@@ -3,7 +3,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
-import 'book_dashboard_screen.dart';
+import 'main_layout_screen.dart';
 import 'settings_screen.dart';
 import 'generate_book_screen.dart';
 
@@ -63,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   final book = books[index];
                   return GestureDetector(
                     onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => BookDashboardScreen(book: book)));
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)));
                     },
                     child: Container(
                       decoration: AppTheme.glassDecoration.copyWith(
@@ -102,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _loadBooks(); // reload after generation
         },
         icon: const Icon(LucideIcons.sparkles, color: Colors.white),
-        label: const Text('New Book via AI', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        label: const Text('New Book', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
       ),
     );
   }

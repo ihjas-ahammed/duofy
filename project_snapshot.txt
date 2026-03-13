@@ -1,651 +1,179 @@
 
---- START OF FILE README.md ---
-# DuoFY (Flutter Port)
 
-A generic, Duolingo-style interactive learning platform that turns any book into an interactive lesson path using Gemini AI.
-
-## Setup Instructions
-
-### 1. Firebase Realtime Database Configuration
-This app uses Firebase Realtime Database to store generated books and progress.
-1. Go to the [Firebase Console](https://console.firebase.google.com/).
-2. Select your project (`duofy-mobile`).
-3. Navigate to **Realtime Database** and click **Create Database**.
-4. Start in **Test Mode** (for development) or set up strict security rules.
-5. In your Flutter project, ensure you have run `flutterfire configure` to link your active Firebase project so that `google-services.json` (Android) and `GoogleService-Info.plist` (iOS) are properly updated.
-
-### 2. Google Generative AI (Gemini) API Key
-We use the Gemini API to analyze uploaded PDFs and generate interactive JSON lessons.
-1. Get a free API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
-2. For safety, the API key is **not** hardcoded. 
-3. When you launch the app, click the **Settings** (gear) icon on the Home Screen.
-4. Enter your Gemini API key and save it securely on your device.
-
-### 3. Turning Books into Interactive Lessons
-1. On the Home Screen, tap the **"+"** Floating Action Button.
-2. Select a PDF from your device.
-3. The app will securely send the document to Gemini using your local API key to extract the content and convert it into a structured "DuoFY" interactive module path.
-4. The generated book will automatically be saved to your Firebase Realtime Database and appear on your Home Screen.
-
-## Project Structure Overview
-- `/lib/models`: Data structures (Book, Module, Lesson, Slide, etc.)
-- `/lib/screens`: Home, Dashboard (Path), Lesson Player, PDF Generator, Settings
-- `/lib/widgets`: Modular UI components (Custom Duolingo-style Buttons, Glass Panels, WebViews)
-- `/lib/services`: AI and Database handling services
-- `/lib/theme`: Colors and global styling matching the web platform
---- END OF FILE README.md ---
-
---- START OF FILE lib/main.dart ---
+--- START OF FILE lib/widgets/lesson_path.dart ---
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'firebase_options.dart';
-import 'theme/app_theme.dart';
-import 'screens/home_screen.dart';
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  
-  // Initialize shared prefs for settings early
-  await SharedPreferences.getInstance();
-
-  runApp(const DuoFyApp());
-}
-
-class DuoFyApp extends StatelessWidget {
-  const DuoFyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'DuoFY',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
-      home: const HomeScreen(),
-    );
-  }
-}
---- END OF FILE lib/main.dart ---
-
---- START OF FILE lib/theme/app_theme.dart ---
-import 'package:flutter/material.dart';
-
-class AppTheme {
-  static const Color duoGreen = Color(0xFF58cc02);
-  static const Color duoGreenDark = Color(0xFF46a302);
-  static const Color duoBlue = Color(0xFF1cb0f6);
-  static const Color duoBlueDark = Color(0xFF1899d6);
-  static const Color duoRed = Color(0xFFff4b4b);
-  static const Color duoRedDark = Color(0xFFea2b2b);
-  static const Color duoViolet = Color(0xFFce82ff);
-  static const Color duoVioletDark = Color(0xFFa559ce);
-  static const Color duoOrange = Color(0xFFff9600);
-  static const Color duoOrangeDark = Color(0xFFcc7800);
-  
-  static const Color background = Color(0xFF0b0f19);
-  static const Color surface = Color(0xFF1f1f28);
-  
-  static ThemeData get darkTheme {
-    return ThemeData(
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: background,
-      primaryColor: duoBlue,
-      fontFamily: 'Nunito',
-      colorScheme: const ColorScheme.dark(
-        primary: duoBlue,
-        secondary: duoGreen,
-        surface: surface,
-        background: background,
-      ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-      ),
-    );
-  }
-
-  static BoxDecoration get glassDecoration {
-    return BoxDecoration(
-      color: Colors.white.withOpacity(0.05),
-      borderRadius: BorderRadius.circular(24),
-      border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.3),
-          blurRadius: 30,
-          offset: const Offset(0, 4),
-        )
-      ],
-    );
-  }
-}
---- END OF FILE lib/theme/app_theme.dart ---
-
---- START OF FILE lib/models/app_models.dart ---
-class Book {
-  final String id;
-  final String title;
-  final String description;
-  final String icon;
-  final List<Module> modules;
-
-  Book({required this.id, required this.title, required this.description, required this.icon, required this.modules});
-
-  factory Book.fromJson(Map<String, dynamic> json) {
-    return Book(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      icon: json['icon'] ?? 'Book',
-      modules: (json['modules'] as List?)?.map((m) => Module.fromJson(Map<String, dynamic>.from(m))).toList() ?? [],
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'description': description,
-    'icon': icon,
-    'modules': modules.map((m) => m.toJson()).toList(),
-  };
-}
-
-class Module {
-  final String id;
-  final String title;
-  final String description;
-  final List<Section> sections;
-
-  Module({required this.id, required this.title, required this.description, required this.sections});
-
-  factory Module.fromJson(Map<String, dynamic> json) {
-    return Module(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      sections: (json['sections'] as List?)?.map((s) => Section.fromJson(Map<String, dynamic>.from(s))).toList() ?? [],
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'description': description,
-    'sections': sections.map((s) => s.toJson()).toList(),
-  };
-}
-
-class Section {
-  final String id;
-  final String title;
-  final String description;
-  final String color;
-  final List<Unit> units;
-
-  Section({required this.id, required this.title, required this.description, required this.color, required this.units});
-
-  factory Section.fromJson(Map<String, dynamic> json) {
-    return Section(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      color: json['color'] ?? 'duo-blue',
-      units: (json['units'] as List?)?.map((u) => Unit.fromJson(Map<String, dynamic>.from(u))).toList() ?? [],
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'description': description,
-    'color': color,
-    'units': units.map((u) => u.toJson()).toList(),
-  };
-}
-
-class Unit {
-  final String id;
-  final String title;
-  final String description;
-  final List<Lesson> lessons;
-
-  Unit({required this.id, required this.title, required this.description, required this.lessons});
-
-  factory Unit.fromJson(Map<String, dynamic> json) {
-    return Unit(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      lessons: (json['lessons'] as List?)?.map((l) => Lesson.fromJson(Map<String, dynamic>.from(l))).toList() ?? [],
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'description': description,
-    'lessons': lessons.map((l) => l.toJson()).toList(),
-  };
-}
-
-class Lesson {
-  final String id;
-  final String title;
-  final String description;
-  final String icon;
-  final List<Slide> slides;
-
-  Lesson({required this.id, required this.title, required this.description, required this.icon, required this.slides});
-
-  factory Lesson.fromJson(Map<String, dynamic> json) {
-    return Lesson(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      icon: json['icon'] ?? 'BookOpen',
-      slides: (json['slides'] as List?)?.map((s) => Slide.fromJson(Map<String, dynamic>.from(s))).toList() ?? [],
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'description': description,
-    'icon': icon,
-    'slides': slides.map((s) => s.toJson()).toList(),
-  };
-}
-
-class Slide {
-  final String id;
-  final String type;
-  final String title;
-  final String content;
-  final String? interactiveCanvasUrl;
-  final List<QuizOption>? options;
-
-  Slide({required this.id, required this.type, required this.title, required this.content, this.interactiveCanvasUrl, this.options});
-
-  factory Slide.fromJson(Map<String, dynamic> json) {
-    return Slide(
-      id: json['id'] ?? '',
-      type: json['type'] ?? 'theory',
-      title: json['title'] ?? '',
-      content: json['content'] ?? '',
-      interactiveCanvasUrl: json['interactiveCanvasUrl'],
-      options: (json['options'] as List?)?.map((o) => QuizOption.fromJson(Map<String, dynamic>.from(o))).toList(),
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'type': type,
-    'title': title,
-    'content': content,
-    if (interactiveCanvasUrl != null) 'interactiveCanvasUrl': interactiveCanvasUrl,
-    if (options != null) 'options': options!.map((o) => o.toJson()).toList(),
-  };
-}
-
-class QuizOption {
-  final String id;
-  final String text;
-  final bool isCorrect;
-  final String explanation;
-
-  QuizOption({required this.id, required this.text, required this.isCorrect, required this.explanation});
-
-  factory QuizOption.fromJson(Map<String, dynamic> json) {
-    return QuizOption(
-      id: json['id'] ?? '',
-      text: json['text'] ?? '',
-      isCorrect: json['isCorrect'] ?? false,
-      explanation: json['explanation'] ?? '',
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'text': text,
-    'isCorrect': isCorrect,
-    'explanation': explanation,
-  };
-}
---- END OF FILE lib/models/app_models.dart ---
-
---- START OF FILE lib/data/mock_books.dart ---
 import '../models/app_models.dart';
+import '../theme/app_theme.dart';
+import '../screens/lesson_screen.dart';
+import 'lesson_node.dart';
 
-final List<Book> mockBooks = [
-  Book(
-    id: 'b-physics-1',
-    title: 'Modern Physics',
-    description: 'Relativity, Quantum Mechanics, and more.',
-    icon: 'Atom',
-    modules: [
-      Module(
-        id: 'm-phys-1',
-        title: 'Quantum Mechanics',
-        description: 'The foundation of the microscopic world.',
-        sections: [
-          Section(
-            id: 's-phys-1-1',
-            title: 'Wave-Particle Duality',
-            description: 'Light and matter behave as both waves and particles.',
-            color: 'duo-blue',
-            units: [
-              Unit(
-                id: 'u-phys-1-1',
-                title: 'Photons',
-                description: 'The particle nature of light',
-                lessons: [
-                  Lesson(
-                    id: 'l-phys-1-1-1',
-                    title: 'What is a Photon?',
-                    description: 'Basic introduction',
-                    icon: 'Sun',
-                    slides: [
-                      Slide(
-                        id: 'sl-1',
-                        type: 'theory',
-                        title: 'The Photon',
-                        content: 'A photon is a discrete packet of energy associated with electromagnetic radiation.',
-                      ),
-                      Slide(
-                        id: 'sl-2',
-                        type: 'quiz',
-                        title: 'Check your understanding',
-                        content: 'Does a photon have mass?',
-                        options: [
-                          QuizOption(id: 'a', text: 'Yes', isCorrect: false, explanation: 'Photons are massless particles.'),
-                          QuizOption(id: 'b', text: 'No, it has zero rest mass', isCorrect: true, explanation: 'Correct!'),
-                        ],
-                      ),
-                      Slide(
-                        id: 'sl-3',
-                        type: 'interactive_canvas',
-                        title: 'Interactive Wave',
-                        content: 'Interact with the wave visualization below.',
-                        interactiveCanvasUrl: 'https://phet.colorado.edu/sims/html/wave-interference/latest/wave-interference_en.html',
-                      )
-                    ]
-                  )
-                ]
-              )
-            ]
-          )
-        ]
-      )
-    ]
-  ),
-  Book(
-    id: 'b-psych-1',
-    title: 'Cognitive Psychology',
-    description: 'How the mind works, memory, and perception.',
-    icon: 'Brain',
-    modules: [
-      Module(
-        id: 'm-psych-1',
-        title: 'Memory Systems',
-        description: 'Short term, long term, and working memory.',
-        sections: [
-          Section(
-            id: 's-psych-1-1',
-            title: 'Working Memory Model',
-            description: 'Baddeley and Hitch',
-            color: 'duo-violet',
-            units: [
-              Unit(
-                id: 'u-psych-1-1',
-                title: 'Central Executive',
-                description: 'The boss of memory',
-                lessons: [
-                  Lesson(
-                    id: 'l-psych-1-1-1',
-                    title: 'The Central Executive',
-                    description: 'Directing attention',
-                    icon: 'BrainCircuit',
-                    slides: [
-                      Slide(
-                        id: 'sl-p-1',
-                        type: 'theory',
-                        title: 'Role',
-                        content: 'The central executive is responsible for monitoring and coordinating the operation of the slave systems (e.g., visuo-spatial sketchpad).',
-                      ),
-                    ]
-                  )
-                ]
-              )
-            ]
-          )
-        ]
-      )
-    ]
-  ),
-];
---- END OF FILE lib/data/mock_books.dart ---
+class LessonPath extends StatelessWidget {
+  final Section section;
 
---- START OF FILE lib/services/database_service.dart ---
-import 'package:firebase_database/firebase_database.dart';
-import '../models/app_models.dart';
-import '../data/mock_books.dart';
-
-class DatabaseService {
-  final DatabaseReference _dbRef = FirebaseDatabase.instance.ref();
-
-  Future<List<Book>> fetchBooks() async {
-    try {
-      final snapshot = await _dbRef.child('books').get();
-      if (snapshot.exists) {
-        final Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
-        List<Book> books = [];
-        data.forEach((key, value) {
-          books.add(Book.fromJson(Map<String, dynamic>.from(value)));
-        });
-        return books;
-      } else {
-        // If DB is empty, populate with mock data for demonstration
-        await saveBooks(mockBooks);
-        return mockBooks;
-      }
-    } catch (e) {
-      print('Firebase Error: \$e. Falling back to mock data.');
-      return mockBooks;
-    }
-  }
-
-  Future<void> saveBooks(List<Book> books) async {
-    for (var book in books) {
-      await _dbRef.child('books').child(book.id).set(book.toJson());
-    }
-  }
-
-  Future<void> saveGeneratedBook(Book book) async {
-    await _dbRef.child('books').child(book.id).set(book.toJson());
-  }
-}
---- END OF FILE lib/services/database_service.dart ---
-
---- START OF FILE lib/services/ai_service.dart ---
-import 'dart:convert';
-import 'dart:io';
-import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../models/app_models.dart';
-
-class AiService {
-  Future<String?> getApiKey() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('gemini_api_key');
-  }
-
-  Future<Book?> generateBookFromPdf(File pdfFile, String title) async {
-    final apiKey = await getApiKey();
-    if (apiKey == null || apiKey.isEmpty) {
-      throw Exception('API Key not set. Please configure in Settings.');
-    }
-
-    final model = GenerativeModel(
-      model: 'gemini-1.5-flash',
-      apiKey: apiKey,
-      generationConfig: GenerationConfig(responseMimeType: 'application/json'),
-    );
-
-    final pdfBytes = await pdfFile.readAsBytes();
-    final prompt = TextPart('''
-You are an expert curriculum designer. Convert the provided document into a structured JSON interactive lesson plan.
-The JSON must perfectly match this structure (return ONLY JSON):
-{
-  "id": "generated-\$title",
-  "title": "\$title",
-  "description": "Auto-generated book",
-  "icon": "Book",
-  "modules": [
-    {
-      "id": "m-1",
-      "title": "Module Title",
-      "description": "Module Desc",
-      "sections": [
-        {
-          "id": "s-1",
-          "title": "Section Title",
-          "description": "Section Desc",
-          "color": "duo-green",
-          "units": [
-            {
-              "id": "u-1",
-              "title": "Unit Title",
-              "description": "Unit Desc",
-              "lessons": [
-                {
-                  "id": "l-1",
-                  "title": "Lesson Title",
-                  "description": "Lesson Desc",
-                  "icon": "BookOpen",
-                  "slides": [
-                    {
-                      "id": "sl-1",
-                      "type": "theory",
-                      "title": "Slide Title",
-                      "content": "Markdown text..."
-                    },
-                    {
-                      "id": "sl-2",
-                      "type": "quiz",
-                      "title": "Quiz Title",
-                      "content": "Question here...",
-                      "options": [
-                        {"id": "a", "text": "Option A", "isCorrect": true, "explanation": "Why"}
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
-''');
-
-    try {
-      final response = await model.generateContent([
-        Content.multi([
-          prompt,
-          DataPart('application/pdf', pdfBytes),
-        ])
-      ]);
-
-      if (response.text != null) {
-        final Map<String, dynamic> jsonMap = jsonDecode(response.text!);
-        return Book.fromJson(jsonMap);
-      }
-    } catch (e) {
-      print('AI Generation Error: \$e');
-      throw Exception('Failed to generate book: \$e');
-    }
-    return null;
-  }
-}
---- END OF FILE lib/services/ai_service.dart ---
-
---- START OF FILE lib/widgets/duo_button.dart ---
-import 'package:flutter/material.dart';
-
-class DuoButton extends StatefulWidget {
-  final String text;
-  final VoidCallback onPressed;
-  final Color color;
-  final Color shadowColor;
-  final bool isOutline;
-
-  const DuoButton({
+  const LessonPath({
     super.key,
-    required this.text,
-    required this.onPressed,
-    required this.color,
-    required this.shadowColor,
-    this.isOutline = false,
+    required this.section,
   });
 
-  @override
-  State<DuoButton> createState() => _DuoButtonState();
-}
-
-class _DuoButtonState extends State<DuoButton> {
-  bool _isPressed = false;
+  Color _getPathColor() {
+    switch (section.color) {
+      case 'duo-green': return AppTheme.duoGreen;
+      case 'duo-blue': return AppTheme.duoBlue;
+      case 'duo-violet': return AppTheme.duoViolet;
+      case 'duo-orange': return AppTheme.duoOrange;
+      default: return AppTheme.duoBlue;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) {
-        setState(() => _isPressed = false);
-        widget.onPressed();
-      },
-      onTapCancel: () => setState(() => _isPressed = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 100),
-        margin: EdgeInsets.only(top: _isPressed ? 4 : 0, bottom: _isPressed ? 0 : 4),
-        decoration: BoxDecoration(
-          color: widget.isOutline ? Colors.transparent : widget.color,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: widget.isOutline ? widget.color : widget.shadowColor,
-            width: 2,
-          ),
-          boxShadow: _isPressed
-              ? []
-              : [
-                  BoxShadow(
-                    color: widget.shadowColor,
-                    offset: const Offset(0, 4),
-                  )
+    List<Widget> stackChildren = [];
+    List<Offset> pathPoints = [];
+
+    double currentY = 30; // Added more top spacing
+    int globalLessonIdx = 0;
+
+    for (var unit in section.units) {
+      // Add Glassy Unit Header with more padding
+      stackChildren.add(
+        Positioned(
+          top: currentY,
+          left: 20,
+          right: 20,
+          child: AppTheme.applyGlassBlur(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: Column(
+                children: [
+                  Text(
+                    unit.title.toUpperCase(),
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white, letterSpacing: 1.5),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    unit.description,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white54),
+                    textAlign: TextAlign.center,
+                  ),
                 ],
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-        child: Center(
-          child: Text(
-            widget.text.toUpperCase(),
-            style: TextStyle(
-              color: widget.isOutline ? widget.color : Colors.white,
-              fontWeight: FontWeight.w900,
-              fontSize: 16,
-              letterSpacing: 1.2,
+              ),
             ),
           ),
         ),
+      );
+
+      currentY += 130; // Increased space after header
+
+      for (var lesson in unit.lessons) {
+        final int phase = globalLessonIdx % 4;
+        double offsetX = 0;
+        if (phase == 1) offsetX = 65; // Wider zig-zag
+        if (phase == 3) offsetX = -65; // Wider zig-zag
+
+        double centerX = MediaQuery.of(context).size.width / 2;
+        double absoluteX = centerX + offsetX;
+
+        pathPoints.add(Offset(absoluteX, currentY + 40)); // 40 is half of the new 80px node
+
+        stackChildren.add(
+          Positioned(
+            top: currentY,
+            left: 0,
+            right: 0,
+            child: Transform.translate(
+              offset: Offset(offsetX, 0),
+              child: LessonNodeWidget(
+                lesson: lesson,
+                isCompleted: globalLessonIdx < 1,
+                isLocked: globalLessonIdx > 1,
+                sectionColorStr: section.color,
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(
+                    builder: (_) => LessonScreen(lesson: lesson)
+                  ));
+                },
+              ),
+            ),
+          ),
+        );
+
+        currentY += 140; // Increased vertical spacing between nodes
+        globalLessonIdx++;
+      }
+      
+      currentY += 20; // Extra padding at the end of a unit
+    }
+
+    stackChildren.insert(0, 
+      Positioned.fill(
+        child: CustomPaint(
+          painter: CurvedPathPainter(
+            points: pathPoints,
+            pathColor: Colors.grey.shade800,
+            activeColor: _getPathColor(),
+            activeIndex: 1, 
+          ),
+        ),
+      )
+    );
+
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: SizedBox(
+        height: currentY + 120, // Extra padding for bottom nav
+        width: double.infinity,
+        child: Stack(
+          alignment: Alignment.topCenter,
+          children: stackChildren,
+        ),
       ),
     );
   }
 }
---- END OF FILE lib/widgets/duo_button.dart ---
+
+class CurvedPathPainter extends CustomPainter {
+  final List<Offset> points;
+  final Color pathColor;
+  final Color activeColor;
+  final int activeIndex;
+
+  CurvedPathPainter({
+    required this.points,
+    required this.pathColor,
+    required this.activeColor,
+    required this.activeIndex,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (points.length < 2) return;
+
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 14 // Thicker path
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    for (int i = 0; i < points.length - 1; i++) {
+      final p1 = points[i];
+      final p2 = points[i + 1];
+
+      final path = Path();
+      path.moveTo(p1.dx, p1.dy);
+      
+      double cy = (p1.dy + p2.dy) / 2;
+      path.cubicTo(p1.dx, cy, p2.dx, cy, p2.dx, p2.dy);
+
+      paint.color = (i < activeIndex) ? activeColor : pathColor;
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+--- END OF FILE lib/widgets/lesson_path.dart ---
 
 --- START OF FILE lib/widgets/lesson_node.dart ---
 import 'package:flutter/material.dart';
@@ -702,8 +230,8 @@ class LessonNodeWidget extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 70,
-            height: 70,
+            width: 80, // Increased from 70 to 80
+            height: 80, // Increased from 70 to 80
             decoration: BoxDecoration(
               color: bgColor,
               shape: BoxShape.circle,
@@ -718,19 +246,20 @@ class LessonNodeWidget extends StatelessWidget {
             child: Icon(
               isLocked ? LucideIcons.lock : LucideIcons.bookOpen,
               color: isLocked ? Colors.grey.shade500 : Colors.white,
-              size: 32,
+              size: 36, // Increased icon size
             ),
           ),
           const SizedBox(height: 16),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), // Increased padding
             decoration: AppTheme.glassDecoration,
             child: Text(
               lesson.title.toUpperCase(),
               style: const TextStyle(
-                fontSize: 10,
+                fontSize: 11, // Slightly larger font
                 fontWeight: FontWeight.w900,
                 color: Colors.white70,
+                letterSpacing: 1.0,
               ),
               textAlign: TextAlign.center,
             ),
@@ -742,306 +271,252 @@ class LessonNodeWidget extends StatelessWidget {
 }
 --- END OF FILE lib/widgets/lesson_node.dart ---
 
---- START OF FILE lib/screens/home_screen.dart ---
+--- START OF FILE lib/screens/practice_screen.dart ---
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import '../models/app_models.dart';
-import '../services/database_service.dart';
-import '../theme/app_theme.dart';
-import 'book_dashboard_screen.dart';
-import 'settings_screen.dart';
-import 'generate_book_screen.dart';
-
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  final DatabaseService _db = DatabaseService();
-  List<Book> books = [];
-  bool isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadBooks();
-  }
-
-  Future<void> _loadBooks() async {
-    final fetched = await _db.fetchBooks();
-    setState(() {
-      books = fetched;
-      isLoading = false;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('DuoFY Books', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5)),
-        actions: [
-          IconButton(
-            icon: const Icon(LucideIcons.settings),
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
-            },
-          )
-        ],
-      ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue))
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 0.8,
-                ),
-                itemCount: books.length,
-                itemBuilder: (context, index) {
-                  final book = books[index];
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => BookDashboardScreen(book: book)));
-                    },
-                    child: Container(
-                      decoration: AppTheme.glassDecoration.copyWith(
-                        border: Border.all(color: AppTheme.duoBlue.withOpacity(0.3), width: 2),
-                      ),
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(LucideIcons.book, size: 48, color: AppTheme.duoBlue),
-                          const SizedBox(height: 16),
-                          Text(
-                            book.title,
-                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            book.description,
-                            style: const TextStyle(color: Colors.white54, fontSize: 12),
-                            textAlign: TextAlign.center,
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppTheme.duoGreen,
-        onPressed: () async {
-          await Navigator.push(context, MaterialPageRoute(builder: (_) => const GenerateBookScreen()));
-          _loadBooks(); // reload after generation
-        },
-        icon: const Icon(LucideIcons.sparkles, color: Colors.white),
-        label: const Text('New Book via AI', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-      ),
-    );
-  }
-}
---- END OF FILE lib/screens/home_screen.dart ---
-
---- START OF FILE lib/screens/book_dashboard_screen.dart ---
-import 'package:flutter/material.dart';
-import '../models/app_models.dart';
-import '../theme/app_theme.dart';
-import '../widgets/lesson_node.dart';
-import 'lesson_screen.dart';
-
-class BookDashboardScreen extends StatefulWidget {
-  final Book book;
-
-  const BookDashboardScreen({super.key, required this.book});
-
-  @override
-  State<BookDashboardScreen> createState() => _BookDashboardScreenState();
-}
-
-class _BookDashboardScreenState extends State<BookDashboardScreen> {
-  int currentModuleIdx = 0;
-  int currentSectionIdx = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    if (widget.book.modules.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(title: Text(widget.book.title)),
-        body: const Center(child: Text("This book is empty.")),
-      );
-    }
-
-    final section = widget.book.modules[currentModuleIdx].sections[currentSectionIdx];
-    final allLessons = section.units.expand((u) => u.lessons).toList();
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(section.title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(color: Colors.white.withOpacity(0.1), height: 1.0),
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 40),
-          child: Center(
-            child: Wrap(
-              direction: Axis.vertical,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 60,
-              children: allLessons.map((lesson) {
-                // Hardcode logic for demo: first lesson unlocked, others locked.
-                // In a real app, track via SharedPreferences.
-                bool isUnlocked = allLessons.indexOf(lesson) == 0; 
-                return LessonNodeWidget(
-                  lesson: lesson,
-                  isCompleted: false,
-                  isLocked: !isUnlocked,
-                  sectionColorStr: section.color,
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => LessonScreen(lesson: lesson)
-                    ));
-                  },
-                );
-              }).toList(),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
---- END OF FILE lib/screens/book_dashboard_screen.dart ---
-
---- START OF FILE lib/screens/lesson_screen.dart ---
-import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
-import '../widgets/slide_views/interactive_webview.dart';
+import 'practice_session_screen.dart';
 
-class LessonScreen extends StatefulWidget {
-  final Lesson lesson;
+class PracticeScreen extends StatelessWidget {
+  final Book book;
 
-  const LessonScreen({super.key, required this.lesson});
+  const PracticeScreen({super.key, required this.book});
 
   @override
-  State<LessonScreen> createState() => _LessonScreenState();
-}
-
-class _LessonScreenState extends State<LessonScreen> {
-  int _currentIndex = 0;
-  bool _answeredCorrectly = false;
-  String? _selectedOption;
-
-  void _nextSlide() {
-    if (_currentIndex < widget.lesson.slides.length - 1) {
-      setState(() {
-        _currentIndex++;
-        _answeredCorrectly = false;
-        _selectedOption = null;
-      });
-    } else {
-      // Lesson Complete
-      Navigator.pop(context);
-    }
-  }
-
-  Widget _buildSlideContent(Slide slide) {
-    if (slide.type == 'interactive_canvas' && slide.interactiveCanvasUrl != null) {
-      return Expanded(
-        child: Column(
-          children: [
-            if (slide.content.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: MarkdownBody(data: slide.content, styleSheet: MarkdownStyleSheet(p: const TextStyle(fontSize: 18, color: Colors.white))),
-              ),
-            Expanded(child: InteractiveWebview(url: slide.interactiveCanvasUrl!)),
-          ],
-        ),
-      );
-    }
-
-    if (slide.type == 'quiz') {
-      return Expanded(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Practice Arena', style: TextStyle(fontWeight: FontWeight.w900)),
+        automaticallyImplyLeading: false,
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: AppTheme.glassDecoration,
-                child: MarkdownBody(data: slide.content, styleSheet: MarkdownStyleSheet(p: const TextStyle(fontSize: 20, color: Colors.white))),
-              ),
+              Icon(LucideIcons.dumbbell, size: 100, color: AppTheme.duoViolet.withOpacity(0.8)),
               const SizedBox(height: 32),
-              if (slide.options != null)
-                ...slide.options!.map((opt) {
-                  final isSelected = _selectedOption == opt.id;
-                  final color = _answeredCorrectly && isSelected 
-                      ? AppTheme.duoGreen 
-                      : (isSelected ? AppTheme.duoBlue : Colors.white10);
-                  
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: InkWell(
-                      onTap: _answeredCorrectly ? null : () => setState(() => _selectedOption = opt.id),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.2),
-                          border: Border.all(color: color, width: 2),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: MarkdownBody(data: opt.text, styleSheet: MarkdownStyleSheet(p: const TextStyle(fontSize: 18))),
-                      ),
-                    ),
+              const Text(
+                'Ready to Train?',
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Review past concepts to strengthen your memory. Mistakes here will be repeated until you master them!',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white54, fontSize: 16, height: 1.5),
+              ),
+              const SizedBox(height: 48),
+              DuoButton(
+                text: 'Start Practice',
+                color: AppTheme.duoViolet,
+                shadowColor: AppTheme.duoVioletDark,
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => PracticeSessionScreen(book: book)),
                   );
-                }).toList(),
+                },
+              ),
             ],
           ),
-        ),
-      );
-    }
-
-    // Default Theory View
-    return Expanded(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: AppTheme.glassDecoration,
-          child: MarkdownBody(data: slide.content, styleSheet: MarkdownStyleSheet(p: const TextStyle(fontSize: 18, color: Colors.white, height: 1.5))),
         ),
       ),
     );
   }
+}
+--- END OF FILE lib/screens/practice_screen.dart ---
+
+--- START OF FILE lib/screens/practice_session_screen.dart ---
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../models/app_models.dart';
+import '../theme/app_theme.dart';
+import '../services/global_state.dart';
+import '../widgets/duo_button.dart';
+import '../widgets/slide_views/quiz_view.dart';
+import '../widgets/slide_views/fill_in_blank_view.dart';
+import '../widgets/slide_views/numerical_view.dart';
+import 'lesson_complete_screen.dart';
+
+class PracticeSessionScreen extends StatefulWidget {
+  final Book book;
+
+  const PracticeSessionScreen({super.key, required this.book});
+
+  @override
+  State<PracticeSessionScreen> createState() => _PracticeSessionScreenState();
+}
+
+class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
+  List<Slide> _queue = [];
+  int _totalQuestions = 0;
+  int _completedQuestions = 0;
+  
+  bool _answered = false;
+  bool _isCorrect = false;
+  
+  late DateTime _startTime;
+  int _mistakesMade = 0;
+
+  String? _selectedQuizOption;
+  String _blankInput = '';
+  String _numericInput = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _startTime = DateTime.now();
+    _extractInteractiveSlides();
+  }
+
+  void _extractInteractiveSlides() {
+    List<Slide> pool = [];
+    for (var module in widget.book.modules) {
+      pool.addAll(module.practiceQuestions);
+    }
+    if (pool.isEmpty) {
+      for (var module in widget.book.modules) {
+        for (var section in module.sections) {
+          for (var unit in section.units) {
+            for (var lesson in unit.lessons) {
+              for (var slide in lesson.slides) {
+                if (['quiz', 'fill_in_blank', 'numerical'].contains(slide.type)) {
+                  pool.add(slide);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    pool.shuffle();
+    // Take up to 5 questions for a session
+    if (pool.length > 5) {
+      _queue = pool.sublist(0, 5);
+    } else {
+      _queue = pool;
+    }
+    _totalQuestions = _queue.length;
+  }
+
+  Future<void> _finishPractice() async {
+    int timeSpent = DateTime.now().difference(_startTime).inSeconds;
+    int accuracy = _totalQuestions > 0 ? (((_totalQuestions) / (_totalQuestions + _mistakesMade)) * 100).round() : 100;
+    int xpEarned = 10; 
+
+    await GlobalState.addXp(xpEarned);
+
+    if (mounted) {
+      Navigator.pushReplacement(
+        context, 
+        MaterialPageRoute(builder: (_) => LessonCompleteScreen(
+          xpEarned: xpEarned,
+          accuracy: accuracy,
+          timeSpentSeconds: timeSpent,
+          isPractice: true, 
+        ))
+      );
+    }
+  }
+
+  void _processNext() {
+    if (_isCorrect) {
+      _completedQuestions++;
+      _queue.removeAt(0); // Pop correct answer
+    } else {
+      _mistakesMade++;
+      // Move to back of the queue to repeat later
+      final slide = _queue.removeAt(0);
+      _queue.add(slide);
+    }
+
+    if (_queue.isEmpty) {
+      _finishPractice();
+    } else {
+      setState(() {
+        _answered = false;
+        _isCorrect = false;
+        _selectedQuizOption = null;
+        _blankInput = '';
+        _numericInput = '';
+      });
+    }
+  }
+
+  void _checkAnswer() {
+    final slide = _queue.first;
+    bool correct = false;
+
+    if (slide.type == 'quiz' && _selectedQuizOption != null) {
+      correct = slide.options!.firstWhere((o) => o.id == _selectedQuizOption).isCorrect;
+    } else if (slide.type == 'fill_in_blank') {
+      correct = _blankInput.trim().toLowerCase() == slide.blankAnswer?.toLowerCase().replaceAll(r'\', '');
+    } else if (slide.type == 'numerical') {
+      final val = double.tryParse(_numericInput);
+      if (val != null && slide.numericAnswer != null) {
+        correct = (val - slide.numericAnswer!).abs() <= (slide.numericTolerance ?? 0.01);
+      }
+    }
+
+    setState(() {
+      _answered = true;
+      _isCorrect = correct;
+    });
+  }
+
+  bool _canCheck() {
+    if (_queue.isEmpty) return false;
+    final slide = _queue.first;
+    if (slide.type == 'quiz') return _selectedQuizOption != null;
+    if (slide.type == 'fill_in_blank') return _blankInput.trim().isNotEmpty;
+    if (slide.type == 'numerical') return _numericInput.trim().isNotEmpty;
+    return false;
+  }
+
+  Widget _buildContent(Slide slide) {
+    if (slide.type == 'quiz') {
+      return QuizView(
+        slide: slide,
+        selectedOptionId: _selectedQuizOption,
+        isAnswered: _answered,
+        onSelect: (id) => setState(() => _selectedQuizOption = id),
+      );
+    } else if (slide.type == 'fill_in_blank') {
+      return FillInBlankView(
+        slide: slide,
+        value: _blankInput,
+        isAnswered: _answered,
+        isCorrect: _isCorrect,
+        onChanged: (val) => setState(() => _blankInput = val),
+      );
+    } else if (slide.type == 'numerical') {
+      return NumericalView(
+        slide: slide,
+        value: _numericInput,
+        isAnswered: _answered,
+        isCorrect: _isCorrect,
+        onChanged: (val) => setState(() => _numericInput = val),
+      );
+    }
+    return const SizedBox();
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.lesson.slides.isEmpty) {
-      return Scaffold(appBar: AppBar(), body: const Center(child: Text("Empty Lesson")));
+    if (_queue.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: const Center(child: Text('No practice questions available.')),
+      );
     }
 
-    final slide = widget.lesson.slides[_currentIndex];
-    final progress = (_currentIndex) / widget.lesson.slides.length;
+    final slide = _queue.first;
+    final progress = _totalQuestions == 0 ? 0.0 : (_completedQuestions / _totalQuestions);
 
     return Scaffold(
       appBar: AppBar(
@@ -1052,7 +527,7 @@ class _LessonScreenState extends State<LessonScreen> {
         title: LinearProgressIndicator(
           value: progress,
           backgroundColor: Colors.white12,
-          color: AppTheme.duoGreen,
+          color: AppTheme.duoViolet,
           minHeight: 12,
           borderRadius: BorderRadius.circular(6),
         ),
@@ -1060,287 +535,311 @@ class _LessonScreenState extends State<LessonScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            if (slide.title.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(slide.title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Text(
+                slide.title.toUpperCase(),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppTheme.duoViolet, letterSpacing: 1.5),
               ),
+            ),
             
-            _buildSlideContent(slide),
+            Expanded(child: _buildContent(slide)),
             
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: Colors.white10, width: 1)),
+            // Bottom Action Bar
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              decoration: BoxDecoration(
+                color: _answered 
+                  ? (_isCorrect ? AppTheme.duoGreen.withOpacity(0.15) : AppTheme.duoRed.withOpacity(0.15))
+                  : Colors.transparent,
+                border: Border(top: BorderSide(
+                  color: _answered ? (_isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.white10, 
+                  width: 2)
+                ),
               ),
-              child: slide.type == 'quiz' && !_answeredCorrectly
-                  ? DuoButton(
-                      text: 'Check',
-                      color: _selectedOption != null ? AppTheme.duoGreen : Colors.grey.shade700,
-                      shadowColor: _selectedOption != null ? AppTheme.duoGreenDark : Colors.grey.shade800,
-                      onPressed: () {
-                        if (_selectedOption != null) {
-                          final opt = slide.options!.firstWhere((o) => o.id == _selectedOption);
-                          if (opt.isCorrect) {
-                            setState(() => _answeredCorrectly = true);
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(opt.explanation)));
-                          }
-                        }
-                      },
-                    )
-                  : DuoButton(
-                      text: 'Continue',
-                      color: AppTheme.duoBlue,
-                      shadowColor: AppTheme.duoBlueDark,
-                      onPressed: _nextSlide,
-                    ),
-            )
-          ],
-        ),
-      ),
-    );
-  }
-}
---- END OF FILE lib/screens/lesson_screen.dart ---
-
---- START OF FILE lib/widgets/slide_views/interactive_webview.dart ---
-import 'package:flutter/material.dart';
-import 'package:webview_flutter/webview_flutter.dart';
-
-class InteractiveWebview extends StatefulWidget {
-  final String url;
-
-  const InteractiveWebview({super.key, required this.url});
-
-  @override
-  State<InteractiveWebview> createState() => _InteractiveWebviewState();
-}
-
-class _InteractiveWebviewState extends State<InteractiveWebview> {
-  late final WebViewController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0x00000000))
-      ..loadRequest(Uri.parse(widget.url));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.black45,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white12),
-      ),
-      clipBehavior: Clip.hardEdge,
-      child: WebViewWidget(controller: _controller),
-    );
-  }
-}
---- END OF FILE lib/widgets/slide_views/interactive_webview.dart ---
-
---- START OF FILE lib/screens/settings_screen.dart ---
-import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../theme/app_theme.dart';
-import '../widgets/duo_button.dart';
-
-class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
-
-  @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  final _keyController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _loadKey();
-  }
-
-  Future<void> _loadKey() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _keyController.text = prefs.getString('gemini_api_key') ?? '';
-    });
-  }
-
-  Future<void> _saveKey() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('gemini_api_key', _keyController.text.trim());
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('API Key Saved Successfully')));
-      Navigator.pop(context);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Google Generative AI Configuration', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _keyController,
-              decoration: const InputDecoration(
-                labelText: 'Gemini API Key',
-                border: OutlineInputBorder(),
-                filled: true,
-                fillColor: Colors.black26,
-              ),
-              obscureText: true,
-            ),
-            const SizedBox(height: 8),
-            const Text('Get your free API key from Google AI Studio. It is stored safely on your local device.', style: TextStyle(color: Colors.white54, fontSize: 12)),
-            const Spacer(),
-            DuoButton(
-              text: 'Save Settings',
-              onPressed: _saveKey,
-              color: AppTheme.duoGreen,
-              shadowColor: AppTheme.duoGreenDark,
-            )
-          ],
-        ),
-      ),
-    );
-  }
-}
---- END OF FILE lib/screens/settings_screen.dart ---
-
---- START OF FILE lib/screens/generate_book_screen.dart ---
-import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
-import '../services/ai_service.dart';
-import '../services/database_service.dart';
-import '../theme/app_theme.dart';
-import '../widgets/duo_button.dart';
-
-class GenerateBookScreen extends StatefulWidget {
-  const GenerateBookScreen({super.key});
-
-  @override
-  State<GenerateBookScreen> createState() => _GenerateBookScreenState();
-}
-
-class _GenerateBookScreenState extends State<GenerateBookScreen> {
-  final AiService _aiService = AiService();
-  final DatabaseService _dbService = DatabaseService();
-  final _titleController = TextEditingController();
-  
-  File? _selectedFile;
-  bool _isGenerating = false;
-  String _statusMessage = '';
-
-  Future<void> _pickFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-    );
-
-    if (result != null) {
-      setState(() {
-        _selectedFile = File(result.files.single.path!);
-      });
-    }
-  }
-
-  Future<void> _generate() async {
-    if (_selectedFile == null || _titleController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a PDF and enter a title.')));
-      return;
-    }
-
-    setState(() {
-      _isGenerating = true;
-      _statusMessage = 'Analyzing PDF with Gemini... This may take a minute.';
-    });
-
-    try {
-      final book = await _aiService.generateBookFromPdf(_selectedFile!, _titleController.text.trim());
-      if (book != null) {
-        setState(() => _statusMessage = 'Saving to Database...');
-        await _dbService.saveGeneratedBook(book);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Book Generated Successfully!')));
-          Navigator.pop(context);
-        }
-      }
-    } catch (e) {
-      setState(() {
-        _statusMessage = 'Error: \${e.toString()}';
-      });
-    } finally {
-      if (mounted) setState(() => _isGenerating = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Generate Lesson')),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: 'Book Title',
-                border: OutlineInputBorder(),
-                filled: true,
-                fillColor: Colors.black26,
-              ),
-            ),
-            const SizedBox(height: 24),
-            DuoButton(
-              text: _selectedFile != null ? 'PDF Selected' : 'Upload PDF',
-              onPressed: _pickFile,
-              color: AppTheme.duoBlue,
-              shadowColor: AppTheme.duoBlueDark,
-              isOutline: _selectedFile != null,
-            ),
-            if (_selectedFile != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text('File: \${_selectedFile!.path.split('/').last}', style: const TextStyle(color: Colors.white54), textAlign: TextAlign.center),
-              ),
-            const Spacer(),
-            if (_isGenerating)
-              Column(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const CircularProgressIndicator(color: AppTheme.duoGreen),
-                  const SizedBox(height: 16),
-                  Text(_statusMessage, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 32),
+                  if (_answered)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(color: _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed, shape: BoxShape.circle),
+                            child: Icon(_isCorrect ? LucideIcons.check : LucideIcons.x, color: Colors.white, size: 24),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              _isCorrect ? 'Excellent!' : 'Incorrect.',
+                              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                  !_answered
+                      ? DuoButton(
+                          text: 'Check',
+                          color: _canCheck() ? AppTheme.duoGreen : Colors.grey.shade700,
+                          shadowColor: _canCheck() ? AppTheme.duoGreenDark : Colors.grey.shade800,
+                          onPressed: () {
+                            if (_canCheck()) _checkAnswer();
+                          },
+                        )
+                      : DuoButton(
+                          text: _answered && !_isCorrect ? 'Got It' : 'Continue',
+                          color: _answered && !_isCorrect ? AppTheme.duoRed : AppTheme.duoBlue,
+                          shadowColor: _answered && !_isCorrect ? AppTheme.duoRedDark : AppTheme.duoBlueDark,
+                          onPressed: _processNext,
+                        ),
                 ],
-              )
-            else
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+--- END OF FILE lib/screens/practice_session_screen.dart ---
+
+--- START OF FILE lib/screens/exam_screen.dart ---
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../models/app_models.dart';
+import '../theme/app_theme.dart';
+import '../widgets/math_markdown.dart';
+
+class ExamScreen extends StatelessWidget {
+  final Book book;
+
+  const ExamScreen({super.key, required this.book});
+
+  @override
+  Widget build(BuildContext context) {
+    // Gather exam questions from all modules
+    List<Slide> examQuestions = [];
+    for (var module in book.modules) {
+      examQuestions.addAll(module.examQuestions);
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Exam Reference', style: TextStyle(fontWeight: FontWeight.w900)),
+        automaticallyImplyLeading: false,
+      ),
+      body: examQuestions.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(LucideIcons.bookOpenCheck, size: 80, color: AppTheme.duoGreen.withOpacity(0.5)),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'No Exam Questions Found',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white),
+                  ),
+                ],
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 120), // Padding for bottom nav
+              itemCount: examQuestions.length,
+              itemBuilder: (context, index) {
+                final q = examQuestions[index];
+
+                String answerText = '';
+                if (q.type == 'quiz') {
+                  final correctOpt = q.options?.firstWhere((o) => o.isCorrect, orElse: () => q.options!.first);
+                  answerText = r'**Answer:** ' + (correctOpt?.text ?? '') + r'\n\n*Explanation:* ' + (correctOpt?.explanation ?? '');
+                } else if (q.type == 'fill_in_blank') {
+                  answerText = r'**Answer:** $$' + (q.blankAnswer ?? '') + r'$$';
+                } else if (q.type == 'numerical') {
+                  answerText = r'**Answer:** ' + (q.numericAnswer?.toString() ?? '');
+                }
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: AppTheme.glassDecoration.copyWith(
+                    border: Border.all(color: AppTheme.duoOrange.withOpacity(0.3), width: 2),
+                  ),
+                  child: Theme(
+                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      iconColor: AppTheme.duoOrange,
+                      collapsedIconColor: Colors.white54,
+                      title: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            q.title.toUpperCase(),
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppTheme.duoOrange, letterSpacing: 1.2),
+                          ),
+                          const SizedBox(height: 8),
+                          MathMarkdown(data: q.content, textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+                        ],
+                      ),
+                      childrenPadding: const EdgeInsets.all(20),
+                      expandedAlignment: Alignment.centerLeft,
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppTheme.duoOrange.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppTheme.duoOrange.withOpacity(0.5)),
+                          ),
+                          child: MathMarkdown(
+                            data: answerText,
+                            textStyle: const TextStyle(fontSize: 16, color: Colors.white, height: 1.5),
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+    );
+  }
+}
+--- END OF FILE lib/screens/exam_screen.dart ---
+
+--- START OF FILE lib/screens/lesson_complete_screen.dart ---
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../theme/app_theme.dart';
+import '../widgets/duo_button.dart';
+
+class LessonCompleteScreen extends StatelessWidget {
+  final int xpEarned;
+  final int accuracy;
+  final int timeSpentSeconds;
+  final bool isPractice; 
+
+  const LessonCompleteScreen({
+    super.key,
+    required this.xpEarned,
+    required this.accuracy,
+    required this.timeSpentSeconds,
+    this.isPractice = false,
+  });
+
+  String get _formattedTime {
+    int m = timeSpentSeconds ~/ 60;
+    int s = timeSpentSeconds % 60;
+    if (m > 0) return '${m}m ${s}s';
+    return '${s}s';
+  }
+
+  String get _message {
+    if (accuracy == 100) return "Perfect!";
+    if (accuracy >= 80) return "Great Job!";
+    if (accuracy >= 60) return "Good Effort!";
+    return "Complete!";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            children: [
+              const Spacer(),
+              const Icon(LucideIcons.trophy, size: 100, color: Colors.amber),
+              const SizedBox(height: 32),
+              Text(
+                _message,
+                style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.amber),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 48),
+              
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      decoration: AppTheme.glassDecoration.copyWith(
+                        border: const Border(bottom: BorderSide(color: Colors.amber, width: 4)),
+                      ),
+                      child: Column(
+                        children: [
+                          const Icon(LucideIcons.zap, color: Colors.amber, size: 28),
+                          const SizedBox(height: 8),
+                          const Text('XP EARNED', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 1.2)),
+                          const SizedBox(height: 4),
+                          Text('+$xpEarned', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      decoration: AppTheme.glassDecoration.copyWith(
+                        border: const Border(bottom: BorderSide(color: AppTheme.duoBlue, width: 4)),
+                      ),
+                      child: Column(
+                        children: [
+                          const Icon(LucideIcons.target, color: AppTheme.duoBlue, size: 28),
+                          const SizedBox(height: 8),
+                          const Text('ACCURACY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 1.2)),
+                          const SizedBox(height: 4),
+                          Text('$accuracy%', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                decoration: AppTheme.glassDecoration.copyWith(
+                  border: const Border(bottom: BorderSide(color: AppTheme.duoGreen, width: 4)),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(LucideIcons.clock, color: AppTheme.duoGreen, size: 28),
+                    const SizedBox(height: 8),
+                    const Text('TIME SPENT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 1.2)),
+                    const SizedBox(height: 4),
+                    Text(_formattedTime, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+                  ],
+                ),
+              ),
+              
+              const Spacer(),
               DuoButton(
-                text: 'Generate Book',
-                onPressed: _generate,
+                text: 'Continue',
                 color: AppTheme.duoGreen,
                 shadowColor: AppTheme.duoGreenDark,
-              ),
-          ],
+                onPressed: () {
+                  if (isPractice) {
+                    Navigator.pop(context); 
+                  } else {
+                    Navigator.pop(context); 
+                    Navigator.pop(context); 
+                  }
+                },
+              )
+            ],
+          ),
         ),
       ),
     );
   }
 }
---- END OF FILE lib/screens/generate_book_screen.dart ---
+--- END OF FILE lib/screens/lesson_complete_screen.dart ---

@@ -4,30 +4,30 @@ import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../services/global_state.dart';
 import '../widgets/duo_button.dart';
-import '../widgets/slide_views/theory_view.dart';
 import '../widgets/slide_views/quiz_view.dart';
 import '../widgets/slide_views/fill_in_blank_view.dart';
 import '../widgets/slide_views/numerical_view.dart';
-import '../widgets/slide_views/interactive_webview.dart';
 import 'lesson_complete_screen.dart';
 
-class LessonScreen extends StatefulWidget {
-  final Lesson lesson;
+class PracticeSessionScreen extends StatefulWidget {
+  final Book book;
 
-  const LessonScreen({super.key, required this.lesson});
+  const PracticeSessionScreen({super.key, required this.book});
 
   @override
-  State<LessonScreen> createState() => _LessonScreenState();
+  State<PracticeSessionScreen> createState() => _PracticeSessionScreenState();
 }
 
-class _LessonScreenState extends State<LessonScreen> {
-  int _currentIndex = 0;
+class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
+  List<Slide> _queue = [];
+  int _totalQuestions = 0;
+  int _completedQuestions = 0;
+  
   bool _answered = false;
   bool _isCorrect = false;
-
+  
   late DateTime _startTime;
-  int _totalInteractive = 0;
-  int _correctAttempts = 0;
+  int _mistakesMade = 0;
 
   String? _selectedQuizOption;
   String _blankInput = '';
@@ -37,36 +37,47 @@ class _LessonScreenState extends State<LessonScreen> {
   void initState() {
     super.initState();
     _startTime = DateTime.now();
-    for (var slide in widget.lesson.slides) {
-      if (['quiz', 'fill_in_blank', 'numerical'].contains(slide.type)) {
-        _totalInteractive++;
+    _extractInteractiveSlides();
+  }
+
+  void _extractInteractiveSlides() {
+    List<Slide> pool = [];
+    for (var module in widget.book.modules) {
+      pool.addAll(module.practiceQuestions);
+    }
+    if (pool.isEmpty) {
+      for (var module in widget.book.modules) {
+        for (var section in module.sections) {
+          for (var unit in section.units) {
+            for (var lesson in unit.lessons) {
+              for (var slide in lesson.slides) {
+                if (['quiz', 'fill_in_blank', 'numerical'].contains(slide.type)) {
+                  pool.add(slide);
+                }
+              }
+            }
+          }
+        }
       }
     }
-  }
-
-  void _nextSlide() {
-    if (_currentIndex < widget.lesson.slides.length - 1) {
-      setState(() {
-        _currentIndex++;
-        _answered = false;
-        _isCorrect = false;
-        _selectedQuizOption = null;
-        _blankInput = '';
-        _numericInput = '';
-      });
-    } else {
-      _finishLesson();
-    }
-  }
-
-  Future<void> _finishLesson() async {
-    int timeSpent = DateTime.now().difference(_startTime).inSeconds;
-    int accuracy = _totalInteractive > 0 ? ((_correctAttempts / _totalInteractive) * 100).round() : 100;
-    int xpEarned = 15;
-
-    // Save XP Globally
-    await GlobalState.addXp(xpEarned);
     
+    pool.shuffle();
+    // Take up to 5 questions for a session
+    if (pool.length > 5) {
+      _queue = pool.sublist(0, 5);
+    } else {
+      _queue = pool;
+    }
+    _totalQuestions = _queue.length;
+  }
+
+  Future<void> _finishPractice() async {
+    int timeSpent = DateTime.now().difference(_startTime).inSeconds;
+    int accuracy = _totalQuestions > 0 ? (((_totalQuestions) / (_totalQuestions + _mistakesMade)) * 100).round() : 100;
+    int xpEarned = 10; 
+
+    await GlobalState.addXp(xpEarned);
+
     if (mounted) {
       Navigator.pushReplacement(
         context, 
@@ -74,17 +85,42 @@ class _LessonScreenState extends State<LessonScreen> {
           xpEarned: xpEarned,
           accuracy: accuracy,
           timeSpentSeconds: timeSpent,
+          isPractice: true, 
         ))
       );
     }
   }
 
-  void _checkAnswer(Slide slide) {
+  void _processNext() {
+    if (_isCorrect) {
+      _completedQuestions++;
+      _queue.removeAt(0); // Pop correct answer
+    } else {
+      _mistakesMade++;
+      // Move to back of the queue to repeat later
+      final slide = _queue.removeAt(0);
+      _queue.add(slide);
+    }
+
+    if (_queue.isEmpty) {
+      _finishPractice();
+    } else {
+      setState(() {
+        _answered = false;
+        _isCorrect = false;
+        _selectedQuizOption = null;
+        _blankInput = '';
+        _numericInput = '';
+      });
+    }
+  }
+
+  void _checkAnswer() {
+    final slide = _queue.first;
     bool correct = false;
 
     if (slide.type == 'quiz' && _selectedQuizOption != null) {
-      final opt = slide.options!.firstWhere((o) => o.id == _selectedQuizOption);
-      correct = opt.isCorrect;
+      correct = slide.options!.firstWhere((o) => o.id == _selectedQuizOption).isCorrect;
     } else if (slide.type == 'fill_in_blank') {
       correct = _blankInput.trim().toLowerCase() == slide.blankAnswer?.toLowerCase().replaceAll(r'\', '');
     } else if (slide.type == 'numerical') {
@@ -97,59 +133,57 @@ class _LessonScreenState extends State<LessonScreen> {
     setState(() {
       _answered = true;
       _isCorrect = correct;
-      if (correct) _correctAttempts++;
     });
   }
 
-  bool _canCheck(Slide slide) {
+  bool _canCheck() {
+    if (_queue.isEmpty) return false;
+    final slide = _queue.first;
     if (slide.type == 'quiz') return _selectedQuizOption != null;
     if (slide.type == 'fill_in_blank') return _blankInput.trim().isNotEmpty;
     if (slide.type == 'numerical') return _numericInput.trim().isNotEmpty;
-    return true; 
+    return false;
   }
 
-  Widget _buildSlideContent(Slide slide) {
-    switch (slide.type) {
-      case 'interactive_canvas':
-        return InteractiveWebview(slide: slide);
-      case 'quiz':
-        return QuizView(
-          slide: slide,
-          selectedOptionId: _selectedQuizOption,
-          isAnswered: _answered,
-          onSelect: (id) => setState(() => _selectedQuizOption = id),
-        );
-      case 'fill_in_blank':
-        return FillInBlankView(
-          slide: slide,
-          value: _blankInput,
-          isAnswered: _answered,
-          isCorrect: _isCorrect,
-          onChanged: (val) => setState(() => _blankInput = val),
-        );
-      case 'numerical':
-        return NumericalView(
-          slide: slide,
-          value: _numericInput,
-          isAnswered: _answered,
-          isCorrect: _isCorrect,
-          onChanged: (val) => setState(() => _numericInput = val),
-        );
-      case 'theory':
-      default:
-        return TheoryView(slide: slide);
+  Widget _buildContent(Slide slide) {
+    if (slide.type == 'quiz') {
+      return QuizView(
+        slide: slide,
+        selectedOptionId: _selectedQuizOption,
+        isAnswered: _answered,
+        onSelect: (id) => setState(() => _selectedQuizOption = id),
+      );
+    } else if (slide.type == 'fill_in_blank') {
+      return FillInBlankView(
+        slide: slide,
+        value: _blankInput,
+        isAnswered: _answered,
+        isCorrect: _isCorrect,
+        onChanged: (val) => setState(() => _blankInput = val),
+      );
+    } else if (slide.type == 'numerical') {
+      return NumericalView(
+        slide: slide,
+        value: _numericInput,
+        isAnswered: _answered,
+        isCorrect: _isCorrect,
+        onChanged: (val) => setState(() => _numericInput = val),
+      );
     }
+    return const SizedBox();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.lesson.slides.isEmpty) {
-      return Scaffold(appBar: AppBar(), body: const Center(child: Text("Empty Lesson")));
+    if (_queue.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: const Center(child: Text('No practice questions available.')),
+      );
     }
 
-    final slide = widget.lesson.slides[_currentIndex];
-    final progress = (_currentIndex) / widget.lesson.slides.length;
-    final isInteractive = ['quiz', 'fill_in_blank', 'numerical'].contains(slide.type);
+    final slide = _queue.first;
+    final progress = _totalQuestions == 0 ? 0.0 : (_completedQuestions / _totalQuestions);
 
     return Scaffold(
       appBar: AppBar(
@@ -160,7 +194,7 @@ class _LessonScreenState extends State<LessonScreen> {
         title: LinearProgressIndicator(
           value: progress,
           backgroundColor: Colors.white12,
-          color: AppTheme.duoGreen,
+          color: AppTheme.duoViolet,
           minHeight: 12,
           borderRadius: BorderRadius.circular(6),
         ),
@@ -168,19 +202,17 @@ class _LessonScreenState extends State<LessonScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            if (slide.title.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-                child: Text(
-                  slide.title, 
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
-                  textAlign: TextAlign.center,
-                ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Text(
+                slide.title.toUpperCase(),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppTheme.duoViolet, letterSpacing: 1.5),
               ),
+            ),
             
-            Expanded(child: _buildSlideContent(slide)),
+            Expanded(child: _buildContent(slide)),
             
-            // Bottom Check / Continue Bar (Two-Layered UI)
+            // Bottom Action Bar
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
@@ -218,26 +250,20 @@ class _LessonScreenState extends State<LessonScreen> {
                       ),
                     ),
                     
-                  isInteractive && !_answered
+                  !_answered
                       ? DuoButton(
                           text: 'Check',
-                          color: _canCheck(slide) ? AppTheme.duoGreen : Colors.grey.shade700,
-                          shadowColor: _canCheck(slide) ? AppTheme.duoGreenDark : Colors.grey.shade800,
+                          color: _canCheck() ? AppTheme.duoGreen : Colors.grey.shade700,
+                          shadowColor: _canCheck() ? AppTheme.duoGreenDark : Colors.grey.shade800,
                           onPressed: () {
-                            if (_canCheck(slide)) _checkAnswer(slide);
+                            if (_canCheck()) _checkAnswer();
                           },
                         )
                       : DuoButton(
                           text: _answered && !_isCorrect ? 'Got It' : 'Continue',
                           color: _answered && !_isCorrect ? AppTheme.duoRed : AppTheme.duoBlue,
                           shadowColor: _answered && !_isCorrect ? AppTheme.duoRedDark : AppTheme.duoBlueDark,
-                          onPressed: () {
-                            if (_answered && !_isCorrect) {
-                              setState(() => _answered = false); // reset to try again
-                            } else {
-                              _nextSlide();
-                            }
-                          },
+                          onPressed: _processNext,
                         ),
                 ],
               ),

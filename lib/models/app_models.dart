@@ -31,8 +31,17 @@ class Module {
   final String title;
   final String description;
   final List<Section> sections;
+  final List<Slide> practiceQuestions;
+  final List<Slide> examQuestions;
 
-  Module({required this.id, required this.title, required this.description, required this.sections});
+  Module({
+    required this.id, 
+    required this.title, 
+    required this.description, 
+    required this.sections,
+    required this.practiceQuestions,
+    required this.examQuestions,
+  });
 
   factory Module.fromJson(Map<String, dynamic> json) {
     return Module(
@@ -40,6 +49,8 @@ class Module {
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       sections: (json['sections'] as List?)?.map((s) => Section.fromJson(Map<String, dynamic>.from(s))).toList() ?? [],
+      practiceQuestions: (json['practiceQuestions'] as List?)?.map((s) => Slide.fromJson(Map<String, dynamic>.from(s))).toList() ?? [],
+      examQuestions: (json['examQuestions'] as List?)?.map((s) => Slide.fromJson(Map<String, dynamic>.from(s))).toList() ?? [],
     );
   }
 
@@ -48,6 +59,8 @@ class Module {
     'title': title,
     'description': description,
     'sections': sections.map((s) => s.toJson()).toList(),
+    'practiceQuestions': practiceQuestions.map((s) => s.toJson()).toList(),
+    'examQuestions': examQuestions.map((s) => s.toJson()).toList(),
   };
 }
 
@@ -134,13 +147,26 @@ class Lesson {
 
 class Slide {
   final String id;
-  final String type;
+  final String type; // theory, quiz, fill_in_blank, numerical, interactive_canvas
   final String title;
   final String content;
-  final String? interactiveCanvasUrl;
+  final String? interactiveCanvasHtml;
   final List<QuizOption>? options;
+  final String? blankAnswer;
+  final double? numericAnswer;
+  final double? numericTolerance;
 
-  Slide({required this.id, required this.type, required this.title, required this.content, this.interactiveCanvasUrl, this.options});
+  Slide({
+    required this.id,
+    required this.type,
+    required this.title,
+    required this.content,
+    this.interactiveCanvasHtml,
+    this.options,
+    this.blankAnswer,
+    this.numericAnswer,
+    this.numericTolerance,
+  });
 
   factory Slide.fromJson(Map<String, dynamic> json) {
     return Slide(
@@ -148,8 +174,11 @@ class Slide {
       type: json['type'] ?? 'theory',
       title: json['title'] ?? '',
       content: json['content'] ?? '',
-      interactiveCanvasUrl: json['interactiveCanvasUrl'],
+      interactiveCanvasHtml: json['interactiveCanvasHtml'],
       options: (json['options'] as List?)?.map((o) => QuizOption.fromJson(Map<String, dynamic>.from(o))).toList(),
+      blankAnswer: json['blankAnswer'],
+      numericAnswer: json['numericAnswer']?.toDouble(),
+      numericTolerance: json['numericTolerance']?.toDouble() ?? 0.01,
     );
   }
 
@@ -158,8 +187,11 @@ class Slide {
     'type': type,
     'title': title,
     'content': content,
-    if (interactiveCanvasUrl != null) 'interactiveCanvasUrl': interactiveCanvasUrl,
+    if (interactiveCanvasHtml != null) 'interactiveCanvasHtml': interactiveCanvasHtml,
     if (options != null) 'options': options!.map((o) => o.toJson()).toList(),
+    if (blankAnswer != null) 'blankAnswer': blankAnswer,
+    if (numericAnswer != null) 'numericAnswer': numericAnswer,
+    if (numericTolerance != null) 'numericTolerance': numericTolerance,
   };
 }
 

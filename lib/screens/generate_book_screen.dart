@@ -58,7 +58,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
       }
     } catch (e) {
       setState(() {
-        _statusMessage = 'Error: \${e.toString()}';
+        _statusMessage = 'Error: ${e.toString()}';
       });
     } finally {
       if (mounted) setState(() => _isGenerating = false);
@@ -94,7 +94,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
             if (_selectedFile != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
-                child: Text('File: \${_selectedFile!.path.split('/').last}', style: const TextStyle(color: Colors.white54), textAlign: TextAlign.center),
+                child: Text('File: ${_selectedFile!.path.split('/').last}', style: const TextStyle(color: Colors.white54), textAlign: TextAlign.center),
               ),
             const Spacer(),
             if (_isGenerating)

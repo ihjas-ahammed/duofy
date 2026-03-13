@@ -52,8 +52,8 @@ class LessonNodeWidget extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 70,
-            height: 70,
+            width: 80, // Increased from 70 to 80
+            height: 80, // Increased from 70 to 80
             decoration: BoxDecoration(
               color: bgColor,
               shape: BoxShape.circle,
@@ -68,19 +68,20 @@ class LessonNodeWidget extends StatelessWidget {
             child: Icon(
               isLocked ? LucideIcons.lock : LucideIcons.bookOpen,
               color: isLocked ? Colors.grey.shade500 : Colors.white,
-              size: 32,
+              size: 36, // Increased icon size
             ),
           ),
           const SizedBox(height: 16),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), // Increased padding
             decoration: AppTheme.glassDecoration,
             child: Text(
               lesson.title.toUpperCase(),
               style: const TextStyle(
-                fontSize: 10,
+                fontSize: 11, // Slightly larger font
                 fontWeight: FontWeight.w900,
                 color: Colors.white70,
+                letterSpacing: 1.0,
               ),
               textAlign: TextAlign.center,
             ),

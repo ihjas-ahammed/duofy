@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 import 'theme/app_theme.dart';
 import 'screens/home_screen.dart';
+import 'services/global_state.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,8 +12,9 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
-  // Initialize shared prefs for settings early
-  await SharedPreferences.getInstance();
+  // Initialize shared prefs and load global XP early
+  final prefs = await SharedPreferences.getInstance();
+  GlobalState.xpNotifier.value = prefs.getInt('user_xp') ?? 0;
 
   runApp(const DuoFyApp());
 }

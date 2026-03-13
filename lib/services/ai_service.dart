@@ -23,12 +23,16 @@ class AiService {
     );
 
     final pdfBytes = await pdfFile.readAsBytes();
-    final prompt = TextPart('''
+    final prompt = TextPart(r'''
 You are an expert curriculum designer. Convert the provided document into a structured JSON interactive lesson plan.
+The app supports these slide types: 'theory', 'quiz', 'fill_in_blank', 'numerical', 'interactive_canvas'.
+For 'interactive_canvas', generate RAW valid HTML/JS inside "interactiveCanvasHtml" that simulates the concept visually. Make sure the canvas resizes to the window. 
+You MUST use LaTeX formatting inside Markdown by wrapping math in $ (inline) or $$ (block). Be careful to add spaces around $ symbols so they don't stick directly to underscores or punctuation.
+
 The JSON must perfectly match this structure (return ONLY JSON):
 {
-  "id": "generated-\$title",
-  "title": "\$title",
+  "id": "generated-book-id",
+  "title": "Title Here",
   "description": "Auto-generated book",
   "icon": "Book",
   "modules": [
@@ -36,6 +40,27 @@ The JSON must perfectly match this structure (return ONLY JSON):
       "id": "m-1",
       "title": "Module Title",
       "description": "Module Desc",
+      "practiceQuestions": [
+        {
+          "id": "pq-1",
+          "type": "quiz",
+          "title": "Practice Quiz",
+          "content": "Question text...",
+          "options": [
+            {"id": "a", "text": "Option A", "isCorrect": true, "explanation": "Why"}
+          ]
+        }
+      ],
+      "examQuestions": [
+        {
+          "id": "eq-1",
+          "type": "numerical",
+          "title": "Exam Numerical",
+          "content": "Calculate $x$...",
+          "numericAnswer": 5,
+          "numericTolerance": 0.1
+        }
+      ],
       "sections": [
         {
           "id": "s-1",
@@ -58,16 +83,7 @@ The JSON must perfectly match this structure (return ONLY JSON):
                       "id": "sl-1",
                       "type": "theory",
                       "title": "Slide Title",
-                      "content": "Markdown text..."
-                    },
-                    {
-                      "id": "sl-2",
-                      "type": "quiz",
-                      "title": "Quiz Title",
-                      "content": "Question here...",
-                      "options": [
-                        {"id": "a", "text": "Option A", "isCorrect": true, "explanation": "Why"}
-                      ]
+                      "content": "Markdown text with $ math $..."
                     }
                   ]
                 }
@@ -94,8 +110,8 @@ The JSON must perfectly match this structure (return ONLY JSON):
         return Book.fromJson(jsonMap);
       }
     } catch (e) {
-      print('AI Generation Error: \$e');
-      throw Exception('Failed to generate book: \$e');
+      print('AI Generation Error: $e');
+      throw Exception('Failed to generate book: $e');
     }
     return null;
   }

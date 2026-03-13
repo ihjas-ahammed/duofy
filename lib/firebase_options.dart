@@ -46,6 +46,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '893487649041',
     projectId: 'duofy-mobile',
     authDomain: 'duofy-mobile.firebaseapp.com',
+    databaseURL: 'https://duofy-mobile-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'duofy-mobile.firebasestorage.app',
   );
 
@@ -54,6 +55,7 @@ class DefaultFirebaseOptions {
     appId: '1:893487649041:android:bc141c5e7a34db44c1bcb0',
     messagingSenderId: '893487649041',
     projectId: 'duofy-mobile',
+    databaseURL: 'https://duofy-mobile-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'duofy-mobile.firebasestorage.app',
   );
 
@@ -62,6 +64,7 @@ class DefaultFirebaseOptions {
     appId: '1:893487649041:ios:d7017f4e1f10bac2c1bcb0',
     messagingSenderId: '893487649041',
     projectId: 'duofy-mobile',
+    databaseURL: 'https://duofy-mobile-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'duofy-mobile.firebasestorage.app',
     iosBundleId: 'com.example.duofy',
   );
@@ -71,6 +74,7 @@ class DefaultFirebaseOptions {
     appId: '1:893487649041:ios:d7017f4e1f10bac2c1bcb0',
     messagingSenderId: '893487649041',
     projectId: 'duofy-mobile',
+    databaseURL: 'https://duofy-mobile-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'duofy-mobile.firebasestorage.app',
     iosBundleId: 'com.example.duofy',
   );
@@ -81,6 +85,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '893487649041',
     projectId: 'duofy-mobile',
     authDomain: 'duofy-mobile.firebaseapp.com',
+    databaseURL: 'https://duofy-mobile-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'duofy-mobile.firebasestorage.app',
   );
+
 }

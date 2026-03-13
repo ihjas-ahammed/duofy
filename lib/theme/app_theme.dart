@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class AppTheme {
@@ -38,7 +39,7 @@ class AppTheme {
   static BoxDecoration get glassDecoration {
     return BoxDecoration(
       color: Colors.white.withOpacity(0.05),
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(20),
       border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
       boxShadow: [
         BoxShadow(
@@ -47,6 +48,24 @@ class AppTheme {
           offset: const Offset(0, 4),
         )
       ],
+    );
+  }
+
+  // Used for wrapping elements with a true glass blur
+  static Widget applyGlassBlur({required Widget child, double borderRadius = 20, Color? color}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(borderRadius),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
+        child: Container(
+          decoration: BoxDecoration(
+            color: color ?? Colors.black.withOpacity(0.4),
+            borderRadius: BorderRadius.circular(borderRadius),
+            border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+          ),
+          child: child,
+        ),
+      ),
     );
   }
 }
