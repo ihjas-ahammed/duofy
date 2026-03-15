@@ -7,10 +7,16 @@ import '../models/app_models.dart';
 class AiService {
   Future<Book?> generateBookFromPdf(File pdfFile, String title) async {
     final prefs = await SharedPreferences.getInstance();
-    final keysString = prefs.getString('gemini_api_keys') ?? '';
+    
+    // Get list format or fallback to legacy comma separated string
+    List<String> keys = prefs.getStringList('gemini_api_keys_list') ??[];
+    if (keys.isEmpty) {
+      final keysString = prefs.getString('gemini_api_keys') ?? '';
+      keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    }
+    
     final modelName = prefs.getString('gemini_model') ?? 'gemini-1.5-flash';
 
-    final keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
     if (keys.isEmpty) {
       throw Exception('No API Keys configured. Please configure them in Settings.');
     }
@@ -29,23 +35,23 @@ The JSON must perfectly match this structure (return ONLY JSON):
   "title": "Title Here",
   "description": "Auto-generated book",
   "icon": "Book",
-  "modules": [
+  "modules":[
     {
       "id": "m-1",
       "title": "Module Title",
       "description": "Module Desc",
-      "practiceQuestions": [
+      "practiceQuestions":[
         {
           "id": "pq-1",
           "type": "quiz",
           "title": "Practice Quiz",
           "content": "Question text...",
-          "options": [
+          "options":[
             {"id": "a", "text": "Option A", "isCorrect": true, "explanation": "Why"}
           ]
         }
       ],
-      "examQuestions": [
+      "examQuestions":[
         {
           "id": "eq-1",
           "type": "numerical",
@@ -55,24 +61,24 @@ The JSON must perfectly match this structure (return ONLY JSON):
           "numericTolerance": 0.1
         }
       ],
-      "sections": [
+      "sections":[
         {
           "id": "s-1",
           "title": "Section Title",
           "description": "Section Desc",
           "color": "duo-green",
-          "units": [
+          "units":[
             {
               "id": "u-1",
               "title": "Unit Title",
               "description": "Unit Desc",
-              "lessons": [
+              "lessons":[
                 {
                   "id": "l-1",
                   "title": "Lesson Title",
                   "description": "Lesson Desc",
                   "icon": "BookOpen",
-                  "slides": [
+                  "slides":[
                     {
                       "id": "sl-1",
                       "type": "theory",

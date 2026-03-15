@@ -10,14 +10,13 @@ class DatabaseService {
   Future<List<Book>> fetchBooks({bool forceRefresh = false}) async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Load from cache first unless pull-to-refresh
+    // Load strictly from cache first unless pull-to-refresh is requested.
+    // This allows the app to work entirely offline after the first boot.
     if (!forceRefresh) {
       final cached = prefs.getString('cached_books');
       if (cached != null) {
         try {
           final List decoded = jsonDecode(cached);
-          // Launch a silent fetch in the background to keep cache fresh
-          _fetchAndCacheFirebase();
           return decoded.map((e) => Book.fromJson(Map<String, dynamic>.from(e))).toList();
         } catch (e) {
           // Fall through to Firebase fetch if cache parsing fails
@@ -34,7 +33,7 @@ class DatabaseService {
       final snapshot = await _dbRef.child('books').get();
       if (snapshot.exists) {
         final Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
-        List<Book> books = [];
+        List<Book> books =[];
         data.forEach((key, value) {
           books.add(Book.fromJson(Map<String, dynamic>.from(value)));
         });

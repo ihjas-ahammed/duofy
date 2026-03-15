@@ -7,7 +7,7 @@ A generic, Duolingo-style interactive learning platform that turns any book into
 ### 1. New Dependencies Required
 Make sure you have run the following commands to add all the dependencies:
 ```bash
-flutter pub add firebase_database webview_flutter google_generative_ai file_picker flutter_markdown shared_preferences lucide_icons path_provider
+flutter pub add firebase_database webview_flutter google_generative_ai file_picker flutter_markdown shared_preferences lucide_icons path_provider http
 flutter pub add flutter_markdown_latex markdown
 ```
 
@@ -37,3 +37,6 @@ We use the Gemini API to analyze uploaded PDFs and generate interactive JSON les
 - **Solid Selectors**: Fixed the Section Selector drawer in the dashboard. The drawer retains a glassmorphic blur, but individual section items now use solid `AppTheme.surface` backgrounds for better contrast and Duolingo-style compactness.
 - **Practice Arena Modularization**: The Practice Screen now features a grid of distinct practice modes (MCQ, Proofs, Step-by-Step, Fill in the Blanks, Numericals). `PracticeSessionScreen` dynamically filters the question queue based on the selected mode.
 - **Interactive Proofs**: Introduced `InteractiveProofView` to handle multi-step logical deductions. If a slide is of type `proof` or `step_by_step`, this view takes over the parent screen's bottom bar to manage sequential reveals and micro-interactions.
+- **Windows Start Menu Style UI**: Revamped `HomeScreen` layout to resemble a compact app grid. Pinned items represent downloaded/created books, fitting seamlessly into a dense 3-column layout.
+- **Dynamic API Keys & Model Fetching**: The `SettingsScreen` now utilizes an `ApiKeysManager` for individual list management rather than a comma-separated text string. Additionally, real-time HTTP polling queries `v1beta/models` to discover the latest AI offerings securely on-device.
+- **Offline First Execution**: The database logic will strictly retrieve locally cached JSON payload mappings unless an explicit manual pull-to-refresh is initialized.
