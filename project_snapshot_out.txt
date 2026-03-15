@@ -1,0 +1,5181 @@
+--- START OF FILE .gitattributes ---
+# Auto detect text files and perform LF normalization
+* text=auto
+
+--- END OF FILE .gitattributes ---
+
+--- START OF FILE analysis_options.yaml ---
+# This file configures the analyzer, which statically analyzes Dart code to
+# check for errors, warnings, and lints.
+#
+# The issues identified by the analyzer are surfaced in the UI of Dart-enabled
+# IDEs (https://dart.dev/tools#ides-and-editors). The analyzer can also be
+# invoked from the command line by running `flutter analyze`.
+
+# The following line activates a set of recommended lints for Flutter apps,
+# packages, and plugins designed to encourage good coding practices.
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  # The lint rules applied to this project can be customized in the
+  # section below to disable rules from the `package:flutter_lints/flutter.yaml`
+  # included above or to enable additional rules. A list of all available lints
+  # and their documentation is published at https://dart.dev/lints.
+  #
+  # Instead of disabling a lint rule for the entire project in the
+  # section below, it can also be suppressed for a single line of code
+  # or a specific dart file by using the `// ignore: name_of_lint` and
+  # `// ignore_for_file: name_of_lint` syntax on the line or in the file
+  # producing the lint.
+  rules:
+    # avoid_print: false  # Uncomment to disable the `avoid_print` rule
+    # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
+
+# Additional information about this file can be found at
+# https://dart.dev/guides/language/analysis-options
+
+--- END OF FILE analysis_options.yaml ---
+
+--- START OF FILE .gitignore ---
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+--- END OF FILE .gitignore ---
+
+--- START OF FILE README.md ---
+# DuoFY (Flutter Port)
+
+A generic, Duolingo-style interactive learning platform that turns any book into an interactive lesson path using Gemini AI.
+
+## Setup Instructions
+
+### 1. New Dependencies Required
+Make sure you have run the following commands to add all the dependencies:
+```bash
+flutter pub add firebase_database webview_flutter google_generative_ai file_picker flutter_markdown shared_preferences lucide_icons path_provider
+flutter pub add flutter_markdown_latex markdown
+```
+
+### 2. Firebase Realtime Database Configuration
+This app uses Firebase Realtime Database to store generated books and progress.
+1. Go to the [Firebase Console](https://console.firebase.google.com/).
+2. Select your project.
+3. Navigate to **Realtime Database** and click **Create Database** (Start in Test Mode for development).
+4. Run `flutterfire configure` to link your active Firebase project.
+
+### 3. Google Generative AI (Gemini) API Key
+We use the Gemini API to analyze uploaded PDFs and generate interactive JSON lessons.
+1. Get a free API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
+2. Launch the app, click the **Settings** (gear) icon on the Home Screen.
+3. Enter your Gemini API key and save it securely.
+
+## Project Structure Overview
+- `/lib/models`: Data structures (Book, Module, Lesson, Slide, InteractiveStep, etc.)
+- `/lib/screens`: Home, Dashboard (Path), Lesson Player, Completion Screen, PDF Generator, Practice
+- `/lib/widgets`: Modular UI components (Custom Duolingo-style Buttons, Glass Panels, MathMarkdown)
+- `/lib/widgets/slide_views`: Individual renderers for theory, quiz, blanks, numericals, JS canvas, and Interactive Proofs.
+- `/lib/services`: AI and Database handling services
+- `/lib/theme`: Colors and global styling matching the web platform
+
+## Recent Updates & Design Process
+- **AppBar Redesign**: Standardized `MainLayoutScreen` to prominently display the active Book Title in the center, relocating the global XP tracker to the top right.
+- **Solid Selectors**: Fixed the Section Selector drawer in the dashboard. The drawer retains a glassmorphic blur, but individual section items now use solid `AppTheme.surface` backgrounds for better contrast and Duolingo-style compactness.
+- **Practice Arena Modularization**: The Practice Screen now features a grid of distinct practice modes (MCQ, Proofs, Step-by-Step, Fill in the Blanks, Numericals). `PracticeSessionScreen` dynamically filters the question queue based on the selected mode.
+- **Interactive Proofs**: Introduced `InteractiveProofView` to handle multi-step logical deductions. If a slide is of type `proof` or `step_by_step`, this view takes over the parent screen's bottom bar to manage sequential reveals and micro-interactions.
+--- END OF FILE README.md ---
+
+--- START OF FILE pubspec.yaml ---
+name: duofy
+description: "A new Flutter project."
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# In Android, build-name is used as versionName while build-number used as versionCode.
+# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
+# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
+# Read more about iOS versioning at
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+# In Windows, build-name is used as the major, minor, and patch parts
+# of the product and file versions while build-number is used as the build suffix.
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.3
+
+# Dependencies specify other packages that your package needs in order to work.
+# To automatically upgrade your package dependencies to the latest versions
+# consider running `flutter pub upgrade --major-versions`. Alternatively,
+# dependencies can be manually updated by changing the version numbers below to
+# the latest version available on pub.dev. To see which dependencies have newer
+# versions available, run `flutter pub outdated`.
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^1.0.8
+  firebase_core: ^4.5.0
+  firebase_database: ^12.1.4
+  webview_flutter: ^4.13.1
+  google_generative_ai: ^0.4.7
+  file_picker: ^10.3.10
+  flutter_markdown: ^0.7.7+1
+  shared_preferences: ^2.5.4
+  lucide_icons: ^0.257.0
+  path_provider: ^2.1.5
+  flutter_markdown_latex: ^0.3.4
+  markdown: ^7.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # The "flutter_lints" package below contains a set of recommended lints to
+  # encourage good coding practices. The lint set provided by the package is
+  # activated in the `analysis_options.yaml` file located at the root of your
+  # package. See that file for information about deactivating specific lint
+  # rules and activating additional ones.
+  flutter_lints: ^6.0.0
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
+flutter:
+
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
+  uses-material-design: true
+
+  # To add assets to your application, add an assets section, like this:
+  # assets:
+  #   - images/a_dot_burr.jpeg
+  #   - images/a_dot_ham.jpeg
+
+  # An image asset can refer to one or more resolution-specific "variants", see
+  # https://flutter.dev/to/resolution-aware-images
+
+  # For details regarding adding assets from package dependencies, see
+  # https://flutter.dev/to/asset-from-package
+
+  # To add custom fonts to your application, add a fonts section here,
+  # in this "flutter" section. Each entry in this list should have a
+  # "family" key with the font family name, and a "fonts" key with a
+  # list giving the asset and other descriptors for the font. For
+  # example:
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
+  #         style: italic
+  #   - family: Trajan Pro
+  #     fonts:
+  #       - asset: fonts/TrajanPro.ttf
+  #       - asset: fonts/TrajanPro_Bold.ttf
+  #         weight: 700
+  #
+  # For details regarding fonts from package dependencies,
+  # see https://flutter.dev/to/font-from-package
+
+--- END OF FILE pubspec.yaml ---
+
+--- START OF FILE .metadata ---
+# This file tracks properties of this Flutter project.
+# Used by Flutter tool to assess capabilities and perform upgrades etc.
+#
+# This file should be version controlled and should not be manually edited.
+
+version:
+  revision: "66dd93f9a27ffe2a9bfc8297506ce066ff51265f"
+  channel: "stable"
+
+project_type: app
+
+# Tracks metadata for the flutter migrate command
+migration:
+  platforms:
+    - platform: root
+      create_revision: 66dd93f9a27ffe2a9bfc8297506ce066ff51265f
+      base_revision: 66dd93f9a27ffe2a9bfc8297506ce066ff51265f
+    - platform: android
+      create_revision: 66dd93f9a27ffe2a9bfc8297506ce066ff51265f
+      base_revision: 66dd93f9a27ffe2a9bfc8297506ce066ff51265f
+    - platform: ios
+      create_revision: 66dd93f9a27ffe2a9bfc8297506ce066ff51265f
+      base_revision: 66dd93f9a27ffe2a9bfc8297506ce066ff51265f
+    - platform: linux
+      create_revision: 66dd93f9a27ffe2a9bfc8297506ce066ff51265f
+      base_revision: 66dd93f9a27ffe2a9bfc8297506ce066ff51265f
+    - platform: macos
+      create_revision: 66dd93f9a27ffe2a9bfc8297506ce066ff51265f
+      base_revision: 66dd93f9a27ffe2a9bfc8297506ce066ff51265f
+    - platform: web
+      create_revision: 66dd93f9a27ffe2a9bfc8297506ce066ff51265f
+      base_revision: 66dd93f9a27ffe2a9bfc8297506ce066ff51265f
+    - platform: windows
+      create_revision: 66dd93f9a27ffe2a9bfc8297506ce066ff51265f
+      base_revision: 66dd93f9a27ffe2a9bfc8297506ce066ff51265f
+
+  # User provided section
+
+  # List of Local paths (relative to this file) that should be
+  # ignored by the migrate tool.
+  #
+  # Files that are not part of the templates will be ignored by default.
+  unmanaged_files:
+    - 'lib/main.dart'
+    - 'ios/Runner.xcodeproj/project.pbxproj'
+
+--- END OF FILE .metadata ---
+
+--- START OF FILE pubspec.lock ---
+# Generated by pub
+# See https://dart.dev/tools/pub/glossary#lockfile
+packages:
+  _flutterfire_internals:
+    dependency: transitive
+    description:
+      name: _flutterfire_internals
+      sha256: afe15ce18a287d2f89da95566e62892df339b1936bbe9b83587df45b944ee72a
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.3.67"
+  args:
+    dependency: transitive
+    description:
+      name: args
+      sha256: d0481093c50b1da8910eb0bb301626d4d8eb7284aa739614d2b394ee09e3ea04
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.7.0"
+  async:
+    dependency: transitive
+    description:
+      name: async
+      sha256: "758e6d74e971c3e5aceb4110bfd6698efc7f501675bcfe0c775459a8140750eb"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.13.0"
+  boolean_selector:
+    dependency: transitive
+    description:
+      name: boolean_selector
+      sha256: "8aab1771e1243a5063b8b0ff68042d67334e3feab9e95b9490f9a6ebf73b42ea"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.2"
+  characters:
+    dependency: transitive
+    description:
+      name: characters
+      sha256: f71061c654a3380576a52b451dd5532377954cf9dbd272a78fc8479606670803
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.0"
+  clock:
+    dependency: transitive
+    description:
+      name: clock
+      sha256: fddb70d9b5277016c77a80201021d40a2247104d9f4aa7bab7157b7e3f05b84b
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.2"
+  code_assets:
+    dependency: transitive
+    description:
+      name: code_assets
+      sha256: "83ccdaa064c980b5596c35dd64a8d3ecc68620174ab9b90b6343b753aa721687"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
+  collection:
+    dependency: transitive
+    description:
+      name: collection
+      sha256: "2f5709ae4d3d59dd8f7cd309b4e023046b57d8a6c82130785d2b0e5868084e76"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.19.1"
+  cross_file:
+    dependency: transitive
+    description:
+      name: cross_file
+      sha256: "28bb3ae56f117b5aec029d702a90f57d285cd975c3c5c281eaca38dbc47c5937"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.5+2"
+  crypto:
+    dependency: transitive
+    description:
+      name: crypto
+      sha256: c8ea0233063ba03258fbcf2ca4d6dadfefe14f02fab57702265467a19f27fadf
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.7"
+  cupertino_icons:
+    dependency: "direct main"
+    description:
+      name: cupertino_icons
+      sha256: ba631d1c7f7bef6b729a622b7b752645a2d076dba9976925b8f25725a30e1ee6
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.8"
+  dbus:
+    dependency: transitive
+    description:
+      name: dbus
+      sha256: d0c98dcd4f5169878b6cf8f6e0a52403a9dff371a3e2f019697accbf6f44a270
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.7.12"
+  fake_async:
+    dependency: transitive
+    description:
+      name: fake_async
+      sha256: "5368f224a74523e8d2e7399ea1638b37aecfca824a3cc4dfdf77bf1fa905ac44"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.3.3"
+  ffi:
+    dependency: transitive
+    description:
+      name: ffi
+      sha256: "6d7fd89431262d8f3125e81b50d3847a091d846eafcd4fdb88dd06f36d705a45"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.0"
+  file:
+    dependency: transitive
+    description:
+      name: file
+      sha256: a3b4f84adafef897088c160faf7dfffb7696046cb13ae90b508c2cbc95d3b8d4
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.0.1"
+  file_picker:
+    dependency: "direct main"
+    description:
+      name: file_picker
+      sha256: "57d9a1dd5063f85fa3107fb42d1faffda52fdc948cefd5fe5ea85267a5fc7343"
+      url: "https://pub.dev"
+    source: hosted
+    version: "10.3.10"
+  firebase_core:
+    dependency: "direct main"
+    description:
+      name: firebase_core
+      sha256: f0997fee80fbb6d2c658c5b88ae87ba1f9506b5b37126db64fc2e75d8e977fbb
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.5.0"
+  firebase_core_platform_interface:
+    dependency: transitive
+    description:
+      name: firebase_core_platform_interface
+      sha256: cccb4f572325dc14904c02fcc7db6323ad62ba02536833dddb5c02cac7341c64
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.0.2"
+  firebase_core_web:
+    dependency: transitive
+    description:
+      name: firebase_core_web
+      sha256: "856ca92bf2d75a63761286ab8e791bda3a85184c2b641764433b619647acfca6"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.5.0"
+  firebase_database:
+    dependency: "direct main"
+    description:
+      name: firebase_database
+      sha256: "5162446a8fc4c930f89582531a963c7c659b1b3167e8720e926899d9fbfabb1e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "12.1.4"
+  firebase_database_platform_interface:
+    dependency: transitive
+    description:
+      name: firebase_database_platform_interface
+      sha256: "6a59a702ea900f479f4411fe6dac50e3f8f17bf8b21cc986e6bbfcaa3ab0e50e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.0+3"
+  firebase_database_web:
+    dependency: transitive
+    description:
+      name: firebase_database_web
+      sha256: f825a3b3507a7064312c88af47abc63765405785cc7ddf768c13f11192431ae8
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.7+4"
+  flutter:
+    dependency: "direct main"
+    description: flutter
+    source: sdk
+    version: "0.0.0"
+  flutter_lints:
+    dependency: "direct dev"
+    description:
+      name: flutter_lints
+      sha256: "3105dc8492f6183fb076ccf1f351ac3d60564bff92e20bfc4af9cc1651f4e7e1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.0.0"
+  flutter_markdown:
+    dependency: "direct main"
+    description:
+      name: flutter_markdown
+      sha256: "08fb8315236099ff8e90cb87bb2b935e0a724a3af1623000a9cec930468e0f27"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.7.7+1"
+  flutter_markdown_latex:
+    dependency: "direct main"
+    description:
+      name: flutter_markdown_latex
+      sha256: "839e76a84abb3632ffcebbd450cf93c7e9894af65622527d23f0084cee1bfd04"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.4"
+  flutter_math_fork:
+    dependency: transitive
+    description:
+      name: flutter_math_fork
+      sha256: "6d5f2f1aa57ae539ffb0a04bb39d2da67af74601d685a161aff7ce5bda5fa407"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.7.4"
+  flutter_plugin_android_lifecycle:
+    dependency: transitive
+    description:
+      name: flutter_plugin_android_lifecycle
+      sha256: ee8068e0e1cd16c4a82714119918efdeed33b3ba7772c54b5d094ab53f9b7fd1
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.33"
+  flutter_svg:
+    dependency: transitive
+    description:
+      name: flutter_svg
+      sha256: "1ded017b39c8e15c8948ea855070a5ff8ff8b3d5e83f3446e02d6bb12add7ad9"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.4"
+  flutter_test:
+    dependency: "direct dev"
+    description: flutter
+    source: sdk
+    version: "0.0.0"
+  flutter_web_plugins:
+    dependency: transitive
+    description: flutter
+    source: sdk
+    version: "0.0.0"
+  glob:
+    dependency: transitive
+    description:
+      name: glob
+      sha256: c3f1ee72c96f8f78935e18aa8cecced9ab132419e8625dc187e1c2408efc20de
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.3"
+  google_generative_ai:
+    dependency: "direct main"
+    description:
+      name: google_generative_ai
+      sha256: "71f613d0247968992ad87a0eb21650a566869757442ba55a31a81be6746e0d1f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.4.7"
+  hooks:
+    dependency: transitive
+    description:
+      name: hooks
+      sha256: e79ed1e8e1929bc6ecb6ec85f0cb519c887aa5b423705ded0d0f2d9226def388
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.2"
+  http:
+    dependency: transitive
+    description:
+      name: http
+      sha256: "87721a4a50b19c7f1d49001e51409bddc46303966ce89a65af4f4e6004896412"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.6.0"
+  http_parser:
+    dependency: transitive
+    description:
+      name: http_parser
+      sha256: "178d74305e7866013777bab2c3d8726205dc5a4dd935297175b19a23a2e66571"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.1.2"
+  leak_tracker:
+    dependency: transitive
+    description:
+      name: leak_tracker
+      sha256: "33e2e26bdd85a0112ec15400c8cbffea70d0f9c3407491f672a2fad47915e2de"
+      url: "https://pub.dev"
+    source: hosted
+    version: "11.0.2"
+  leak_tracker_flutter_testing:
+    dependency: transitive
+    description:
+      name: leak_tracker_flutter_testing
+      sha256: "1dbc140bb5a23c75ea9c4811222756104fbcd1a27173f0c34ca01e16bea473c1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.10"
+  leak_tracker_testing:
+    dependency: transitive
+    description:
+      name: leak_tracker_testing
+      sha256: "8d5a2d49f4a66b49744b23b018848400d23e54caf9463f4eb20df3eb8acb2eb1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.2"
+  lints:
+    dependency: transitive
+    description:
+      name: lints
+      sha256: "12f842a479589fea194fe5c5a3095abc7be0c1f2ddfa9a0e76aed1dbd26a87df"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.1.0"
+  logging:
+    dependency: transitive
+    description:
+      name: logging
+      sha256: c8245ada5f1717ed44271ed1c26b8ce85ca3228fd2ffdb75468ab01979309d61
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.3.0"
+  lucide_icons:
+    dependency: "direct main"
+    description:
+      name: lucide_icons
+      sha256: ad24d0fd65707e48add30bebada7d90bff2a1bba0a72d6e9b19d44246b0e83c4
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.257.0"
+  markdown:
+    dependency: "direct main"
+    description:
+      name: markdown
+      sha256: "935e23e1ff3bc02d390bad4d4be001208ee92cc217cb5b5a6c19bc14aaa318c1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.3.0"
+  matcher:
+    dependency: transitive
+    description:
+      name: matcher
+      sha256: dc58c723c3c24bf8d3e2d3ad3f2f9d7bd9cf43ec6feaa64181775e60190153f2
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.12.17"
+  material_color_utilities:
+    dependency: transitive
+    description:
+      name: material_color_utilities
+      sha256: f7142bb1154231d7ea5f96bc7bde4bda2a0945d2806bb11670e30b850d56bdec
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.11.1"
+  meta:
+    dependency: transitive
+    description:
+      name: meta
+      sha256: "23f08335362185a5ea2ad3a4e597f1375e78bce8a040df5c600c8d3552ef2394"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.17.0"
+  native_toolchain_c:
+    dependency: transitive
+    description:
+      name: native_toolchain_c
+      sha256: "92b2ca62c8bd2b8d2f267cdfccf9bfbdb7322f778f8f91b3ce5b5cda23a3899f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.17.5"
+  nested:
+    dependency: transitive
+    description:
+      name: nested
+      sha256: "03bac4c528c64c95c722ec99280375a6f2fc708eec17c7b3f07253b626cd2a20"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
+  objective_c:
+    dependency: transitive
+    description:
+      name: objective_c
+      sha256: "100a1c87616ab6ed41ec263b083c0ef3261ee6cd1dc3b0f35f8ddfa4f996fe52"
+      url: "https://pub.dev"
+    source: hosted
+    version: "9.3.0"
+  path:
+    dependency: transitive
+    description:
+      name: path
+      sha256: "75cca69d1490965be98c73ceaea117e8a04dd21217b37b292c9ddbec0d955bc5"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.9.1"
+  path_parsing:
+    dependency: transitive
+    description:
+      name: path_parsing
+      sha256: "883402936929eac138ee0a45da5b0f2c80f89913e6dc3bf77eb65b84b409c6ca"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
+  path_provider:
+    dependency: "direct main"
+    description:
+      name: path_provider
+      sha256: "50c5dd5b6e1aaf6fb3a78b33f6aa3afca52bf903a8a5298f53101fdaee55bbcd"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.5"
+  path_provider_android:
+    dependency: transitive
+    description:
+      name: path_provider_android
+      sha256: f2c65e21139ce2c3dad46922be8272bb5963516045659e71bb16e151c93b580e
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.22"
+  path_provider_foundation:
+    dependency: transitive
+    description:
+      name: path_provider_foundation
+      sha256: "2a376b7d6392d80cd3705782d2caa734ca4727776db0b6ec36ef3f1855197699"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.6.0"
+  path_provider_linux:
+    dependency: transitive
+    description:
+      name: path_provider_linux
+      sha256: f7a1fe3a634fe7734c8d3f2766ad746ae2a2884abe22e241a8b301bf5cac3279
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.1"
+  path_provider_platform_interface:
+    dependency: transitive
+    description:
+      name: path_provider_platform_interface
+      sha256: "88f5779f72ba699763fa3a3b06aa4bf6de76c8e5de842cf6f29e2e06476c2334"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.2"
+  path_provider_windows:
+    dependency: transitive
+    description:
+      name: path_provider_windows
+      sha256: bd6f00dbd873bfb70d0761682da2b3a2c2fccc2b9e84c495821639601d81afe7
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.0"
+  petitparser:
+    dependency: transitive
+    description:
+      name: petitparser
+      sha256: "91bd59303e9f769f108f8df05e371341b15d59e995e6806aefab827b58336675"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.0.2"
+  platform:
+    dependency: transitive
+    description:
+      name: platform
+      sha256: "5d6b1b0036a5f331ebc77c850ebc8506cbc1e9416c27e59b439f917a902a4984"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.6"
+  plugin_platform_interface:
+    dependency: transitive
+    description:
+      name: plugin_platform_interface
+      sha256: "4820fbfdb9478b1ebae27888254d445073732dae3d6ea81f0b7e06d5dedc3f02"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.8"
+  provider:
+    dependency: transitive
+    description:
+      name: provider
+      sha256: "4e82183fa20e5ca25703ead7e05de9e4cceed1fbd1eadc1ac3cb6f565a09f272"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.1.5+1"
+  pub_semver:
+    dependency: transitive
+    description:
+      name: pub_semver
+      sha256: "5bfcf68ca79ef689f8990d1160781b4bad40a3bd5e5218ad4076ddb7f4081585"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.0"
+  shared_preferences:
+    dependency: "direct main"
+    description:
+      name: shared_preferences
+      sha256: "2939ae520c9024cb197fc20dee269cd8cdbf564c8b5746374ec6cacdc5169e64"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.5.4"
+  shared_preferences_android:
+    dependency: transitive
+    description:
+      name: shared_preferences_android
+      sha256: "8374d6200ab33ac99031a852eba4c8eb2170c4bf20778b3e2c9eccb45384fb41"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.4.21"
+  shared_preferences_foundation:
+    dependency: transitive
+    description:
+      name: shared_preferences_foundation
+      sha256: "4e7eaffc2b17ba398759f1151415869a34771ba11ebbccd1b0145472a619a64f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.5.6"
+  shared_preferences_linux:
+    dependency: transitive
+    description:
+      name: shared_preferences_linux
+      sha256: "580abfd40f415611503cae30adf626e6656dfb2f0cee8f465ece7b6defb40f2f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.4.1"
+  shared_preferences_platform_interface:
+    dependency: transitive
+    description:
+      name: shared_preferences_platform_interface
+      sha256: "57cbf196c486bc2cf1f02b85784932c6094376284b3ad5779d1b1c6c6a816b80"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.4.1"
+  shared_preferences_web:
+    dependency: transitive
+    description:
+      name: shared_preferences_web
+      sha256: c49bd060261c9a3f0ff445892695d6212ff603ef3115edbb448509d407600019
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.4.3"
+  shared_preferences_windows:
+    dependency: transitive
+    description:
+      name: shared_preferences_windows
+      sha256: "94ef0f72b2d71bc3e700e025db3710911bd51a71cefb65cc609dd0d9a982e3c1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.4.1"
+  sky_engine:
+    dependency: transitive
+    description: flutter
+    source: sdk
+    version: "0.0.0"
+  source_span:
+    dependency: transitive
+    description:
+      name: source_span
+      sha256: "56a02f1f4cd1a2d96303c0144c93bd6d909eea6bee6bf5a0e0b685edbd4c47ab"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.10.2"
+  stack_trace:
+    dependency: transitive
+    description:
+      name: stack_trace
+      sha256: "8b27215b45d22309b5cddda1aa2b19bdfec9df0e765f2de506401c071d38d1b1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.12.1"
+  stream_channel:
+    dependency: transitive
+    description:
+      name: stream_channel
+      sha256: "969e04c80b8bcdf826f8f16579c7b14d780458bd97f56d107d3950fdbeef059d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.4"
+  string_scanner:
+    dependency: transitive
+    description:
+      name: string_scanner
+      sha256: "921cd31725b72fe181906c6a94d987c78e3b98c2e205b397ea399d4054872b43"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.1"
+  term_glyph:
+    dependency: transitive
+    description:
+      name: term_glyph
+      sha256: "7f554798625ea768a7518313e58f83891c7f5024f88e46e7182a4558850a4b8e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.2"
+  test_api:
+    dependency: transitive
+    description:
+      name: test_api
+      sha256: ab2726c1a94d3176a45960b6234466ec367179b87dd74f1611adb1f3b5fb9d55
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.7.7"
+  tuple:
+    dependency: transitive
+    description:
+      name: tuple
+      sha256: a97ce2013f240b2f3807bcbaf218765b6f301c3eff91092bcfa23a039e7dd151
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.2"
+  typed_data:
+    dependency: transitive
+    description:
+      name: typed_data
+      sha256: f9049c039ebfeb4cf7a7104a675823cd72dba8297f264b6637062516699fa006
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.0"
+  vector_graphics:
+    dependency: transitive
+    description:
+      name: vector_graphics
+      sha256: "7076216a10d5c390315fbe536a30f1254c341e7543e6c4c8a815e591307772b1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.20"
+  vector_graphics_codec:
+    dependency: transitive
+    description:
+      name: vector_graphics_codec
+      sha256: "99fd9fbd34d9f9a32efd7b6a6aae14125d8237b10403b422a6a6dfeac2806146"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.13"
+  vector_graphics_compiler:
+    dependency: transitive
+    description:
+      name: vector_graphics_compiler
+      sha256: "5a88dd14c0954a5398af544651c7fb51b457a2a556949bfb25369b210ef73a74"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.0"
+  vector_math:
+    dependency: transitive
+    description:
+      name: vector_math
+      sha256: d530bd74fea330e6e364cda7a85019c434070188383e1cd8d9777ee586914c5b
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.0"
+  vm_service:
+    dependency: transitive
+    description:
+      name: vm_service
+      sha256: "45caa6c5917fa127b5dbcfbd1fa60b14e583afdc08bfc96dda38886ca252eb60"
+      url: "https://pub.dev"
+    source: hosted
+    version: "15.0.2"
+  web:
+    dependency: transitive
+    description:
+      name: web
+      sha256: "868d88a33d8a87b18ffc05f9f030ba328ffefba92d6c127917a2ba740f9cfe4a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.1"
+  webview_flutter:
+    dependency: "direct main"
+    description:
+      name: webview_flutter
+      sha256: a3da219916aba44947d3a5478b1927876a09781174b5a2b67fa5be0555154bf9
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.13.1"
+  webview_flutter_android:
+    dependency: transitive
+    description:
+      name: webview_flutter_android
+      sha256: "2a03df01df2fd30b075d1e7f24c28aee593f2e5d5ac4c3c4283c5eda63717b24"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.10.13"
+  webview_flutter_platform_interface:
+    dependency: transitive
+    description:
+      name: webview_flutter_platform_interface
+      sha256: "63d26ee3aca7256a83ccb576a50272edd7cfc80573a4305caa98985feb493ee0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.14.0"
+  webview_flutter_wkwebview:
+    dependency: transitive
+    description:
+      name: webview_flutter_wkwebview
+      sha256: "2df8fd9ada04d699b9db8e79aa783a16e5d89b69e5b74009b87e16b59912cf98"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.24.0"
+  win32:
+    dependency: transitive
+    description:
+      name: win32
+      sha256: d7cb55e04cd34096cd3a79b3330245f54cb96a370a1c27adb3c84b917de8b08e
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.15.0"
+  xdg_directories:
+    dependency: transitive
+    description:
+      name: xdg_directories
+      sha256: "7a3f37b05d989967cdddcbb571f1ea834867ae2faa29725fd085180e0883aa15"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
+  xml:
+    dependency: transitive
+    description:
+      name: xml
+      sha256: "971043b3a0d3da28727e40ed3e0b5d18b742fa5a68665cca88e74b7876d5e025"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.6.1"
+  yaml:
+    dependency: transitive
+    description:
+      name: yaml
+      sha256: b9da305ac7c39faa3f030eccd175340f968459dae4af175130b3fc47e40d76ce
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.3"
+sdks:
+  dart: ">=3.10.3 <4.0.0"
+  flutter: ">=3.38.4"
+
+--- END OF FILE pubspec.lock ---
+
+--- START OF FILE firebase.json ---
+{"flutter":{"platforms":{"android":{"default":{"projectId":"duofy-mobile","appId":"1:893487649041:android:bc141c5e7a34db44c1bcb0","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"duofy-mobile","configurations":{"android":"1:893487649041:android:bc141c5e7a34db44c1bcb0","ios":"1:893487649041:ios:d7017f4e1f10bac2c1bcb0","macos":"1:893487649041:ios:d7017f4e1f10bac2c1bcb0","web":"1:893487649041:web:09808ecc8b2b38dac1bcb0","windows":"1:893487649041:web:257a39e69050c3f0c1bcb0"}}}}}}
+--- END OF FILE firebase.json ---
+
+--- START OF FILE lib/main.dart ---
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'firebase_options.dart';
+import 'theme/app_theme.dart';
+import 'screens/home_screen.dart';
+import 'services/global_state.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
+  // Initialize shared prefs and load global XP early
+  final prefs = await SharedPreferences.getInstance();
+  GlobalState.xpNotifier.value = prefs.getInt('user_xp') ?? 0;
+
+  runApp(const DuoFyApp());
+}
+
+class DuoFyApp extends StatelessWidget {
+  const DuoFyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'DuoFY',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.darkTheme,
+      home: const HomeScreen(),
+    );
+  }
+}
+--- END OF FILE lib/main.dart ---
+
+--- START OF FILE lib/firebase_options.dart ---
+// File generated by FlutterFire CLI.
+// ignore_for_file: type=lint
+import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
+
+/// Default [FirebaseOptions] for use with your Firebase apps.
+///
+/// Example:
+/// ```dart
+/// import 'firebase_options.dart';
+/// // ...
+/// await Firebase.initializeApp(
+///   options: DefaultFirebaseOptions.currentPlatform,
+/// );
+/// ```
+class DefaultFirebaseOptions {
+  static FirebaseOptions get currentPlatform {
+    if (kIsWeb) {
+      return web;
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return android;
+      case TargetPlatform.iOS:
+        return ios;
+      case TargetPlatform.macOS:
+        return macos;
+      case TargetPlatform.windows:
+        return windows;
+      case TargetPlatform.linux:
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for linux - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
+      default:
+        throw UnsupportedError(
+          'DefaultFirebaseOptions are not supported for this platform.',
+        );
+    }
+  }
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyDgN0RvGOhHDQV5Wc7-4MDIry7ZiluFOJQ',
+    appId: '1:893487649041:web:09808ecc8b2b38dac1bcb0',
+    messagingSenderId: '893487649041',
+    projectId: 'duofy-mobile',
+    authDomain: 'duofy-mobile.firebaseapp.com',
+    databaseURL: 'https://duofy-mobile-default-rtdb.asia-southeast1.firebasedatabase.app',
+    storageBucket: 'duofy-mobile.firebasestorage.app',
+  );
+
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'AIzaSyC60Cuy9ppgsEar_SiQZXZlnT8WwsWEL1k',
+    appId: '1:893487649041:android:bc141c5e7a34db44c1bcb0',
+    messagingSenderId: '893487649041',
+    projectId: 'duofy-mobile',
+    databaseURL: 'https://duofy-mobile-default-rtdb.asia-southeast1.firebasedatabase.app',
+    storageBucket: 'duofy-mobile.firebasestorage.app',
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyCCzekcgP7issZ9ozkvkBocm94IOLUmPs8',
+    appId: '1:893487649041:ios:d7017f4e1f10bac2c1bcb0',
+    messagingSenderId: '893487649041',
+    projectId: 'duofy-mobile',
+    databaseURL: 'https://duofy-mobile-default-rtdb.asia-southeast1.firebasedatabase.app',
+    storageBucket: 'duofy-mobile.firebasestorage.app',
+    iosBundleId: 'com.example.duofy',
+  );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyCCzekcgP7issZ9ozkvkBocm94IOLUmPs8',
+    appId: '1:893487649041:ios:d7017f4e1f10bac2c1bcb0',
+    messagingSenderId: '893487649041',
+    projectId: 'duofy-mobile',
+    databaseURL: 'https://duofy-mobile-default-rtdb.asia-southeast1.firebasedatabase.app',
+    storageBucket: 'duofy-mobile.firebasestorage.app',
+    iosBundleId: 'com.example.duofy',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyDgN0RvGOhHDQV5Wc7-4MDIry7ZiluFOJQ',
+    appId: '1:893487649041:web:257a39e69050c3f0c1bcb0',
+    messagingSenderId: '893487649041',
+    projectId: 'duofy-mobile',
+    authDomain: 'duofy-mobile.firebaseapp.com',
+    databaseURL: 'https://duofy-mobile-default-rtdb.asia-southeast1.firebasedatabase.app',
+    storageBucket: 'duofy-mobile.firebasestorage.app',
+  );
+
+}
+--- END OF FILE lib/firebase_options.dart ---
+
+--- START OF FILE lib/theme/app_theme.dart ---
+import 'dart:ui';
+import 'package:flutter/material.dart';
+
+class AppTheme {
+  static const Color duoGreen = Color(0xFF58cc02);
+  static const Color duoGreenDark = Color(0xFF46a302);
+  static const Color duoBlue = Color(0xFF1cb0f6);
+  static const Color duoBlueDark = Color(0xFF1899d6);
+  static const Color duoRed = Color(0xFFff4b4b);
+  static const Color duoRedDark = Color(0xFFea2b2b);
+  static const Color duoViolet = Color(0xFFce82ff);
+  static const Color duoVioletDark = Color(0xFFa559ce);
+  static const Color duoOrange = Color(0xFFff9600);
+  static const Color duoOrangeDark = Color(0xFFcc7800);
+  
+  static const Color background = Color(0xFF0b0f19);
+  static const Color surface = Color(0xFF1f1f28);
+  
+  static ThemeData get darkTheme {
+    return ThemeData(
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: background,
+      primaryColor: duoBlue,
+      fontFamily: 'Nunito',
+      colorScheme: const ColorScheme.dark(
+        primary: duoBlue,
+        secondary: duoGreen,
+        surface: surface,
+        background: background,
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+      ),
+    );
+  }
+
+  static BoxDecoration get glassDecoration {
+    return BoxDecoration(
+      color: Colors.white.withOpacity(0.05),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.3),
+          blurRadius: 30,
+          offset: const Offset(0, 4),
+        )
+      ],
+    );
+  }
+
+  // Used for wrapping elements with a true glass blur
+  static Widget applyGlassBlur({required Widget child, double borderRadius = 20, Color? color}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(borderRadius),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
+        child: Container(
+          decoration: BoxDecoration(
+            color: color ?? Colors.black.withOpacity(0.4),
+            borderRadius: BorderRadius.circular(borderRadius),
+            border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+--- END OF FILE lib/theme/app_theme.dart ---
+
+--- START OF FILE lib/models/app_models.dart ---
+class Book {
+  final String id;
+  final String title;
+  final String description;
+  final String icon;
+  final List<Module> modules;
+
+  Book({required this.id, required this.title, required this.description, required this.icon, required this.modules});
+
+  factory Book.fromJson(Map<String, dynamic> json) {
+    return Book(
+      id: json['id'] ?? '',
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      icon: json['icon'] ?? 'Book',
+      modules: (json['modules'] as List?)?.map((m) => Module.fromJson(Map<String, dynamic>.from(m))).toList() ?? [],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'description': description,
+    'icon': icon,
+    'modules': modules.map((m) => m.toJson()).toList(),
+  };
+}
+
+class Module {
+  final String id;
+  final String title;
+  final String description;
+  final List<Section> sections;
+  final List<Slide> practiceQuestions;
+  final List<Slide> examQuestions;
+
+  Module({
+    required this.id, 
+    required this.title, 
+    required this.description, 
+    required this.sections,
+    required this.practiceQuestions,
+    required this.examQuestions,
+  });
+
+  factory Module.fromJson(Map<String, dynamic> json) {
+    return Module(
+      id: json['id'] ?? '',
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      sections: (json['sections'] as List?)?.map((s) => Section.fromJson(Map<String, dynamic>.from(s))).toList() ?? [],
+      practiceQuestions: (json['practiceQuestions'] as List?)?.map((s) => Slide.fromJson(Map<String, dynamic>.from(s))).toList() ?? [],
+      examQuestions: (json['examQuestions'] as List?)?.map((s) => Slide.fromJson(Map<String, dynamic>.from(s))).toList() ?? [],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'description': description,
+    'sections': sections.map((s) => s.toJson()).toList(),
+    'practiceQuestions': practiceQuestions.map((s) => s.toJson()).toList(),
+    'examQuestions': examQuestions.map((s) => s.toJson()).toList(),
+  };
+}
+
+class Section {
+  final String id;
+  final String title;
+  final String description;
+  final String color;
+  final List<Unit> units;
+
+  Section({required this.id, required this.title, required this.description, required this.color, required this.units});
+
+  factory Section.fromJson(Map<String, dynamic> json) {
+    return Section(
+      id: json['id'] ?? '',
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      color: json['color'] ?? 'duo-blue',
+      units: (json['units'] as List?)?.map((u) => Unit.fromJson(Map<String, dynamic>.from(u))).toList() ?? [],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'description': description,
+    'color': color,
+    'units': units.map((u) => u.toJson()).toList(),
+  };
+}
+
+class Unit {
+  final String id;
+  final String title;
+  final String description;
+  final List<Lesson> lessons;
+
+  Unit({required this.id, required this.title, required this.description, required this.lessons});
+
+  factory Unit.fromJson(Map<String, dynamic> json) {
+    return Unit(
+      id: json['id'] ?? '',
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      lessons: (json['lessons'] as List?)?.map((l) => Lesson.fromJson(Map<String, dynamic>.from(l))).toList() ?? [],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'description': description,
+    'lessons': lessons.map((l) => l.toJson()).toList(),
+  };
+}
+
+class Lesson {
+  final String id;
+  final String title;
+  final String description;
+  final String icon;
+  final List<Slide> slides;
+
+  Lesson({required this.id, required this.title, required this.description, required this.icon, required this.slides});
+
+  factory Lesson.fromJson(Map<String, dynamic> json) {
+    return Lesson(
+      id: json['id'] ?? '',
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      icon: json['icon'] ?? 'BookOpen',
+      slides: (json['slides'] as List?)?.map((s) => Slide.fromJson(Map<String, dynamic>.from(s))).toList() ?? [],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'description': description,
+    'icon': icon,
+    'slides': slides.map((s) => s.toJson()).toList(),
+  };
+}
+
+class InteractiveStep {
+  final String? prompt;
+  final String? stepText;
+  final List<QuizOption>? options;
+
+  InteractiveStep({this.prompt, this.stepText, this.options});
+
+  factory InteractiveStep.fromJson(Map<String, dynamic> json) {
+    return InteractiveStep(
+      prompt: json['prompt'],
+      stepText: json['stepText'],
+      options: (json['options'] as List?)?.map((o) => QuizOption.fromJson(Map<String, dynamic>.from(o))).toList(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    if (prompt != null) 'prompt': prompt,
+    if (stepText != null) 'stepText': stepText,
+    if (options != null) 'options': options!.map((o) => o.toJson()).toList(),
+  };
+}
+
+class Slide {
+  final String id;
+  final String type; // theory, quiz, fill_in_blank, numerical, interactive_canvas, proof, step_by_step
+  final String title;
+  final String content;
+  final String? interactiveCanvasHtml;
+  final List<QuizOption>? options;
+  final List<InteractiveStep>? interactiveSteps;
+  final List<String>? proofSteps;
+  final String? blankAnswer;
+  final double? numericAnswer;
+  final double? numericTolerance;
+
+  Slide({
+    required this.id,
+    required this.type,
+    required this.title,
+    required this.content,
+    this.interactiveCanvasHtml,
+    this.options,
+    this.interactiveSteps,
+    this.proofSteps,
+    this.blankAnswer,
+    this.numericAnswer,
+    this.numericTolerance,
+  });
+
+  factory Slide.fromJson(Map<String, dynamic> json) {
+    return Slide(
+      id: json['id'] ?? '',
+      type: json['type'] ?? 'theory',
+      title: json['title'] ?? '',
+      content: json['content'] ?? '',
+      interactiveCanvasHtml: json['interactiveCanvasHtml'],
+      options: (json['options'] as List?)?.map((o) => QuizOption.fromJson(Map<String, dynamic>.from(o))).toList(),
+      interactiveSteps: (json['interactiveSteps'] as List?)?.map((s) => InteractiveStep.fromJson(Map<String, dynamic>.from(s))).toList(),
+      proofSteps: (json['proofSteps'] as List?)?.map((s) => s.toString()).toList(),
+      blankAnswer: json['blankAnswer'],
+      numericAnswer: json['numericAnswer']?.toDouble(),
+      numericTolerance: json['numericTolerance']?.toDouble() ?? 0.01,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'type': type,
+    'title': title,
+    'content': content,
+    if (interactiveCanvasHtml != null) 'interactiveCanvasHtml': interactiveCanvasHtml,
+    if (options != null) 'options': options!.map((o) => o.toJson()).toList(),
+    if (interactiveSteps != null) 'interactiveSteps': interactiveSteps!.map((s) => s.toJson()).toList(),
+    if (proofSteps != null) 'proofSteps': proofSteps,
+    if (blankAnswer != null) 'blankAnswer': blankAnswer,
+    if (numericAnswer != null) 'numericAnswer': numericAnswer,
+    if (numericTolerance != null) 'numericTolerance': numericTolerance,
+  };
+}
+
+class QuizOption {
+  final String id;
+  final String text;
+  final bool isCorrect;
+  final String explanation;
+
+  QuizOption({required this.id, required this.text, required this.isCorrect, required this.explanation});
+
+  factory QuizOption.fromJson(Map<String, dynamic> json) {
+    return QuizOption(
+      id: json['id'] ?? '',
+      text: json['text'] ?? '',
+      isCorrect: json['isCorrect'] ?? false,
+      explanation: json['explanation'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'text': text,
+    'isCorrect': isCorrect,
+    'explanation': explanation,
+  };
+}
+--- END OF FILE lib/models/app_models.dart ---
+
+--- START OF FILE lib/data/mock_books.dart ---
+import '../models/app_models.dart';
+
+final List<Book> mockBooks = [
+  Book(
+    id: 'b-physics-1',
+    title: 'Modern Physics',
+    description: 'Relativity, Quantum Mechanics, and Wave-Particle Duality.',
+    icon: 'Atom',
+    modules: [
+      Module(
+        id: 'm-phys-1',
+        title: 'Quantum Mechanics',
+        description: 'The foundation of the microscopic world.',
+        practiceQuestions: [
+          Slide(
+            id: 'pq-mcq-1',
+            type: 'quiz',
+            title: 'MCQ: Photons',
+            content: r'Which of the following describes a photon?',
+            options: [
+              QuizOption(id: 'a', text: 'A wave of continuous energy.', isCorrect: false, explanation: 'Photons are discrete packets.'),
+              QuizOption(id: 'b', text: 'A discrete quantum of electromagnetic energy.', isCorrect: true, explanation: 'Correct!'),
+            ]
+          ),
+          Slide(
+            id: 'pq-fib-1',
+            type: 'fill_in_blank',
+            title: 'Fill in Blank: Energy',
+            content: r'The formula for photon energy is \$E = hf\$. If frequency increases, the energy ___ .',
+            blankAnswer: 'increases',
+          ),
+          Slide(
+            id: 'pq-num-1',
+            type: 'numerical',
+            title: 'Numerical: Work Function',
+            content: r'If \$E = 5.5\$ eV and \$\Phi = 2.0\$ eV, what is \$K_{max}\$?',
+            numericAnswer: 3.5,
+            numericTolerance: 0.1,
+          ),
+          Slide(
+            id: 'pq-proof-1',
+            type: 'proof',
+            title: 'Proof: Length Contraction',
+            content: r'Let us formally derive length contraction.',
+            interactiveSteps: [
+              InteractiveStep(
+                stepText: r'Start with the Lorentz transformation: \$x' r"' = \gamma(x - vt)\$"
+              ),
+              InteractiveStep(
+                prompt: r'If we measure the rod in frame S, we measure both ends at the same time \$t\$. What happens to the \$vt\$ term when we calculate \$\Delta x' r"' = x'_2 - x'_1\$?",
+                stepText: r'The \$vt\$ term cancels out!',
+                options: [
+                  QuizOption(id: 'a', text: 'It cancels out.', isCorrect: true, explanation: "Since \$t_1 = t_2\$, \$vt_1 - vt_2 = 0\$."),
+                  QuizOption(id: 'b', text: 'It doubles.', isCorrect: false, explanation: 'No, we are subtracting.'),
+                ]
+              ),
+              InteractiveStep(
+                stepText: r'Therefore, \$L_0 = \gamma L\$, which rearranges to \$L = L_0/\gamma\$.'
+              )
+            ]
+          ),
+          Slide(
+            id: 'pq-step-1',
+            type: 'step_by_step',
+            title: 'Step by Step: Relativity',
+            content: r'Calculate the momentum of an electron at \$v=0.8c\$.',
+            interactiveSteps: [
+              InteractiveStep(
+                prompt: 'First, calculate the Lorentz factor \$\\gamma\$.',
+                stepText: '\$\\gamma = 1 / \\sqrt{1 - 0.8^2} = 1.667\$',
+                options: [
+                  QuizOption(id: 'a', text: '1.667', isCorrect: true, explanation: 'Correct!'),
+                  QuizOption(id: 'b', text: '0.6', isCorrect: false, explanation: 'That is \$1 - v/c\$.'),
+                ]
+              ),
+              InteractiveStep(
+                stepText: 'Now use \$p = \\gamma m v\$ to find the final momentum.'
+              )
+            ]
+          ),
+        ],
+        examQuestions: [
+          Slide(
+            id: 'e-1',
+            type: 'numerical',
+            title: 'Exam: Binding Energy',
+            content: r'If the work function \$\Phi\$ is 2.0 eV and incoming light has energy 5.5 eV, what is the max kinetic energy in eV? (\$K_{max} = E - \Phi\$)',
+            numericAnswer: 3.5,
+            numericTolerance: 0.1,
+          ),
+          Slide(
+            id: 'e-2',
+            type: 'quiz',
+            title: 'Exam: Ground State',
+            content: r'What is the principal quantum number \$n\$ for the ground state of Hydrogen?',
+            options: [
+              QuizOption(id: 'a', text: '0', isCorrect: false, explanation: 'n starts at 1.'),
+              QuizOption(id: 'b', text: '1', isCorrect: true, explanation: 'The lowest energy state is n=1.'),
+            ]
+          ),
+        ],
+        sections: [
+          Section(
+            id: 's-phys-1-1',
+            title: 'Section 1: The Quantum Realm',
+            description: 'Photons, Waves, and Atoms.',
+            color: 'duo-blue',
+            units: [
+              Unit(
+                id: 'u-phys-1-1',
+                title: 'Wave-Particle Duality',
+                description: 'The Nature of Light',
+                lessons: [
+                  Lesson(
+                    id: 'l-phys-1-1-1',
+                    title: 'What is a Photon?',
+                    description: 'Basic introduction',
+                    icon: 'Sun',
+                    slides: [
+                      Slide(
+                        id: 'sl-1',
+                        type: 'theory',
+                        title: 'The Photon',
+                        content: r'A photon is a discrete packet of energy. Max Planck proposed that energy is quantized: \$\$E = hf\$\$ Where \$h\$ is Planck\s constant and \$f\$ is frequency.',
+                      ),
+                      Slide(
+                        id: 'sl-2',
+                        type: 'quiz',
+                        title: 'Check your understanding',
+                        content: r'Does a photon have mass at rest?',
+                        options: [
+                          QuizOption(id: 'a', text: r'Yes, it is a heavy particle.', isCorrect: false, explanation: r'Photons are massless particles.'),
+                          QuizOption(id: 'b', text: r'No, its rest mass is 0.', isCorrect: true, explanation: r'Correct! A photon has no rest mass, but carries momentum \$p = \frac{h}{\lambda}\$.'),
+                        ],
+                      ),
+                      Slide(
+                        id: 'sl-3',
+                        type: 'interactive_canvas',
+                        title: 'Wave Simulation',
+                        content: r'Interact with the canvas below to see how sine waves propagate.',
+                        interactiveCanvasHtml: r'''
+                          <canvas id="myCanvas" style="width:100%; height:100%;"></canvas>
+                          <script>
+                            const canvas = document.getElementById('myCanvas');
+                            const ctx = canvas.getContext('2d');
+                            let time = 0;
+                            function resize() {
+                              canvas.width = canvas.clientWidth;
+                              canvas.height = canvas.clientHeight;
+                            }
+                            window.addEventListener('resize', resize);
+                            resize();
+                            function draw() {
+                              ctx.clearRect(0, 0, canvas.width, canvas.height);
+                              ctx.beginPath();
+                              ctx.strokeStyle = '#1cb0f6';
+                              ctx.lineWidth = 4;
+                              for(let i = 0; i < canvas.width; i++) {
+                                const y = canvas.height/2 + Math.sin(i * 0.05 + time) * 50;
+                                if(i===0) ctx.moveTo(i, y);
+                                else ctx.lineTo(i, y);
+                              }
+                              ctx.stroke();
+                              time -= 0.1;
+                              requestAnimationFrame(draw);
+                            }
+                            draw();
+                          </script>
+                        ''',
+                      )
+                    ]
+                  ),
+                  Lesson(
+                    id: 'l-phys-1-1-2',
+                    title: 'The Photoelectric Effect',
+                    description: 'Einstein\'s discovery',
+                    icon: 'Camera',
+                    slides: [
+                      Slide(
+                        id: 'sl-4',
+                        type: 'fill_in_blank',
+                        title: 'Energy Formula',
+                        content: r'Einstein\s photoelectric equation is \$K_{max} = hf - \$ ___, where the missing variable is the work function \$\Phi\$.',
+                        blankAnswer: r'\Phi',
+                      ),
+                      Slide(
+                        id: 'sl-5',
+                        type: 'numerical',
+                        title: 'Calculate Energy',
+                        content: r'If \$h \approx 6.62 \times 10^{-34}\$ J·s and \$f = 1 \times 10^{14}\$ Hz, what is E? (Coefficient only)',
+                        numericAnswer: 6.62,
+                        numericTolerance: 0.1,
+                      ),
+                      Slide(
+                        id: 'sl-proof-1',
+                        type: 'proof',
+                        title: 'Interactive Derivation',
+                        content: 'Let us build the photoelectric equation step by step.',
+                        interactiveSteps: [
+                          InteractiveStep(
+                            stepText: 'Assume a single photon interacts with a single electron.'
+                          ),
+                          InteractiveStep(
+                            prompt: 'What is the energy of the incoming photon?',
+                            stepText: 'The photon energy is \$E = hf\$.',
+                            options: [
+                              QuizOption(id: '1', text: '\$hf\$', isCorrect: true, explanation: 'Planck equation'),
+                              QuizOption(id: '2', text: '\$\\Phi\$', isCorrect: false, explanation: 'That is the work function'),
+                            ]
+                          ),
+                          InteractiveStep(
+                            stepText: 'Thus, the kinetic energy remaining is \$K_{max} = hf - \\Phi\$.'
+                          )
+                        ]
+                      )
+                    ]
+                  ),
+                ]
+              ),
+              Unit(
+                id: 'u-phys-1-2',
+                title: 'The Bohr Model',
+                description: 'Atoms and Energy Levels',
+                lessons: [
+                  Lesson(
+                    id: 'l-phys-1-2-1',
+                    title: 'Hydrogen Spectrum',
+                    description: 'Energy transitions',
+                    icon: 'Atom',
+                    slides: [
+                      Slide(
+                        id: 'sl-6',
+                        type: 'theory',
+                        title: 'Energy Levels',
+                        content: r'Electrons orbit the nucleus in specific levels. The energy of the \$n\$-th level in Hydrogen is: \$\$E_n = -\frac{13.6}{n^2} \text{ eV}\$\$',
+                      ),
+                      Slide(
+                        id: 'sl-7',
+                        type: 'quiz',
+                        title: 'Ground State',
+                        content: r'What is the energy of the ground state (\$n=1\$)?',
+                        options: [
+                          QuizOption(id: 'a', text: r'\$-13.6\$ eV', isCorrect: true, explanation: r'Correct! Plug 1 into the denominator.'),
+                          QuizOption(id: 'b', text: r'\$0\$ eV', isCorrect: false, explanation: r'0 eV is when the electron is completely free (\$n=\infty\$).'),
+                        ]
+                      )
+                    ]
+                  )
+                ]
+              )
+            ]
+          )
+        ]
+      )
+    ]
+  )
+];
+--- END OF FILE lib/data/mock_books.dart ---
+
+--- START OF FILE lib/services/database_service.dart ---
+import 'dart:convert';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/app_models.dart';
+import '../data/mock_books.dart';
+
+class DatabaseService {
+  final DatabaseReference _dbRef = FirebaseDatabase.instance.ref();
+
+  Future<List<Book>> fetchBooks({bool forceRefresh = false}) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Load from cache first unless pull-to-refresh
+    if (!forceRefresh) {
+      final cached = prefs.getString('cached_books');
+      if (cached != null) {
+        try {
+          final List decoded = jsonDecode(cached);
+          // Launch a silent fetch in the background to keep cache fresh
+          _fetchAndCacheFirebase();
+          return decoded.map((e) => Book.fromJson(Map<String, dynamic>.from(e))).toList();
+        } catch (e) {
+          // Fall through to Firebase fetch if cache parsing fails
+        }
+      }
+    }
+
+    return await _fetchAndCacheFirebase();
+  }
+
+  Future<List<Book>> _fetchAndCacheFirebase() async {
+    final prefs = await SharedPreferences.getInstance();
+    try {
+      final snapshot = await _dbRef.child('books').get();
+      if (snapshot.exists) {
+        final Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
+        List<Book> books = [];
+        data.forEach((key, value) {
+          books.add(Book.fromJson(Map<String, dynamic>.from(value)));
+        });
+        await prefs.setString('cached_books', jsonEncode(books.map((b) => b.toJson()).toList()));
+        return books;
+      } else {
+        await saveBooks(mockBooks);
+        await prefs.setString('cached_books', jsonEncode(mockBooks.map((b) => b.toJson()).toList()));
+        return mockBooks;
+      }
+    } catch (e) {
+      // If offline or errored out, fallback to local cache
+      final cached = prefs.getString('cached_books');
+      if (cached != null) {
+        final List decoded = jsonDecode(cached);
+        return decoded.map((e) => Book.fromJson(Map<String, dynamic>.from(e))).toList();
+      }
+      return mockBooks;
+    }
+  }
+
+  Future<void> saveBooks(List<Book> books) async {
+    for (var book in books) {
+      await _dbRef.child('books').child(book.id).set(book.toJson());
+    }
+  }
+
+  Future<void> saveGeneratedBook(Book book) async {
+    await _dbRef.child('books').child(book.id).set(book.toJson());
+  }
+}
+--- END OF FILE lib/services/database_service.dart ---
+
+--- START OF FILE lib/services/ai_service.dart ---
+import 'dart:convert';
+import 'dart:io';
+import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/app_models.dart';
+
+class AiService {
+  Future<Book?> generateBookFromPdf(File pdfFile, String title) async {
+    final prefs = await SharedPreferences.getInstance();
+    final keysString = prefs.getString('gemini_api_keys') ?? '';
+    final modelName = prefs.getString('gemini_model') ?? 'gemini-1.5-flash';
+
+    final keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    if (keys.isEmpty) {
+      throw Exception('No API Keys configured. Please configure them in Settings.');
+    }
+
+    final pdfBytes = await pdfFile.readAsBytes();
+    final prompt = TextPart(r'''
+You are an expert curriculum designer. Convert the provided document into a structured JSON interactive lesson plan.
+The app supports these slide types: 'theory', 'quiz', 'fill_in_blank', 'numerical', 'interactive_canvas'.
+For 'interactive_canvas', generate RAW valid HTML/JS inside "interactiveCanvasHtml" that simulates the concept visually. Make sure the canvas resizes to the window. 
+For 'fill_in_blank', format the question with `___` (three underscores) where the user should type the answer inline.
+You MUST use LaTeX formatting inside Markdown by wrapping math in $ (inline) or $$ (block). Be careful to add spaces around $ symbols so they don't stick directly to underscores or punctuation.
+
+The JSON must perfectly match this structure (return ONLY JSON):
+{
+  "id": "generated-book-id",
+  "title": "Title Here",
+  "description": "Auto-generated book",
+  "icon": "Book",
+  "modules": [
+    {
+      "id": "m-1",
+      "title": "Module Title",
+      "description": "Module Desc",
+      "practiceQuestions": [
+        {
+          "id": "pq-1",
+          "type": "quiz",
+          "title": "Practice Quiz",
+          "content": "Question text...",
+          "options": [
+            {"id": "a", "text": "Option A", "isCorrect": true, "explanation": "Why"}
+          ]
+        }
+      ],
+      "examQuestions": [
+        {
+          "id": "eq-1",
+          "type": "numerical",
+          "title": "Exam Numerical",
+          "content": "Calculate $x$...",
+          "numericAnswer": 5,
+          "numericTolerance": 0.1
+        }
+      ],
+      "sections": [
+        {
+          "id": "s-1",
+          "title": "Section Title",
+          "description": "Section Desc",
+          "color": "duo-green",
+          "units": [
+            {
+              "id": "u-1",
+              "title": "Unit Title",
+              "description": "Unit Desc",
+              "lessons": [
+                {
+                  "id": "l-1",
+                  "title": "Lesson Title",
+                  "description": "Lesson Desc",
+                  "icon": "BookOpen",
+                  "slides": [
+                    {
+                      "id": "sl-1",
+                      "type": "theory",
+                      "title": "Slide Title",
+                      "content": "Markdown text with $ math $..."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+''');
+
+    Exception? lastException;
+
+    for (var apiKey in keys) {
+      try {
+        final model = GenerativeModel(
+          model: modelName,
+          apiKey: apiKey,
+          generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+        );
+
+        final response = await model.generateContent([
+          Content.multi([
+            prompt,
+            DataPart('application/pdf', pdfBytes),
+          ])
+        ]);
+
+        if (response.text != null) {
+          final Map<String, dynamic> jsonMap = jsonDecode(response.text!);
+          return Book.fromJson(jsonMap);
+        }
+      } catch (e) {
+        print('Key $apiKey failed: $e');
+        lastException = Exception('Failed with key: $e');
+      }
+    }
+
+    throw lastException ?? Exception('Failed to generate book.');
+  }
+}
+--- END OF FILE lib/services/ai_service.dart ---
+
+--- START OF FILE lib/services/progress_service.dart ---
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/app_models.dart';
+
+class ProgressService {
+  static const String _completedKey = 'completed_lessons';
+  static const String _xpKey = 'user_xp';
+
+  static Future<List<String>> getCompletedLessons() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(_completedKey) ?? [];
+  }
+
+  static Future<void> markLessonCompleted(String lessonId) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> completed = prefs.getStringList(_completedKey) ?? [];
+    if (!completed.contains(lessonId)) {
+      completed.add(lessonId);
+      await prefs.setStringList(_completedKey, completed);
+      
+      // Add XP
+      int currentXp = prefs.getInt(_xpKey) ?? 0;
+      await prefs.setInt(_xpKey, currentXp + 20);
+    }
+  }
+
+  static Future<int> getXp() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_xpKey) ?? 0;
+  }
+
+  static Future<double> getBookProgress(Book book) async {
+    final completed = await getCompletedLessons();
+    int total = 0;
+    int done = 0;
+    for (var m in book.modules) {
+      for (var s in m.sections) {
+        for (var u in s.units) {
+          for (var l in u.lessons) {
+            total++;
+            if (completed.contains(l.id)) done++;
+          }
+        }
+      }
+    }
+    return total == 0 ? 0.0 : (done / total);
+  }
+}
+--- END OF FILE lib/services/progress_service.dart ---
+
+--- START OF FILE lib/services/global_state.dart ---
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class GlobalState {
+  // Reactive XP variable that can be listened to anywhere in the app
+  static final ValueNotifier<int> xpNotifier = ValueNotifier<int>(0);
+
+  static Future<void> addXp(int amount) async {
+    final prefs = await SharedPreferences.getInstance();
+    final newXp = xpNotifier.value + amount;
+    xpNotifier.value = newXp;
+    await prefs.setInt('user_xp', newXp);
+  }
+}
+--- END OF FILE lib/services/global_state.dart ---
+
+--- START OF FILE lib/widgets/duo_button.dart ---
+import 'package:flutter/material.dart';
+
+class DuoButton extends StatefulWidget {
+  final String text;
+  final VoidCallback onPressed;
+  final Color color;
+  final Color shadowColor;
+  final bool isOutline;
+
+  const DuoButton({
+    super.key,
+    required this.text,
+    required this.onPressed,
+    required this.color,
+    required this.shadowColor,
+    this.isOutline = false,
+  });
+
+  @override
+  State<DuoButton> createState() => _DuoButtonState();
+}
+
+class _DuoButtonState extends State<DuoButton> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        widget.onPressed();
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 100),
+        margin: EdgeInsets.only(top: _isPressed ? 4 : 0, bottom: _isPressed ? 0 : 4),
+        decoration: BoxDecoration(
+          color: widget.isOutline ? Colors.transparent : widget.color,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: widget.isOutline ? widget.color : widget.shadowColor,
+            width: 2,
+          ),
+          boxShadow: _isPressed
+              ? []
+              : [
+                  BoxShadow(
+                    color: widget.shadowColor,
+                    offset: const Offset(0, 4),
+                  )
+                ],
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+        child: Center(
+          child: Text(
+            widget.text.toUpperCase(),
+            style: TextStyle(
+              color: widget.isOutline ? widget.color : Colors.white,
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+--- END OF FILE lib/widgets/duo_button.dart ---
+
+--- START OF FILE lib/widgets/lesson_node.dart ---
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../models/app_models.dart';
+import '../theme/app_theme.dart';
+
+class LessonNodeWidget extends StatelessWidget {
+  final Lesson lesson;
+  final bool isCompleted;
+  final bool isLocked;
+  final String sectionColorStr;
+  final VoidCallback onTap;
+
+  const LessonNodeWidget({
+    super.key,
+    required this.lesson,
+    required this.isCompleted,
+    required this.isLocked,
+    required this.sectionColorStr,
+    required this.onTap,
+  });
+
+  Color _getColor() {
+    if (isCompleted) return Colors.amber;
+    switch (sectionColorStr) {
+      case 'duo-green': return AppTheme.duoGreen;
+      case 'duo-blue': return AppTheme.duoBlue;
+      case 'duo-violet': return AppTheme.duoViolet;
+      case 'duo-orange': return AppTheme.duoOrange;
+      default: return AppTheme.duoBlue;
+    }
+  }
+
+  Color _getShadowColor() {
+    if (isCompleted) return Colors.amber.shade700;
+    switch (sectionColorStr) {
+      case 'duo-green': return AppTheme.duoGreenDark;
+      case 'duo-blue': return AppTheme.duoBlueDark;
+      case 'duo-violet': return AppTheme.duoVioletDark;
+      case 'duo-orange': return AppTheme.duoOrangeDark;
+      default: return AppTheme.duoBlueDark;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bgColor = isLocked ? Colors.grey.shade800 : _getColor();
+    final shadowColor = isLocked ? Colors.grey.shade900 : _getShadowColor();
+
+    return GestureDetector(
+      onTap: isLocked ? null : onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 80, // Increased from 70 to 80
+            height: 80, // Increased from 70 to 80
+            decoration: BoxDecoration(
+              color: bgColor,
+              shape: BoxShape.circle,
+              border: Border.all(color: shadowColor, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: shadowColor,
+                  offset: const Offset(0, 6),
+                )
+              ],
+            ),
+            child: Icon(
+              isLocked ? LucideIcons.lock : LucideIcons.bookOpen,
+              color: isLocked ? Colors.grey.shade500 : Colors.white,
+              size: 36, // Increased icon size
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), // Increased padding
+            decoration: AppTheme.glassDecoration,
+            child: Text(
+              lesson.title.toUpperCase(),
+              style: const TextStyle(
+                fontSize: 11, // Slightly larger font
+                fontWeight: FontWeight.w900,
+                color: Colors.white70,
+                letterSpacing: 1.0,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}
+--- END OF FILE lib/widgets/lesson_node.dart ---
+
+--- START OF FILE lib/widgets/lesson_path.dart ---
+import 'package:flutter/material.dart';
+import '../models/app_models.dart';
+import '../theme/app_theme.dart';
+import '../screens/lesson_screen.dart';
+import 'lesson_node.dart';
+
+class LessonPath extends StatelessWidget {
+  final Section section;
+
+  const LessonPath({
+    super.key,
+    required this.section,
+  });
+
+  Color _getPathColor() {
+    switch (section.color) {
+      case 'duo-green': return AppTheme.duoGreen;
+      case 'duo-blue': return AppTheme.duoBlue;
+      case 'duo-violet': return AppTheme.duoViolet;
+      case 'duo-orange': return AppTheme.duoOrange;
+      default: return AppTheme.duoBlue;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    List<Widget> stackChildren = [];
+    List<Offset> pathPoints = [];
+
+    double currentY = 30; // Added more top spacing
+    int globalLessonIdx = 0;
+
+    for (var unit in section.units) {
+      // Add Glassy Unit Header with more padding
+      stackChildren.add(
+        Positioned(
+          top: currentY,
+          left: 20,
+          right: 20,
+          child: AppTheme.applyGlassBlur(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: Column(
+                children: [
+                  Text(
+                    unit.title.toUpperCase(),
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white, letterSpacing: 1.5),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    unit.description,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white54),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      currentY += 130; // Increased space after header
+
+      for (var lesson in unit.lessons) {
+        final int phase = globalLessonIdx % 4;
+        double offsetX = 0;
+        if (phase == 1) offsetX = 65; // Wider zig-zag
+        if (phase == 3) offsetX = -65; // Wider zig-zag
+
+        double centerX = MediaQuery.of(context).size.width / 2;
+        double absoluteX = centerX + offsetX;
+
+        pathPoints.add(Offset(absoluteX, currentY + 40)); // 40 is half of the new 80px node
+
+        stackChildren.add(
+          Positioned(
+            top: currentY,
+            left: 0,
+            right: 0,
+            child: Transform.translate(
+              offset: Offset(offsetX, 0),
+              child: LessonNodeWidget(
+                lesson: lesson,
+                isCompleted: globalLessonIdx < 1,
+                isLocked: globalLessonIdx > 1,
+                sectionColorStr: section.color,
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(
+                    builder: (_) => LessonScreen(lesson: lesson)
+                  ));
+                },
+              ),
+            ),
+          ),
+        );
+
+        currentY += 140; // Increased vertical spacing between nodes
+        globalLessonIdx++;
+      }
+      
+      currentY += 20; // Extra padding at the end of a unit
+    }
+
+    stackChildren.insert(0, 
+      Positioned.fill(
+        child: CustomPaint(
+          painter: CurvedPathPainter(
+            points: pathPoints,
+            pathColor: Colors.grey.shade800,
+            activeColor: _getPathColor(),
+            activeIndex: 1, 
+          ),
+        ),
+      )
+    );
+
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: SizedBox(
+        height: currentY + 120, // Extra padding for bottom nav
+        width: double.infinity,
+        child: Stack(
+          alignment: Alignment.topCenter,
+          children: stackChildren,
+        ),
+      ),
+    );
+  }
+}
+
+class CurvedPathPainter extends CustomPainter {
+  final List<Offset> points;
+  final Color pathColor;
+  final Color activeColor;
+  final int activeIndex;
+
+  CurvedPathPainter({
+    required this.points,
+    required this.pathColor,
+    required this.activeColor,
+    required this.activeIndex,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (points.length < 2) return;
+
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 14 // Thicker path
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    for (int i = 0; i < points.length - 1; i++) {
+      final p1 = points[i];
+      final p2 = points[i + 1];
+
+      final path = Path();
+      path.moveTo(p1.dx, p1.dy);
+      
+      double cy = (p1.dy + p2.dy) / 2;
+      path.cubicTo(p1.dx, cy, p2.dx, cy, p2.dx, p2.dy);
+
+      paint.color = (i < activeIndex) ? activeColor : pathColor;
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+--- END OF FILE lib/widgets/lesson_path.dart ---
+
+--- START OF FILE lib/widgets/math_markdown.dart ---
+import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_markdown_latex/flutter_markdown_latex.dart';
+import 'package:markdown/markdown.dart' as md;
+
+class MathMarkdown extends StatelessWidget {
+  final String data;
+  final TextStyle? textStyle;
+  final TextAlign textAlign;
+  final List<md.InlineSyntax>? customSyntaxes;
+  final Map<String, MarkdownElementBuilder>? customBuilders;
+
+  const MathMarkdown({
+    super.key, 
+    required this.data, 
+    this.textStyle,
+    this.textAlign = TextAlign.left,
+    this.customSyntaxes,
+    this.customBuilders,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Robust replacement string logic mapping to fix commonly mangled markdown outputs 
+    // from LLMs to ensure LaTeX compatibility
+    String safeData = data
+      .replaceAll(r'\$', r'$')
+      .replaceAll(r'\[', r'$$')
+      .replaceAll(r'\]', r'$$')
+      .replaceAll(r'\(', r'$')
+      .replaceAll(r'\)', r'$')
+      .replaceAll(r'$.', r'$ .')
+      .replaceAll(r'$,', r'$ ,')
+      .replaceAll(r'_$', r'_ $')
+      .replaceAll(r'-$', r'- $');
+
+    return MarkdownBody(
+      data: safeData,
+      selectable: true,
+      styleSheet: MarkdownStyleSheet(
+        p: textStyle ?? const TextStyle(fontSize: 16, color: Colors.white, height: 1.5, fontWeight: FontWeight.w600),
+        textAlign: WrapAlignment.start,
+      ),
+      builders: {
+        'latex': LatexElementBuilder(
+          textStyle: textStyle?.copyWith(color: Colors.amber) ?? const TextStyle(color: Colors.amber, fontSize: 16, fontWeight: FontWeight.w800),
+        ),
+        if (customBuilders != null) ...customBuilders!,
+      },
+      extensionSet: md.ExtensionSet(
+        [LatexBlockSyntax(), ...md.ExtensionSet.gitHubFlavored.blockSyntaxes],
+        [
+          LatexInlineSyntax(), 
+          if (customSyntaxes != null) ...customSyntaxes!,
+          ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes
+        ],
+      ),
+    );
+  }
+}
+--- END OF FILE lib/widgets/math_markdown.dart ---
+
+--- START OF FILE lib/widgets/slide_views/interactive_webview.dart ---
+import 'package:flutter/material.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import '../../models/app_models.dart';
+import '../math_markdown.dart';
+
+class InteractiveWebview extends StatefulWidget {
+  final Slide slide;
+
+  const InteractiveWebview({super.key, required this.slide});
+
+  @override
+  State<InteractiveWebview> createState() => _InteractiveWebviewState();
+}
+
+class _InteractiveWebviewState extends State<InteractiveWebview> {
+  late final WebViewController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    final htmlWrapper = '''
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <style>
+          body { margin: 0; padding: 0; background-color: transparent; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
+          canvas { max-width: 100%; max-height: 100%; border-radius: 16px; display: block; }
+        </style>
+      </head>
+      <body>
+        ${widget.slide.interactiveCanvasHtml ?? '<p style="color:white; font-family:sans-serif;">No Canvas Data</p>'}
+      </body>
+      </html>
+    ''';
+
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(const Color(0x00000000))
+      ..loadHtmlString(htmlWrapper);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        if (widget.slide.content.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: MathMarkdown(data: widget.slide.content),
+          ),
+        Expanded(
+          child: Container(
+            margin: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.black45,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white12, width: 2),
+            ),
+            clipBehavior: Clip.hardEdge,
+            child: WebViewWidget(controller: _controller),
+          ),
+        ),
+      ],
+    );
+  }
+}
+--- END OF FILE lib/widgets/slide_views/interactive_webview.dart ---
+
+--- START OF FILE lib/widgets/slide_views/theory_view.dart ---
+import 'package:flutter/material.dart';
+import '../../models/app_models.dart';
+import '../../theme/app_theme.dart';
+import '../math_markdown.dart';
+
+class TheoryView extends StatelessWidget {
+  final Slide slide;
+
+  const TheoryView({super.key, required this.slide});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: AppTheme.glassDecoration,
+        child: MathMarkdown(data: slide.content),
+      ),
+    );
+  }
+}
+--- END OF FILE lib/widgets/slide_views/theory_view.dart ---
+
+--- START OF FILE lib/widgets/slide_views/quiz_view.dart ---
+import 'package:flutter/material.dart';
+import '../../models/app_models.dart';
+import '../../theme/app_theme.dart';
+import '../math_markdown.dart';
+
+class QuizView extends StatelessWidget {
+  final Slide slide;
+  final String? selectedOptionId;
+  final bool isAnswered;
+  final Function(String) onSelect;
+
+  const QuizView({
+    super.key, 
+    required this.slide, 
+    required this.selectedOptionId, 
+    required this.isAnswered, 
+    required this.onSelect
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: AppTheme.glassDecoration,
+            child: MathMarkdown(data: slide.content, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(height: 24),
+          if (slide.options != null)
+            ...slide.options!.map((opt) {
+              final isSelected = selectedOptionId == opt.id;
+              
+              Color borderColor = Colors.white12;
+              Color bgColor = Colors.white.withOpacity(0.05);
+
+              if (isAnswered) {
+                if (opt.isCorrect) {
+                  borderColor = AppTheme.duoGreen;
+                  bgColor = AppTheme.duoGreen.withOpacity(0.2);
+                } else if (isSelected && !opt.isCorrect) {
+                  borderColor = AppTheme.duoRed;
+                  bgColor = AppTheme.duoRed.withOpacity(0.2);
+                } else {
+                  bgColor = Colors.transparent;
+                }
+              } else if (isSelected) {
+                borderColor = AppTheme.duoBlue;
+                bgColor = AppTheme.duoBlue.withOpacity(0.2);
+              }
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: InkWell(
+                  onTap: isAnswered ? null : () => onSelect(opt.id),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      border: Border.all(color: borderColor, width: 2),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: MathMarkdown(data: opt.text, textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                  ),
+                ),
+              );
+            }).toList(),
+        ],
+      ),
+    );
+  }
+}
+--- END OF FILE lib/widgets/slide_views/quiz_view.dart ---
+
+--- START OF FILE lib/widgets/slide_views/fill_in_blank_view.dart ---
+import 'package:flutter/material.dart';
+import 'package:markdown/markdown.dart' as md;
+import 'package:flutter_markdown/flutter_markdown.dart';
+import '../../models/app_models.dart';
+import '../../theme/app_theme.dart';
+import '../math_markdown.dart';
+
+class BlankSyntax extends md.InlineSyntax {
+  BlankSyntax() : super(r'___+'); // Matches 3 or more underscores
+  @override
+  bool onMatch(md.InlineParser parser, Match match) {
+    parser.addNode(md.Element.empty('blank'));
+    return true;
+  }
+}
+
+class BlankBuilder extends MarkdownElementBuilder {
+  final String value;
+  final bool isAnswered;
+  final bool isCorrect;
+  final Function(String) onChanged;
+
+  BlankBuilder({required this.value, required this.isAnswered, required this.isCorrect, required this.onChanged});
+
+  @override
+  Widget? visitElementAfter(md.Element element, TextStyle? preferredStyle) {
+    return Container(
+      width: 100,
+      height: 35,
+      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      child: TextField(
+        enabled: !isAnswered,
+        onChanged: onChanged,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.amber,
+        ),
+        decoration: InputDecoration(
+          contentPadding: const EdgeInsets.only(bottom: 12),
+          filled: true,
+          fillColor: Colors.black45,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+        ),
+      ),
+    );
+  }
+}
+
+class FillInBlankView extends StatelessWidget {
+  final Slide slide;
+  final String value;
+  final bool isAnswered;
+  final bool isCorrect;
+  final Function(String) onChanged;
+
+  const FillInBlankView({
+    super.key, 
+    required this.slide, 
+    required this.value, 
+    required this.isAnswered, 
+    required this.isCorrect, 
+    required this.onChanged
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    bool hasInlineBlank = slide.content.contains('___');
+
+    if (hasInlineBlank) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: AppTheme.glassDecoration,
+          child: MathMarkdown(
+            data: slide.content,
+            customSyntaxes: [BlankSyntax()],
+            customBuilders: {
+              'blank': BlankBuilder(
+                value: value,
+                isAnswered: isAnswered,
+                isCorrect: isCorrect,
+                onChanged: onChanged,
+              )
+            },
+          ),
+        ),
+      );
+    }
+
+    // Fallback: Standard block input logic if not written inline
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: AppTheme.glassDecoration,
+            child: MathMarkdown(data: slide.content, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(height: 32),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.white12, width: 2),
+            ),
+            child: Column(
+              children: [
+                const Text('YOUR ANSWER', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.5)),
+                const SizedBox(height: 12),
+                TextField(
+                  enabled: !isAnswered,
+                  onChanged: onChanged,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 22, 
+                    fontWeight: FontWeight.w900,
+                    color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.amber,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: '___',
+                    hintStyle: const TextStyle(color: Colors.white24),
+                    filled: true,
+                    fillColor: Colors.black45,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.amber, width: 2)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+--- END OF FILE lib/widgets/slide_views/fill_in_blank_view.dart ---
+
+--- START OF FILE lib/widgets/slide_views/numerical_view.dart ---
+import 'package:flutter/material.dart';
+import '../../models/app_models.dart';
+import '../../theme/app_theme.dart';
+import '../math_markdown.dart';
+
+class NumericalView extends StatelessWidget {
+  final Slide slide;
+  final String value;
+  final bool isAnswered;
+  final bool isCorrect;
+  final Function(String) onChanged;
+
+  const NumericalView({
+    super.key, 
+    required this.slide, 
+    required this.value, 
+    required this.isAnswered, 
+    required this.isCorrect, 
+    required this.onChanged
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: AppTheme.glassDecoration,
+            child: MathMarkdown(data: slide.content, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(height: 32),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.white12, width: 2),
+            ),
+            child: Column(
+              children: [
+                const Text('ENTER NUMBER', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.5)),
+                const SizedBox(height: 12),
+                TextField(
+                  enabled: !isAnswered,
+                  onChanged: onChanged,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 22, 
+                    fontWeight: FontWeight.w900,
+                    color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.amber,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: '0.0',
+                    hintStyle: const TextStyle(color: Colors.white24),
+                    filled: true,
+                    fillColor: Colors.black45,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.amber, width: 2)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+--- END OF FILE lib/widgets/slide_views/numerical_view.dart ---
+
+--- START OF FILE lib/widgets/slide_views/interactive_proof_view.dart ---
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../../models/app_models.dart';
+import '../../theme/app_theme.dart';
+import '../math_markdown.dart';
+import '../duo_button.dart';
+
+class InteractiveProofView extends StatefulWidget {
+  final Slide slide;
+  final VoidCallback onComplete;
+
+  const InteractiveProofView({
+    super.key,
+    required this.slide,
+    required this.onComplete,
+  });
+
+  @override
+  State<InteractiveProofView> createState() => _InteractiveProofViewState();
+}
+
+class _InteractiveProofViewState extends State<InteractiveProofView> {
+  int _currentStepIndex = 0;
+  List<String> _revealedSteps = [];
+  
+  String? _selectedOptionId;
+  bool _isSubmitted = false;
+  bool _isCorrect = false;
+
+  late List<InteractiveStep> _steps;
+
+  @override
+  void initState() {
+    super.initState();
+    _steps = widget.slide.interactiveSteps ?? [];
+  }
+
+  void _handleNextStatic() {
+    final currentStep = _steps[_currentStepIndex];
+    if (currentStep.stepText != null) {
+      setState(() {
+        _revealedSteps.add(currentStep.stepText!);
+        _currentStepIndex++;
+      });
+    }
+  }
+
+  void _checkAnswer() {
+    if (_selectedOptionId == null) return;
+    
+    final currentStep = _steps[_currentStepIndex];
+    final correctOpt = currentStep.options?.firstWhere((o) => o.isCorrect);
+    final correct = correctOpt?.id == _selectedOptionId;
+
+    setState(() {
+      _isSubmitted = true;
+      _isCorrect = correct;
+    });
+  }
+
+  void _handleNextInteractive() {
+    final currentStep = _steps[_currentStepIndex];
+    final correctOpt = currentStep.options?.firstWhere((o) => o.isCorrect);
+    
+    final textToReveal = currentStep.stepText ?? correctOpt?.text ?? '';
+    
+    setState(() {
+      _revealedSteps.add(textToReveal);
+      _currentStepIndex++;
+      _isSubmitted = false;
+      _isCorrect = false;
+      _selectedOptionId = null;
+    });
+  }
+
+  void _resetInteraction() {
+    setState(() {
+      _isSubmitted = false;
+      _isCorrect = false;
+      _selectedOptionId = null;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    bool isFinished = _currentStepIndex >= _steps.length;
+    InteractiveStep? currentStep = isFinished ? null : _steps[_currentStepIndex];
+    bool hasOptions = currentStep?.options != null && currentStep!.options!.isNotEmpty;
+
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (widget.slide.title.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: Text(
+                      widget.slide.title,
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+
+                if (widget.slide.content.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    margin: const EdgeInsets.only(bottom: 24),
+                    decoration: AppTheme.glassDecoration,
+                    child: MathMarkdown(data: widget.slide.content, textStyle: const TextStyle(fontSize: 16, color: Colors.white)),
+                  ),
+
+                ..._revealedSteps.map((stepText) => Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.duoGreen.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppTheme.duoGreen.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(top: 2, right: 12),
+                          child: Icon(LucideIcons.checkCircle2, color: AppTheme.duoGreen, size: 20),
+                        ),
+                        Expanded(child: MathMarkdown(data: stepText, textStyle: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold))),
+                      ],
+                    ),
+                  ),
+                )).toList(),
+
+                if (!isFinished && currentStep != null)
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppTheme.duoBlue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppTheme.duoBlue.withOpacity(0.3), width: 2),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(LucideIcons.brainCircuit, color: AppTheme.duoBlue, size: 24),
+                            const SizedBox(width: 8),
+                            Text('NEXT STEP', style: TextStyle(color: AppTheme.duoBlue.withOpacity(0.8), fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.2)),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        if (currentStep.prompt != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16.0),
+                            child: MathMarkdown(data: currentStep.prompt!, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                          )
+                        else if (!hasOptions && currentStep.stepText != null)
+                          MathMarkdown(data: currentStep.stepText!, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+
+                        if (hasOptions)
+                          ...currentStep.options!.map((opt) {
+                            final isSelected = _selectedOptionId == opt.id;
+                            Color borderColor = Colors.white12;
+                            Color bgColor = Colors.white.withOpacity(0.05);
+
+                            if (_isSubmitted) {
+                              if (opt.isCorrect) {
+                                borderColor = AppTheme.duoGreen;
+                                bgColor = AppTheme.duoGreen.withOpacity(0.2);
+                              } else if (isSelected && !opt.isCorrect) {
+                                borderColor = AppTheme.duoRed;
+                                bgColor = AppTheme.duoRed.withOpacity(0.2);
+                              } else {
+                                bgColor = Colors.transparent;
+                              }
+                            } else if (isSelected) {
+                              borderColor = AppTheme.duoBlue;
+                              bgColor = AppTheme.duoBlue.withOpacity(0.2);
+                            }
+
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: InkWell(
+                                onTap: _isSubmitted ? null : () => setState(() => _selectedOptionId = opt.id),
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: bgColor,
+                                    border: Border.all(color: borderColor, width: 2),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: MathMarkdown(data: opt.text, textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                      ],
+                    ),
+                  )
+              ],
+            ),
+          ),
+        ),
+
+        // Bottom Action Bar
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          decoration: BoxDecoration(
+            color: _isSubmitted 
+              ? (_isCorrect ? AppTheme.duoGreen.withOpacity(0.15) : AppTheme.duoRed.withOpacity(0.15))
+              : Colors.transparent,
+            border: Border(top: BorderSide(
+              color: _isSubmitted ? (_isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.white10, 
+              width: 2)
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (_isSubmitted)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(color: _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed, shape: BoxShape.circle),
+                        child: Icon(_isCorrect ? LucideIcons.check : LucideIcons.x, color: Colors.white, size: 24),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          _isCorrect ? 'Excellent!' : 'Incorrect.',
+                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+              if (isFinished)
+                 DuoButton(
+                    text: 'Complete Sequence',
+                    color: AppTheme.duoGreen,
+                    shadowColor: AppTheme.duoGreenDark,
+                    onPressed: widget.onComplete,
+                 )
+              else if (hasOptions)
+                 !_isSubmitted
+                    ? DuoButton(
+                        text: 'Check Step',
+                        color: _selectedOptionId != null ? AppTheme.duoBlue : Colors.grey.shade700,
+                        shadowColor: _selectedOptionId != null ? AppTheme.duoBlueDark : Colors.grey.shade800,
+                        onPressed: () {
+                          if (_selectedOptionId != null) _checkAnswer();
+                        },
+                      )
+                    : DuoButton(
+                        text: _isCorrect ? 'Continue' : 'Try Again',
+                        color: _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed,
+                        shadowColor: _isCorrect ? AppTheme.duoGreenDark : AppTheme.duoRedDark,
+                        onPressed: _isCorrect ? _handleNextInteractive : _resetInteraction,
+                      )
+              else
+                 DuoButton(
+                    text: 'Next Step',
+                    color: AppTheme.duoBlue,
+                    shadowColor: AppTheme.duoBlueDark,
+                    onPressed: _handleNextStatic,
+                 )
+            ],
+          ),
+        )
+      ],
+    );
+  }
+}
+--- END OF FILE lib/widgets/slide_views/interactive_proof_view.dart ---
+
+--- START OF FILE lib/widgets/slide_views/step_by_step_view.dart ---
+import 'package:flutter/material.dart';
+import '../../models/app_models.dart';
+import '../../theme/app_theme.dart';
+import '../math_markdown.dart';
+import '../duo_button.dart';
+import 'interactive_proof_view.dart';
+
+class StepByStepView extends StatefulWidget {
+  final Slide slide;
+  final VoidCallback onComplete;
+
+  const StepByStepView({
+    super.key,
+    required this.slide,
+    required this.onComplete,
+  });
+
+  @override
+  State<StepByStepView> createState() => _StepByStepViewState();
+}
+
+class _StepByStepViewState extends State<StepByStepView> {
+  bool _started = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_started) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: AppTheme.glassDecoration,
+              child: MathMarkdown(data: widget.slide.content, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(height: 32),
+            DuoButton(
+              text: 'I have tried, show steps',
+              color: AppTheme.duoOrange,
+              shadowColor: AppTheme.duoOrangeDark,
+              onPressed: () => setState(() => _started = true),
+            )
+          ],
+        ),
+      );
+    }
+    return InteractiveProofView(slide: widget.slide, onComplete: widget.onComplete);
+  }
+}
+--- END OF FILE lib/widgets/slide_views/step_by_step_view.dart ---
+
+--- START OF FILE lib/widgets/selectors/module_selector.dart ---
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../../models/app_models.dart';
+import '../../theme/app_theme.dart';
+
+class ModuleSelector extends StatelessWidget {
+  final List<Module> modules;
+  final int activeModuleIdx;
+  final Function(int) onSelect;
+
+  const ModuleSelector({
+    super.key,
+    required this.modules,
+    required this.activeModuleIdx,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.surface.withOpacity(0.95),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        border: Border.all(color: Colors.white10),
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 6,
+            decoration: BoxDecoration(
+              color: Colors.white24,
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text('Select Module', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 24),
+          ...List.generate(modules.length, (index) {
+            final mod = modules[index];
+            final isActive = index == activeModuleIdx;
+            
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: GestureDetector(
+                onTap: () => onSelect(index),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isActive ? AppTheme.duoBlue.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isActive ? AppTheme.duoBlue : Colors.transparent, 
+                      width: 2
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isActive ? AppTheme.duoBlue : Colors.grey.shade800,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(LucideIcons.book, color: Colors.white),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              mod.title, 
+                              style: TextStyle(
+                                fontSize: 16, 
+                                fontWeight: FontWeight.bold,
+                                color: isActive ? AppTheme.duoBlue : Colors.white
+                              )
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              mod.description, 
+                              style: const TextStyle(fontSize: 12, color: Colors.white54),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (isActive)
+                        const Icon(LucideIcons.check, color: AppTheme.duoBlue)
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 20), // Bottom safe area padding
+        ],
+      ),
+    );
+  }
+}
+--- END OF FILE lib/widgets/selectors/module_selector.dart ---
+
+--- START OF FILE lib/widgets/selectors/section_selector.dart ---
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../../models/app_models.dart';
+import '../../theme/app_theme.dart';
+
+class SectionSelector extends StatelessWidget {
+  final List<Section> sections;
+  final int activeSectionIdx;
+  final Function(int) onSelect;
+
+  const SectionSelector({
+    super.key,
+    required this.sections,
+    required this.activeSectionIdx,
+    required this.onSelect,
+  });
+
+  Color _getColor(String colorStr) {
+    switch (colorStr) {
+      case 'duo-green': return AppTheme.duoGreen;
+      case 'duo-blue': return AppTheme.duoBlue;
+      case 'duo-violet': return AppTheme.duoViolet;
+      case 'duo-orange': return AppTheme.duoOrange;
+      default: return AppTheme.duoBlue;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.surface.withOpacity(0.95),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        border: Border.all(color: Colors.white10),
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 6,
+            decoration: BoxDecoration(
+              color: Colors.white24,
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text('Sections', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 24),
+          ...List.generate(sections.length, (index) {
+            final section = sections[index];
+            final isActive = index == activeSectionIdx;
+            final color = _getColor(section.color);
+            
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: GestureDetector(
+                onTap: () => onSelect(index),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: isActive ? color.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isActive ? color : Colors.transparent, 
+                      width: 2
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              section.title, 
+                              style: TextStyle(
+                                fontSize: 18, 
+                                fontWeight: FontWeight.bold,
+                                color: isActive ? Colors.white : Colors.white70
+                              )
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              section.description, 
+                              style: TextStyle(
+                                fontSize: 13, 
+                                color: isActive ? Colors.white.withOpacity(0.8) : Colors.white54
+                              )
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isActive ? Colors.white24 : Colors.white10,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          LucideIcons.chevronRight, 
+                          color: isActive ? Colors.white : Colors.white54
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 20), // Bottom safe area padding
+        ],
+      ),
+    );
+  }
+}
+--- END OF FILE lib/widgets/selectors/section_selector.dart ---
+
+--- START OF FILE lib/screens/home_screen.dart ---
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../models/app_models.dart';
+import '../services/database_service.dart';
+import '../services/progress_service.dart';
+import '../theme/app_theme.dart';
+import 'main_layout_screen.dart';
+import 'settings_screen.dart';
+import 'generate_book_screen.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final DatabaseService _db = DatabaseService();
+  List<Book> books = [];
+  Map<String, double> progressMap = {};
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBooks();
+  }
+
+  Future<void> _loadBooks({bool force = false}) async {
+    final fetched = await _db.fetchBooks(forceRefresh: force);
+    
+    // Calculate progress metric locally
+    Map<String, double> prog = {};
+    for (var b in fetched) {
+      prog[b.id] = await ProgressService.getBookProgress(b);
+    }
+
+    setState(() {
+      books = fetched;
+      progressMap = prog;
+      isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('DuoFY Books', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+        actions: [
+          IconButton(
+            icon: const Icon(LucideIcons.settings),
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+            },
+          )
+        ],
+      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue))
+          : Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: RefreshIndicator(
+                color: AppTheme.duoBlue,
+                onRefresh: () => _loadBooks(force: true),
+                child: GridView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 0.75,
+                  ),
+                  itemCount: books.length,
+                  itemBuilder: (context, index) {
+                    final book = books[index];
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
+                          .then((_) => _loadBooks()); // Refresh progress on return
+                      },
+                      child: Container(
+                        decoration: AppTheme.glassDecoration.copyWith(
+                          border: Border.all(color: AppTheme.duoBlue.withOpacity(0.3), width: 2),
+                        ),
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(LucideIcons.book, size: 48, color: AppTheme.duoBlue),
+                            const SizedBox(height: 16),
+                            Text(
+                              book.title,
+                              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Expanded(
+                              child: Text(
+                                book.description,
+                                style: const TextStyle(color: Colors.white54, fontSize: 12),
+                                textAlign: TextAlign.center,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            LinearProgressIndicator(
+                              value: progressMap[book.id] ?? 0.0,
+                              backgroundColor: Colors.white12,
+                              color: AppTheme.duoGreen,
+                              borderRadius: BorderRadius.circular(4),
+                              minHeight: 6,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: AppTheme.duoGreen,
+        onPressed: () async {
+          await Navigator.push(context, MaterialPageRoute(builder: (_) => const GenerateBookScreen()));
+          _loadBooks(force: true); 
+        },
+        icon: const Icon(LucideIcons.sparkles, color: Colors.white),
+        label: const Text('New Book', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+      ),
+    );
+  }
+}
+--- END OF FILE lib/screens/home_screen.dart ---
+
+--- START OF FILE lib/screens/book_dashboard_screen.dart ---
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../models/app_models.dart';
+import '../theme/app_theme.dart';
+import '../widgets/lesson_path.dart';
+
+class BookDashboardScreen extends StatefulWidget {
+  final Book book;
+
+  const BookDashboardScreen({super.key, required this.book});
+
+  @override
+  State<BookDashboardScreen> createState() => _BookDashboardScreenState();
+}
+
+class _BookDashboardScreenState extends State<BookDashboardScreen> {
+  int currentModuleIdx = 0;
+  int currentSectionIdx = 0;
+
+  void _showSelector() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return AppTheme.applyGlassBlur(
+          borderRadius: 24,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            height: MediaQuery.of(context).size.height * 0.5,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('SELECT SECTION', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white54, letterSpacing: 1.5)),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: widget.book.modules[currentModuleIdx].sections.length,
+                    itemBuilder: (ctx, i) {
+                      final s = widget.book.modules[currentModuleIdx].sections[i];
+                      final isSelected = i == currentSectionIdx;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppTheme.duoBlue.withOpacity(0.2) : AppTheme.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: isSelected ? AppTheme.duoBlue : Colors.white12, width: 2),
+                        ),
+                        child: ListTile(
+                          onTap: () {
+                            setState(() => currentSectionIdx = i);
+                            Navigator.pop(ctx);
+                          },
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          title: Text(
+                            s.title, 
+                            style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? AppTheme.duoBlue : Colors.white)
+                          ),
+                          subtitle: Text(
+                            s.description, 
+                            style: const TextStyle(fontSize: 12, color: Colors.white54)
+                          ),
+                          trailing: isSelected 
+                            ? const Icon(LucideIcons.checkCircle2, color: AppTheme.duoBlue) 
+                            : const Icon(LucideIcons.chevronRight, color: Colors.white24),
+                        ),
+                      );
+                    },
+                  ),
+                )
+              ],
+            ),
+          ),
+        );
+      }
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.book.modules.isEmpty) {
+      return const Center(child: Text("This book is empty."));
+    }
+
+    final section = widget.book.modules[currentModuleIdx].sections[currentSectionIdx];
+
+    return Scaffold(
+      body: Column(
+        children: [
+          // Glassy Header Selector (Always show to allow user to see what they are on)
+          GestureDetector(
+            onTap: _showSelector,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              decoration: AppTheme.glassDecoration.copyWith(
+                border: const Border(bottom: BorderSide(color: AppTheme.duoBlue, width: 4)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(LucideIcons.book, color: AppTheme.duoBlue, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      section.title.toUpperCase(),
+                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.2),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const Icon(LucideIcons.chevronDown, color: Colors.white54, size: 20),
+                ],
+              ),
+            ),
+          ),
+          
+          Expanded(child: LessonPath(section: section)),
+        ],
+      ),
+    );
+  }
+}
+--- END OF FILE lib/screens/book_dashboard_screen.dart ---
+
+--- START OF FILE lib/screens/lesson_screen.dart ---
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../models/app_models.dart';
+import '../theme/app_theme.dart';
+import '../services/global_state.dart';
+import '../widgets/duo_button.dart';
+import '../widgets/math_markdown.dart';
+import '../widgets/slide_views/theory_view.dart';
+import '../widgets/slide_views/quiz_view.dart';
+import '../widgets/slide_views/fill_in_blank_view.dart';
+import '../widgets/slide_views/numerical_view.dart';
+import '../widgets/slide_views/interactive_webview.dart';
+import '../widgets/slide_views/interactive_proof_view.dart';
+import '../widgets/slide_views/step_by_step_view.dart';
+import 'lesson_complete_screen.dart';
+
+class LessonScreen extends StatefulWidget {
+  final Lesson lesson;
+
+  const LessonScreen({super.key, required this.lesson});
+
+  @override
+  State<LessonScreen> createState() => _LessonScreenState();
+}
+
+class _LessonScreenState extends State<LessonScreen> {
+  int _currentIndex = 0;
+  bool _answered = false;
+  bool _isCorrect = false;
+
+  late DateTime _startTime;
+  int _totalInteractive = 0;
+  int _correctAttempts = 0;
+
+  String? _selectedQuizOption;
+  String _blankInput = '';
+  String _numericInput = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _startTime = DateTime.now();
+    for (var slide in widget.lesson.slides) {
+      if (['quiz', 'fill_in_blank', 'numerical', 'proof', 'step_by_step'].contains(slide.type)) {
+        _totalInteractive++;
+      }
+    }
+  }
+
+  void _nextSlide() {
+    if (_currentIndex < widget.lesson.slides.length - 1) {
+      setState(() {
+        _currentIndex++;
+        _answered = false;
+        _isCorrect = false;
+        _selectedQuizOption = null;
+        _blankInput = '';
+        _numericInput = '';
+      });
+    } else {
+      _finishLesson();
+    }
+  }
+
+  Future<void> _finishLesson() async {
+    int timeSpent = DateTime.now().difference(_startTime).inSeconds;
+    int accuracy = _totalInteractive > 0 ? ((_correctAttempts / _totalInteractive) * 100).round() : 100;
+    int xpEarned = 15;
+
+    // Save XP Globally
+    await GlobalState.addXp(xpEarned);
+    
+    if (mounted) {
+      Navigator.pushReplacement(
+        context, 
+        MaterialPageRoute(builder: (_) => LessonCompleteScreen(
+          xpEarned: xpEarned,
+          accuracy: accuracy,
+          timeSpentSeconds: timeSpent,
+        ))
+      );
+    }
+  }
+
+  void _checkAnswer(Slide slide) {
+    bool correct = false;
+
+    if (slide.type == 'quiz' && _selectedQuizOption != null) {
+      final opt = slide.options!.firstWhere((o) => o.id == _selectedQuizOption);
+      correct = opt.isCorrect;
+    } else if (slide.type == 'fill_in_blank') {
+      correct = _blankInput.trim().toLowerCase() == slide.blankAnswer?.toLowerCase().replaceAll(r'\', '');
+    } else if (slide.type == 'numerical') {
+      final val = double.tryParse(_numericInput);
+      if (val != null && slide.numericAnswer != null) {
+        correct = (val - slide.numericAnswer!).abs() <= (slide.numericTolerance ?? 0.01);
+      }
+    }
+
+    setState(() {
+      _answered = true;
+      _isCorrect = correct;
+      if (correct) _correctAttempts++;
+    });
+  }
+
+  bool _canCheck(Slide slide) {
+    if (slide.type == 'quiz') return _selectedQuizOption != null;
+    if (slide.type == 'fill_in_blank') return _blankInput.trim().isNotEmpty;
+    if (slide.type == 'numerical') return _numericInput.trim().isNotEmpty;
+    return true; 
+  }
+
+  bool _isCustomBottomBar(Slide slide) {
+    return slide.type == 'proof' || slide.type == 'step_by_step';
+  }
+
+  String _getCorrectAnswerText(Slide slide) {
+    if (slide.type == 'quiz') {
+      final opt = slide.options?.firstWhere((o) => o.isCorrect, orElse: () => slide.options!.first);
+      return opt?.text ?? '';
+    }
+    if (slide.type == 'fill_in_blank') return slide.blankAnswer ?? '';
+    if (slide.type == 'numerical') return slide.numericAnswer?.toString() ?? '';
+    return '';
+  }
+
+  Widget _buildSlideContent(Slide slide) {
+    switch (slide.type) {
+      case 'interactive_canvas':
+        return InteractiveWebview(slide: slide);
+      case 'proof':
+        return InteractiveProofView(
+          slide: slide,
+          onComplete: () {
+            setState(() {
+              _isCorrect = true;
+              _answered = true;
+              _correctAttempts++;
+            });
+            _nextSlide();
+          },
+        );
+      case 'step_by_step':
+        return StepByStepView(
+          slide: slide,
+          onComplete: () {
+            setState(() {
+              _isCorrect = true;
+              _answered = true;
+              _correctAttempts++;
+            });
+            _nextSlide();
+          },
+        );
+      case 'quiz':
+        return QuizView(
+          slide: slide,
+          selectedOptionId: _selectedQuizOption,
+          isAnswered: _answered,
+          onSelect: (id) => setState(() => _selectedQuizOption = id),
+        );
+      case 'fill_in_blank':
+        return FillInBlankView(
+          slide: slide,
+          value: _blankInput,
+          isAnswered: _answered,
+          isCorrect: _isCorrect,
+          onChanged: (val) => setState(() => _blankInput = val),
+        );
+      case 'numerical':
+        return NumericalView(
+          slide: slide,
+          value: _numericInput,
+          isAnswered: _answered,
+          isCorrect: _isCorrect,
+          onChanged: (val) => setState(() => _numericInput = val),
+        );
+      case 'theory':
+      default:
+        return TheoryView(slide: slide);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.lesson.slides.isEmpty) {
+      return Scaffold(appBar: AppBar(), body: const Center(child: Text("Empty Lesson")));
+    }
+
+    final slide = widget.lesson.slides[_currentIndex];
+    final progress = (_currentIndex) / widget.lesson.slides.length;
+    final isInteractive = ['quiz', 'fill_in_blank', 'numerical'].contains(slide.type);
+    final hasCustomBar = _isCustomBottomBar(slide);
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(LucideIcons.x),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: LinearProgressIndicator(
+          value: progress,
+          backgroundColor: Colors.white12,
+          color: AppTheme.duoGreen,
+          minHeight: 12,
+          borderRadius: BorderRadius.circular(6),
+        ),
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            if (slide.title.isNotEmpty && !hasCustomBar)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                child: Text(
+                  slide.title, 
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            
+            Expanded(child: _buildSlideContent(slide)),
+            
+            // Native Bottom Check / Continue Bar (Hide if child implements its own)
+            if (!hasCustomBar)
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                decoration: BoxDecoration(
+                  color: _answered 
+                    ? (_isCorrect ? AppTheme.duoGreen.withOpacity(0.15) : AppTheme.duoRed.withOpacity(0.15))
+                    : Colors.transparent,
+                  border: Border(top: BorderSide(
+                    color: _answered ? (_isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.white10, 
+                    width: 2)
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_answered && !_isCorrect)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.duoRed.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppTheme.duoRed.withOpacity(0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('CORRECT ANSWER:', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.2)),
+                              const SizedBox(height: 4),
+                              MathMarkdown(
+                                data: _getCorrectAnswerText(slide), 
+                                textStyle: const TextStyle(color: AppTheme.duoRed, fontSize: 16, fontWeight: FontWeight.bold)
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      
+                    isInteractive && !_answered
+                        ? DuoButton(
+                            text: 'Check',
+                            color: _canCheck(slide) ? AppTheme.duoGreen : Colors.grey.shade700,
+                            shadowColor: _canCheck(slide) ? AppTheme.duoGreenDark : Colors.grey.shade800,
+                            onPressed: () {
+                              if (_canCheck(slide)) _checkAnswer(slide);
+                            },
+                          )
+                        : DuoButton(
+                            text: _answered && !_isCorrect ? 'Got It' : 'Continue',
+                            color: _answered && !_isCorrect ? AppTheme.duoRed : AppTheme.duoBlue,
+                            shadowColor: _answered && !_isCorrect ? AppTheme.duoRedDark : AppTheme.duoBlueDark,
+                            onPressed: () {
+                              if (_answered && !_isCorrect) {
+                                setState(() => _answered = false); // reset to try again
+                              } else {
+                                _nextSlide();
+                              }
+                            },
+                          ),
+                  ],
+                ),
+              )
+          ],
+        ),
+      ),
+    );
+  }
+}
+--- END OF FILE lib/screens/lesson_screen.dart ---
+
+--- START OF FILE lib/screens/settings_screen.dart ---
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../theme/app_theme.dart';
+import '../widgets/duo_button.dart';
+
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  final _keysController = TextEditingController();
+  String _selectedModel = 'gemini-1.5-flash';
+  
+  final List<String> _models = [
+    'gemini-1.5-flash',
+    'gemini-1.5-pro',
+    'gemini-2.0-flash-exp'
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _keysController.text = prefs.getString('gemini_api_keys') ?? '';
+      _selectedModel = prefs.getString('gemini_model') ?? 'gemini-1.5-flash';
+    });
+  }
+
+  Future<void> _saveSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('gemini_api_keys', _keysController.text.trim());
+    await prefs.setString('gemini_model', _selectedModel);
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Settings Saved Successfully')));
+      Navigator.pop(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Settings')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Google Generative AI Config', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            
+            TextField(
+              controller: _keysController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Gemini API Keys (Comma Separated)',
+                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.black26,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text('Enter multiple API keys separated by commas. The system will fallback if one is rate limited.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 24),
+
+            const Text('Active AI Model', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              value: _selectedModel,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.black26,
+              ),
+              items: _models.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
+              onChanged: (val) {
+                if (val != null) setState(() => _selectedModel = val);
+              },
+            ),
+            
+            const SizedBox(height: 48),
+            DuoButton(
+              text: 'Save Settings',
+              onPressed: _saveSettings,
+              color: AppTheme.duoGreen,
+              shadowColor: AppTheme.duoGreenDark,
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+--- END OF FILE lib/screens/settings_screen.dart ---
+
+--- START OF FILE lib/screens/generate_book_screen.dart ---
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import '../services/ai_service.dart';
+import '../services/database_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/duo_button.dart';
+
+class GenerateBookScreen extends StatefulWidget {
+  const GenerateBookScreen({super.key});
+
+  @override
+  State<GenerateBookScreen> createState() => _GenerateBookScreenState();
+}
+
+class _GenerateBookScreenState extends State<GenerateBookScreen> {
+  final AiService _aiService = AiService();
+  final DatabaseService _dbService = DatabaseService();
+  final _titleController = TextEditingController();
+  
+  File? _selectedFile;
+  bool _isGenerating = false;
+  String _statusMessage = '';
+
+  Future<void> _pickFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+
+    if (result != null) {
+      setState(() {
+        _selectedFile = File(result.files.single.path!);
+      });
+    }
+  }
+
+  Future<void> _generate() async {
+    if (_selectedFile == null || _titleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a PDF and enter a title.')));
+      return;
+    }
+
+    setState(() {
+      _isGenerating = true;
+      _statusMessage = 'Analyzing PDF with Gemini... This may take a minute.';
+    });
+
+    try {
+      final book = await _aiService.generateBookFromPdf(_selectedFile!, _titleController.text.trim());
+      if (book != null) {
+        setState(() => _statusMessage = 'Saving to Database...');
+        await _dbService.saveGeneratedBook(book);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Book Generated Successfully!')));
+          Navigator.pop(context);
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _statusMessage = 'Error: ${e.toString()}';
+      });
+    } finally {
+      if (mounted) setState(() => _isGenerating = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Generate Lesson')),
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(
+                labelText: 'Book Title',
+                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.black26,
+              ),
+            ),
+            const SizedBox(height: 24),
+            DuoButton(
+              text: _selectedFile != null ? 'PDF Selected' : 'Upload PDF',
+              onPressed: _pickFile,
+              color: AppTheme.duoBlue,
+              shadowColor: AppTheme.duoBlueDark,
+              isOutline: _selectedFile != null,
+            ),
+            if (_selectedFile != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text('File: ${_selectedFile!.path.split('/').last}', style: const TextStyle(color: Colors.white54), textAlign: TextAlign.center),
+              ),
+            const Spacer(),
+            if (_isGenerating)
+              Column(
+                children: [
+                  const CircularProgressIndicator(color: AppTheme.duoGreen),
+                  const SizedBox(height: 16),
+                  Text(_statusMessage, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 32),
+                ],
+              )
+            else
+              DuoButton(
+                text: 'Generate Book',
+                onPressed: _generate,
+                color: AppTheme.duoGreen,
+                shadowColor: AppTheme.duoGreenDark,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+--- END OF FILE lib/screens/generate_book_screen.dart ---
+
+--- START OF FILE lib/screens/lesson_complete_screen.dart ---
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../theme/app_theme.dart';
+import '../widgets/duo_button.dart';
+
+class LessonCompleteScreen extends StatelessWidget {
+  final int xpEarned;
+  final int accuracy;
+  final int timeSpentSeconds;
+  final bool isPractice; 
+
+  const LessonCompleteScreen({
+    super.key,
+    required this.xpEarned,
+    required this.accuracy,
+    required this.timeSpentSeconds,
+    this.isPractice = false,
+  });
+
+  String get _formattedTime {
+    int m = timeSpentSeconds ~/ 60;
+    int s = timeSpentSeconds % 60;
+    if (m > 0) return '${m}m ${s}s';
+    return '${s}s';
+  }
+
+  String get _message {
+    if (accuracy == 100) return "Perfect!";
+    if (accuracy >= 80) return "Great Job!";
+    if (accuracy >= 60) return "Good Effort!";
+    return "Complete!";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            children: [
+              const Spacer(),
+              const Icon(LucideIcons.trophy, size: 100, color: Colors.amber),
+              const SizedBox(height: 32),
+              Text(
+                _message,
+                style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.amber),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 48),
+              
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      decoration: AppTheme.glassDecoration.copyWith(
+                        border: const Border(bottom: BorderSide(color: Colors.amber, width: 4)),
+                      ),
+                      child: Column(
+                        children: [
+                          const Icon(LucideIcons.zap, color: Colors.amber, size: 28),
+                          const SizedBox(height: 8),
+                          const Text('XP EARNED', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 1.2)),
+                          const SizedBox(height: 4),
+                          Text('+$xpEarned', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      decoration: AppTheme.glassDecoration.copyWith(
+                        border: const Border(bottom: BorderSide(color: AppTheme.duoBlue, width: 4)),
+                      ),
+                      child: Column(
+                        children: [
+                          const Icon(LucideIcons.target, color: AppTheme.duoBlue, size: 28),
+                          const SizedBox(height: 8),
+                          const Text('ACCURACY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 1.2)),
+                          const SizedBox(height: 4),
+                          Text('$accuracy%', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                decoration: AppTheme.glassDecoration.copyWith(
+                  border: const Border(bottom: BorderSide(color: AppTheme.duoGreen, width: 4)),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(LucideIcons.clock, color: AppTheme.duoGreen, size: 28),
+                    const SizedBox(height: 8),
+                    const Text('TIME SPENT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 1.2)),
+                    const SizedBox(height: 4),
+                    Text(_formattedTime, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+                  ],
+                ),
+              ),
+              
+              const Spacer(),
+              DuoButton(
+                text: 'Continue',
+                color: AppTheme.duoGreen,
+                shadowColor: AppTheme.duoGreenDark,
+                onPressed: () {
+                  if (isPractice) {
+                    Navigator.pop(context); 
+                  } else {
+                    Navigator.pop(context); 
+                    Navigator.pop(context); 
+                  }
+                },
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+--- END OF FILE lib/screens/lesson_complete_screen.dart ---
+
+--- START OF FILE lib/screens/main_layout_screen.dart ---
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../models/app_models.dart';
+import '../theme/app_theme.dart';
+import '../services/global_state.dart';
+import 'book_dashboard_screen.dart';
+import 'practice_screen.dart';
+import 'notes_screen.dart';
+import 'exam_screen.dart';
+
+class MainLayoutScreen extends StatefulWidget {
+  final Book book;
+
+  const MainLayoutScreen({super.key, required this.book});
+
+  @override
+  State<MainLayoutScreen> createState() => _MainLayoutScreenState();
+}
+
+class _MainLayoutScreenState extends State<MainLayoutScreen> {
+  int _currentIndex = 0;
+  
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      BookDashboardScreen(book: widget.book),
+      PracticeScreen(book: widget.book),
+      NotesScreen(book: widget.book),
+      ExamScreen(book: widget.book),
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      extendBody: true, 
+      appBar: AppBar(
+        backgroundColor: AppTheme.background.withOpacity(0.9),
+        flexibleSpace: ClipRRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(color: Colors.transparent),
+          ),
+        ),
+        centerTitle: true,
+        title: Text(
+          widget.book.title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w900,
+            fontSize: 18,
+            letterSpacing: 1.0,
+            color: Colors.white,
+          ),
+        ),
+        actions: [
+          ValueListenableBuilder<int>(
+            valueListenable: GlobalState.xpNotifier,
+            builder: (context, xp, child) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(LucideIcons.zap, color: Colors.amber, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$xp XP', 
+                        style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.w900, fontSize: 14),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _pages,
+      ),
+      
+      // Glass Bottom Navigation Bar (Ultra Compact Icons only)
+      bottomNavigationBar: ClipRRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.6),
+              border: Border(top: BorderSide(color: Colors.white.withOpacity(0.15))),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildNavItem(0, LucideIcons.map),
+                  _buildNavItem(1, LucideIcons.dumbbell),
+                  _buildNavItem(2, LucideIcons.fileText),
+                  _buildNavItem(3, LucideIcons.bookOpenCheck),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData icon) {
+    final isActive = _currentIndex == index;
+    final color = isActive ? AppTheme.duoBlue : Colors.white54;
+    
+    return GestureDetector(
+      onTap: () => setState(() => _currentIndex = index),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        child: Icon(icon, color: color, size: 28),
+      ),
+    );
+  }
+}
+--- END OF FILE lib/screens/main_layout_screen.dart ---
+
+--- START OF FILE lib/screens/practice_screen.dart ---
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../models/app_models.dart';
+import '../theme/app_theme.dart';
+import 'practice_session_screen.dart';
+
+class PracticeScreen extends StatelessWidget {
+  final Book book;
+
+  const PracticeScreen({super.key, required this.book});
+
+  Widget _buildPracticeCard(BuildContext context, String title, String subtitle, String type, IconData icon, Color color) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => PracticeSessionScreen(book: book, practiceType: type)),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withOpacity(0.3), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.1),
+              offset: const Offset(0, 4),
+              blurRadius: 10,
+            )
+          ]
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 24, color: color),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(fontSize: 12, color: Colors.white54, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+            Icon(LucideIcons.chevronRight, color: color.withOpacity(0.5))
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Practice Arena', style: TextStyle(fontWeight: FontWeight.w900)),
+        automaticallyImplyLeading: false,
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.only(left: 8.0, bottom: 24.0, right: 8.0),
+                child: Text(
+                  'Target specific skills to master the concepts. Mistakes will be repeated until perfected!',
+                  style: TextStyle(color: Colors.white54, fontSize: 14, height: 1.4),
+                ),
+              ),
+              Expanded(
+                child: ListView(
+                  physics: const BouncingScrollPhysics(),
+                  children: [
+                    _buildPracticeCard(context, 'Multiple Choice', 'Test knowledge', 'quiz', LucideIcons.list, AppTheme.duoBlue),
+                    _buildPracticeCard(context, 'Proofs & Logic', 'Step-by-step', 'proof', LucideIcons.brainCircuit, AppTheme.duoViolet),
+                    _buildPracticeCard(context, 'Big Questions', 'Multi-stage', 'step_by_step', LucideIcons.layers, AppTheme.duoOrange),
+                    _buildPracticeCard(context, 'Fill in Blanks', 'Recall terms', 'fill_in_blank', LucideIcons.minus, AppTheme.duoRed),
+                    _buildPracticeCard(context, 'Numericals', 'Calculate values', 'numerical', LucideIcons.calculator, AppTheme.duoGreen),
+                    const SizedBox(height: 100), // padding for bottom nav
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+--- END OF FILE lib/screens/practice_screen.dart ---
+
+--- START OF FILE lib/screens/notes_screen.dart ---
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../models/app_models.dart';
+import '../theme/app_theme.dart';
+import '../widgets/math_markdown.dart';
+
+class NotesScreen extends StatelessWidget {
+  final Book book;
+
+  const NotesScreen({super.key, required this.book});
+
+  List<Slide> _getTheorySlides() {
+    List<Slide> notes = [];
+    for (var module in book.modules) {
+      for (var section in module.sections) {
+        for (var unit in section.units) {
+          for (var lesson in unit.lessons) {
+            for (var slide in lesson.slides) {
+              if (slide.type == 'theory') {
+                notes.add(slide);
+              }
+            }
+          }
+        }
+      }
+    }
+    return notes;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final notes = _getTheorySlides();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Module Notes', style: TextStyle(fontWeight: FontWeight.w900)),
+        automaticallyImplyLeading: false,
+      ),
+      body: notes.isEmpty 
+        ? const Center(child: Text('No notes available.', style: TextStyle(color: Colors.white54)))
+        : ListView.builder(
+            padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
+            itemCount: notes.length,
+            itemBuilder: (context, index) {
+              final slide = notes[index];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 24),
+                decoration: AppTheme.glassDecoration.copyWith(
+                  border: const Border(left: BorderSide(color: AppTheme.duoViolet, width: 4)),
+                ),
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(LucideIcons.bookOpen, color: AppTheme.duoViolet, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            slide.title.toUpperCase(),
+                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: AppTheme.duoViolet),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    MathMarkdown(data: slide.content, textStyle: const TextStyle(fontSize: 16, color: Colors.white, height: 1.6)),
+                  ],
+                ),
+              );
+            },
+          ),
+    );
+  }
+}
+--- END OF FILE lib/screens/notes_screen.dart ---
+
+--- START OF FILE lib/screens/exam_screen.dart ---
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../models/app_models.dart';
+import '../theme/app_theme.dart';
+import '../widgets/math_markdown.dart';
+
+class ExamScreen extends StatelessWidget {
+  final Book book;
+
+  const ExamScreen({super.key, required this.book});
+
+  @override
+  Widget build(BuildContext context) {
+    // Gather exam questions from all modules
+    List<Slide> examQuestions = [];
+    for (var module in book.modules) {
+      examQuestions.addAll(module.examQuestions);
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Exam Reference', style: TextStyle(fontWeight: FontWeight.w900)),
+        automaticallyImplyLeading: false,
+      ),
+      body: examQuestions.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(LucideIcons.bookOpenCheck, size: 80, color: AppTheme.duoGreen.withOpacity(0.5)),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'No Exam Questions Found',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white),
+                  ),
+                ],
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 120), // Padding for bottom nav
+              itemCount: examQuestions.length,
+              itemBuilder: (context, index) {
+                final q = examQuestions[index];
+
+                String answerText = '';
+                if (q.type == 'quiz') {
+                  final correctOpt = q.options?.firstWhere((o) => o.isCorrect, orElse: () => q.options!.first);
+                  answerText = r'**Answer:** ' + (correctOpt?.text ?? '') + r'\n\n*Explanation:* ' + (correctOpt?.explanation ?? '');
+                } else if (q.type == 'fill_in_blank') {
+                  answerText = r'**Answer:** $$' + (q.blankAnswer ?? '') + r'$$';
+                } else if (q.type == 'numerical') {
+                  answerText = r'**Answer:** ' + (q.numericAnswer?.toString() ?? '');
+                }
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: AppTheme.glassDecoration.copyWith(
+                    border: Border.all(color: AppTheme.duoOrange.withOpacity(0.3), width: 2),
+                  ),
+                  child: Theme(
+                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      iconColor: AppTheme.duoOrange,
+                      collapsedIconColor: Colors.white54,
+                      title: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            q.title.toUpperCase(),
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppTheme.duoOrange, letterSpacing: 1.2),
+                          ),
+                          const SizedBox(height: 8),
+                          MathMarkdown(data: q.content, textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+                        ],
+                      ),
+                      childrenPadding: const EdgeInsets.all(20),
+                      expandedAlignment: Alignment.centerLeft,
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppTheme.duoOrange.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppTheme.duoOrange.withOpacity(0.5)),
+                          ),
+                          child: MathMarkdown(
+                            data: answerText,
+                            textStyle: const TextStyle(fontSize: 16, color: Colors.white, height: 1.5),
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+    );
+  }
+}
+--- END OF FILE lib/screens/exam_screen.dart ---
+
+--- START OF FILE lib/screens/practice_session_screen.dart ---
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../models/app_models.dart';
+import '../theme/app_theme.dart';
+import '../services/global_state.dart';
+import '../widgets/duo_button.dart';
+import '../widgets/math_markdown.dart';
+import '../widgets/slide_views/quiz_view.dart';
+import '../widgets/slide_views/fill_in_blank_view.dart';
+import '../widgets/slide_views/numerical_view.dart';
+import '../widgets/slide_views/interactive_proof_view.dart';
+import '../widgets/slide_views/step_by_step_view.dart';
+import 'lesson_complete_screen.dart';
+
+class PracticeSessionScreen extends StatefulWidget {
+  final Book book;
+  final String practiceType; 
+
+  const PracticeSessionScreen({super.key, required this.book, required this.practiceType});
+
+  @override
+  State<PracticeSessionScreen> createState() => _PracticeSessionScreenState();
+}
+
+class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
+  List<Slide> _queue = [];
+  int _totalQuestions = 0;
+  int _completedQuestions = 0;
+  
+  bool _answered = false;
+  bool _isCorrect = false;
+  
+  late DateTime _startTime;
+  int _mistakesMade = 0;
+
+  String? _selectedQuizOption;
+  String _blankInput = '';
+  String _numericInput = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _startTime = DateTime.now();
+    _extractInteractiveSlides();
+  }
+
+  void _extractInteractiveSlides() {
+    List<Slide> pool = [];
+    
+    // Scan practice questions in modules
+    for (var module in widget.book.modules) {
+      for (var slide in module.practiceQuestions) {
+        if (_isTargetType(slide.type)) pool.add(slide);
+      }
+    }
+
+    // If still empty, scan lessons
+    if (pool.isEmpty) {
+      for (var module in widget.book.modules) {
+        for (var section in module.sections) {
+          for (var unit in section.units) {
+            for (var lesson in unit.lessons) {
+              for (var slide in lesson.slides) {
+                if (_isTargetType(slide.type)) pool.add(slide);
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    pool.shuffle();
+    if (pool.length > 5) {
+      _queue = pool.sublist(0, 5);
+    } else {
+      _queue = pool;
+    }
+    _totalQuestions = _queue.length;
+  }
+
+  bool _isTargetType(String slideType) {
+    if (widget.practiceType == 'quiz' && slideType == 'quiz') return true;
+    if (widget.practiceType == 'proof' && slideType == 'proof') return true;
+    if (widget.practiceType == 'step_by_step' && (slideType == 'step_by_step' || slideType == 'proof')) return true;
+    if (widget.practiceType == 'fill_in_blank' && slideType == 'fill_in_blank') return true;
+    if (widget.practiceType == 'numerical' && slideType == 'numerical') return true;
+    return false;
+  }
+
+  Future<void> _finishPractice() async {
+    int timeSpent = DateTime.now().difference(_startTime).inSeconds;
+    int accuracy = _totalQuestions > 0 ? (((_totalQuestions) / (_totalQuestions + _mistakesMade)) * 100).round() : 100;
+    int xpEarned = 10; 
+
+    await GlobalState.addXp(xpEarned);
+
+    if (mounted) {
+      Navigator.pushReplacement(
+        context, 
+        MaterialPageRoute(builder: (_) => LessonCompleteScreen(
+          xpEarned: xpEarned,
+          accuracy: accuracy,
+          timeSpentSeconds: timeSpent,
+          isPractice: true, 
+        ))
+      );
+    }
+  }
+
+  void _processNext() {
+    if (_isCorrect) {
+      _completedQuestions++;
+      _queue.removeAt(0); 
+    } else {
+      _mistakesMade++;
+      // Move to back of the queue to repeat later
+      final slide = _queue.removeAt(0);
+      _queue.add(slide);
+    }
+
+    if (_queue.isEmpty) {
+      _finishPractice();
+    } else {
+      setState(() {
+        _answered = false;
+        _isCorrect = false;
+        _selectedQuizOption = null;
+        _blankInput = '';
+        _numericInput = '';
+      });
+    }
+  }
+
+  void _checkAnswer() {
+    final slide = _queue.first;
+    bool correct = false;
+
+    if (slide.type == 'quiz' && _selectedQuizOption != null) {
+      correct = slide.options!.firstWhere((o) => o.id == _selectedQuizOption).isCorrect;
+    } else if (slide.type == 'fill_in_blank') {
+      correct = _blankInput.trim().toLowerCase() == slide.blankAnswer?.toLowerCase().replaceAll(r'\', '');
+    } else if (slide.type == 'numerical') {
+      final val = double.tryParse(_numericInput);
+      if (val != null && slide.numericAnswer != null) {
+        correct = (val - slide.numericAnswer!).abs() <= (slide.numericTolerance ?? 0.01);
+      }
+    }
+
+    setState(() {
+      _answered = true;
+      _isCorrect = correct;
+    });
+  }
+
+  bool _canCheck() {
+    if (_queue.isEmpty) return false;
+    final slide = _queue.first;
+    if (slide.type == 'quiz') return _selectedQuizOption != null;
+    if (slide.type == 'fill_in_blank') return _blankInput.trim().isNotEmpty;
+    if (slide.type == 'numerical') return _numericInput.trim().isNotEmpty;
+    return false;
+  }
+
+  bool get _isCustomBottomBar {
+    if (_queue.isEmpty) return false;
+    final type = _queue.first.type;
+    return type == 'proof' || type == 'step_by_step';
+  }
+
+  String _getCorrectAnswerText(Slide slide) {
+    if (slide.type == 'quiz') {
+      final opt = slide.options?.firstWhere((o) => o.isCorrect, orElse: () => slide.options!.first);
+      return opt?.text ?? '';
+    }
+    if (slide.type == 'fill_in_blank') return slide.blankAnswer ?? '';
+    if (slide.type == 'numerical') return slide.numericAnswer?.toString() ?? '';
+    return '';
+  }
+
+  Widget _buildContent(Slide slide) {
+    if (slide.type == 'quiz') {
+      return QuizView(
+        slide: slide,
+        selectedOptionId: _selectedQuizOption,
+        isAnswered: _answered,
+        onSelect: (id) => setState(() => _selectedQuizOption = id),
+      );
+    } else if (slide.type == 'fill_in_blank') {
+      return FillInBlankView(
+        slide: slide,
+        value: _blankInput,
+        isAnswered: _answered,
+        isCorrect: _isCorrect,
+        onChanged: (val) => setState(() => _blankInput = val),
+      );
+    } else if (slide.type == 'numerical') {
+      return NumericalView(
+        slide: slide,
+        value: _numericInput,
+        isAnswered: _answered,
+        isCorrect: _isCorrect,
+        onChanged: (val) => setState(() => _numericInput = val),
+      );
+    } else if (slide.type == 'proof') {
+      return InteractiveProofView(
+        slide: slide,
+        onComplete: () {
+          setState(() {
+            _isCorrect = true;
+            _answered = true;
+          });
+          _processNext();
+        },
+      );
+    } else if (slide.type == 'step_by_step') {
+      return StepByStepView(
+        slide: slide,
+        onComplete: () {
+          setState(() {
+            _isCorrect = true;
+            _answered = true;
+          });
+          _processNext();
+        },
+      );
+    }
+    return const SizedBox();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_queue.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: const Center(child: Text('No practice questions available for this type.', style: TextStyle(color: Colors.white54))),
+      );
+    }
+
+    final slide = _queue.first;
+    final progress = _totalQuestions == 0 ? 0.0 : (_completedQuestions / _totalQuestions);
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(LucideIcons.x),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: LinearProgressIndicator(
+          value: progress,
+          backgroundColor: Colors.white12,
+          color: AppTheme.duoViolet,
+          minHeight: 12,
+          borderRadius: BorderRadius.circular(6),
+        ),
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Text(
+                slide.title.toUpperCase(),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppTheme.duoViolet, letterSpacing: 1.5),
+              ),
+            ),
+            
+            Expanded(child: _buildContent(slide)),
+            
+            // Native Bottom Action Bar (hide if child implements its own)
+            if (!_isCustomBottomBar)
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                decoration: BoxDecoration(
+                  color: _answered 
+                    ? (_isCorrect ? AppTheme.duoGreen.withOpacity(0.15) : AppTheme.duoRed.withOpacity(0.15))
+                    : Colors.transparent,
+                  border: Border(top: BorderSide(
+                    color: _answered ? (_isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.white10, 
+                    width: 2)
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_answered && !_isCorrect)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.duoRed.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppTheme.duoRed.withOpacity(0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('CORRECT ANSWER:', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.2)),
+                              const SizedBox(height: 4),
+                              MathMarkdown(
+                                data: _getCorrectAnswerText(slide), 
+                                textStyle: const TextStyle(color: AppTheme.duoRed, fontSize: 16, fontWeight: FontWeight.bold)
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      
+                    !_answered
+                        ? DuoButton(
+                            text: 'Check',
+                            color: _canCheck() ? AppTheme.duoGreen : Colors.grey.shade700,
+                            shadowColor: _canCheck() ? AppTheme.duoGreenDark : Colors.grey.shade800,
+                            onPressed: () {
+                              if (_canCheck()) _checkAnswer();
+                            },
+                          )
+                        : DuoButton(
+                            text: _answered && !_isCorrect ? 'Got It' : 'Continue',
+                            color: _answered && !_isCorrect ? AppTheme.duoRed : AppTheme.duoBlue,
+                            shadowColor: _answered && !_isCorrect ? AppTheme.duoRedDark : AppTheme.duoBlueDark,
+                            onPressed: _processNext,
+                          ),
+                  ],
+                ),
+              )
+          ],
+        ),
+      ),
+    );
+  }
+}
+--- END OF FILE lib/screens/practice_session_screen.dart ---
+
+--- START OF FILE test/widget_test.dart ---
+// This is a basic Flutter widget test.
+//
+// To perform an interaction with a widget in your test, use the WidgetTester
+// utility in the flutter_test package. For example, you can send tap and scroll
+// gestures. You can also use WidgetTester to find child widgets in the widget
+// tree, read text, and verify that the values of widget properties are correct.
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:duofy/main.dart';
+
+void main() {
+  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+    // Build our app and trigger a frame.
+    await tester.pumpWidget(const DuoFyApp());
+
+    // Verify that our counter starts at 0.
+    expect(find.text('0'), findsOneWidget);
+    expect(find.text('1'), findsNothing);
+
+    // Tap the '+' icon and trigger a frame.
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pump();
+
+    // Verify that our counter has incremented.
+    expect(find.text('0'), findsNothing);
+    expect(find.text('1'), findsOneWidget);
+  });
+}
+
+--- END OF FILE test/widget_test.dart ---
+
+--- START OF FILE web/index.html ---
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="A new Flutter project.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="duofy">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>duofy</title>
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
+
+--- END OF FILE web/index.html ---
+
+--- START OF FILE web/manifest.json ---
+{
+    "name": "duofy",
+    "short_name": "duofy",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#0175C2",
+    "theme_color": "#0175C2",
+    "description": "A new Flutter project.",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}
+
+--- END OF FILE web/manifest.json ---

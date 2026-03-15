@@ -38,16 +38,31 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                     itemBuilder: (ctx, i) {
                       final s = widget.book.modules[currentModuleIdx].sections[i];
                       final isSelected = i == currentSectionIdx;
-                      return ListTile(
-                        onTap: () {
-                          setState(() => currentSectionIdx = i);
-                          Navigator.pop(ctx);
-                        },
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        tileColor: isSelected ? AppTheme.duoBlue.withOpacity(0.2) : Colors.transparent,
-                        title: Text(s.title, style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? AppTheme.duoBlue : Colors.white)),
-                        subtitle: Text(s.description, style: const TextStyle(fontSize: 12, color: Colors.white54)),
-                        trailing: isSelected ? const Icon(LucideIcons.checkCircle2, color: AppTheme.duoBlue) : null,
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppTheme.duoBlue.withOpacity(0.2) : AppTheme.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: isSelected ? AppTheme.duoBlue : Colors.white12, width: 2),
+                        ),
+                        child: ListTile(
+                          onTap: () {
+                            setState(() => currentSectionIdx = i);
+                            Navigator.pop(ctx);
+                          },
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          title: Text(
+                            s.title, 
+                            style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? AppTheme.duoBlue : Colors.white)
+                          ),
+                          subtitle: Text(
+                            s.description, 
+                            style: const TextStyle(fontSize: 12, color: Colors.white54)
+                          ),
+                          trailing: isSelected 
+                            ? const Icon(LucideIcons.checkCircle2, color: AppTheme.duoBlue) 
+                            : const Icon(LucideIcons.chevronRight, color: Colors.white24),
+                        ),
                       );
                     },
                   ),

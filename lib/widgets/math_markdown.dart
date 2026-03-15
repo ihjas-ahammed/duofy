@@ -7,19 +7,28 @@ class MathMarkdown extends StatelessWidget {
   final String data;
   final TextStyle? textStyle;
   final TextAlign textAlign;
+  final List<md.InlineSyntax>? customSyntaxes;
+  final Map<String, MarkdownElementBuilder>? customBuilders;
 
   const MathMarkdown({
     super.key, 
     required this.data, 
     this.textStyle,
     this.textAlign = TextAlign.left,
+    this.customSyntaxes,
+    this.customBuilders,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Pre-process strings to fix common spacing issues that break the LaTeX parser.
-    // Ensure that $ is padded if it touches punctuation, avoiding parser swallowing.
+    // Robust replacement string logic mapping to fix commonly mangled markdown outputs 
+    // from LLMs to ensure LaTeX compatibility
     String safeData = data
+      .replaceAll(r'\$', r'$')
+      .replaceAll(r'\[', r'$$')
+      .replaceAll(r'\]', r'$$')
+      .replaceAll(r'\(', r'$')
+      .replaceAll(r'\)', r'$')
       .replaceAll(r'$.', r'$ .')
       .replaceAll(r'$,', r'$ ,')
       .replaceAll(r'_$', r'_ $')
@@ -36,10 +45,15 @@ class MathMarkdown extends StatelessWidget {
         'latex': LatexElementBuilder(
           textStyle: textStyle?.copyWith(color: Colors.amber) ?? const TextStyle(color: Colors.amber, fontSize: 16, fontWeight: FontWeight.w800),
         ),
+        if (customBuilders != null) ...customBuilders!,
       },
       extensionSet: md.ExtensionSet(
         [LatexBlockSyntax(), ...md.ExtensionSet.gitHubFlavored.blockSyntaxes],
-        [LatexInlineSyntax(), ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes],
+        [
+          LatexInlineSyntax(), 
+          if (customSyntaxes != null) ...customSyntaxes!,
+          ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes
+        ],
       ),
     );
   }

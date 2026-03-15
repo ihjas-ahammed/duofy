@@ -4,11 +4,14 @@ import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../services/global_state.dart';
 import '../widgets/duo_button.dart';
+import '../widgets/math_markdown.dart';
 import '../widgets/slide_views/theory_view.dart';
 import '../widgets/slide_views/quiz_view.dart';
 import '../widgets/slide_views/fill_in_blank_view.dart';
 import '../widgets/slide_views/numerical_view.dart';
 import '../widgets/slide_views/interactive_webview.dart';
+import '../widgets/slide_views/interactive_proof_view.dart';
+import '../widgets/slide_views/step_by_step_view.dart';
 import 'lesson_complete_screen.dart';
 
 class LessonScreen extends StatefulWidget {
@@ -38,7 +41,7 @@ class _LessonScreenState extends State<LessonScreen> {
     super.initState();
     _startTime = DateTime.now();
     for (var slide in widget.lesson.slides) {
-      if (['quiz', 'fill_in_blank', 'numerical'].contains(slide.type)) {
+      if (['quiz', 'fill_in_blank', 'numerical', 'proof', 'step_by_step'].contains(slide.type)) {
         _totalInteractive++;
       }
     }
@@ -108,10 +111,48 @@ class _LessonScreenState extends State<LessonScreen> {
     return true; 
   }
 
+  bool _isCustomBottomBar(Slide slide) {
+    return slide.type == 'proof' || slide.type == 'step_by_step';
+  }
+
+  String _getCorrectAnswerText(Slide slide) {
+    if (slide.type == 'quiz') {
+      final opt = slide.options?.firstWhere((o) => o.isCorrect, orElse: () => slide.options!.first);
+      return opt?.text ?? '';
+    }
+    if (slide.type == 'fill_in_blank') return slide.blankAnswer ?? '';
+    if (slide.type == 'numerical') return slide.numericAnswer?.toString() ?? '';
+    return '';
+  }
+
   Widget _buildSlideContent(Slide slide) {
     switch (slide.type) {
       case 'interactive_canvas':
         return InteractiveWebview(slide: slide);
+      case 'proof':
+        return InteractiveProofView(
+          slide: slide,
+          onComplete: () {
+            setState(() {
+              _isCorrect = true;
+              _answered = true;
+              _correctAttempts++;
+            });
+            _nextSlide();
+          },
+        );
+      case 'step_by_step':
+        return StepByStepView(
+          slide: slide,
+          onComplete: () {
+            setState(() {
+              _isCorrect = true;
+              _answered = true;
+              _correctAttempts++;
+            });
+            _nextSlide();
+          },
+        );
       case 'quiz':
         return QuizView(
           slide: slide,
@@ -150,6 +191,7 @@ class _LessonScreenState extends State<LessonScreen> {
     final slide = widget.lesson.slides[_currentIndex];
     final progress = (_currentIndex) / widget.lesson.slides.length;
     final isInteractive = ['quiz', 'fill_in_blank', 'numerical'].contains(slide.type);
+    final hasCustomBar = _isCustomBottomBar(slide);
 
     return Scaffold(
       appBar: AppBar(
@@ -168,7 +210,7 @@ class _LessonScreenState extends State<LessonScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            if (slide.title.isNotEmpty)
+            if (slide.title.isNotEmpty && !hasCustomBar)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
                 child: Text(
@@ -180,68 +222,72 @@ class _LessonScreenState extends State<LessonScreen> {
             
             Expanded(child: _buildSlideContent(slide)),
             
-            // Bottom Check / Continue Bar (Two-Layered UI)
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-              decoration: BoxDecoration(
-                color: _answered 
-                  ? (_isCorrect ? AppTheme.duoGreen.withOpacity(0.15) : AppTheme.duoRed.withOpacity(0.15))
-                  : Colors.transparent,
-                border: Border(top: BorderSide(
-                  color: _answered ? (_isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.white10, 
-                  width: 2)
+            // Native Bottom Check / Continue Bar (Hide if child implements its own)
+            if (!hasCustomBar)
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                decoration: BoxDecoration(
+                  color: _answered 
+                    ? (_isCorrect ? AppTheme.duoGreen.withOpacity(0.15) : AppTheme.duoRed.withOpacity(0.15))
+                    : Colors.transparent,
+                  border: Border(top: BorderSide(
+                    color: _answered ? (_isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.white10, 
+                    width: 2)
+                  ),
                 ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (_answered)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(color: _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed, shape: BoxShape.circle),
-                            child: Icon(_isCorrect ? LucideIcons.check : LucideIcons.x, color: Colors.white, size: 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_answered && !_isCorrect)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.duoRed.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppTheme.duoRed.withOpacity(0.3)),
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Text(
-                              _isCorrect ? 'Excellent!' : 'Incorrect.',
-                              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed),
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('CORRECT ANSWER:', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.2)),
+                              const SizedBox(height: 4),
+                              MathMarkdown(
+                                data: _getCorrectAnswerText(slide), 
+                                textStyle: const TextStyle(color: AppTheme.duoRed, fontSize: 16, fontWeight: FontWeight.bold)
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                    
-                  isInteractive && !_answered
-                      ? DuoButton(
-                          text: 'Check',
-                          color: _canCheck(slide) ? AppTheme.duoGreen : Colors.grey.shade700,
-                          shadowColor: _canCheck(slide) ? AppTheme.duoGreenDark : Colors.grey.shade800,
-                          onPressed: () {
-                            if (_canCheck(slide)) _checkAnswer(slide);
-                          },
-                        )
-                      : DuoButton(
-                          text: _answered && !_isCorrect ? 'Got It' : 'Continue',
-                          color: _answered && !_isCorrect ? AppTheme.duoRed : AppTheme.duoBlue,
-                          shadowColor: _answered && !_isCorrect ? AppTheme.duoRedDark : AppTheme.duoBlueDark,
-                          onPressed: () {
-                            if (_answered && !_isCorrect) {
-                              setState(() => _answered = false); // reset to try again
-                            } else {
-                              _nextSlide();
-                            }
-                          },
                         ),
-                ],
-              ),
-            )
+                      ),
+                      
+                    isInteractive && !_answered
+                        ? DuoButton(
+                            text: 'Check',
+                            color: _canCheck(slide) ? AppTheme.duoGreen : Colors.grey.shade700,
+                            shadowColor: _canCheck(slide) ? AppTheme.duoGreenDark : Colors.grey.shade800,
+                            onPressed: () {
+                              if (_canCheck(slide)) _checkAnswer(slide);
+                            },
+                          )
+                        : DuoButton(
+                            text: _answered && !_isCorrect ? 'Got It' : 'Continue',
+                            color: _answered && !_isCorrect ? AppTheme.duoRed : AppTheme.duoBlue,
+                            shadowColor: _answered && !_isCorrect ? AppTheme.duoRedDark : AppTheme.duoBlueDark,
+                            onPressed: () {
+                              if (_answered && !_isCorrect) {
+                                setState(() => _answered = false); // reset to try again
+                              } else {
+                                _nextSlide();
+                              }
+                            },
+                          ),
+                  ],
+                ),
+              )
           ],
         ),
       ),

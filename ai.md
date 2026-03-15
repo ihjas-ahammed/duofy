@@ -1,13 +1,16 @@
 Make the following changes:
 
-    - You are given an empty flutter project and our base project:
-        - Your task is to recreate my web project in flutter without losing any visual element but for any kind of 'data', my current one is based on Thafheemul Quran but I have to make it work for any kind of applications
-        - Make the intractive arts based on web view 
-        - For now add a base data based 'Psychology and Physics'
-        - My goal is to create an application that can help user turn any books into intractiove lessons like this
-            - So, on home screen add the list of intractive books and then open the duofy screen after i click on one, here 'Psychology and Physics'
-            - Use firebase realtime database, also give me intsrctioctions to active it on 'README.md' 
     
+    - Update home:
+        - Update the list view, make it look like on windows start menu
+
+    - Update settings:
+        - Use a list view instead of comma seperte api keys
+        - Fetch all latest models with a button using simple fetch like command to models part
+
+    - Database, only refresh if user push down, unless make it possible the app can work offline
+    
+
 
 Make sure there wont be any screensize error, our ideal screen is 720x1520 with 271 dpi
 When adding a new ui, create very compact design based on the theme of duolingo

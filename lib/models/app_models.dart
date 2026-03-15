@@ -145,13 +145,37 @@ class Lesson {
   };
 }
 
+class InteractiveStep {
+  final String? prompt;
+  final String? stepText;
+  final List<QuizOption>? options;
+
+  InteractiveStep({this.prompt, this.stepText, this.options});
+
+  factory InteractiveStep.fromJson(Map<String, dynamic> json) {
+    return InteractiveStep(
+      prompt: json['prompt'],
+      stepText: json['stepText'],
+      options: (json['options'] as List?)?.map((o) => QuizOption.fromJson(Map<String, dynamic>.from(o))).toList(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    if (prompt != null) 'prompt': prompt,
+    if (stepText != null) 'stepText': stepText,
+    if (options != null) 'options': options!.map((o) => o.toJson()).toList(),
+  };
+}
+
 class Slide {
   final String id;
-  final String type; // theory, quiz, fill_in_blank, numerical, interactive_canvas
+  final String type; // theory, quiz, fill_in_blank, numerical, interactive_canvas, proof, step_by_step
   final String title;
   final String content;
   final String? interactiveCanvasHtml;
   final List<QuizOption>? options;
+  final List<InteractiveStep>? interactiveSteps;
+  final List<String>? proofSteps;
   final String? blankAnswer;
   final double? numericAnswer;
   final double? numericTolerance;
@@ -163,6 +187,8 @@ class Slide {
     required this.content,
     this.interactiveCanvasHtml,
     this.options,
+    this.interactiveSteps,
+    this.proofSteps,
     this.blankAnswer,
     this.numericAnswer,
     this.numericTolerance,
@@ -176,6 +202,8 @@ class Slide {
       content: json['content'] ?? '',
       interactiveCanvasHtml: json['interactiveCanvasHtml'],
       options: (json['options'] as List?)?.map((o) => QuizOption.fromJson(Map<String, dynamic>.from(o))).toList(),
+      interactiveSteps: (json['interactiveSteps'] as List?)?.map((s) => InteractiveStep.fromJson(Map<String, dynamic>.from(s))).toList(),
+      proofSteps: (json['proofSteps'] as List?)?.map((s) => s.toString()).toList(),
       blankAnswer: json['blankAnswer'],
       numericAnswer: json['numericAnswer']?.toDouble(),
       numericTolerance: json['numericTolerance']?.toDouble() ?? 0.01,
@@ -189,6 +217,8 @@ class Slide {
     'content': content,
     if (interactiveCanvasHtml != null) 'interactiveCanvasHtml': interactiveCanvasHtml,
     if (options != null) 'options': options!.map((o) => o.toJson()).toList(),
+    if (interactiveSteps != null) 'interactiveSteps': interactiveSteps!.map((s) => s.toJson()).toList(),
+    if (proofSteps != null) 'proofSteps': proofSteps,
     if (blankAnswer != null) 'blankAnswer': blankAnswer,
     if (numericAnswer != null) 'numericAnswer': numericAnswer,
     if (numericTolerance != null) 'numericTolerance': numericTolerance,

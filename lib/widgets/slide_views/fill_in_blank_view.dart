@@ -1,7 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:markdown/markdown.dart' as md;
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../models/app_models.dart';
 import '../../theme/app_theme.dart';
 import '../math_markdown.dart';
+
+class BlankSyntax extends md.InlineSyntax {
+  BlankSyntax() : super(r'___+'); // Matches 3 or more underscores
+  @override
+  bool onMatch(md.InlineParser parser, Match match) {
+    parser.addNode(md.Element.empty('blank'));
+    return true;
+  }
+}
+
+class BlankBuilder extends MarkdownElementBuilder {
+  final String value;
+  final bool isAnswered;
+  final bool isCorrect;
+  final Function(String) onChanged;
+
+  BlankBuilder({required this.value, required this.isAnswered, required this.isCorrect, required this.onChanged});
+
+  @override
+  Widget? visitElementAfter(md.Element element, TextStyle? preferredStyle) {
+    return Container(
+      width: 100,
+      height: 35,
+      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      child: TextField(
+        enabled: !isAnswered,
+        onChanged: onChanged,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.amber,
+        ),
+        decoration: InputDecoration(
+          contentPadding: const EdgeInsets.only(bottom: 12),
+          filled: true,
+          fillColor: Colors.black45,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+        ),
+      ),
+    );
+  }
+}
 
 class FillInBlankView extends StatelessWidget {
   final Slide slide;
@@ -21,6 +66,31 @@ class FillInBlankView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    bool hasInlineBlank = slide.content.contains('___');
+
+    if (hasInlineBlank) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: AppTheme.glassDecoration,
+          child: MathMarkdown(
+            data: slide.content,
+            customSyntaxes: [BlankSyntax()],
+            customBuilders: {
+              'blank': BlankBuilder(
+                value: value,
+                isAnswered: isAnswered,
+                isCorrect: isCorrect,
+                onChanged: onChanged,
+              )
+            },
+          ),
+        ),
+      );
+    }
+
+    // Fallback: Standard block input logic if not written inline
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(

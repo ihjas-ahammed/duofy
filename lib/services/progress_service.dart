@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/app_models.dart';
 
 class ProgressService {
   static const String _completedKey = 'completed_lessons';
@@ -25,5 +26,22 @@ class ProgressService {
   static Future<int> getXp() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(_xpKey) ?? 0;
+  }
+
+  static Future<double> getBookProgress(Book book) async {
+    final completed = await getCompletedLessons();
+    int total = 0;
+    int done = 0;
+    for (var m in book.modules) {
+      for (var s in m.sections) {
+        for (var u in s.units) {
+          for (var l in u.lessons) {
+            total++;
+            if (completed.contains(l.id)) done++;
+          }
+        }
+      }
+    }
+    return total == 0 ? 0.0 : (done / total);
   }
 }

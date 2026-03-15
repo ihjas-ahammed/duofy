@@ -46,21 +46,44 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
             child: Container(color: Colors.transparent),
           ),
         ),
-        title: ValueListenableBuilder<int>(
-          valueListenable: GlobalState.xpNotifier,
-          builder: (context, xp, child) {
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(LucideIcons.zap, color: Colors.amber, size: 20),
-                const SizedBox(width: 4),
-                Text('$xp XP', style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.w900, fontSize: 16)),
-              ],
-            );
-          },
+        centerTitle: true,
+        title: Text(
+          widget.book.title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w900,
+            fontSize: 18,
+            letterSpacing: 1.0,
+            color: Colors.white,
+          ),
         ),
         actions: [
-          IconButton(icon: const Icon(LucideIcons.moreHorizontal), onPressed: () {}),
+          ValueListenableBuilder<int>(
+            valueListenable: GlobalState.xpNotifier,
+            builder: (context, xp, child) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(LucideIcons.zap, color: Colors.amber, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$xp XP', 
+                        style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.w900, fontSize: 14),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
         ],
       ),
       body: IndexedStack(
@@ -68,7 +91,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
         children: _pages,
       ),
       
-      // Glass Bottom Navigation Bar
+      // Glass Bottom Navigation Bar (Ultra Compact Icons only)
       bottomNavigationBar: ClipRRect(
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
@@ -83,10 +106,10 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildNavItem(0, LucideIcons.map, 'Path'),
-                  _buildNavItem(1, LucideIcons.dumbbell, 'Practice'),
-                  _buildNavItem(2, LucideIcons.fileText, 'Notes'),
-                  _buildNavItem(3, LucideIcons.bookOpenCheck, 'Exam'),
+                  _buildNavItem(0, LucideIcons.map),
+                  _buildNavItem(1, LucideIcons.dumbbell),
+                  _buildNavItem(2, LucideIcons.fileText),
+                  _buildNavItem(3, LucideIcons.bookOpenCheck),
                 ],
               ),
             ),
@@ -96,7 +119,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label) {
+  Widget _buildNavItem(int index, IconData icon) {
     final isActive = _currentIndex == index;
     final color = isActive ? AppTheme.duoBlue : Colors.white54;
     
@@ -105,18 +128,8 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 4),
-            Text(
-              label.toUpperCase(),
-              style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.0),
-            ),
-          ],
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        child: Icon(icon, color: color, size: 28),
       ),
     );
   }

@@ -5,28 +5,22 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
 
 class AiService {
-  Future<String?> getApiKey() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('gemini_api_key');
-  }
-
   Future<Book?> generateBookFromPdf(File pdfFile, String title) async {
-    final apiKey = await getApiKey();
-    if (apiKey == null || apiKey.isEmpty) {
-      throw Exception('API Key not set. Please configure in Settings.');
-    }
+    final prefs = await SharedPreferences.getInstance();
+    final keysString = prefs.getString('gemini_api_keys') ?? '';
+    final modelName = prefs.getString('gemini_model') ?? 'gemini-1.5-flash';
 
-    final model = GenerativeModel(
-      model: 'gemini-1.5-flash',
-      apiKey: apiKey,
-      generationConfig: GenerationConfig(responseMimeType: 'application/json'),
-    );
+    final keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    if (keys.isEmpty) {
+      throw Exception('No API Keys configured. Please configure them in Settings.');
+    }
 
     final pdfBytes = await pdfFile.readAsBytes();
     final prompt = TextPart(r'''
 You are an expert curriculum designer. Convert the provided document into a structured JSON interactive lesson plan.
 The app supports these slide types: 'theory', 'quiz', 'fill_in_blank', 'numerical', 'interactive_canvas'.
 For 'interactive_canvas', generate RAW valid HTML/JS inside "interactiveCanvasHtml" that simulates the concept visually. Make sure the canvas resizes to the window. 
+For 'fill_in_blank', format the question with `___` (three underscores) where the user should type the answer inline.
 You MUST use LaTeX formatting inside Markdown by wrapping math in $ (inline) or $$ (block). Be careful to add spaces around $ symbols so they don't stick directly to underscores or punctuation.
 
 The JSON must perfectly match this structure (return ONLY JSON):
@@ -97,22 +91,33 @@ The JSON must perfectly match this structure (return ONLY JSON):
 }
 ''');
 
-    try {
-      final response = await model.generateContent([
-        Content.multi([
-          prompt,
-          DataPart('application/pdf', pdfBytes),
-        ])
-      ]);
+    Exception? lastException;
 
-      if (response.text != null) {
-        final Map<String, dynamic> jsonMap = jsonDecode(response.text!);
-        return Book.fromJson(jsonMap);
+    for (var apiKey in keys) {
+      try {
+        final model = GenerativeModel(
+          model: modelName,
+          apiKey: apiKey,
+          generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+        );
+
+        final response = await model.generateContent([
+          Content.multi([
+            prompt,
+            DataPart('application/pdf', pdfBytes),
+          ])
+        ]);
+
+        if (response.text != null) {
+          final Map<String, dynamic> jsonMap = jsonDecode(response.text!);
+          return Book.fromJson(jsonMap);
+        }
+      } catch (e) {
+        print('Key $apiKey failed: $e');
+        lastException = Exception('Failed with key: $e');
       }
-    } catch (e) {
-      print('AI Generation Error: $e');
-      throw Exception('Failed to generate book: $e');
     }
-    return null;
+
+    throw lastException ?? Exception('Failed to generate book.');
   }
 }

@@ -1,288 +1,858 @@
+Here are the requested changes. I have improved the math rendering logic, added local caching for offline capability, implemented the compact practice UI, inline fill-in-the-blanks, try-first step-by-step logic, model/multiple-key selection in settings, and progress bars for the home screen.
 
-
---- START OF FILE lib/widgets/lesson_path.dart ---
-import 'package:flutter/material.dart';
+--- START OF FILE lib/services/progress_service.dart ---
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
-import '../theme/app_theme.dart';
-import '../screens/lesson_screen.dart';
-import 'lesson_node.dart';
 
-class LessonPath extends StatelessWidget {
-  final Section section;
+class ProgressService {
+  static const String _completedKey = 'completed_lessons';
+  static const String _xpKey = 'user_xp';
 
-  const LessonPath({
-    super.key,
-    required this.section,
-  });
+  static Future<List<String>> getCompletedLessons() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(_completedKey) ?? [];
+  }
 
-  Color _getPathColor() {
-    switch (section.color) {
-      case 'duo-green': return AppTheme.duoGreen;
-      case 'duo-blue': return AppTheme.duoBlue;
-      case 'duo-violet': return AppTheme.duoViolet;
-      case 'duo-orange': return AppTheme.duoOrange;
-      default: return AppTheme.duoBlue;
+  static Future<void> markLessonCompleted(String lessonId) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> completed = prefs.getStringList(_completedKey) ?? [];
+    if (!completed.contains(lessonId)) {
+      completed.add(lessonId);
+      await prefs.setStringList(_completedKey, completed);
+      
+      // Add XP
+      int currentXp = prefs.getInt(_xpKey) ?? 0;
+      await prefs.setInt(_xpKey, currentXp + 20);
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    List<Widget> stackChildren = [];
-    List<Offset> pathPoints = [];
+  static Future<int> getXp() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_xpKey) ?? 0;
+  }
 
-    double currentY = 30; // Added more top spacing
-    int globalLessonIdx = 0;
+  static Future<double> getBookProgress(Book book) async {
+    final completed = await getCompletedLessons();
+    int total = 0;
+    int done = 0;
+    for (var m in book.modules) {
+      for (var s in m.sections) {
+        for (var u in s.units) {
+          for (var l in u.lessons) {
+            total++;
+            if (completed.contains(l.id)) done++;
+          }
+        }
+      }
+    }
+    return total == 0 ? 0.0 : (done / total);
+  }
+}
+--- END OF FILE lib/services/progress_service.dart ---
 
-    for (var unit in section.units) {
-      // Add Glassy Unit Header with more padding
-      stackChildren.add(
-        Positioned(
-          top: currentY,
-          left: 20,
-          right: 20,
-          child: AppTheme.applyGlassBlur(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-              child: Column(
-                children: [
-                  Text(
-                    unit.title.toUpperCase(),
-                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white, letterSpacing: 1.5),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    unit.description,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white54),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
+--- START OF FILE lib/services/database_service.dart ---
+import 'dart:convert';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/app_models.dart';
+import '../data/mock_books.dart';
 
-      currentY += 130; // Increased space after header
+class DatabaseService {
+  final DatabaseReference _dbRef = FirebaseDatabase.instance.ref();
 
-      for (var lesson in unit.lessons) {
-        final int phase = globalLessonIdx % 4;
-        double offsetX = 0;
-        if (phase == 1) offsetX = 65; // Wider zig-zag
-        if (phase == 3) offsetX = -65; // Wider zig-zag
+  Future<List<Book>> fetchBooks({bool forceRefresh = false}) async {
+    final prefs = await SharedPreferences.getInstance();
 
-        double centerX = MediaQuery.of(context).size.width / 2;
-        double absoluteX = centerX + offsetX;
+    // Load from cache first unless pull-to-refresh
+    if (!forceRefresh) {
+      final cached = prefs.getString('cached_books');
+      if (cached != null) {
+        try {
+          final List decoded = jsonDecode(cached);
+          // Launch a silent fetch in the background to keep cache fresh
+          _fetchAndCacheFirebase();
+          return decoded.map((e) => Book.fromJson(Map<String, dynamic>.from(e))).toList();
+        } catch (e) {
+          // Fall through to Firebase fetch if cache parsing fails
+        }
+      }
+    }
 
-        pathPoints.add(Offset(absoluteX, currentY + 40)); // 40 is half of the new 80px node
+    return await _fetchAndCacheFirebase();
+  }
 
-        stackChildren.add(
-          Positioned(
-            top: currentY,
-            left: 0,
-            right: 0,
-            child: Transform.translate(
-              offset: Offset(offsetX, 0),
-              child: LessonNodeWidget(
-                lesson: lesson,
-                isCompleted: globalLessonIdx < 1,
-                isLocked: globalLessonIdx > 1,
-                sectionColorStr: section.color,
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => LessonScreen(lesson: lesson)
-                  ));
-                },
-              ),
-            ),
-          ),
+  Future<List<Book>> _fetchAndCacheFirebase() async {
+    final prefs = await SharedPreferences.getInstance();
+    try {
+      final snapshot = await _dbRef.child('books').get();
+      if (snapshot.exists) {
+        final Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
+        List<Book> books = [];
+        data.forEach((key, value) {
+          books.add(Book.fromJson(Map<String, dynamic>.from(value)));
+        });
+        await prefs.setString('cached_books', jsonEncode(books.map((b) => b.toJson()).toList()));
+        return books;
+      } else {
+        await saveBooks(mockBooks);
+        await prefs.setString('cached_books', jsonEncode(mockBooks.map((b) => b.toJson()).toList()));
+        return mockBooks;
+      }
+    } catch (e) {
+      // If offline or errored out, fallback to local cache
+      final cached = prefs.getString('cached_books');
+      if (cached != null) {
+        final List decoded = jsonDecode(cached);
+        return decoded.map((e) => Book.fromJson(Map<String, dynamic>.from(e))).toList();
+      }
+      return mockBooks;
+    }
+  }
+
+  Future<void> saveBooks(List<Book> books) async {
+    for (var book in books) {
+      await _dbRef.child('books').child(book.id).set(book.toJson());
+    }
+  }
+
+  Future<void> saveGeneratedBook(Book book) async {
+    await _dbRef.child('books').child(book.id).set(book.toJson());
+  }
+}
+--- END OF FILE lib/services/database_service.dart ---
+
+--- START OF FILE lib/services/ai_service.dart ---
+import 'dart:convert';
+import 'dart:io';
+import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/app_models.dart';
+
+class AiService {
+  Future<Book?> generateBookFromPdf(File pdfFile, String title) async {
+    final prefs = await SharedPreferences.getInstance();
+    final keysString = prefs.getString('gemini_api_keys') ?? '';
+    final modelName = prefs.getString('gemini_model') ?? 'gemini-1.5-flash';
+
+    final keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    if (keys.isEmpty) {
+      throw Exception('No API Keys configured. Please configure them in Settings.');
+    }
+
+    final pdfBytes = await pdfFile.readAsBytes();
+    final prompt = TextPart(r'''
+You are an expert curriculum designer. Convert the provided document into a structured JSON interactive lesson plan.
+The app supports these slide types: 'theory', 'quiz', 'fill_in_blank', 'numerical', 'interactive_canvas'.
+For 'interactive_canvas', generate RAW valid HTML/JS inside "interactiveCanvasHtml" that simulates the concept visually. Make sure the canvas resizes to the window. 
+For 'fill_in_blank', format the question with `___` (three underscores) where the user should type the answer inline.
+You MUST use LaTeX formatting inside Markdown by wrapping math in $ (inline) or $$ (block). Be careful to add spaces around $ symbols so they don't stick directly to underscores or punctuation.
+
+The JSON must perfectly match this structure (return ONLY JSON):
+{
+  "id": "generated-book-id",
+  "title": "Title Here",
+  "description": "Auto-generated book",
+  "icon": "Book",
+  "modules": [
+    {
+      "id": "m-1",
+      "title": "Module Title",
+      "description": "Module Desc",
+      "practiceQuestions": [
+        {
+          "id": "pq-1",
+          "type": "quiz",
+          "title": "Practice Quiz",
+          "content": "Question text...",
+          "options": [
+            {"id": "a", "text": "Option A", "isCorrect": true, "explanation": "Why"}
+          ]
+        }
+      ],
+      "examQuestions": [
+        {
+          "id": "eq-1",
+          "type": "numerical",
+          "title": "Exam Numerical",
+          "content": "Calculate $x$...",
+          "numericAnswer": 5,
+          "numericTolerance": 0.1
+        }
+      ],
+      "sections": [
+        {
+          "id": "s-1",
+          "title": "Section Title",
+          "description": "Section Desc",
+          "color": "duo-green",
+          "units": [
+            {
+              "id": "u-1",
+              "title": "Unit Title",
+              "description": "Unit Desc",
+              "lessons": [
+                {
+                  "id": "l-1",
+                  "title": "Lesson Title",
+                  "description": "Lesson Desc",
+                  "icon": "BookOpen",
+                  "slides": [
+                    {
+                      "id": "sl-1",
+                      "type": "theory",
+                      "title": "Slide Title",
+                      "content": "Markdown text with $ math $..."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+''');
+
+    Exception? lastException;
+
+    for (var apiKey in keys) {
+      try {
+        final model = GenerativeModel(
+          model: modelName,
+          apiKey: apiKey,
+          generationConfig: GenerationConfig(responseMimeType: 'application/json'),
         );
 
-        currentY += 140; // Increased vertical spacing between nodes
-        globalLessonIdx++;
+        final response = await model.generateContent([
+          Content.multi([
+            prompt,
+            DataPart('application/pdf', pdfBytes),
+          ])
+        ]);
+
+        if (response.text != null) {
+          final Map<String, dynamic> jsonMap = jsonDecode(response.text!);
+          return Book.fromJson(jsonMap);
+        }
+      } catch (e) {
+        print('Key $apiKey failed: $e');
+        lastException = Exception('Failed with key: $e');
       }
-      
-      currentY += 20; // Extra padding at the end of a unit
     }
 
-    stackChildren.insert(0, 
-      Positioned.fill(
-        child: CustomPaint(
-          painter: CurvedPathPainter(
-            points: pathPoints,
-            pathColor: Colors.grey.shade800,
-            activeColor: _getPathColor(),
-            activeIndex: 1, 
-          ),
-        ),
-      )
-    );
-
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      child: SizedBox(
-        height: currentY + 120, // Extra padding for bottom nav
-        width: double.infinity,
-        child: Stack(
-          alignment: Alignment.topCenter,
-          children: stackChildren,
-        ),
-      ),
-    );
+    throw lastException ?? Exception('Failed to generate book.');
   }
 }
+--- END OF FILE lib/services/ai_service.dart ---
 
-class CurvedPathPainter extends CustomPainter {
-  final List<Offset> points;
-  final Color pathColor;
-  final Color activeColor;
-  final int activeIndex;
-
-  CurvedPathPainter({
-    required this.points,
-    required this.pathColor,
-    required this.activeColor,
-    required this.activeIndex,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (points.length < 2) return;
-
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 14 // Thicker path
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    for (int i = 0; i < points.length - 1; i++) {
-      final p1 = points[i];
-      final p2 = points[i + 1];
-
-      final path = Path();
-      path.moveTo(p1.dx, p1.dy);
-      
-      double cy = (p1.dy + p2.dy) / 2;
-      path.cubicTo(p1.dx, cy, p2.dx, cy, p2.dx, p2.dy);
-
-      paint.color = (i < activeIndex) ? activeColor : pathColor;
-      canvas.drawPath(path, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
---- END OF FILE lib/widgets/lesson_path.dart ---
-
---- START OF FILE lib/widgets/lesson_node.dart ---
+--- START OF FILE lib/widgets/math_markdown.dart ---
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import '../models/app_models.dart';
-import '../theme/app_theme.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_markdown_latex/flutter_markdown_latex.dart';
+import 'package:markdown/markdown.dart' as md;
 
-class LessonNodeWidget extends StatelessWidget {
-  final Lesson lesson;
-  final bool isCompleted;
-  final bool isLocked;
-  final String sectionColorStr;
-  final VoidCallback onTap;
+class MathMarkdown extends StatelessWidget {
+  final String data;
+  final TextStyle? textStyle;
+  final TextAlign textAlign;
+  final List<md.InlineSyntax>? customSyntaxes;
+  final Map<String, MarkdownElementBuilder>? customBuilders;
 
-  const LessonNodeWidget({
-    super.key,
-    required this.lesson,
-    required this.isCompleted,
-    required this.isLocked,
-    required this.sectionColorStr,
-    required this.onTap,
+  const MathMarkdown({
+    super.key, 
+    required this.data, 
+    this.textStyle,
+    this.textAlign = TextAlign.left,
+    this.customSyntaxes,
+    this.customBuilders,
   });
-
-  Color _getColor() {
-    if (isCompleted) return Colors.amber;
-    switch (sectionColorStr) {
-      case 'duo-green': return AppTheme.duoGreen;
-      case 'duo-blue': return AppTheme.duoBlue;
-      case 'duo-violet': return AppTheme.duoViolet;
-      case 'duo-orange': return AppTheme.duoOrange;
-      default: return AppTheme.duoBlue;
-    }
-  }
-
-  Color _getShadowColor() {
-    if (isCompleted) return Colors.amber.shade700;
-    switch (sectionColorStr) {
-      case 'duo-green': return AppTheme.duoGreenDark;
-      case 'duo-blue': return AppTheme.duoBlueDark;
-      case 'duo-violet': return AppTheme.duoVioletDark;
-      case 'duo-orange': return AppTheme.duoOrangeDark;
-      default: return AppTheme.duoBlueDark;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = isLocked ? Colors.grey.shade800 : _getColor();
-    final shadowColor = isLocked ? Colors.grey.shade900 : _getShadowColor();
+    // Robust replacement string logic mapping to fix commonly mangled markdown outputs 
+    // from LLMs to ensure LaTeX compatibility
+    String safeData = data
+      .replaceAll(r'\$', r'$')
+      .replaceAll(r'\[', r'$$')
+      .replaceAll(r'\]', r'$$')
+      .replaceAll(r'\(', r'$')
+      .replaceAll(r'\)', r'$')
+      .replaceAll(r'$.', r'$ .')
+      .replaceAll(r'$,', r'$ ,')
+      .replaceAll(r'_$', r'_ $')
+      .replaceAll(r'-$', r'- $');
 
-    return GestureDetector(
-      onTap: isLocked ? null : onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 80, // Increased from 70 to 80
-            height: 80, // Increased from 70 to 80
-            decoration: BoxDecoration(
-              color: bgColor,
-              shape: BoxShape.circle,
-              border: Border.all(color: shadowColor, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: shadowColor,
-                  offset: const Offset(0, 6),
-                )
-              ],
-            ),
-            child: Icon(
-              isLocked ? LucideIcons.lock : LucideIcons.bookOpen,
-              color: isLocked ? Colors.grey.shade500 : Colors.white,
-              size: 36, // Increased icon size
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), // Increased padding
-            decoration: AppTheme.glassDecoration,
-            child: Text(
-              lesson.title.toUpperCase(),
-              style: const TextStyle(
-                fontSize: 11, // Slightly larger font
-                fontWeight: FontWeight.w900,
-                color: Colors.white70,
-                letterSpacing: 1.0,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          )
+    return MarkdownBody(
+      data: safeData,
+      selectable: true,
+      styleSheet: MarkdownStyleSheet(
+        p: textStyle ?? const TextStyle(fontSize: 16, color: Colors.white, height: 1.5, fontWeight: FontWeight.w600),
+        textAlign: WrapAlignment.start,
+      ),
+      builders: {
+        'latex': LatexElementBuilder(
+          textStyle: textStyle?.copyWith(color: Colors.amber) ?? const TextStyle(color: Colors.amber, fontSize: 16, fontWeight: FontWeight.w800),
+        ),
+        if (customBuilders != null) ...customBuilders!,
+      },
+      extensionSet: md.ExtensionSet(
+        [LatexBlockSyntax(), ...md.ExtensionSet.gitHubFlavored.blockSyntaxes],
+        [
+          LatexInlineSyntax(), 
+          if (customSyntaxes != null) ...customSyntaxes!,
+          ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes
         ],
       ),
     );
   }
 }
---- END OF FILE lib/widgets/lesson_node.dart ---
+--- END OF FILE lib/widgets/math_markdown.dart ---
+
+--- START OF FILE lib/widgets/slide_views/fill_in_blank_view.dart ---
+import 'package:flutter/material.dart';
+import 'package:markdown/markdown.dart' as md;
+import 'package:flutter_markdown/flutter_markdown.dart';
+import '../../models/app_models.dart';
+import '../../theme/app_theme.dart';
+import '../math_markdown.dart';
+
+class BlankSyntax extends md.InlineSyntax {
+  BlankSyntax() : super(r'___+'); // Matches 3 or more underscores
+  @override
+  bool onMatch(md.InlineParser parser, Match match) {
+    parser.addNode(md.Element.empty('blank'));
+    return true;
+  }
+}
+
+class BlankBuilder extends MarkdownElementBuilder {
+  final String value;
+  final bool isAnswered;
+  final bool isCorrect;
+  final Function(String) onChanged;
+
+  BlankBuilder({required this.value, required this.isAnswered, required this.isCorrect, required this.onChanged});
+
+  @override
+  Widget? visitElementAfter(md.Element element, TextStyle? preferredStyle) {
+    return Container(
+      width: 100,
+      height: 35,
+      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      child: TextField(
+        enabled: !isAnswered,
+        onChanged: onChanged,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.amber,
+        ),
+        decoration: InputDecoration(
+          contentPadding: const EdgeInsets.only(bottom: 12),
+          filled: true,
+          fillColor: Colors.black45,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+        ),
+      ),
+    );
+  }
+}
+
+class FillInBlankView extends StatelessWidget {
+  final Slide slide;
+  final String value;
+  final bool isAnswered;
+  final bool isCorrect;
+  final Function(String) onChanged;
+
+  const FillInBlankView({
+    super.key, 
+    required this.slide, 
+    required this.value, 
+    required this.isAnswered, 
+    required this.isCorrect, 
+    required this.onChanged
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    bool hasInlineBlank = slide.content.contains('___');
+
+    if (hasInlineBlank) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: AppTheme.glassDecoration,
+          child: MathMarkdown(
+            data: slide.content,
+            customSyntaxes: [BlankSyntax()],
+            customBuilders: {
+              'blank': BlankBuilder(
+                value: value,
+                isAnswered: isAnswered,
+                isCorrect: isCorrect,
+                onChanged: onChanged,
+              )
+            },
+          ),
+        ),
+      );
+    }
+
+    // Fallback: Standard block input logic if not written inline
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: AppTheme.glassDecoration,
+            child: MathMarkdown(data: slide.content, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(height: 32),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.white12, width: 2),
+            ),
+            child: Column(
+              children: [
+                const Text('YOUR ANSWER', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.5)),
+                const SizedBox(height: 12),
+                TextField(
+                  enabled: !isAnswered,
+                  onChanged: onChanged,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 22, 
+                    fontWeight: FontWeight.w900,
+                    color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.amber,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: '___',
+                    hintStyle: const TextStyle(color: Colors.white24),
+                    filled: true,
+                    fillColor: Colors.black45,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.amber, width: 2)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+--- END OF FILE lib/widgets/slide_views/fill_in_blank_view.dart ---
+
+--- START OF FILE lib/widgets/slide_views/step_by_step_view.dart ---
+import 'package:flutter/material.dart';
+import '../../models/app_models.dart';
+import '../../theme/app_theme.dart';
+import '../math_markdown.dart';
+import '../duo_button.dart';
+import 'interactive_proof_view.dart';
+
+class StepByStepView extends StatefulWidget {
+  final Slide slide;
+  final VoidCallback onComplete;
+
+  const StepByStepView({
+    super.key,
+    required this.slide,
+    required this.onComplete,
+  });
+
+  @override
+  State<StepByStepView> createState() => _StepByStepViewState();
+}
+
+class _StepByStepViewState extends State<StepByStepView> {
+  bool _started = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_started) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: AppTheme.glassDecoration,
+              child: MathMarkdown(data: widget.slide.content, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(height: 32),
+            DuoButton(
+              text: 'I have tried, show steps',
+              color: AppTheme.duoOrange,
+              shadowColor: AppTheme.duoOrangeDark,
+              onPressed: () => setState(() => _started = true),
+            )
+          ],
+        ),
+      );
+    }
+    return InteractiveProofView(slide: widget.slide, onComplete: widget.onComplete);
+  }
+}
+--- END OF FILE lib/widgets/slide_views/step_by_step_view.dart ---
+
+--- START OF FILE lib/screens/home_screen.dart ---
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../models/app_models.dart';
+import '../services/database_service.dart';
+import '../services/progress_service.dart';
+import '../theme/app_theme.dart';
+import 'main_layout_screen.dart';
+import 'settings_screen.dart';
+import 'generate_book_screen.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final DatabaseService _db = DatabaseService();
+  List<Book> books = [];
+  Map<String, double> progressMap = {};
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBooks();
+  }
+
+  Future<void> _loadBooks({bool force = false}) async {
+    final fetched = await _db.fetchBooks(forceRefresh: force);
+    
+    // Calculate progress metric locally
+    Map<String, double> prog = {};
+    for (var b in fetched) {
+      prog[b.id] = await ProgressService.getBookProgress(b);
+    }
+
+    setState(() {
+      books = fetched;
+      progressMap = prog;
+      isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('DuoFY Books', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+        actions: [
+          IconButton(
+            icon: const Icon(LucideIcons.settings),
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+            },
+          )
+        ],
+      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue))
+          : Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: RefreshIndicator(
+                color: AppTheme.duoBlue,
+                onRefresh: () => _loadBooks(force: true),
+                child: GridView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 0.75,
+                  ),
+                  itemCount: books.length,
+                  itemBuilder: (context, index) {
+                    final book = books[index];
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
+                          .then((_) => _loadBooks()); // Refresh progress on return
+                      },
+                      child: Container(
+                        decoration: AppTheme.glassDecoration.copyWith(
+                          border: Border.all(color: AppTheme.duoBlue.withOpacity(0.3), width: 2),
+                        ),
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(LucideIcons.book, size: 48, color: AppTheme.duoBlue),
+                            const SizedBox(height: 16),
+                            Text(
+                              book.title,
+                              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Expanded(
+                              child: Text(
+                                book.description,
+                                style: const TextStyle(color: Colors.white54, fontSize: 12),
+                                textAlign: TextAlign.center,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            LinearProgressIndicator(
+                              value: progressMap[book.id] ?? 0.0,
+                              backgroundColor: Colors.white12,
+                              color: AppTheme.duoGreen,
+                              borderRadius: BorderRadius.circular(4),
+                              minHeight: 6,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: AppTheme.duoGreen,
+        onPressed: () async {
+          await Navigator.push(context, MaterialPageRoute(builder: (_) => const GenerateBookScreen()));
+          _loadBooks(force: true); 
+        },
+        icon: const Icon(LucideIcons.sparkles, color: Colors.white),
+        label: const Text('New Book', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+      ),
+    );
+  }
+}
+--- END OF FILE lib/screens/home_screen.dart ---
+
+--- START OF FILE lib/screens/main_layout_screen.dart ---
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../models/app_models.dart';
+import '../theme/app_theme.dart';
+import '../services/global_state.dart';
+import 'book_dashboard_screen.dart';
+import 'practice_screen.dart';
+import 'notes_screen.dart';
+import 'exam_screen.dart';
+
+class MainLayoutScreen extends StatefulWidget {
+  final Book book;
+
+  const MainLayoutScreen({super.key, required this.book});
+
+  @override
+  State<MainLayoutScreen> createState() => _MainLayoutScreenState();
+}
+
+class _MainLayoutScreenState extends State<MainLayoutScreen> {
+  int _currentIndex = 0;
+  
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      BookDashboardScreen(book: widget.book),
+      PracticeScreen(book: widget.book),
+      NotesScreen(book: widget.book),
+      ExamScreen(book: widget.book),
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      extendBody: true, 
+      appBar: AppBar(
+        backgroundColor: AppTheme.background.withOpacity(0.9),
+        flexibleSpace: ClipRRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(color: Colors.transparent),
+          ),
+        ),
+        centerTitle: true,
+        title: Text(
+          widget.book.title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w900,
+            fontSize: 18,
+            letterSpacing: 1.0,
+            color: Colors.white,
+          ),
+        ),
+        actions: [
+          ValueListenableBuilder<int>(
+            valueListenable: GlobalState.xpNotifier,
+            builder: (context, xp, child) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(LucideIcons.zap, color: Colors.amber, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$xp XP', 
+                        style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.w900, fontSize: 14),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _pages,
+      ),
+      
+      // Glass Bottom Navigation Bar (Ultra Compact Icons only)
+      bottomNavigationBar: ClipRRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.6),
+              border: Border(top: BorderSide(color: Colors.white.withOpacity(0.15))),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildNavItem(0, LucideIcons.map),
+                  _buildNavItem(1, LucideIcons.dumbbell),
+                  _buildNavItem(2, LucideIcons.fileText),
+                  _buildNavItem(3, LucideIcons.bookOpenCheck),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData icon) {
+    final isActive = _currentIndex == index;
+    final color = isActive ? AppTheme.duoBlue : Colors.white54;
+    
+    return GestureDetector(
+      onTap: () => setState(() => _currentIndex = index),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        child: Icon(icon, color: color, size: 28),
+      ),
+    );
+  }
+}
+--- END OF FILE lib/screens/main_layout_screen.dart ---
 
 --- START OF FILE lib/screens/practice_screen.dart ---
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
-import '../widgets/duo_button.dart';
 import 'practice_session_screen.dart';
 
 class PracticeScreen extends StatelessWidget {
   final Book book;
 
   const PracticeScreen({super.key, required this.book});
+
+  Widget _buildPracticeCard(BuildContext context, String title, String subtitle, String type, IconData icon, Color color) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => PracticeSessionScreen(book: book, practiceType: type)),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withOpacity(0.3), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.1),
+              offset: const Offset(0, 4),
+              blurRadius: 10,
+            )
+          ]
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 24, color: color),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(fontSize: 12, color: Colors.white54, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+            Icon(LucideIcons.chevronRight, color: color.withOpacity(0.5))
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -291,35 +861,31 @@ class PracticeScreen extends StatelessWidget {
         title: const Text('Practice Arena', style: TextStyle(fontWeight: FontWeight.w900)),
         automaticallyImplyLeading: false,
       ),
-      body: Center(
+      body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(LucideIcons.dumbbell, size: 100, color: AppTheme.duoViolet.withOpacity(0.8)),
-              const SizedBox(height: 32),
-              const Text(
-                'Ready to Train?',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white),
+              const Padding(
+                padding: EdgeInsets.only(left: 8.0, bottom: 24.0, right: 8.0),
+                child: Text(
+                  'Target specific skills to master the concepts. Mistakes will be repeated until perfected!',
+                  style: TextStyle(color: Colors.white54, fontSize: 14, height: 1.4),
+                ),
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Review past concepts to strengthen your memory. Mistakes here will be repeated until you master them!',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white54, fontSize: 16, height: 1.5),
-              ),
-              const SizedBox(height: 48),
-              DuoButton(
-                text: 'Start Practice',
-                color: AppTheme.duoViolet,
-                shadowColor: AppTheme.duoVioletDark,
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => PracticeSessionScreen(book: book)),
-                  );
-                },
+              Expanded(
+                child: ListView(
+                  physics: const BouncingScrollPhysics(),
+                  children: [
+                    _buildPracticeCard(context, 'Multiple Choice', 'Test knowledge', 'quiz', LucideIcons.list, AppTheme.duoBlue),
+                    _buildPracticeCard(context, 'Proofs & Logic', 'Step-by-step', 'proof', LucideIcons.brainCircuit, AppTheme.duoViolet),
+                    _buildPracticeCard(context, 'Big Questions', 'Multi-stage', 'step_by_step', LucideIcons.layers, AppTheme.duoOrange),
+                    _buildPracticeCard(context, 'Fill in Blanks', 'Recall terms', 'fill_in_blank', LucideIcons.minus, AppTheme.duoRed),
+                    _buildPracticeCard(context, 'Numericals', 'Calculate values', 'numerical', LucideIcons.calculator, AppTheme.duoGreen),
+                    const SizedBox(height: 100), // padding for bottom nav
+                  ],
+                ),
               ),
             ],
           ),
@@ -330,6 +896,409 @@ class PracticeScreen extends StatelessWidget {
 }
 --- END OF FILE lib/screens/practice_screen.dart ---
 
+--- START OF FILE lib/screens/settings_screen.dart ---
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../theme/app_theme.dart';
+import '../widgets/duo_button.dart';
+
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  final _keysController = TextEditingController();
+  String _selectedModel = 'gemini-1.5-flash';
+  
+  final List<String> _models = [
+    'gemini-1.5-flash',
+    'gemini-1.5-pro',
+    'gemini-2.0-flash-exp'
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _keysController.text = prefs.getString('gemini_api_keys') ?? '';
+      _selectedModel = prefs.getString('gemini_model') ?? 'gemini-1.5-flash';
+    });
+  }
+
+  Future<void> _saveSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('gemini_api_keys', _keysController.text.trim());
+    await prefs.setString('gemini_model', _selectedModel);
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Settings Saved Successfully')));
+      Navigator.pop(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Settings')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Google Generative AI Config', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            
+            TextField(
+              controller: _keysController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Gemini API Keys (Comma Separated)',
+                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.black26,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text('Enter multiple API keys separated by commas. The system will fallback if one is rate limited.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 24),
+
+            const Text('Active AI Model', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              value: _selectedModel,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.black26,
+              ),
+              items: _models.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
+              onChanged: (val) {
+                if (val != null) setState(() => _selectedModel = val);
+              },
+            ),
+            
+            const SizedBox(height: 48),
+            DuoButton(
+              text: 'Save Settings',
+              onPressed: _saveSettings,
+              color: AppTheme.duoGreen,
+              shadowColor: AppTheme.duoGreenDark,
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+--- END OF FILE lib/screens/settings_screen.dart ---
+
+--- START OF FILE lib/screens/lesson_screen.dart ---
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../models/app_models.dart';
+import '../theme/app_theme.dart';
+import '../services/global_state.dart';
+import '../widgets/duo_button.dart';
+import '../widgets/math_markdown.dart';
+import '../widgets/slide_views/theory_view.dart';
+import '../widgets/slide_views/quiz_view.dart';
+import '../widgets/slide_views/fill_in_blank_view.dart';
+import '../widgets/slide_views/numerical_view.dart';
+import '../widgets/slide_views/interactive_webview.dart';
+import '../widgets/slide_views/interactive_proof_view.dart';
+import '../widgets/slide_views/step_by_step_view.dart';
+import 'lesson_complete_screen.dart';
+
+class LessonScreen extends StatefulWidget {
+  final Lesson lesson;
+
+  const LessonScreen({super.key, required this.lesson});
+
+  @override
+  State<LessonScreen> createState() => _LessonScreenState();
+}
+
+class _LessonScreenState extends State<LessonScreen> {
+  int _currentIndex = 0;
+  bool _answered = false;
+  bool _isCorrect = false;
+
+  late DateTime _startTime;
+  int _totalInteractive = 0;
+  int _correctAttempts = 0;
+
+  String? _selectedQuizOption;
+  String _blankInput = '';
+  String _numericInput = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _startTime = DateTime.now();
+    for (var slide in widget.lesson.slides) {
+      if (['quiz', 'fill_in_blank', 'numerical', 'proof', 'step_by_step'].contains(slide.type)) {
+        _totalInteractive++;
+      }
+    }
+  }
+
+  void _nextSlide() {
+    if (_currentIndex < widget.lesson.slides.length - 1) {
+      setState(() {
+        _currentIndex++;
+        _answered = false;
+        _isCorrect = false;
+        _selectedQuizOption = null;
+        _blankInput = '';
+        _numericInput = '';
+      });
+    } else {
+      _finishLesson();
+    }
+  }
+
+  Future<void> _finishLesson() async {
+    int timeSpent = DateTime.now().difference(_startTime).inSeconds;
+    int accuracy = _totalInteractive > 0 ? ((_correctAttempts / _totalInteractive) * 100).round() : 100;
+    int xpEarned = 15;
+
+    // Save XP Globally
+    await GlobalState.addXp(xpEarned);
+    
+    if (mounted) {
+      Navigator.pushReplacement(
+        context, 
+        MaterialPageRoute(builder: (_) => LessonCompleteScreen(
+          xpEarned: xpEarned,
+          accuracy: accuracy,
+          timeSpentSeconds: timeSpent,
+        ))
+      );
+    }
+  }
+
+  void _checkAnswer(Slide slide) {
+    bool correct = false;
+
+    if (slide.type == 'quiz' && _selectedQuizOption != null) {
+      final opt = slide.options!.firstWhere((o) => o.id == _selectedQuizOption);
+      correct = opt.isCorrect;
+    } else if (slide.type == 'fill_in_blank') {
+      correct = _blankInput.trim().toLowerCase() == slide.blankAnswer?.toLowerCase().replaceAll(r'\', '');
+    } else if (slide.type == 'numerical') {
+      final val = double.tryParse(_numericInput);
+      if (val != null && slide.numericAnswer != null) {
+        correct = (val - slide.numericAnswer!).abs() <= (slide.numericTolerance ?? 0.01);
+      }
+    }
+
+    setState(() {
+      _answered = true;
+      _isCorrect = correct;
+      if (correct) _correctAttempts++;
+    });
+  }
+
+  bool _canCheck(Slide slide) {
+    if (slide.type == 'quiz') return _selectedQuizOption != null;
+    if (slide.type == 'fill_in_blank') return _blankInput.trim().isNotEmpty;
+    if (slide.type == 'numerical') return _numericInput.trim().isNotEmpty;
+    return true; 
+  }
+
+  bool _isCustomBottomBar(Slide slide) {
+    return slide.type == 'proof' || slide.type == 'step_by_step';
+  }
+
+  String _getCorrectAnswerText(Slide slide) {
+    if (slide.type == 'quiz') {
+      final opt = slide.options?.firstWhere((o) => o.isCorrect, orElse: () => slide.options!.first);
+      return opt?.text ?? '';
+    }
+    if (slide.type == 'fill_in_blank') return slide.blankAnswer ?? '';
+    if (slide.type == 'numerical') return slide.numericAnswer?.toString() ?? '';
+    return '';
+  }
+
+  Widget _buildSlideContent(Slide slide) {
+    switch (slide.type) {
+      case 'interactive_canvas':
+        return InteractiveWebview(slide: slide);
+      case 'proof':
+        return InteractiveProofView(
+          slide: slide,
+          onComplete: () {
+            setState(() {
+              _isCorrect = true;
+              _answered = true;
+              _correctAttempts++;
+            });
+            _nextSlide();
+          },
+        );
+      case 'step_by_step':
+        return StepByStepView(
+          slide: slide,
+          onComplete: () {
+            setState(() {
+              _isCorrect = true;
+              _answered = true;
+              _correctAttempts++;
+            });
+            _nextSlide();
+          },
+        );
+      case 'quiz':
+        return QuizView(
+          slide: slide,
+          selectedOptionId: _selectedQuizOption,
+          isAnswered: _answered,
+          onSelect: (id) => setState(() => _selectedQuizOption = id),
+        );
+      case 'fill_in_blank':
+        return FillInBlankView(
+          slide: slide,
+          value: _blankInput,
+          isAnswered: _answered,
+          isCorrect: _isCorrect,
+          onChanged: (val) => setState(() => _blankInput = val),
+        );
+      case 'numerical':
+        return NumericalView(
+          slide: slide,
+          value: _numericInput,
+          isAnswered: _answered,
+          isCorrect: _isCorrect,
+          onChanged: (val) => setState(() => _numericInput = val),
+        );
+      case 'theory':
+      default:
+        return TheoryView(slide: slide);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.lesson.slides.isEmpty) {
+      return Scaffold(appBar: AppBar(), body: const Center(child: Text("Empty Lesson")));
+    }
+
+    final slide = widget.lesson.slides[_currentIndex];
+    final progress = (_currentIndex) / widget.lesson.slides.length;
+    final isInteractive = ['quiz', 'fill_in_blank', 'numerical'].contains(slide.type);
+    final hasCustomBar = _isCustomBottomBar(slide);
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(LucideIcons.x),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: LinearProgressIndicator(
+          value: progress,
+          backgroundColor: Colors.white12,
+          color: AppTheme.duoGreen,
+          minHeight: 12,
+          borderRadius: BorderRadius.circular(6),
+        ),
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            if (slide.title.isNotEmpty && !hasCustomBar)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                child: Text(
+                  slide.title, 
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            
+            Expanded(child: _buildSlideContent(slide)),
+            
+            // Native Bottom Check / Continue Bar (Hide if child implements its own)
+            if (!hasCustomBar)
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                decoration: BoxDecoration(
+                  color: _answered 
+                    ? (_isCorrect ? AppTheme.duoGreen.withOpacity(0.15) : AppTheme.duoRed.withOpacity(0.15))
+                    : Colors.transparent,
+                  border: Border(top: BorderSide(
+                    color: _answered ? (_isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.white10, 
+                    width: 2)
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_answered && !_isCorrect)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.duoRed.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppTheme.duoRed.withOpacity(0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('CORRECT ANSWER:', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.2)),
+                              const SizedBox(height: 4),
+                              MathMarkdown(
+                                data: _getCorrectAnswerText(slide), 
+                                textStyle: const TextStyle(color: AppTheme.duoRed, fontSize: 16, fontWeight: FontWeight.bold)
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      
+                    isInteractive && !_answered
+                        ? DuoButton(
+                            text: 'Check',
+                            color: _canCheck(slide) ? AppTheme.duoGreen : Colors.grey.shade700,
+                            shadowColor: _canCheck(slide) ? AppTheme.duoGreenDark : Colors.grey.shade800,
+                            onPressed: () {
+                              if (_canCheck(slide)) _checkAnswer(slide);
+                            },
+                          )
+                        : DuoButton(
+                            text: _answered && !_isCorrect ? 'Got It' : 'Continue',
+                            color: _answered && !_isCorrect ? AppTheme.duoRed : AppTheme.duoBlue,
+                            shadowColor: _answered && !_isCorrect ? AppTheme.duoRedDark : AppTheme.duoBlueDark,
+                            onPressed: () {
+                              if (_answered && !_isCorrect) {
+                                setState(() => _answered = false); // reset to try again
+                              } else {
+                                _nextSlide();
+                              }
+                            },
+                          ),
+                  ],
+                ),
+              )
+          ],
+        ),
+      ),
+    );
+  }
+}
+--- END OF FILE lib/screens/lesson_screen.dart ---
+
 --- START OF FILE lib/screens/practice_session_screen.dart ---
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -337,15 +1306,19 @@ import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../services/global_state.dart';
 import '../widgets/duo_button.dart';
+import '../widgets/math_markdown.dart';
 import '../widgets/slide_views/quiz_view.dart';
 import '../widgets/slide_views/fill_in_blank_view.dart';
 import '../widgets/slide_views/numerical_view.dart';
+import '../widgets/slide_views/interactive_proof_view.dart';
+import '../widgets/slide_views/step_by_step_view.dart';
 import 'lesson_complete_screen.dart';
 
 class PracticeSessionScreen extends StatefulWidget {
   final Book book;
+  final String practiceType; 
 
-  const PracticeSessionScreen({super.key, required this.book});
+  const PracticeSessionScreen({super.key, required this.book, required this.practiceType});
 
   @override
   State<PracticeSessionScreen> createState() => _PracticeSessionScreenState();
@@ -375,18 +1348,22 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
 
   void _extractInteractiveSlides() {
     List<Slide> pool = [];
+    
+    // Scan practice questions in modules
     for (var module in widget.book.modules) {
-      pool.addAll(module.practiceQuestions);
+      for (var slide in module.practiceQuestions) {
+        if (_isTargetType(slide.type)) pool.add(slide);
+      }
     }
+
+    // If still empty, scan lessons
     if (pool.isEmpty) {
       for (var module in widget.book.modules) {
         for (var section in module.sections) {
           for (var unit in section.units) {
             for (var lesson in unit.lessons) {
               for (var slide in lesson.slides) {
-                if (['quiz', 'fill_in_blank', 'numerical'].contains(slide.type)) {
-                  pool.add(slide);
-                }
+                if (_isTargetType(slide.type)) pool.add(slide);
               }
             }
           }
@@ -395,13 +1372,21 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     }
     
     pool.shuffle();
-    // Take up to 5 questions for a session
     if (pool.length > 5) {
       _queue = pool.sublist(0, 5);
     } else {
       _queue = pool;
     }
     _totalQuestions = _queue.length;
+  }
+
+  bool _isTargetType(String slideType) {
+    if (widget.practiceType == 'quiz' && slideType == 'quiz') return true;
+    if (widget.practiceType == 'proof' && slideType == 'proof') return true;
+    if (widget.practiceType == 'step_by_step' && (slideType == 'step_by_step' || slideType == 'proof')) return true;
+    if (widget.practiceType == 'fill_in_blank' && slideType == 'fill_in_blank') return true;
+    if (widget.practiceType == 'numerical' && slideType == 'numerical') return true;
+    return false;
   }
 
   Future<void> _finishPractice() async {
@@ -427,7 +1412,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
   void _processNext() {
     if (_isCorrect) {
       _completedQuestions++;
-      _queue.removeAt(0); // Pop correct answer
+      _queue.removeAt(0); 
     } else {
       _mistakesMade++;
       // Move to back of the queue to repeat later
@@ -478,6 +1463,22 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     return false;
   }
 
+  bool get _isCustomBottomBar {
+    if (_queue.isEmpty) return false;
+    final type = _queue.first.type;
+    return type == 'proof' || type == 'step_by_step';
+  }
+
+  String _getCorrectAnswerText(Slide slide) {
+    if (slide.type == 'quiz') {
+      final opt = slide.options?.firstWhere((o) => o.isCorrect, orElse: () => slide.options!.first);
+      return opt?.text ?? '';
+    }
+    if (slide.type == 'fill_in_blank') return slide.blankAnswer ?? '';
+    if (slide.type == 'numerical') return slide.numericAnswer?.toString() ?? '';
+    return '';
+  }
+
   Widget _buildContent(Slide slide) {
     if (slide.type == 'quiz') {
       return QuizView(
@@ -502,6 +1503,28 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
         isCorrect: _isCorrect,
         onChanged: (val) => setState(() => _numericInput = val),
       );
+    } else if (slide.type == 'proof') {
+      return InteractiveProofView(
+        slide: slide,
+        onComplete: () {
+          setState(() {
+            _isCorrect = true;
+            _answered = true;
+          });
+          _processNext();
+        },
+      );
+    } else if (slide.type == 'step_by_step') {
+      return StepByStepView(
+        slide: slide,
+        onComplete: () {
+          setState(() {
+            _isCorrect = true;
+            _answered = true;
+          });
+          _processNext();
+        },
+      );
     }
     return const SizedBox();
   }
@@ -511,7 +1534,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     if (_queue.isEmpty) {
       return Scaffold(
         appBar: AppBar(),
-        body: const Center(child: Text('No practice questions available.')),
+        body: const Center(child: Text('No practice questions available for this type.', style: TextStyle(color: Colors.white54))),
       );
     }
 
@@ -545,62 +1568,66 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
             
             Expanded(child: _buildContent(slide)),
             
-            // Bottom Action Bar
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-              decoration: BoxDecoration(
-                color: _answered 
-                  ? (_isCorrect ? AppTheme.duoGreen.withOpacity(0.15) : AppTheme.duoRed.withOpacity(0.15))
-                  : Colors.transparent,
-                border: Border(top: BorderSide(
-                  color: _answered ? (_isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.white10, 
-                  width: 2)
+            // Native Bottom Action Bar (hide if child implements its own)
+            if (!_isCustomBottomBar)
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                decoration: BoxDecoration(
+                  color: _answered 
+                    ? (_isCorrect ? AppTheme.duoGreen.withOpacity(0.15) : AppTheme.duoRed.withOpacity(0.15))
+                    : Colors.transparent,
+                  border: Border(top: BorderSide(
+                    color: _answered ? (_isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.white10, 
+                    width: 2)
+                  ),
                 ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (_answered)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(color: _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed, shape: BoxShape.circle),
-                            child: Icon(_isCorrect ? LucideIcons.check : LucideIcons.x, color: Colors.white, size: 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_answered && !_isCorrect)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.duoRed.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppTheme.duoRed.withOpacity(0.3)),
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Text(
-                              _isCorrect ? 'Excellent!' : 'Incorrect.',
-                              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed),
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('CORRECT ANSWER:', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.2)),
+                              const SizedBox(height: 4),
+                              MathMarkdown(
+                                data: _getCorrectAnswerText(slide), 
+                                textStyle: const TextStyle(color: AppTheme.duoRed, fontSize: 16, fontWeight: FontWeight.bold)
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                    
-                  !_answered
-                      ? DuoButton(
-                          text: 'Check',
-                          color: _canCheck() ? AppTheme.duoGreen : Colors.grey.shade700,
-                          shadowColor: _canCheck() ? AppTheme.duoGreenDark : Colors.grey.shade800,
-                          onPressed: () {
-                            if (_canCheck()) _checkAnswer();
-                          },
-                        )
-                      : DuoButton(
-                          text: _answered && !_isCorrect ? 'Got It' : 'Continue',
-                          color: _answered && !_isCorrect ? AppTheme.duoRed : AppTheme.duoBlue,
-                          shadowColor: _answered && !_isCorrect ? AppTheme.duoRedDark : AppTheme.duoBlueDark,
-                          onPressed: _processNext,
                         ),
-                ],
-              ),
-            )
+                      ),
+                      
+                    !_answered
+                        ? DuoButton(
+                            text: 'Check',
+                            color: _canCheck() ? AppTheme.duoGreen : Colors.grey.shade700,
+                            shadowColor: _canCheck() ? AppTheme.duoGreenDark : Colors.grey.shade800,
+                            onPressed: () {
+                              if (_canCheck()) _checkAnswer();
+                            },
+                          )
+                        : DuoButton(
+                            text: _answered && !_isCorrect ? 'Got It' : 'Continue',
+                            color: _answered && !_isCorrect ? AppTheme.duoRed : AppTheme.duoBlue,
+                            shadowColor: _answered && !_isCorrect ? AppTheme.duoRedDark : AppTheme.duoBlueDark,
+                            onPressed: _processNext,
+                          ),
+                  ],
+                ),
+              )
           ],
         ),
       ),
@@ -608,238 +1635,3 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
   }
 }
 --- END OF FILE lib/screens/practice_session_screen.dart ---
-
---- START OF FILE lib/screens/exam_screen.dart ---
-import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import '../models/app_models.dart';
-import '../theme/app_theme.dart';
-import '../widgets/math_markdown.dart';
-
-class ExamScreen extends StatelessWidget {
-  final Book book;
-
-  const ExamScreen({super.key, required this.book});
-
-  @override
-  Widget build(BuildContext context) {
-    // Gather exam questions from all modules
-    List<Slide> examQuestions = [];
-    for (var module in book.modules) {
-      examQuestions.addAll(module.examQuestions);
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Exam Reference', style: TextStyle(fontWeight: FontWeight.w900)),
-        automaticallyImplyLeading: false,
-      ),
-      body: examQuestions.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(LucideIcons.bookOpenCheck, size: 80, color: AppTheme.duoGreen.withOpacity(0.5)),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'No Exam Questions Found',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white),
-                  ),
-                ],
-              ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 120), // Padding for bottom nav
-              itemCount: examQuestions.length,
-              itemBuilder: (context, index) {
-                final q = examQuestions[index];
-
-                String answerText = '';
-                if (q.type == 'quiz') {
-                  final correctOpt = q.options?.firstWhere((o) => o.isCorrect, orElse: () => q.options!.first);
-                  answerText = r'**Answer:** ' + (correctOpt?.text ?? '') + r'\n\n*Explanation:* ' + (correctOpt?.explanation ?? '');
-                } else if (q.type == 'fill_in_blank') {
-                  answerText = r'**Answer:** $$' + (q.blankAnswer ?? '') + r'$$';
-                } else if (q.type == 'numerical') {
-                  answerText = r'**Answer:** ' + (q.numericAnswer?.toString() ?? '');
-                }
-
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: AppTheme.glassDecoration.copyWith(
-                    border: Border.all(color: AppTheme.duoOrange.withOpacity(0.3), width: 2),
-                  ),
-                  child: Theme(
-                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      iconColor: AppTheme.duoOrange,
-                      collapsedIconColor: Colors.white54,
-                      title: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            q.title.toUpperCase(),
-                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppTheme.duoOrange, letterSpacing: 1.2),
-                          ),
-                          const SizedBox(height: 8),
-                          MathMarkdown(data: q.content, textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
-                        ],
-                      ),
-                      childrenPadding: const EdgeInsets.all(20),
-                      expandedAlignment: Alignment.centerLeft,
-                      children: [
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppTheme.duoOrange.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppTheme.duoOrange.withOpacity(0.5)),
-                          ),
-                          child: MathMarkdown(
-                            data: answerText,
-                            textStyle: const TextStyle(fontSize: 16, color: Colors.white, height: 1.5),
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-    );
-  }
-}
---- END OF FILE lib/screens/exam_screen.dart ---
-
---- START OF FILE lib/screens/lesson_complete_screen.dart ---
-import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import '../theme/app_theme.dart';
-import '../widgets/duo_button.dart';
-
-class LessonCompleteScreen extends StatelessWidget {
-  final int xpEarned;
-  final int accuracy;
-  final int timeSpentSeconds;
-  final bool isPractice; 
-
-  const LessonCompleteScreen({
-    super.key,
-    required this.xpEarned,
-    required this.accuracy,
-    required this.timeSpentSeconds,
-    this.isPractice = false,
-  });
-
-  String get _formattedTime {
-    int m = timeSpentSeconds ~/ 60;
-    int s = timeSpentSeconds % 60;
-    if (m > 0) return '${m}m ${s}s';
-    return '${s}s';
-  }
-
-  String get _message {
-    if (accuracy == 100) return "Perfect!";
-    if (accuracy >= 80) return "Great Job!";
-    if (accuracy >= 60) return "Good Effort!";
-    return "Complete!";
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            children: [
-              const Spacer(),
-              const Icon(LucideIcons.trophy, size: 100, color: Colors.amber),
-              const SizedBox(height: 32),
-              Text(
-                _message,
-                style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.amber),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 48),
-              
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      decoration: AppTheme.glassDecoration.copyWith(
-                        border: const Border(bottom: BorderSide(color: Colors.amber, width: 4)),
-                      ),
-                      child: Column(
-                        children: [
-                          const Icon(LucideIcons.zap, color: Colors.amber, size: 28),
-                          const SizedBox(height: 8),
-                          const Text('XP EARNED', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 1.2)),
-                          const SizedBox(height: 4),
-                          Text('+$xpEarned', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      decoration: AppTheme.glassDecoration.copyWith(
-                        border: const Border(bottom: BorderSide(color: AppTheme.duoBlue, width: 4)),
-                      ),
-                      child: Column(
-                        children: [
-                          const Icon(LucideIcons.target, color: AppTheme.duoBlue, size: 28),
-                          const SizedBox(height: 8),
-                          const Text('ACCURACY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 1.2)),
-                          const SizedBox(height: 4),
-                          Text('$accuracy%', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                decoration: AppTheme.glassDecoration.copyWith(
-                  border: const Border(bottom: BorderSide(color: AppTheme.duoGreen, width: 4)),
-                ),
-                child: Column(
-                  children: [
-                    const Icon(LucideIcons.clock, color: AppTheme.duoGreen, size: 28),
-                    const SizedBox(height: 8),
-                    const Text('TIME SPENT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 1.2)),
-                    const SizedBox(height: 4),
-                    Text(_formattedTime, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
-                  ],
-                ),
-              ),
-              
-              const Spacer(),
-              DuoButton(
-                text: 'Continue',
-                color: AppTheme.duoGreen,
-                shadowColor: AppTheme.duoGreenDark,
-                onPressed: () {
-                  if (isPractice) {
-                    Navigator.pop(context); 
-                  } else {
-                    Navigator.pop(context); 
-                    Navigator.pop(context); 
-                  }
-                },
-              )
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
---- END OF FILE lib/screens/lesson_complete_screen.dart ---
