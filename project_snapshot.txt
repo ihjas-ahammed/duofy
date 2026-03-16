@@ -1,881 +1,76 @@
-```bash
-rm lib/screens/pdf_split_preview_screen.dart
-```
 
---- START OF FILE README.md ---
-# DuoFY (Flutter Port)
-
-A generic, Duolingo-style interactive learning platform that turns any book into an interactive lesson path using Gemini AI.
-
-## Setup Instructions
-
-### 1. Dependencies
-Ensure you have the required packages:
-```bash
-flutter pub add firebase_database webview_flutter google_generative_ai file_picker flutter_markdown shared_preferences lucide_icons path_provider http
-flutter pub add flutter_markdown_latex markdown
-flutter pub add syncfusion_flutter_pdf syncfusion_flutter_pdfviewer
-```
-
-### 2. Firebase Realtime Database Configuration
-This app uses Firebase Realtime Database to store generated books and progress.
-1. Go to the [Firebase Console](https://console.firebase.google.com/).
-2. Select your project.
-3. Navigate to **Realtime Database** and click **Create Database** (Start in Test Mode for development).
-4. Run `flutterfire configure` to link your active Firebase project.
-
-### 3. Google Generative AI (Gemini) API Key
-We use the Gemini API to analyze uploaded PDFs and generate interactive JSON lessons.
-1. Get a free API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
-2. Launch the app, click the **Settings** (gear) icon on the Home Screen.
-3. Enter your Gemini API key and save it securely.
-
-## Project Structure Overview
-- `/lib/models`: Data structures (Book, Module, Lesson, Slide, InteractiveStep, etc.)
-- `/lib/screens`: Home, Dashboard (Path), Lesson Player, Completion Screen, PDF Generator, Practice
-- `/lib/widgets`: Modular UI components (Custom Duolingo-style Buttons, Glass Panels, MathMarkdown)
-- `/lib/widgets/slide_views`: Individual renderers for theory, quiz, blanks, numericals, JS canvas, and Interactive Proofs.
-- `/lib/services`: AI, Database handling, and PDF splitting services
-- `/lib/utils`: JSON Calibrators and safe parsers to stabilize AI output.
-- `/lib/theme`: Colors and global styling matching the web platform
-
-## Recent Updates & Design Process
-- **Instant Flow Integration**: Removed the intermediate PDF split preview screen. You enter the book name, upload the PDF, and the app rapidly fetches the metadata outline. The physical chunking now directly happens in the background while you are on the Home screen.
-- **AI JSON Calibration Engine**: Added a dedicated `JsonCalibrator` utility that runs post-generation. It intercepts `RangeError`, `FormatException`, unescaped newlines, invalid LaTeX escaping, and trailing commas to guarantee the app doesn't crash on slightly malformed AI outputs.
-- **Robust Model Parsing**: Hardened the data classes (`app_models.dart`) using safe type checks (`is List`) so that even if the AI misses an array, the UI falls back gracefully to empty lists instead of throwing runtime exceptions.
-- **Small Screen Optimizations**: Adjusted vertical strides in `LessonPath` (`currentY += 180`) and added padding buffers to completely eliminate overlap and layout overflow errors on compact devices (720x1520 at 271dpi).
-- **Duolingo-Style Theme Tweaks**: Added standard rounded text fields and refined the glassmorphism rendering across generation flows.
---- END OF FILE README.md ---
-
---- START OF FILE lib/utils/json_calibrator.dart ---
-import 'dart:convert';
-
-class JsonCalibrator {
-  /// Aggressively sanitizes, cleans, and decodes AI generated JSON
-  /// to prevent RangeErrors and FormatExceptions due to hallucinated syntax.
-  static Map<String, dynamic> cleanAndDecode(String raw) {
-    String c = raw.trim();
-    
-    // Strip markdown code blocks safely
-    if (c.contains('```json')) {
-      final parts = c.split('```json');
-      if (parts.length > 1) {
-        c = parts[1];
-        if (c.contains('```')) c = c.split('```')[0];
-      }
-    } else if (c.contains('```')) {
-      final parts = c.split('```');
-      if (parts.length > 1) {
-        c = parts[1];
-        if (c.contains('```')) c = c.split('```')[0];
-      }
-    }
-
-    int s = c.indexOf('{');
-    int e = c.lastIndexOf('}');
-    
-    if (s == -1 || e == -1 || s > e) {
-      print("JSON Calibrator Error: No valid JSON object bounds found.");
-      return {}; // Safe fallback
-    }
-    
-    c = c.substring(s, e + 1);
-
-    try {
-      final decoded = jsonDecode(c);
-      if (decoded is Map<String, dynamic>) return decoded;
-      return {};
-    } catch (err) {
-      print("Initial JSON parse failed. Running calibration... ($err)");
-      
-      // Step 1: Fix unescaped newlines inside strings
-      c = c.replaceAll('\n', ' ');
-      
-      // Step 2: Fix trailing commas
-      c = c.replaceAll(RegExp(r',\s*}'), '}').replaceAll(RegExp(r',\s*\]'), ']');
-      
-      // Step 3: Ensure LaTeX backslashes are heavily escaped
-      c = c.replaceAll(r'\frac', r'\\frac')
-           .replaceAll(r'\sqrt', r'\\sqrt')
-           .replaceAll(r'\text', r'\\text')
-           .replaceAll(r'\cdot', r'\\cdot')
-           .replaceAll(r'\pi', r'\\pi');
-
-      try {
-        final decoded = jsonDecode(c);
-        if (decoded is Map<String, dynamic>) return decoded;
-        return {};
-      } catch (err2) {
-        print("Aggressive calibration failed: $err2");
-        return {}; // Final safe fallback to avoid complete app crash
-      }
-    }
-  }
-}
---- END OF FILE lib/utils/json_calibrator.dart ---
-
---- START OF FILE lib/services/ai_service.dart ---
-import 'dart:io';
-import 'dart:async';
-import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../models/app_models.dart';
-import '../utils/json_calibrator.dart';
-
-class AiService {
-  Future<List<String>> _getKeys() async {
-    final prefs = await SharedPreferences.getInstance();
-    List<String> keys = prefs.getStringList('gemini_api_keys_list') ?? [];
-    if (keys.isEmpty) {
-      final keysString = prefs.getString('gemini_api_keys') ?? '';
-      keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
-    }
-    if (keys.isEmpty) throw Exception('No API Keys configured.');
-    return keys;
-  }
-
-  Future<List<String>> _getModels() async {
-    final prefs = await SharedPreferences.getInstance();
-    List<String> models = prefs.getStringList('gemini_models_list') ?? [];
-    if (models.isEmpty) {
-      final oldModel = prefs.getString('gemini_model') ?? 'gemini-1.5-flash';
-      models = [oldModel];
-    }
-    return models;
-  }
-
-  /// STAGE 1: Extracts the table of contents and creates the Book Skeleton
-  Future<Book?> generateBookSkeleton(File pdfFile, String filename, String userTitle) async {
-    final keys = await _getKeys();
-    final models = await _getModels();
-    final pdfBytes = await pdfFile.readAsBytes();
-    
-    final prompt = TextPart('''
-You are an expert curriculum designer. Analyze the attached PDF document to create a high-level course skeleton.
-The user uploaded a file named: "$filename". 
-${userTitle.isNotEmpty ? 'The user specified the course title as: "$userTitle". Use this exact title in the `title` field.' : 'Generate a suitable, professional `title` for this course based on the document content.'}
-
-CRITICAL INSTRUCTIONS:
-1. The `startPage` and `endPage` MUST refer to the ABSOLUTE PDF PAGE INDEX (1-based index where the absolute first page of the file is 1).
-2. You must extract the Table of Contents and structure it into Modules -> Sections -> Units. Each Section MUST have at least 1 Unit.
-3. In the custom `systemPrompt` string you generate, STRICTLY instruct the AI to use double-escaped backslashes for all LaTeX (e.g. \\\\frac instead of \\frac).
-
-Return ONLY valid JSON matching this exact structure:
-{
-  "id": "generated-book-${DateTime.now().millisecondsSinceEpoch}",
-  "title": "Generated Course Title Here",
-  "description": "Auto-generated book overview",
-  "icon": "Book",
-  "systemPrompt": "You are an expert tutor... Remember to double-escape LaTeX strings...",
-  "modules":[
-    {
-      "id": "m-1",
-      "title": "Module Title",
-      "description": "Module Desc",
-      "practiceQuestions": [],
-      "examQuestions": [],
-      "sections":[
-        {
-          "id": "s-1",
-          "title": "Section Title",
-          "description": "Section Desc",
-          "color": "duo-green",
-          "units":[
-            {
-              "id": "u-1",
-              "title": "Unit Title",
-              "description": "Unit Desc",
-              "startPage": 1,
-              "endPage": 10
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
-''');
-
-    Exception? lastException;
-    
-    for (var modelName in models) {
-      for (var apiKey in keys) {
-        try {
-          print("Requesting MetaData from Gemini using model: $modelName...");
-          final model = GenerativeModel(
-            model: modelName,
-            apiKey: apiKey,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
-          );
-
-          final response = await model.generateContent([
-            Content.multi([prompt, DataPart('application/pdf', pdfBytes)])
-          ]).timeout(const Duration(minutes: 5));
-
-          if (response.text != null) {
-            final jsonMap = JsonCalibrator.cleanAndDecode(response.text!);
-            if (jsonMap.isEmpty) throw Exception("Generated JSON was empty or unrecoverable.");
-            
-            // Override title forcefully if provided to ensure it matches user input
-            if (userTitle.isNotEmpty) {
-              jsonMap['title'] = userTitle;
-            }
-
-            return Book.fromJson(jsonMap);
-          }
-        } on TimeoutException {
-          lastException = Exception('Request timed out ($modelName).');
-        } catch (e) {
-          lastException = Exception('Generation failed: $e');
-        }
-      }
-    }
-    throw lastException ?? Exception('Failed to generate skeleton. All models/keys exhausted.');
-  }
-
-  /// STAGE 2: Generates deep lesson content for a specific chunked PDF Unit
-  Future<Unit> generateUnitContent(Unit unit, Book bookContext) async {
-    final keys = await _getKeys();
-    final models = await _getModels();
-    
-    if (unit.pdfPath == null) throw Exception("No PDF chunk available for this unit.");
-    final pdfBytes = await File(unit.pdfPath!).readAsBytes();
-
-    final prompt = TextPart('''
-SYSTEM PROMPT:
-${bookContext.systemPrompt ?? "You are an expert tutor."}
-
-TASK:
-Generate interactive lesson content for the unit: "${unit.title}".
-Rely on the provided attached PDF chunk.
-You MUST use LaTeX formatting inside Markdown by wrapping math in \$ (inline) or \$\$ (block).
-CRITICAL: All backslashes in LaTeX MUST be double-escaped for JSON compatibility (e.g., use \\\\frac{1}{2} instead of \\frac{1}{2}). Do not use unescaped quotes inside string values.
-
-Return ONLY valid JSON representing the "lessons" array.
-Format:
-{
-  "lessons": [
-    {
-      "id": "l-${DateTime.now().millisecondsSinceEpoch}-1",
-      "title": "Lesson Title",
-      "description": "Short Description",
-      "icon": "BookOpen",
-      "slides": [
-        {
-          "id": "sl-1",
-          "type": "theory",
-          "title": "Slide Title",
-          "content": "Theory text here..."
-        }
-      ]
-    }
-  ]
-}
-''');
-
-    Exception? lastException;
-    
-    for (var modelName in models) {
-      for (var apiKey in keys) {
-        try {
-          print("Generating Unit Content [${unit.title}] using model: $modelName...");
-          final model = GenerativeModel(
-            model: modelName,
-            apiKey: apiKey,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
-          );
-
-          final response = await model.generateContent([
-            Content.multi([prompt, DataPart('application/pdf', pdfBytes)])
-          ]).timeout(const Duration(minutes: 5));
-
-          if (response.text != null) {
-            final jsonMap = JsonCalibrator.cleanAndDecode(response.text!);
-            final lessonsData = jsonMap['lessons'];
-            
-            List<Lesson> newLessons = [];
-            if (lessonsData is List) {
-               newLessons = lessonsData.map((l) => Lesson.fromJson(Map<String, dynamic>.from(l))).toList();
-            }
-            
-            return unit.copyWith(isGenerated: true, lessons: newLessons);
-          }
-        } on TimeoutException {
-          lastException = Exception('Request timed out.');
-        } catch (e) {
-          lastException = Exception('Failed: $e');
-        }
-      }
-    }
-    throw lastException ?? Exception('Failed to generate unit content. All models/keys exhausted.');
-  }
-}
---- END OF FILE lib/services/ai_service.dart ---
-
---- START OF FILE lib/models/app_models.dart ---
-class Book {
-  final String id;
-  final String title;
-  final String description;
-  final String icon;
-  final String? systemPrompt;
-  final List<Module> modules;
-
-  Book({
-    required this.id, 
-    required this.title, 
-    required this.description, 
-    required this.icon, 
-    this.systemPrompt,
-    required this.modules
-  });
-
-  factory Book.fromJson(Map<String, dynamic> json) {
-    return Book(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      icon: json['icon'] ?? 'Book',
-      systemPrompt: json['systemPrompt'],
-      modules: (json['modules'] is List) 
-        ? (json['modules'] as List).map((m) => Module.fromJson(Map<String, dynamic>.from(m))).toList() 
-        : [],
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'description': description,
-    'icon': icon,
-    if (systemPrompt != null) 'systemPrompt': systemPrompt,
-    'modules': modules.map((m) => m.toJson()).toList(),
-  };
-
-  Book copyWith({
-    String? id,
-    String? title,
-    String? description,
-    String? icon,
-    String? systemPrompt,
-    List<Module>? modules,
-  }) {
-    return Book(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      description: description ?? this.description,
-      icon: icon ?? this.icon,
-      systemPrompt: systemPrompt ?? this.systemPrompt,
-      modules: modules ?? this.modules,
-    );
-  }
-}
-
-class Module {
-  final String id;
-  final String title;
-  final String description;
-  final List<Section> sections;
-  final List<Slide> practiceQuestions;
-  final List<Slide> examQuestions;
-
-  Module({
-    required this.id, 
-    required this.title, 
-    required this.description, 
-    required this.sections,
-    required this.practiceQuestions,
-    required this.examQuestions,
-  });
-
-  factory Module.fromJson(Map<String, dynamic> json) {
-    return Module(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      sections: (json['sections'] is List) 
-        ? (json['sections'] as List).map((s) => Section.fromJson(Map<String, dynamic>.from(s))).toList() 
-        : [],
-      practiceQuestions: (json['practiceQuestions'] is List) 
-        ? (json['practiceQuestions'] as List).map((s) => Slide.fromJson(Map<String, dynamic>.from(s))).toList() 
-        : [],
-      examQuestions: (json['examQuestions'] is List) 
-        ? (json['examQuestions'] as List).map((s) => Slide.fromJson(Map<String, dynamic>.from(s))).toList() 
-        : [],
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'description': description,
-    'sections': sections.map((s) => s.toJson()).toList(),
-    'practiceQuestions': practiceQuestions.map((s) => s.toJson()).toList(),
-    'examQuestions': examQuestions.map((s) => s.toJson()).toList(),
-  };
-
-  Module copyWith({
-    String? id,
-    String? title,
-    String? description,
-    List<Section>? sections,
-    List<Slide>? practiceQuestions,
-    List<Slide>? examQuestions,
-  }) {
-    return Module(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      description: description ?? this.description,
-      sections: sections ?? this.sections,
-      practiceQuestions: practiceQuestions ?? this.practiceQuestions,
-      examQuestions: examQuestions ?? this.examQuestions,
-    );
-  }
-}
-
-class Section {
-  final String id;
-  final String title;
-  final String description;
-  final String color;
-  final List<Unit> units;
-
-  Section({
-    required this.id, 
-    required this.title, 
-    required this.description, 
-    required this.color, 
-    required this.units
-  });
-
-  factory Section.fromJson(Map<String, dynamic> json) {
-    return Section(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      color: json['color'] ?? 'duo-blue',
-      units: (json['units'] is List) 
-        ? (json['units'] as List).map((u) => Unit.fromJson(Map<String, dynamic>.from(u))).toList() 
-        : [],
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'description': description,
-    'color': color,
-    'units': units.map((u) => u.toJson()).toList(),
-  };
-
-  Section copyWith({
-    String? id,
-    String? title,
-    String? description,
-    String? color,
-    List<Unit>? units,
-  }) {
-    return Section(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      description: description ?? this.description,
-      color: color ?? this.color,
-      units: units ?? this.units,
-    );
-  }
-}
-
-class Unit {
-  final String id;
-  final String title;
-  final String description;
-  final int? startPage;
-  final int? endPage;
-  final bool isGenerated;
-  final String? pdfPath;
-  final List<Lesson> lessons;
-
-  Unit({
-    required this.id, 
-    required this.title, 
-    required this.description, 
-    this.startPage,
-    this.endPage,
-    required this.isGenerated,
-    this.pdfPath,
-    required this.lessons
-  });
-
-  factory Unit.fromJson(Map<String, dynamic> json) {
-    return Unit(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      startPage: json['startPage'],
-      endPage: json['endPage'],
-      isGenerated: json['isGenerated'] ?? true,
-      pdfPath: json['pdfPath'],
-      lessons: (json['lessons'] is List) 
-        ? (json['lessons'] as List).map((l) => Lesson.fromJson(Map<String, dynamic>.from(l))).toList() 
-        : [],
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'description': description,
-    if (startPage != null) 'startPage': startPage,
-    if (endPage != null) 'endPage': endPage,
-    'isGenerated': isGenerated,
-    if (pdfPath != null) 'pdfPath': pdfPath,
-    'lessons': lessons.map((l) => l.toJson()).toList(),
-  };
-
-  Unit copyWith({
-    String? id,
-    String? title,
-    String? description,
-    int? startPage,
-    int? endPage,
-    bool? isGenerated,
-    String? pdfPath,
-    List<Lesson>? lessons,
-  }) {
-    return Unit(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      description: description ?? this.description,
-      startPage: startPage ?? this.startPage,
-      endPage: endPage ?? this.endPage,
-      isGenerated: isGenerated ?? this.isGenerated,
-      pdfPath: pdfPath ?? this.pdfPath,
-      lessons: lessons ?? this.lessons,
-    );
-  }
-}
-
-class Lesson {
-  final String id;
-  final String title;
-  final String description;
-  final String icon;
-  final List<Slide> slides;
-
-  Lesson({required this.id, required this.title, required this.description, required this.icon, required this.slides});
-
-  factory Lesson.fromJson(Map<String, dynamic> json) {
-    return Lesson(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      icon: json['icon'] ?? 'BookOpen',
-      slides: (json['slides'] is List) 
-        ? (json['slides'] as List).map((s) => Slide.fromJson(Map<String, dynamic>.from(s))).toList() 
-        : [],
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'description': description,
-    'icon': icon,
-    'slides': slides.map((s) => s.toJson()).toList(),
-  };
-}
-
-class InteractiveStep {
-  final String? prompt;
-  final String? stepText;
-  final List<QuizOption>? options;
-
-  InteractiveStep({this.prompt, this.stepText, this.options});
-
-  factory InteractiveStep.fromJson(Map<String, dynamic> json) {
-    return InteractiveStep(
-      prompt: json['prompt'],
-      stepText: json['stepText'],
-      options: (json['options'] is List) 
-        ? (json['options'] as List).map((o) => QuizOption.fromJson(Map<String, dynamic>.from(o))).toList() 
-        : null,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    if (prompt != null) 'prompt': prompt,
-    if (stepText != null) 'stepText': stepText,
-    if (options != null) 'options': options!.map((o) => o.toJson()).toList(),
-  };
-}
-
-class Slide {
-  final String id;
-  final String type;
-  final String title;
-  final String content;
-  final String? interactiveCanvasHtml;
-  final List<QuizOption>? options;
-  final List<InteractiveStep>? interactiveSteps;
-  final List<String>? proofSteps;
-  final String? blankAnswer;
-  final double? numericAnswer;
-  final double? numericTolerance;
-
-  Slide({
-    required this.id,
-    required this.type,
-    required this.title,
-    required this.content,
-    this.interactiveCanvasHtml,
-    this.options,
-    this.interactiveSteps,
-    this.proofSteps,
-    this.blankAnswer,
-    this.numericAnswer,
-    this.numericTolerance,
-  });
-
-  factory Slide.fromJson(Map<String, dynamic> json) {
-    return Slide(
-      id: json['id'] ?? '',
-      type: json['type'] ?? 'theory',
-      title: json['title'] ?? '',
-      content: json['content'] ?? '',
-      interactiveCanvasHtml: json['interactiveCanvasHtml'],
-      options: (json['options'] is List) 
-        ? (json['options'] as List).map((o) => QuizOption.fromJson(Map<String, dynamic>.from(o))).toList() 
-        : null,
-      interactiveSteps: (json['interactiveSteps'] is List) 
-        ? (json['interactiveSteps'] as List).map((s) => InteractiveStep.fromJson(Map<String, dynamic>.from(s))).toList() 
-        : null,
-      proofSteps: (json['proofSteps'] is List) 
-        ? (json['proofSteps'] as List).map((s) => s.toString()).toList() 
-        : null,
-      blankAnswer: json['blankAnswer'],
-      numericAnswer: json['numericAnswer']?.toDouble(),
-      numericTolerance: json['numericTolerance']?.toDouble() ?? 0.01,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'type': type,
-    'title': title,
-    'content': content,
-    if (interactiveCanvasHtml != null) 'interactiveCanvasHtml': interactiveCanvasHtml,
-    if (options != null) 'options': options!.map((o) => o.toJson()).toList(),
-    if (interactiveSteps != null) 'interactiveSteps': interactiveSteps!.map((s) => s.toJson()).toList(),
-    if (proofSteps != null) 'proofSteps': proofSteps,
-    if (blankAnswer != null) 'blankAnswer': blankAnswer,
-    if (numericAnswer != null) 'numericAnswer': numericAnswer,
-    if (numericTolerance != null) 'numericTolerance': numericTolerance,
-  };
-}
-
-class QuizOption {
-  final String id;
-  final String text;
-  final bool isCorrect;
-  final String explanation;
-
-  QuizOption({required this.id, required this.text, required this.isCorrect, required this.explanation});
-
-  factory QuizOption.fromJson(Map<String, dynamic> json) {
-    return QuizOption(
-      id: json['id'] ?? '',
-      text: json['text'] ?? '',
-      isCorrect: json['isCorrect'] ?? false,
-      explanation: json['explanation'] ?? '',
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'text': text,
-    'isCorrect': isCorrect,
-    'explanation': explanation,
-  };
-}
---- END OF FILE lib/models/app_models.dart ---
-
---- START OF FILE lib/screens/generate_book_screen.dart ---
-import 'dart:io';
+--- START OF FILE lib/widgets/unit_header.dart ---
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import '../services/ai_service.dart';
-import '../services/generation_manager.dart';
+import '../models/app_models.dart';
 import '../theme/app_theme.dart';
-import '../widgets/duo_button.dart';
+import 'duo_button.dart';
 
-class GenerateBookScreen extends StatefulWidget {
-  const GenerateBookScreen({super.key});
+class UnitHeader extends StatelessWidget {
+  final Unit unit;
+  final bool isGenerated;
+  final bool isLoading;
+  final VoidCallback onGenerate;
 
-  @override
-  State<GenerateBookScreen> createState() => _GenerateBookScreenState();
-}
-
-class _GenerateBookScreenState extends State<GenerateBookScreen> {
-  final AiService _aiService = AiService();
-  final TextEditingController _titleCtrl = TextEditingController();
-  
-  File? _selectedFile;
-  bool _isGenerating = false;
-
-  Future<void> _pickFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-    );
-
-    if (result != null) {
-      setState(() {
-        _selectedFile = File(result.files.single.path!);
-      });
-    }
-  }
-
-  Future<void> _generate() async {
-    if (_selectedFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a PDF file first.')));
-      return;
-    }
-
-    setState(() => _isGenerating = true);
-
-    try {
-      final filename = _selectedFile!.path.split('/').last;
-      final userTitle = _titleCtrl.text.trim();
-      
-      // Stage 1: Generate Metadata
-      final skeletonBook = await _aiService.generateBookSkeleton(_selectedFile!, filename, userTitle);
-      
-      if (skeletonBook != null && mounted) {
-        // Automatically fire background split and jump back to Home instantly
-        GenerationManager.instance.startBackgroundSplitAndSave(_selectedFile!, skeletonBook);
-        Navigator.pop(context); 
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
-        setState(() => _isGenerating = false);
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _titleCtrl.dispose();
-    super.dispose();
-  }
+  const UnitHeader({
+    super.key,
+    required this.unit,
+    required this.isGenerated,
+    required this.isLoading,
+    required this.onGenerate,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('New Course', style: TextStyle(fontWeight: FontWeight.w900))),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+    return AppTheme.applyGlassBlur(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              "Give your course a name and attach the PDF material. We'll automatically break it down into a structured lesson path.",
-              style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
+            Text(
+              unit.title.toUpperCase(),
+              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white, letterSpacing: 1.2),
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
-            
-            const Text('COURSE TITLE (OPTIONAL)', style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _titleCtrl,
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'e.g., Quantum Mechanics 101',
-                hintStyle: const TextStyle(color: Colors.white38),
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.white12)),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.white12)),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppTheme.duoBlue, width: 2)),
-              ),
+            const SizedBox(height: 6),
+            Text(
+              unit.description,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white54),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
             
-            const SizedBox(height: 24),
-            const Text('SOURCE MATERIAL', style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
-            const SizedBox(height: 8),
-            
-            DuoButton(
-              text: _selectedFile != null ? 'Change PDF' : 'Upload PDF',
-              onPressed: _pickFile,
-              color: AppTheme.duoBlue,
-              shadowColor: AppTheme.duoBlueDark,
-              isOutline: _selectedFile != null,
-            ),
-            
-            if (_selectedFile != null)
+            if (!isGenerated)
               Padding(
-                padding: const EdgeInsets.only(top: 16.0),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppTheme.duoBlue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppTheme.duoBlue.withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(LucideIcons.fileText, color: AppTheme.duoBlue),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _selectedFile!.path.split('/').last,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                padding: const EdgeInsets.only(top: 16),
+                child: isLoading
+                    ? const Center(child: CircularProgressIndicator(color: AppTheme.duoViolet))
+                    : SizedBox(
+                        width: double.infinity,
+                        child: DuoButton(
+                          text: 'Generate Unit',
+                          color: AppTheme.duoViolet,
+                          shadowColor: AppTheme.duoVioletDark,
+                          onPressed: onGenerate,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
-            
-            const SizedBox(height: 48),
-            
-            if (_isGenerating)
-              const Column(
-                children: [
-                  CircularProgressIndicator(color: AppTheme.duoGreen),
-                  SizedBox(height: 24),
-                  Text('Extracting Metadata...', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                  SizedBox(height: 8),
-                  Text('This takes a few seconds. We will start splitting in the background right after.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Colors.white54)),
-                  SizedBox(height: 32),
-                ],
               )
-            else
-              DuoButton(
-                text: 'Create Course',
-                onPressed: _generate,
-                color: AppTheme.duoGreen,
-                shadowColor: AppTheme.duoGreenDark,
-              ),
           ],
         ),
       ),
     );
   }
 }
---- END OF FILE lib/screens/generate_book_screen.dart ---
+--- END OF FILE lib/widgets/unit_header.dart ---
 
 --- START OF FILE lib/widgets/lesson_path.dart ---
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../screens/lesson_screen.dart';
 import 'lesson_node.dart';
-import 'duo_button.dart';
+import 'unit_header.dart';
 
 class LessonPath extends StatelessWidget {
   final Section section;
@@ -906,62 +101,30 @@ class LessonPath extends StatelessWidget {
 
     double currentY = 30; 
     int globalLessonIdx = 0;
-    int unitIdx = 0;
 
-    for (var unit in section.units) {
+    for (int i = 0; i < section.units.length; i++) {
+      final unit = section.units[i];
+      final int currentUnitIdx = i; // Fixes Dart closure variable capture bug
       final bool isGenerated = unit.isGenerated && unit.lessons.isNotEmpty;
       final bool isLoading = loadingUnitIds.contains(unit.id);
 
-      // Compact Unit Header safely bounded
+      // Compact Unit Header ensuring no overflows on small screens
       stackChildren.add(
         Positioned(
           top: currentY,
           left: 16,
           right: 16,
-          child: AppTheme.applyGlassBlur(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    unit.title.toUpperCase(),
-                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: Colors.white, letterSpacing: 1.2),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    unit.description,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white54),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  
-                  if (!isGenerated)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16),
-                      child: isLoading
-                          ? const Center(child: CircularProgressIndicator(color: AppTheme.duoViolet))
-                          : SizedBox(
-                              width: double.infinity,
-                              child: DuoButton(
-                                text: 'Generate Unit',
-                                color: AppTheme.duoViolet,
-                                shadowColor: AppTheme.duoVioletDark,
-                                onPressed: () => onGenerateUnit(unit, unitIdx),
-                              ),
-                            ),
-                    )
-                ],
-              ),
-            ),
+          child: UnitHeader(
+            unit: unit,
+            isGenerated: isGenerated,
+            isLoading: isLoading,
+            onGenerate: () => onGenerateUnit(unit, currentUnitIdx),
           ),
         ),
       );
 
-      // Safely increase Y stride to prevent layout overlap on smaller screens
-      currentY += isGenerated ? 180 : 250; 
+      // Give ample Y spacing depending on whether we need to draw lessons or just the Generate card
+      currentY += isGenerated ? 130 : 210; 
 
       if (isGenerated) {
         for (var lesson in unit.lessons) {
@@ -997,13 +160,12 @@ class LessonPath extends StatelessWidget {
             ),
           );
 
-          currentY += 160; // Increased from 140 to safely separate nodes
+          currentY += 140; 
           globalLessonIdx++;
         }
       }
       
       currentY += 20; 
-      unitIdx++;
     }
 
     stackChildren.insert(0, 
@@ -1022,7 +184,7 @@ class LessonPath extends StatelessWidget {
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       child: SizedBox(
-        height: currentY + 140, // Expanded padding for bottom nav space
+        height: currentY + 120, // Extra padding for bottom nav
         width: double.infinity,
         child: Stack(
           alignment: Alignment.topCenter,
@@ -1075,3 +237,50 @@ class CurvedPathPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 --- END OF FILE lib/widgets/lesson_path.dart ---
+
+--- START OF FILE README.md ---
+# DuoFY (Flutter Port)
+
+A generic, Duolingo-style interactive learning platform that turns any book into an interactive lesson path using Gemini AI.
+
+## Setup Instructions
+
+### 1. Dependencies
+Ensure you have the required packages:
+```bash
+flutter pub add firebase_database webview_flutter google_generative_ai file_picker flutter_markdown shared_preferences lucide_icons path_provider http
+flutter pub add flutter_markdown_latex markdown
+flutter pub add syncfusion_flutter_pdf syncfusion_flutter_pdfviewer
+```
+
+### 2. Firebase Realtime Database Configuration
+This app uses Firebase Realtime Database to store generated books and progress.
+1. Go to the [Firebase Console](https://console.firebase.google.com/).
+2. Select your project.
+3. Navigate to **Realtime Database** and click **Create Database** (Start in Test Mode for development).
+4. Run `flutterfire configure` to link your active Firebase project.
+
+### 3. Google Generative AI (Gemini) API Key
+We use the Gemini API to analyze uploaded PDFs and generate interactive JSON lessons.
+1. Get a free API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
+2. Launch the app, click the **Settings** (gear) icon on the Home Screen.
+3. Enter your Gemini API key and save it securely.
+
+## Project Structure Overview
+- `/lib/models`: Data structures (Book, Module, Lesson, Slide, InteractiveStep, etc.)
+- `/lib/screens`: Home, Dashboard (Path), Lesson Player, Completion Screen, PDF Generator, Practice
+- `/lib/widgets`: Modular UI components (Custom Duolingo-style Buttons, Glass Panels, MathMarkdown)
+- `/lib/widgets/slide_views`: Individual renderers for theory, quiz, blanks, numericals, JS canvas, and Interactive Proofs.
+- `/lib/services`: AI, Database handling, and PDF splitting services
+- `/lib/theme`: Colors and global styling matching the web platform
+
+## Recent Updates & Design Process
+- **AI Generation Flow**: We simplified the course creation flow. The user no longer needs to manually input the course title; the AI intelligently derives it from the PDF content and file name.
+- **Improved Settings & Model Fetching**: Instead of manually typing models, the Settings screen now fetches available Gemini models natively using your API key. Users can easily select fallback models from a bottom sheet.
+- **Enhanced AI Logging**: Added extensive `print` logs in `ai_service.dart` to help developers debug metadata parsing and trace the raw JSON outputs returned by Gemini.
+- **Two-Stage Background Generation**: When generating a new course, the app pulls the metadata first. Once confirmed by the user, the actual physical PDF splitting and saving happens asynchronously in the background. The user can return to the Home Screen and see a live "Generating" card.
+- **Small Screen Optimizations**: All text fields, layouts, and paths (like `LessonPath` and `PdfSplitPreviewScreen`) have been refactored using `Flexible`, `Expanded`, and max-lines bounds to prevent layout overflows on smaller devices (e.g. 720x1520 at 271dpi).
+- **Closure Variable Bug Fix**: Fixed a critical bug where `unitIdx` was inaccurately tracked inside the `LessonPath` loop due to Dart's closure variable capture mechanics. This resolves the `RangeError (index)` thrown when attempting to generate units on existing courses.
+- **Enhanced Modularity**: Refactored the unit card UI out of `LessonPath` into a dedicated `UnitHeader` widget (`lib/widgets/unit_header.dart`), keeping code clean, maintainable, and focused on drawing the path itself.
+
+--- END OF FILE README.md ---

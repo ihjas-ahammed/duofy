@@ -4,7 +4,7 @@ import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../screens/lesson_screen.dart';
 import 'lesson_node.dart';
-import 'duo_button.dart';
+import 'unit_header.dart';
 
 class LessonPath extends StatelessWidget {
   final Section section;
@@ -35,9 +35,10 @@ class LessonPath extends StatelessWidget {
 
     double currentY = 30; 
     int globalLessonIdx = 0;
-    int unitIdx = 0;
 
-    for (var unit in section.units) {
+    for (int i = 0; i < section.units.length; i++) {
+      final unit = section.units[i];
+      final int currentUnitIdx = i; // Fixes Dart closure variable capture bug
       final bool isGenerated = unit.isGenerated && unit.lessons.isNotEmpty;
       final bool isLoading = loadingUnitIds.contains(unit.id);
 
@@ -47,43 +48,11 @@ class LessonPath extends StatelessWidget {
           top: currentY,
           left: 16,
           right: 16,
-          child: AppTheme.applyGlassBlur(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              child: Column(
-                children: [
-                  Text(
-                    unit.title.toUpperCase(),
-                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white, letterSpacing: 1.2),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    unit.description,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white54),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  
-                  if (!isGenerated)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16),
-                      child: isLoading
-                          ? const Center(child: CircularProgressIndicator(color: AppTheme.duoViolet))
-                          : SizedBox(
-                              width: double.infinity,
-                              child: DuoButton(
-                                text: 'Generate Unit',
-                                color: AppTheme.duoViolet,
-                                shadowColor: AppTheme.duoVioletDark,
-                                onPressed: () => onGenerateUnit(unit, unitIdx),
-                              ),
-                            ),
-                    )
-                ],
-              ),
-            ),
+          child: UnitHeader(
+            unit: unit,
+            isGenerated: isGenerated,
+            isLoading: isLoading,
+            onGenerate: () => onGenerateUnit(unit, currentUnitIdx),
           ),
         ),
       );
@@ -131,7 +100,6 @@ class LessonPath extends StatelessWidget {
       }
       
       currentY += 20; 
-      unitIdx++;
     }
 
     stackChildren.insert(0, 
