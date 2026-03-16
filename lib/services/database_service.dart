@@ -11,7 +11,6 @@ class DatabaseService {
     final prefs = await SharedPreferences.getInstance();
 
     // Load strictly from cache first unless pull-to-refresh is requested.
-    // This allows the app to work entirely offline after the first boot.
     if (!forceRefresh) {
       final cached = prefs.getString('cached_books');
       if (cached != null) {
@@ -19,7 +18,7 @@ class DatabaseService {
           final List decoded = jsonDecode(cached);
           return decoded.map((e) => Book.fromJson(Map<String, dynamic>.from(e))).toList();
         } catch (e) {
-          // Fall through to Firebase fetch if cache parsing fails
+          // Fall through
         }
       }
     }
@@ -45,7 +44,6 @@ class DatabaseService {
         return mockBooks;
       }
     } catch (e) {
-      // If offline or errored out, fallback to local cache
       final cached = prefs.getString('cached_books');
       if (cached != null) {
         final List decoded = jsonDecode(cached);
@@ -63,5 +61,19 @@ class DatabaseService {
 
   Future<void> saveGeneratedBook(Book book) async {
     await _dbRef.child('books').child(book.id).set(book.toJson());
+  }
+
+  Future<void> deleteBook(String id) async {
+    // Remove from Firebase
+    await _dbRef.child('books').child(id).remove();
+    
+    // Update local cache
+    final prefs = await SharedPreferences.getInstance();
+    final cached = prefs.getString('cached_books');
+    if (cached != null) {
+      List decoded = jsonDecode(cached);
+      decoded.removeWhere((e) => e['id'] == id);
+      await prefs.setString('cached_books', jsonEncode(decoded));
+    }
   }
 }

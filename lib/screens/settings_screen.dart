@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
-import '../widgets/api_keys_manager.dart';
+import '../widgets/string_list_manager.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -14,15 +15,10 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  List<String> _keys =[];
-  String _selectedModel = 'gemini-1.5-flash';
+  List<String> _keys = [];
+  List<String> _models = [];
   bool _isFetchingModels = false;
-  
-  List<String> _models =[
-    'gemini-1.5-flash',
-    'gemini-1.5-pro',
-    'gemini-2.0-flash-exp'
-  ];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -32,25 +28,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
+    
+    List<String> keys = prefs.getStringList('gemini_api_keys_list') ?? [];
+    if (keys.isEmpty) {
+       final keysString = prefs.getString('gemini_api_keys') ?? '';
+       keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    }
+    
+    List<String> models = prefs.getStringList('gemini_models_list') ?? [];
+    if (models.isEmpty) {
+       final oldModel = prefs.getString('gemini_model') ?? 'gemini-1.5-flash';
+       models = [oldModel];
+    }
+    
+    _keys = List.from(keys);
+    _models = List.from(models);
+
     setState(() {
-      List<String> keys = prefs.getStringList('gemini_api_keys_list') ??[];
-      if (keys.isEmpty) {
-         final keysString = prefs.getString('gemini_api_keys') ?? '';
-         keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
-      }
-      _keys = keys;
-      _selectedModel = prefs.getString('gemini_model') ?? 'gemini-1.5-flash';
-      
-      if (!_models.contains(_selectedModel)) {
-        _models.insert(0, _selectedModel);
-      }
+      _isLoading = false;
     });
   }
 
   Future<void> _saveSettings() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList('gemini_api_keys_list', _keys);
-    await prefs.setString('gemini_model', _selectedModel);
+    await prefs.setStringList('gemini_models_list', _models);
     
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Settings Saved Successfully')));
@@ -69,21 +71,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final response = await http.get(Uri.parse('https://generativelanguage.googleapis.com/v1beta/models?key=${_keys.first}'));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final List fetched = data['models'] ??[];
-        List<String> newModels =[];
+        final List fetched = data['models'] ?? [];
+        List<String> fetchedModels = [];
         
         for (var m in fetched) {
           String name = m['name'];
           if (name.startsWith('models/')) name = name.substring(7);
-          if (name.contains('gemini')) newModels.add(name);
+          if (name.contains('gemini')) fetchedModels.add(name);
         }
 
-        if (newModels.isNotEmpty) {
-          setState(() {
-            _models = newModels;
-            if (!_models.contains(_selectedModel)) _selectedModel = _models.first;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Models fetched successfully!')));
+        if (fetchedModels.isNotEmpty && mounted) {
+           showModalBottomSheet(
+             context: context, 
+             builder: (ctx) => ListView.builder(
+               itemCount: fetchedModels.length,
+               itemBuilder: (c, i) => ListTile(
+                 title: Text(fetchedModels[i]),
+                 onTap: () {
+                    setState(() {
+                      if (!_models.contains(fetchedModels[i]) && _models.length < 5) {
+                        _models.add(fetchedModels[i]);
+                      }
+                    });
+                    Navigator.pop(ctx);
+                 },
+               )
+             )
+           );
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to fetch: ${response.statusCode}')));
@@ -97,6 +111,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator(color: AppTheme.duoBlue)),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Settings', style: TextStyle(fontWeight: FontWeight.w900))),
       body: SingleChildScrollView(
@@ -108,33 +128,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 8),
             const Text('Add multiple keys to fall back automatically if rate-limited.', style: TextStyle(color: Colors.white54, fontSize: 12)),
             const SizedBox(height: 16),
-            
-            ApiKeysManager(
-              initialKeys: _keys,
+            StringListManager(
+              initialItems: _keys,
+              hintText: 'Enter Gemini API Key',
+              itemIcon: LucideIcons.key,
               onChanged: (newKeys) => setState(() => _keys = newKeys),
             ),
             const SizedBox(height: 32),
 
-            const Text('Active AI Model', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('AI Models Sequence', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            const Text('Add up to 5 models. Top models will be prioritized.', style: TextStyle(color: Colors.white54, fontSize: 12)),
             const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              value: _selectedModel,
-              isExpanded: true,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                filled: true,
-                fillColor: Colors.black26,
-              ),
-              items: _models.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
-              onChanged: (val) {
-                if (val != null) setState(() => _selectedModel = val);
-              },
+            StringListManager(
+              initialItems: _models,
+              hintText: 'e.g. gemini-1.5-pro',
+              itemIcon: LucideIcons.bot,
+              onChanged: (newModels) => setState(() => _models = newModels),
             ),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: DuoButton(
-                text: _isFetchingModels ? 'Fetching...' : 'Fetch Latest Models',
+                text: _isFetchingModels ? 'Fetching...' : 'Browse Available Models',
                 onPressed: _isFetchingModels ? () {} : _fetchModels,
                 color: AppTheme.duoBlue,
                 shadowColor: AppTheme.duoBlueDark,

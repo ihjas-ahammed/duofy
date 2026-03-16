@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../screens/lesson_screen.dart';
 import 'lesson_node.dart';
+import 'duo_button.dart';
 
 class LessonPath extends StatelessWidget {
   final Section section;
+  final Set<String> loadingUnitIds;
+  final Function(Unit, int) onGenerateUnit;
 
   const LessonPath({
     super.key,
     required this.section,
+    required this.loadingUnitIds,
+    required this.onGenerateUnit,
   });
 
   Color _getPathColor() {
@@ -27,19 +33,23 @@ class LessonPath extends StatelessWidget {
     List<Widget> stackChildren = [];
     List<Offset> pathPoints = [];
 
-    double currentY = 30; // Added more top spacing
+    double currentY = 30; 
     int globalLessonIdx = 0;
+    int unitIdx = 0;
 
     for (var unit in section.units) {
-      // Add Glassy Unit Header with more padding
+      final bool isGenerated = unit.isGenerated && unit.lessons.isNotEmpty;
+      final bool isLoading = loadingUnitIds.contains(unit.id);
+
+      // Compact Unit Header ensuring no overflows on small screens
       stackChildren.add(
         Positioned(
           top: currentY,
-          left: 20,
-          right: 20,
+          left: 16,
+          right: 16,
           child: AppTheme.applyGlassBlur(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
               child: Column(
                 children: [
                   Text(
@@ -47,12 +57,28 @@ class LessonPath extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white, letterSpacing: 1.5),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text(
                     unit.description,
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white54),
                     textAlign: TextAlign.center,
                   ),
+                  
+                  if (!isGenerated)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: isLoading
+                          ? const Center(child: CircularProgressIndicator(color: AppTheme.duoViolet))
+                          : SizedBox(
+                              width: double.infinity,
+                              child: DuoButton(
+                                text: 'Generate Unit',
+                                color: AppTheme.duoViolet,
+                                shadowColor: AppTheme.duoVioletDark,
+                                onPressed: () => onGenerateUnit(unit, unitIdx),
+                              ),
+                            ),
+                    )
                 ],
               ),
             ),
@@ -60,46 +86,49 @@ class LessonPath extends StatelessWidget {
         ),
       );
 
-      currentY += 130; // Increased space after header
+      currentY += isGenerated ? 120 : 190; 
 
-      for (var lesson in unit.lessons) {
-        final int phase = globalLessonIdx % 4;
-        double offsetX = 0;
-        if (phase == 1) offsetX = 65; // Wider zig-zag
-        if (phase == 3) offsetX = -65; // Wider zig-zag
+      if (isGenerated) {
+        for (var lesson in unit.lessons) {
+          final int phase = globalLessonIdx % 4;
+          double offsetX = 0;
+          if (phase == 1) offsetX = 60; 
+          if (phase == 3) offsetX = -60; 
 
-        double centerX = MediaQuery.of(context).size.width / 2;
-        double absoluteX = centerX + offsetX;
+          double centerX = MediaQuery.of(context).size.width / 2;
+          double absoluteX = centerX + offsetX;
 
-        pathPoints.add(Offset(absoluteX, currentY + 40)); // 40 is half of the new 80px node
+          pathPoints.add(Offset(absoluteX, currentY + 40)); 
 
-        stackChildren.add(
-          Positioned(
-            top: currentY,
-            left: 0,
-            right: 0,
-            child: Transform.translate(
-              offset: Offset(offsetX, 0),
-              child: LessonNodeWidget(
-                lesson: lesson,
-                isCompleted: globalLessonIdx < 1,
-                isLocked: globalLessonIdx > 1,
-                sectionColorStr: section.color,
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => LessonScreen(lesson: lesson)
-                  ));
-                },
+          stackChildren.add(
+            Positioned(
+              top: currentY,
+              left: 0,
+              right: 0,
+              child: Transform.translate(
+                offset: Offset(offsetX, 0),
+                child: LessonNodeWidget(
+                  lesson: lesson,
+                  isCompleted: globalLessonIdx < 1,
+                  isLocked: globalLessonIdx > 1,
+                  sectionColorStr: section.color,
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => LessonScreen(lesson: lesson)
+                    ));
+                  },
+                ),
               ),
             ),
-          ),
-        );
+          );
 
-        currentY += 140; // Increased vertical spacing between nodes
-        globalLessonIdx++;
+          currentY += 140; 
+          globalLessonIdx++;
+        }
       }
       
-      currentY += 20; // Extra padding at the end of a unit
+      currentY += 20; 
+      unitIdx++;
     }
 
     stackChildren.insert(0, 
@@ -148,7 +177,7 @@ class CurvedPathPainter extends CustomPainter {
 
     final paint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 14 // Thicker path
+      ..strokeWidth = 14 
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 

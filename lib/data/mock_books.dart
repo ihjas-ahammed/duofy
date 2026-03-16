@@ -107,6 +107,7 @@ final List<Book> mockBooks = [
             color: 'duo-blue',
             units: [
               Unit(
+                isGenerated: false,
                 id: 'u-phys-1-1',
                 title: 'Wave-Particle Duality',
                 description: 'The Nature of Light',
@@ -218,6 +219,7 @@ final List<Book> mockBooks = [
                 ]
               ),
               Unit(
+                isGenerated: false,
                 id: 'u-phys-1-2',
                 title: 'The Bohr Model',
                 description: 'Atoms and Energy Levels',

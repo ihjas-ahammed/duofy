@@ -3,9 +3,17 @@ class Book {
   final String title;
   final String description;
   final String icon;
+  final String? systemPrompt;
   final List<Module> modules;
 
-  Book({required this.id, required this.title, required this.description, required this.icon, required this.modules});
+  Book({
+    required this.id, 
+    required this.title, 
+    required this.description, 
+    required this.icon, 
+    this.systemPrompt,
+    required this.modules
+  });
 
   factory Book.fromJson(Map<String, dynamic> json) {
     return Book(
@@ -13,6 +21,7 @@ class Book {
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       icon: json['icon'] ?? 'Book',
+      systemPrompt: json['systemPrompt'],
       modules: (json['modules'] as List?)?.map((m) => Module.fromJson(Map<String, dynamic>.from(m))).toList() ?? [],
     );
   }
@@ -22,8 +31,27 @@ class Book {
     'title': title,
     'description': description,
     'icon': icon,
+    if (systemPrompt != null) 'systemPrompt': systemPrompt,
     'modules': modules.map((m) => m.toJson()).toList(),
   };
+
+  Book copyWith({
+    String? id,
+    String? title,
+    String? description,
+    String? icon,
+    String? systemPrompt,
+    List<Module>? modules,
+  }) {
+    return Book(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      icon: icon ?? this.icon,
+      systemPrompt: systemPrompt ?? this.systemPrompt,
+      modules: modules ?? this.modules,
+    );
+  }
 }
 
 class Module {
@@ -62,6 +90,24 @@ class Module {
     'practiceQuestions': practiceQuestions.map((s) => s.toJson()).toList(),
     'examQuestions': examQuestions.map((s) => s.toJson()).toList(),
   };
+
+  Module copyWith({
+    String? id,
+    String? title,
+    String? description,
+    List<Section>? sections,
+    List<Slide>? practiceQuestions,
+    List<Slide>? examQuestions,
+  }) {
+    return Module(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      sections: sections ?? this.sections,
+      practiceQuestions: practiceQuestions ?? this.practiceQuestions,
+      examQuestions: examQuestions ?? this.examQuestions,
+    );
+  }
 }
 
 class Section {
@@ -71,7 +117,13 @@ class Section {
   final String color;
   final List<Unit> units;
 
-  Section({required this.id, required this.title, required this.description, required this.color, required this.units});
+  Section({
+    required this.id, 
+    required this.title, 
+    required this.description, 
+    required this.color, 
+    required this.units
+  });
 
   factory Section.fromJson(Map<String, dynamic> json) {
     return Section(
@@ -90,21 +142,54 @@ class Section {
     'color': color,
     'units': units.map((u) => u.toJson()).toList(),
   };
+
+  Section copyWith({
+    String? id,
+    String? title,
+    String? description,
+    String? color,
+    List<Unit>? units,
+  }) {
+    return Section(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      color: color ?? this.color,
+      units: units ?? this.units,
+    );
+  }
 }
 
 class Unit {
   final String id;
   final String title;
   final String description;
+  final int? startPage;
+  final int? endPage;
+  final bool isGenerated;
+  final String? pdfPath;
   final List<Lesson> lessons;
 
-  Unit({required this.id, required this.title, required this.description, required this.lessons});
+  Unit({
+    required this.id, 
+    required this.title, 
+    required this.description, 
+    this.startPage,
+    this.endPage,
+    required this.isGenerated,
+    this.pdfPath,
+    required this.lessons
+  });
 
   factory Unit.fromJson(Map<String, dynamic> json) {
     return Unit(
       id: json['id'] ?? '',
       title: json['title'] ?? '',
       description: json['description'] ?? '',
+      startPage: json['startPage'],
+      endPage: json['endPage'],
+      isGenerated: json['isGenerated'] ?? true, // Default true to support legacy mocks easily
+      pdfPath: json['pdfPath'],
       lessons: (json['lessons'] as List?)?.map((l) => Lesson.fromJson(Map<String, dynamic>.from(l))).toList() ?? [],
     );
   }
@@ -113,8 +198,34 @@ class Unit {
     'id': id,
     'title': title,
     'description': description,
+    if (startPage != null) 'startPage': startPage,
+    if (endPage != null) 'endPage': endPage,
+    'isGenerated': isGenerated,
+    if (pdfPath != null) 'pdfPath': pdfPath,
     'lessons': lessons.map((l) => l.toJson()).toList(),
   };
+
+  Unit copyWith({
+    String? id,
+    String? title,
+    String? description,
+    int? startPage,
+    int? endPage,
+    bool? isGenerated,
+    String? pdfPath,
+    List<Lesson>? lessons,
+  }) {
+    return Unit(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      startPage: startPage ?? this.startPage,
+      endPage: endPage ?? this.endPage,
+      isGenerated: isGenerated ?? this.isGenerated,
+      pdfPath: pdfPath ?? this.pdfPath,
+      lessons: lessons ?? this.lessons,
+    );
+  }
 }
 
 class Lesson {

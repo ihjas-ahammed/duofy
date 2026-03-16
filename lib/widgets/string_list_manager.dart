@@ -2,42 +2,54 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../theme/app_theme.dart';
 
-class ApiKeysManager extends StatefulWidget {
-  final List<String> initialKeys;
+class StringListManager extends StatefulWidget {
+  final List<String> initialItems;
+  final String hintText;
+  final IconData itemIcon;
   final Function(List<String>) onChanged;
 
-  const ApiKeysManager({super.key, required this.initialKeys, required this.onChanged});
+  const StringListManager({
+    super.key, 
+    required this.initialItems, 
+    required this.hintText,
+    required this.itemIcon,
+    required this.onChanged
+  });
 
   @override
-  State<ApiKeysManager> createState() => _ApiKeysManagerState();
+  State<StringListManager> createState() => _StringListManagerState();
 }
 
-class _ApiKeysManagerState extends State<ApiKeysManager> {
-  late List<String> _keys;
+class _StringListManagerState extends State<StringListManager> {
+  late List<String> _items;
   final _controller = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _keys = List.from(widget.initialKeys);
+    _items = List.from(widget.initialItems);
   }
 
-  void _addKey() {
+  void _addItem() {
     final val = _controller.text.trim();
-    if (val.isNotEmpty && !_keys.contains(val)) {
+    if (val.isNotEmpty && !_items.contains(val)) {
+      if (_items.length >= 5) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Maximum 5 items allowed.')));
+        return;
+      }
       setState(() {
-        _keys.add(val);
+        _items.add(val);
         _controller.clear();
       });
-      widget.onChanged(_keys);
+      widget.onChanged(_items);
     }
   }
 
-  void _removeKey(int index) {
+  void _removeItem(int index) {
     setState(() {
-      _keys.removeAt(index);
+      _items.removeAt(index);
     });
-    widget.onChanged(_keys);
+    widget.onChanged(_items);
   }
 
   @override
@@ -50,19 +62,20 @@ class _ApiKeysManagerState extends State<ApiKeysManager> {
             Expanded(
               child: TextField(
                 controller: _controller,
-                decoration: const InputDecoration(
-                  hintText: 'Enter API Key',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  hintText: widget.hintText,
+                  border: const OutlineInputBorder(),
                   filled: true,
                   fillColor: Colors.black26,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),
               ),
             ),
             const SizedBox(width: 12),
             GestureDetector(
-              onTap: _addKey,
+              onTap: _addItem,
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: AppTheme.duoGreen,
                   borderRadius: BorderRadius.circular(12),
@@ -73,11 +86,11 @@ class _ApiKeysManagerState extends State<ApiKeysManager> {
             )
           ],
         ),
-        if (_keys.isNotEmpty) const SizedBox(height: 16),
+        if (_items.isNotEmpty) const SizedBox(height: 16),
         ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: _keys.length,
+          itemCount: _items.length,
           itemBuilder: (context, index) {
             return Container(
               margin: const EdgeInsets.only(bottom: 8),
@@ -89,17 +102,17 @@ class _ApiKeysManagerState extends State<ApiKeysManager> {
               ),
               child: Row(
                 children:[
-                  const Icon(LucideIcons.key, color: Colors.amber, size: 18),
+                  Icon(widget.itemIcon, color: Colors.amber, size: 18),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      _keys[index],
+                      _items[index],
                       style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   GestureDetector(
-                    onTap: () => _removeKey(index),
+                    onTap: () => _removeItem(index),
                     child: const Icon(LucideIcons.trash2, color: AppTheme.duoRed, size: 20),
                   )
                 ],

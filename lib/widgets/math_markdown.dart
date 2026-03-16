@@ -21,8 +21,7 @@ class MathMarkdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Robust replacement string logic mapping to fix commonly mangled markdown outputs 
-    // from LLMs to ensure LaTeX compatibility
+    // Aggressive sanitization of common AI Markdown/LaTeX generation issues
     String safeData = data
       .replaceAll(r'\$', r'$')
       .replaceAll(r'\[', r'$$')
@@ -32,7 +31,14 @@ class MathMarkdown extends StatelessWidget {
       .replaceAll(r'$.', r'$ .')
       .replaceAll(r'$,', r'$ ,')
       .replaceAll(r'_$', r'_ $')
-      .replaceAll(r'-$', r'- $');
+      .replaceAll(r'-$', r'- $')
+      // Clean up common double escaped literal outputs from the UI side if JSON parsing passed them raw
+      .replaceAll(r'\\frac', r'\frac')
+      .replaceAll(r'\\sqrt', r'\sqrt')
+      .replaceAll(r'\\text', r'\text')
+      .replaceAll(r'\\cdot', r'\cdot')
+      .replaceAll(r'\\Delta', r'\Delta')
+      .replaceAll(r'\\pi', r'\pi');
 
     return MarkdownBody(
       data: safeData,

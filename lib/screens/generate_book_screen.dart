@@ -2,9 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/ai_service.dart';
-import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
+import 'pdf_split_preview_screen.dart';
 
 class GenerateBookScreen extends StatefulWidget {
   const GenerateBookScreen({super.key});
@@ -15,12 +15,10 @@ class GenerateBookScreen extends StatefulWidget {
 
 class _GenerateBookScreenState extends State<GenerateBookScreen> {
   final AiService _aiService = AiService();
-  final DatabaseService _dbService = DatabaseService();
   final _titleController = TextEditingController();
   
   File? _selectedFile;
   bool _isGenerating = false;
-  String _statusMessage = '';
 
   Future<void> _pickFile() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -41,43 +39,50 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
       return;
     }
 
-    setState(() {
-      _isGenerating = true;
-      _statusMessage = 'Analyzing PDF with Gemini... This may take a minute.';
-    });
+    setState(() => _isGenerating = true);
 
     try {
-      final book = await _aiService.generateBookFromPdf(_selectedFile!, _titleController.text.trim());
-      if (book != null) {
-        setState(() => _statusMessage = 'Saving to Database...');
-        await _dbService.saveGeneratedBook(book);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Book Generated Successfully!')));
-          Navigator.pop(context);
-        }
+      // Stage 1: Generate Skeleton
+      final skeletonBook = await _aiService.generateBookSkeleton(_selectedFile!, _titleController.text.trim());
+      
+      if (skeletonBook != null && mounted) {
+        // Pause generation and push to Preview Screen for confirmation
+        Navigator.pushReplacement(
+          context, 
+          MaterialPageRoute(
+            builder: (_) => PdfSplitPreviewScreen(
+              originalPdf: _selectedFile!,
+              skeletonBook: skeletonBook,
+            )
+          )
+        );
       }
     } catch (e) {
-      setState(() {
-        _statusMessage = 'Error: ${e.toString()}';
-      });
-    } finally {
-      if (mounted) setState(() => _isGenerating = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+        setState(() => _isGenerating = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Generate Lesson')),
+      appBar: AppBar(title: const Text('New Course', style: TextStyle(fontWeight: FontWeight.w900))),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const Text(
+              "We'll analyze the PDF to create a course skeleton first. Then you can review the assigned page ranges before we chunk the file.",
+              style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
+            ),
+            const SizedBox(height: 24),
             TextField(
               controller: _titleController,
               decoration: const InputDecoration(
-                labelText: 'Book Title',
+                labelText: 'Course Title',
                 border: OutlineInputBorder(),
                 filled: true,
                 fillColor: Colors.black26,
@@ -97,18 +102,19 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                 child: Text('File: ${_selectedFile!.path.split('/').last}', style: const TextStyle(color: Colors.white54), textAlign: TextAlign.center),
               ),
             const Spacer(),
+            
             if (_isGenerating)
-              Column(
+              const Column(
                 children: [
-                  const CircularProgressIndicator(color: AppTheme.duoGreen),
-                  const SizedBox(height: 16),
-                  Text(_statusMessage, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 32),
+                  CircularProgressIndicator(color: AppTheme.duoGreen),
+                  SizedBox(height: 16),
+                  Text('Analyzing Book Structure...', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
+                  SizedBox(height: 32),
                 ],
               )
             else
               DuoButton(
-                text: 'Generate Book',
+                text: 'Analyze PDF',
                 onPressed: _generate,
                 color: AppTheme.duoGreen,
                 shadowColor: AppTheme.duoGreenDark,

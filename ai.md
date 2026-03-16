@@ -1,14 +1,30 @@
 Make the following changes:
 
     
-    - Update home:
-        - Update the list view, make it look like on windows start menu
+    - Update AI generation:
+        Make async working like I can also close the window and its auto added to the grid, then I can click on the grid item to see the progress
 
+        but once the ai gets the metadata ask for confiration to split pdf
+    
     - Update settings:
-        - Use a list view instead of comma seperte api keys
-        - Fetch all latest models with a button using simple fetch like command to models part
+        Make it possible to use upto five models, like if one fails the another just like we had with api keys
 
-    - Database, only refresh if user push down, unless make it possible the app can work offline
+    - Update lesson generation:
+        Add an fix for possible string leteral errors after AI generation especially with MathJax
+
+    - Update pdf splitting:
+        - Use REAL splitting like it should decrease the file size based on the split, because there is some other kind of split somehow keeps the same file size?!
+
+    - Update HOME SCREEN:
+        - MAke it looks like app store screen.
+        - Make it possible I can delete the generated books
+        
+
+
+    So it will be like this, I add the book and name, then click generate but this generation will be quick and it should show the loading screen, first step to get the metadata as explained in first generation, then pdf splitting and saving, then thats it
+
+    After that I open the book and I only see the names of units and a generate button for each, when I click that unit will be generated
+                
     
 
 

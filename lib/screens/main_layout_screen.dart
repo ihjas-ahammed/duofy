@@ -20,22 +20,30 @@ class MainLayoutScreen extends StatefulWidget {
 
 class _MainLayoutScreenState extends State<MainLayoutScreen> {
   int _currentIndex = 0;
-  
-  late final List<Widget> _pages;
+  late Book _currentBook;
 
   @override
   void initState() {
     super.initState();
-    _pages = [
-      BookDashboardScreen(book: widget.book),
-      PracticeScreen(book: widget.book),
-      NotesScreen(book: widget.book),
-      ExamScreen(book: widget.book),
-    ];
+    _currentBook = widget.book;
+  }
+
+  void _onBookUpdated(Book newBook) {
+    setState(() {
+      _currentBook = newBook;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    // Dynamically rebuild children with the latest state
+    final List<Widget> pages = [
+      BookDashboardScreen(book: _currentBook, onBookUpdated: _onBookUpdated),
+      PracticeScreen(book: _currentBook),
+      NotesScreen(book: _currentBook),
+      ExamScreen(book: _currentBook),
+    ];
+
     return Scaffold(
       extendBody: true, 
       appBar: AppBar(
@@ -48,7 +56,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
         ),
         centerTitle: true,
         title: Text(
-          widget.book.title,
+          _currentBook.title,
           style: const TextStyle(
             fontWeight: FontWeight.w900,
             fontSize: 18,
@@ -88,7 +96,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
       ),
       body: IndexedStack(
         index: _currentIndex,
-        children: _pages,
+        children: pages,
       ),
       
       // Glass Bottom Navigation Bar (Ultra Compact Icons only)
