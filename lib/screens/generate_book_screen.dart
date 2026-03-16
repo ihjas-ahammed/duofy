@@ -15,7 +15,6 @@ class GenerateBookScreen extends StatefulWidget {
 
 class _GenerateBookScreenState extends State<GenerateBookScreen> {
   final AiService _aiService = AiService();
-  final _titleController = TextEditingController();
   
   File? _selectedFile;
   bool _isGenerating = false;
@@ -34,8 +33,8 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
   }
 
   Future<void> _generate() async {
-    if (_selectedFile == null || _titleController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a PDF and enter a title.')));
+    if (_selectedFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a PDF file first.')));
       return;
     }
 
@@ -43,7 +42,8 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
 
     try {
       // Stage 1: Generate Skeleton
-      final skeletonBook = await _aiService.generateBookSkeleton(_selectedFile!, _titleController.text.trim());
+      final filename = _selectedFile!.path.split('/').last;
+      final skeletonBook = await _aiService.generateBookSkeleton(_selectedFile!, filename);
       
       if (skeletonBook != null && mounted) {
         // Pause generation and push to Preview Screen for confirmation
@@ -75,20 +75,10 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              "We'll analyze the PDF to create a course skeleton first. Then you can review the assigned page ranges before we chunk the file.",
+              "We'll instantly analyze the PDF to map out the course chapters. You can review the structure before we chunk the file in the background.",
               style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
             ),
-            const SizedBox(height: 24),
-            TextField(
-              controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: 'Course Title',
-                border: OutlineInputBorder(),
-                filled: true,
-                fillColor: Colors.black26,
-              ),
-            ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             DuoButton(
               text: _selectedFile != null ? 'PDF Selected' : 'Upload PDF',
               onPressed: _pickFile,
@@ -98,8 +88,8 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
             ),
             if (_selectedFile != null)
               Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text('File: ${_selectedFile!.path.split('/').last}', style: const TextStyle(color: Colors.white54), textAlign: TextAlign.center),
+                padding: const EdgeInsets.only(top: 16.0),
+                child: Text('File: ${_selectedFile!.path.split('/').last}', style: const TextStyle(color: Colors.white54, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
               ),
             const Spacer(),
             
@@ -108,7 +98,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                 children: [
                   CircularProgressIndicator(color: AppTheme.duoGreen),
                   SizedBox(height: 16),
-                  Text('Analyzing Book Structure...', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text('Extracting Metadata...', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
                   SizedBox(height: 32),
                 ],
               )

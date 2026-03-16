@@ -82,20 +82,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         if (fetchedModels.isNotEmpty && mounted) {
            showModalBottomSheet(
-             context: context, 
-             builder: (ctx) => ListView.builder(
-               itemCount: fetchedModels.length,
-               itemBuilder: (c, i) => ListTile(
-                 title: Text(fetchedModels[i]),
-                 onTap: () {
-                    setState(() {
-                      if (!_models.contains(fetchedModels[i]) && _models.length < 5) {
-                        _models.add(fetchedModels[i]);
-                      }
-                    });
-                    Navigator.pop(ctx);
-                 },
-               )
+             context: context,
+             backgroundColor: AppTheme.surface,
+             shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+             builder: (ctx) => Padding(
+               padding: const EdgeInsets.all(16.0),
+               child: Column(
+                 crossAxisAlignment: CrossAxisAlignment.start,
+                 children: [
+                   const Text('Available Models', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white)),
+                   const SizedBox(height: 16),
+                   Expanded(
+                     child: ListView.builder(
+                       itemCount: fetchedModels.length,
+                       itemBuilder: (c, i) => ListTile(
+                         leading: const Icon(LucideIcons.bot, color: AppTheme.duoBlue),
+                         title: Text(fetchedModels[i], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                         onTap: () {
+                            setState(() {
+                              if (!_models.contains(fetchedModels[i]) && _models.length < 5) {
+                                _models.add(fetchedModels[i]);
+                              }
+                            });
+                            Navigator.pop(ctx);
+                         },
+                       )
+                     ),
+                   ),
+                 ],
+               ),
              )
            );
         }
@@ -140,13 +155,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 8),
             const Text('Add up to 5 models. Top models will be prioritized.', style: TextStyle(color: Colors.white54, fontSize: 12)),
             const SizedBox(height: 16),
-            StringListManager(
-              initialItems: _models,
-              hintText: 'e.g. gemini-1.5-pro',
-              itemIcon: LucideIcons.bot,
-              onChanged: (newModels) => setState(() => _models = newModels),
-            ),
-            const SizedBox(height: 12),
+            
+            if (_models.isNotEmpty)
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _models.map((m) => Chip(
+                  label: Text(m, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                  deleteIcon: const Icon(LucideIcons.x, size: 16, color: Colors.white54),
+                  backgroundColor: Colors.white.withOpacity(0.1),
+                  side: const BorderSide(color: Colors.white24),
+                  onDeleted: () => setState(() => _models.remove(m)),
+                )).toList(),
+              ),
+              
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: DuoButton(

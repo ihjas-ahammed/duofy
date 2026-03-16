@@ -54,7 +54,7 @@ class LessonPath extends StatelessWidget {
                 children: [
                   Text(
                     unit.title.toUpperCase(),
-                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white, letterSpacing: 1.5),
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white, letterSpacing: 1.2),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 6),
@@ -62,6 +62,8 @@ class LessonPath extends StatelessWidget {
                     unit.description,
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white54),
                     textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   
                   if (!isGenerated)
@@ -86,7 +88,8 @@ class LessonPath extends StatelessWidget {
         ),
       );
 
-      currentY += isGenerated ? 120 : 190; 
+      // Give ample Y spacing depending on whether we need to draw lessons or just the Generate card
+      currentY += isGenerated ? 130 : 210; 
 
       if (isGenerated) {
         for (var lesson in unit.lessons) {

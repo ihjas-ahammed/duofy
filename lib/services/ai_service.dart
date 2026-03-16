@@ -55,29 +55,31 @@ class AiService {
       }
       return decoded;
     } catch (e) {
-      print("JSON Parse Error: $e\nPayload Segment: ${cleaned.substring(0, cleaned.length > 200 ? 200 : cleaned.length)}");
+      print("JSON Parse Error: $e\nPayload Segment: ${cleaned.substring(0, cleaned.length > 500 ? 500 : cleaned.length)}");
       throw Exception('Failed to parse AI JSON response: $e');
     }
   }
 
   /// STAGE 1: Extracts the table of contents and creates the Book Skeleton
-  Future<Book?> generateBookSkeleton(File pdfFile, String title) async {
+  Future<Book?> generateBookSkeleton(File pdfFile, String filename) async {
     final keys = await _getKeys();
     final models = await _getModels();
     final pdfBytes = await pdfFile.readAsBytes();
     
     final prompt = TextPart('''
 You are an expert curriculum designer. Analyze the attached PDF document to create a high-level course skeleton.
-You need to extract the Table of Contents and structure it into Modules -> Sections -> Units.
+The user uploaded a file named: "$filename". 
 
 CRITICAL INSTRUCTIONS:
-1. The `startPage` and `endPage` MUST refer to the ABSOLUTE PDF PAGE INDEX (1-based index where the absolute first page of the file is 1), NOT the printed page number.
-2. In the custom `systemPrompt` string you generate, STRICTLY instruct the AI to use double-escaped backslashes for all LaTeX (e.g. \\\\frac instead of \\frac).
+1. Generate a suitable, professional `title` for this course based on the document content or the filename.
+2. The `startPage` and `endPage` MUST refer to the ABSOLUTE PDF PAGE INDEX (1-based index where the absolute first page of the file is 1), NOT the printed page number. Ensure they accurately reflect logical splits.
+3. You must extract the Table of Contents and structure it into Modules -> Sections -> Units. Each Section MUST have at least 1 Unit.
+4. In the custom `systemPrompt` string you generate, STRICTLY instruct the AI to use double-escaped backslashes for all LaTeX (e.g. \\\\frac instead of \\frac).
 
 Return ONLY valid JSON matching this exact structure:
 {
   "id": "generated-book-${DateTime.now().millisecondsSinceEpoch}",
-  "title": "$title",
+  "title": "Generated Course Title Here",
   "description": "Auto-generated book overview",
   "icon": "Book",
   "systemPrompt": "You are an expert tutor... Remember to double-escape LaTeX strings as \\\\frac ...",
@@ -116,6 +118,7 @@ Return ONLY valid JSON matching this exact structure:
     for (var modelName in models) {
       for (var apiKey in keys) {
         try {
+          print("Requesting MetaData from Gemini using model: $modelName...");
           final model = GenerativeModel(
             model: modelName,
             apiKey: apiKey,
@@ -127,12 +130,19 @@ Return ONLY valid JSON matching this exact structure:
           ]).timeout(const Duration(minutes: 5));
 
           if (response.text != null) {
+            print("\n=================== AI METADATA GENERATION ===================");
+            print("Raw Response Length: ${response.text?.length} chars");
+            print("Raw Response Output:\n${response.text}");
+            print("==============================================================\n");
+
             final jsonMap = _cleanAndDecodeJson(response.text!);
             return Book.fromJson(jsonMap);
           }
         } on TimeoutException {
+          print("Timeout using $modelName with key ${apiKey.substring(0,4)}...");
           lastException = Exception('Request timed out ($modelName).');
         } catch (e) {
+          print("Failed using $modelName: $e");
           lastException = Exception('Generation failed: $e');
         }
       }
@@ -185,6 +195,7 @@ Format:
     for (var modelName in models) {
       for (var apiKey in keys) {
         try {
+          print("Generating Unit Content [${unit.title}] using model: $modelName...");
           final model = GenerativeModel(
             model: modelName,
             apiKey: apiKey,
@@ -196,6 +207,10 @@ Format:
           ]).timeout(const Duration(minutes: 5));
 
           if (response.text != null) {
+            print("\n=================== AI UNIT GENERATION ===================");
+            print("Raw Response Output snippet:\n${response.text!.substring(0, response.text!.length > 300 ? 300 : response.text!.length)}...");
+            print("==========================================================\n");
+
             final jsonMap = _cleanAndDecodeJson(response.text!);
             final lessonsData = jsonMap['lessons'] as List?;
             final newLessons = lessonsData?.map((l) => Lesson.fromJson(Map<String, dynamic>.from(l))).toList() ?? [];

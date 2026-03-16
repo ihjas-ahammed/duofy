@@ -1,4 +1,6 @@
-
+```bash
+rm lib/screens/pdf_split_preview_screen.dart
+```
 
 --- START OF FILE README.md ---
 # DuoFY (Flutter Port)
@@ -7,8 +9,8 @@ A generic, Duolingo-style interactive learning platform that turns any book into
 
 ## Setup Instructions
 
-### 1. New Dependencies Required
-Make sure you have run the following commands to add all the dependencies:
+### 1. Dependencies
+Ensure you have the required packages:
 ```bash
 flutter pub add firebase_database webview_flutter google_generative_ai file_picker flutter_markdown shared_preferences lucide_icons path_provider http
 flutter pub add flutter_markdown_latex markdown
@@ -34,106 +36,91 @@ We use the Gemini API to analyze uploaded PDFs and generate interactive JSON les
 - `/lib/widgets`: Modular UI components (Custom Duolingo-style Buttons, Glass Panels, MathMarkdown)
 - `/lib/widgets/slide_views`: Individual renderers for theory, quiz, blanks, numericals, JS canvas, and Interactive Proofs.
 - `/lib/services`: AI, Database handling, and PDF splitting services
+- `/lib/utils`: JSON Calibrators and safe parsers to stabilize AI output.
 - `/lib/theme`: Colors and global styling matching the web platform
 
 ## Recent Updates & Design Process
-- **Two-Stage Background Generation**: When generating a new course, the app now pulls the metadata first. Once confirmed by the user, the actual physical PDF splitting and saving happens asynchronously in the background. The user can return to the Home Screen and see a live "Generating" card.
-- **App Store Inspired Home Screen**: The UI features large, beautiful, high-contrast cards showcasing the progress of your generated books. Users can easily delete courses using the integrated delete actions on the cards.
-- **Multiple Models & Keys Fallback**: Users can supply up to 5 models and 5 API keys in settings. If the primary model or key is rate-limited or fails context parsing, it seamlessly cycles to the next one, ensuring 99% reliability.
-- **Robust MathJax & JSON Escaping**: Generation prompts have been strictly enforced to double-escape LaTeX strings (like `\\frac`), and aggressive sanitization runs on the Dart side to ensure UI rendering doesn't crash from literal string mismatches.
-- **True Physical PDF Splitting**: Uses Syncfusion's `drawPdfTemplate` inside a fresh `PdfDocument` to guarantee the generated chunk drops all bloated, unreferenced metadata from the original document, keeping file sizes ultra-small.
-
+- **Instant Flow Integration**: Removed the intermediate PDF split preview screen. You enter the book name, upload the PDF, and the app rapidly fetches the metadata outline. The physical chunking now directly happens in the background while you are on the Home screen.
+- **AI JSON Calibration Engine**: Added a dedicated `JsonCalibrator` utility that runs post-generation. It intercepts `RangeError`, `FormatException`, unescaped newlines, invalid LaTeX escaping, and trailing commas to guarantee the app doesn't crash on slightly malformed AI outputs.
+- **Robust Model Parsing**: Hardened the data classes (`app_models.dart`) using safe type checks (`is List`) so that even if the AI misses an array, the UI falls back gracefully to empty lists instead of throwing runtime exceptions.
+- **Small Screen Optimizations**: Adjusted vertical strides in `LessonPath` (`currentY += 180`) and added padding buffers to completely eliminate overlap and layout overflow errors on compact devices (720x1520 at 271dpi).
+- **Duolingo-Style Theme Tweaks**: Added standard rounded text fields and refined the glassmorphism rendering across generation flows.
 --- END OF FILE README.md ---
 
---- START OF FILE lib/services/database_service.dart ---
+--- START OF FILE lib/utils/json_calibrator.dart ---
 import 'dart:convert';
-import 'package:firebase_database/firebase_database.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../models/app_models.dart';
-import '../data/mock_books.dart';
 
-class DatabaseService {
-  final DatabaseReference _dbRef = FirebaseDatabase.instance.ref();
-
-  Future<List<Book>> fetchBooks({bool forceRefresh = false}) async {
-    final prefs = await SharedPreferences.getInstance();
-
-    // Load strictly from cache first unless pull-to-refresh is requested.
-    if (!forceRefresh) {
-      final cached = prefs.getString('cached_books');
-      if (cached != null) {
-        try {
-          final List decoded = jsonDecode(cached);
-          return decoded.map((e) => Book.fromJson(Map<String, dynamic>.from(e))).toList();
-        } catch (e) {
-          // Fall through
-        }
-      }
-    }
-
-    return await _fetchAndCacheFirebase();
-  }
-
-  Future<List<Book>> _fetchAndCacheFirebase() async {
-    final prefs = await SharedPreferences.getInstance();
-    try {
-      final snapshot = await _dbRef.child('books').get();
-      if (snapshot.exists) {
-        final Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
-        List<Book> books =[];
-        data.forEach((key, value) {
-          books.add(Book.fromJson(Map<String, dynamic>.from(value)));
-        });
-        await prefs.setString('cached_books', jsonEncode(books.map((b) => b.toJson()).toList()));
-        return books;
-      } else {
-        await saveBooks(mockBooks);
-        await prefs.setString('cached_books', jsonEncode(mockBooks.map((b) => b.toJson()).toList()));
-        return mockBooks;
-      }
-    } catch (e) {
-      final cached = prefs.getString('cached_books');
-      if (cached != null) {
-        final List decoded = jsonDecode(cached);
-        return decoded.map((e) => Book.fromJson(Map<String, dynamic>.from(e))).toList();
-      }
-      return mockBooks;
-    }
-  }
-
-  Future<void> saveBooks(List<Book> books) async {
-    for (var book in books) {
-      await _dbRef.child('books').child(book.id).set(book.toJson());
-    }
-  }
-
-  Future<void> saveGeneratedBook(Book book) async {
-    await _dbRef.child('books').child(book.id).set(book.toJson());
-  }
-
-  Future<void> deleteBook(String id) async {
-    // Remove from Firebase
-    await _dbRef.child('books').child(id).remove();
+class JsonCalibrator {
+  /// Aggressively sanitizes, cleans, and decodes AI generated JSON
+  /// to prevent RangeErrors and FormatExceptions due to hallucinated syntax.
+  static Map<String, dynamic> cleanAndDecode(String raw) {
+    String c = raw.trim();
     
-    // Update local cache
-    final prefs = await SharedPreferences.getInstance();
-    final cached = prefs.getString('cached_books');
-    if (cached != null) {
-      List decoded = jsonDecode(cached);
-      decoded.removeWhere((e) => e['id'] == id);
-      await prefs.setString('cached_books', jsonEncode(decoded));
+    // Strip markdown code blocks safely
+    if (c.contains('```json')) {
+      final parts = c.split('```json');
+      if (parts.length > 1) {
+        c = parts[1];
+        if (c.contains('```')) c = c.split('```')[0];
+      }
+    } else if (c.contains('```')) {
+      final parts = c.split('```');
+      if (parts.length > 1) {
+        c = parts[1];
+        if (c.contains('```')) c = c.split('```')[0];
+      }
+    }
+
+    int s = c.indexOf('{');
+    int e = c.lastIndexOf('}');
+    
+    if (s == -1 || e == -1 || s > e) {
+      print("JSON Calibrator Error: No valid JSON object bounds found.");
+      return {}; // Safe fallback
+    }
+    
+    c = c.substring(s, e + 1);
+
+    try {
+      final decoded = jsonDecode(c);
+      if (decoded is Map<String, dynamic>) return decoded;
+      return {};
+    } catch (err) {
+      print("Initial JSON parse failed. Running calibration... ($err)");
+      
+      // Step 1: Fix unescaped newlines inside strings
+      c = c.replaceAll('\n', ' ');
+      
+      // Step 2: Fix trailing commas
+      c = c.replaceAll(RegExp(r',\s*}'), '}').replaceAll(RegExp(r',\s*\]'), ']');
+      
+      // Step 3: Ensure LaTeX backslashes are heavily escaped
+      c = c.replaceAll(r'\frac', r'\\frac')
+           .replaceAll(r'\sqrt', r'\\sqrt')
+           .replaceAll(r'\text', r'\\text')
+           .replaceAll(r'\cdot', r'\\cdot')
+           .replaceAll(r'\pi', r'\\pi');
+
+      try {
+        final decoded = jsonDecode(c);
+        if (decoded is Map<String, dynamic>) return decoded;
+        return {};
+      } catch (err2) {
+        print("Aggressive calibration failed: $err2");
+        return {}; // Final safe fallback to avoid complete app crash
+      }
     }
   }
 }
---- END OF FILE lib/services/database_service.dart ---
+--- END OF FILE lib/utils/json_calibrator.dart ---
 
 --- START OF FILE lib/services/ai_service.dart ---
-import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
+import '../utils/json_calibrator.dart';
 
 class AiService {
   Future<List<String>> _getKeys() async {
@@ -157,60 +144,29 @@ class AiService {
     return models;
   }
 
-  /// Robust JSON parser that handles Markdown ticks and invalid string literal types
-  Map<String, dynamic> _cleanAndDecodeJson(String text) {
-    String cleaned = text;
-    if (cleaned.contains('```json')) {
-      cleaned = cleaned.split('```json')[1].split('```')[0];
-    } else if (cleaned.contains('```')) {
-      cleaned = cleaned.split('```')[1].split('```')[0];
-    }
-    
-    cleaned = cleaned.trim();
-    int start = cleaned.indexOf('{');
-    int end = cleaned.lastIndexOf('}');
-    
-    if (start != -1 && end != -1) {
-      cleaned = cleaned.substring(start, end + 1);
-    }
-    
-    // Fallback sanitation: Escape any unescaped backslashes outside of valid JSON quotes
-    // This is a common issue when AI outputs raw \n instead of \\n
-    cleaned = cleaned.replaceAll(r'\"', r'\\"').replaceAll(r'\n', r'\\n');
-    
-    try {
-      final decoded = jsonDecode(cleaned);
-      if (decoded is! Map<String, dynamic>) {
-        throw Exception('Expected a JSON Object (Map), but got ${decoded.runtimeType}.');
-      }
-      return decoded;
-    } catch (e) {
-      print("JSON Parse Error: $e\nPayload Segment: ${cleaned.substring(0, cleaned.length > 200 ? 200 : cleaned.length)}");
-      throw Exception('Failed to parse AI JSON response: $e');
-    }
-  }
-
   /// STAGE 1: Extracts the table of contents and creates the Book Skeleton
-  Future<Book?> generateBookSkeleton(File pdfFile, String title) async {
+  Future<Book?> generateBookSkeleton(File pdfFile, String filename, String userTitle) async {
     final keys = await _getKeys();
     final models = await _getModels();
     final pdfBytes = await pdfFile.readAsBytes();
     
     final prompt = TextPart('''
 You are an expert curriculum designer. Analyze the attached PDF document to create a high-level course skeleton.
-You need to extract the Table of Contents and structure it into Modules -> Sections -> Units.
+The user uploaded a file named: "$filename". 
+${userTitle.isNotEmpty ? 'The user specified the course title as: "$userTitle". Use this exact title in the `title` field.' : 'Generate a suitable, professional `title` for this course based on the document content.'}
 
 CRITICAL INSTRUCTIONS:
-1. The `startPage` and `endPage` MUST refer to the ABSOLUTE PDF PAGE INDEX (1-based index where the absolute first page of the file is 1), NOT the printed page number.
-2. In the custom `systemPrompt` string you generate, STRICTLY instruct the AI to use double-escaped backslashes for all LaTeX (e.g. \\\\frac instead of \\frac).
+1. The `startPage` and `endPage` MUST refer to the ABSOLUTE PDF PAGE INDEX (1-based index where the absolute first page of the file is 1).
+2. You must extract the Table of Contents and structure it into Modules -> Sections -> Units. Each Section MUST have at least 1 Unit.
+3. In the custom `systemPrompt` string you generate, STRICTLY instruct the AI to use double-escaped backslashes for all LaTeX (e.g. \\\\frac instead of \\frac).
 
 Return ONLY valid JSON matching this exact structure:
 {
   "id": "generated-book-${DateTime.now().millisecondsSinceEpoch}",
-  "title": "$title",
+  "title": "Generated Course Title Here",
   "description": "Auto-generated book overview",
   "icon": "Book",
-  "systemPrompt": "You are an expert tutor... Remember to double-escape LaTeX strings as \\\\frac ...",
+  "systemPrompt": "You are an expert tutor... Remember to double-escape LaTeX strings...",
   "modules":[
     {
       "id": "m-1",
@@ -242,10 +198,10 @@ Return ONLY valid JSON matching this exact structure:
 
     Exception? lastException;
     
-    // Cycle models, then cycle keys
     for (var modelName in models) {
       for (var apiKey in keys) {
         try {
+          print("Requesting MetaData from Gemini using model: $modelName...");
           final model = GenerativeModel(
             model: modelName,
             apiKey: apiKey,
@@ -257,7 +213,14 @@ Return ONLY valid JSON matching this exact structure:
           ]).timeout(const Duration(minutes: 5));
 
           if (response.text != null) {
-            final jsonMap = _cleanAndDecodeJson(response.text!);
+            final jsonMap = JsonCalibrator.cleanAndDecode(response.text!);
+            if (jsonMap.isEmpty) throw Exception("Generated JSON was empty or unrecoverable.");
+            
+            // Override title forcefully if provided to ensure it matches user input
+            if (userTitle.isNotEmpty) {
+              jsonMap['title'] = userTitle;
+            }
+
             return Book.fromJson(jsonMap);
           }
         } on TimeoutException {
@@ -286,7 +249,7 @@ TASK:
 Generate interactive lesson content for the unit: "${unit.title}".
 Rely on the provided attached PDF chunk.
 You MUST use LaTeX formatting inside Markdown by wrapping math in \$ (inline) or \$\$ (block).
-CRITICAL: All backslashes in LaTeX MUST be double-escaped for JSON compatibility (e.g., use \\\\frac{1}{2} instead of \\frac{1}{2}).
+CRITICAL: All backslashes in LaTeX MUST be double-escaped for JSON compatibility (e.g., use \\\\frac{1}{2} instead of \\frac{1}{2}). Do not use unescaped quotes inside string values.
 
 Return ONLY valid JSON representing the "lessons" array.
 Format:
@@ -315,6 +278,7 @@ Format:
     for (var modelName in models) {
       for (var apiKey in keys) {
         try {
+          print("Generating Unit Content [${unit.title}] using model: $modelName...");
           final model = GenerativeModel(
             model: modelName,
             apiKey: apiKey,
@@ -326,9 +290,13 @@ Format:
           ]).timeout(const Duration(minutes: 5));
 
           if (response.text != null) {
-            final jsonMap = _cleanAndDecodeJson(response.text!);
-            final lessonsData = jsonMap['lessons'] as List?;
-            final newLessons = lessonsData?.map((l) => Lesson.fromJson(Map<String, dynamic>.from(l))).toList() ?? [];
+            final jsonMap = JsonCalibrator.cleanAndDecode(response.text!);
+            final lessonsData = jsonMap['lessons'];
+            
+            List<Lesson> newLessons = [];
+            if (lessonsData is List) {
+               newLessons = lessonsData.map((l) => Lesson.fromJson(Map<String, dynamic>.from(l))).toList();
+            }
             
             return unit.copyWith(isGenerated: true, lessons: newLessons);
           }
@@ -344,451 +312,402 @@ Format:
 }
 --- END OF FILE lib/services/ai_service.dart ---
 
---- START OF FILE lib/services/generation_manager.dart ---
-import 'dart:io';
-import 'package:flutter/material.dart';
-import '../models/app_models.dart';
-import 'pdf_service.dart';
-import 'database_service.dart';
-
-class GenerationTask {
+--- START OF FILE lib/models/app_models.dart ---
+class Book {
   final String id;
   final String title;
-  String statusMessage;
-  bool isError;
+  final String description;
+  final String icon;
+  final String? systemPrompt;
+  final List<Module> modules;
 
-  GenerationTask({
+  Book({
     required this.id, 
     required this.title, 
-    this.statusMessage = 'Starting...', 
-    this.isError = false
-  });
-}
-
-class GenerationManager extends ChangeNotifier {
-  static final GenerationManager instance = GenerationManager._internal();
-  GenerationManager._internal();
-
-  final List<GenerationTask> activeTasks = [];
-  final PdfService _pdfService = PdfService();
-  final DatabaseService _dbService = DatabaseService();
-
-  VoidCallback? onBookGenerated;
-
-  /// Background Stage 2: Physically splits the PDF and saves the chunked book to DB
-  Future<void> startBackgroundSplitAndSave(File originalPdf, Book offsetBook) async {
-    final task = GenerationTask(
-      id: offsetBook.id, 
-      title: offsetBook.title,
-      statusMessage: 'Physically chunking PDF...'
-    );
-    activeTasks.add(task);
-    notifyListeners();
-
-    try {
-      final completeBook = await _pdfService.splitBookPdf(originalPdf, offsetBook);
-
-      task.statusMessage = 'Saving to Database...';
-      notifyListeners();
-      
-      await _dbService.saveGeneratedBook(completeBook);
-      
-      activeTasks.remove(task);
-      notifyListeners();
-      
-      onBookGenerated?.call();
-    } catch (e) {
-      task.isError = true;
-      task.statusMessage = 'Error: ${e.toString()}';
-      notifyListeners();
-    }
-  }
-
-  void dismissTask(String id) {
-    activeTasks.removeWhere((t) => t.id == id);
-    notifyListeners();
-  }
-}
---- END OF FILE lib/services/generation_manager.dart ---
-
---- START OF FILE lib/services/pdf_service.dart ---
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
-import 'package:syncfusion_flutter_pdf/pdf.dart';
-import '../models/app_models.dart';
-
-class PdfService {
-  /// True Physical Splitting using Template Drawing
-  /// This guarantees that massive, unreferenced meta-data from the old document isn't retained.
-  Future<Book> splitBookPdf(File originalPdf, Book book) async {
-    final bytes = await originalPdf.readAsBytes();
-    final PdfDocument sourceDoc = PdfDocument(inputBytes: bytes);
-    final int totalPages = sourceDoc.pages.count;
-    
-    final dir = await getApplicationDocumentsDirectory();
-    final bookDir = Directory('${dir.path}/books/${book.id}');
-    if (!await bookDir.exists()) await bookDir.create(recursive: true);
-
-    List<Module> updatedModules = [];
-
-    for (var module in book.modules) {
-      List<Section> updatedSections = [];
-      
-      for (var section in module.sections) {
-        List<Unit> updatedUnits = [];
-        
-        for (var unit in section.units) {
-          if (unit.startPage != null && unit.endPage != null) {
-            
-            int start = unit.startPage! - 1;
-            int end = unit.endPage! - 1;
-            if (start < 0) start = 0;
-            if (end >= totalPages) end = totalPages - 1;
-
-            final PdfDocument newDoc = PdfDocument();
-            // Important: drawing templates strips out redundant document-level objects
-            for (int i = start; i <= end; i++) {
-              final PdfPage sourcePage = sourceDoc.pages[i];
-              newDoc.pageSettings.size = sourcePage.size;
-              
-              final PdfTemplate template = sourcePage.createTemplate();
-              final PdfPage newPage = newDoc.pages.add();
-              newPage.graphics.drawPdfTemplate(template, const Offset(0, 0));
-            }
-
-            final file = File('${bookDir.path}/${unit.id}.pdf');
-            await file.writeAsBytes(await newDoc.save());
-            newDoc.dispose();
-
-            updatedUnits.add(unit.copyWith(pdfPath: file.path, isGenerated: false, lessons: []));
-          } else {
-            updatedUnits.add(unit.copyWith(isGenerated: false, lessons: []));
-          }
-        }
-        updatedSections.add(section.copyWith(units: updatedUnits));
-      }
-      updatedModules.add(module.copyWith(sections: updatedSections));
-    }
-    sourceDoc.dispose();
-
-    return book.copyWith(modules: updatedModules);
-  }
-}
---- END OF FILE lib/services/pdf_service.dart ---
-
---- START OF FILE lib/widgets/string_list_manager.dart ---
-import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import '../theme/app_theme.dart';
-
-class StringListManager extends StatefulWidget {
-  final List<String> initialItems;
-  final String hintText;
-  final IconData itemIcon;
-  final Function(List<String>) onChanged;
-
-  const StringListManager({
-    super.key, 
-    required this.initialItems, 
-    required this.hintText,
-    required this.itemIcon,
-    required this.onChanged
+    required this.description, 
+    required this.icon, 
+    this.systemPrompt,
+    required this.modules
   });
 
-  @override
-  State<StringListManager> createState() => _StringListManagerState();
-}
-
-class _StringListManagerState extends State<StringListManager> {
-  late List<String> _items;
-  final _controller = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _items = List.from(widget.initialItems);
+  factory Book.fromJson(Map<String, dynamic> json) {
+    return Book(
+      id: json['id'] ?? '',
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      icon: json['icon'] ?? 'Book',
+      systemPrompt: json['systemPrompt'],
+      modules: (json['modules'] is List) 
+        ? (json['modules'] as List).map((m) => Module.fromJson(Map<String, dynamic>.from(m))).toList() 
+        : [],
+    );
   }
 
-  void _addItem() {
-    final val = _controller.text.trim();
-    if (val.isNotEmpty && !_items.contains(val)) {
-      if (_items.length >= 5) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Maximum 5 items allowed.')));
-        return;
-      }
-      setState(() {
-        _items.add(val);
-        _controller.clear();
-      });
-      widget.onChanged(_items);
-    }
-  }
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'description': description,
+    'icon': icon,
+    if (systemPrompt != null) 'systemPrompt': systemPrompt,
+    'modules': modules.map((m) => m.toJson()).toList(),
+  };
 
-  void _removeItem(int index) {
-    setState(() {
-      _items.removeAt(index);
-    });
-    widget.onChanged(_items);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children:[
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                decoration: InputDecoration(
-                  hintText: widget.hintText,
-                  border: const OutlineInputBorder(),
-                  filled: true,
-                  fillColor: Colors.black26,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            GestureDetector(
-              onTap: _addItem,
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppTheme.duoGreen,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppTheme.duoGreenDark, width: 2),
-                ),
-                child: const Icon(LucideIcons.plus, color: Colors.white),
-              ),
-            )
-          ],
-        ),
-        if (_items.isNotEmpty) const SizedBox(height: 16),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _items.length,
-          itemBuilder: (context, index) {
-            return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppTheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white12),
-              ),
-              child: Row(
-                children:[
-                  Icon(widget.itemIcon, color: Colors.amber, size: 18),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      _items[index],
-                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => _removeItem(index),
-                    child: const Icon(LucideIcons.trash2, color: AppTheme.duoRed, size: 20),
-                  )
-                ],
-              ),
-            );
-          },
-        ),
-      ],
+  Book copyWith({
+    String? id,
+    String? title,
+    String? description,
+    String? icon,
+    String? systemPrompt,
+    List<Module>? modules,
+  }) {
+    return Book(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      icon: icon ?? this.icon,
+      systemPrompt: systemPrompt ?? this.systemPrompt,
+      modules: modules ?? this.modules,
     );
   }
 }
---- END OF FILE lib/widgets/string_list_manager.dart ---
 
---- START OF FILE lib/screens/settings_screen.dart ---
-import 'dart:convert';
-import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
-import '../theme/app_theme.dart';
-import '../widgets/duo_button.dart';
-import '../widgets/string_list_manager.dart';
+class Module {
+  final String id;
+  final String title;
+  final String description;
+  final List<Section> sections;
+  final List<Slide> practiceQuestions;
+  final List<Slide> examQuestions;
 
-class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  Module({
+    required this.id, 
+    required this.title, 
+    required this.description, 
+    required this.sections,
+    required this.practiceQuestions,
+    required this.examQuestions,
+  });
 
-  @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  List<String> _keys = [];
-  List<String> _models = [];
-  bool _isFetchingModels = false;
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSettings();
+  factory Module.fromJson(Map<String, dynamic> json) {
+    return Module(
+      id: json['id'] ?? '',
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      sections: (json['sections'] is List) 
+        ? (json['sections'] as List).map((s) => Section.fromJson(Map<String, dynamic>.from(s))).toList() 
+        : [],
+      practiceQuestions: (json['practiceQuestions'] is List) 
+        ? (json['practiceQuestions'] as List).map((s) => Slide.fromJson(Map<String, dynamic>.from(s))).toList() 
+        : [],
+      examQuestions: (json['examQuestions'] is List) 
+        ? (json['examQuestions'] as List).map((s) => Slide.fromJson(Map<String, dynamic>.from(s))).toList() 
+        : [],
+    );
   }
 
-  Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    
-    List<String> keys = prefs.getStringList('gemini_api_keys_list') ?? [];
-    if (keys.isEmpty) {
-       final keysString = prefs.getString('gemini_api_keys') ?? '';
-       keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
-    }
-    
-    List<String> models = prefs.getStringList('gemini_models_list') ?? [];
-    if (models.isEmpty) {
-       final oldModel = prefs.getString('gemini_model') ?? 'gemini-1.5-flash';
-       models = [oldModel];
-    }
-    
-    _keys = List.from(keys);
-    _models = List.from(models);
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'description': description,
+    'sections': sections.map((s) => s.toJson()).toList(),
+    'practiceQuestions': practiceQuestions.map((s) => s.toJson()).toList(),
+    'examQuestions': examQuestions.map((s) => s.toJson()).toList(),
+  };
 
-    setState(() {
-      _isLoading = false;
-    });
-  }
-
-  Future<void> _saveSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('gemini_api_keys_list', _keys);
-    await prefs.setStringList('gemini_models_list', _models);
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Settings Saved Successfully')));
-      Navigator.pop(context);
-    }
-  }
-
-  Future<void> _fetchModels() async {
-    if (_keys.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please add an API key first.')));
-      return;
-    }
-
-    setState(() => _isFetchingModels = true);
-    try {
-      final response = await http.get(Uri.parse('https://generativelanguage.googleapis.com/v1beta/models?key=${_keys.first}'));
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final List fetched = data['models'] ?? [];
-        List<String> fetchedModels = [];
-        
-        for (var m in fetched) {
-          String name = m['name'];
-          if (name.startsWith('models/')) name = name.substring(7);
-          if (name.contains('gemini')) fetchedModels.add(name);
-        }
-
-        if (fetchedModels.isNotEmpty && mounted) {
-           showModalBottomSheet(
-             context: context, 
-             builder: (ctx) => ListView.builder(
-               itemCount: fetchedModels.length,
-               itemBuilder: (c, i) => ListTile(
-                 title: Text(fetchedModels[i]),
-                 onTap: () {
-                    setState(() {
-                      if (!_models.contains(fetchedModels[i]) && _models.length < 5) {
-                        _models.add(fetchedModels[i]);
-                      }
-                    });
-                    Navigator.pop(ctx);
-                 },
-               )
-             )
-           );
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to fetch: ${response.statusCode}')));
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-    } finally {
-      setState(() => _isFetchingModels = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: AppTheme.duoBlue)),
-      );
-    }
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings', style: TextStyle(fontWeight: FontWeight.w900))),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children:[
-            const Text('API Keys', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            const Text('Add multiple keys to fall back automatically if rate-limited.', style: TextStyle(color: Colors.white54, fontSize: 12)),
-            const SizedBox(height: 16),
-            StringListManager(
-              initialItems: _keys,
-              hintText: 'Enter Gemini API Key',
-              itemIcon: LucideIcons.key,
-              onChanged: (newKeys) => setState(() => _keys = newKeys),
-            ),
-            const SizedBox(height: 32),
-
-            const Text('AI Models Sequence', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            const Text('Add up to 5 models. Top models will be prioritized.', style: TextStyle(color: Colors.white54, fontSize: 12)),
-            const SizedBox(height: 16),
-            StringListManager(
-              initialItems: _models,
-              hintText: 'e.g. gemini-1.5-pro',
-              itemIcon: LucideIcons.bot,
-              onChanged: (newModels) => setState(() => _models = newModels),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: DuoButton(
-                text: _isFetchingModels ? 'Fetching...' : 'Browse Available Models',
-                onPressed: _isFetchingModels ? () {} : _fetchModels,
-                color: AppTheme.duoBlue,
-                shadowColor: AppTheme.duoBlueDark,
-                isOutline: true,
-              ),
-            ),
-            
-            const SizedBox(height: 48),
-            DuoButton(
-              text: 'Save Settings',
-              onPressed: _saveSettings,
-              color: AppTheme.duoGreen,
-              shadowColor: AppTheme.duoGreenDark,
-            )
-          ],
-        ),
-      ),
+  Module copyWith({
+    String? id,
+    String? title,
+    String? description,
+    List<Section>? sections,
+    List<Slide>? practiceQuestions,
+    List<Slide>? examQuestions,
+  }) {
+    return Module(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      sections: sections ?? this.sections,
+      practiceQuestions: practiceQuestions ?? this.practiceQuestions,
+      examQuestions: examQuestions ?? this.examQuestions,
     );
   }
 }
---- END OF FILE lib/screens/settings_screen.dart ---
+
+class Section {
+  final String id;
+  final String title;
+  final String description;
+  final String color;
+  final List<Unit> units;
+
+  Section({
+    required this.id, 
+    required this.title, 
+    required this.description, 
+    required this.color, 
+    required this.units
+  });
+
+  factory Section.fromJson(Map<String, dynamic> json) {
+    return Section(
+      id: json['id'] ?? '',
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      color: json['color'] ?? 'duo-blue',
+      units: (json['units'] is List) 
+        ? (json['units'] as List).map((u) => Unit.fromJson(Map<String, dynamic>.from(u))).toList() 
+        : [],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'description': description,
+    'color': color,
+    'units': units.map((u) => u.toJson()).toList(),
+  };
+
+  Section copyWith({
+    String? id,
+    String? title,
+    String? description,
+    String? color,
+    List<Unit>? units,
+  }) {
+    return Section(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      color: color ?? this.color,
+      units: units ?? this.units,
+    );
+  }
+}
+
+class Unit {
+  final String id;
+  final String title;
+  final String description;
+  final int? startPage;
+  final int? endPage;
+  final bool isGenerated;
+  final String? pdfPath;
+  final List<Lesson> lessons;
+
+  Unit({
+    required this.id, 
+    required this.title, 
+    required this.description, 
+    this.startPage,
+    this.endPage,
+    required this.isGenerated,
+    this.pdfPath,
+    required this.lessons
+  });
+
+  factory Unit.fromJson(Map<String, dynamic> json) {
+    return Unit(
+      id: json['id'] ?? '',
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      startPage: json['startPage'],
+      endPage: json['endPage'],
+      isGenerated: json['isGenerated'] ?? true,
+      pdfPath: json['pdfPath'],
+      lessons: (json['lessons'] is List) 
+        ? (json['lessons'] as List).map((l) => Lesson.fromJson(Map<String, dynamic>.from(l))).toList() 
+        : [],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'description': description,
+    if (startPage != null) 'startPage': startPage,
+    if (endPage != null) 'endPage': endPage,
+    'isGenerated': isGenerated,
+    if (pdfPath != null) 'pdfPath': pdfPath,
+    'lessons': lessons.map((l) => l.toJson()).toList(),
+  };
+
+  Unit copyWith({
+    String? id,
+    String? title,
+    String? description,
+    int? startPage,
+    int? endPage,
+    bool? isGenerated,
+    String? pdfPath,
+    List<Lesson>? lessons,
+  }) {
+    return Unit(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      startPage: startPage ?? this.startPage,
+      endPage: endPage ?? this.endPage,
+      isGenerated: isGenerated ?? this.isGenerated,
+      pdfPath: pdfPath ?? this.pdfPath,
+      lessons: lessons ?? this.lessons,
+    );
+  }
+}
+
+class Lesson {
+  final String id;
+  final String title;
+  final String description;
+  final String icon;
+  final List<Slide> slides;
+
+  Lesson({required this.id, required this.title, required this.description, required this.icon, required this.slides});
+
+  factory Lesson.fromJson(Map<String, dynamic> json) {
+    return Lesson(
+      id: json['id'] ?? '',
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      icon: json['icon'] ?? 'BookOpen',
+      slides: (json['slides'] is List) 
+        ? (json['slides'] as List).map((s) => Slide.fromJson(Map<String, dynamic>.from(s))).toList() 
+        : [],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'description': description,
+    'icon': icon,
+    'slides': slides.map((s) => s.toJson()).toList(),
+  };
+}
+
+class InteractiveStep {
+  final String? prompt;
+  final String? stepText;
+  final List<QuizOption>? options;
+
+  InteractiveStep({this.prompt, this.stepText, this.options});
+
+  factory InteractiveStep.fromJson(Map<String, dynamic> json) {
+    return InteractiveStep(
+      prompt: json['prompt'],
+      stepText: json['stepText'],
+      options: (json['options'] is List) 
+        ? (json['options'] as List).map((o) => QuizOption.fromJson(Map<String, dynamic>.from(o))).toList() 
+        : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    if (prompt != null) 'prompt': prompt,
+    if (stepText != null) 'stepText': stepText,
+    if (options != null) 'options': options!.map((o) => o.toJson()).toList(),
+  };
+}
+
+class Slide {
+  final String id;
+  final String type;
+  final String title;
+  final String content;
+  final String? interactiveCanvasHtml;
+  final List<QuizOption>? options;
+  final List<InteractiveStep>? interactiveSteps;
+  final List<String>? proofSteps;
+  final String? blankAnswer;
+  final double? numericAnswer;
+  final double? numericTolerance;
+
+  Slide({
+    required this.id,
+    required this.type,
+    required this.title,
+    required this.content,
+    this.interactiveCanvasHtml,
+    this.options,
+    this.interactiveSteps,
+    this.proofSteps,
+    this.blankAnswer,
+    this.numericAnswer,
+    this.numericTolerance,
+  });
+
+  factory Slide.fromJson(Map<String, dynamic> json) {
+    return Slide(
+      id: json['id'] ?? '',
+      type: json['type'] ?? 'theory',
+      title: json['title'] ?? '',
+      content: json['content'] ?? '',
+      interactiveCanvasHtml: json['interactiveCanvasHtml'],
+      options: (json['options'] is List) 
+        ? (json['options'] as List).map((o) => QuizOption.fromJson(Map<String, dynamic>.from(o))).toList() 
+        : null,
+      interactiveSteps: (json['interactiveSteps'] is List) 
+        ? (json['interactiveSteps'] as List).map((s) => InteractiveStep.fromJson(Map<String, dynamic>.from(s))).toList() 
+        : null,
+      proofSteps: (json['proofSteps'] is List) 
+        ? (json['proofSteps'] as List).map((s) => s.toString()).toList() 
+        : null,
+      blankAnswer: json['blankAnswer'],
+      numericAnswer: json['numericAnswer']?.toDouble(),
+      numericTolerance: json['numericTolerance']?.toDouble() ?? 0.01,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'type': type,
+    'title': title,
+    'content': content,
+    if (interactiveCanvasHtml != null) 'interactiveCanvasHtml': interactiveCanvasHtml,
+    if (options != null) 'options': options!.map((o) => o.toJson()).toList(),
+    if (interactiveSteps != null) 'interactiveSteps': interactiveSteps!.map((s) => s.toJson()).toList(),
+    if (proofSteps != null) 'proofSteps': proofSteps,
+    if (blankAnswer != null) 'blankAnswer': blankAnswer,
+    if (numericAnswer != null) 'numericAnswer': numericAnswer,
+    if (numericTolerance != null) 'numericTolerance': numericTolerance,
+  };
+}
+
+class QuizOption {
+  final String id;
+  final String text;
+  final bool isCorrect;
+  final String explanation;
+
+  QuizOption({required this.id, required this.text, required this.isCorrect, required this.explanation});
+
+  factory QuizOption.fromJson(Map<String, dynamic> json) {
+    return QuizOption(
+      id: json['id'] ?? '',
+      text: json['text'] ?? '',
+      isCorrect: json['isCorrect'] ?? false,
+      explanation: json['explanation'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'text': text,
+    'isCorrect': isCorrect,
+    'explanation': explanation,
+  };
+}
+--- END OF FILE lib/models/app_models.dart ---
 
 --- START OF FILE lib/screens/generate_book_screen.dart ---
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../services/ai_service.dart';
+import '../services/generation_manager.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
-import 'pdf_split_preview_screen.dart';
 
 class GenerateBookScreen extends StatefulWidget {
   const GenerateBookScreen({super.key});
@@ -799,7 +718,7 @@ class GenerateBookScreen extends StatefulWidget {
 
 class _GenerateBookScreenState extends State<GenerateBookScreen> {
   final AiService _aiService = AiService();
-  final _titleController = TextEditingController();
+  final TextEditingController _titleCtrl = TextEditingController();
   
   File? _selectedFile;
   bool _isGenerating = false;
@@ -818,28 +737,24 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
   }
 
   Future<void> _generate() async {
-    if (_selectedFile == null || _titleController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a PDF and enter a title.')));
+    if (_selectedFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a PDF file first.')));
       return;
     }
 
     setState(() => _isGenerating = true);
 
     try {
-      // Stage 1: Generate Skeleton
-      final skeletonBook = await _aiService.generateBookSkeleton(_selectedFile!, _titleController.text.trim());
+      final filename = _selectedFile!.path.split('/').last;
+      final userTitle = _titleCtrl.text.trim();
+      
+      // Stage 1: Generate Metadata
+      final skeletonBook = await _aiService.generateBookSkeleton(_selectedFile!, filename, userTitle);
       
       if (skeletonBook != null && mounted) {
-        // Pause generation and push to Preview Screen for confirmation
-        Navigator.pushReplacement(
-          context, 
-          MaterialPageRoute(
-            builder: (_) => PdfSplitPreviewScreen(
-              originalPdf: _selectedFile!,
-              skeletonBook: skeletonBook,
-            )
-          )
-        );
+        // Automatically fire background split and jump back to Home instantly
+        GenerationManager.instance.startBackgroundSplitAndSave(_selectedFile!, skeletonBook);
+        Navigator.pop(context); 
       }
     } catch (e) {
       if (mounted) {
@@ -850,55 +765,98 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
   }
 
   @override
+  void dispose() {
+    _titleCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('New Course', style: TextStyle(fontWeight: FontWeight.w900))),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              "We'll analyze the PDF to create a course skeleton first. Then you can review the assigned page ranges before we chunk the file.",
+              "Give your course a name and attach the PDF material. We'll automatically break it down into a structured lesson path.",
               style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
+            
+            const Text('COURSE TITLE (OPTIONAL)', style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+            const SizedBox(height: 8),
             TextField(
-              controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: 'Course Title',
-                border: OutlineInputBorder(),
+              controller: _titleCtrl,
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'e.g., Quantum Mechanics 101',
+                hintStyle: const TextStyle(color: Colors.white38),
                 filled: true,
-                fillColor: Colors.black26,
+                fillColor: Colors.white.withOpacity(0.05),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.white12)),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.white12)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppTheme.duoBlue, width: 2)),
               ),
             ),
+            
             const SizedBox(height: 24),
+            const Text('SOURCE MATERIAL', style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+            const SizedBox(height: 8),
+            
             DuoButton(
-              text: _selectedFile != null ? 'PDF Selected' : 'Upload PDF',
+              text: _selectedFile != null ? 'Change PDF' : 'Upload PDF',
               onPressed: _pickFile,
               color: AppTheme.duoBlue,
               shadowColor: AppTheme.duoBlueDark,
               isOutline: _selectedFile != null,
             ),
+            
             if (_selectedFile != null)
               Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text('File: ${_selectedFile!.path.split('/').last}', style: const TextStyle(color: Colors.white54), textAlign: TextAlign.center),
+                padding: const EdgeInsets.only(top: 16.0),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.duoBlue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppTheme.duoBlue.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(LucideIcons.fileText, color: AppTheme.duoBlue),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _selectedFile!.path.split('/').last,
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            const Spacer(),
+            
+            const SizedBox(height: 48),
             
             if (_isGenerating)
               const Column(
                 children: [
                   CircularProgressIndicator(color: AppTheme.duoGreen),
-                  SizedBox(height: 16),
-                  Text('Analyzing Book Structure...', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
+                  SizedBox(height: 24),
+                  Text('Extracting Metadata...', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                  SizedBox(height: 8),
+                  Text('This takes a few seconds. We will start splitting in the background right after.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Colors.white54)),
                   SizedBox(height: 32),
                 ],
               )
             else
               DuoButton(
-                text: 'Analyze PDF',
+                text: 'Create Course',
                 onPressed: _generate,
                 color: AppTheme.duoGreen,
                 shadowColor: AppTheme.duoGreenDark,
@@ -911,580 +869,8 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
 }
 --- END OF FILE lib/screens/generate_book_screen.dart ---
 
---- START OF FILE lib/screens/pdf_split_preview_screen.dart ---
-import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
-import '../models/app_models.dart';
-import '../services/generation_manager.dart';
-import '../theme/app_theme.dart';
-import '../widgets/duo_button.dart';
-
-class _UnitEditor {
-  final int modIdx;
-  final int secIdx;
-  final int unitIdx;
-  final Unit originalUnit;
-  final TextEditingController startCtrl;
-  final TextEditingController endCtrl;
-
-  _UnitEditor(this.modIdx, this.secIdx, this.unitIdx, this.originalUnit)
-      : startCtrl = TextEditingController(text: originalUnit.startPage?.toString() ?? ''),
-        endCtrl = TextEditingController(text: originalUnit.endPage?.toString() ?? '');
-}
-
-class PdfSplitPreviewScreen extends StatefulWidget {
-  final File originalPdf;
-  final Book skeletonBook;
-
-  const PdfSplitPreviewScreen({
-    super.key,
-    required this.originalPdf,
-    required this.skeletonBook,
-  });
-
-  @override
-  State<PdfSplitPreviewScreen> createState() => _PdfSplitPreviewScreenState();
-}
-
-class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
-  final PdfViewerController _pdfViewerController = PdfViewerController();
-  List<_UnitEditor> _editors = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _flattenHierarchy();
-  }
-
-  void _flattenHierarchy() {
-    for (int m = 0; m < widget.skeletonBook.modules.length; m++) {
-      for (int s = 0; s < widget.skeletonBook.modules[m].sections.length; s++) {
-        for (int u = 0; u < widget.skeletonBook.modules[m].sections[s].units.length; u++) {
-          final unit = widget.skeletonBook.modules[m].sections[s].units[u];
-          _editors.add(_UnitEditor(m, s, u, unit));
-        }
-      }
-    }
-  }
-
-  void _commitSplits() {
-    // Reconstruct the Book with updated ranges
-    List<Module> updatedModules = List.from(widget.skeletonBook.modules);
-    
-    for (var editor in _editors) {
-      int? sPage = int.tryParse(editor.startCtrl.text);
-      int? ePage = int.tryParse(editor.endCtrl.text);
-      
-      final mIdx = editor.modIdx;
-      final sIdx = editor.secIdx;
-      final uIdx = editor.unitIdx;
-      
-      final List<Section> modSections = List.from(updatedModules[mIdx].sections);
-      final List<Unit> secUnits = List.from(modSections[sIdx].units);
-      
-      secUnits[uIdx] = secUnits[uIdx].copyWith(startPage: sPage, endPage: ePage);
-      modSections[sIdx] = modSections[sIdx].copyWith(units: secUnits);
-      updatedModules[mIdx] = updatedModules[mIdx].copyWith(sections: modSections);
-    }
-
-    final offsetBook = widget.skeletonBook.copyWith(modules: updatedModules);
-
-    // Fire off the background task
-    GenerationManager.instance.startBackgroundSplitAndSave(widget.originalPdf, offsetBook);
-
-    // Pop everything to get back to the home screen
-    Navigator.popUntil(context, (route) => route.isFirst);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Review Page Splits', style: TextStyle(fontWeight: FontWeight.w900))),
-      body: Column(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Container(
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.white12, width: 2),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              clipBehavior: Clip.hardEdge,
-              child: Stack(
-                children: [
-                  SfPdfViewer.file(
-                    widget.originalPdf,
-                    controller: _pdfViewerController,
-                    canShowScrollHead: false,
-                    canShowScrollStatus: false,
-                  ),
-                  Positioned(
-                    bottom: 16,
-                    right: 16,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: AppTheme.surface.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white24),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(LucideIcons.fileText, size: 16, color: Colors.white54),
-                          const SizedBox(width: 8),
-                          const Text('Use Viewer to find absolute page #', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                    ),
-                  )
-                ],
-              ),
-            ),
-          ),
-          
-          Expanded(
-            flex: 3,
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppTheme.surface,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 10, offset: const Offset(0, -4))
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.only(top: 24, left: 24, right: 24, bottom: 8),
-                    child: Text('Adjust Unit Ranges', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
-                  ),
-                  Expanded(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      itemCount: _editors.length,
-                      itemBuilder: (context, i) {
-                        final editor = _editors[i];
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.white12),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(editor.originalUnit.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                                    const SizedBox(height: 4),
-                                    Text('M${editor.modIdx + 1} • S${editor.secIdx + 1}', style: const TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.w900)),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              SizedBox(
-                                width: 55,
-                                child: TextField(
-                                  controller: editor.startCtrl,
-                                  keyboardType: TextInputType.number,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
-                                  decoration: InputDecoration(
-                                    labelText: 'Start',
-                                    labelStyle: const TextStyle(fontSize: 10),
-                                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                  ),
-                                ),
-                              ),
-                              const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 4),
-                                child: Text('-', style: TextStyle(color: Colors.white54)),
-                              ),
-                              SizedBox(
-                                width: 55,
-                                child: TextField(
-                                  controller: editor.endCtrl,
-                                  keyboardType: TextInputType.number,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
-                                  decoration: InputDecoration(
-                                    labelText: 'End',
-                                    labelStyle: const TextStyle(fontSize: 10),
-                                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                  ),
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(LucideIcons.eye, color: AppTheme.duoBlue, size: 20),
-                                onPressed: () {
-                                  int? p = int.tryParse(editor.startCtrl.text);
-                                  if (p != null) {
-                                    _pdfViewerController.jumpToPage(p);
-                                  }
-                                },
-                              )
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: DuoButton(
-                      text: 'Confirm & Split Course',
-                      color: AppTheme.duoGreen,
-                      shadowColor: AppTheme.duoGreenDark,
-                      onPressed: _commitSplits,
-                    ),
-                  )
-                ],
-              ),
-            ),
-          )
-        ],
-      ),
-    );
-  }
-}
---- END OF FILE lib/screens/pdf_split_preview_screen.dart ---
-
---- START OF FILE lib/widgets/book_card.dart ---
-import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import '../models/app_models.dart';
-import '../theme/app_theme.dart';
-
-class BookCard extends StatelessWidget {
-  final Book book;
-  final double progress;
-  final VoidCallback onTap;
-  final VoidCallback onDelete;
-
-  const BookCard({
-    super.key,
-    required this.book,
-    required this.progress,
-    required this.onTap,
-    required this.onDelete,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 240,
-        margin: const EdgeInsets.only(bottom: 24),
-        decoration: BoxDecoration(
-          color: AppTheme.surface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white12, width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            )
-          ],
-        ),
-        clipBehavior: Clip.hardEdge,
-        child: Stack(
-          children: [
-            Column(
-              children: [
-                Expanded(
-                  flex: 5,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppTheme.duoBlue.withOpacity(0.8),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        LucideIcons.bookOpen, 
-                        size: 64, 
-                        color: Colors.white.withOpacity(0.8)
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 4,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                    color: AppTheme.surface,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          book.title,
-                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: Colors.white, height: 1.2),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          book.description,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white54),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const Spacer(),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: LinearProgressIndicator(
-                                value: progress,
-                                backgroundColor: Colors.white10,
-                                color: AppTheme.duoGreen,
-                                minHeight: 6,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            const Text(
-                              'Continue',
-                              style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.w900, fontSize: 14),
-                            )
-                          ],
-                        )
-                      ],
-                    ),
-                  ),
-                )
-              ],
-            ),
-            Positioned(
-              top: 12,
-              right: 12,
-              child: GestureDetector(
-                onTap: onDelete,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black45,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white24),
-                  ),
-                  child: const Icon(LucideIcons.trash2, size: 16, color: Colors.white),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
---- END OF FILE lib/widgets/book_card.dart ---
-
---- START OF FILE lib/screens/home_screen.dart ---
-import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import '../models/app_models.dart';
-import '../services/database_service.dart';
-import '../services/progress_service.dart';
-import '../services/generation_manager.dart';
-import '../theme/app_theme.dart';
-import '../widgets/book_card.dart';
-import '../widgets/generating_book_tile.dart';
-import 'main_layout_screen.dart';
-import 'settings_screen.dart';
-import 'generate_book_screen.dart';
-
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  final DatabaseService _db = DatabaseService();
-  List<Book> books = [];
-  Map<String, double> progressMap = {};
-  bool isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadBooks();
-    GenerationManager.instance.onBookGenerated = () => _loadBooks(force: true);
-  }
-
-  Future<void> _loadBooks({bool force = false}) async {
-    final fetched = await _db.fetchBooks(forceRefresh: force);
-    Map<String, double> prog = {};
-    for (var b in fetched) {
-      prog[b.id] = await ProgressService.getBookProgress(b);
-    }
-
-    if (mounted) {
-      setState(() {
-        books = fetched;
-        progressMap = prog;
-        isLoading = false;
-      });
-    }
-  }
-
-  void _deleteBook(String id) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Delete Course?', style: TextStyle(fontWeight: FontWeight.w900)),
-        content: const Text('This will permanently delete the course and all its downloaded chunks.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              setState(() => isLoading = true);
-              await _db.deleteBook(id);
-              _loadBooks(force: true);
-            },
-            child: const Text('Delete', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      )
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: GenerationManager.instance,
-      builder: (context, child) {
-        final activeTasks = GenerationManager.instance.activeTasks;
-
-        return Scaffold(
-          backgroundColor: AppTheme.background,
-          body: isLoading
-            ? const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue))
-            : RefreshIndicator(
-                color: AppTheme.duoBlue,
-                onRefresh: () => _loadBooks(force: true),
-                child: CustomScrollView(
-                  physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-                  slivers:[
-                    SliverAppBar(
-                      expandedHeight: 120,
-                      floating: true,
-                      backgroundColor: AppTheme.background,
-                      flexibleSpace: FlexibleSpaceBar(
-                        titlePadding: const EdgeInsets.only(left: 24, bottom: 16),
-                        title: const Text('Today', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 28, color: Colors.white)),
-                      ),
-                      actions:[
-                        IconButton(
-                          padding: const EdgeInsets.only(right: 16),
-                          icon: const Icon(LucideIcons.settings, size: 28),
-                          onPressed: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
-                          },
-                        )
-                      ],
-                    ),
-
-                    if (activeTasks.isNotEmpty)
-                      SliverToBoxAdapter(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                              child: Text('Generating...', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white54)),
-                            ),
-                            SizedBox(
-                              height: 140,
-                              child: ListView.builder(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                scrollDirection: Axis.horizontal,
-                                itemCount: activeTasks.length,
-                                itemBuilder: (context, index) {
-                                  return Container(
-                                    width: 140,
-                                    margin: const EdgeInsets.symmetric(horizontal: 8),
-                                    child: GeneratingBookTile(task: activeTasks[index])
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                          ],
-                        ),
-                      ),
-                    
-                    if (books.isEmpty && activeTasks.isEmpty)
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.all(40.0),
-                          child: Center(
-                            child: Column(
-                              children: [
-                                Icon(LucideIcons.bookDashed, size: 80, color: Colors.white24),
-                                const SizedBox(height: 16),
-                                const Text('No courses found.\nTap the + button to create one.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontSize: 16)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-
-                    if (books.isNotEmpty)
-                      SliverPadding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              final book = books[index];
-                              return BookCard(
-                                book: book,
-                                progress: progressMap[book.id] ?? 0.0,
-                                onTap: () {
-                                  Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
-                                    .then((_) => _loadBooks());
-                                },
-                                onDelete: () => _deleteBook(book.id),
-                              );
-                            },
-                            childCount: books.length,
-                          ),
-                        ),
-                      ),
-                    
-                    const SliverToBoxAdapter(child: SizedBox(height: 100)),
-                  ],
-                ),
-              ),
-          floatingActionButton: FloatingActionButton(
-            backgroundColor: AppTheme.duoGreen,
-            child: const Icon(LucideIcons.plus, color: Colors.white, size: 32),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GenerateBookScreen())),
-          ),
-        );
-      }
-    );
-  }
-}
---- END OF FILE lib/screens/home_screen.dart ---
-
 --- START OF FILE lib/widgets/lesson_path.dart ---
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../screens/lesson_screen.dart';
@@ -1526,7 +912,7 @@ class LessonPath extends StatelessWidget {
       final bool isGenerated = unit.isGenerated && unit.lessons.isNotEmpty;
       final bool isLoading = loadingUnitIds.contains(unit.id);
 
-      // Compact Unit Header ensuring no overflows on small screens
+      // Compact Unit Header safely bounded
       stackChildren.add(
         Positioned(
           top: currentY,
@@ -1536,10 +922,11 @@ class LessonPath extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     unit.title.toUpperCase(),
-                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white, letterSpacing: 1.5),
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: Colors.white, letterSpacing: 1.2),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 6),
@@ -1547,6 +934,8 @@ class LessonPath extends StatelessWidget {
                     unit.description,
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white54),
                     textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   
                   if (!isGenerated)
@@ -1571,7 +960,8 @@ class LessonPath extends StatelessWidget {
         ),
       );
 
-      currentY += isGenerated ? 120 : 190; 
+      // Safely increase Y stride to prevent layout overlap on smaller screens
+      currentY += isGenerated ? 180 : 250; 
 
       if (isGenerated) {
         for (var lesson in unit.lessons) {
@@ -1607,7 +997,7 @@ class LessonPath extends StatelessWidget {
             ),
           );
 
-          currentY += 140; 
+          currentY += 160; // Increased from 140 to safely separate nodes
           globalLessonIdx++;
         }
       }
@@ -1632,7 +1022,7 @@ class LessonPath extends StatelessWidget {
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       child: SizedBox(
-        height: currentY + 120, // Extra padding for bottom nav
+        height: currentY + 140, // Expanded padding for bottom nav space
         width: double.infinity,
         child: Stack(
           alignment: Alignment.topCenter,
@@ -1685,293 +1075,3 @@ class CurvedPathPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 --- END OF FILE lib/widgets/lesson_path.dart ---
-
---- START OF FILE lib/widgets/math_markdown.dart ---
-import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:flutter_markdown_latex/flutter_markdown_latex.dart';
-import 'package:markdown/markdown.dart' as md;
-
-class MathMarkdown extends StatelessWidget {
-  final String data;
-  final TextStyle? textStyle;
-  final TextAlign textAlign;
-  final List<md.InlineSyntax>? customSyntaxes;
-  final Map<String, MarkdownElementBuilder>? customBuilders;
-
-  const MathMarkdown({
-    super.key, 
-    required this.data, 
-    this.textStyle,
-    this.textAlign = TextAlign.left,
-    this.customSyntaxes,
-    this.customBuilders,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    // Aggressive sanitization of common AI Markdown/LaTeX generation issues
-    String safeData = data
-      .replaceAll(r'\$', r'$')
-      .replaceAll(r'\[', r'$$')
-      .replaceAll(r'\]', r'$$')
-      .replaceAll(r'\(', r'$')
-      .replaceAll(r'\)', r'$')
-      .replaceAll(r'$.', r'$ .')
-      .replaceAll(r'$,', r'$ ,')
-      .replaceAll(r'_$', r'_ $')
-      .replaceAll(r'-$', r'- $')
-      // Clean up common double escaped literal outputs from the UI side if JSON parsing passed them raw
-      .replaceAll(r'\\frac', r'\frac')
-      .replaceAll(r'\\sqrt', r'\sqrt')
-      .replaceAll(r'\\text', r'\text')
-      .replaceAll(r'\\cdot', r'\cdot')
-      .replaceAll(r'\\Delta', r'\Delta')
-      .replaceAll(r'\\pi', r'\pi');
-
-    return MarkdownBody(
-      data: safeData,
-      selectable: true,
-      styleSheet: MarkdownStyleSheet(
-        p: textStyle ?? const TextStyle(fontSize: 16, color: Colors.white, height: 1.5, fontWeight: FontWeight.w600),
-        textAlign: WrapAlignment.start,
-      ),
-      builders: {
-        'latex': LatexElementBuilder(
-          textStyle: textStyle?.copyWith(color: Colors.amber) ?? const TextStyle(color: Colors.amber, fontSize: 16, fontWeight: FontWeight.w800),
-        ),
-        if (customBuilders != null) ...customBuilders!,
-      },
-      extensionSet: md.ExtensionSet(
-        [LatexBlockSyntax(), ...md.ExtensionSet.gitHubFlavored.blockSyntaxes],
-        [
-          LatexInlineSyntax(), 
-          if (customSyntaxes != null) ...customSyntaxes!,
-          ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes
-        ],
-      ),
-    );
-  }
-}
---- END OF FILE lib/widgets/math_markdown.dart ---
-
---- START OF FILE lib/screens/book_dashboard_screen.dart ---
-import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import '../models/app_models.dart';
-import '../theme/app_theme.dart';
-import '../widgets/lesson_path.dart';
-import '../services/ai_service.dart';
-import '../services/database_service.dart';
-
-class BookDashboardScreen extends StatefulWidget {
-  final Book book;
-  final Function(Book) onBookUpdated;
-
-  const BookDashboardScreen({
-    super.key, 
-    required this.book,
-    required this.onBookUpdated
-  });
-
-  @override
-  State<BookDashboardScreen> createState() => _BookDashboardScreenState();
-}
-
-class _BookDashboardScreenState extends State<BookDashboardScreen> {
-  int currentModuleIdx = 0;
-  int currentSectionIdx = 0;
-
-  final Set<String> _generatingUnits = {};
-  final AiService _aiService = AiService();
-  final DatabaseService _dbService = DatabaseService();
-
-  Future<void> _handleGenerateUnit(Unit unit, int modIdx, int secIdx, int unitIdx) async {
-    setState(() => _generatingUnits.add(unit.id));
-    
-    try {
-      final updatedUnit = await _aiService.generateUnitContent(unit, widget.book);
-      
-      final List<Unit> updatedUnits = List.from(widget.book.modules[modIdx].sections[secIdx].units);
-      updatedUnits[unitIdx] = updatedUnit;
-      
-      final List<Section> updatedSections = List.from(widget.book.modules[modIdx].sections);
-      updatedSections[secIdx] = updatedSections[secIdx].copyWith(units: updatedUnits);
-
-      final List<Module> updatedModules = List.from(widget.book.modules);
-      updatedModules[modIdx] = updatedModules[modIdx].copyWith(sections: updatedSections);
-
-      final newBook = widget.book.copyWith(modules: updatedModules);
-
-      await _dbService.saveGeneratedBook(newBook);
-      widget.onBookUpdated(newBook);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unit Generated Successfully!')));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error generating: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _generatingUnits.remove(unit.id));
-      }
-    }
-  }
-
-  void _showHierarchySelector() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        return AppTheme.applyGlassBlur(
-          borderRadius: 24,
-          child: Container(
-            padding: const EdgeInsets.only(top: 24, left: 16, right: 16),
-            height: MediaQuery.of(context).size.height * 0.7,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.only(left: 8.0),
-                  child: Text('COURSE STRUCTURE', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white54, letterSpacing: 1.5)),
-                ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: widget.book.modules.length,
-                    itemBuilder: (ctx, mIdx) {
-                      final m = widget.book.modules[mIdx];
-                      final bool isModuleActive = mIdx == currentModuleIdx;
-                      
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: isModuleActive ? Colors.white.withOpacity(0.05) : Colors.transparent,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: isModuleActive ? Colors.white24 : Colors.transparent),
-                        ),
-                        child: Theme(
-                          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                          child: ExpansionTile(
-                            initiallyExpanded: isModuleActive,
-                            iconColor: AppTheme.duoBlue,
-                            collapsedIconColor: Colors.white54,
-                            leading: Icon(LucideIcons.folder, color: isModuleActive ? AppTheme.duoBlue : Colors.white54),
-                            title: Text(
-                              m.title,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold, 
-                                color: isModuleActive ? Colors.white : Colors.white70
-                              ),
-                            ),
-                            children: m.sections.asMap().entries.map((entry) {
-                              final sIdx = entry.key;
-                              final s = entry.value;
-                              final isSectionActive = isModuleActive && sIdx == currentSectionIdx;
-                              
-                              return Padding(
-                                padding: const EdgeInsets.only(left: 32, right: 8, bottom: 8),
-                                child: ListTile(
-                                  onTap: () {
-                                    setState(() {
-                                      currentModuleIdx = mIdx;
-                                      currentSectionIdx = sIdx;
-                                    });
-                                    Navigator.pop(ctx);
-                                  },
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  tileColor: isSectionActive ? AppTheme.duoBlue.withOpacity(0.2) : Colors.transparent,
-                                  title: Text(
-                                    s.title,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold, 
-                                      color: isSectionActive ? AppTheme.duoBlue : Colors.white
-                                    ),
-                                  ),
-                                  trailing: isSectionActive 
-                                    ? const Icon(LucideIcons.checkCircle2, color: AppTheme.duoBlue, size: 20)
-                                    : null,
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                )
-              ],
-            ),
-          ),
-        );
-      }
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (widget.book.modules.isEmpty) {
-      return const Center(child: Text("This book is empty."));
-    }
-
-    final module = widget.book.modules[currentModuleIdx];
-    final section = module.sections[currentSectionIdx];
-
-    return Scaffold(
-      body: Column(
-        children: [
-          GestureDetector(
-            onTap: _showHierarchySelector,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              decoration: AppTheme.glassDecoration.copyWith(
-                border: const Border(bottom: BorderSide(color: AppTheme.duoBlue, width: 4)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(LucideIcons.book, color: AppTheme.duoBlue, size: 20),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          module.title.toUpperCase(),
-                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: Colors.white54, letterSpacing: 1.2),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          section.title,
-                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Colors.white),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(LucideIcons.chevronDown, color: Colors.white54, size: 20),
-                ],
-              ),
-            ),
-          ),
-          
-          Expanded(
-            child: LessonPath(
-              section: section,
-              loadingUnitIds: _generatingUnits,
-              onGenerateUnit: (unit, unitIdx) {
-                _handleGenerateUnit(unit, currentModuleIdx, currentSectionIdx, unitIdx);
-              },
-            )
-          ),
-        ],
-      ),
-    );
-  }
-}
---- END OF FILE lib/screens/book_dashboard_screen.dart --

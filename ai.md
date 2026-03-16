@@ -1,24 +1,8 @@
 Make the following changes:
 
     
-    - Update AI generation:
-        Make async working like I can also close the window and its auto added to the grid, then I can click on the grid item to see the progress
-
-        but once the ai gets the metadata ask for confiration to split pdf
-    
-    - Update settings:
-        Make it possible to use upto five models, like if one fails the another just like we had with api keys
-
-    - Update lesson generation:
-        Add an fix for possible string leteral errors after AI generation especially with MathJax
-
-    - Update pdf splitting:
-        - Use REAL splitting like it should decrease the file size based on the split, because there is some other kind of split somehow keeps the same file size?!
-
-    - Update HOME SCREEN:
-        - MAke it looks like app store screen.
-        - Make it possible I can delete the generated books
-        
+    - Fix AI generation:
+        The unit selection is working well, but the unit generation is having bugs like formatting issue, string literal, Range() error etc. so add a calibration function after generating the json to avoid all this issues
 
 
     So it will be like this, I add the book and name, then click generate but this generation will be quick and it should show the loading screen, first step to get the metadata as explained in first generation, then pdf splitting and saving, then thats it

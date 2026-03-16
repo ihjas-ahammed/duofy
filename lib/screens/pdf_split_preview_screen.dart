@@ -87,13 +87,13 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Review Page Splits', style: TextStyle(fontWeight: FontWeight.w900))),
+      appBar: AppBar(title: const Text('Review Page Splits', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18))),
       body: Column(
         children: [
           Expanded(
             flex: 2,
             child: Container(
-              margin: const EdgeInsets.all(16),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.white12, width: 2),
                 borderRadius: BorderRadius.circular(16),
@@ -108,10 +108,10 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                     canShowScrollStatus: false,
                   ),
                   Positioned(
-                    bottom: 16,
-                    right: 16,
+                    bottom: 12,
+                    right: 12,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
                         color: AppTheme.surface.withOpacity(0.9),
                         borderRadius: BorderRadius.circular(20),
@@ -119,9 +119,9 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(LucideIcons.fileText, size: 16, color: Colors.white54),
+                          const Icon(LucideIcons.fileText, size: 14, color: Colors.white54),
                           const SizedBox(width: 8),
-                          const Text('Use Viewer to find absolute page #', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          const Text('Use Viewer to find exact page #', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
@@ -145,17 +145,17 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Padding(
-                    padding: EdgeInsets.only(top: 24, left: 24, right: 24, bottom: 8),
-                    child: Text('Adjust Unit Ranges', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+                    padding: EdgeInsets.only(top: 20, left: 24, right: 24, bottom: 8),
+                    child: Text('Adjust Unit Ranges', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
                   ),
                   Expanded(
                     child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       itemCount: _editors.length,
                       itemBuilder: (context, i) {
                         final editor = _editors[i];
                         return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
+                          margin: const EdgeInsets.only(bottom: 8),
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.05),
@@ -168,49 +168,54 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(editor.originalUnit.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                    Text(
+                                      editor.originalUnit.title, 
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                     const SizedBox(height: 4),
-                                    Text('M${editor.modIdx + 1} • S${editor.secIdx + 1}', style: const TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.w900)),
+                                    Text('M${editor.modIdx + 1} • S${editor.secIdx + 1}', style: const TextStyle(color: Colors.white54, fontSize: 9, fontWeight: FontWeight.w900)),
                                   ],
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              SizedBox(
-                                width: 55,
+                              Flexible(
                                 child: TextField(
                                   controller: editor.startCtrl,
                                   keyboardType: TextInputType.number,
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                                   decoration: InputDecoration(
                                     labelText: 'Start',
-                                    labelStyle: const TextStyle(fontSize: 10),
-                                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                                    labelStyle: const TextStyle(fontSize: 9),
+                                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 4),
                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                                   ),
                                 ),
                               ),
                               const Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 4),
-                                child: Text('-', style: TextStyle(color: Colors.white54)),
+                                child: Text('-', style: TextStyle(color: Colors.white54, fontSize: 12)),
                               ),
-                              SizedBox(
-                                width: 55,
+                              Flexible(
                                 child: TextField(
                                   controller: editor.endCtrl,
                                   keyboardType: TextInputType.number,
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                                   decoration: InputDecoration(
                                     labelText: 'End',
-                                    labelStyle: const TextStyle(fontSize: 10),
-                                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                                    labelStyle: const TextStyle(fontSize: 9),
+                                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 4),
                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                                   ),
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(LucideIcons.eye, color: AppTheme.duoBlue, size: 20),
+                                icon: const Icon(LucideIcons.eye, color: AppTheme.duoBlue, size: 18),
+                                padding: const EdgeInsets.all(4),
+                                constraints: const BoxConstraints(),
                                 onPressed: () {
                                   int? p = int.tryParse(editor.startCtrl.text);
                                   if (p != null) {

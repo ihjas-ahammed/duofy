@@ -4,8 +4,8 @@ A generic, Duolingo-style interactive learning platform that turns any book into
 
 ## Setup Instructions
 
-### 1. New Dependencies Required
-Make sure you have run the following commands to add all the dependencies:
+### 1. Dependencies
+Ensure you have the required packages:
 ```bash
 flutter pub add firebase_database webview_flutter google_generative_ai file_picker flutter_markdown shared_preferences lucide_icons path_provider http
 flutter pub add flutter_markdown_latex markdown
@@ -34,8 +34,8 @@ We use the Gemini API to analyze uploaded PDFs and generate interactive JSON les
 - `/lib/theme`: Colors and global styling matching the web platform
 
 ## Recent Updates & Design Process
-- **Two-Stage Background Generation**: When generating a new course, the app now pulls the metadata first. Once confirmed by the user, the actual physical PDF splitting and saving happens asynchronously in the background. The user can return to the Home Screen and see a live "Generating" card.
-- **App Store Inspired Home Screen**: The UI features large, beautiful, high-contrast cards showcasing the progress of your generated books. Users can easily delete courses using the integrated delete actions on the cards.
-- **Multiple Models & Keys Fallback**: Users can supply up to 5 models and 5 API keys in settings. If the primary model or key is rate-limited or fails context parsing, it seamlessly cycles to the next one, ensuring 99% reliability.
-- **Robust MathJax & JSON Escaping**: Generation prompts have been strictly enforced to double-escape LaTeX strings (like `\\frac`), and aggressive sanitization runs on the Dart side to ensure UI rendering doesn't crash from literal string mismatches.
-- **True Physical PDF Splitting**: Uses Syncfusion's `drawPdfTemplate` inside a fresh `PdfDocument` to guarantee the generated chunk drops all bloated, unreferenced metadata from the original document, keeping file sizes ultra-small.
+- **AI Generation Flow**: We simplified the course creation flow. The user no longer needs to manually input the course title; the AI intelligently derives it from the PDF content and file name.
+- **Improved Settings & Model Fetching**: Instead of manually typing models, the Settings screen now fetches available Gemini models natively using your API key. Users can easily select fallback models from a bottom sheet.
+- **Enhanced AI Logging**: Added extensive `print` logs in `ai_service.dart` to help developers debug metadata parsing and trace the raw JSON outputs returned by Gemini.
+- **Two-Stage Background Generation**: When generating a new course, the app pulls the metadata first. Once confirmed by the user, the actual physical PDF splitting and saving happens asynchronously in the background. The user can return to the Home Screen and see a live "Generating" card.
+- **Small Screen Optimizations**: All text fields, layouts, and paths (like `LessonPath` and `PdfSplitPreviewScreen`) have been refactored using `Flexible`, `Expanded`, and max-lines bounds to prevent layout overflows on smaller devices (e.g. 720x1520 at 271dpi).
