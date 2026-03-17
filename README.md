@@ -8,7 +8,7 @@ A generic, Duolingo-style interactive learning platform that turns any book into
 Ensure you have the required packages:
 ```bash
 flutter pub add firebase_database webview_flutter google_generative_ai file_picker flutter_markdown shared_preferences lucide_icons path_provider http
-flutter pub add flutter_markdown_latex markdown
+flutter pub add flutter_markdown_latex markdown share_plus
 flutter pub add syncfusion_flutter_pdf syncfusion_flutter_pdfviewer
 ```
 
@@ -27,17 +27,19 @@ We use the Gemini API to analyze uploaded PDFs and generate interactive JSON les
 
 ## Project Structure Overview
 - `/lib/models`: Data structures (Book, Module, Lesson, Slide, InteractiveStep, etc.)
-- `/lib/screens`: Home, Dashboard (Path), Lesson Player, Completion Screen, PDF Generator, Practice
+- `/lib/screens`: Home, Dashboard (Path), Lesson Player, Completion Screen, PDF Generator, Practice, PDF Browser, Advanced Prompts
 - `/lib/widgets`: Modular UI components (Custom Duolingo-style Buttons, Glass Panels, MathMarkdown)
 - `/lib/widgets/slide_views`: Individual renderers for theory, quiz, blanks, numericals, JS canvas, and Interactive Proofs.
-- `/lib/services`: AI, Database handling, and PDF splitting services
+- `/lib/services`: AI, Database handling, PDF splitting, and Dynamic Prompting services
 - `/lib/theme`: Colors and global styling matching the web platform
 
 ## Recent Updates & Design Process
-- **AI Generation Flow**: We simplified the course creation flow. The user no longer needs to manually input the course title; the AI intelligently derives it from the PDF content and file name.
-- **Improved Settings & Model Fetching**: Instead of manually typing models, the Settings screen now fetches available Gemini models natively using your API key. Users can easily select fallback models from a bottom sheet.
-- **Enhanced AI Logging**: Added extensive `print` logs in `ai_service.dart` to help developers debug metadata parsing and trace the raw JSON outputs returned by Gemini.
-- **Two-Stage Background Generation**: When generating a new course, the app pulls the metadata first. Once confirmed by the user, the actual physical PDF splitting and saving happens asynchronously in the background. The user can return to the Home Screen and see a live "Generating" card.
-- **Small Screen Optimizations**: All text fields, layouts, and paths (like `LessonPath` and `PdfSplitPreviewScreen`) have been refactored using `Flexible`, `Expanded`, and max-lines bounds to prevent layout overflows on smaller devices (e.g. 720x1520 at 271dpi).
-- **Closure Variable Bug Fix**: Fixed a critical bug where `unitIdx` was inaccurately tracked inside the `LessonPath` loop due to Dart's closure variable capture mechanics. This resolves the `RangeError (index)` thrown when attempting to generate units on existing courses.
-- **Enhanced Modularity**: Refactored the unit card UI out of `LessonPath` into a dedicated `UnitHeader` widget (`lib/widgets/unit_header.dart`), keeping code clean, maintainable, and focused on drawing the path itself.
+- **Dynamic Prompt Engine**: Added `PromptService` and an Advanced Settings screen allowing users to edit the exact instructions sent to the AI. Uses variables like `%unit_title%` and `%filename%`.
+- **Improved PDF Browser**: The downloaded PDF chunk browser now intelligently maps raw directory IDs back to readable `Book Title` and `Unit Title`. When sharing, it copies the file to a clean, readable filename to improve the UX.
+- **Deep Structure Generation**: Modified the skeleton AI prompts to fully utilize the Book -> Module (Chapter) -> Section (Subtopic) -> Unit (Deep Topic) hierarchy natively.
+- **UI & Generation Fixes**: 
+  - Eliminated "Empty Option" bugs in Quizzes by enforcing strict text presence in AI prompts and adding model-level fallbacks.
+  - Stopped question titles from duplicating the question text.
+  - Eliminated the `a (or b)` hallucination from `fill_in_blank` answers.
+  - Explicitly integrated the `numerical` slide type into the AI generation loop for calculating physics/math outputs.
+- **Bulletproof JSON Instantiation**: The `app_models.dart` `fromJson` constructors leverage defensive string extractors (`_str()`, `_bool()`).

@@ -3,6 +3,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../services/global_state.dart';
+import '../services/progress_service.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/math_markdown.dart';
 import '../widgets/slide_views/theory_view.dart';
@@ -67,7 +68,8 @@ class _LessonScreenState extends State<LessonScreen> {
     int accuracy = _totalInteractive > 0 ? ((_correctAttempts / _totalInteractive) * 100).round() : 100;
     int xpEarned = 15;
 
-    // Save XP Globally
+    // Save unlock progress and XP Globally
+    await ProgressService.markLessonCompleted(widget.lesson.id);
     await GlobalState.addXp(xpEarned);
     
     if (mounted) {

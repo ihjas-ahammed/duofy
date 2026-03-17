@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
+import 'prompt_service.dart';
 
 class AiService {
   Future<List<String>> _getKeys() async {
@@ -13,7 +14,10 @@ class AiService {
       final keysString = prefs.getString('gemini_api_keys') ?? '';
       keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
     }
-    if (keys.isEmpty) throw Exception('No API Keys configured.');
+    if (keys.isEmpty) {
+      print("[AiService] FATAL: No API Keys configured.");
+      throw Exception('No API Keys configured.');
+    }
     return keys;
   }
 
@@ -29,6 +33,7 @@ class AiService {
 
   /// Robust JSON parser that handles Markdown ticks and invalid string literal types
   Map<String, dynamic> _cleanAndDecodeJson(String text) {
+    print("[AiService] Initiating JSON Cleanup and Decoding...");
     String cleaned = text;
     if (cleaned.contains('```json')) {
       cleaned = cleaned.split('```json')[1].split('```')[0];
@@ -44,186 +49,175 @@ class AiService {
       cleaned = cleaned.substring(start, end + 1);
     }
     
-    // Fallback sanitation: Escape any unescaped backslashes outside of valid JSON quotes
-    // This is a common issue when AI outputs raw \n instead of \\n
-    cleaned = cleaned.replaceAll(r'\"', r'\\"').replaceAll(r'\n', r'\\n');
-    
     try {
       final decoded = jsonDecode(cleaned);
       if (decoded is! Map<String, dynamic>) {
         throw Exception('Expected a JSON Object (Map), but got ${decoded.runtimeType}.');
       }
+      print("[AiService] JSON Decoded Successfully.");
       return decoded;
-    } catch (e) {
-      print("JSON Parse Error: $e\nPayload Segment: ${cleaned.substring(0, cleaned.length > 500 ? 500 : cleaned.length)}");
-      throw Exception('Failed to parse AI JSON response: $e');
+    } catch (e1) {
+      print("[AiService] Initial parse failed. Trying fallback cleanup... $e1");
+      try {
+        // Fallback: fix literal unescaped newlines which AI might fail to properly escape
+        String agg = cleaned.replaceAll('\n', '\\n').replaceAll('\r', '');
+        return jsonDecode(agg) as Map<String, dynamic>;
+      } catch (e2) {
+        print("\n[AiService] JSON PARSE ERROR: $e2");
+        print("[AiService] === PROBLEMATIC PAYLOAD SEGMENT ===");
+        print(cleaned.substring(0, cleaned.length > 500 ? 500 : cleaned.length));
+        print("=============================================\n");
+        throw Exception('Failed to parse AI JSON response: $e2');
+      }
     }
   }
 
   /// STAGE 1: Extracts the table of contents and creates the Book Skeleton
   Future<Book?> generateBookSkeleton(File pdfFile, String filename) async {
+    print("\n[AiService] === STARTING STAGE 1: BOOK SKELETON GENERATION ===");
     final keys = await _getKeys();
     final models = await _getModels();
     final pdfBytes = await pdfFile.readAsBytes();
     
-    final prompt = TextPart('''
-You are an expert curriculum designer. Analyze the attached PDF document to create a high-level course skeleton.
-The user uploaded a file named: "$filename". 
-
-CRITICAL INSTRUCTIONS:
-1. Generate a suitable, professional `title` for this course based on the document content or the filename.
-2. The `startPage` and `endPage` MUST refer to the ABSOLUTE PDF PAGE INDEX (1-based index where the absolute first page of the file is 1), NOT the printed page number. Ensure they accurately reflect logical splits.
-3. You must extract the Table of Contents and structure it into Modules -> Sections -> Units. Each Section MUST have at least 1 Unit.
-4. In the custom `systemPrompt` string you generate, STRICTLY instruct the AI to use double-escaped backslashes for all LaTeX (e.g. \\\\frac instead of \\frac).
-
-Return ONLY valid JSON matching this exact structure:
-{
-  "id": "generated-book-${DateTime.now().millisecondsSinceEpoch}",
-  "title": "Generated Course Title Here",
-  "description": "Auto-generated book overview",
-  "icon": "Book",
-  "systemPrompt": "You are an expert tutor... Remember to double-escape LaTeX strings as \\\\frac ...",
-  "modules":[
-    {
-      "id": "m-1",
-      "title": "Module Title",
-      "description": "Module Desc",
-      "practiceQuestions": [],
-      "examQuestions": [],
-      "sections":[
-        {
-          "id": "s-1",
-          "title": "Section Title",
-          "description": "Section Desc",
-          "color": "duo-green",
-          "units":[
-            {
-              "id": "u-1",
-              "title": "Unit Title",
-              "description": "Unit Desc",
-              "startPage": 1,
-              "endPage": 10
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
-''');
+    final rawPrompt = await PromptService.getSkeletonPrompt();
+    final hydratedPrompt = rawPrompt.replaceAll('%filename%', filename);
+    
+    final prompt = TextPart(hydratedPrompt);
 
     Exception? lastException;
     
-    // Cycle models, then cycle keys
     for (var modelName in models) {
       for (var apiKey in keys) {
         try {
-          print("Requesting MetaData from Gemini using model: $modelName...");
+          print("[AiService] Requesting Skeleton via $modelName [Key: ...${apiKey.substring(apiKey.length > 4 ? apiKey.length - 4 : 0)}]");
+          
           final model = GenerativeModel(
             model: modelName,
             apiKey: apiKey,
             generationConfig: GenerationConfig(responseMimeType: 'application/json'),
           );
 
+          final stopwatch = Stopwatch()..start();
           final response = await model.generateContent([
             Content.multi([prompt, DataPart('application/pdf', pdfBytes)])
           ]).timeout(const Duration(minutes: 5));
+          stopwatch.stop();
 
           if (response.text != null) {
-            print("\n=================== AI METADATA GENERATION ===================");
-            print("Raw Response Length: ${response.text?.length} chars");
-            print("Raw Response Output:\n${response.text}");
-            print("==============================================================\n");
-
+            print("[AiService] Skeleton Generation Success! Took ${stopwatch.elapsed.inSeconds} seconds.");
             final jsonMap = _cleanAndDecodeJson(response.text!);
+            print("[AiService] === SKELETON GENERATION COMPLETE ===\n");
             return Book.fromJson(jsonMap);
           }
         } on TimeoutException {
-          print("Timeout using $modelName with key ${apiKey.substring(0,4)}...");
+          print("[AiService] Warning: Request timed out for $modelName.");
           lastException = Exception('Request timed out ($modelName).');
         } catch (e) {
-          print("Failed using $modelName: $e");
+          print("[AiService] Error using $modelName: $e");
           lastException = Exception('Generation failed: $e');
         }
       }
     }
+    print("[AiService] FATAL: All models/keys exhausted for Skeleton generation.");
     throw lastException ?? Exception('Failed to generate skeleton. All models/keys exhausted.');
   }
 
   /// STAGE 2: Generates deep lesson content for a specific chunked PDF Unit
-  Future<Unit> generateUnitContent(Unit unit, Book bookContext) async {
+  Future<Unit> generateUnitContent(Unit unit, Book bookContext, Function(String) onProgress) async {
+    print("\n[AiService] === STARTING UNIT CONTENT GENERATION (TWO-STAGE) ===");
+    print("[AiService] Target Unit: ${unit.title}");
+    
     final keys = await _getKeys();
     final models = await _getModels();
     
     if (unit.pdfPath == null) throw Exception("No PDF chunk available for this unit.");
     final pdfBytes = await File(unit.pdfPath!).readAsBytes();
 
-    final prompt = TextPart('''
-SYSTEM PROMPT:
-${bookContext.systemPrompt ?? "You are an expert tutor."}
-
-TASK:
-Generate interactive lesson content for the unit: "${unit.title}".
-Rely on the provided attached PDF chunk.
-You MUST use LaTeX formatting inside Markdown by wrapping math in \$ (inline) or \$\$ (block).
-CRITICAL: All backslashes in LaTeX MUST be double-escaped for JSON compatibility (e.g., use \\\\frac{1}{2} instead of \\frac{1}{2}).
-
-Return ONLY valid JSON representing the "lessons" array.
-Format:
-{
-  "lessons": [
-    {
-      "id": "l-${DateTime.now().millisecondsSinceEpoch}-1",
-      "title": "Lesson Title",
-      "description": "Short Description",
-      "icon": "BookOpen",
-      "slides": [
-        {
-          "id": "sl-1",
-          "type": "theory",
-          "title": "Slide Title",
-          "content": "Theory text here..."
-        }
-      ]
-    }
-  ]
-}
-''');
-
     Exception? lastException;
-    
+
     for (var modelName in models) {
       for (var apiKey in keys) {
         try {
-          print("Generating Unit Content [${unit.title}] using model: $modelName...");
-          final model = GenerativeModel(
+          print("\n[AiService] Attempting generation pipeline with $modelName [Key: ...${apiKey.substring(apiKey.length > 4 ? apiKey.length - 4 : 0)}]");
+          
+          final modelText = GenerativeModel(
+            model: modelName,
+            apiKey: apiKey,
+          );
+          
+          final modelJson = GenerativeModel(
             model: modelName,
             apiKey: apiKey,
             generationConfig: GenerationConfig(responseMimeType: 'application/json'),
           );
 
-          final response = await model.generateContent([
-            Content.multi([prompt, DataPart('application/pdf', pdfBytes)])
+          // ------------------------------------------------------------------
+          // STEP 1: Lesson Planning (Text Generation)
+          // ------------------------------------------------------------------
+          print("[AiService] [Stage 2.1] Requesting Pedagogical Lesson Plan...");
+          onProgress("Analyzing PDF & Planning Layout...");
+          
+          final rawPlanPrompt = await PromptService.getPlanPrompt();
+          final hydratedPlanPrompt = rawPlanPrompt.replaceAll('%unit_title%', unit.title);
+          
+          final planPrompt = TextPart(hydratedPlanPrompt);
+
+          final planStopwatch = Stopwatch()..start();
+          final planResponse = await modelText.generateContent([
+            Content.multi([planPrompt, DataPart('application/pdf', pdfBytes)])
+          ]).timeout(const Duration(minutes: 4));
+          planStopwatch.stop();
+
+          final lessonPlan = planResponse.text ?? '';
+          if (lessonPlan.isEmpty) throw Exception("AI failed to generate a lesson plan.");
+          
+          print("[AiService] [Stage 2.1] Lesson Plan Acquired in ${planStopwatch.elapsed.inSeconds}s.");
+
+          // ------------------------------------------------------------------
+          // STEP 2: JSON Instantiation
+          // ------------------------------------------------------------------
+          print("[AiService] [Stage 2.2] Requesting JSON Instantiation based on Plan...");
+          onProgress("Generating Interactive Content...");
+
+          final rawJsonPrompt = await PromptService.getJsonPrompt();
+          final hydratedJsonPrompt = rawJsonPrompt
+              .replaceAll('%system_prompt%', bookContext.systemPrompt ?? "You are an expert tutor.")
+              .replaceAll('%unit_title%', unit.title)
+              .replaceAll('%lesson_plan%', lessonPlan);
+
+          final jsonPrompt = TextPart(hydratedJsonPrompt);
+
+          final jsonStopwatch = Stopwatch()..start();
+          final response = await modelJson.generateContent([
+            Content.multi([jsonPrompt, DataPart('application/pdf', pdfBytes)])
           ]).timeout(const Duration(minutes: 5));
+          jsonStopwatch.stop();
 
           if (response.text != null) {
-            print("\n=================== AI UNIT GENERATION ===================");
-            print("Raw Response Output snippet:\n${response.text!.substring(0, response.text!.length > 300 ? 300 : response.text!.length)}...");
-            print("==========================================================\n");
-
+            print("[AiService] [Stage 2.2] JSON Generation Success! Took ${jsonStopwatch.elapsed.inSeconds}s.");
+            
+            onProgress("Parsing content...");
             final jsonMap = _cleanAndDecodeJson(response.text!);
             final lessonsData = jsonMap['lessons'] as List?;
-            final newLessons = lessonsData?.map((l) => Lesson.fromJson(Map<String, dynamic>.from(l))).toList() ?? [];
             
+            final newLessons = lessonsData?.map((l) {
+              if (l is Map) return Lesson.fromJson(Map<String, dynamic>.from(l));
+              return null;
+            }).whereType<Lesson>().toList() ?? [];
+            
+            print("[AiService] === UNIT CONTENT GENERATION COMPLETE ===\n");
             return unit.copyWith(isGenerated: true, lessons: newLessons);
           }
         } on TimeoutException {
-          lastException = Exception('Request timed out.');
+          print("[AiService] Warning: Request timed out for $modelName.");
+          lastException = Exception('Request timed out ($modelName).');
         } catch (e) {
+          print("[AiService] Error in pipeline using $modelName: $e");
           lastException = Exception('Failed: $e');
         }
       }
     }
+    print("[AiService] FATAL: All models/keys exhausted for Unit generation.");
     throw lastException ?? Exception('Failed to generate unit content. All models/keys exhausted.');
   }
 }

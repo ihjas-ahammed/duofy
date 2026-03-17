@@ -1,8 +1,13 @@
 Make the following changes:
 
-    
-    - Fix the issue given in screenshot while generating units
-    
+    - Fix errors like what we found in the screenshot, check our code and also update the prompt, also sometimes we get answers like a (or b) in fill in the blanks fix that, also add if needed one more type (numerical on generation)
+
+    - Update settings:
+        - Add an advanced screen where I can edit all the prompts we have (with variables like unit data as %unit_data%)
+        - Update the pdf list:
+            - Categorize by book name and also show unit name instead of file name, also on share use that file name
+            
+
 
 
 Make sure there wont be any screensize error, our ideal screen is 720x1520 with 271 dpi

@@ -6,6 +6,8 @@ import 'package:http/http.dart' as http;
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/string_list_manager.dart';
+import 'pdf_browser_screen.dart';
+import 'advanced_prompts_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -139,6 +141,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children:[
+            Row(
+              children: [
+                Expanded(
+                  child: DuoButton(
+                    text: 'PDF Browser',
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const PdfBrowserScreen()));
+                    },
+                    color: AppTheme.duoViolet,
+                    shadowColor: AppTheme.duoVioletDark,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: DuoButton(
+                    text: 'Advanced',
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const AdvancedPromptsScreen()));
+                    },
+                    color: AppTheme.duoOrange,
+                    shadowColor: AppTheme.duoOrangeDark,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 32),
+
             const Text('API Keys', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             const Text('Add multiple keys to fall back automatically if rate-limited.', style: TextStyle(color: Colors.white54, fontSize: 12)),

@@ -8,14 +8,20 @@ import 'unit_header.dart';
 
 class LessonPath extends StatelessWidget {
   final Section section;
-  final Set<String> loadingUnitIds;
+  final Map<String, String> loadingUnitStatuses;
   final Function(Unit, int) onGenerateUnit;
+  final Function(Unit, int) onClearUnit;
+  final List<String> completedLessons;
+  final VoidCallback onLessonFinished;
 
   const LessonPath({
     super.key,
     required this.section,
-    required this.loadingUnitIds,
+    required this.loadingUnitStatuses,
     required this.onGenerateUnit,
+    required this.onClearUnit,
+    required this.completedLessons,
+    required this.onLessonFinished,
   });
 
   Color _getPathColor() {
@@ -33,14 +39,14 @@ class LessonPath extends StatelessWidget {
     List<Widget> stackChildren = [];
     List<Offset> pathPoints = [];
 
-    double currentY = 30; 
-    int globalLessonIdx = 0;
+    double currentY = 20; 
+    bool previousCompleted = true; // The very first lesson is always unlocked
 
     for (int i = 0; i < section.units.length; i++) {
       final unit = section.units[i];
-      final int currentUnitIdx = i; // Fixes Dart closure variable capture bug
+      final int currentUnitIdx = i; 
       final bool isGenerated = unit.isGenerated && unit.lessons.isNotEmpty;
-      final bool isLoading = loadingUnitIds.contains(unit.id);
+      final String? loadingStatus = loadingUnitStatuses[unit.id];
 
       // Compact Unit Header ensuring no overflows on small screens
       stackChildren.add(
@@ -51,21 +57,26 @@ class LessonPath extends StatelessWidget {
           child: UnitHeader(
             unit: unit,
             isGenerated: isGenerated,
-            isLoading: isLoading,
+            loadingStatus: loadingStatus,
             onGenerate: () => onGenerateUnit(unit, currentUnitIdx),
+            onClear: () => onClearUnit(unit, currentUnitIdx),
           ),
         ),
       );
 
-      // Give ample Y spacing depending on whether we need to draw lessons or just the Generate card
-      currentY += isGenerated ? 130 : 210; 
+      // Expand distance dynamically based on header size
+      currentY += isGenerated ? 100 : 170; 
 
       if (isGenerated) {
-        for (var lesson in unit.lessons) {
-          final int phase = globalLessonIdx % 4;
+        for (int l = 0; l < unit.lessons.length; l++) {
+          final lesson = unit.lessons[l];
+          final bool isCompleted = completedLessons.contains(lesson.id);
+          final bool isLocked = !previousCompleted && !isCompleted;
+          
+          final int phase = l % 4;
           double offsetX = 0;
-          if (phase == 1) offsetX = 60; 
-          if (phase == 3) offsetX = -60; 
+          if (phase == 1) offsetX = 50; 
+          if (phase == 3) offsetX = -50; 
 
           double centerX = MediaQuery.of(context).size.width / 2;
           double absoluteX = centerX + offsetX;
@@ -81,21 +92,22 @@ class LessonPath extends StatelessWidget {
                 offset: Offset(offsetX, 0),
                 child: LessonNodeWidget(
                   lesson: lesson,
-                  isCompleted: globalLessonIdx < 1,
-                  isLocked: globalLessonIdx > 1,
+                  isCompleted: isCompleted,
+                  isLocked: isLocked,
                   sectionColorStr: section.color,
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(
+                  onTap: () async {
+                    await Navigator.push(context, MaterialPageRoute(
                       builder: (_) => LessonScreen(lesson: lesson)
                     ));
+                    onLessonFinished();
                   },
                 ),
               ),
             ),
           );
 
-          currentY += 140; 
-          globalLessonIdx++;
+          currentY += 130; 
+          previousCompleted = isCompleted;
         }
       }
       

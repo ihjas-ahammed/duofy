@@ -1,9 +1,11 @@
 import 'dart:ui';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../services/global_state.dart';
+import '../services/generation_manager.dart';
 import 'book_dashboard_screen.dart';
 import 'practice_screen.dart';
 import 'notes_screen.dart';
@@ -21,22 +23,40 @@ class MainLayoutScreen extends StatefulWidget {
 class _MainLayoutScreenState extends State<MainLayoutScreen> {
   int _currentIndex = 0;
   late Book _currentBook;
+  late StreamSubscription<Book> _bookUpdateSub;
 
   @override
   void initState() {
     super.initState();
     _currentBook = widget.book;
-  }
 
-  void _onBookUpdated(Book newBook) {
-    setState(() {
-      _currentBook = newBook;
+    // Listen to background generation updates globally
+    _bookUpdateSub = GenerationManager.instance.bookUpdates.listen((updatedBook) {
+      if (updatedBook.id == _currentBook.id && mounted) {
+        setState(() {
+          _currentBook = updatedBook;
+        });
+      }
     });
   }
 
   @override
+  void dispose() {
+    _bookUpdateSub.cancel();
+    super.dispose();
+  }
+
+  // Fallback direct update for synchronous changes if needed
+  void _onBookUpdated(Book newBook) {
+    if (mounted) {
+      setState(() {
+        _currentBook = newBook;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Dynamically rebuild children with the latest state
     final List<Widget> pages = [
       BookDashboardScreen(book: _currentBook, onBookUpdated: _onBookUpdated),
       PracticeScreen(book: _currentBook),

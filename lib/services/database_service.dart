@@ -8,72 +8,161 @@ class DatabaseService {
   final DatabaseReference _dbRef = FirebaseDatabase.instance.ref();
 
   Future<List<Book>> fetchBooks({bool forceRefresh = false}) async {
+    print("\n[DatabaseService] === FETCH BOOKS REQUESTED ===");
+    print("[DatabaseService] Force Refresh: $forceRefresh");
+    
     final prefs = await SharedPreferences.getInstance();
-
-    // Load strictly from cache first unless pull-to-refresh is requested.
-    if (!forceRefresh) {
-      final cached = prefs.getString('cached_books');
-      if (cached != null) {
-        try {
-          final List decoded = jsonDecode(cached);
-          return decoded.map((e) => Book.fromJson(Map<String, dynamic>.from(e))).toList();
-        } catch (e) {
-          // Fall through
-        }
+    
+    // 1. Fetch Local Cache
+    final cachedStr = prefs.getString('cached_books');
+    List<Book> localBooks = [];
+    if (cachedStr != null) {
+      try {
+        final List decoded = jsonDecode(cachedStr);
+        localBooks = decoded.map((e) => Book.fromJson(Map<String, dynamic>.from(e))).toList();
+        print("[DatabaseService] Found ${localBooks.length} books in local cache.");
+      } catch (e) {
+        print("[DatabaseService] Error parsing local cache: $e");
       }
+    } else {
+      print("[DatabaseService] Local cache is empty.");
     }
 
-    return await _fetchAndCacheFirebase();
-  }
+    if (!forceRefresh && localBooks.isNotEmpty) {
+      print("[DatabaseService] Returning local cache without network sync.");
+      return localBooks;
+    }
 
-  Future<List<Book>> _fetchAndCacheFirebase() async {
-    final prefs = await SharedPreferences.getInstance();
+    // 2. Perform Intelligent Two-Way Sync
+    print("[DatabaseService] Initiating Two-Way Firebase Sync...");
     try {
       final snapshot = await _dbRef.child('books').get();
+      Map<String, Book> remoteBooksMap = {};
+      
       if (snapshot.exists) {
         final Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
-        List<Book> books =[];
         data.forEach((key, value) {
-          books.add(Book.fromJson(Map<String, dynamic>.from(value)));
+          final b = Book.fromJson(Map<String, dynamic>.from(value));
+          remoteBooksMap[b.id] = b;
         });
-        await prefs.setString('cached_books', jsonEncode(books.map((b) => b.toJson()).toList()));
-        return books;
+        print("[DatabaseService] Fetched ${remoteBooksMap.length} books from remote DB.");
       } else {
-        await saveBooks(mockBooks);
-        await prefs.setString('cached_books', jsonEncode(mockBooks.map((b) => b.toJson()).toList()));
-        return mockBooks;
+        print("[DatabaseService] Remote DB is currently empty.");
       }
+
+      Map<String, Book> mergedBooksMap = {...remoteBooksMap};
+      bool needsRemoteUpdate = false;
+
+      // Compare local against remote
+      print("[DatabaseService] Comparing Local vs Remote Timestamps...");
+      for (var localBook in localBooks) {
+        if (!remoteBooksMap.containsKey(localBook.id)) {
+          print("[DatabaseService] Book ${localBook.id} exists locally but not remotely. Queuing upload.");
+          mergedBooksMap[localBook.id] = localBook;
+          needsRemoteUpdate = true;
+        } else {
+          final remoteBook = remoteBooksMap[localBook.id]!;
+          final localTime = localBook.updatedAt ?? 0;
+          final remoteTime = remoteBook.updatedAt ?? 0;
+          
+          if (localTime > remoteTime) {
+            print("[DatabaseService] Local book ${localBook.id} is newer ($localTime > $remoteTime). Queuing upload.");
+            mergedBooksMap[localBook.id] = localBook;
+            needsRemoteUpdate = true;
+          } else if (remoteTime > localTime) {
+            print("[DatabaseService] Remote book ${localBook.id} is newer ($remoteTime > $localTime). Using remote.");
+          } else {
+            // Equal, no action needed
+          }
+        }
+      }
+
+      final mergedList = mergedBooksMap.values.toList();
+
+      // Push required updates to Remote DB
+      if (needsRemoteUpdate) {
+        print("[DatabaseService] Pushing updated local books to Remote DB...");
+        for (var book in mergedList) {
+          await _dbRef.child('books').child(book.id).set(book.toJson());
+        }
+        print("[DatabaseService] Remote DB updated.");
+      } else if (remoteBooksMap.isEmpty && localBooks.isEmpty) {
+        print("[DatabaseService] System is completely empty. Populating mock books...");
+        for (var book in mockBooks) {
+          final mockWithTime = book.copyWith(updatedAt: DateTime.now().millisecondsSinceEpoch);
+          await _dbRef.child('books').child(mockWithTime.id).set(mockWithTime.toJson());
+          mergedList.add(mockWithTime);
+        }
+      }
+
+      // Update Local Cache with merged reality
+      print("[DatabaseService] Sync Complete. Updating local SharedPrefs cache.");
+      await prefs.setString('cached_books', jsonEncode(mergedList.map((b) => b.toJson()).toList()));
+      return mergedList;
+
     } catch (e) {
-      final cached = prefs.getString('cached_books');
-      if (cached != null) {
-        final List decoded = jsonDecode(cached);
-        return decoded.map((e) => Book.fromJson(Map<String, dynamic>.from(e))).toList();
-      }
-      return mockBooks;
+      print("[DatabaseService] SYNC ERROR: $e");
+      print("[DatabaseService] Falling back to local cache.");
+      return localBooks;
     }
   }
 
   Future<void> saveBooks(List<Book> books) async {
     for (var book in books) {
-      await _dbRef.child('books').child(book.id).set(book.toJson());
+      await saveGeneratedBook(book);
     }
   }
 
   Future<void> saveGeneratedBook(Book book) async {
-    await _dbRef.child('books').child(book.id).set(book.toJson());
+    print("\n[DatabaseService] Saving Generated Book: ${book.id}");
+    final updatedTime = DateTime.now().millisecondsSinceEpoch;
+    final updatedBook = book.copyWith(updatedAt: updatedTime);
+    
+    try {
+      // 1. Save Remote
+      print("[DatabaseService] Pushing to Firebase Realtime DB...");
+      await _dbRef.child('books').child(updatedBook.id).set(updatedBook.toJson());
+
+      // 2. Save Local Cache
+      print("[DatabaseService] Updating Local SharedPrefs...");
+      final prefs = await SharedPreferences.getInstance();
+      final cachedStr = prefs.getString('cached_books');
+      List<Book> localBooks = [];
+      if (cachedStr != null) {
+        final List decoded = jsonDecode(cachedStr);
+        localBooks = decoded.map((e) => Book.fromJson(Map<String, dynamic>.from(e))).toList();
+      }
+
+      final index = localBooks.indexWhere((b) => b.id == updatedBook.id);
+      if (index >= 0) {
+        localBooks[index] = updatedBook;
+      } else {
+        localBooks.add(updatedBook);
+      }
+
+      await prefs.setString('cached_books', jsonEncode(localBooks.map((b) => b.toJson()).toList()));
+      print("[DatabaseService] Save Complete.");
+    } catch (e) {
+      print("[DatabaseService] ERROR during saveGeneratedBook: $e");
+    }
   }
 
   Future<void> deleteBook(String id) async {
-    // Remove from Firebase
-    await _dbRef.child('books').child(id).remove();
-    
-    // Update local cache
-    final prefs = await SharedPreferences.getInstance();
-    final cached = prefs.getString('cached_books');
-    if (cached != null) {
-      List decoded = jsonDecode(cached);
-      decoded.removeWhere((e) => e['id'] == id);
-      await prefs.setString('cached_books', jsonEncode(decoded));
+    print("\n[DatabaseService] Deleting Book: $id");
+    try {
+      await _dbRef.child('books').child(id).remove();
+      print("[DatabaseService] Removed from Firebase.");
+      
+      final prefs = await SharedPreferences.getInstance();
+      final cachedStr = prefs.getString('cached_books');
+      if (cachedStr != null) {
+        List decoded = jsonDecode(cachedStr);
+        decoded.removeWhere((e) => e['id'] == id);
+        await prefs.setString('cached_books', jsonEncode(decoded));
+        print("[DatabaseService] Removed from Local Cache.");
+      }
+    } catch (e) {
+      print("[DatabaseService] ERROR during deletion: $e");
     }
   }
 }

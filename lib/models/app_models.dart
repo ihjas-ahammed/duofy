@@ -1,9 +1,41 @@
+import 'dart:convert';
+
+String _str(dynamic val, [String def = '']) {
+  if (val == null) return def;
+  if (val is String) return val;
+  if (val is Map || val is List) return jsonEncode(val);
+  return val.toString();
+}
+
+String? _strOpt(dynamic val) {
+  if (val == null) return null;
+  if (val is String) return val;
+  if (val is Map || val is List) return jsonEncode(val);
+  return val.toString();
+}
+
+double? _dblOpt(dynamic val) {
+  if (val == null) return null;
+  if (val is num) return val.toDouble();
+  if (val is String) return double.tryParse(val);
+  return null;
+}
+
+bool _bool(dynamic val, [bool def = false]) {
+  if (val == null) return def;
+  if (val is bool) return val;
+  if (val is String) return val.toLowerCase() == 'true';
+  if (val is num) return val > 0;
+  return def;
+}
+
 class Book {
   final String id;
   final String title;
   final String description;
   final String icon;
   final String? systemPrompt;
+  final int? updatedAt;
   final List<Module> modules;
 
   Book({
@@ -12,17 +44,19 @@ class Book {
     required this.description, 
     required this.icon, 
     this.systemPrompt,
+    this.updatedAt,
     required this.modules
   });
 
   factory Book.fromJson(Map<String, dynamic> json) {
     return Book(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      icon: json['icon'] ?? 'Book',
-      systemPrompt: json['systemPrompt'],
-      modules: (json['modules'] as List?)?.map((m) => Module.fromJson(Map<String, dynamic>.from(m))).toList() ?? [],
+      id: _str(json['id']),
+      title: _str(json['title']),
+      description: _str(json['description']),
+      icon: _str(json['icon'], 'Book'),
+      systemPrompt: _strOpt(json['systemPrompt']),
+      updatedAt: json['updatedAt'] is num ? (json['updatedAt'] as num).toInt() : int.tryParse(_str(json['updatedAt'])),
+      modules: (json['modules'] as List?)?.map((m) => Module.fromJson(m is Map ? Map<String, dynamic>.from(m) : {})).toList() ?? [],
     );
   }
 
@@ -32,6 +66,7 @@ class Book {
     'description': description,
     'icon': icon,
     if (systemPrompt != null) 'systemPrompt': systemPrompt,
+    if (updatedAt != null) 'updatedAt': updatedAt,
     'modules': modules.map((m) => m.toJson()).toList(),
   };
 
@@ -41,6 +76,7 @@ class Book {
     String? description,
     String? icon,
     String? systemPrompt,
+    int? updatedAt,
     List<Module>? modules,
   }) {
     return Book(
@@ -49,6 +85,7 @@ class Book {
       description: description ?? this.description,
       icon: icon ?? this.icon,
       systemPrompt: systemPrompt ?? this.systemPrompt,
+      updatedAt: updatedAt ?? this.updatedAt,
       modules: modules ?? this.modules,
     );
   }
@@ -73,12 +110,12 @@ class Module {
 
   factory Module.fromJson(Map<String, dynamic> json) {
     return Module(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      sections: (json['sections'] as List?)?.map((s) => Section.fromJson(Map<String, dynamic>.from(s))).toList() ?? [],
-      practiceQuestions: (json['practiceQuestions'] as List?)?.map((s) => Slide.fromJson(Map<String, dynamic>.from(s))).toList() ?? [],
-      examQuestions: (json['examQuestions'] as List?)?.map((s) => Slide.fromJson(Map<String, dynamic>.from(s))).toList() ?? [],
+      id: _str(json['id']),
+      title: _str(json['title']),
+      description: _str(json['description']),
+      sections: (json['sections'] as List?)?.map((s) => Section.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
+      practiceQuestions: (json['practiceQuestions'] as List?)?.map((s) => Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
+      examQuestions: (json['examQuestions'] as List?)?.map((s) => Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
     );
   }
 
@@ -127,11 +164,11 @@ class Section {
 
   factory Section.fromJson(Map<String, dynamic> json) {
     return Section(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      color: json['color'] ?? 'duo-blue',
-      units: (json['units'] as List?)?.map((u) => Unit.fromJson(Map<String, dynamic>.from(u))).toList() ?? [],
+      id: _str(json['id']),
+      title: _str(json['title']),
+      description: _str(json['description']),
+      color: _str(json['color'], 'duo-blue'),
+      units: (json['units'] as List?)?.map((u) => Unit.fromJson(u is Map ? Map<String, dynamic>.from(u) : {})).toList() ?? [],
     );
   }
 
@@ -183,14 +220,14 @@ class Unit {
 
   factory Unit.fromJson(Map<String, dynamic> json) {
     return Unit(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      startPage: json['startPage'],
-      endPage: json['endPage'],
-      isGenerated: json['isGenerated'] ?? true, // Default true to support legacy mocks easily
-      pdfPath: json['pdfPath'],
-      lessons: (json['lessons'] as List?)?.map((l) => Lesson.fromJson(Map<String, dynamic>.from(l))).toList() ?? [],
+      id: _str(json['id']),
+      title: _str(json['title']),
+      description: _str(json['description']),
+      startPage: json['startPage'] is num ? (json['startPage'] as num).toInt() : int.tryParse(_str(json['startPage'])),
+      endPage: json['endPage'] is num ? (json['endPage'] as num).toInt() : int.tryParse(_str(json['endPage'])),
+      isGenerated: _bool(json['isGenerated'], true),
+      pdfPath: _strOpt(json['pdfPath']),
+      lessons: (json['lessons'] as List?)?.map((l) => Lesson.fromJson(l is Map ? Map<String, dynamic>.from(l) : {})).toList() ?? [],
     );
   }
 
@@ -239,11 +276,11 @@ class Lesson {
 
   factory Lesson.fromJson(Map<String, dynamic> json) {
     return Lesson(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      icon: json['icon'] ?? 'BookOpen',
-      slides: (json['slides'] as List?)?.map((s) => Slide.fromJson(Map<String, dynamic>.from(s))).toList() ?? [],
+      id: _str(json['id']),
+      title: _str(json['title']),
+      description: _str(json['description']),
+      icon: _str(json['icon'], 'BookOpen'),
+      slides: (json['slides'] as List?)?.map((s) => Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
     );
   }
 
@@ -265,9 +302,9 @@ class InteractiveStep {
 
   factory InteractiveStep.fromJson(Map<String, dynamic> json) {
     return InteractiveStep(
-      prompt: json['prompt'],
-      stepText: json['stepText'],
-      options: (json['options'] as List?)?.map((o) => QuizOption.fromJson(Map<String, dynamic>.from(o))).toList(),
+      prompt: _strOpt(json['prompt']),
+      stepText: _strOpt(json['stepText']),
+      options: (json['options'] as List?)?.map((o) => QuizOption.fromJson(o is Map ? Map<String, dynamic>.from(o) : {})).toList(),
     );
   }
 
@@ -307,17 +344,17 @@ class Slide {
 
   factory Slide.fromJson(Map<String, dynamic> json) {
     return Slide(
-      id: json['id'] ?? '',
-      type: json['type'] ?? 'theory',
-      title: json['title'] ?? '',
-      content: json['content'] ?? '',
-      interactiveCanvasHtml: json['interactiveCanvasHtml'],
-      options: (json['options'] as List?)?.map((o) => QuizOption.fromJson(Map<String, dynamic>.from(o))).toList(),
-      interactiveSteps: (json['interactiveSteps'] as List?)?.map((s) => InteractiveStep.fromJson(Map<String, dynamic>.from(s))).toList(),
-      proofSteps: (json['proofSteps'] as List?)?.map((s) => s.toString()).toList(),
-      blankAnswer: json['blankAnswer'],
-      numericAnswer: json['numericAnswer']?.toDouble(),
-      numericTolerance: json['numericTolerance']?.toDouble() ?? 0.01,
+      id: _str(json['id']),
+      type: _str(json['type'], 'theory'),
+      title: _str(json['title']),
+      content: _str(json['content']),
+      interactiveCanvasHtml: _strOpt(json['interactiveCanvasHtml']),
+      options: (json['options'] as List?)?.map((o) => QuizOption.fromJson(o is Map ? Map<String, dynamic>.from(o) : {})).toList(),
+      interactiveSteps: (json['interactiveSteps'] as List?)?.map((s) => InteractiveStep.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList(),
+      proofSteps: (json['proofSteps'] as List?)?.map((s) => _str(s)).toList(),
+      blankAnswer: _strOpt(json['blankAnswer']),
+      numericAnswer: _dblOpt(json['numericAnswer']),
+      numericTolerance: _dblOpt(json['numericTolerance']) ?? 0.01,
     );
   }
 
@@ -346,10 +383,10 @@ class QuizOption {
 
   factory QuizOption.fromJson(Map<String, dynamic> json) {
     return QuizOption(
-      id: json['id'] ?? '',
-      text: json['text'] ?? '',
-      isCorrect: json['isCorrect'] ?? false,
-      explanation: json['explanation'] ?? '',
+      id: _str(json['id']),
+      text: _str(json['text'], 'Option'), // Fallback if AI omits text
+      isCorrect: _bool(json['isCorrect']),
+      explanation: _str(json['explanation']),
     );
   }
 
