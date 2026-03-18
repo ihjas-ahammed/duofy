@@ -12,7 +12,6 @@ import '../widgets/slide_views/fill_in_blank_view.dart';
 import '../widgets/slide_views/numerical_view.dart';
 import '../widgets/slide_views/interactive_webview.dart';
 import '../widgets/slide_views/interactive_proof_view.dart';
-import '../widgets/slide_views/step_by_step_view.dart';
 import 'lesson_complete_screen.dart';
 
 class LessonScreen extends StatefulWidget {
@@ -90,6 +89,14 @@ class _LessonScreenState extends State<LessonScreen> {
     if (slide.type == 'quiz' && _selectedQuizOption != null) {
       final opt = slide.options!.firstWhere((o) => o.id == _selectedQuizOption);
       correct = opt.isCorrect;
+      
+      // Fallback robust check to overcome AI JSON generation un-mapped identical text bugs
+      if (!correct) {
+        final correctOpts = slide.options!.where((o) => o.isCorrect);
+        if (correctOpts.any((c) => c.text.trim().toLowerCase() == opt.text.trim().toLowerCase())) {
+          correct = true;
+        }
+      }
     } else if (slide.type == 'fill_in_blank') {
       correct = _blankInput.trim().toLowerCase() == slide.blankAnswer?.toLowerCase().replaceAll(r'\', '');
     } else if (slide.type == 'numerical') {
@@ -131,20 +138,9 @@ class _LessonScreenState extends State<LessonScreen> {
     switch (slide.type) {
       case 'interactive_canvas':
         return InteractiveWebview(slide: slide);
+      case 'step_by_step':
       case 'proof':
         return InteractiveProofView(
-          slide: slide,
-          onComplete: () {
-            setState(() {
-              _isCorrect = true;
-              _answered = true;
-              _correctAttempts++;
-            });
-            _nextSlide();
-          },
-        );
-      case 'step_by_step':
-        return StepByStepView(
           slide: slide,
           onComplete: () {
             setState(() {

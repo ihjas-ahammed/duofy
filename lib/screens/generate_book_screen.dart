@@ -1,10 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import '../services/ai_service.dart';
+import '../services/generation_manager.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
-import 'pdf_split_preview_screen.dart';
 
 class GenerateBookScreen extends StatefulWidget {
   const GenerateBookScreen({super.key});
@@ -14,10 +13,7 @@ class GenerateBookScreen extends StatefulWidget {
 }
 
 class _GenerateBookScreenState extends State<GenerateBookScreen> {
-  final AiService _aiService = AiService();
-  
   File? _selectedFile;
-  bool _isGenerating = false;
 
   Future<void> _pickFile() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -32,37 +28,17 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
     }
   }
 
-  Future<void> _generate() async {
+  void _generate() {
     if (_selectedFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a PDF file first.')));
       return;
     }
 
-    setState(() => _isGenerating = true);
-
-    try {
-      // Stage 1: Generate Skeleton
-      final filename = _selectedFile!.path.split('/').last;
-      final skeletonBook = await _aiService.generateBookSkeleton(_selectedFile!, filename);
-      
-      if (skeletonBook != null && mounted) {
-        // Pause generation and push to Preview Screen for confirmation
-        Navigator.pushReplacement(
-          context, 
-          MaterialPageRoute(
-            builder: (_) => PdfSplitPreviewScreen(
-              originalPdf: _selectedFile!,
-              skeletonBook: skeletonBook,
-            )
-          )
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
-        setState(() => _isGenerating = false);
-      }
-    }
+    final filename = _selectedFile!.path.split('/').last;
+    
+    // Kick off async metadata extraction immediately and return to home
+    GenerationManager.instance.startBookGeneration(_selectedFile!, filename);
+    Navigator.pop(context);
   }
 
   @override
@@ -93,22 +69,12 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
               ),
             const Spacer(),
             
-            if (_isGenerating)
-              const Column(
-                children: [
-                  CircularProgressIndicator(color: AppTheme.duoGreen),
-                  SizedBox(height: 16),
-                  Text('Extracting Metadata...', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
-                  SizedBox(height: 32),
-                ],
-              )
-            else
-              DuoButton(
-                text: 'Analyze PDF',
-                onPressed: _generate,
-                color: AppTheme.duoGreen,
-                shadowColor: AppTheme.duoGreenDark,
-              ),
+            DuoButton(
+              text: 'Analyze PDF',
+              onPressed: _generate,
+              color: AppTheme.duoGreen,
+              shadowColor: AppTheme.duoGreenDark,
+            ),
           ],
         ),
       ),

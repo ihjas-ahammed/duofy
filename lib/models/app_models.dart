@@ -317,7 +317,7 @@ class InteractiveStep {
 
 class Slide {
   final String id;
-  final String type; // theory, quiz, fill_in_blank, numerical, interactive_canvas, proof, step_by_step
+  final String type; 
   final String title;
   final String content;
   final String? interactiveCanvasHtml;
@@ -343,13 +343,41 @@ class Slide {
   });
 
   factory Slide.fromJson(Map<String, dynamic> json) {
+    final type = _str(json['type'], 'theory');
+    List<QuizOption>? parsedOptions;
+    
+    // Robust parsing: Enforce exactly 1 correct answer to avoid UI evaluation bugs
+    if (json['options'] != null) {
+      parsedOptions = (json['options'] as List).map((o) => QuizOption.fromJson(o is Map ? Map<String, dynamic>.from(o) : {})).toList();
+      if (type == 'quiz' && parsedOptions.isNotEmpty) {
+        int correctCount = parsedOptions.where((o) => o.isCorrect).length;
+        if (correctCount != 1) {
+          bool firstTrue = false;
+          parsedOptions = parsedOptions.map((o) {
+            if (correctCount == 0 && !firstTrue) {
+              firstTrue = true;
+              return QuizOption(id: o.id, text: o.text, isCorrect: true, explanation: o.explanation);
+            }
+            if (o.isCorrect) {
+              if (!firstTrue) {
+                firstTrue = true;
+                return o;
+              }
+              return QuizOption(id: o.id, text: o.text, isCorrect: false, explanation: o.explanation);
+            }
+            return o;
+          }).toList();
+        }
+      }
+    }
+
     return Slide(
       id: _str(json['id']),
-      type: _str(json['type'], 'theory'),
+      type: type,
       title: _str(json['title']),
       content: _str(json['content']),
       interactiveCanvasHtml: _strOpt(json['interactiveCanvasHtml']),
-      options: (json['options'] as List?)?.map((o) => QuizOption.fromJson(o is Map ? Map<String, dynamic>.from(o) : {})).toList(),
+      options: parsedOptions,
       interactiveSteps: (json['interactiveSteps'] as List?)?.map((s) => InteractiveStep.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList(),
       proofSteps: (json['proofSteps'] as List?)?.map((s) => _str(s)).toList(),
       blankAnswer: _strOpt(json['blankAnswer']),
@@ -382,11 +410,16 @@ class QuizOption {
   QuizOption({required this.id, required this.text, required this.isCorrect, required this.explanation});
 
   factory QuizOption.fromJson(Map<String, dynamic> json) {
+    final rawId = _strOpt(json['id']);
+    final parsedText = _str(json['text'], 'Option');
+    // Generates a deterministic fallback id preventing multiple-selection logic bugs
+    final effectiveId = (rawId != null && rawId.isNotEmpty) ? rawId.trim() : parsedText.trim().hashCode.toString();
+
     return QuizOption(
-      id: _str(json['id']),
-      text: _str(json['text'], 'Option'), // Fallback if AI omits text
+      id: effectiveId,
+      text: parsedText.trim(),
       isCorrect: _bool(json['isCorrect']),
-      explanation: _str(json['explanation']),
+      explanation: _str(json['explanation']).trim(),
     );
   }
 

@@ -1,13 +1,25 @@
 Make the following changes:
 
-    - Fix errors like what we found in the screenshot, check our code and also update the prompt, also sometimes we get answers like a (or b) in fill in the blanks fix that, also add if needed one more type (numerical on generation)
+    - Introduce adaptive progressbar:
+        Since it takes a lot of time to generate data we need to add a psychologically less boring progress bar with a predicted time (based on my initial values and averging last three AI runs)
+        Time taken:
+            - Metadata generation:
+                Add a time based on the internet upload speed because we have the file: +size/uploadspeed
+                Add a time for usual AI generatiom, this could be based on size of book but we assume the initial is upto 3 minutes
+            - Unit generation:
+                Stage 1: This was relatively fast upto 40 seconds
+                Stage 2: This took based on the metadata, when we had 10 lessons it took 1.2 min
 
-    - Update settings:
-        - Add an advanced screen where I can edit all the prompts we have (with variables like unit data as %unit_data%)
-        - Update the pdf list:
-            - Categorize by book name and also show unit name instead of file name, also on share use that file name
-            
+        Psychology: Make it faster at beginning then slow down, so it will look less boring!
 
+
+    - Fix multiple choice:
+        As given in the answer, we faced two type of error:
+            1. The anwer is wrong
+            2. Even if the correct answer is selected it was shown in currect
+
+    - Improve Big Question:
+        It was supposed to be in the same format as proof question, so use that element instead of spplitting into slides
 
 
 Make sure there wont be any screensize error, our ideal screen is 720x1520 with 271 dpi

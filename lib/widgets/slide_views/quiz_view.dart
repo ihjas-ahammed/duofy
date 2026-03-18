@@ -24,12 +24,17 @@ class QuizView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: AppTheme.glassDecoration,
-            child: MathMarkdown(data: slide.content, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-          const SizedBox(height: 24),
+          // Fallback to hide empty dark container if AI fails to populate content
+          if (slide.content.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: AppTheme.glassDecoration,
+              child: MathMarkdown(data: slide.content, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          
+          if (slide.content.isNotEmpty)
+            const SizedBox(height: 24),
+            
           if (slide.options != null)
             ...slide.options!.map((opt) {
               final isSelected = selectedOptionId == opt.id;

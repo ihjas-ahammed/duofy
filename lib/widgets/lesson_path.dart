@@ -3,12 +3,13 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../screens/lesson_screen.dart';
+import '../services/generation_manager.dart';
 import 'lesson_node.dart';
 import 'unit_header.dart';
 
 class LessonPath extends StatelessWidget {
   final Section section;
-  final Map<String, String> loadingUnitStatuses;
+  final Map<String, UnitGenTask> loadingUnitStatuses;
   final Function(Unit, int) onGenerateUnit;
   final Function(Unit, int) onClearUnit;
   final List<String> completedLessons;
@@ -46,7 +47,7 @@ class LessonPath extends StatelessWidget {
       final unit = section.units[i];
       final int currentUnitIdx = i; 
       final bool isGenerated = unit.isGenerated && unit.lessons.isNotEmpty;
-      final String? loadingStatus = loadingUnitStatuses[unit.id];
+      final UnitGenTask? loadingStatus = loadingUnitStatuses[unit.id];
 
       // Compact Unit Header ensuring no overflows on small screens
       stackChildren.add(
@@ -57,7 +58,7 @@ class LessonPath extends StatelessWidget {
           child: UnitHeader(
             unit: unit,
             isGenerated: isGenerated,
-            loadingStatus: loadingStatus,
+            generationTask: loadingStatus,
             onGenerate: () => onGenerateUnit(unit, currentUnitIdx),
             onClear: () => onClearUnit(unit, currentUnitIdx),
           ),

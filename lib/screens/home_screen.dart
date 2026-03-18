@@ -6,10 +6,11 @@ import '../services/progress_service.dart';
 import '../services/generation_manager.dart';
 import '../theme/app_theme.dart';
 import '../widgets/book_card.dart';
-import '../widgets/generating_book_tile.dart';
+import '../widgets/generating_book_card.dart';
 import 'main_layout_screen.dart';
 import 'settings_screen.dart';
 import 'generate_book_screen.dart';
+import 'pdf_split_preview_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -108,35 +109,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         )
                       ],
                     ),
-
-                    if (activeTasks.isNotEmpty)
-                      SliverToBoxAdapter(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                              child: Text('Generating...', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white54)),
-                            ),
-                            SizedBox(
-                              height: 140,
-                              child: ListView.builder(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                scrollDirection: Axis.horizontal,
-                                itemCount: activeTasks.length,
-                                itemBuilder: (context, index) {
-                                  return Container(
-                                    width: 140,
-                                    margin: const EdgeInsets.symmetric(horizontal: 8),
-                                    child: GeneratingBookTile(task: activeTasks[index])
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                          ],
-                        ),
-                      ),
                     
                     if (books.isEmpty && activeTasks.isEmpty)
                       SliverToBoxAdapter(
@@ -145,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Center(
                             child: Column(
                               children: [
-                                Icon(LucideIcons.bookDown, size: 80, color: Colors.white24),
+                                const Icon(LucideIcons.bookDown, size: 80, color: Colors.white24),
                                 const SizedBox(height: 16),
                                 const Text('No courses found.\nTap the + button to create one.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontSize: 16)),
                               ],
@@ -154,24 +126,45 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
 
-                    if (books.isNotEmpty)
+                    if (books.isNotEmpty || activeTasks.isNotEmpty)
                       SliverPadding(
                         padding: const EdgeInsets.symmetric(horizontal: 24),
                         sliver: SliverList(
                           delegate: SliverChildBuilderDelegate(
                             (context, index) {
-                              final book = books[index];
-                              return BookCard(
-                                book: book,
-                                progress: progressMap[book.id] ?? 0.0,
-                                onTap: () {
-                                  Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
-                                    .then((_) => _loadBooks());
-                                },
-                                onDelete: () => _deleteBook(book.id),
-                              );
+                              if (index < activeTasks.length) {
+                                final task = activeTasks[index];
+                                return GeneratingBookCard(
+                                  task: task,
+                                  onTap: () {
+                                    if (task.state == BookGenState.review && task.skeletonBook != null) {
+                                      Navigator.push(context, MaterialPageRoute(
+                                        builder: (_) => PdfSplitPreviewScreen(
+                                          taskId: task.id,
+                                          originalPdf: task.pdfFile,
+                                          skeletonBook: task.skeletonBook!,
+                                        )
+                                      ));
+                                    } else if (task.state == BookGenState.error) {
+                                      GenerationManager.instance.dismissTask(task.id);
+                                    }
+                                  }
+                                );
+                              } else {
+                                final bookIndex = index - activeTasks.length;
+                                final book = books[bookIndex];
+                                return BookCard(
+                                  book: book,
+                                  progress: progressMap[book.id] ?? 0.0,
+                                  onTap: () {
+                                    Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
+                                      .then((_) => _loadBooks());
+                                  },
+                                  onDelete: () => _deleteBook(book.id),
+                                );
+                              }
                             },
-                            childCount: books.length,
+                            childCount: activeTasks.length + books.length,
                           ),
                         ),
                       ),

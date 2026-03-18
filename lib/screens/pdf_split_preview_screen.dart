@@ -21,11 +21,13 @@ class _UnitEditor {
 }
 
 class PdfSplitPreviewScreen extends StatefulWidget {
+  final String taskId;
   final File originalPdf;
   final Book skeletonBook;
 
   const PdfSplitPreviewScreen({
     super.key,
+    required this.taskId,
     required this.originalPdf,
     required this.skeletonBook,
   });
@@ -77,11 +79,11 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
 
     final offsetBook = widget.skeletonBook.copyWith(modules: updatedModules);
 
-    // Fire off the background task
-    GenerationManager.instance.startBackgroundSplitAndSave(widget.originalPdf, offsetBook);
+    // Continue background task
+    GenerationManager.instance.startBackgroundSplitAndSave(widget.taskId, widget.originalPdf, offsetBook);
 
-    // Pop everything to get back to the home screen
-    Navigator.popUntil(context, (route) => route.isFirst);
+    // Pop back to home screen where we came from
+    Navigator.pop(context);
   }
 
   @override

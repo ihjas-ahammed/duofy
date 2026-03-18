@@ -1,455 +1,9 @@
+To fix these issues, we need to attack the problem at two levels:
 
+1. **AI Generation (The Root Cause):** The AI is dropping `content` fields on quizzes or hallucinating the schema for `interactiveSteps` on big questions. We will update `PromptService` with an explicit JSON structure template. Language models perform exponentially better when given an exact structural template to copy.
+2. **UI Fallbacks (The Visual Glitch):** The UI currently renders empty glass containers if the AI leaves `slide.content` or `currentStep.prompt` empty. We will add checks to gracefully hide empty containers or fallback to other available text fields if the AI mixes them up.
 
---- START OF FILE README.md ---
-# DuoFY (Flutter Port)
-
-A generic, Duolingo-style interactive learning platform that turns any book into an interactive lesson path using Gemini AI.
-
-## Setup Instructions
-
-### 1. Dependencies
-Ensure you have the required packages:
-```bash
-flutter pub add firebase_database webview_flutter google_generative_ai file_picker flutter_markdown shared_preferences lucide_icons path_provider http
-flutter pub add flutter_markdown_latex markdown share_plus
-flutter pub add syncfusion_flutter_pdf syncfusion_flutter_pdfviewer
-```
-
-### 2. Firebase Realtime Database Configuration
-This app uses Firebase Realtime Database to store generated books and progress.
-1. Go to the [Firebase Console](https://console.firebase.google.com/).
-2. Select your project.
-3. Navigate to **Realtime Database** and click **Create Database** (Start in Test Mode for development).
-4. Run `flutterfire configure` to link your active Firebase project.
-
-### 3. Google Generative AI (Gemini) API Key
-We use the Gemini API to analyze uploaded PDFs and generate interactive JSON lessons.
-1. Get a free API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
-2. Launch the app, click the **Settings** (gear) icon on the Home Screen.
-3. Enter your Gemini API key and save it securely.
-
-## Project Structure Overview
-- `/lib/models`: Data structures (Book, Module, Lesson, Slide, InteractiveStep, etc.)
-- `/lib/screens`: Home, Dashboard (Path), Lesson Player, Completion Screen, PDF Generator, Practice, PDF Browser, Advanced Prompts
-- `/lib/widgets`: Modular UI components (Custom Duolingo-style Buttons, Glass Panels, MathMarkdown)
-- `/lib/widgets/slide_views`: Individual renderers for theory, quiz, blanks, numericals, JS canvas, and Interactive Proofs.
-- `/lib/services`: AI, Database handling, PDF splitting, and Dynamic Prompting services
-- `/lib/theme`: Colors and global styling matching the web platform
-
-## Recent Updates & Design Process
-- **Dynamic Prompt Engine**: Added `PromptService` and an Advanced Settings screen allowing users to edit the exact instructions sent to the AI. Uses variables like `%unit_title%` and `%filename%`.
-- **Improved PDF Browser**: The downloaded PDF chunk browser now intelligently maps raw directory IDs back to readable `Book Title` and `Unit Title`. When sharing, it copies the file to a clean, readable filename to improve the UX.
-- **Deep Structure Generation**: Modified the skeleton AI prompts to fully utilize the Book -> Module (Chapter) -> Section (Subtopic) -> Unit (Deep Topic) hierarchy natively.
-- **UI & Generation Fixes**: 
-  - Eliminated "Empty Option" bugs in Quizzes by enforcing strict text presence in AI prompts and adding model-level fallbacks.
-  - Stopped question titles from duplicating the question text.
-  - Eliminated the `a (or b)` hallucination from `fill_in_blank` answers.
-  - Explicitly integrated the `numerical` slide type into the AI generation loop for calculating physics/math outputs.
-- **Bulletproof JSON Instantiation**: The `app_models.dart` `fromJson` constructors leverage defensive string extractors (`_str()`, `_bool()`).
-
---- END OF FILE README.md ---
-
---- START OF FILE lib/models/app_models.dart ---
-import 'dart:convert';
-
-String _str(dynamic val, [String def = '']) {
-  if (val == null) return def;
-  if (val is String) return val;
-  if (val is Map || val is List) return jsonEncode(val);
-  return val.toString();
-}
-
-String? _strOpt(dynamic val) {
-  if (val == null) return null;
-  if (val is String) return val;
-  if (val is Map || val is List) return jsonEncode(val);
-  return val.toString();
-}
-
-double? _dblOpt(dynamic val) {
-  if (val == null) return null;
-  if (val is num) return val.toDouble();
-  if (val is String) return double.tryParse(val);
-  return null;
-}
-
-bool _bool(dynamic val, [bool def = false]) {
-  if (val == null) return def;
-  if (val is bool) return val;
-  if (val is String) return val.toLowerCase() == 'true';
-  if (val is num) return val > 0;
-  return def;
-}
-
-class Book {
-  final String id;
-  final String title;
-  final String description;
-  final String icon;
-  final String? systemPrompt;
-  final int? updatedAt;
-  final List<Module> modules;
-
-  Book({
-    required this.id, 
-    required this.title, 
-    required this.description, 
-    required this.icon, 
-    this.systemPrompt,
-    this.updatedAt,
-    required this.modules
-  });
-
-  factory Book.fromJson(Map<String, dynamic> json) {
-    return Book(
-      id: _str(json['id']),
-      title: _str(json['title']),
-      description: _str(json['description']),
-      icon: _str(json['icon'], 'Book'),
-      systemPrompt: _strOpt(json['systemPrompt']),
-      updatedAt: json['updatedAt'] is num ? (json['updatedAt'] as num).toInt() : int.tryParse(_str(json['updatedAt'])),
-      modules: (json['modules'] as List?)?.map((m) => Module.fromJson(m is Map ? Map<String, dynamic>.from(m) : {})).toList() ?? [],
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'description': description,
-    'icon': icon,
-    if (systemPrompt != null) 'systemPrompt': systemPrompt,
-    if (updatedAt != null) 'updatedAt': updatedAt,
-    'modules': modules.map((m) => m.toJson()).toList(),
-  };
-
-  Book copyWith({
-    String? id,
-    String? title,
-    String? description,
-    String? icon,
-    String? systemPrompt,
-    int? updatedAt,
-    List<Module>? modules,
-  }) {
-    return Book(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      description: description ?? this.description,
-      icon: icon ?? this.icon,
-      systemPrompt: systemPrompt ?? this.systemPrompt,
-      updatedAt: updatedAt ?? this.updatedAt,
-      modules: modules ?? this.modules,
-    );
-  }
-}
-
-class Module {
-  final String id;
-  final String title;
-  final String description;
-  final List<Section> sections;
-  final List<Slide> practiceQuestions;
-  final List<Slide> examQuestions;
-
-  Module({
-    required this.id, 
-    required this.title, 
-    required this.description, 
-    required this.sections,
-    required this.practiceQuestions,
-    required this.examQuestions,
-  });
-
-  factory Module.fromJson(Map<String, dynamic> json) {
-    return Module(
-      id: _str(json['id']),
-      title: _str(json['title']),
-      description: _str(json['description']),
-      sections: (json['sections'] as List?)?.map((s) => Section.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
-      practiceQuestions: (json['practiceQuestions'] as List?)?.map((s) => Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
-      examQuestions: (json['examQuestions'] as List?)?.map((s) => Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'description': description,
-    'sections': sections.map((s) => s.toJson()).toList(),
-    'practiceQuestions': practiceQuestions.map((s) => s.toJson()).toList(),
-    'examQuestions': examQuestions.map((s) => s.toJson()).toList(),
-  };
-
-  Module copyWith({
-    String? id,
-    String? title,
-    String? description,
-    List<Section>? sections,
-    List<Slide>? practiceQuestions,
-    List<Slide>? examQuestions,
-  }) {
-    return Module(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      description: description ?? this.description,
-      sections: sections ?? this.sections,
-      practiceQuestions: practiceQuestions ?? this.practiceQuestions,
-      examQuestions: examQuestions ?? this.examQuestions,
-    );
-  }
-}
-
-class Section {
-  final String id;
-  final String title;
-  final String description;
-  final String color;
-  final List<Unit> units;
-
-  Section({
-    required this.id, 
-    required this.title, 
-    required this.description, 
-    required this.color, 
-    required this.units
-  });
-
-  factory Section.fromJson(Map<String, dynamic> json) {
-    return Section(
-      id: _str(json['id']),
-      title: _str(json['title']),
-      description: _str(json['description']),
-      color: _str(json['color'], 'duo-blue'),
-      units: (json['units'] as List?)?.map((u) => Unit.fromJson(u is Map ? Map<String, dynamic>.from(u) : {})).toList() ?? [],
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'description': description,
-    'color': color,
-    'units': units.map((u) => u.toJson()).toList(),
-  };
-
-  Section copyWith({
-    String? id,
-    String? title,
-    String? description,
-    String? color,
-    List<Unit>? units,
-  }) {
-    return Section(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      description: description ?? this.description,
-      color: color ?? this.color,
-      units: units ?? this.units,
-    );
-  }
-}
-
-class Unit {
-  final String id;
-  final String title;
-  final String description;
-  final int? startPage;
-  final int? endPage;
-  final bool isGenerated;
-  final String? pdfPath;
-  final List<Lesson> lessons;
-
-  Unit({
-    required this.id, 
-    required this.title, 
-    required this.description, 
-    this.startPage,
-    this.endPage,
-    required this.isGenerated,
-    this.pdfPath,
-    required this.lessons
-  });
-
-  factory Unit.fromJson(Map<String, dynamic> json) {
-    return Unit(
-      id: _str(json['id']),
-      title: _str(json['title']),
-      description: _str(json['description']),
-      startPage: json['startPage'] is num ? (json['startPage'] as num).toInt() : int.tryParse(_str(json['startPage'])),
-      endPage: json['endPage'] is num ? (json['endPage'] as num).toInt() : int.tryParse(_str(json['endPage'])),
-      isGenerated: _bool(json['isGenerated'], true),
-      pdfPath: _strOpt(json['pdfPath']),
-      lessons: (json['lessons'] as List?)?.map((l) => Lesson.fromJson(l is Map ? Map<String, dynamic>.from(l) : {})).toList() ?? [],
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'description': description,
-    if (startPage != null) 'startPage': startPage,
-    if (endPage != null) 'endPage': endPage,
-    'isGenerated': isGenerated,
-    if (pdfPath != null) 'pdfPath': pdfPath,
-    'lessons': lessons.map((l) => l.toJson()).toList(),
-  };
-
-  Unit copyWith({
-    String? id,
-    String? title,
-    String? description,
-    int? startPage,
-    int? endPage,
-    bool? isGenerated,
-    String? pdfPath,
-    List<Lesson>? lessons,
-  }) {
-    return Unit(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      description: description ?? this.description,
-      startPage: startPage ?? this.startPage,
-      endPage: endPage ?? this.endPage,
-      isGenerated: isGenerated ?? this.isGenerated,
-      pdfPath: pdfPath ?? this.pdfPath,
-      lessons: lessons ?? this.lessons,
-    );
-  }
-}
-
-class Lesson {
-  final String id;
-  final String title;
-  final String description;
-  final String icon;
-  final List<Slide> slides;
-
-  Lesson({required this.id, required this.title, required this.description, required this.icon, required this.slides});
-
-  factory Lesson.fromJson(Map<String, dynamic> json) {
-    return Lesson(
-      id: _str(json['id']),
-      title: _str(json['title']),
-      description: _str(json['description']),
-      icon: _str(json['icon'], 'BookOpen'),
-      slides: (json['slides'] as List?)?.map((s) => Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'description': description,
-    'icon': icon,
-    'slides': slides.map((s) => s.toJson()).toList(),
-  };
-}
-
-class InteractiveStep {
-  final String? prompt;
-  final String? stepText;
-  final List<QuizOption>? options;
-
-  InteractiveStep({this.prompt, this.stepText, this.options});
-
-  factory InteractiveStep.fromJson(Map<String, dynamic> json) {
-    return InteractiveStep(
-      prompt: _strOpt(json['prompt']),
-      stepText: _strOpt(json['stepText']),
-      options: (json['options'] as List?)?.map((o) => QuizOption.fromJson(o is Map ? Map<String, dynamic>.from(o) : {})).toList(),
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    if (prompt != null) 'prompt': prompt,
-    if (stepText != null) 'stepText': stepText,
-    if (options != null) 'options': options!.map((o) => o.toJson()).toList(),
-  };
-}
-
-class Slide {
-  final String id;
-  final String type; // theory, quiz, fill_in_blank, numerical, interactive_canvas, proof, step_by_step
-  final String title;
-  final String content;
-  final String? interactiveCanvasHtml;
-  final List<QuizOption>? options;
-  final List<InteractiveStep>? interactiveSteps;
-  final List<String>? proofSteps;
-  final String? blankAnswer;
-  final double? numericAnswer;
-  final double? numericTolerance;
-
-  Slide({
-    required this.id,
-    required this.type,
-    required this.title,
-    required this.content,
-    this.interactiveCanvasHtml,
-    this.options,
-    this.interactiveSteps,
-    this.proofSteps,
-    this.blankAnswer,
-    this.numericAnswer,
-    this.numericTolerance,
-  });
-
-  factory Slide.fromJson(Map<String, dynamic> json) {
-    return Slide(
-      id: _str(json['id']),
-      type: _str(json['type'], 'theory'),
-      title: _str(json['title']),
-      content: _str(json['content']),
-      interactiveCanvasHtml: _strOpt(json['interactiveCanvasHtml']),
-      options: (json['options'] as List?)?.map((o) => QuizOption.fromJson(o is Map ? Map<String, dynamic>.from(o) : {})).toList(),
-      interactiveSteps: (json['interactiveSteps'] as List?)?.map((s) => InteractiveStep.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList(),
-      proofSteps: (json['proofSteps'] as List?)?.map((s) => _str(s)).toList(),
-      blankAnswer: _strOpt(json['blankAnswer']),
-      numericAnswer: _dblOpt(json['numericAnswer']),
-      numericTolerance: _dblOpt(json['numericTolerance']) ?? 0.01,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'type': type,
-    'title': title,
-    'content': content,
-    if (interactiveCanvasHtml != null) 'interactiveCanvasHtml': interactiveCanvasHtml,
-    if (options != null) 'options': options!.map((o) => o.toJson()).toList(),
-    if (interactiveSteps != null) 'interactiveSteps': interactiveSteps!.map((s) => s.toJson()).toList(),
-    if (proofSteps != null) 'proofSteps': proofSteps,
-    if (blankAnswer != null) 'blankAnswer': blankAnswer,
-    if (numericAnswer != null) 'numericAnswer': numericAnswer,
-    if (numericTolerance != null) 'numericTolerance': numericTolerance,
-  };
-}
-
-class QuizOption {
-  final String id;
-  final String text;
-  final bool isCorrect;
-  final String explanation;
-
-  QuizOption({required this.id, required this.text, required this.isCorrect, required this.explanation});
-
-  factory QuizOption.fromJson(Map<String, dynamic> json) {
-    return QuizOption(
-      id: _str(json['id']),
-      text: _str(json['text'], 'Option'), // Fallback if AI omits text
-      isCorrect: _bool(json['isCorrect']),
-      explanation: _str(json['explanation']),
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'text': text,
-    'isCorrect': isCorrect,
-    'explanation': explanation,
-  };
-}
---- END OF FILE lib/models/app_models.dart ---
+Here are the updated files:
 
 --- START OF FILE lib/services/prompt_service.dart ---
 import 'package:shared_preferences/shared_preferences.dart';
@@ -474,12 +28,35 @@ CRITICAL INSTRUCTIONS:
 
 Return ONLY valid JSON matching this exact structure:
 {
-  "id": "generated-book-...",
+  "id": "generated-book-123",
   "title": "Generated Course Title Here",
   "description": "Auto-generated book overview",
   "icon": "Book",
   "systemPrompt": "You are an expert tutor...",
-  "modules":[ ... ]
+  "modules":[
+    {
+      "id": "m1",
+      "title": "Module Title",
+      "description": "...",
+      "sections": [
+        {
+          "id": "s1",
+          "title": "Section Title",
+          "description": "...",
+          "color": "duo-blue",
+          "units": [
+            {
+              "id": "u1",
+              "title": "Unit Title",
+              "description": "...",
+              "startPage": 1,
+              "endPage": 5
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }''';
 
   static const String defaultPlan = '''You are an expert curriculum designer. Analyze the attached PDF chunk for the unit: "%unit_title%".
@@ -495,7 +72,7 @@ CRITICAL DUOLINGO-STYLE MICRO-LEARNING RULES:
    - 2 "fill_in_blank" slides (one question per slide).
    - 4 "quiz" (multiple choice) objective questions (one question per slide).
    - 1 "numerical" slide (if applicable, calculating a value).
-   - 1 "proof" or "step_by_step" interactive solution (if applicable).''';
+   - 1 "proof" or "step_by_step" interactive solution (ONE combined slide mapping the multiple stages of the problem).''';
 
   static const String defaultJson = '''SYSTEM PROMPT:
 %system_prompt%
@@ -507,16 +84,42 @@ You previously created this optimal learning plan for the unit "%unit_title%":
 Based strictly on this plan and the attached PDF chunk, generate the full JSON content.
 
 CRITICAL SCHEMA & MICRO-LEARNING RULES:
-1. EXTREME MICRO-LEARNING: "content" fields MUST be very short (1-3 sentences max).
-2. `slide.title` should be a short category (e.g. "Concept Check"), DO NOT duplicate the question text in the title.
-3. `fill_in_blank` slides: "content" MUST be a single plain-text string containing exactly three underscores (`___`). `blankAnswer` MUST be the exact single correct word/phrase (e.g. "generalization"), DO NOT provide alternatives like "a or b".
-4. `quiz` slides MUST have exactly 4 options. EACH option MUST have a non-empty `text` field containing the choice.
-5. `numerical` slides: "content" is the word problem. Must provide `numericAnswer` (a float/number) and optionally `numericTolerance`.
-6. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}).
-7. Markdown math is wrapped in \$ or \$\$.
+1. "theory" slides: `content` MUST be a few sentences explaining a concept.
+2. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Do not leave it empty! Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
+3. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word.
+4. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
+5. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}). Markdown math is wrapped in \$ or \$\$.
 
-Return ONLY valid JSON representing the "lessons" array. Format:
-{ "lessons": [ { "id": "...", "title": "...", "description": "...", "icon": "BookOpen", "slides": [ ... ] } ] }''';
+YOU MUST RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
+{
+  "lessons": [
+    {
+      "id": "l1", "title": "Lesson 1", "description": "...", "icon": "BookOpen",
+      "slides": [
+        {
+          "id": "s1", "type": "theory", "title": "Concept", "content": "Explanation here."
+        },
+        {
+          "id": "s2", "type": "quiz", "title": "Knowledge Check",
+          "content": "WHAT IS THE ACTUAL QUESTION TEXT HERE?",
+          "options": [
+            {"id": "a", "text": "Option 1", "isCorrect": true, "explanation": "..."}
+          ]
+        },
+        {
+          "id": "s3", "type": "step_by_step", "title": "Big Problem",
+          "content": "Overall problem description here...",
+          "interactiveSteps": [
+            { "stepText": "First, let's understand X." },
+            { "prompt": "What is the formula for X?", "options": [
+                {"id": "o1", "text": "Y", "isCorrect": true, "explanation": "..."}
+            ]}
+          ]
+        }
+      ]
+    }
+  ]
+}''';
 
   // Loaders
   static Future<String> getSkeletonPrompt() async {
@@ -559,782 +162,394 @@ Return ONLY valid JSON representing the "lessons" array. Format:
 }
 --- END OF FILE lib/services/prompt_service.dart ---
 
---- START OF FILE lib/services/ai_service.dart ---
-import 'dart:convert';
-import 'dart:io';
-import 'dart:async';
-import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../models/app_models.dart';
-import 'prompt_service.dart';
-
-class AiService {
-  Future<List<String>> _getKeys() async {
-    final prefs = await SharedPreferences.getInstance();
-    List<String> keys = prefs.getStringList('gemini_api_keys_list') ?? [];
-    if (keys.isEmpty) {
-      final keysString = prefs.getString('gemini_api_keys') ?? '';
-      keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
-    }
-    if (keys.isEmpty) {
-      print("[AiService] FATAL: No API Keys configured.");
-      throw Exception('No API Keys configured.');
-    }
-    return keys;
-  }
-
-  Future<List<String>> _getModels() async {
-    final prefs = await SharedPreferences.getInstance();
-    List<String> models = prefs.getStringList('gemini_models_list') ?? [];
-    if (models.isEmpty) {
-      final oldModel = prefs.getString('gemini_model') ?? 'gemini-1.5-flash';
-      models = [oldModel];
-    }
-    return models;
-  }
-
-  /// Robust JSON parser that handles Markdown ticks and invalid string literal types
-  Map<String, dynamic> _cleanAndDecodeJson(String text) {
-    print("[AiService] Initiating JSON Cleanup and Decoding...");
-    String cleaned = text;
-    if (cleaned.contains('```json')) {
-      cleaned = cleaned.split('```json')[1].split('```')[0];
-    } else if (cleaned.contains('```')) {
-      cleaned = cleaned.split('```')[1].split('```')[0];
-    }
-    
-    cleaned = cleaned.trim();
-    int start = cleaned.indexOf('{');
-    int end = cleaned.lastIndexOf('}');
-    
-    if (start != -1 && end != -1) {
-      cleaned = cleaned.substring(start, end + 1);
-    }
-    
-    try {
-      final decoded = jsonDecode(cleaned);
-      if (decoded is! Map<String, dynamic>) {
-        throw Exception('Expected a JSON Object (Map), but got ${decoded.runtimeType}.');
-      }
-      print("[AiService] JSON Decoded Successfully.");
-      return decoded;
-    } catch (e1) {
-      print("[AiService] Initial parse failed. Trying fallback cleanup... $e1");
-      try {
-        // Fallback: fix literal unescaped newlines which AI might fail to properly escape
-        String agg = cleaned.replaceAll('\n', '\\n').replaceAll('\r', '');
-        return jsonDecode(agg) as Map<String, dynamic>;
-      } catch (e2) {
-        print("\n[AiService] JSON PARSE ERROR: $e2");
-        print("[AiService] === PROBLEMATIC PAYLOAD SEGMENT ===");
-        print(cleaned.substring(0, cleaned.length > 500 ? 500 : cleaned.length));
-        print("=============================================\n");
-        throw Exception('Failed to parse AI JSON response: $e2');
-      }
-    }
-  }
-
-  /// STAGE 1: Extracts the table of contents and creates the Book Skeleton
-  Future<Book?> generateBookSkeleton(File pdfFile, String filename) async {
-    print("\n[AiService] === STARTING STAGE 1: BOOK SKELETON GENERATION ===");
-    final keys = await _getKeys();
-    final models = await _getModels();
-    final pdfBytes = await pdfFile.readAsBytes();
-    
-    final rawPrompt = await PromptService.getSkeletonPrompt();
-    final hydratedPrompt = rawPrompt.replaceAll('%filename%', filename);
-    
-    final prompt = TextPart(hydratedPrompt);
-
-    Exception? lastException;
-    
-    for (var modelName in models) {
-      for (var apiKey in keys) {
-        try {
-          print("[AiService] Requesting Skeleton via $modelName [Key: ...${apiKey.substring(apiKey.length > 4 ? apiKey.length - 4 : 0)}]");
-          
-          final model = GenerativeModel(
-            model: modelName,
-            apiKey: apiKey,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
-          );
-
-          final stopwatch = Stopwatch()..start();
-          final response = await model.generateContent([
-            Content.multi([prompt, DataPart('application/pdf', pdfBytes)])
-          ]).timeout(const Duration(minutes: 5));
-          stopwatch.stop();
-
-          if (response.text != null) {
-            print("[AiService] Skeleton Generation Success! Took ${stopwatch.elapsed.inSeconds} seconds.");
-            final jsonMap = _cleanAndDecodeJson(response.text!);
-            print("[AiService] === SKELETON GENERATION COMPLETE ===\n");
-            return Book.fromJson(jsonMap);
-          }
-        } on TimeoutException {
-          print("[AiService] Warning: Request timed out for $modelName.");
-          lastException = Exception('Request timed out ($modelName).');
-        } catch (e) {
-          print("[AiService] Error using $modelName: $e");
-          lastException = Exception('Generation failed: $e');
-        }
-      }
-    }
-    print("[AiService] FATAL: All models/keys exhausted for Skeleton generation.");
-    throw lastException ?? Exception('Failed to generate skeleton. All models/keys exhausted.');
-  }
-
-  /// STAGE 2: Generates deep lesson content for a specific chunked PDF Unit
-  Future<Unit> generateUnitContent(Unit unit, Book bookContext, Function(String) onProgress) async {
-    print("\n[AiService] === STARTING UNIT CONTENT GENERATION (TWO-STAGE) ===");
-    print("[AiService] Target Unit: ${unit.title}");
-    
-    final keys = await _getKeys();
-    final models = await _getModels();
-    
-    if (unit.pdfPath == null) throw Exception("No PDF chunk available for this unit.");
-    final pdfBytes = await File(unit.pdfPath!).readAsBytes();
-
-    Exception? lastException;
-
-    for (var modelName in models) {
-      for (var apiKey in keys) {
-        try {
-          print("\n[AiService] Attempting generation pipeline with $modelName [Key: ...${apiKey.substring(apiKey.length > 4 ? apiKey.length - 4 : 0)}]");
-          
-          final modelText = GenerativeModel(
-            model: modelName,
-            apiKey: apiKey,
-          );
-          
-          final modelJson = GenerativeModel(
-            model: modelName,
-            apiKey: apiKey,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
-          );
-
-          // ------------------------------------------------------------------
-          // STEP 1: Lesson Planning (Text Generation)
-          // ------------------------------------------------------------------
-          print("[AiService] [Stage 2.1] Requesting Pedagogical Lesson Plan...");
-          onProgress("Analyzing PDF & Planning Layout...");
-          
-          final rawPlanPrompt = await PromptService.getPlanPrompt();
-          final hydratedPlanPrompt = rawPlanPrompt.replaceAll('%unit_title%', unit.title);
-          
-          final planPrompt = TextPart(hydratedPlanPrompt);
-
-          final planStopwatch = Stopwatch()..start();
-          final planResponse = await modelText.generateContent([
-            Content.multi([planPrompt, DataPart('application/pdf', pdfBytes)])
-          ]).timeout(const Duration(minutes: 4));
-          planStopwatch.stop();
-
-          final lessonPlan = planResponse.text ?? '';
-          if (lessonPlan.isEmpty) throw Exception("AI failed to generate a lesson plan.");
-          
-          print("[AiService] [Stage 2.1] Lesson Plan Acquired in ${planStopwatch.elapsed.inSeconds}s.");
-
-          // ------------------------------------------------------------------
-          // STEP 2: JSON Instantiation
-          // ------------------------------------------------------------------
-          print("[AiService] [Stage 2.2] Requesting JSON Instantiation based on Plan...");
-          onProgress("Generating Interactive Content...");
-
-          final rawJsonPrompt = await PromptService.getJsonPrompt();
-          final hydratedJsonPrompt = rawJsonPrompt
-              .replaceAll('%system_prompt%', bookContext.systemPrompt ?? "You are an expert tutor.")
-              .replaceAll('%unit_title%', unit.title)
-              .replaceAll('%lesson_plan%', lessonPlan);
-
-          final jsonPrompt = TextPart(hydratedJsonPrompt);
-
-          final jsonStopwatch = Stopwatch()..start();
-          final response = await modelJson.generateContent([
-            Content.multi([jsonPrompt, DataPart('application/pdf', pdfBytes)])
-          ]).timeout(const Duration(minutes: 5));
-          jsonStopwatch.stop();
-
-          if (response.text != null) {
-            print("[AiService] [Stage 2.2] JSON Generation Success! Took ${jsonStopwatch.elapsed.inSeconds}s.");
-            
-            onProgress("Parsing content...");
-            final jsonMap = _cleanAndDecodeJson(response.text!);
-            final lessonsData = jsonMap['lessons'] as List?;
-            
-            final newLessons = lessonsData?.map((l) {
-              if (l is Map) return Lesson.fromJson(Map<String, dynamic>.from(l));
-              return null;
-            }).whereType<Lesson>().toList() ?? [];
-            
-            print("[AiService] === UNIT CONTENT GENERATION COMPLETE ===\n");
-            return unit.copyWith(isGenerated: true, lessons: newLessons);
-          }
-        } on TimeoutException {
-          print("[AiService] Warning: Request timed out for $modelName.");
-          lastException = Exception('Request timed out ($modelName).');
-        } catch (e) {
-          print("[AiService] Error in pipeline using $modelName: $e");
-          lastException = Exception('Failed: $e');
-        }
-      }
-    }
-    print("[AiService] FATAL: All models/keys exhausted for Unit generation.");
-    throw lastException ?? Exception('Failed to generate unit content. All models/keys exhausted.');
-  }
-}
---- END OF FILE lib/services/ai_service.dart ---
-
---- START OF FILE lib/screens/settings_screen.dart ---
-import 'dart:convert';
+--- START OF FILE lib/widgets/slide_views/quiz_view.dart ---
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
-import '../theme/app_theme.dart';
-import '../widgets/duo_button.dart';
-import '../widgets/string_list_manager.dart';
-import 'pdf_browser_screen.dart';
-import 'advanced_prompts_screen.dart';
+import '../../models/app_models.dart';
+import '../../theme/app_theme.dart';
+import '../math_markdown.dart';
 
-class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+class QuizView extends StatelessWidget {
+  final Slide slide;
+  final String? selectedOptionId;
+  final bool isAnswered;
+  final Function(String) onSelect;
+
+  const QuizView({
+    super.key, 
+    required this.slide, 
+    required this.selectedOptionId, 
+    required this.isAnswered, 
+    required this.onSelect
+  });
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Fallback to hide empty dark container if AI fails to populate content
+          if (slide.content.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: AppTheme.glassDecoration,
+              child: MathMarkdown(data: slide.content, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          
+          if (slide.content.isNotEmpty)
+            const SizedBox(height: 24),
+            
+          if (slide.options != null)
+            ...slide.options!.map((opt) {
+              final isSelected = selectedOptionId == opt.id;
+              
+              Color borderColor = Colors.white12;
+              Color bgColor = Colors.white.withOpacity(0.05);
+
+              if (isAnswered) {
+                if (opt.isCorrect) {
+                  borderColor = AppTheme.duoGreen;
+                  bgColor = AppTheme.duoGreen.withOpacity(0.2);
+                } else if (isSelected && !opt.isCorrect) {
+                  borderColor = AppTheme.duoRed;
+                  bgColor = AppTheme.duoRed.withOpacity(0.2);
+                } else {
+                  bgColor = Colors.transparent;
+                }
+              } else if (isSelected) {
+                borderColor = AppTheme.duoBlue;
+                bgColor = AppTheme.duoBlue.withOpacity(0.2);
+              }
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: InkWell(
+                  onTap: isAnswered ? null : () => onSelect(opt.id),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      border: Border.all(color: borderColor, width: 2),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: MathMarkdown(data: opt.text, textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                  ),
+                ),
+              );
+            }).toList(),
+        ],
+      ),
+    );
+  }
+}
+--- END OF FILE lib/widgets/slide_views/quiz_view.dart ---
+
+--- START OF FILE lib/widgets/slide_views/interactive_proof_view.dart ---
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../../models/app_models.dart';
+import '../../theme/app_theme.dart';
+import '../math_markdown.dart';
+import '../duo_button.dart';
+
+class InteractiveProofView extends StatefulWidget {
+  final Slide slide;
+  final VoidCallback onComplete;
+
+  const InteractiveProofView({
+    super.key,
+    required this.slide,
+    required this.onComplete,
+  });
+
+  @override
+  State<InteractiveProofView> createState() => _InteractiveProofViewState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
-  List<String> _keys = [];
-  List<String> _models = [];
-  bool _isFetchingModels = false;
-  bool _isLoading = true;
+class _InteractiveProofViewState extends State<InteractiveProofView> {
+  int _currentStepIndex = 0;
+  List<String> _revealedSteps = [];
+  
+  String? _selectedOptionId;
+  bool _isSubmitted = false;
+  bool _isCorrect = false;
+
+  late List<InteractiveStep> _steps;
 
   @override
   void initState() {
     super.initState();
-    _loadSettings();
+    _steps = widget.slide.interactiveSteps ?? [];
   }
 
-  Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    
-    List<String> keys = prefs.getStringList('gemini_api_keys_list') ?? [];
-    if (keys.isEmpty) {
-       final keysString = prefs.getString('gemini_api_keys') ?? '';
-       keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+  void _handleNextStatic() {
+    final currentStep = _steps[_currentStepIndex];
+    if (currentStep.stepText != null && currentStep.stepText!.isNotEmpty) {
+      setState(() {
+        _revealedSteps.add(currentStep.stepText!);
+        _currentStepIndex++;
+      });
+    } else {
+      // Failsafe if stepText is empty
+      setState(() {
+        _currentStepIndex++;
+      });
     }
+  }
+
+  void _checkAnswer() {
+    if (_selectedOptionId == null) return;
     
-    List<String> models = prefs.getStringList('gemini_models_list') ?? [];
-    if (models.isEmpty) {
-       final oldModel = prefs.getString('gemini_model') ?? 'gemini-1.5-flash';
-       models = [oldModel];
-    }
-    
-    _keys = List.from(keys);
-    _models = List.from(models);
+    final currentStep = _steps[_currentStepIndex];
+    final correctOpt = currentStep.options?.firstWhere((o) => o.isCorrect);
+    final correct = correctOpt?.id == _selectedOptionId;
 
     setState(() {
-      _isLoading = false;
+      _isSubmitted = true;
+      _isCorrect = correct;
     });
   }
 
-  Future<void> _saveSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('gemini_api_keys_list', _keys);
-    await prefs.setStringList('gemini_models_list', _models);
+  void _handleNextInteractive() {
+    final currentStep = _steps[_currentStepIndex];
+    final correctOpt = currentStep.options?.firstWhere((o) => o.isCorrect);
     
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Settings Saved Successfully')));
-      Navigator.pop(context);
+    // Sometimes the AI puts the question in stepText. If it did, don't reveal the question as the "learned fact".
+    // Rely on the correct option text instead.
+    String textToReveal = '';
+    if (currentStep.stepText != null && currentStep.stepText!.isNotEmpty && currentStep.prompt != null) {
+      textToReveal = currentStep.stepText!;
+    } else {
+      textToReveal = correctOpt?.text ?? '';
     }
+    
+    setState(() {
+      if (textToReveal.isNotEmpty) _revealedSteps.add(textToReveal);
+      _currentStepIndex++;
+      _isSubmitted = false;
+      _isCorrect = false;
+      _selectedOptionId = null;
+    });
   }
 
-  Future<void> _fetchModels() async {
-    if (_keys.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please add an API key first.')));
-      return;
-    }
-
-    setState(() => _isFetchingModels = true);
-    try {
-      final response = await http.get(Uri.parse('https://generativelanguage.googleapis.com/v1beta/models?key=${_keys.first}'));
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final List fetched = data['models'] ?? [];
-        List<String> fetchedModels = [];
-        
-        for (var m in fetched) {
-          String name = m['name'];
-          if (name.startsWith('models/')) name = name.substring(7);
-          if (name.contains('gemini')) fetchedModels.add(name);
-        }
-
-        if (fetchedModels.isNotEmpty && mounted) {
-           showModalBottomSheet(
-             context: context,
-             backgroundColor: AppTheme.surface,
-             shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-             builder: (ctx) => Padding(
-               padding: const EdgeInsets.all(16.0),
-               child: Column(
-                 crossAxisAlignment: CrossAxisAlignment.start,
-                 children: [
-                   const Text('Available Models', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white)),
-                   const SizedBox(height: 16),
-                   Expanded(
-                     child: ListView.builder(
-                       itemCount: fetchedModels.length,
-                       itemBuilder: (c, i) => ListTile(
-                         leading: const Icon(LucideIcons.bot, color: AppTheme.duoBlue),
-                         title: Text(fetchedModels[i], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                         onTap: () {
-                            setState(() {
-                              if (!_models.contains(fetchedModels[i]) && _models.length < 5) {
-                                _models.add(fetchedModels[i]);
-                              }
-                            });
-                            Navigator.pop(ctx);
-                         },
-                       )
-                     ),
-                   ),
-                 ],
-               ),
-             )
-           );
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to fetch: ${response.statusCode}')));
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-    } finally {
-      setState(() => _isFetchingModels = false);
-    }
+  void _resetInteraction() {
+    setState(() {
+      _isSubmitted = false;
+      _isCorrect = false;
+      _selectedOptionId = null;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: AppTheme.duoBlue)),
-      );
-    }
+    bool isFinished = _currentStepIndex >= _steps.length;
+    InteractiveStep? currentStep = isFinished ? null : _steps[_currentStepIndex];
+    bool hasOptions = currentStep?.options != null && currentStep!.options!.isNotEmpty;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings', style: TextStyle(fontWeight: FontWeight.w900))),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children:[
-            Row(
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: DuoButton(
-                    text: 'PDF Browser',
-                    onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const PdfBrowserScreen()));
-                    },
-                    color: AppTheme.duoViolet,
-                    shadowColor: AppTheme.duoVioletDark,
+                if (widget.slide.title.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: Text(
+                      widget.slide.title,
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: DuoButton(
-                    text: 'Advanced',
-                    onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const AdvancedPromptsScreen()));
-                    },
-                    color: AppTheme.duoOrange,
-                    shadowColor: AppTheme.duoOrangeDark,
+
+                if (widget.slide.content.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    margin: const EdgeInsets.only(bottom: 24),
+                    decoration: AppTheme.glassDecoration,
+                    child: MathMarkdown(data: widget.slide.content, textStyle: const TextStyle(fontSize: 16, color: Colors.white)),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
 
-            const Text('API Keys', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            const Text('Add multiple keys to fall back automatically if rate-limited.', style: TextStyle(color: Colors.white54, fontSize: 12)),
-            const SizedBox(height: 16),
-            StringListManager(
-              initialItems: _keys,
-              hintText: 'Enter Gemini API Key',
-              itemIcon: LucideIcons.key,
-              onChanged: (newKeys) => setState(() => _keys = newKeys),
-            ),
-            const SizedBox(height: 32),
-
-            const Text('AI Models Sequence', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            const Text('Add up to 5 models. Top models will be prioritized.', style: TextStyle(color: Colors.white54, fontSize: 12)),
-            const SizedBox(height: 16),
-            
-            if (_models.isNotEmpty)
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _models.map((m) => Chip(
-                  label: Text(m, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                  deleteIcon: const Icon(LucideIcons.x, size: 16, color: Colors.white54),
-                  backgroundColor: Colors.white.withOpacity(0.1),
-                  side: const BorderSide(color: Colors.white24),
-                  onDeleted: () => setState(() => _models.remove(m)),
+                ..._revealedSteps.map((stepText) => Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.duoGreen.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppTheme.duoGreen.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(top: 2, right: 12),
+                          child: Icon(LucideIcons.checkCircle2, color: AppTheme.duoGreen, size: 20),
+                        ),
+                        Expanded(child: MathMarkdown(data: stepText, textStyle: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold))),
+                      ],
+                    ),
+                  ),
                 )).toList(),
-              ),
-              
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: DuoButton(
-                text: _isFetchingModels ? 'Fetching...' : 'Browse Available Models',
-                onPressed: _isFetchingModels ? () {} : _fetchModels,
-                color: AppTheme.duoBlue,
-                shadowColor: AppTheme.duoBlueDark,
-                isOutline: true,
-              ),
-            ),
-            
-            const SizedBox(height: 48),
-            DuoButton(
-              text: 'Save Settings',
-              onPressed: _saveSettings,
-              color: AppTheme.duoGreen,
-              shadowColor: AppTheme.duoGreenDark,
-            )
-          ],
-        ),
-      ),
-    );
-  }
-}
---- END OF FILE lib/screens/settings_screen.dart ---
 
---- START OF FILE lib/screens/advanced_prompts_screen.dart ---
-import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import '../theme/app_theme.dart';
-import '../services/prompt_service.dart';
-import '../widgets/duo_button.dart';
-
-class AdvancedPromptsScreen extends StatefulWidget {
-  const AdvancedPromptsScreen({super.key});
-
-  @override
-  State<AdvancedPromptsScreen> createState() => _AdvancedPromptsScreenState();
-}
-
-class _AdvancedPromptsScreenState extends State<AdvancedPromptsScreen> {
-  final _skeletonCtrl = TextEditingController();
-  final _planCtrl = TextEditingController();
-  final _jsonCtrl = TextEditingController();
-
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadPrompts();
-  }
-
-  Future<void> _loadPrompts() async {
-    _skeletonCtrl.text = await PromptService.getSkeletonPrompt();
-    _planCtrl.text = await PromptService.getPlanPrompt();
-    _jsonCtrl.text = await PromptService.getJsonPrompt();
-    setState(() => _isLoading = false);
-  }
-
-  Future<void> _savePrompts() async {
-    await PromptService.saveSkeletonPrompt(_skeletonCtrl.text);
-    await PromptService.savePlanPrompt(_planCtrl.text);
-    await PromptService.saveJsonPrompt(_jsonCtrl.text);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Custom prompts saved!')));
-      Navigator.pop(context);
-    }
-  }
-
-  Future<void> _resetToDefaults() async {
-    await PromptService.resetToDefaults();
-    await _loadPrompts();
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Restored defaults.')));
-    }
-  }
-
-  Widget _buildEditor(String title, String description, TextEditingController controller) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 24),
-      decoration: AppTheme.glassDecoration,
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          iconColor: AppTheme.duoOrange,
-          collapsedIconColor: Colors.white54,
-          title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
-          subtitle: Text(description, style: const TextStyle(fontSize: 12, color: Colors.white54)),
-          childrenPadding: const EdgeInsets.all(16),
-          children: [
-            TextField(
-              controller: controller,
-              maxLines: 12,
-              style: const TextStyle(fontSize: 12, color: Colors.white70, fontFamily: 'monospace'),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.black45,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator(color: AppTheme.duoOrange)));
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Advanced Prompts', style: TextStyle(fontWeight: FontWeight.w900)),
-        actions: [
-          IconButton(
-            icon: const Icon(LucideIcons.refreshCcw, color: AppTheme.duoRed),
-            onPressed: _resetToDefaults,
-            tooltip: 'Reset Defaults',
-          )
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Padding(
-              padding: EdgeInsets.only(bottom: 24, left: 8, right: 8),
-              child: Text(
-                'Edit the exact instructions sent to the AI. Use variables like %filename%, %unit_title% to inject dynamic data.',
-                style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
-              ),
-            ),
-            
-            _buildEditor(
-              'Stage 1: Book Skeleton', 
-              'Generates the TOC mapping. Variables: %filename%', 
-              _skeletonCtrl
-            ),
-            _buildEditor(
-              'Stage 2.1: Lesson Plan', 
-              'Generates pedagogical layout. Variables: %unit_title%', 
-              _planCtrl
-            ),
-            _buildEditor(
-              'Stage 2.2: JSON Extraction', 
-              'Enforces strict schema. Variables: %unit_title%, %system_prompt%, %lesson_plan%', 
-              _jsonCtrl
-            ),
-            
-            const SizedBox(height: 16),
-            DuoButton(
-              text: 'Save Prompts',
-              color: AppTheme.duoOrange,
-              shadowColor: AppTheme.duoOrangeDark,
-              onPressed: _savePrompts,
-            ),
-            const SizedBox(height: 40), // Safe area
-          ],
-        ),
-      ),
-    );
-  }
-}
---- END OF FILE lib/screens/advanced_prompts_screen.dart ---
-
---- START OF FILE lib/screens/pdf_browser_screen.dart ---
-import 'dart:io';
-import 'dart:convert';
-import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../models/app_models.dart';
-import '../theme/app_theme.dart';
-
-class _PdfMeta {
-  final File file;
-  final String bookName;
-  final String unitName;
-  final String sizeKb;
-
-  _PdfMeta(this.file, this.bookName, this.unitName, this.sizeKb);
-}
-
-class PdfBrowserScreen extends StatefulWidget {
-  const PdfBrowserScreen({super.key});
-
-  @override
-  State<PdfBrowserScreen> createState() => _PdfBrowserScreenState();
-}
-
-class _PdfBrowserScreenState extends State<PdfBrowserScreen> {
-  List<_PdfMeta> _pdfs = [];
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadPdfs();
-  }
-
-  Future<void> _loadPdfs() async {
-    try {
-      // 1. Load Local Cache mappings
-      final prefs = await SharedPreferences.getInstance();
-      final cachedStr = prefs.getString('cached_books');
-      List<Book> books = [];
-      if (cachedStr != null) {
-        final List decoded = jsonDecode(cachedStr);
-        books = decoded.map((e) => Book.fromJson(Map<String, dynamic>.from(e))).toList();
-      }
-
-      // 2. Scan physical directory
-      final dir = await getApplicationDocumentsDirectory();
-      final booksDir = Directory('${dir.path}/books');
-      
-      List<_PdfMeta> loadedList = [];
-
-      if (await booksDir.exists()) {
-        final List<FileSystemEntity> entities = await booksDir.list(recursive: true).toList();
-        final files = entities.whereType<File>().where((f) => f.path.endsWith('.pdf')).toList();
-
-        for (var file in files) {
-          final parentDirId = file.parent.path.split('/').last;
-          final unitIdRaw = file.path.split('/').last.replaceAll('.pdf', '');
-          
-          String mappedBookName = "Unknown Course ($parentDirId)";
-          String mappedUnitName = unitIdRaw;
-
-          // Attempt match
-          for (var b in books) {
-            if (b.id == parentDirId) {
-              mappedBookName = b.title;
-              for (var m in b.modules) {
-                for (var s in m.sections) {
-                  for (var u in s.units) {
-                    if (u.id == unitIdRaw) {
-                      mappedUnitName = u.title;
-                    }
-                  }
-                }
-              }
-              break;
-            }
-          }
-
-          final sizeKb = (file.lengthSync() / 1024).toStringAsFixed(1);
-          loadedList.add(_PdfMeta(file, mappedBookName, mappedUnitName, sizeKb));
-        }
-      }
-      
-      if (mounted) {
-        setState(() {
-          _pdfs = loadedList;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      print("Error loading PDFs: $e");
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  void _openPdf(_PdfMeta meta) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => Scaffold(
-          appBar: AppBar(title: Text(meta.unitName, style: const TextStyle(fontSize: 14))),
-          body: SfPdfViewer.file(meta.file),
-        )
-      )
-    );
-  }
-
-  Future<void> _sharePdf(_PdfMeta meta) async {
-    try {
-      final tempDir = await getTemporaryDirectory();
-      final safeName = "${meta.bookName} - ${meta.unitName}".replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
-      final tempFile = File('${tempDir.path}/$safeName.pdf');
-      
-      await meta.file.copy(tempFile.path);
-      await Share.shareXFiles([XFile(tempFile.path)], text: 'Check out this course unit: ${meta.unitName}');
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error sharing: $e')));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Downloaded Units', style: TextStyle(fontWeight: FontWeight.w900))),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue))
-          : _pdfs.isEmpty
-              ? const Center(child: Text('No PDFs found.', style: TextStyle(color: Colors.white54)))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _pdfs.length,
-                  itemBuilder: (context, index) {
-                    final meta = _pdfs[index];
-
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: AppTheme.glassDecoration,
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        leading: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(color: AppTheme.duoRed.withOpacity(0.2), shape: BoxShape.circle),
-                          child: const Icon(LucideIcons.fileText, color: AppTheme.duoRed, size: 20),
-                        ),
-                        title: Text(meta.unitName, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Colors.white)),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 4.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(meta.bookName, style: const TextStyle(fontSize: 11, color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 2),
-                              Text('${meta.sizeKb} KB', style: const TextStyle(fontSize: 10, color: Colors.white54)),
-                            ],
-                          ),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
+                if (!isFinished && currentStep != null)
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppTheme.duoBlue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppTheme.duoBlue.withOpacity(0.3), width: 2),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
                           children: [
-                            IconButton(
-                              icon: const Icon(LucideIcons.share, color: Colors.white70, size: 20),
-                              onPressed: () => _sharePdf(meta),
-                            ),
-                            IconButton(
-                              icon: const Icon(LucideIcons.externalLink, color: AppTheme.duoGreen, size: 20),
-                              onPressed: () => _openPdf(meta),
-                            ),
+                            const Icon(LucideIcons.brainCircuit, color: AppTheme.duoBlue, size: 24),
+                            const SizedBox(width: 8),
+                            Text('NEXT STEP', style: TextStyle(color: AppTheme.duoBlue.withOpacity(0.8), fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.2)),
                           ],
                         ),
+                        const SizedBox(height: 16),
+                        
+                        // Robust step rendering to handle AI placement mistakes
+                        if (currentStep.prompt != null && currentStep.prompt!.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16.0),
+                            child: MathMarkdown(data: currentStep.prompt!, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                          )
+                        else if (hasOptions && currentStep.stepText != null && currentStep.stepText!.isNotEmpty)
+                          // Fallback: AI mistakenly put the question inside `stepText` instead of `prompt`
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16.0),
+                            child: MathMarkdown(data: currentStep.stepText!, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                          )
+                        else if (!hasOptions && currentStep.stepText != null && currentStep.stepText!.isNotEmpty)
+                          MathMarkdown(data: currentStep.stepText!, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+
+                        if (hasOptions)
+                          ...currentStep.options!.map((opt) {
+                            final isSelected = _selectedOptionId == opt.id;
+                            Color borderColor = Colors.white12;
+                            Color bgColor = Colors.white.withOpacity(0.05);
+
+                            if (_isSubmitted) {
+                              if (opt.isCorrect) {
+                                borderColor = AppTheme.duoGreen;
+                                bgColor = AppTheme.duoGreen.withOpacity(0.2);
+                              } else if (isSelected && !opt.isCorrect) {
+                                borderColor = AppTheme.duoRed;
+                                bgColor = AppTheme.duoRed.withOpacity(0.2);
+                              } else {
+                                bgColor = Colors.transparent;
+                              }
+                            } else if (isSelected) {
+                              borderColor = AppTheme.duoBlue;
+                              bgColor = AppTheme.duoBlue.withOpacity(0.2);
+                            }
+
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: InkWell(
+                                onTap: _isSubmitted ? null : () => setState(() => _selectedOptionId = opt.id),
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: bgColor,
+                                    border: Border.all(color: borderColor, width: 2),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: MathMarkdown(data: opt.text, textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                      ],
+                    ),
+                  )
+              ],
+            ),
+          ),
+        ),
+
+        // Bottom Action Bar
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          decoration: BoxDecoration(
+            color: _isSubmitted 
+              ? (_isCorrect ? AppTheme.duoGreen.withOpacity(0.15) : AppTheme.duoRed.withOpacity(0.15))
+              : Colors.transparent,
+            border: Border(top: BorderSide(
+              color: _isSubmitted ? (_isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.white10, 
+              width: 2)
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (_isSubmitted)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(color: _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed, shape: BoxShape.circle),
+                        child: Icon(_isCorrect ? LucideIcons.check : LucideIcons.x, color: Colors.white, size: 24),
                       ),
-                    );
-                  },
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          _isCorrect ? 'Excellent!' : 'Incorrect.',
+                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                
+              if (isFinished)
+                 DuoButton(
+                    text: 'Complete Sequence',
+                    color: AppTheme.duoGreen,
+                    shadowColor: AppTheme.duoGreenDark,
+                    onPressed: widget.onComplete,
+                 )
+              else if (hasOptions)
+                 !_isSubmitted
+                    ? DuoButton(
+                        text: 'Check Step',
+                        color: _selectedOptionId != null ? AppTheme.duoBlue : Colors.grey.shade700,
+                        shadowColor: _selectedOptionId != null ? AppTheme.duoBlueDark : Colors.grey.shade800,
+                        onPressed: () {
+                          if (_selectedOptionId != null) _checkAnswer();
+                        },
+                      )
+                    : DuoButton(
+                        text: _isCorrect ? 'Continue' : 'Try Again',
+                        color: _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed,
+                        shadowColor: _isCorrect ? AppTheme.duoGreenDark : AppTheme.duoRedDark,
+                        onPressed: _isCorrect ? _handleNextInteractive : _resetInteraction,
+                      )
+              else
+                 DuoButton(
+                    text: 'Next Step',
+                    color: AppTheme.duoBlue,
+                    shadowColor: AppTheme.duoBlueDark,
+                    onPressed: _handleNextStatic,
+                 )
+            ],
+          ),
+        )
+      ],
     );
   }
 }
---- END OF FILE lib/screens/pdf_browser_screen.dart ---
+--- END OF FILE lib/widgets/slide_views/interactive_proof_view.dart ---

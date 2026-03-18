@@ -20,12 +20,35 @@ CRITICAL INSTRUCTIONS:
 
 Return ONLY valid JSON matching this exact structure:
 {
-  "id": "generated-book-...",
+  "id": "generated-book-123",
   "title": "Generated Course Title Here",
   "description": "Auto-generated book overview",
   "icon": "Book",
   "systemPrompt": "You are an expert tutor...",
-  "modules":[ ... ]
+  "modules":[
+    {
+      "id": "m1",
+      "title": "Module Title",
+      "description": "...",
+      "sections": [
+        {
+          "id": "s1",
+          "title": "Section Title",
+          "description": "...",
+          "color": "duo-blue",
+          "units": [
+            {
+              "id": "u1",
+              "title": "Unit Title",
+              "description": "...",
+              "startPage": 1,
+              "endPage": 5
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }''';
 
   static const String defaultPlan = '''You are an expert curriculum designer. Analyze the attached PDF chunk for the unit: "%unit_title%".
@@ -41,7 +64,7 @@ CRITICAL DUOLINGO-STYLE MICRO-LEARNING RULES:
    - 2 "fill_in_blank" slides (one question per slide).
    - 4 "quiz" (multiple choice) objective questions (one question per slide).
    - 1 "numerical" slide (if applicable, calculating a value).
-   - 1 "proof" or "step_by_step" interactive solution (if applicable).''';
+   - 1 "proof" or "step_by_step" interactive solution (ONE combined slide mapping the multiple stages of the problem).''';
 
   static const String defaultJson = '''SYSTEM PROMPT:
 %system_prompt%
@@ -53,16 +76,42 @@ You previously created this optimal learning plan for the unit "%unit_title%":
 Based strictly on this plan and the attached PDF chunk, generate the full JSON content.
 
 CRITICAL SCHEMA & MICRO-LEARNING RULES:
-1. EXTREME MICRO-LEARNING: "content" fields MUST be very short (1-3 sentences max).
-2. `slide.title` should be a short category (e.g. "Concept Check"), DO NOT duplicate the question text in the title.
-3. `fill_in_blank` slides: "content" MUST be a single plain-text string containing exactly three underscores (`___`). `blankAnswer` MUST be the exact single correct word/phrase (e.g. "generalization"), DO NOT provide alternatives like "a or b".
-4. `quiz` slides MUST have exactly 4 options. EACH option MUST have a non-empty `text` field containing the choice.
-5. `numerical` slides: "content" is the word problem. Must provide `numericAnswer` (a float/number) and optionally `numericTolerance`.
-6. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}).
-7. Markdown math is wrapped in \$ or \$\$.
+1. "theory" slides: `content` MUST be a few sentences explaining a concept.
+2. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Do not leave it empty! Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
+3. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word.
+4. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
+5. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}). Markdown math is wrapped in \$ or \$\$.
 
-Return ONLY valid JSON representing the "lessons" array. Format:
-{ "lessons": [ { "id": "...", "title": "...", "description": "...", "icon": "BookOpen", "slides": [ ... ] } ] }''';
+YOU MUST RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
+{
+  "lessons": [
+    {
+      "id": "l1", "title": "Lesson 1", "description": "...", "icon": "BookOpen",
+      "slides": [
+        {
+          "id": "s1", "type": "theory", "title": "Concept", "content": "Explanation here."
+        },
+        {
+          "id": "s2", "type": "quiz", "title": "Knowledge Check",
+          "content": "WHAT IS THE ACTUAL QUESTION TEXT HERE?",
+          "options": [
+            {"id": "a", "text": "Option 1", "isCorrect": true, "explanation": "..."}
+          ]
+        },
+        {
+          "id": "s3", "type": "step_by_step", "title": "Big Problem",
+          "content": "Overall problem description here...",
+          "interactiveSteps": [
+            { "stepText": "First, let's understand X." },
+            { "prompt": "What is the formula for X?", "options": [
+                {"id": "o1", "text": "Y", "isCorrect": true, "explanation": "..."}
+            ]}
+          ]
+        }
+      ]
+    }
+  ]
+}''';
 
   // Loaders
   static Future<String> getSkeletonPrompt() async {

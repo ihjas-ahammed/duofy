@@ -1292,22 +1292,19 @@ We use the Gemini API to analyze uploaded PDFs and generate interactive JSON les
 
 ## Project Structure Overview
 - `/lib/models`: Data structures (Book, Module, Lesson, Slide, InteractiveStep, etc.)
-- `/lib/screens`: Home, Dashboard (Path), Lesson Player, Completion Screen, PDF Generator, Practice, PDF Browser
+- `/lib/screens`: Home, Dashboard (Path), Lesson Player, Completion Screen, PDF Generator, Practice, PDF Browser, Advanced Prompts
 - `/lib/widgets`: Modular UI components (Custom Duolingo-style Buttons, Glass Panels, MathMarkdown)
 - `/lib/widgets/slide_views`: Individual renderers for theory, quiz, blanks, numericals, JS canvas, and Interactive Proofs.
-- `/lib/services`: AI, Database handling, and PDF splitting services
+- `/lib/services`: AI, Database handling, PDF splitting, and Dynamic Prompting services
 - `/lib/theme`: Colors and global styling matching the web platform
 
 ## Recent Updates & Design Process
-- **Micro-Learning Schema Enforcement**: Fixed an AI hallucination where `fill_in_blank` exercises rendered as raw JSON arrays by explicitly defining strict schema rules (`content` must only be a string with `___`). 
-- **Duolingo-Style Lesson Pacing**: Modified the AI Plan Prompts to aggressively prioritize slide count over text density. The AI is now strictly instructed to generate 1-3 sentences per slide, automatically splitting long theory subjects into numerous micro-slides to perfectly fit 720x1520 displays without heavy scrolling.
-- **Bulletproof JSON Instantiation**: The `app_models.dart` `fromJson` constructors leverage defensive string extractors (`_str()`, `_bool()`). This permanently fixes `type '_Map<String, dynamic>' is not a subtype of type 'String'` crashes caused when the AI bypasses the schema.
-- **True Lesson Progression**: The node unlocking system now accurately reads local shared preferences using `ProgressService`, locking upcoming lessons strictly based on your actual completion metrics instead of dummy indexes. 
-- **Unit Regeneration**: If you are unhappy with an AI-generated unit, you can easily tap "Regenerate Unit" in the `UnitHeader`. This clears out the AI nodes allowing you to re-run the prompt for better lessons.
-- **Downloaded PDFs Browser**: Added an integrated local PDF manager under Settings. You can browse, open natively, and export/share the chunked PDFs used by the application using `share_plus` and `SfPdfViewer`.
-- **Live Generation Tracking**: Instead of an indeterminate spinner, the `UnitHeader` receives real-time text updates detailing which stage of the LLM pipeline it is currently on.
-- **Two-Way Offline/Online Sync**: Realtime Database is now correctly synchronized with the local storage cache via pull-to-refresh on the Home Screen. The sync engine compares an `updatedAt` timestamp and pushes/pulls changes intelligently. 
-
+- **Async Course Generation Pipeline**: PDF metadata extraction is now moved to a background process. Users instantly see a "Generating Course" placeholder on their dashboard while AI extracts table of contents and page numbers.
+- **Enhanced JSON Prompts**: Resolved missing `pageNo` data by restructuring the Book Skeleton prompt output. Now `startPage` and `endPage` are explicitly requested per unit.
+- **Micro-Learning Logic Fixes**: Prevented all options from being evaluated as true on Quiz slides by guaranteeing deterministic unique IDs for option objects if the AI model drops them.
+- **Dynamic Prompt Engine**: Added `PromptService` and an Advanced Settings screen allowing users to edit the exact instructions sent to the AI. Uses variables like `%unit_title%` and `%filename%`.
+- **Improved PDF Browser**: The downloaded PDF chunk browser now intelligently maps raw directory IDs back to readable `Book Title` and `Unit Title`. 
+- **Bulletproof JSON Instantiation**: The `app_models.dart` `fromJson` constructors leverage defensive string extractors (`_str()`, `_bool()`).
 --- END OF FILE README.md ---
 
 --- START OF FILE lib/main.dart ---
@@ -1836,7 +1833,7 @@ class InteractiveStep {
 
 class Slide {
   final String id;
-  final String type; // theory, quiz, fill_in_blank, numerical, interactive_canvas, proof, step_by_step
+  final String type; 
   final String title;
   final String content;
   final String? interactiveCanvasHtml;
@@ -1901,9 +1898,14 @@ class QuizOption {
   QuizOption({required this.id, required this.text, required this.isCorrect, required this.explanation});
 
   factory QuizOption.fromJson(Map<String, dynamic> json) {
+    final rawId = _strOpt(json['id']);
+    final parsedText = _str(json['text'], 'Option');
+    // Generates a deterministic fallback id preventing multiple-selection logic bugs
+    final effectiveId = (rawId != null && rawId.isNotEmpty) ? rawId : parsedText.hashCode.toString();
+
     return QuizOption(
-      id: _str(json['id']),
-      text: _str(json['text']),
+      id: effectiveId,
+      text: parsedText,
       isCorrect: _bool(json['isCorrect']),
       explanation: _str(json['explanation']),
     );
@@ -2493,17 +2495,23 @@ import 'pdf_service.dart';
 import 'database_service.dart';
 import 'ai_service.dart';
 
+enum BookGenState { extracting, review, chunking, saving, error }
+
 class GenerationTask {
   final String id;
   final String title;
+  final File pdfFile;
+  BookGenState state;
   String statusMessage;
-  bool isError;
+  Book? skeletonBook;
+  String? errorMessage;
 
   GenerationTask({
     required this.id, 
     required this.title, 
-    this.statusMessage = 'Starting...', 
-    this.isError = false
+    required this.pdfFile,
+    this.state = BookGenState.extracting,
+    this.statusMessage = 'Extracting Metadata & Planning...', 
   });
 }
 
@@ -2518,55 +2526,74 @@ class GenerationManager extends ChangeNotifier {
   final DatabaseService _dbService = DatabaseService();
   final AiService _aiService = AiService();
 
-  // Stream for broadcasting globally updated books (e.g., when a unit finishes generating in the background)
+  // Stream for broadcasting globally updated books
   final StreamController<Book> _bookUpdateController = StreamController<Book>.broadcast();
   Stream<Book> get bookUpdates => _bookUpdateController.stream;
 
   VoidCallback? onBookGenerated;
 
-  /// Background Stage 2: Physically splits the PDF and saves the chunked book to DB
-  Future<void> startBackgroundSplitAndSave(File originalPdf, Book offsetBook) async {
-    print("\n[GenerationManager] === STARTING BACKGROUND SPLIT & SAVE ===");
-    print("[GenerationManager] Book ID: ${offsetBook.id}");
+  /// Background Stage 1: Async Book Skeleton Extraction
+  Future<void> startBookGeneration(File pdfFile, String filename) async {
+    final taskId = DateTime.now().millisecondsSinceEpoch.toString();
     final task = GenerationTask(
-      id: offsetBook.id, 
-      title: offsetBook.title,
-      statusMessage: 'Physically chunking PDF...'
+      id: taskId,
+      title: filename,
+      pdfFile: pdfFile,
     );
+    
     activeTasks.add(task);
+    notifyListeners();
+
+    try {
+      final skeletonBook = await _aiService.generateBookSkeleton(pdfFile, filename);
+      if (skeletonBook != null) {
+        task.skeletonBook = skeletonBook;
+        task.state = BookGenState.review;
+        task.statusMessage = 'Action Required: Review Splits';
+        notifyListeners();
+      }
+    } catch (e) {
+      task.state = BookGenState.error;
+      task.errorMessage = e.toString();
+      task.statusMessage = 'Failed to generate structure';
+      notifyListeners();
+    }
+  }
+
+  /// Background Stage 2: Physically splits the PDF and saves the chunked book to DB
+  Future<void> startBackgroundSplitAndSave(String taskId, File originalPdf, Book offsetBook) async {
+    final taskIndex = activeTasks.indexWhere((t) => t.id == taskId);
+    if (taskIndex == -1) return;
+    
+    final task = activeTasks[taskIndex];
+    task.state = BookGenState.chunking;
+    task.statusMessage = 'Splitting PDF chunks...';
     notifyListeners();
 
     try {
       final completeBook = await _pdfService.splitBookPdf(originalPdf, offsetBook);
 
+      task.state = BookGenState.saving;
       task.statusMessage = 'Saving to Database...';
       notifyListeners();
       
-      print("[GenerationManager] Split complete. Saving generated book to database.");
       await _dbService.saveGeneratedBook(completeBook);
       
       activeTasks.remove(task);
       notifyListeners();
       
-      print("[GenerationManager] === SPLIT & SAVE SUCCESSFUL ===\n");
       onBookGenerated?.call();
     } catch (e) {
-      print("[GenerationManager] ERROR during split & save: $e");
-      task.isError = true;
-      task.statusMessage = 'Error: ${e.toString()}';
+      task.state = BookGenState.error;
+      task.statusMessage = 'Error chunking file';
+      task.errorMessage = e.toString();
       notifyListeners();
     }
   }
 
   /// Background Stage 3: Generates deep lesson content for a specific Unit asynchronously
   Future<void> startUnitGeneration(Unit unit, Book book, int modIdx, int secIdx, int unitIdx) async {
-    if (activeUnitGenerations.containsKey(unit.id)) {
-      print("[GenerationManager] Unit ${unit.id} is already generating. Ignoring request.");
-      return;
-    }
-    
-    print("\n[GenerationManager] === STARTING UNIT GENERATION (BACKGROUND) ===");
-    print("[GenerationManager] Target Unit: ${unit.title} (ID: ${unit.id})");
+    if (activeUnitGenerations.containsKey(unit.id)) return;
     
     activeUnitGenerations[unit.id] = 'Initializing AI...';
     notifyListeners();
@@ -2577,7 +2604,6 @@ class GenerationManager extends ChangeNotifier {
         notifyListeners();
       });
       
-      print("[GenerationManager] Reconstructing book with generated unit...");
       final List<Unit> updatedUnits = List.from(book.modules[modIdx].sections[secIdx].units);
       updatedUnits[unitIdx] = updatedUnit;
       
@@ -2589,18 +2615,13 @@ class GenerationManager extends ChangeNotifier {
 
       final newBook = book.copyWith(modules: updatedModules);
 
-      print("[GenerationManager] Saving updated book to Database...");
       await _dbService.saveGeneratedBook(newBook);
       
       activeUnitGenerations.remove(unit.id);
       notifyListeners();
 
-      print("[GenerationManager] Broadcasting Book Update to UI Listeners.");
       _bookUpdateController.add(newBook);
-      print("[GenerationManager] === UNIT GENERATION SUCCESSFUL ===\n");
-
     } catch (e) {
-      print("[GenerationManager] ERROR during unit generation: $e");
       activeUnitGenerations[unit.id] = 'Error: $e';
       notifyListeners();
     }
@@ -2627,6 +2648,7 @@ import 'dart:async';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
+import 'prompt_service.dart';
 
 class AiService {
   Future<List<String>> _getKeys() async {
@@ -2701,29 +2723,10 @@ class AiService {
     final models = await _getModels();
     final pdfBytes = await pdfFile.readAsBytes();
     
-    print("[AiService] File: $filename | Size: ${pdfBytes.length} bytes");
-    print("[AiService] Fallback Chain: ${models.join(' -> ')}");
-
-    final prompt = TextPart('''
-You are an expert curriculum designer. Analyze the attached PDF document to create a high-level course skeleton.
-The user uploaded a file named: "$filename". 
-
-CRITICAL INSTRUCTIONS:
-1. Generate a suitable, professional `title` for this course based on the document content or the filename.
-2. The `startPage` and `endPage` MUST refer to the ABSOLUTE PDF PAGE INDEX (1-based index where the absolute first page of the file is 1), NOT the printed page number. Ensure they accurately reflect logical splits.
-3. You must extract the Table of Contents and structure it into Modules -> Sections -> Units. Each Section MUST have at least 1 Unit.
-4. In the custom `systemPrompt` string you generate, STRICTLY instruct the AI to use double-escaped backslashes for all LaTeX (e.g. \\\\frac instead of \\frac).
-
-Return ONLY valid JSON matching this exact structure:
-{
-  "id": "generated-book-${DateTime.now().millisecondsSinceEpoch}",
-  "title": "Generated Course Title Here",
-  "description": "Auto-generated book overview",
-  "icon": "Book",
-  "systemPrompt": "You are an expert tutor... Remember to double-escape LaTeX strings as \\\\frac ...",
-  "modules":[ ... ]
-}
-''');
+    final rawPrompt = await PromptService.getSkeletonPrompt();
+    final hydratedPrompt = rawPrompt.replaceAll('%filename%', filename);
+    
+    final prompt = TextPart(hydratedPrompt);
 
     Exception? lastException;
     
@@ -2746,7 +2749,6 @@ Return ONLY valid JSON matching this exact structure:
 
           if (response.text != null) {
             print("[AiService] Skeleton Generation Success! Took ${stopwatch.elapsed.inSeconds} seconds.");
-            print("[AiService] Response Length: ${response.text!.length} chars.");
             final jsonMap = _cleanAndDecodeJson(response.text!);
             print("[AiService] === SKELETON GENERATION COMPLETE ===\n");
             return Book.fromJson(jsonMap);
@@ -2765,7 +2767,6 @@ Return ONLY valid JSON matching this exact structure:
   }
 
   /// STAGE 2: Generates deep lesson content for a specific chunked PDF Unit
-  /// Utilizes a Two-Step sequence: 1. Plan structure. 2. Output detailed JSON.
   Future<Unit> generateUnitContent(Unit unit, Book bookContext, Function(String) onProgress) async {
     print("\n[AiService] === STARTING UNIT CONTENT GENERATION (TWO-STAGE) ===");
     print("[AiService] Target Unit: ${unit.title}");
@@ -2775,7 +2776,6 @@ Return ONLY valid JSON matching this exact structure:
     
     if (unit.pdfPath == null) throw Exception("No PDF chunk available for this unit.");
     final pdfBytes = await File(unit.pdfPath!).readAsBytes();
-    print("[AiService] PDF Chunk Size: ${pdfBytes.length} bytes");
 
     Exception? lastException;
 
@@ -2801,21 +2801,10 @@ Return ONLY valid JSON matching this exact structure:
           print("[AiService] [Stage 2.1] Requesting Pedagogical Lesson Plan...");
           onProgress("Analyzing PDF & Planning Layout...");
           
-          final planPrompt = TextPart('''
-You are an expert curriculum designer. Analyze the attached PDF chunk for the unit: "${unit.title}".
-Design a pedagogical lesson plan in PLAIN TEXT (do NOT output JSON yet).
-Break this unit down into multiple logical lessons based on the PDF content.
-
-CRITICAL DUOLINGO-STYLE MICRO-LEARNING RULES:
-1. MAXIMIZE the number of lessons. Break concepts down into extremely bite-sized pieces.
-2. For EACH lesson, list the exact sequence of slides.
-3. Theory/Concepts MUST be split across many small slides. NO MORE than 1-3 sentences per slide! Do not give large walls of text.
-4. Each lesson must contain:
-   - Several short Theory slides.
-   - 2 "fill_in_blank" slides (one question per slide).
-   - 4 "quiz" (multiple choice) objective questions (one question per slide).
-   - 1 "proof" or "step_by_step" interactive solution (if applicable).
-''');
+          final rawPlanPrompt = await PromptService.getPlanPrompt();
+          final hydratedPlanPrompt = rawPlanPrompt.replaceAll('%unit_title%', unit.title);
+          
+          final planPrompt = TextPart(hydratedPlanPrompt);
 
           final planStopwatch = Stopwatch()..start();
           final planResponse = await modelText.generateContent([
@@ -2827,9 +2816,6 @@ CRITICAL DUOLINGO-STYLE MICRO-LEARNING RULES:
           if (lessonPlan.isEmpty) throw Exception("AI failed to generate a lesson plan.");
           
           print("[AiService] [Stage 2.1] Lesson Plan Acquired in ${planStopwatch.elapsed.inSeconds}s.");
-          print("[AiService] --- PLAN PREVIEW ---");
-          print(lessonPlan.substring(0, lessonPlan.length > 200 ? 200 : lessonPlan.length).replaceAll('\n', ' '));
-          print("----------------------------");
 
           // ------------------------------------------------------------------
           // STEP 2: JSON Instantiation
@@ -2837,45 +2823,13 @@ CRITICAL DUOLINGO-STYLE MICRO-LEARNING RULES:
           print("[AiService] [Stage 2.2] Requesting JSON Instantiation based on Plan...");
           onProgress("Generating Interactive Content...");
 
-          final jsonPrompt = TextPart('''
-SYSTEM PROMPT:
-${bookContext.systemPrompt ?? "You are an expert tutor."}
+          final rawJsonPrompt = await PromptService.getJsonPrompt();
+          final hydratedJsonPrompt = rawJsonPrompt
+              .replaceAll('%system_prompt%', bookContext.systemPrompt ?? "You are an expert tutor.")
+              .replaceAll('%unit_title%', unit.title)
+              .replaceAll('%lesson_plan%', lessonPlan);
 
-TASK:
-You previously created this optimal learning plan for the unit "${unit.title}":
-$lessonPlan
-
-Based strictly on this plan and the attached PDF chunk, generate the full JSON content.
-
-CRITICAL SCHEMA & MICRO-LEARNING RULES:
-1. EXTREME MICRO-LEARNING: "content" fields MUST be very short (1-3 sentences max). If a topic is long, split it into multiple consecutive "theory" slides.
-2. `fill_in_blank` slides: "content" MUST be a single plain-text string containing exactly three underscores (`___`) for the blank. DO NOT output an array or JSON object for "content". 
-   -> Correct Example: {"id":"s1", "type":"fill_in_blank", "title":"Definition", "content":"The ability to progress from examples to broader conclusions is ___.", "blankAnswer":"generalization"}
-3. `quiz` slides MUST have exactly 4 options.
-4. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2} instead of \\frac{1}{2}).
-5. Markdown math is wrapped in \$ or \$\$.
-
-Return ONLY valid JSON representing the "lessons" array.
-Format:
-{
-  "lessons": [
-    {
-      "id": "l-${DateTime.now().millisecondsSinceEpoch}-1",
-      "title": "Lesson Title",
-      "description": "Short Description",
-      "icon": "BookOpen",
-      "slides": [
-        {
-          "id": "sl-1",
-          "type": "theory",
-          "title": "Slide Title",
-          "content": "Theory text here..."
-        }
-      ]
-    }
-  ]
-}
-''');
+          final jsonPrompt = TextPart(hydratedJsonPrompt);
 
           final jsonStopwatch = Stopwatch()..start();
           final response = await modelJson.generateContent([
@@ -2885,13 +2839,11 @@ Format:
 
           if (response.text != null) {
             print("[AiService] [Stage 2.2] JSON Generation Success! Took ${jsonStopwatch.elapsed.inSeconds}s.");
-            print("[AiService] Response Length: ${response.text!.length} chars.");
             
             onProgress("Parsing content...");
             final jsonMap = _cleanAndDecodeJson(response.text!);
             final lessonsData = jsonMap['lessons'] as List?;
             
-            // Safe parsing defense against map types casted as elements.
             final newLessons = lessonsData?.map((l) {
               if (l is Map) return Lesson.fromJson(Map<String, dynamic>.from(l));
               return null;
@@ -2914,6 +2866,137 @@ Format:
   }
 }
 --- END OF FILE lib/services/ai_service.dart ---
+
+--- START OF FILE lib/services/prompt_service.dart ---
+import 'package:shared_preferences/shared_preferences.dart';
+
+class PromptService {
+  static const String _kSkeleton = 'prompt_skeleton';
+  static const String _kPlan = 'prompt_plan';
+  static const String _kJson = 'prompt_json';
+
+  // The default robust AI prompts
+  static const String defaultSkeleton = '''You are an expert curriculum designer. Analyze the attached PDF document to create a high-level course skeleton.
+The user uploaded a file named: "%filename%". 
+
+CRITICAL INSTRUCTIONS:
+1. Generate a suitable, professional `title` for this course based on the document content or the filename.
+2. STRUCTURE HIERARCHY:
+   - "modules" represent the main Chapters.
+   - "sections" represent the subtopics within a chapter (e.g., 2.1, 2.2).
+   - "units" go deeper into the specific topics within each section.
+3. The `startPage` and `endPage` MUST refer to the ABSOLUTE PDF PAGE INDEX (1-based index where the absolute first page of the file is 1), NOT the printed page number. Ensure they accurately reflect logical splits.
+4. In the custom `systemPrompt` string you generate, STRICTLY instruct the AI to use double-escaped backslashes for all LaTeX (e.g. \\\\frac instead of \\frac).
+
+Return ONLY valid JSON matching this exact structure:
+{
+  "id": "generated-book-123",
+  "title": "Generated Course Title Here",
+  "description": "Auto-generated book overview",
+  "icon": "Book",
+  "systemPrompt": "You are an expert tutor...",
+  "modules":[
+    {
+      "id": "m1",
+      "title": "Module Title",
+      "description": "...",
+      "sections": [
+        {
+          "id": "s1",
+          "title": "Section Title",
+          "description": "...",
+          "color": "duo-blue",
+          "units": [
+            {
+              "id": "u1",
+              "title": "Unit Title",
+              "description": "...",
+              "startPage": 1,
+              "endPage": 5
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}''';
+
+  static const String defaultPlan = '''You are an expert curriculum designer. Analyze the attached PDF chunk for the unit: "%unit_title%".
+Design a pedagogical lesson plan in PLAIN TEXT (do NOT output JSON yet).
+Break this unit down into multiple logical lessons based on the PDF content.
+
+CRITICAL DUOLINGO-STYLE MICRO-LEARNING RULES:
+1. MAXIMIZE the number of lessons. Break concepts down into extremely bite-sized pieces.
+2. For EACH lesson, list the exact sequence of slides.
+3. Theory/Concepts MUST be split across many small slides. NO MORE than 1-3 sentences per slide!
+4. Each lesson must contain:
+   - Several short Theory slides.
+   - 2 "fill_in_blank" slides (one question per slide).
+   - 4 "quiz" (multiple choice) objective questions (one question per slide).
+   - 1 "numerical" slide (if applicable, calculating a value).
+   - 1 "proof" or "step_by_step" interactive solution (if applicable).''';
+
+  static const String defaultJson = '''SYSTEM PROMPT:
+%system_prompt%
+
+TASK:
+You previously created this optimal learning plan for the unit "%unit_title%":
+%lesson_plan%
+
+Based strictly on this plan and the attached PDF chunk, generate the full JSON content.
+
+CRITICAL SCHEMA & MICRO-LEARNING RULES:
+1. EXTREME MICRO-LEARNING: "content" fields MUST be very short (1-3 sentences max).
+2. `slide.title` should be a short category (e.g. "Concept Check"), DO NOT duplicate the question text in the title.
+3. `fill_in_blank` slides: "content" MUST be a single plain-text string containing exactly three underscores (`___`). `blankAnswer` MUST be the exact single correct word/phrase (e.g. "generalization"), DO NOT provide alternatives like "a or b".
+4. `quiz` slides MUST have exactly 4 options. EACH option MUST have an `id` (e.g. "a", "b", "c", "d"), a non-empty `text` field containing the choice, and an `explanation`.
+5. `numerical` slides: "content" is the word problem. Must provide `numericAnswer` (a float/number) and optionally `numericTolerance`.
+6. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}).
+7. Markdown math is wrapped in \$ or \$\$.
+
+Return ONLY valid JSON representing the "lessons" array. Format:
+{ "lessons": [ { "id": "...", "title": "...", "description": "...", "icon": "BookOpen", "slides": [ ... ] } ] }''';
+
+  // Loaders
+  static Future<String> getSkeletonPrompt() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_kSkeleton) ?? defaultSkeleton;
+  }
+
+  static Future<String> getPlanPrompt() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_kPlan) ?? defaultPlan;
+  }
+
+  static Future<String> getJsonPrompt() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_kJson) ?? defaultJson;
+  }
+
+  // Savers
+  static Future<void> saveSkeletonPrompt(String text) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kSkeleton, text.trim());
+  }
+
+  static Future<void> savePlanPrompt(String text) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kPlan, text.trim());
+  }
+
+  static Future<void> saveJsonPrompt(String text) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kJson, text.trim());
+  }
+
+  static Future<void> resetToDefaults() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kSkeleton);
+    await prefs.remove(_kPlan);
+    await prefs.remove(_kJson);
+  }
+}
+--- END OF FILE lib/services/prompt_service.dart ---
 
 --- START OF FILE lib/widgets/duo_button.dart ---
 import 'package:flutter/material.dart';
@@ -3151,75 +3234,6 @@ class MathMarkdown extends StatelessWidget {
   }
 }
 --- END OF FILE lib/widgets/math_markdown.dart ---
-
---- START OF FILE lib/widgets/generating_book_tile.dart ---
-import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import '../services/generation_manager.dart';
-import '../theme/app_theme.dart';
-
-class GeneratingBookTile extends StatelessWidget {
-  final GenerationTask task;
-
-  const GeneratingBookTile({super.key, required this.task});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: task.isError ? () => GenerationManager.instance.dismissTask(task.id) : null,
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppTheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: task.isError ? AppTheme.duoRed : AppTheme.duoViolet, width: 2), 
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children:[
-            Expanded(
-              child: Center(
-                child: task.isError
-                  ? const Icon(LucideIcons.alertTriangle, size: 32, color: AppTheme.duoRed)
-                  : const SizedBox(
-                      width: 28, 
-                      height: 28, 
-                      child: CircularProgressIndicator(color: AppTheme.duoViolet, strokeWidth: 3)
-                    ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4.0),
-              child: Text(
-                task.title,
-                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: Colors.white),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Text(
-                task.isError ? 'Tap to dismiss' : task.statusMessage,
-                style: TextStyle(
-                  fontSize: 9, 
-                  color: task.isError ? AppTheme.duoRed : Colors.white54,
-                  fontWeight: FontWeight.bold
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
-        ),
-      ),
-    );
-  }
-}
---- END OF FILE lib/widgets/generating_book_tile.dart ---
 
 --- START OF FILE lib/widgets/string_list_manager.dart ---
 import 'package:flutter/material.dart';
@@ -3796,6 +3810,128 @@ class UnitHeader extends StatelessWidget {
   }
 }
 --- END OF FILE lib/widgets/unit_header.dart ---
+
+--- START OF FILE lib/widgets/generating_book_card.dart ---
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../services/generation_manager.dart';
+import '../theme/app_theme.dart';
+
+class GeneratingBookCard extends StatelessWidget {
+  final GenerationTask task;
+  final VoidCallback onTap;
+
+  const GeneratingBookCard({
+    super.key, 
+    required this.task, 
+    required this.onTap
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Color borderColor = AppTheme.duoViolet;
+    IconData statusIcon = LucideIcons.loader;
+    Color iconColor = AppTheme.duoViolet;
+    
+    if (task.state == BookGenState.error) {
+      borderColor = AppTheme.duoRed;
+      iconColor = AppTheme.duoRed;
+      statusIcon = LucideIcons.alertTriangle;
+    } else if (task.state == BookGenState.review) {
+      borderColor = AppTheme.duoOrange;
+      iconColor = AppTheme.duoOrange;
+      statusIcon = LucideIcons.checkCircle2;
+    }
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 160,
+        margin: const EdgeInsets.only(bottom: 24),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: borderColor, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            )
+          ],
+        ),
+        clipBehavior: Clip.hardEdge,
+        child: Row(
+          children: [
+            Container(
+              width: 120,
+              decoration: BoxDecoration(
+                color: borderColor.withOpacity(0.15),
+                border: Border(right: BorderSide(color: borderColor, width: 2)),
+              ),
+              child: Center(
+                child: task.state == BookGenState.extracting || task.state == BookGenState.chunking || task.state == BookGenState.saving
+                  ? const SizedBox(
+                      width: 40, 
+                      height: 40, 
+                      child: CircularProgressIndicator(color: AppTheme.duoViolet, strokeWidth: 4)
+                    )
+                  : Icon(statusIcon, size: 50, color: iconColor),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      task.title,
+                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white, height: 1.2),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      task.statusMessage,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold, 
+                        fontSize: 13, 
+                        color: task.state == BookGenState.error ? AppTheme.duoRed : Colors.white70
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (task.state == BookGenState.error && task.errorMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4.0),
+                        child: Text(
+                          task.errorMessage!,
+                          style: const TextStyle(fontSize: 10, color: Colors.white38),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    if (task.state == BookGenState.review)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8.0),
+                        child: Text(
+                          'TAP TO CONTINUE',
+                          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: AppTheme.duoOrange, letterSpacing: 1.5),
+                        ),
+                      )
+                  ],
+                ),
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+--- END OF FILE lib/widgets/generating_book_card.dart ---
 
 --- START OF FILE lib/widgets/slide_views/interactive_webview.dart ---
 import 'package:flutter/material.dart';
@@ -4774,10 +4910,11 @@ import '../services/progress_service.dart';
 import '../services/generation_manager.dart';
 import '../theme/app_theme.dart';
 import '../widgets/book_card.dart';
-import '../widgets/generating_book_tile.dart';
+import '../widgets/generating_book_card.dart';
 import 'main_layout_screen.dart';
 import 'settings_screen.dart';
 import 'generate_book_screen.dart';
+import 'pdf_split_preview_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -4876,35 +5013,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         )
                       ],
                     ),
-
-                    if (activeTasks.isNotEmpty)
-                      SliverToBoxAdapter(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                              child: Text('Generating...', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white54)),
-                            ),
-                            SizedBox(
-                              height: 140,
-                              child: ListView.builder(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                scrollDirection: Axis.horizontal,
-                                itemCount: activeTasks.length,
-                                itemBuilder: (context, index) {
-                                  return Container(
-                                    width: 140,
-                                    margin: const EdgeInsets.symmetric(horizontal: 8),
-                                    child: GeneratingBookTile(task: activeTasks[index])
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                          ],
-                        ),
-                      ),
                     
                     if (books.isEmpty && activeTasks.isEmpty)
                       SliverToBoxAdapter(
@@ -4913,7 +5021,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Center(
                             child: Column(
                               children: [
-                                Icon(LucideIcons.bookDown, size: 80, color: Colors.white24),
+                                const Icon(LucideIcons.bookDown, size: 80, color: Colors.white24),
                                 const SizedBox(height: 16),
                                 const Text('No courses found.\nTap the + button to create one.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontSize: 16)),
                               ],
@@ -4922,24 +5030,45 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
 
-                    if (books.isNotEmpty)
+                    if (books.isNotEmpty || activeTasks.isNotEmpty)
                       SliverPadding(
                         padding: const EdgeInsets.symmetric(horizontal: 24),
                         sliver: SliverList(
                           delegate: SliverChildBuilderDelegate(
                             (context, index) {
-                              final book = books[index];
-                              return BookCard(
-                                book: book,
-                                progress: progressMap[book.id] ?? 0.0,
-                                onTap: () {
-                                  Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
-                                    .then((_) => _loadBooks());
-                                },
-                                onDelete: () => _deleteBook(book.id),
-                              );
+                              if (index < activeTasks.length) {
+                                final task = activeTasks[index];
+                                return GeneratingBookCard(
+                                  task: task,
+                                  onTap: () {
+                                    if (task.state == BookGenState.review && task.skeletonBook != null) {
+                                      Navigator.push(context, MaterialPageRoute(
+                                        builder: (_) => PdfSplitPreviewScreen(
+                                          taskId: task.id,
+                                          originalPdf: task.pdfFile,
+                                          skeletonBook: task.skeletonBook!,
+                                        )
+                                      ));
+                                    } else if (task.state == BookGenState.error) {
+                                      GenerationManager.instance.dismissTask(task.id);
+                                    }
+                                  }
+                                );
+                              } else {
+                                final bookIndex = index - activeTasks.length;
+                                final book = books[bookIndex];
+                                return BookCard(
+                                  book: book,
+                                  progress: progressMap[book.id] ?? 0.0,
+                                  onTap: () {
+                                    Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
+                                      .then((_) => _loadBooks());
+                                  },
+                                  onDelete: () => _deleteBook(book.id),
+                                );
+                              }
                             },
-                            childCount: books.length,
+                            childCount: activeTasks.length + books.length,
                           ),
                         ),
                       ),
@@ -5514,6 +5643,7 @@ import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/string_list_manager.dart';
 import 'pdf_browser_screen.dart';
+import 'advanced_prompts_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -5647,16 +5777,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children:[
-            SizedBox(
-              width: double.infinity,
-              child: DuoButton(
-                text: 'Browse Downloaded PDFs',
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const PdfBrowserScreen()));
-                },
-                color: AppTheme.duoViolet,
-                shadowColor: AppTheme.duoVioletDark,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: DuoButton(
+                    text: 'PDF Browser',
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const PdfBrowserScreen()));
+                    },
+                    color: AppTheme.duoViolet,
+                    shadowColor: AppTheme.duoVioletDark,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: DuoButton(
+                    text: 'Advanced',
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const AdvancedPromptsScreen()));
+                    },
+                    color: AppTheme.duoOrange,
+                    shadowColor: AppTheme.duoOrangeDark,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 32),
 
@@ -6649,10 +6793,9 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import '../services/ai_service.dart';
+import '../services/generation_manager.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
-import 'pdf_split_preview_screen.dart';
 
 class GenerateBookScreen extends StatefulWidget {
   const GenerateBookScreen({super.key});
@@ -6662,10 +6805,7 @@ class GenerateBookScreen extends StatefulWidget {
 }
 
 class _GenerateBookScreenState extends State<GenerateBookScreen> {
-  final AiService _aiService = AiService();
-  
   File? _selectedFile;
-  bool _isGenerating = false;
 
   Future<void> _pickFile() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -6680,37 +6820,17 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
     }
   }
 
-  Future<void> _generate() async {
+  void _generate() {
     if (_selectedFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a PDF file first.')));
       return;
     }
 
-    setState(() => _isGenerating = true);
-
-    try {
-      // Stage 1: Generate Skeleton
-      final filename = _selectedFile!.path.split('/').last;
-      final skeletonBook = await _aiService.generateBookSkeleton(_selectedFile!, filename);
-      
-      if (skeletonBook != null && mounted) {
-        // Pause generation and push to Preview Screen for confirmation
-        Navigator.pushReplacement(
-          context, 
-          MaterialPageRoute(
-            builder: (_) => PdfSplitPreviewScreen(
-              originalPdf: _selectedFile!,
-              skeletonBook: skeletonBook,
-            )
-          )
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
-        setState(() => _isGenerating = false);
-      }
-    }
+    final filename = _selectedFile!.path.split('/').last;
+    
+    // Kick off async metadata extraction immediately and return to home
+    GenerationManager.instance.startBookGeneration(_selectedFile!, filename);
+    Navigator.pop(context);
   }
 
   @override
@@ -6741,22 +6861,12 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
               ),
             const Spacer(),
             
-            if (_isGenerating)
-              const Column(
-                children: [
-                  CircularProgressIndicator(color: AppTheme.duoGreen),
-                  SizedBox(height: 16),
-                  Text('Extracting Metadata...', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
-                  SizedBox(height: 32),
-                ],
-              )
-            else
-              DuoButton(
-                text: 'Analyze PDF',
-                onPressed: _generate,
-                color: AppTheme.duoGreen,
-                shadowColor: AppTheme.duoGreenDark,
-              ),
+            DuoButton(
+              text: 'Analyze PDF',
+              onPressed: _generate,
+              color: AppTheme.duoGreen,
+              shadowColor: AppTheme.duoGreenDark,
+            ),
           ],
         ),
       ),
@@ -6789,11 +6899,13 @@ class _UnitEditor {
 }
 
 class PdfSplitPreviewScreen extends StatefulWidget {
+  final String taskId;
   final File originalPdf;
   final Book skeletonBook;
 
   const PdfSplitPreviewScreen({
     super.key,
+    required this.taskId,
     required this.originalPdf,
     required this.skeletonBook,
   });
@@ -6845,11 +6957,11 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
 
     final offsetBook = widget.skeletonBook.copyWith(modules: updatedModules);
 
-    // Fire off the background task
-    GenerationManager.instance.startBackgroundSplitAndSave(widget.originalPdf, offsetBook);
+    // Continue background task
+    GenerationManager.instance.startBackgroundSplitAndSave(widget.taskId, widget.originalPdf, offsetBook);
 
-    // Pop everything to get back to the home screen
-    Navigator.popUntil(context, (route) => route.isFirst);
+    // Pop back to home screen where we came from
+    Navigator.pop(context);
   }
 
   @override
@@ -7019,12 +7131,24 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
 
 --- START OF FILE lib/screens/pdf_browser_screen.dart ---
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/app_models.dart';
 import '../theme/app_theme.dart';
+
+class _PdfMeta {
+  final File file;
+  final String bookName;
+  final String unitName;
+  final String sizeKb;
+
+  _PdfMeta(this.file, this.bookName, this.unitName, this.sizeKb);
+}
 
 class PdfBrowserScreen extends StatefulWidget {
   const PdfBrowserScreen({super.key});
@@ -7034,7 +7158,7 @@ class PdfBrowserScreen extends StatefulWidget {
 }
 
 class _PdfBrowserScreenState extends State<PdfBrowserScreen> {
-  List<File> _pdfs = [];
+  List<_PdfMeta> _pdfs = [];
   bool _isLoading = true;
 
   @override
@@ -7045,40 +7169,95 @@ class _PdfBrowserScreenState extends State<PdfBrowserScreen> {
 
   Future<void> _loadPdfs() async {
     try {
+      // 1. Load Local Cache mappings
+      final prefs = await SharedPreferences.getInstance();
+      final cachedStr = prefs.getString('cached_books');
+      List<Book> books = [];
+      if (cachedStr != null) {
+        final List decoded = jsonDecode(cachedStr);
+        books = decoded.map((e) => Book.fromJson(Map<String, dynamic>.from(e))).toList();
+      }
+
+      // 2. Scan physical directory
       final dir = await getApplicationDocumentsDirectory();
       final booksDir = Directory('${dir.path}/books');
+      
+      List<_PdfMeta> loadedList = [];
+
       if (await booksDir.exists()) {
         final List<FileSystemEntity> entities = await booksDir.list(recursive: true).toList();
-        _pdfs = entities.whereType<File>().where((f) => f.path.endsWith('.pdf')).toList();
+        final files = entities.whereType<File>().where((f) => f.path.endsWith('.pdf')).toList();
+
+        for (var file in files) {
+          final parentDirId = file.parent.path.split('/').last;
+          final unitIdRaw = file.path.split('/').last.replaceAll('.pdf', '');
+          
+          String mappedBookName = "Unknown Course ($parentDirId)";
+          String mappedUnitName = unitIdRaw;
+
+          // Attempt match
+          for (var b in books) {
+            if (b.id == parentDirId) {
+              mappedBookName = b.title;
+              for (var m in b.modules) {
+                for (var s in m.sections) {
+                  for (var u in s.units) {
+                    if (u.id == unitIdRaw) {
+                      mappedUnitName = u.title;
+                    }
+                  }
+                }
+              }
+              break;
+            }
+          }
+
+          final sizeKb = (file.lengthSync() / 1024).toStringAsFixed(1);
+          loadedList.add(_PdfMeta(file, mappedBookName, mappedUnitName, sizeKb));
+        }
+      }
+      
+      if (mounted) {
+        setState(() {
+          _pdfs = loadedList;
+          _isLoading = false;
+        });
       }
     } catch (e) {
       print("Error loading PDFs: $e");
-    }
-    if (mounted) {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _openPdf(File file) {
+  void _openPdf(_PdfMeta meta) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => Scaffold(
-          appBar: AppBar(title: Text(file.path.split('/').last, style: const TextStyle(fontSize: 14))),
-          body: SfPdfViewer.file(file),
+          appBar: AppBar(title: Text(meta.unitName, style: const TextStyle(fontSize: 14))),
+          body: SfPdfViewer.file(meta.file),
         )
       )
     );
   }
 
-  void _sharePdf(File file) {
-    Share.shareXFiles([XFile(file.path)], text: 'Check out this course unit PDF!');
+  Future<void> _sharePdf(_PdfMeta meta) async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final safeName = "${meta.bookName} - ${meta.unitName}".replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
+      final tempFile = File('${tempDir.path}/$safeName.pdf');
+      
+      await meta.file.copy(tempFile.path);
+      await Share.shareXFiles([XFile(tempFile.path)], text: 'Check out this course unit: ${meta.unitName}');
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error sharing: $e')));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Downloaded PDFs', style: TextStyle(fontWeight: FontWeight.w900))),
+      appBar: AppBar(title: const Text('Downloaded Units', style: TextStyle(fontWeight: FontWeight.w900))),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue))
           : _pdfs.isEmpty
@@ -7087,32 +7266,40 @@ class _PdfBrowserScreenState extends State<PdfBrowserScreen> {
                   padding: const EdgeInsets.all(16),
                   itemCount: _pdfs.length,
                   itemBuilder: (context, index) {
-                    final file = _pdfs[index];
-                    final fileName = file.path.split('/').last;
-                    final parentDir = file.parent.path.split('/').last;
-                    final sizeKb = (file.lengthSync() / 1024).toStringAsFixed(1);
+                    final meta = _pdfs[index];
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: AppTheme.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white12),
-                      ),
+                      decoration: AppTheme.glassDecoration,
                       child: ListTile(
-                        leading: const Icon(LucideIcons.fileText, color: AppTheme.duoRed),
-                        title: Text(fileName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white)),
-                        subtitle: Text('Course: $parentDir\nSize: $sizeKb KB', style: const TextStyle(fontSize: 12, color: Colors.white54)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        leading: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(color: AppTheme.duoRed.withOpacity(0.2), shape: BoxShape.circle),
+                          child: const Icon(LucideIcons.fileText, color: AppTheme.duoRed, size: 20),
+                        ),
+                        title: Text(meta.unitName, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Colors.white)),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 4.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(meta.bookName, style: const TextStyle(fontSize: 11, color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 2),
+                              Text('${meta.sizeKb} KB', style: const TextStyle(fontSize: 10, color: Colors.white54)),
+                            ],
+                          ),
+                        ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              icon: const Icon(LucideIcons.share, color: AppTheme.duoBlue, size: 20),
-                              onPressed: () => _sharePdf(file),
+                              icon: const Icon(LucideIcons.share, color: Colors.white70, size: 20),
+                              onPressed: () => _sharePdf(meta),
                             ),
                             IconButton(
                               icon: const Icon(LucideIcons.externalLink, color: AppTheme.duoGreen, size: 20),
-                              onPressed: () => _openPdf(file),
+                              onPressed: () => _openPdf(meta),
                             ),
                           ],
                         ),
@@ -7124,6 +7311,149 @@ class _PdfBrowserScreenState extends State<PdfBrowserScreen> {
   }
 }
 --- END OF FILE lib/screens/pdf_browser_screen.dart ---
+
+--- START OF FILE lib/screens/advanced_prompts_screen.dart ---
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../theme/app_theme.dart';
+import '../services/prompt_service.dart';
+import '../widgets/duo_button.dart';
+
+class AdvancedPromptsScreen extends StatefulWidget {
+  const AdvancedPromptsScreen({super.key});
+
+  @override
+  State<AdvancedPromptsScreen> createState() => _AdvancedPromptsScreenState();
+}
+
+class _AdvancedPromptsScreenState extends State<AdvancedPromptsScreen> {
+  final _skeletonCtrl = TextEditingController();
+  final _planCtrl = TextEditingController();
+  final _jsonCtrl = TextEditingController();
+
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPrompts();
+  }
+
+  Future<void> _loadPrompts() async {
+    _skeletonCtrl.text = await PromptService.getSkeletonPrompt();
+    _planCtrl.text = await PromptService.getPlanPrompt();
+    _jsonCtrl.text = await PromptService.getJsonPrompt();
+    setState(() => _isLoading = false);
+  }
+
+  Future<void> _savePrompts() async {
+    await PromptService.saveSkeletonPrompt(_skeletonCtrl.text);
+    await PromptService.savePlanPrompt(_planCtrl.text);
+    await PromptService.saveJsonPrompt(_jsonCtrl.text);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Custom prompts saved!')));
+      Navigator.pop(context);
+    }
+  }
+
+  Future<void> _resetToDefaults() async {
+    await PromptService.resetToDefaults();
+    await _loadPrompts();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Restored defaults.')));
+    }
+  }
+
+  Widget _buildEditor(String title, String description, TextEditingController controller) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      decoration: AppTheme.glassDecoration,
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          iconColor: AppTheme.duoOrange,
+          collapsedIconColor: Colors.white54,
+          title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
+          subtitle: Text(description, style: const TextStyle(fontSize: 12, color: Colors.white54)),
+          childrenPadding: const EdgeInsets.all(16),
+          children: [
+            TextField(
+              controller: controller,
+              maxLines: 12,
+              style: const TextStyle(fontSize: 12, color: Colors.white70, fontFamily: 'monospace'),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.black45,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator(color: AppTheme.duoOrange)));
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Advanced Prompts', style: TextStyle(fontWeight: FontWeight.w900)),
+        actions: [
+          IconButton(
+            icon: const Icon(LucideIcons.refreshCcw, color: AppTheme.duoRed),
+            onPressed: _resetToDefaults,
+            tooltip: 'Reset Defaults',
+          )
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(bottom: 24, left: 8, right: 8),
+              child: Text(
+                'Edit the exact instructions sent to the AI. Use variables like %filename%, %unit_title% to inject dynamic data.',
+                style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
+              ),
+            ),
+            
+            _buildEditor(
+              'Stage 1: Book Skeleton', 
+              'Generates the TOC mapping. Variables: %filename%', 
+              _skeletonCtrl
+            ),
+            _buildEditor(
+              'Stage 2.1: Lesson Plan', 
+              'Generates pedagogical layout. Variables: %unit_title%', 
+              _planCtrl
+            ),
+            _buildEditor(
+              'Stage 2.2: JSON Extraction', 
+              'Enforces strict schema. Variables: %unit_title%, %system_prompt%, %lesson_plan%', 
+              _jsonCtrl
+            ),
+            
+            const SizedBox(height: 16),
+            DuoButton(
+              text: 'Save Prompts',
+              color: AppTheme.duoOrange,
+              shadowColor: AppTheme.duoOrangeDark,
+              onPressed: _savePrompts,
+            ),
+            const SizedBox(height: 40), // Safe area
+          ],
+        ),
+      ),
+    );
+  }
+}
+--- END OF FILE lib/screens/advanced_prompts_screen.dart ---
 
 --- START OF FILE test/widget_test.dart ---
 // This is a basic Flutter widget test.

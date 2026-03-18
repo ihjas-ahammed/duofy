@@ -9,7 +9,6 @@ import '../widgets/slide_views/quiz_view.dart';
 import '../widgets/slide_views/fill_in_blank_view.dart';
 import '../widgets/slide_views/numerical_view.dart';
 import '../widgets/slide_views/interactive_proof_view.dart';
-import '../widgets/slide_views/step_by_step_view.dart';
 import 'lesson_complete_screen.dart';
 
 class PracticeSessionScreen extends StatefulWidget {
@@ -136,7 +135,16 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     bool correct = false;
 
     if (slide.type == 'quiz' && _selectedQuizOption != null) {
-      correct = slide.options!.firstWhere((o) => o.id == _selectedQuizOption).isCorrect;
+      final selectedOpt = slide.options!.firstWhere((o) => o.id == _selectedQuizOption);
+      correct = selectedOpt.isCorrect;
+      
+      // Fallback robust check
+      if (!correct) {
+        final correctOpts = slide.options!.where((o) => o.isCorrect);
+        if (correctOpts.any((c) => c.text.trim().toLowerCase() == selectedOpt.text.trim().toLowerCase())) {
+          correct = true;
+        }
+      }
     } else if (slide.type == 'fill_in_blank') {
       correct = _blankInput.trim().toLowerCase() == slide.blankAnswer?.toLowerCase().replaceAll(r'\', '');
     } else if (slide.type == 'numerical') {
@@ -201,19 +209,8 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
         isCorrect: _isCorrect,
         onChanged: (val) => setState(() => _numericInput = val),
       );
-    } else if (slide.type == 'proof') {
+    } else if (slide.type == 'proof' || slide.type == 'step_by_step') {
       return InteractiveProofView(
-        slide: slide,
-        onComplete: () {
-          setState(() {
-            _isCorrect = true;
-            _answered = true;
-          });
-          _processNext();
-        },
-      );
-    } else if (slide.type == 'step_by_step') {
-      return StepByStepView(
         slide: slide,
         onComplete: () {
           setState(() {

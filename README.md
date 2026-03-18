@@ -34,12 +34,8 @@ We use the Gemini API to analyze uploaded PDFs and generate interactive JSON les
 - `/lib/theme`: Colors and global styling matching the web platform
 
 ## Recent Updates & Design Process
-- **Dynamic Prompt Engine**: Added `PromptService` and an Advanced Settings screen allowing users to edit the exact instructions sent to the AI. Uses variables like `%unit_title%` and `%filename%`.
-- **Improved PDF Browser**: The downloaded PDF chunk browser now intelligently maps raw directory IDs back to readable `Book Title` and `Unit Title`. When sharing, it copies the file to a clean, readable filename to improve the UX.
-- **Deep Structure Generation**: Modified the skeleton AI prompts to fully utilize the Book -> Module (Chapter) -> Section (Subtopic) -> Unit (Deep Topic) hierarchy natively.
-- **UI & Generation Fixes**: 
-  - Eliminated "Empty Option" bugs in Quizzes by enforcing strict text presence in AI prompts and adding model-level fallbacks.
-  - Stopped question titles from duplicating the question text.
-  - Eliminated the `a (or b)` hallucination from `fill_in_blank` answers.
-  - Explicitly integrated the `numerical` slide type into the AI generation loop for calculating physics/math outputs.
-- **Bulletproof JSON Instantiation**: The `app_models.dart` `fromJson` constructors leverage defensive string extractors (`_str()`, `_bool()`).
+- **Adaptive Psychological Progress Bar**: Replaced static loading spinners with a logarithmic progress bar (Zeno's paradox algorithm) that predicts processing time based on historical AI generation averages and file size, making long waits feel significantly shorter.
+- **Robust Multiple Choice Engine**: Implemented cross-verification on `QuizOption` selections to prevent correct answers from being flagged as incorrect when the AI generates redundant or un-indexed JSON structures. Enforces exactly ONE correct option at the instantiation layer.
+- **Unified Interactive Step UI**: Deprecated the clumsy `step_by_step` slide splitting. Big questions now inherently utilize the polished, progressive disclosure format of the `InteractiveProofView`.
+- **Async Course Generation Pipeline**: PDF metadata extraction is now moved to a background process. Users instantly see a "Generating Course" placeholder on their dashboard while AI extracts table of contents and page numbers.
+- **Enhanced JSON Prompts**: Resolved missing `pageNo` data by restructuring the Book Skeleton prompt output. Now `startPage` and `endPage` are explicitly requested per unit.

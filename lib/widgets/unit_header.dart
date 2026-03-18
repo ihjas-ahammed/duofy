@@ -4,11 +4,12 @@ import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../services/generation_manager.dart';
 import 'duo_button.dart';
+import 'psychological_progress_bar.dart';
 
 class UnitHeader extends StatelessWidget {
   final Unit unit;
   final bool isGenerated;
-  final String? loadingStatus;
+  final UnitGenTask? generationTask;
   final VoidCallback onGenerate;
   final VoidCallback onClear;
 
@@ -16,14 +17,15 @@ class UnitHeader extends StatelessWidget {
     super.key,
     required this.unit,
     required this.isGenerated,
-    required this.loadingStatus,
+    required this.generationTask,
     required this.onGenerate,
     required this.onClear,
   });
 
   @override
   Widget build(BuildContext context) {
-    bool isError = loadingStatus != null && loadingStatus!.startsWith('Error');
+    bool isError = generationTask?.isError ?? false;
+    String? status = generationTask?.status;
 
     return AppTheme.applyGlassBlur(
       child: Padding(
@@ -49,12 +51,12 @@ class UnitHeader extends StatelessWidget {
             if (!isGenerated)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
-                child: loadingStatus != null
+                child: generationTask != null
                     ? (isError 
                         ? Column(
                             children: [
                               Text(
-                                loadingStatus!,
+                                status ?? 'Unknown Error',
                                 style: const TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold, fontSize: 10),
                                 textAlign: TextAlign.center,
                                 maxLines: 2,
@@ -75,20 +77,11 @@ class UnitHeader extends StatelessWidget {
                               ),
                             ],
                           )
-                        : Column(
-                            children: [
-                              const SizedBox(
-                                width: 20, height: 20,
-                                child: CircularProgressIndicator(color: AppTheme.duoViolet, strokeWidth: 3),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                loadingStatus!, 
-                                style: const TextStyle(color: AppTheme.duoViolet, fontWeight: FontWeight.bold, fontSize: 10),
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                              )
-                            ],
+                        : PsychologicalProgressBar(
+                            estimatedDuration: generationTask!.estimatedDuration,
+                            startTime: generationTask!.startTime,
+                            isCircular: true,
+                            label: status ?? 'Loading...',
                           )
                       )
                     : SizedBox(

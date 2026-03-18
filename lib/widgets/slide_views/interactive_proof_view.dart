@@ -37,9 +37,14 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
 
   void _handleNextStatic() {
     final currentStep = _steps[_currentStepIndex];
-    if (currentStep.stepText != null) {
+    if (currentStep.stepText != null && currentStep.stepText!.isNotEmpty) {
       setState(() {
         _revealedSteps.add(currentStep.stepText!);
+        _currentStepIndex++;
+      });
+    } else {
+      // Failsafe if stepText is empty
+      setState(() {
         _currentStepIndex++;
       });
     }
@@ -62,10 +67,17 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
     final currentStep = _steps[_currentStepIndex];
     final correctOpt = currentStep.options?.firstWhere((o) => o.isCorrect);
     
-    final textToReveal = currentStep.stepText ?? correctOpt?.text ?? '';
+    // Sometimes the AI puts the question in stepText. If it did, don't reveal the question as the "learned fact".
+    // Rely on the correct option text instead.
+    String textToReveal = '';
+    if (currentStep.stepText != null && currentStep.stepText!.isNotEmpty && currentStep.prompt != null) {
+      textToReveal = currentStep.stepText!;
+    } else {
+      textToReveal = correctOpt?.text ?? '';
+    }
     
     setState(() {
-      _revealedSteps.add(textToReveal);
+      if (textToReveal.isNotEmpty) _revealedSteps.add(textToReveal);
       _currentStepIndex++;
       _isSubmitted = false;
       _isCorrect = false;
@@ -155,12 +167,19 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                         ),
                         const SizedBox(height: 16),
                         
-                        if (currentStep.prompt != null)
+                        // Robust step rendering to handle AI placement mistakes
+                        if (currentStep.prompt != null && currentStep.prompt!.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 16.0),
                             child: MathMarkdown(data: currentStep.prompt!, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
                           )
-                        else if (!hasOptions && currentStep.stepText != null)
+                        else if (hasOptions && currentStep.stepText != null && currentStep.stepText!.isNotEmpty)
+                          // Fallback: AI mistakenly put the question inside `stepText` instead of `prompt`
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16.0),
+                            child: MathMarkdown(data: currentStep.stepText!, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                          )
+                        else if (!hasOptions && currentStep.stepText != null && currentStep.stepText!.isNotEmpty)
                           MathMarkdown(data: currentStep.stepText!, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
 
                         if (hasOptions)
