@@ -61,6 +61,7 @@ CRITICAL DUOLINGO-STYLE MICRO-LEARNING RULES:
 3. Theory/Concepts MUST be split across many small slides. NO MORE than 1-3 sentences per slide!
 4. Each lesson must contain:
    - Several short Theory slides.
+   - 1 "interactive_canvas" slide that uses a 2D canvas to visually animate/illustrate the theory.
    - 2 "fill_in_blank" slides (one question per slide).
    - 4 "quiz" (multiple choice) objective questions (one question per slide).
    - 1 "numerical" slide (if applicable, calculating a value).
@@ -77,10 +78,11 @@ Based strictly on this plan and the attached PDF chunk, generate the full JSON c
 
 CRITICAL SCHEMA & MICRO-LEARNING RULES:
 1. "theory" slides: `content` MUST be a few sentences explaining a concept.
-2. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Do not leave it empty! Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
-3. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word.
-4. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
-5. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}). Markdown math is wrapped in \$ or \$\$.
+2. "interactive_canvas" slides: `content` MUST be the theory explanation. `interactiveCanvasHtml` MUST contain ONLY the raw HTML `<canvas id="myCanvas"></canvas>` and `<script>` that draws an engaging, responsive 2D visualization of the topic.
+3. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Do not leave it empty! Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
+4. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word. Include an array of 3 `blankDistractors` (wrong words) for the user to choose from.
+5. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
+6. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}). Markdown math is wrapped in \$ or \$\$.
 
 YOU MUST RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
 {
@@ -92,14 +94,19 @@ YOU MUST RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
           "id": "s1", "type": "theory", "title": "Concept", "content": "Explanation here."
         },
         {
-          "id": "s2", "type": "quiz", "title": "Knowledge Check",
+          "id": "s2", "type": "interactive_canvas", "title": "Visualization", 
+          "content": "This wave moves constantly...",
+          "interactiveCanvasHtml": "<canvas id='myCanvas'></canvas><script>...draw loop...</script>"
+        },
+        {
+          "id": "s3", "type": "quiz", "title": "Knowledge Check",
           "content": "WHAT IS THE ACTUAL QUESTION TEXT HERE?",
           "options": [
             {"id": "a", "text": "Option 1", "isCorrect": true, "explanation": "..."}
           ]
         },
         {
-          "id": "s3", "type": "step_by_step", "title": "Big Problem",
+          "id": "s4", "type": "step_by_step", "title": "Big Problem",
           "content": "Overall problem description here...",
           "interactiveSteps": [
             { "stepText": "First, let's understand X." },

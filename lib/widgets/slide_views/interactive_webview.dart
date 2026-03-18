@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../models/app_models.dart';
+import '../../theme/app_theme.dart';
 import '../math_markdown.dart';
 
 class InteractiveWebview extends StatefulWidget {
@@ -46,9 +47,16 @@ class _InteractiveWebviewState extends State<InteractiveWebview> {
     return Column(
       children: [
         if (widget.slide.content.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            child: MathMarkdown(data: widget.slide.content),
+          Container(
+            constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.35),
+            decoration: BoxDecoration(
+              color: AppTheme.surface.withOpacity(0.5),
+              border: const Border(bottom: BorderSide(color: Colors.white12, width: 2)),
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: MathMarkdown(data: widget.slide.content),
+            ),
           ),
         Expanded(
           child: Container(
@@ -57,6 +65,13 @@ class _InteractiveWebviewState extends State<InteractiveWebview> {
               color: Colors.black45,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(color: Colors.white12, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                )
+              ]
             ),
             clipBehavior: Clip.hardEdge,
             child: WebViewWidget(controller: _controller),

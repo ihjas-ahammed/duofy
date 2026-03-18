@@ -1,5 +1,6 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../screens/lesson_screen.dart';
@@ -39,8 +40,9 @@ class LessonPath extends StatelessWidget {
   Widget build(BuildContext context) {
     List<Widget> stackChildren = [];
     List<Offset> pathPoints = [];
+    List<bool> nodeCompleted = [];
 
-    double currentY = 20; 
+    double currentY = 40; 
     bool previousCompleted = true; // The very first lesson is always unlocked
 
     for (int i = 0; i < section.units.length; i++) {
@@ -65,8 +67,8 @@ class LessonPath extends StatelessWidget {
         ),
       );
 
-      // Expand distance dynamically based on header size
-      currentY += isGenerated ? 100 : 170; 
+      // Expand distance dynamically based on header size, plus added padding
+      currentY += isGenerated ? 120 : 190; 
 
       if (isGenerated) {
         for (int l = 0; l < unit.lessons.length; l++) {
@@ -83,6 +85,7 @@ class LessonPath extends StatelessWidget {
           double absoluteX = centerX + offsetX;
 
           pathPoints.add(Offset(absoluteX, currentY + 40)); 
+          nodeCompleted.add(isCompleted || previousCompleted); // Current node acts visually 'reachable' if previous is completed
 
           stackChildren.add(
             Positioned(
@@ -97,6 +100,21 @@ class LessonPath extends StatelessWidget {
                   isLocked: isLocked,
                   sectionColorStr: section.color,
                   onTap: () async {
+                    if (isLocked) {
+                      bool? preview = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          backgroundColor: AppTheme.surface,
+                          title: const Text('Lesson Locked', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          content: const Text('You haven\'t completed the required previous lessons yet. Do you want to preview this lesson?', style: TextStyle(color: Colors.white70)),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+                            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Preview', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold))),
+                          ]
+                        )
+                      );
+                      if (preview != true) return;
+                    }
                     await Navigator.push(context, MaterialPageRoute(
                       builder: (_) => LessonScreen(lesson: lesson)
                     ));
@@ -107,23 +125,31 @@ class LessonPath extends StatelessWidget {
             ),
           );
 
-          currentY += 130; 
+          currentY += 140; 
           previousCompleted = isCompleted;
         }
       }
       
-      currentY += 20; 
+      currentY += 40; // Add spacing bottom padding for each unit
     }
 
     stackChildren.insert(0, 
       Positioned.fill(
-        child: CustomPaint(
-          painter: CurvedPathPainter(
-            points: pathPoints,
-            pathColor: Colors.grey.shade800,
-            activeColor: _getPathColor(),
-            activeIndex: 1, 
-          ),
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeOutCubic,
+          builder: (context, value, child) {
+            return CustomPaint(
+              painter: CurvedPathPainter(
+                points: pathPoints,
+                nodeCompleted: nodeCompleted,
+                pathColor: Colors.grey.shade800,
+                activeColor: Colors.amber, 
+                animationValue: value,
+              ),
+            );
+          }
         ),
       )
     );
@@ -144,22 +170,24 @@ class LessonPath extends StatelessWidget {
 
 class CurvedPathPainter extends CustomPainter {
   final List<Offset> points;
+  final List<bool> nodeCompleted;
   final Color pathColor;
   final Color activeColor;
-  final int activeIndex;
+  final double animationValue;
 
   CurvedPathPainter({
     required this.points,
+    required this.nodeCompleted,
     required this.pathColor,
     required this.activeColor,
-    required this.activeIndex,
+    required this.animationValue,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     if (points.length < 2) return;
 
-    final paint = Paint()
+    final basePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 14 
       ..strokeCap = StrokeCap.round
@@ -175,11 +203,24 @@ class CurvedPathPainter extends CustomPainter {
       double cy = (p1.dy + p2.dy) / 2;
       path.cubicTo(p1.dx, cy, p2.dx, cy, p2.dx, p2.dy);
 
-      paint.color = (i < activeIndex) ? activeColor : pathColor;
-      canvas.drawPath(path, paint);
+      bool segmentCompleted = nodeCompleted.length > i+1 && nodeCompleted[i] && nodeCompleted[i+1];
+      
+      basePaint.color = pathColor;
+      canvas.drawPath(path, basePaint);
+
+      if (segmentCompleted) {
+        PathMetrics metrics = path.computeMetrics();
+        for (PathMetric metric in metrics) {
+          Path extracted = metric.extractPath(0, metric.length * animationValue);
+          basePaint.color = activeColor;
+          canvas.drawPath(extracted, basePaint);
+        }
+      }
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant CurvedPathPainter oldDelegate) => 
+    oldDelegate.animationValue != animationValue || 
+    oldDelegate.points.length != points.length;
 }

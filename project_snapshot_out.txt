@@ -137,6 +137,8 @@ dependencies:
   syncfusion_flutter_pdf: ^32.2.9
   syncfusion_flutter_pdfviewer: ^32.2.9
   share_plus: ^12.0.1
+  audioplayers: ^6.6.0
+  confetti: ^0.8.0
 
 dev_dependencies:
   flutter_test:
@@ -288,6 +290,62 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.13.0"
+  audioplayers:
+    dependency: "direct main"
+    description:
+      name: audioplayers
+      sha256: a72dd459d1a48f61a6fb9c0134dba26597c9236af40639ff0eb70eb4e0baab70
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.6.0"
+  audioplayers_android:
+    dependency: transitive
+    description:
+      name: audioplayers_android
+      sha256: "60a6728277228413a85755bd3ffd6fab98f6555608923813ce383b190a360605"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.2.1"
+  audioplayers_darwin:
+    dependency: transitive
+    description:
+      name: audioplayers_darwin
+      sha256: c994b3bb3a921e4904ac40e013fbc94488e824fd7c1de6326f549943b0b44a91
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.4.0"
+  audioplayers_linux:
+    dependency: transitive
+    description:
+      name: audioplayers_linux
+      sha256: f75bce1ce864170ef5e6a2c6a61cd3339e1a17ce11e99a25bae4474ea491d001
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.2.1"
+  audioplayers_platform_interface:
+    dependency: transitive
+    description:
+      name: audioplayers_platform_interface
+      sha256: "0e2f6a919ab56d0fec272e801abc07b26ae7f31980f912f24af4748763e5a656"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.1.1"
+  audioplayers_web:
+    dependency: transitive
+    description:
+      name: audioplayers_web
+      sha256: faa8fa6587f996a6f604433b53af44c57a1407d4fe8dff5766cf63d6875e8de9
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.2.0"
+  audioplayers_windows:
+    dependency: transitive
+    description:
+      name: audioplayers_windows
+      sha256: bafff2b38b6f6d331887558ba6e0a01c9c208d9dbb3ad0005234db065122a734
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.3.0"
   boolean_selector:
     dependency: transitive
     description:
@@ -344,6 +402,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.19.1"
+  confetti:
+    dependency: "direct main"
+    description:
+      name: confetti
+      sha256: "79376a99648efbc3f23582f5784ced0fe239922bd1a0fb41f582051eba750751"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.8.0"
   convert:
     dependency: transitive
     description:
@@ -1028,6 +1094,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "32.2.9"
+  synchronized:
+    dependency: transitive
+    description:
+      name: synchronized
+      sha256: c254ade258ec8282947a0acbbc90b9575b4f19673533ee46f2f6e9b3aeefd7c0
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.4.0"
   term_glyph:
     dependency: transitive
     description:
@@ -1299,13 +1373,22 @@ We use the Gemini API to analyze uploaded PDFs and generate interactive JSON les
 - `/lib/theme`: Colors and global styling matching the web platform
 
 ## Recent Updates & Design Process
+- **Adaptive Psychological Progress Bar**: Replaced static loading spinners with a logarithmic progress bar (Zeno's paradox algorithm) that predicts processing time based on historical AI generation averages and file size, making long waits feel significantly shorter.
+- **Robust Multiple Choice Engine**: Implemented cross-verification on `QuizOption` selections to prevent correct answers from being flagged as incorrect when the AI generates redundant or un-indexed JSON structures. Enforces exactly ONE correct option at the instantiation layer.
+- **Unified Interactive Step UI**: Deprecated the clumsy `step_by_step` slide splitting. Big questions now inherently utilize the polished, progressive disclosure format of the `InteractiveProofView`.
 - **Async Course Generation Pipeline**: PDF metadata extraction is now moved to a background process. Users instantly see a "Generating Course" placeholder on their dashboard while AI extracts table of contents and page numbers.
 - **Enhanced JSON Prompts**: Resolved missing `pageNo` data by restructuring the Book Skeleton prompt output. Now `startPage` and `endPage` are explicitly requested per unit.
-- **Micro-Learning Logic Fixes**: Prevented all options from being evaluated as true on Quiz slides by guaranteeing deterministic unique IDs for option objects if the AI model drops them.
-- **Dynamic Prompt Engine**: Added `PromptService` and an Advanced Settings screen allowing users to edit the exact instructions sent to the AI. Uses variables like `%unit_title%` and `%filename%`.
-- **Improved PDF Browser**: The downloaded PDF chunk browser now intelligently maps raw directory IDs back to readable `Book Title` and `Unit Title`. 
-- **Bulletproof JSON Instantiation**: The `app_models.dart` `fromJson` constructors leverage defensive string extractors (`_str()`, `_bool()`).
 --- END OF FILE README.md ---
+
+--- START OF FILE future.md ---
+
+
+- Update to MultiUser:
+    Initially it will be a guest user, who has all access like a regular user, user can become a regular user by giving themself a username and password in settings
+
+    so there will be a login button in settings 
+
+--- END OF FILE future.md ---
 
 --- START OF FILE lib/main.dart ---
 import 'package:flutter/material.dart';
@@ -1807,6 +1890,22 @@ class Lesson {
     'icon': icon,
     'slides': slides.map((s) => s.toJson()).toList(),
   };
+
+  Lesson copyWith({
+    String? id,
+    String? title,
+    String? description,
+    String? icon,
+    List<Slide>? slides,
+  }) {
+    return Lesson(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      icon: icon ?? this.icon,
+      slides: slides ?? this.slides,
+    );
+  }
 }
 
 class InteractiveStep {
@@ -1841,6 +1940,7 @@ class Slide {
   final List<InteractiveStep>? interactiveSteps;
   final List<String>? proofSteps;
   final String? blankAnswer;
+  final List<String>? blankDistractors;
   final double? numericAnswer;
   final double? numericTolerance;
 
@@ -1854,21 +1954,51 @@ class Slide {
     this.interactiveSteps,
     this.proofSteps,
     this.blankAnswer,
+    this.blankDistractors,
     this.numericAnswer,
     this.numericTolerance,
   });
 
   factory Slide.fromJson(Map<String, dynamic> json) {
+    final type = _str(json['type'], 'theory');
+    List<QuizOption>? parsedOptions;
+    
+    // Robust parsing: Enforce exactly 1 correct answer to avoid UI evaluation bugs
+    if (json['options'] != null) {
+      parsedOptions = (json['options'] as List).map((o) => QuizOption.fromJson(o is Map ? Map<String, dynamic>.from(o) : {})).toList();
+      if (type == 'quiz' && parsedOptions.isNotEmpty) {
+        int correctCount = parsedOptions.where((o) => o.isCorrect).length;
+        if (correctCount != 1) {
+          bool firstTrue = false;
+          parsedOptions = parsedOptions.map((o) {
+            if (correctCount == 0 && !firstTrue) {
+              firstTrue = true;
+              return QuizOption(id: o.id, text: o.text, isCorrect: true, explanation: o.explanation);
+            }
+            if (o.isCorrect) {
+              if (!firstTrue) {
+                firstTrue = true;
+                return o;
+              }
+              return QuizOption(id: o.id, text: o.text, isCorrect: false, explanation: o.explanation);
+            }
+            return o;
+          }).toList();
+        }
+      }
+    }
+
     return Slide(
       id: _str(json['id']),
-      type: _str(json['type'], 'theory'),
+      type: type,
       title: _str(json['title']),
       content: _str(json['content']),
       interactiveCanvasHtml: _strOpt(json['interactiveCanvasHtml']),
-      options: (json['options'] as List?)?.map((o) => QuizOption.fromJson(o is Map ? Map<String, dynamic>.from(o) : {})).toList(),
+      options: parsedOptions,
       interactiveSteps: (json['interactiveSteps'] as List?)?.map((s) => InteractiveStep.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList(),
       proofSteps: (json['proofSteps'] as List?)?.map((s) => _str(s)).toList(),
       blankAnswer: _strOpt(json['blankAnswer']),
+      blankDistractors: (json['blankDistractors'] as List?)?.map((s) => _str(s)).toList(),
       numericAnswer: _dblOpt(json['numericAnswer']),
       numericTolerance: _dblOpt(json['numericTolerance']) ?? 0.01,
     );
@@ -1884,9 +2014,40 @@ class Slide {
     if (interactiveSteps != null) 'interactiveSteps': interactiveSteps!.map((s) => s.toJson()).toList(),
     if (proofSteps != null) 'proofSteps': proofSteps,
     if (blankAnswer != null) 'blankAnswer': blankAnswer,
+    if (blankDistractors != null) 'blankDistractors': blankDistractors,
     if (numericAnswer != null) 'numericAnswer': numericAnswer,
     if (numericTolerance != null) 'numericTolerance': numericTolerance,
   };
+
+  Slide copyWith({
+    String? id,
+    String? type,
+    String? title,
+    String? content,
+    String? interactiveCanvasHtml,
+    List<QuizOption>? options,
+    List<InteractiveStep>? interactiveSteps,
+    List<String>? proofSteps,
+    String? blankAnswer,
+    List<String>? blankDistractors,
+    double? numericAnswer,
+    double? numericTolerance,
+  }) {
+    return Slide(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      interactiveCanvasHtml: interactiveCanvasHtml ?? this.interactiveCanvasHtml,
+      options: options ?? this.options,
+      interactiveSteps: interactiveSteps ?? this.interactiveSteps,
+      proofSteps: proofSteps ?? this.proofSteps,
+      blankAnswer: blankAnswer ?? this.blankAnswer,
+      blankDistractors: blankDistractors ?? this.blankDistractors,
+      numericAnswer: numericAnswer ?? this.numericAnswer,
+      numericTolerance: numericTolerance ?? this.numericTolerance,
+    );
+  }
 }
 
 class QuizOption {
@@ -1901,13 +2062,13 @@ class QuizOption {
     final rawId = _strOpt(json['id']);
     final parsedText = _str(json['text'], 'Option');
     // Generates a deterministic fallback id preventing multiple-selection logic bugs
-    final effectiveId = (rawId != null && rawId.isNotEmpty) ? rawId : parsedText.hashCode.toString();
+    final effectiveId = (rawId != null && rawId.isNotEmpty) ? rawId.trim() : parsedText.trim().hashCode.toString();
 
     return QuizOption(
       id: effectiveId,
-      text: parsedText,
+      text: parsedText.trim(),
       isCorrect: _bool(json['isCorrect']),
-      explanation: _str(json['explanation']),
+      explanation: _str(json['explanation']).trim(),
     );
   }
 
@@ -2490,6 +2651,7 @@ class PdfService {
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
 import 'pdf_service.dart';
 import 'database_service.dart';
@@ -2505,6 +2667,8 @@ class GenerationTask {
   String statusMessage;
   Book? skeletonBook;
   String? errorMessage;
+  Duration estimatedDuration;
+  DateTime startTime;
 
   GenerationTask({
     required this.id, 
@@ -2512,6 +2676,22 @@ class GenerationTask {
     required this.pdfFile,
     this.state = BookGenState.extracting,
     this.statusMessage = 'Extracting Metadata & Planning...', 
+    required this.estimatedDuration,
+    required this.startTime,
+  });
+}
+
+class UnitGenTask {
+  String status;
+  Duration estimatedDuration;
+  DateTime startTime;
+  bool isError;
+
+  UnitGenTask({
+    required this.status, 
+    required this.estimatedDuration, 
+    required this.startTime, 
+    this.isError = false
   });
 }
 
@@ -2520,32 +2700,61 @@ class GenerationManager extends ChangeNotifier {
   GenerationManager._internal();
 
   final List<GenerationTask> activeTasks = [];
-  final Map<String, String> activeUnitGenerations = {}; // Unit ID -> Status
+  final Map<String, UnitGenTask> activeUnitGenerations = {}; // Unit ID -> Task Status
   
   final PdfService _pdfService = PdfService();
   final DatabaseService _dbService = DatabaseService();
   final AiService _aiService = AiService();
 
-  // Stream for broadcasting globally updated books
   final StreamController<Book> _bookUpdateController = StreamController<Book>.broadcast();
   Stream<Book> get bookUpdates => _bookUpdateController.stream;
 
   VoidCallback? onBookGenerated;
 
+  Future<void> _recordRunTime(String key, int durationMs) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> history = prefs.getStringList(key) ?? [];
+    history.add(durationMs.toString());
+    if (history.length > 3) history.removeAt(0); // rolling average of last 3
+    await prefs.setStringList(key, history);
+  }
+
+  Future<int> _getAverageRunTime(String key, int defaultMs) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> history = prefs.getStringList(key) ?? [];
+    if (history.isEmpty) return defaultMs;
+    int sum = history.fold(0, (prev, element) => prev + int.parse(element));
+    return sum ~/ history.length;
+  }
+
   /// Background Stage 1: Async Book Skeleton Extraction
   Future<void> startBookGeneration(File pdfFile, String filename) async {
     final taskId = DateTime.now().millisecondsSinceEpoch.toString();
+    
+    // Estimate Time
+    final fileSize = await pdfFile.length();
+    final uploadSecs = (fileSize / 500000).ceil(); // Assuming ~500 KB/s upload
+    final avgAiMs = await _getAverageRunTime('meta_gen_history', 120000); // 2 mins default
+    final estimatedDuration = Duration(seconds: uploadSecs, milliseconds: avgAiMs);
+
     final task = GenerationTask(
       id: taskId,
       title: filename,
       pdfFile: pdfFile,
+      startTime: DateTime.now(),
+      estimatedDuration: estimatedDuration,
     );
     
     activeTasks.add(task);
     notifyListeners();
 
     try {
+      final stopwatch = Stopwatch()..start();
       final skeletonBook = await _aiService.generateBookSkeleton(pdfFile, filename);
+      stopwatch.stop();
+
+      await _recordRunTime('meta_gen_history', stopwatch.elapsedMilliseconds);
+
       if (skeletonBook != null) {
         task.skeletonBook = skeletonBook;
         task.state = BookGenState.review;
@@ -2568,6 +2777,9 @@ class GenerationManager extends ChangeNotifier {
     final task = activeTasks[taskIndex];
     task.state = BookGenState.chunking;
     task.statusMessage = 'Splitting PDF chunks...';
+    // Re-estimate for chunking phase
+    task.estimatedDuration = const Duration(seconds: 15);
+    task.startTime = DateTime.now();
     notifyListeners();
 
     try {
@@ -2595,15 +2807,24 @@ class GenerationManager extends ChangeNotifier {
   Future<void> startUnitGeneration(Unit unit, Book book, int modIdx, int secIdx, int unitIdx) async {
     if (activeUnitGenerations.containsKey(unit.id)) return;
     
-    activeUnitGenerations[unit.id] = 'Initializing AI...';
+    final avgUnitMs = await _getAverageRunTime('unit_gen_history', 90000); // 1.5 mins default
+
+    activeUnitGenerations[unit.id] = UnitGenTask(
+      status: 'Initializing AI...',
+      estimatedDuration: Duration(milliseconds: avgUnitMs),
+      startTime: DateTime.now()
+    );
     notifyListeners();
     
     try {
+      final stopwatch = Stopwatch()..start();
       final updatedUnit = await _aiService.generateUnitContent(unit, book, (status) {
-        activeUnitGenerations[unit.id] = status;
+        activeUnitGenerations[unit.id]?.status = status;
         notifyListeners();
       });
-      
+      stopwatch.stop();
+      await _recordRunTime('unit_gen_history', stopwatch.elapsedMilliseconds);
+
       final List<Unit> updatedUnits = List.from(book.modules[modIdx].sections[secIdx].units);
       updatedUnits[unitIdx] = updatedUnit;
       
@@ -2622,13 +2843,14 @@ class GenerationManager extends ChangeNotifier {
 
       _bookUpdateController.add(newBook);
     } catch (e) {
-      activeUnitGenerations[unit.id] = 'Error: $e';
+      activeUnitGenerations[unit.id]?.isError = true;
+      activeUnitGenerations[unit.id]?.status = 'Error: $e';
       notifyListeners();
     }
   }
 
   void clearUnitError(String unitId) {
-    if (activeUnitGenerations[unitId]?.startsWith('Error') ?? false) {
+    if (activeUnitGenerations[unitId]?.isError == true) {
       activeUnitGenerations.remove(unitId);
       notifyListeners();
     }
@@ -2845,7 +3067,15 @@ class AiService {
             final lessonsData = jsonMap['lessons'] as List?;
             
             final newLessons = lessonsData?.map((l) {
-              if (l is Map) return Lesson.fromJson(Map<String, dynamic>.from(l));
+              if (l is Map) {
+                var lesson = Lesson.fromJson(Map<String, dynamic>.from(l));
+                // Ensure globally unique IDs across different unit generations
+                final uniqueLessonId = '${unit.id}-${lesson.id}';
+                return lesson.copyWith(
+                  id: uniqueLessonId,
+                  slides: lesson.slides.map((s) => s.copyWith(id: '$uniqueLessonId-${s.id}')).toList()
+                );
+              }
               return null;
             }).whereType<Lesson>().toList() ?? [];
             
@@ -2934,7 +3164,7 @@ CRITICAL DUOLINGO-STYLE MICRO-LEARNING RULES:
    - 2 "fill_in_blank" slides (one question per slide).
    - 4 "quiz" (multiple choice) objective questions (one question per slide).
    - 1 "numerical" slide (if applicable, calculating a value).
-   - 1 "proof" or "step_by_step" interactive solution (if applicable).''';
+   - 1 "proof" or "step_by_step" interactive solution (ONE combined slide mapping the multiple stages of the problem).''';
 
   static const String defaultJson = '''SYSTEM PROMPT:
 %system_prompt%
@@ -2946,16 +3176,48 @@ You previously created this optimal learning plan for the unit "%unit_title%":
 Based strictly on this plan and the attached PDF chunk, generate the full JSON content.
 
 CRITICAL SCHEMA & MICRO-LEARNING RULES:
-1. EXTREME MICRO-LEARNING: "content" fields MUST be very short (1-3 sentences max).
-2. `slide.title` should be a short category (e.g. "Concept Check"), DO NOT duplicate the question text in the title.
-3. `fill_in_blank` slides: "content" MUST be a single plain-text string containing exactly three underscores (`___`). `blankAnswer` MUST be the exact single correct word/phrase (e.g. "generalization"), DO NOT provide alternatives like "a or b".
-4. `quiz` slides MUST have exactly 4 options. EACH option MUST have an `id` (e.g. "a", "b", "c", "d"), a non-empty `text` field containing the choice, and an `explanation`.
-5. `numerical` slides: "content" is the word problem. Must provide `numericAnswer` (a float/number) and optionally `numericTolerance`.
-6. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}).
-7. Markdown math is wrapped in \$ or \$\$.
+1. "theory" slides: `content` MUST be a few sentences explaining a concept.
+2. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Do not leave it empty! Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
+3. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word. Include an array of 3 `blankDistractors` (wrong words) for the user to choose from.
+4. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
+5. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}). Markdown math is wrapped in \$ or \$\$.
 
-Return ONLY valid JSON representing the "lessons" array. Format:
-{ "lessons": [ { "id": "...", "title": "...", "description": "...", "icon": "BookOpen", "slides": [ ... ] } ] }''';
+YOU MUST RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
+{
+  "lessons": [
+    {
+      "id": "l1", "title": "Lesson 1", "description": "...", "icon": "BookOpen",
+      "slides": [
+        {
+          "id": "s1", "type": "theory", "title": "Concept", "content": "Explanation here."
+        },
+        {
+          "id": "s2", "type": "quiz", "title": "Knowledge Check",
+          "content": "WHAT IS THE ACTUAL QUESTION TEXT HERE?",
+          "options": [
+            {"id": "a", "text": "Option 1", "isCorrect": true, "explanation": "..."}
+          ]
+        },
+        {
+          "id": "s3", "type": "fill_in_blank", "title": "Concept Check",
+          "content": "The mitochondria is the ___ of the cell.",
+          "blankAnswer": "powerhouse",
+          "blankDistractors": ["nucleus", "membrane", "battery"]
+        },
+        {
+          "id": "s4", "type": "step_by_step", "title": "Big Problem",
+          "content": "Overall problem description here...",
+          "interactiveSteps": [
+            { "stepText": "First, let's understand X." },
+            { "prompt": "What is the formula for X?", "options": [
+                {"id": "o1", "text": "Y", "isCorrect": true, "explanation": "..."}
+            ]}
+          ]
+        }
+      ]
+    }
+  ]
+}''';
 
   // Loaders
   static Future<String> getSkeletonPrompt() async {
@@ -3120,13 +3382,13 @@ class LessonNodeWidget extends StatelessWidget {
     final shadowColor = isLocked ? Colors.grey.shade900 : _getShadowColor();
 
     return GestureDetector(
-      onTap: isLocked ? null : onTap,
+      onTap: onTap,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 80, // Increased from 70 to 80
-            height: 80, // Increased from 70 to 80
+            width: 80, 
+            height: 80, 
             decoration: BoxDecoration(
               color: bgColor,
               shape: BoxShape.circle,
@@ -3141,17 +3403,17 @@ class LessonNodeWidget extends StatelessWidget {
             child: Icon(
               isLocked ? LucideIcons.lock : LucideIcons.bookOpen,
               color: isLocked ? Colors.grey.shade500 : Colors.white,
-              size: 36, // Increased icon size
+              size: 36, 
             ),
           ),
           const SizedBox(height: 16),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), // Increased padding
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), 
             decoration: AppTheme.glassDecoration,
             child: Text(
               lesson.title.toUpperCase(),
               style: const TextStyle(
-                fontSize: 11, // Slightly larger font
+                fontSize: 11, 
                 fontWeight: FontWeight.w900,
                 color: Colors.white70,
                 letterSpacing: 1.0,
@@ -3176,6 +3438,7 @@ class MathMarkdown extends StatelessWidget {
   final String data;
   final TextStyle? textStyle;
   final TextAlign textAlign;
+  final bool selectable;
   final List<md.InlineSyntax>? customSyntaxes;
   final Map<String, MarkdownElementBuilder>? customBuilders;
 
@@ -3184,6 +3447,7 @@ class MathMarkdown extends StatelessWidget {
     required this.data, 
     this.textStyle,
     this.textAlign = TextAlign.left,
+    this.selectable = true,
     this.customSyntaxes,
     this.customBuilders,
   });
@@ -3211,14 +3475,14 @@ class MathMarkdown extends StatelessWidget {
 
     return MarkdownBody(
       data: safeData,
-      selectable: true,
+      selectable: selectable,
       styleSheet: MarkdownStyleSheet(
         p: textStyle ?? const TextStyle(fontSize: 16, color: Colors.white, height: 1.5, fontWeight: FontWeight.w600),
-        textAlign: WrapAlignment.start,
+        textAlign: textAlign == TextAlign.center ? WrapAlignment.center : WrapAlignment.start,
       ),
       builders: {
         'latex': LatexElementBuilder(
-          textStyle: textStyle?.copyWith(color: Colors.amber) ?? const TextStyle(color: Colors.amber, fontSize: 16, fontWeight: FontWeight.w800),
+          textStyle: textStyle?.copyWith(color: Colors.white) ?? const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
         ),
         if (customBuilders != null) ...customBuilders!,
       },
@@ -3494,17 +3758,19 @@ class BookCard extends StatelessWidget {
 --- END OF FILE lib/widgets/book_card.dart ---
 
 --- START OF FILE lib/widgets/lesson_path.dart ---
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../screens/lesson_screen.dart';
+import '../services/generation_manager.dart';
 import 'lesson_node.dart';
 import 'unit_header.dart';
 
 class LessonPath extends StatelessWidget {
   final Section section;
-  final Map<String, String> loadingUnitStatuses;
+  final Map<String, UnitGenTask> loadingUnitStatuses;
   final Function(Unit, int) onGenerateUnit;
   final Function(Unit, int) onClearUnit;
   final List<String> completedLessons;
@@ -3534,15 +3800,16 @@ class LessonPath extends StatelessWidget {
   Widget build(BuildContext context) {
     List<Widget> stackChildren = [];
     List<Offset> pathPoints = [];
+    List<bool> nodeCompleted = [];
 
-    double currentY = 20; 
+    double currentY = 40; 
     bool previousCompleted = true; // The very first lesson is always unlocked
 
     for (int i = 0; i < section.units.length; i++) {
       final unit = section.units[i];
       final int currentUnitIdx = i; 
       final bool isGenerated = unit.isGenerated && unit.lessons.isNotEmpty;
-      final String? loadingStatus = loadingUnitStatuses[unit.id];
+      final UnitGenTask? loadingStatus = loadingUnitStatuses[unit.id];
 
       // Compact Unit Header ensuring no overflows on small screens
       stackChildren.add(
@@ -3553,15 +3820,15 @@ class LessonPath extends StatelessWidget {
           child: UnitHeader(
             unit: unit,
             isGenerated: isGenerated,
-            loadingStatus: loadingStatus,
+            generationTask: loadingStatus,
             onGenerate: () => onGenerateUnit(unit, currentUnitIdx),
             onClear: () => onClearUnit(unit, currentUnitIdx),
           ),
         ),
       );
 
-      // Expand distance dynamically based on header size
-      currentY += isGenerated ? 100 : 170; 
+      // Expand distance dynamically based on header size, plus added padding
+      currentY += isGenerated ? 120 : 190; 
 
       if (isGenerated) {
         for (int l = 0; l < unit.lessons.length; l++) {
@@ -3578,6 +3845,7 @@ class LessonPath extends StatelessWidget {
           double absoluteX = centerX + offsetX;
 
           pathPoints.add(Offset(absoluteX, currentY + 40)); 
+          nodeCompleted.add(isCompleted || previousCompleted); // Current node acts visually 'reachable' if previous is completed
 
           stackChildren.add(
             Positioned(
@@ -3592,6 +3860,21 @@ class LessonPath extends StatelessWidget {
                   isLocked: isLocked,
                   sectionColorStr: section.color,
                   onTap: () async {
+                    if (isLocked) {
+                      bool? preview = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          backgroundColor: AppTheme.surface,
+                          title: const Text('Lesson Locked', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          content: const Text('You haven\'t completed the required previous lessons yet. Do you want to preview this lesson?', style: TextStyle(color: Colors.white70)),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+                            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Preview', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold))),
+                          ]
+                        )
+                      );
+                      if (preview != true) return;
+                    }
                     await Navigator.push(context, MaterialPageRoute(
                       builder: (_) => LessonScreen(lesson: lesson)
                     ));
@@ -3602,23 +3885,31 @@ class LessonPath extends StatelessWidget {
             ),
           );
 
-          currentY += 130; 
+          currentY += 140; 
           previousCompleted = isCompleted;
         }
       }
       
-      currentY += 20; 
+      currentY += 40; // Add spacing bottom padding for each unit
     }
 
     stackChildren.insert(0, 
       Positioned.fill(
-        child: CustomPaint(
-          painter: CurvedPathPainter(
-            points: pathPoints,
-            pathColor: Colors.grey.shade800,
-            activeColor: _getPathColor(),
-            activeIndex: 1, 
-          ),
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeOutCubic,
+          builder: (context, value, child) {
+            return CustomPaint(
+              painter: CurvedPathPainter(
+                points: pathPoints,
+                nodeCompleted: nodeCompleted,
+                pathColor: Colors.grey.shade800,
+                activeColor: Colors.amber, 
+                animationValue: value,
+              ),
+            );
+          }
         ),
       )
     );
@@ -3639,22 +3930,24 @@ class LessonPath extends StatelessWidget {
 
 class CurvedPathPainter extends CustomPainter {
   final List<Offset> points;
+  final List<bool> nodeCompleted;
   final Color pathColor;
   final Color activeColor;
-  final int activeIndex;
+  final double animationValue;
 
   CurvedPathPainter({
     required this.points,
+    required this.nodeCompleted,
     required this.pathColor,
     required this.activeColor,
-    required this.activeIndex,
+    required this.animationValue,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     if (points.length < 2) return;
 
-    final paint = Paint()
+    final basePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 14 
       ..strokeCap = StrokeCap.round
@@ -3670,13 +3963,26 @@ class CurvedPathPainter extends CustomPainter {
       double cy = (p1.dy + p2.dy) / 2;
       path.cubicTo(p1.dx, cy, p2.dx, cy, p2.dx, p2.dy);
 
-      paint.color = (i < activeIndex) ? activeColor : pathColor;
-      canvas.drawPath(path, paint);
+      bool segmentCompleted = nodeCompleted.length > i+1 && nodeCompleted[i] && nodeCompleted[i+1];
+      
+      basePaint.color = pathColor;
+      canvas.drawPath(path, basePaint);
+
+      if (segmentCompleted) {
+        PathMetrics metrics = path.computeMetrics();
+        for (PathMetric metric in metrics) {
+          Path extracted = metric.extractPath(0, metric.length * animationValue);
+          basePaint.color = activeColor;
+          canvas.drawPath(extracted, basePaint);
+        }
+      }
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant CurvedPathPainter oldDelegate) => 
+    oldDelegate.animationValue != animationValue || 
+    oldDelegate.points.length != points.length;
 }
 --- END OF FILE lib/widgets/lesson_path.dart ---
 
@@ -3687,11 +3993,12 @@ import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../services/generation_manager.dart';
 import 'duo_button.dart';
+import 'psychological_progress_bar.dart';
 
 class UnitHeader extends StatelessWidget {
   final Unit unit;
   final bool isGenerated;
-  final String? loadingStatus;
+  final UnitGenTask? generationTask;
   final VoidCallback onGenerate;
   final VoidCallback onClear;
 
@@ -3699,14 +4006,15 @@ class UnitHeader extends StatelessWidget {
     super.key,
     required this.unit,
     required this.isGenerated,
-    required this.loadingStatus,
+    required this.generationTask,
     required this.onGenerate,
     required this.onClear,
   });
 
   @override
   Widget build(BuildContext context) {
-    bool isError = loadingStatus != null && loadingStatus!.startsWith('Error');
+    bool isError = generationTask?.isError ?? false;
+    String? status = generationTask?.status;
 
     return AppTheme.applyGlassBlur(
       child: Padding(
@@ -3732,12 +4040,12 @@ class UnitHeader extends StatelessWidget {
             if (!isGenerated)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
-                child: loadingStatus != null
+                child: generationTask != null
                     ? (isError 
                         ? Column(
                             children: [
                               Text(
-                                loadingStatus!,
+                                status ?? 'Unknown Error',
                                 style: const TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold, fontSize: 10),
                                 textAlign: TextAlign.center,
                                 maxLines: 2,
@@ -3758,20 +4066,11 @@ class UnitHeader extends StatelessWidget {
                               ),
                             ],
                           )
-                        : Column(
-                            children: [
-                              const SizedBox(
-                                width: 20, height: 20,
-                                child: CircularProgressIndicator(color: AppTheme.duoViolet, strokeWidth: 3),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                loadingStatus!, 
-                                style: const TextStyle(color: AppTheme.duoViolet, fontWeight: FontWeight.bold, fontSize: 10),
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                              )
-                            ],
+                        : PsychologicalProgressBar(
+                            estimatedDuration: generationTask!.estimatedDuration,
+                            startTime: generationTask!.startTime,
+                            isCircular: true,
+                            label: status ?? 'Loading...',
                           )
                       )
                     : SizedBox(
@@ -3816,6 +4115,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../services/generation_manager.dart';
 import '../theme/app_theme.dart';
+import 'psychological_progress_bar.dart';
 
 class GeneratingBookCard extends StatelessWidget {
   final GenerationTask task;
@@ -3871,10 +4171,10 @@ class GeneratingBookCard extends StatelessWidget {
               ),
               child: Center(
                 child: task.state == BookGenState.extracting || task.state == BookGenState.chunking || task.state == BookGenState.saving
-                  ? const SizedBox(
-                      width: 40, 
-                      height: 40, 
-                      child: CircularProgressIndicator(color: AppTheme.duoViolet, strokeWidth: 4)
+                  ? PsychologicalProgressBar(
+                      estimatedDuration: task.estimatedDuration,
+                      startTime: task.startTime,
+                      isCircular: true,
                     )
                   : Icon(statusIcon, size: 50, color: iconColor),
               ),
@@ -3932,6 +4232,173 @@ class GeneratingBookCard extends StatelessWidget {
   }
 }
 --- END OF FILE lib/widgets/generating_book_card.dart ---
+
+--- START OF FILE lib/widgets/psychological_progress_bar.dart ---
+import 'dart:async';
+import 'dart:math' as math;
+import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
+
+class PsychologicalProgressBar extends StatefulWidget {
+  final Duration estimatedDuration;
+  final DateTime startTime;
+  final bool isComplete;
+  final bool isError;
+  final String label;
+  final bool isCircular;
+
+  const PsychologicalProgressBar({
+    super.key,
+    required this.estimatedDuration,
+    required this.startTime,
+    this.isComplete = false,
+    this.isError = false,
+    this.label = '',
+    this.isCircular = false,
+  });
+
+  @override
+  State<PsychologicalProgressBar> createState() => _PsychologicalProgressBarState();
+}
+
+class _PsychologicalProgressBarState extends State<PsychologicalProgressBar> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
+    _animation = Tween<double>(begin: 0.0, end: 0.0).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _startProgress();
+  }
+
+  void _startProgress() {
+    _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      if (widget.isComplete || widget.isError || !mounted) {
+        timer.cancel();
+        _updateTarget(widget.isError ? _animation.value : 1.0);
+        return;
+      }
+
+      final elapsedMs = DateTime.now().difference(widget.startTime).inMilliseconds.toDouble();
+      final totalMs = widget.estimatedDuration.inMilliseconds.toDouble().clamp(1000.0, double.infinity);
+
+      double target;
+      if (elapsedMs < totalMs) {
+        // Linear progression up to 90%
+        target = (elapsedMs / totalMs) * 0.90;
+      } else {
+        // Zeno's Paradox: Asymptotic crawl between 90% and 99%
+        final overtimeMs = elapsedMs - totalMs;
+        target = 0.90 + (0.09 * (1.0 - math.exp(-overtimeMs / 15000)));
+      }
+
+      _updateTarget(target);
+    });
+  }
+
+  void _updateTarget(double target) {
+    if (!mounted) return;
+    _animation = Tween<double>(begin: _animation.value, end: target).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+    _controller.forward(from: 0);
+  }
+
+  @override
+  void didUpdateWidget(PsychologicalProgressBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isComplete && !oldWidget.isComplete) {
+      _timer?.cancel();
+      _updateTarget(1.0);
+    } else if (widget.isError && !oldWidget.isError) {
+      _timer?.cancel();
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.isCircular) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedBuilder(
+            animation: _animation,
+            builder: (context, child) {
+              return SizedBox(
+                width: 40, 
+                height: 40,
+                child: CircularProgressIndicator(
+                  value: _animation.value,
+                  color: widget.isError ? AppTheme.duoRed : AppTheme.duoViolet,
+                  backgroundColor: Colors.white12,
+                  strokeWidth: 4,
+                ),
+              );
+            },
+          ),
+          if (widget.label.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Text(
+                widget.label,
+                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white70),
+                textAlign: TextAlign.center,
+              ),
+            ),
+        ],
+      );
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (widget.label.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Text(
+              widget.label,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70),
+            ),
+          ),
+        Container(
+          height: 12,
+          decoration: BoxDecoration(
+            color: Colors.white12,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          clipBehavior: Clip.hardEdge,
+          child: AnimatedBuilder(
+            animation: _animation,
+            builder: (context, child) {
+              return FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: _animation.value,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: widget.isError ? AppTheme.duoRed : (widget.isComplete ? AppTheme.duoGreen : AppTheme.duoBlue),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+--- END OF FILE lib/widgets/psychological_progress_bar.dart ---
 
 --- START OF FILE lib/widgets/slide_views/interactive_webview.dart ---
 import 'package:flutter/material.dart';
@@ -4019,10 +4486,15 @@ class TheoryView extends StatelessWidget {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: AppTheme.glassDecoration,
-        child: MathMarkdown(data: slide.content),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: AppTheme.glassDecoration,
+          child: MathMarkdown(
+            data: slide.content, 
+            textAlign: TextAlign.center,
+          ),
+        ),
       ),
     );
   }
@@ -4056,12 +4528,17 @@ class QuizView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: AppTheme.glassDecoration,
-            child: MathMarkdown(data: slide.content, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-          const SizedBox(height: 24),
+          // Fallback to hide empty dark container if AI fails to populate content
+          if (slide.content.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: AppTheme.glassDecoration,
+              child: MathMarkdown(data: slide.content, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          
+          if (slide.content.isNotEmpty)
+            const SizedBox(height: 24),
+            
           if (slide.options != null)
             ...slide.options!.map((opt) {
               final isSelected = selectedOptionId == opt.id;
@@ -4096,7 +4573,11 @@ class QuizView extends StatelessWidget {
                       border: Border.all(color: borderColor, width: 2),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: MathMarkdown(data: opt.text, textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                    child: MathMarkdown(
+                      data: opt.text, 
+                      selectable: false, 
+                      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
                   ),
                 ),
               );
@@ -4126,40 +4607,43 @@ class BlankSyntax extends md.InlineSyntax {
 }
 
 class BlankBuilder extends MarkdownElementBuilder {
-  final String value;
+  final TextEditingController controller;
   final bool isAnswered;
   final bool isCorrect;
   final Function(String) onChanged;
 
-  BlankBuilder({required this.value, required this.isAnswered, required this.isCorrect, required this.onChanged});
+  BlankBuilder({required this.controller, required this.isAnswered, required this.isCorrect, required this.onChanged});
 
   @override
   Widget? visitElementAfter(md.Element element, TextStyle? preferredStyle) {
-    return Container(
-      width: 100,
-      height: 35,
-      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      child: TextField(
-        enabled: !isAnswered,
-        onChanged: onChanged,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.amber,
-        ),
-        decoration: InputDecoration(
-          contentPadding: const EdgeInsets.only(bottom: 12),
-          filled: true,
-          fillColor: Colors.black45,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+    return IntrinsicWidth(
+      child: Container(
+        height: 35,
+        constraints: const BoxConstraints(minWidth: 80),
+        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        child: TextField(
+          controller: controller,
+          enabled: !isAnswered,
+          onChanged: onChanged,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.amber,
+          ),
+          decoration: InputDecoration(
+            contentPadding: const EdgeInsets.only(bottom: 12, left: 12, right: 12),
+            filled: true,
+            fillColor: Colors.black45,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+          ),
         ),
       ),
     );
   }
 }
 
-class FillInBlankView extends StatelessWidget {
+class FillInBlankView extends StatefulWidget {
   final Slide slide;
   final String value;
   final bool isAnswered;
@@ -4176,27 +4660,119 @@ class FillInBlankView extends StatelessWidget {
   });
 
   @override
+  State<FillInBlankView> createState() => _FillInBlankViewState();
+}
+
+class _FillInBlankViewState extends State<FillInBlankView> {
+  late TextEditingController _controller;
+  List<String> _suggestions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.value);
+    _buildSuggestions();
+  }
+
+  void _buildSuggestions() {
+    _suggestions = [];
+    if (widget.slide.blankAnswer != null && widget.slide.blankAnswer!.isNotEmpty) {
+      _suggestions.add(widget.slide.blankAnswer!);
+    }
+    if (widget.slide.blankDistractors != null) {
+      _suggestions.addAll(widget.slide.blankDistractors!);
+    }
+    _suggestions.shuffle();
+  }
+
+  @override
+  void didUpdateWidget(FillInBlankView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.slide.id != widget.slide.id) {
+      _controller.text = widget.value;
+      _buildSuggestions();
+    } else if (_controller.text != widget.value) {
+      _controller.text = widget.value;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onSuggestionTapped(String word) {
+    if (widget.isAnswered) return;
+    _controller.text = word;
+    widget.onChanged(word);
+  }
+
+  Widget _buildSuggestionsBank() {
+    if (_suggestions.isEmpty || widget.isAnswered) return const SizedBox.shrink();
+    
+    return Padding(
+      padding: const EdgeInsets.only(top: 24.0),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 12,
+        runSpacing: 12,
+        children: _suggestions.map((word) {
+          final isSelected = widget.value == word;
+          return GestureDetector(
+            onTap: () => _onSuggestionTapped(word),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isSelected ? AppTheme.duoBlue.withOpacity(0.2) : Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isSelected ? AppTheme.duoBlue : Colors.white24,
+                  width: 2,
+                ),
+              ),
+              child: Text(
+                word,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isSelected ? AppTheme.duoBlue : Colors.white,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    bool hasInlineBlank = slide.content.contains('___');
+    bool hasInlineBlank = widget.slide.content.contains('___');
 
     if (hasInlineBlank) {
       return SingleChildScrollView(
         padding: const EdgeInsets.all(24),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: AppTheme.glassDecoration,
-          child: MathMarkdown(
-            data: slide.content,
-            customSyntaxes: [BlankSyntax()],
-            customBuilders: {
-              'blank': BlankBuilder(
-                value: value,
-                isAnswered: isAnswered,
-                isCorrect: isCorrect,
-                onChanged: onChanged,
-              )
-            },
-          ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: AppTheme.glassDecoration,
+              child: MathMarkdown(
+                data: widget.slide.content,
+                customSyntaxes: [BlankSyntax()],
+                customBuilders: {
+                  'blank': BlankBuilder(
+                    controller: _controller,
+                    isAnswered: widget.isAnswered,
+                    isCorrect: widget.isCorrect,
+                    onChanged: widget.onChanged,
+                  )
+                },
+              ),
+            ),
+            _buildSuggestionsBank(),
+          ],
         ),
       );
     }
@@ -4210,7 +4786,7 @@ class FillInBlankView extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: AppTheme.glassDecoration,
-            child: MathMarkdown(data: slide.content, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+            child: MathMarkdown(data: widget.slide.content, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           const SizedBox(height: 32),
           Container(
@@ -4218,20 +4794,21 @@ class FillInBlankView extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.05),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.white12, width: 2),
+              border: Border.all(color: widget.isAnswered ? (widget.isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.white12, width: 2),
             ),
             child: Column(
               children: [
                 const Text('YOUR ANSWER', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.5)),
                 const SizedBox(height: 12),
                 TextField(
-                  enabled: !isAnswered,
-                  onChanged: onChanged,
+                  controller: _controller,
+                  enabled: !widget.isAnswered,
+                  onChanged: widget.onChanged,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 22, 
                     fontWeight: FontWeight.w900,
-                    color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.amber,
+                    color: widget.isAnswered ? (widget.isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.amber,
                   ),
                   decoration: InputDecoration(
                     hintText: '___',
@@ -4246,6 +4823,7 @@ class FillInBlankView extends StatelessWidget {
               ],
             ),
           ),
+          _buildSuggestionsBank(),
         ],
       ),
     );
@@ -4367,11 +4945,31 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
     _steps = widget.slide.interactiveSteps ?? [];
   }
 
+  @override
+  void didUpdateWidget(InteractiveProofView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.slide.id != widget.slide.id) {
+      setState(() {
+        _currentStepIndex = 0;
+        _revealedSteps.clear();
+        _selectedOptionId = null;
+        _isSubmitted = false;
+        _isCorrect = false;
+        _steps = widget.slide.interactiveSteps ?? [];
+      });
+    }
+  }
+
   void _handleNextStatic() {
     final currentStep = _steps[_currentStepIndex];
-    if (currentStep.stepText != null) {
+    if (currentStep.stepText != null && currentStep.stepText!.isNotEmpty) {
       setState(() {
         _revealedSteps.add(currentStep.stepText!);
+        _currentStepIndex++;
+      });
+    } else {
+      // Failsafe if stepText is empty
+      setState(() {
         _currentStepIndex++;
       });
     }
@@ -4394,10 +4992,17 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
     final currentStep = _steps[_currentStepIndex];
     final correctOpt = currentStep.options?.firstWhere((o) => o.isCorrect);
     
-    final textToReveal = currentStep.stepText ?? correctOpt?.text ?? '';
+    // Sometimes the AI puts the question in stepText. If it did, don't reveal the question as the "learned fact".
+    // Rely on the correct option text instead.
+    String textToReveal = '';
+    if (currentStep.stepText != null && currentStep.stepText!.isNotEmpty && currentStep.prompt != null) {
+      textToReveal = currentStep.stepText!;
+    } else {
+      textToReveal = correctOpt?.text ?? '';
+    }
     
     setState(() {
-      _revealedSteps.add(textToReveal);
+      if (textToReveal.isNotEmpty) _revealedSteps.add(textToReveal);
       _currentStepIndex++;
       _isSubmitted = false;
       _isCorrect = false;
@@ -4487,12 +5092,19 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                         ),
                         const SizedBox(height: 16),
                         
-                        if (currentStep.prompt != null)
+                        // Robust step rendering to handle AI placement mistakes
+                        if (currentStep.prompt != null && currentStep.prompt!.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 16.0),
                             child: MathMarkdown(data: currentStep.prompt!, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
                           )
-                        else if (!hasOptions && currentStep.stepText != null)
+                        else if (hasOptions && currentStep.stepText != null && currentStep.stepText!.isNotEmpty)
+                          // Fallback: AI mistakenly put the question inside `stepText` instead of `prompt`
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16.0),
+                            child: MathMarkdown(data: currentStep.stepText!, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                          )
+                        else if (!hasOptions && currentStep.stepText != null && currentStep.stepText!.isNotEmpty)
                           MathMarkdown(data: currentStep.stepText!, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
 
                         if (hasOptions)
@@ -4528,7 +5140,7 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                                     border: Border.all(color: borderColor, width: 2),
                                     borderRadius: BorderRadius.circular(16),
                                   ),
-                                  child: MathMarkdown(data: opt.text, textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                                  child: MathMarkdown(data: opt.text, selectable: false, textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                                 ),
                               ),
                             );
@@ -5334,6 +5946,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
 
 --- START OF FILE lib/screens/lesson_screen.dart ---
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
@@ -5347,7 +5960,6 @@ import '../widgets/slide_views/fill_in_blank_view.dart';
 import '../widgets/slide_views/numerical_view.dart';
 import '../widgets/slide_views/interactive_webview.dart';
 import '../widgets/slide_views/interactive_proof_view.dart';
-import '../widgets/slide_views/step_by_step_view.dart';
 import 'lesson_complete_screen.dart';
 
 class LessonScreen extends StatefulWidget {
@@ -5367,6 +5979,7 @@ class _LessonScreenState extends State<LessonScreen> {
   late DateTime _startTime;
   int _totalInteractive = 0;
   int _correctAttempts = 0;
+  List<Slide> _slideQueue = [];
 
   String? _selectedQuizOption;
   String _blankInput = '';
@@ -5376,7 +5989,9 @@ class _LessonScreenState extends State<LessonScreen> {
   void initState() {
     super.initState();
     _startTime = DateTime.now();
-    for (var slide in widget.lesson.slides) {
+    _slideQueue = List.from(widget.lesson.slides);
+    
+    for (var slide in _slideQueue) {
       if (['quiz', 'fill_in_blank', 'numerical', 'proof', 'step_by_step'].contains(slide.type)) {
         _totalInteractive++;
       }
@@ -5384,7 +5999,7 @@ class _LessonScreenState extends State<LessonScreen> {
   }
 
   void _nextSlide() {
-    if (_currentIndex < widget.lesson.slides.length - 1) {
+    if (_currentIndex < _slideQueue.length - 1) {
       setState(() {
         _currentIndex++;
         _answered = false;
@@ -5425,6 +6040,14 @@ class _LessonScreenState extends State<LessonScreen> {
     if (slide.type == 'quiz' && _selectedQuizOption != null) {
       final opt = slide.options!.firstWhere((o) => o.id == _selectedQuizOption);
       correct = opt.isCorrect;
+      
+      // Fallback robust check to overcome AI JSON generation un-mapped identical text bugs
+      if (!correct) {
+        final correctOpts = slide.options!.where((o) => o.isCorrect);
+        if (correctOpts.any((c) => c.text.trim().toLowerCase() == opt.text.trim().toLowerCase())) {
+          correct = true;
+        }
+      }
     } else if (slide.type == 'fill_in_blank') {
       correct = _blankInput.trim().toLowerCase() == slide.blankAnswer?.toLowerCase().replaceAll(r'\', '');
     } else if (slide.type == 'numerical') {
@@ -5432,6 +6055,15 @@ class _LessonScreenState extends State<LessonScreen> {
       if (val != null && slide.numericAnswer != null) {
         correct = (val - slide.numericAnswer!).abs() <= (slide.numericTolerance ?? 0.01);
       }
+    }
+
+    if (correct) {
+      HapticFeedback.heavyImpact();
+      // SystemSound.play(SystemSoundType.click); 
+    } else {
+      HapticFeedback.vibrate();
+      // Push missed question to end of the queue
+      _slideQueue.add(slide);
     }
 
     setState(() {
@@ -5466,22 +6098,12 @@ class _LessonScreenState extends State<LessonScreen> {
     switch (slide.type) {
       case 'interactive_canvas':
         return InteractiveWebview(slide: slide);
+      case 'step_by_step':
       case 'proof':
         return InteractiveProofView(
           slide: slide,
           onComplete: () {
-            setState(() {
-              _isCorrect = true;
-              _answered = true;
-              _correctAttempts++;
-            });
-            _nextSlide();
-          },
-        );
-      case 'step_by_step':
-        return StepByStepView(
-          slide: slide,
-          onComplete: () {
+            HapticFeedback.heavyImpact();
             setState(() {
               _isCorrect = true;
               _answered = true;
@@ -5521,12 +6143,12 @@ class _LessonScreenState extends State<LessonScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.lesson.slides.isEmpty) {
+    if (_slideQueue.isEmpty) {
       return Scaffold(appBar: AppBar(), body: const Center(child: Text("Empty Lesson")));
     }
 
-    final slide = widget.lesson.slides[_currentIndex];
-    final progress = (_currentIndex) / widget.lesson.slides.length;
+    final slide = _slideQueue[_currentIndex];
+    final progress = (_currentIndex) / _slideQueue.length;
     final isInteractive = ['quiz', 'fill_in_blank', 'numerical'].contains(slide.type);
     final hasCustomBar = _isCustomBottomBar(slide);
 
@@ -5614,13 +6236,7 @@ class _LessonScreenState extends State<LessonScreen> {
                             text: _answered && !_isCorrect ? 'Got It' : 'Continue',
                             color: _answered && !_isCorrect ? AppTheme.duoRed : AppTheme.duoBlue,
                             shadowColor: _answered && !_isCorrect ? AppTheme.duoRedDark : AppTheme.duoBlueDark,
-                            onPressed: () {
-                              if (_answered && !_isCorrect) {
-                                setState(() => _answered = false); // reset to try again
-                              } else {
-                                _nextSlide();
-                              }
-                            },
+                            onPressed: _nextSlide,
                           ),
                   ],
                 ),
@@ -5863,11 +6479,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
 --- START OF FILE lib/screens/lesson_complete_screen.dart ---
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 
-class LessonCompleteScreen extends StatelessWidget {
+class LessonCompleteScreen extends StatefulWidget {
   final int xpEarned;
   final int accuracy;
   final int timeSpentSeconds;
@@ -5881,17 +6498,46 @@ class LessonCompleteScreen extends StatelessWidget {
     this.isPractice = false,
   });
 
+  @override
+  State<LessonCompleteScreen> createState() => _LessonCompleteScreenState();
+}
+
+class _LessonCompleteScreenState extends State<LessonCompleteScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _animController;
+  late Animation<double> _scaleAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _scaleAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.elasticOut)
+    );
+    
+    _animController.forward();
+    
+    Future.delayed(const Duration(milliseconds: 100), () {
+      HapticFeedback.heavyImpact();
+    });
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
   String get _formattedTime {
-    int m = timeSpentSeconds ~/ 60;
-    int s = timeSpentSeconds % 60;
+    int m = widget.timeSpentSeconds ~/ 60;
+    int s = widget.timeSpentSeconds % 60;
     if (m > 0) return '${m}m ${s}s';
     return '${s}s';
   }
 
   String get _message {
-    if (accuracy == 100) return "Perfect!";
-    if (accuracy >= 80) return "Great Job!";
-    if (accuracy >= 60) return "Good Effort!";
+    if (widget.accuracy == 100) return "Perfect!";
+    if (widget.accuracy >= 80) return "Great Job!";
+    if (widget.accuracy >= 60) return "Good Effort!";
     return "Complete!";
   }
 
@@ -5904,85 +6550,101 @@ class LessonCompleteScreen extends StatelessWidget {
           child: Column(
             children: [
               const Spacer(),
-              const Icon(LucideIcons.trophy, size: 100, color: Colors.amber),
-              const SizedBox(height: 32),
-              Text(
-                _message,
-                style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.amber),
-                textAlign: TextAlign.center,
+              ScaleTransition(
+                scale: _scaleAnim,
+                child: Column(
+                  children: [
+                    const Icon(LucideIcons.trophy, size: 100, color: Colors.amber),
+                    const SizedBox(height: 32),
+                    Text(
+                      _message,
+                      style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.amber),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 48),
               
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      decoration: AppTheme.glassDecoration.copyWith(
-                        border: const Border(bottom: BorderSide(color: Colors.amber, width: 4)),
-                      ),
-                      child: Column(
-                        children: [
-                          const Icon(LucideIcons.zap, color: Colors.amber, size: 28),
-                          const SizedBox(height: 8),
-                          const Text('XP EARNED', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 1.2)),
-                          const SizedBox(height: 4),
-                          Text('+$xpEarned', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      decoration: AppTheme.glassDecoration.copyWith(
-                        border: const Border(bottom: BorderSide(color: AppTheme.duoBlue, width: 4)),
-                      ),
-                      child: Column(
-                        children: [
-                          const Icon(LucideIcons.target, color: AppTheme.duoBlue, size: 28),
-                          const SizedBox(height: 8),
-                          const Text('ACCURACY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 1.2)),
-                          const SizedBox(height: 4),
-                          Text('$accuracy%', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
-                        ],
+              ScaleTransition(
+                scale: CurvedAnimation(parent: _animController, curve: const Interval(0.2, 1.0, curve: Curves.elasticOut)),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        decoration: AppTheme.glassDecoration.copyWith(
+                          border: const Border(bottom: BorderSide(color: Colors.amber, width: 4)),
+                        ),
+                        child: Column(
+                          children: [
+                            const Icon(LucideIcons.zap, color: Colors.amber, size: 28),
+                            const SizedBox(height: 8),
+                            const Text('XP EARNED', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 1.2)),
+                            const SizedBox(height: 4),
+                            Text('+${widget.xpEarned}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        decoration: AppTheme.glassDecoration.copyWith(
+                          border: const Border(bottom: BorderSide(color: AppTheme.duoBlue, width: 4)),
+                        ),
+                        child: Column(
+                          children: [
+                            const Icon(LucideIcons.target, color: AppTheme.duoBlue, size: 28),
+                            const SizedBox(height: 8),
+                            const Text('ACCURACY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 1.2)),
+                            const SizedBox(height: 4),
+                            Text('${widget.accuracy}%', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                decoration: AppTheme.glassDecoration.copyWith(
-                  border: const Border(bottom: BorderSide(color: AppTheme.duoGreen, width: 4)),
-                ),
-                child: Column(
-                  children: [
-                    const Icon(LucideIcons.clock, color: AppTheme.duoGreen, size: 28),
-                    const SizedBox(height: 8),
-                    const Text('TIME SPENT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 1.2)),
-                    const SizedBox(height: 4),
-                    Text(_formattedTime, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
-                  ],
+              ScaleTransition(
+                scale: CurvedAnimation(parent: _animController, curve: const Interval(0.4, 1.0, curve: Curves.elasticOut)),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  decoration: AppTheme.glassDecoration.copyWith(
+                    border: const Border(bottom: BorderSide(color: AppTheme.duoGreen, width: 4)),
+                  ),
+                  child: Column(
+                    children: [
+                      const Icon(LucideIcons.clock, color: AppTheme.duoGreen, size: 28),
+                      const SizedBox(height: 8),
+                      const Text('TIME SPENT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 1.2)),
+                      const SizedBox(height: 4),
+                      Text(_formattedTime, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+                    ],
+                  ),
                 ),
               ),
               
               const Spacer(),
-              DuoButton(
-                text: 'Continue',
-                color: AppTheme.duoGreen,
-                shadowColor: AppTheme.duoGreenDark,
-                onPressed: () {
-                  if (isPractice) {
-                    Navigator.pop(context); 
-                  } else {
-                    Navigator.pop(context); 
-                    Navigator.pop(context); 
-                  }
-                },
+              ScaleTransition(
+                scale: CurvedAnimation(parent: _animController, curve: const Interval(0.6, 1.0, curve: Curves.elasticOut)),
+                child: DuoButton(
+                  text: 'Continue',
+                  color: AppTheme.duoGreen,
+                  shadowColor: AppTheme.duoGreenDark,
+                  onPressed: () {
+                    if (widget.isPractice) {
+                      Navigator.pop(context); 
+                    } else {
+                      Navigator.pop(context); 
+                      Navigator.pop(context); 
+                    }
+                  },
+                ),
               )
             ],
           ),
@@ -6454,6 +7116,7 @@ class ExamScreen extends StatelessWidget {
 
 --- START OF FILE lib/screens/practice_session_screen.dart ---
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
@@ -6464,7 +7127,6 @@ import '../widgets/slide_views/quiz_view.dart';
 import '../widgets/slide_views/fill_in_blank_view.dart';
 import '../widgets/slide_views/numerical_view.dart';
 import '../widgets/slide_views/interactive_proof_view.dart';
-import '../widgets/slide_views/step_by_step_view.dart';
 import 'lesson_complete_screen.dart';
 
 class PracticeSessionScreen extends StatefulWidget {
@@ -6591,7 +7253,16 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     bool correct = false;
 
     if (slide.type == 'quiz' && _selectedQuizOption != null) {
-      correct = slide.options!.firstWhere((o) => o.id == _selectedQuizOption).isCorrect;
+      final selectedOpt = slide.options!.firstWhere((o) => o.id == _selectedQuizOption);
+      correct = selectedOpt.isCorrect;
+      
+      // Fallback robust check
+      if (!correct) {
+        final correctOpts = slide.options!.where((o) => o.isCorrect);
+        if (correctOpts.any((c) => c.text.trim().toLowerCase() == selectedOpt.text.trim().toLowerCase())) {
+          correct = true;
+        }
+      }
     } else if (slide.type == 'fill_in_blank') {
       correct = _blankInput.trim().toLowerCase() == slide.blankAnswer?.toLowerCase().replaceAll(r'\', '');
     } else if (slide.type == 'numerical') {
@@ -6599,6 +7270,12 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
       if (val != null && slide.numericAnswer != null) {
         correct = (val - slide.numericAnswer!).abs() <= (slide.numericTolerance ?? 0.01);
       }
+    }
+
+    if (correct) {
+      HapticFeedback.heavyImpact();
+    } else {
+      HapticFeedback.vibrate();
     }
 
     setState(() {
@@ -6656,21 +7333,11 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
         isCorrect: _isCorrect,
         onChanged: (val) => setState(() => _numericInput = val),
       );
-    } else if (slide.type == 'proof') {
+    } else if (slide.type == 'proof' || slide.type == 'step_by_step') {
       return InteractiveProofView(
         slide: slide,
         onComplete: () {
-          setState(() {
-            _isCorrect = true;
-            _answered = true;
-          });
-          _processNext();
-        },
-      );
-    } else if (slide.type == 'step_by_step') {
-      return StepByStepView(
-        slide: slide,
-        onComplete: () {
+          HapticFeedback.heavyImpact();
           setState(() {
             _isCorrect = true;
             _answered = true;

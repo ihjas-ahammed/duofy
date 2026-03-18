@@ -2,20 +2,26 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
+import 'pdf_folder_screen.dart';
 
-class _PdfMeta {
-  final File file;
-  final String bookName;
-  final String unitName;
-  final String sizeKb;
+class PdfFolderMeta {
+  final Directory dir;
+  final String folderId;
+  final Book? linkedBook;
+  final int fileCount;
+  final double sizeMb;
 
-  _PdfMeta(this.file, this.bookName, this.unitName, this.sizeKb);
+  PdfFolderMeta({
+    required this.dir, 
+    required this.folderId, 
+    this.linkedBook, 
+    required this.fileCount, 
+    required this.sizeMb
+  });
 }
 
 class PdfBrowserScreen extends StatefulWidget {
@@ -26,18 +32,17 @@ class PdfBrowserScreen extends StatefulWidget {
 }
 
 class _PdfBrowserScreenState extends State<PdfBrowserScreen> {
-  List<_PdfMeta> _pdfs = [];
+  List<PdfFolderMeta> _folders = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadPdfs();
+    _loadFolders();
   }
 
-  Future<void> _loadPdfs() async {
+  Future<void> _loadFolders() async {
     try {
-      // 1. Load Local Cache mappings
       final prefs = await SharedPreferences.getInstance();
       final cachedStr = prefs.getString('cached_books');
       List<Book> books = [];
@@ -46,130 +51,160 @@ class _PdfBrowserScreenState extends State<PdfBrowserScreen> {
         books = decoded.map((e) => Book.fromJson(Map<String, dynamic>.from(e))).toList();
       }
 
-      // 2. Scan physical directory
-      final dir = await getApplicationDocumentsDirectory();
-      final booksDir = Directory('${dir.path}/books');
+      final appDir = await getApplicationDocumentsDirectory();
+      final booksDir = Directory('${appDir.path}/books');
       
-      List<_PdfMeta> loadedList = [];
+      List<PdfFolderMeta> loadedList = [];
 
       if (await booksDir.exists()) {
-        final List<FileSystemEntity> entities = await booksDir.list(recursive: true).toList();
-        final files = entities.whereType<File>().where((f) => f.path.endsWith('.pdf')).toList();
+        final List<FileSystemEntity> entities = await booksDir.list().toList();
+        final directories = entities.whereType<Directory>().toList();
 
-        for (var file in files) {
-          final parentDirId = file.parent.path.split('/').last;
-          final unitIdRaw = file.path.split('/').last.replaceAll('.pdf', '');
+        for (var dir in directories) {
+          final folderId = dir.path.split('/').last;
           
-          String mappedBookName = "Unknown Course ($parentDirId)";
-          String mappedUnitName = unitIdRaw;
-
-          // Attempt match
-          for (var b in books) {
-            if (b.id == parentDirId) {
-              mappedBookName = b.title;
-              for (var m in b.modules) {
-                for (var s in m.sections) {
-                  for (var u in s.units) {
-                    if (u.id == unitIdRaw) {
-                      mappedUnitName = u.title;
-                    }
-                  }
-                }
-              }
-              break;
-            }
+          Book? linkedBook;
+          try {
+            linkedBook = books.firstWhere((b) => b.id == folderId);
+          } catch (_) {
+            linkedBook = null;
           }
 
-          final sizeKb = (file.lengthSync() / 1024).toStringAsFixed(1);
-          loadedList.add(_PdfMeta(file, mappedBookName, mappedUnitName, sizeKb));
+          final files = await dir.list(recursive: true).where((f) => f is File && f.path.endsWith('.pdf')).toList();
+          final int count = files.length;
+          
+          double totalSize = 0;
+          for (var f in files) {
+            totalSize += (f as File).lengthSync();
+          }
+          final sizeMb = totalSize / (1024 * 1024);
+
+          // Auto-cleanup completely empty orphan folders
+          if (count == 0 && linkedBook == null) {
+            await dir.delete(recursive: true);
+            continue;
+          }
+
+          loadedList.add(PdfFolderMeta(
+            dir: dir,
+            folderId: folderId,
+            linkedBook: linkedBook,
+            fileCount: count,
+            sizeMb: sizeMb,
+          ));
         }
       }
       
       if (mounted) {
         setState(() {
-          _pdfs = loadedList;
+          _folders = loadedList;
           _isLoading = false;
         });
       }
     } catch (e) {
-      print("Error loading PDFs: $e");
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _openPdf(_PdfMeta meta) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => Scaffold(
-          appBar: AppBar(title: Text(meta.unitName, style: const TextStyle(fontSize: 14))),
-          body: SfPdfViewer.file(meta.file),
-        )
+  void _deleteFolder(PdfFolderMeta meta) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text('Delete Folder?', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        content: Text('Are you sure you want to delete ${meta.linkedBook?.title ?? 'this orphan folder'} and all its downloaded PDFs?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              setState(() => _isLoading = true);
+              await meta.dir.delete(recursive: true);
+              _loadFolders();
+            }, 
+            child: const Text('Delete', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold))
+          ),
+        ],
       )
     );
   }
 
-  Future<void> _sharePdf(_PdfMeta meta) async {
-    try {
-      final tempDir = await getTemporaryDirectory();
-      final safeName = "${meta.bookName} - ${meta.unitName}".replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
-      final tempFile = File('${tempDir.path}/$safeName.pdf');
-      
-      await meta.file.copy(tempFile.path);
-      await Share.shareXFiles([XFile(tempFile.path)], text: 'Check out this course unit: ${meta.unitName}');
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error sharing: $e')));
-    }
+  void _openFolder(PdfFolderMeta meta) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PdfFolderScreen(
+          directory: meta.dir,
+          linkedBook: meta.linkedBook,
+          folderId: meta.folderId,
+        )
+      )
+    ).then((_) => _loadFolders()); // Refresh on return in case files were deleted
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Downloaded Units', style: TextStyle(fontWeight: FontWeight.w900))),
+      appBar: AppBar(title: const Text('File Manager', style: TextStyle(fontWeight: FontWeight.w900))),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue))
-          : _pdfs.isEmpty
-              ? const Center(child: Text('No PDFs found.', style: TextStyle(color: Colors.white54)))
+          : _folders.isEmpty
+              ? const Center(child: Text('No downloaded course folders found.', style: TextStyle(color: Colors.white54)))
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  itemCount: _pdfs.length,
+                  itemCount: _folders.length,
                   itemBuilder: (context, index) {
-                    final meta = _pdfs[index];
+                    final meta = _folders[index];
+                    final isOrphan = meta.linkedBook == null;
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
-                      decoration: AppTheme.glassDecoration,
+                      decoration: AppTheme.glassDecoration.copyWith(
+                        border: Border.all(color: isOrphan ? AppTheme.duoOrange.withOpacity(0.4) : Colors.white12)
+                      ),
                       child: ListTile(
+                        onTap: () => _openFolder(meta),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         leading: Container(
                           padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(color: AppTheme.duoRed.withOpacity(0.2), shape: BoxShape.circle),
-                          child: const Icon(LucideIcons.fileText, color: AppTheme.duoRed, size: 20),
+                          decoration: BoxDecoration(
+                            color: isOrphan ? AppTheme.duoOrange.withOpacity(0.2) : AppTheme.duoBlue.withOpacity(0.2), 
+                            shape: BoxShape.circle
+                          ),
+                          child: Icon(
+                            isOrphan ? LucideIcons.folderClosed : LucideIcons.folder, 
+                            color: isOrphan ? AppTheme.duoOrange : AppTheme.duoBlue, 
+                            size: 24
+                          ),
                         ),
-                        title: Text(meta.unitName, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Colors.white)),
+                        title: Text(
+                          meta.linkedBook?.title ?? 'Unlinked Course', 
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900, 
+                            fontSize: 16, 
+                            color: isOrphan ? AppTheme.duoOrange : Colors.white
+                          )
+                        ),
                         subtitle: Padding(
                           padding: const EdgeInsets.only(top: 4.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(meta.bookName, style: const TextStyle(fontSize: 11, color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 2),
-                              Text('${meta.sizeKb} KB', style: const TextStyle(fontSize: 10, color: Colors.white54)),
+                              Text(meta.folderId, style: const TextStyle(fontSize: 10, color: Colors.white38)),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Text('${meta.fileCount} items', style: const TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.bold)),
+                                  const SizedBox(width: 12),
+                                  Text('${meta.sizeMb.toStringAsFixed(2)} MB', style: const TextStyle(fontSize: 12, color: Colors.white54)),
+                                ],
+                              ),
                             ],
                           ),
                         ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(LucideIcons.share, color: Colors.white70, size: 20),
-                              onPressed: () => _sharePdf(meta),
-                            ),
-                            IconButton(
-                              icon: const Icon(LucideIcons.externalLink, color: AppTheme.duoGreen, size: 20),
-                              onPressed: () => _openPdf(meta),
-                            ),
-                          ],
+                        trailing: IconButton(
+                          icon: const Icon(LucideIcons.trash2, color: AppTheme.duoRed, size: 20),
+                          onPressed: () => _deleteFolder(meta),
                         ),
                       ),
                     );

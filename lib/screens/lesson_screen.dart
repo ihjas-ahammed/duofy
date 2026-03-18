@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
@@ -31,6 +32,7 @@ class _LessonScreenState extends State<LessonScreen> {
   late DateTime _startTime;
   int _totalInteractive = 0;
   int _correctAttempts = 0;
+  List<Slide> _slideQueue = [];
 
   String? _selectedQuizOption;
   String _blankInput = '';
@@ -40,7 +42,9 @@ class _LessonScreenState extends State<LessonScreen> {
   void initState() {
     super.initState();
     _startTime = DateTime.now();
-    for (var slide in widget.lesson.slides) {
+    _slideQueue = List.from(widget.lesson.slides);
+    
+    for (var slide in _slideQueue) {
       if (['quiz', 'fill_in_blank', 'numerical', 'proof', 'step_by_step'].contains(slide.type)) {
         _totalInteractive++;
       }
@@ -48,7 +52,7 @@ class _LessonScreenState extends State<LessonScreen> {
   }
 
   void _nextSlide() {
-    if (_currentIndex < widget.lesson.slides.length - 1) {
+    if (_currentIndex < _slideQueue.length - 1) {
       setState(() {
         _currentIndex++;
         _answered = false;
@@ -106,6 +110,15 @@ class _LessonScreenState extends State<LessonScreen> {
       }
     }
 
+    if (correct) {
+      HapticFeedback.heavyImpact();
+      // SystemSound.play(SystemSoundType.click); 
+    } else {
+      HapticFeedback.vibrate();
+      // Push missed question to end of the queue
+      _slideQueue.add(slide);
+    }
+
     setState(() {
       _answered = true;
       _isCorrect = correct;
@@ -143,6 +156,7 @@ class _LessonScreenState extends State<LessonScreen> {
         return InteractiveProofView(
           slide: slide,
           onComplete: () {
+            HapticFeedback.heavyImpact();
             setState(() {
               _isCorrect = true;
               _answered = true;
@@ -182,12 +196,12 @@ class _LessonScreenState extends State<LessonScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.lesson.slides.isEmpty) {
+    if (_slideQueue.isEmpty) {
       return Scaffold(appBar: AppBar(), body: const Center(child: Text("Empty Lesson")));
     }
 
-    final slide = widget.lesson.slides[_currentIndex];
-    final progress = (_currentIndex) / widget.lesson.slides.length;
+    final slide = _slideQueue[_currentIndex];
+    final progress = (_currentIndex) / _slideQueue.length;
     final isInteractive = ['quiz', 'fill_in_blank', 'numerical'].contains(slide.type);
     final hasCustomBar = _isCustomBottomBar(slide);
 
@@ -275,13 +289,7 @@ class _LessonScreenState extends State<LessonScreen> {
                             text: _answered && !_isCorrect ? 'Got It' : 'Continue',
                             color: _answered && !_isCorrect ? AppTheme.duoRed : AppTheme.duoBlue,
                             shadowColor: _answered && !_isCorrect ? AppTheme.duoRedDark : AppTheme.duoBlueDark,
-                            onPressed: () {
-                              if (_answered && !_isCorrect) {
-                                setState(() => _answered = false); // reset to try again
-                              } else {
-                                _nextSlide();
-                              }
-                            },
+                            onPressed: _nextSlide,
                           ),
                   ],
                 ),

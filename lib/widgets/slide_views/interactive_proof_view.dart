@@ -35,6 +35,21 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
     _steps = widget.slide.interactiveSteps ?? [];
   }
 
+  @override
+  void didUpdateWidget(InteractiveProofView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.slide.id != widget.slide.id) {
+      setState(() {
+        _currentStepIndex = 0;
+        _revealedSteps.clear();
+        _selectedOptionId = null;
+        _isSubmitted = false;
+        _isCorrect = false;
+        _steps = widget.slide.interactiveSteps ?? [];
+      });
+    }
+  }
+
   void _handleNextStatic() {
     final currentStep = _steps[_currentStepIndex];
     if (currentStep.stepText != null && currentStep.stepText!.isNotEmpty) {
@@ -215,7 +230,7 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                                     border: Border.all(color: borderColor, width: 2),
                                     borderRadius: BorderRadius.circular(16),
                                   ),
-                                  child: MathMarkdown(data: opt.text, textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                                  child: MathMarkdown(data: opt.text, selectable: false, textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                                 ),
                               ),
                             );

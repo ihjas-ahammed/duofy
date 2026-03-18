@@ -291,6 +291,22 @@ class Lesson {
     'icon': icon,
     'slides': slides.map((s) => s.toJson()).toList(),
   };
+
+  Lesson copyWith({
+    String? id,
+    String? title,
+    String? description,
+    String? icon,
+    List<Slide>? slides,
+  }) {
+    return Lesson(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      icon: icon ?? this.icon,
+      slides: slides ?? this.slides,
+    );
+  }
 }
 
 class InteractiveStep {
@@ -325,6 +341,7 @@ class Slide {
   final List<InteractiveStep>? interactiveSteps;
   final List<String>? proofSteps;
   final String? blankAnswer;
+  final List<String>? blankDistractors;
   final double? numericAnswer;
   final double? numericTolerance;
 
@@ -338,6 +355,7 @@ class Slide {
     this.interactiveSteps,
     this.proofSteps,
     this.blankAnswer,
+    this.blankDistractors,
     this.numericAnswer,
     this.numericTolerance,
   });
@@ -381,6 +399,7 @@ class Slide {
       interactiveSteps: (json['interactiveSteps'] as List?)?.map((s) => InteractiveStep.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList(),
       proofSteps: (json['proofSteps'] as List?)?.map((s) => _str(s)).toList(),
       blankAnswer: _strOpt(json['blankAnswer']),
+      blankDistractors: (json['blankDistractors'] as List?)?.map((s) => _str(s)).toList(),
       numericAnswer: _dblOpt(json['numericAnswer']),
       numericTolerance: _dblOpt(json['numericTolerance']) ?? 0.01,
     );
@@ -396,9 +415,40 @@ class Slide {
     if (interactiveSteps != null) 'interactiveSteps': interactiveSteps!.map((s) => s.toJson()).toList(),
     if (proofSteps != null) 'proofSteps': proofSteps,
     if (blankAnswer != null) 'blankAnswer': blankAnswer,
+    if (blankDistractors != null) 'blankDistractors': blankDistractors,
     if (numericAnswer != null) 'numericAnswer': numericAnswer,
     if (numericTolerance != null) 'numericTolerance': numericTolerance,
   };
+
+  Slide copyWith({
+    String? id,
+    String? type,
+    String? title,
+    String? content,
+    String? interactiveCanvasHtml,
+    List<QuizOption>? options,
+    List<InteractiveStep>? interactiveSteps,
+    List<String>? proofSteps,
+    String? blankAnswer,
+    List<String>? blankDistractors,
+    double? numericAnswer,
+    double? numericTolerance,
+  }) {
+    return Slide(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      interactiveCanvasHtml: interactiveCanvasHtml ?? this.interactiveCanvasHtml,
+      options: options ?? this.options,
+      interactiveSteps: interactiveSteps ?? this.interactiveSteps,
+      proofSteps: proofSteps ?? this.proofSteps,
+      blankAnswer: blankAnswer ?? this.blankAnswer,
+      blankDistractors: blankDistractors ?? this.blankDistractors,
+      numericAnswer: numericAnswer ?? this.numericAnswer,
+      numericTolerance: numericTolerance ?? this.numericTolerance,
+    );
+  }
 }
 
 class QuizOption {

@@ -69,7 +69,11 @@ class QuizView extends StatelessWidget {
                       border: Border.all(color: borderColor, width: 2),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: MathMarkdown(data: opt.text, textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                    child: MathMarkdown(
+                      data: opt.text, 
+                      selectable: false, 
+                      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
                   ),
                 ),
               );

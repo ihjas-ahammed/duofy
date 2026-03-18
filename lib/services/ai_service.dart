@@ -201,7 +201,15 @@ class AiService {
             final lessonsData = jsonMap['lessons'] as List?;
             
             final newLessons = lessonsData?.map((l) {
-              if (l is Map) return Lesson.fromJson(Map<String, dynamic>.from(l));
+              if (l is Map) {
+                var lesson = Lesson.fromJson(Map<String, dynamic>.from(l));
+                // Ensure globally unique IDs across different unit generations
+                final uniqueLessonId = '${unit.id}-${lesson.id}';
+                return lesson.copyWith(
+                  id: uniqueLessonId,
+                  slides: lesson.slides.map((s) => s.copyWith(id: '$uniqueLessonId-${s.id}')).toList()
+                );
+              }
               return null;
             }).whereType<Lesson>().toList() ?? [];
             

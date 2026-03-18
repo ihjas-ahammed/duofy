@@ -34,8 +34,9 @@ We use the Gemini API to analyze uploaded PDFs and generate interactive JSON les
 - `/lib/theme`: Colors and global styling matching the web platform
 
 ## Recent Updates & Design Process
-- **Adaptive Psychological Progress Bar**: Replaced static loading spinners with a logarithmic progress bar (Zeno's paradox algorithm) that predicts processing time based on historical AI generation averages and file size, making long waits feel significantly shorter.
-- **Robust Multiple Choice Engine**: Implemented cross-verification on `QuizOption` selections to prevent correct answers from being flagged as incorrect when the AI generates redundant or un-indexed JSON structures. Enforces exactly ONE correct option at the instantiation layer.
-- **Unified Interactive Step UI**: Deprecated the clumsy `step_by_step` slide splitting. Big questions now inherently utilize the polished, progressive disclosure format of the `InteractiveProofView`.
-- **Async Course Generation Pipeline**: PDF metadata extraction is now moved to a background process. Users instantly see a "Generating Course" placeholder on their dashboard while AI extracts table of contents and page numbers.
-- **Enhanced JSON Prompts**: Resolved missing `pageNo` data by restructuring the Book Skeleton prompt output. Now `startPage` and `endPage` are explicitly requested per unit.
+- **True PDF Splitting**: Replaced template-based splitting with native page-removal logic. This completely solves layout displacement and ensures generated PDF chunks retain exact dimensions and significantly smaller proportional file sizes.
+- **Interactive Canvas Art**: Added a dedicated slide type that visualizes topics via interactive 2D HTML/JS Canvas rendered seamlessly below theory explanations.
+- **PDF Manager System**: Revamped the downloaded PDFs UI into a full folder-based file manager, differentiating between linked course chunks and unlinked orphan files for easy storage cleanup.
+- **Adaptive Psychological Progress Bar**: Replaced static loading spinners with a logarithmic progress bar (Zeno's paradox algorithm) that predicts processing time based on historical AI generation averages and file size.
+- **Robust Multiple Choice Engine**: Implemented cross-verification on `QuizOption` selections to prevent correct answers from being flagged as incorrect.
+- **Async Course Generation Pipeline**: PDF metadata extraction is now moved to a background process for fluid UX.

@@ -1,20 +1,23 @@
 import 'dart:io';
-import 'dart:ui';
 import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import '../models/app_models.dart';
 
 class PdfService {
-  /// True Physical Splitting using Template Drawing
-  /// This guarantees that massive, unreferenced meta-data from the old document isn't retained.
+  /// True Physical Splitting using Page Removal
+  /// This guarantees exact original margins, dimensions, and significantly smaller file sizes
+  /// by not wrapping pages inside graphical templates.
   Future<Book> splitBookPdf(File originalPdf, Book book) async {
     final bytes = await originalPdf.readAsBytes();
-    final PdfDocument sourceDoc = PdfDocument(inputBytes: bytes);
-    final int totalPages = sourceDoc.pages.count;
     
     final dir = await getApplicationDocumentsDirectory();
     final bookDir = Directory('${dir.path}/books/${book.id}');
     if (!await bookDir.exists()) await bookDir.create(recursive: true);
+
+    // Pre-calculate total pages to prevent index out of bounds
+    final dummyDoc = PdfDocument(inputBytes: bytes);
+    final int totalPages = dummyDoc.pages.count;
+    dummyDoc.dispose();
 
     List<Module> updatedModules = [];
 
@@ -32,15 +35,16 @@ class PdfService {
             if (start < 0) start = 0;
             if (end >= totalPages) end = totalPages - 1;
 
-            final PdfDocument newDoc = PdfDocument();
-            // Important: drawing templates strips out redundant document-level objects
-            for (int i = start; i <= end; i++) {
-              final PdfPage sourcePage = sourceDoc.pages[i];
-              newDoc.pageSettings.size = sourcePage.size;
-              
-              final PdfTemplate template = sourcePage.createTemplate();
-              final PdfPage newPage = newDoc.pages.add();
-              newPage.graphics.drawPdfTemplate(template, const Offset(0, 0));
+            // Load fresh document for physical split
+            final PdfDocument newDoc = PdfDocument(inputBytes: bytes);
+            
+            // Critical: Remove trailing pages first so indices of lower pages aren't shifted
+            for (int i = newDoc.pages.count - 1; i > end; i--) {
+              newDoc.pages.removeAt(i);
+            }
+            // Remove leading pages
+            for (int i = start - 1; i >= 0; i--) {
+              newDoc.pages.removeAt(i);
             }
 
             final file = File('${bookDir.path}/${unit.id}.pdf');
@@ -56,7 +60,6 @@ class PdfService {
       }
       updatedModules.add(module.copyWith(sections: updatedSections));
     }
-    sourceDoc.dispose();
 
     return book.copyWith(modules: updatedModules);
   }

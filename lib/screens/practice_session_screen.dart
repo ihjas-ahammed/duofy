@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
@@ -154,6 +155,12 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
       }
     }
 
+    if (correct) {
+      HapticFeedback.heavyImpact();
+    } else {
+      HapticFeedback.vibrate();
+    }
+
     setState(() {
       _answered = true;
       _isCorrect = correct;
@@ -213,6 +220,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
       return InteractiveProofView(
         slide: slide,
         onComplete: () {
+          HapticFeedback.heavyImpact();
           setState(() {
             _isCorrect = true;
             _answered = true;

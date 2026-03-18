@@ -47,13 +47,13 @@ class LessonNodeWidget extends StatelessWidget {
     final shadowColor = isLocked ? Colors.grey.shade900 : _getShadowColor();
 
     return GestureDetector(
-      onTap: isLocked ? null : onTap,
+      onTap: onTap,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 80, // Increased from 70 to 80
-            height: 80, // Increased from 70 to 80
+            width: 80, 
+            height: 80, 
             decoration: BoxDecoration(
               color: bgColor,
               shape: BoxShape.circle,
@@ -68,17 +68,17 @@ class LessonNodeWidget extends StatelessWidget {
             child: Icon(
               isLocked ? LucideIcons.lock : LucideIcons.bookOpen,
               color: isLocked ? Colors.grey.shade500 : Colors.white,
-              size: 36, // Increased icon size
+              size: 36, 
             ),
           ),
           const SizedBox(height: 16),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), // Increased padding
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), 
             decoration: AppTheme.glassDecoration,
             child: Text(
               lesson.title.toUpperCase(),
               style: const TextStyle(
-                fontSize: 11, // Slightly larger font
+                fontSize: 11, 
                 fontWeight: FontWeight.w900,
                 color: Colors.white70,
                 letterSpacing: 1.0,

@@ -12,10 +12,15 @@ class TheoryView extends StatelessWidget {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: AppTheme.glassDecoration,
-        child: MathMarkdown(data: slide.content),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: AppTheme.glassDecoration,
+          child: MathMarkdown(
+            data: slide.content, 
+            textAlign: TextAlign.center,
+          ),
+        ),
       ),
     );
   }
