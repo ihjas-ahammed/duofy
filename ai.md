@@ -1,10 +1,6 @@
 Make the following changes:
 
-    - Fix split pdf size issue: After I split the pdf it seems they have a certain new margin and also sometimes the content is not covered, i think this is because the split happens similar in a way we use print feature, so find another way like real split, by uding same sizing at parent pdf and also same ratio of size like if i take 10 pages from a 100 page pdf of 10 mb, the 10 pages must be near 1 mb and also have the same split without margin or different size
-
-    - Add a new slide type:
-        Intractive canvas art:
-            this work as a web view, it uses canvas 2d to visualize the topic, this goes along with theory slides (like above theory, below canvas art) update the unit generation prompt for this and also add support for canvas art in the slide viewer
+    - 
 
 
 
