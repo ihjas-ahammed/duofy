@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../services/global_state.dart';
+import '../services/database_service.dart';
 import '../services/generation_manager.dart';
 import 'book_dashboard_screen.dart';
 import 'practice_screen.dart';
@@ -55,6 +56,29 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     }
   }
 
+  void _publishBook() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text('Publish to Community?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: const Text('This will make your course available to everyone in the Global Community Picks.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Publishing...')));
+              await DatabaseService().publishToGlobal(_currentBook);
+              if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Published Successfully!')));
+            },
+            child: const Text('Publish', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
+          )
+        ]
+      )
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = [
@@ -83,8 +107,15 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
             letterSpacing: 1.0,
             color: Colors.white,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         actions: [
+          IconButton(
+            icon: const Icon(LucideIcons.uploadCloud, size: 22, color: AppTheme.duoBlue),
+            tooltip: 'Publish to Community',
+            onPressed: _publishBook,
+          ),
           ValueListenableBuilder<int>(
             valueListenable: GlobalState.xpNotifier,
             builder: (context, xp, child) {
@@ -103,7 +134,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                       const Icon(LucideIcons.zap, color: Colors.amber, size: 16),
                       const SizedBox(width: 4),
                       Text(
-                        '$xp XP', 
+                        '$xp', 
                         style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.w900, fontSize: 14),
                       ),
                     ],

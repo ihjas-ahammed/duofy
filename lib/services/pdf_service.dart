@@ -1,20 +1,36 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import '../models/app_models.dart';
 
 class PdfService {
-  /// True Physical Splitting using Page Removal
-  /// This guarantees exact original margins, dimensions, and significantly smaller file sizes
-  /// by not wrapping pages inside graphical templates.
+  /// True Physical Splitting using Page Removal inside an Isolate.
+  /// This fully offloads synchronous PDF parsing rendering it perfectly async,
+  /// preventing dropped frames during background chunking operations.
   Future<Book> splitBookPdf(File originalPdf, Book book) async {
     final bytes = await originalPdf.readAsBytes();
     
     final dir = await getApplicationDocumentsDirectory();
-    final bookDir = Directory('${dir.path}/books/${book.id}');
+    final bookDirPath = '${dir.path}/books/${book.id}';
+    final bookDir = Directory(bookDirPath);
     if (!await bookDir.exists()) await bookDir.create(recursive: true);
 
-    // Pre-calculate total pages to prevent index out of bounds
+    // Offload heavy memory calculations and chunking to a background Isolate
+    return await compute(_splitPdfTask, {
+      'bytes': bytes,
+      'book': book.toJson(),
+      'bookDirPath': bookDirPath,
+    });
+  }
+
+  // Pure static task for Isolate execution
+  static Future<Book> _splitPdfTask(Map<String, dynamic> params) async {
+    final Uint8List bytes = params['bytes'];
+    final Book book = Book.fromJson(params['book']);
+    final String bookDirPath = params['bookDirPath'];
+
     final dummyDoc = PdfDocument(inputBytes: bytes);
     final int totalPages = dummyDoc.pages.count;
     dummyDoc.dispose();
@@ -35,23 +51,23 @@ class PdfService {
             if (start < 0) start = 0;
             if (end >= totalPages) end = totalPages - 1;
 
-            // Load fresh document for physical split
             final PdfDocument newDoc = PdfDocument(inputBytes: bytes);
             
-            // Critical: Remove trailing pages first so indices of lower pages aren't shifted
             for (int i = newDoc.pages.count - 1; i > end; i--) {
               newDoc.pages.removeAt(i);
             }
-            // Remove leading pages
             for (int i = start - 1; i >= 0; i--) {
               newDoc.pages.removeAt(i);
             }
 
-            final file = File('${bookDir.path}/${unit.id}.pdf');
-            await file.writeAsBytes(await newDoc.save());
+            final filePath = '$bookDirPath/${unit.id}.pdf';
+            final file = File(filePath);
+            
+            // Synchronously save in Isolate to avoid inner event loop bottlenecks
+            file.writeAsBytesSync(newDoc.saveSync());
             newDoc.dispose();
 
-            updatedUnits.add(unit.copyWith(pdfPath: file.path, isGenerated: false, lessons: []));
+            updatedUnits.add(unit.copyWith(pdfPath: filePath, isGenerated: false, lessons: []));
           } else {
             updatedUnits.add(unit.copyWith(isGenerated: false, lessons: []));
           }

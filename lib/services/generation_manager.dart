@@ -6,6 +6,7 @@ import '../models/app_models.dart';
 import 'pdf_service.dart';
 import 'database_service.dart';
 import 'ai_service.dart';
+import 'notification_service.dart';
 
 enum BookGenState { extracting, review, chunking, saving, error }
 
@@ -65,7 +66,7 @@ class GenerationManager extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     List<String> history = prefs.getStringList(key) ?? [];
     history.add(durationMs.toString());
-    if (history.length > 3) history.removeAt(0); // rolling average of last 3
+    if (history.length > 3) history.removeAt(0);
     await prefs.setStringList(key, history);
   }
 
@@ -80,11 +81,11 @@ class GenerationManager extends ChangeNotifier {
   /// Background Stage 1: Async Book Skeleton Extraction
   Future<void> startBookGeneration(File pdfFile, String filename) async {
     final taskId = DateTime.now().millisecondsSinceEpoch.toString();
+    final notifId = taskId.hashCode;
     
-    // Estimate Time
     final fileSize = await pdfFile.length();
-    final uploadSecs = (fileSize / 500000).ceil(); // Assuming ~500 KB/s upload
-    final avgAiMs = await _getAverageRunTime('meta_gen_history', 120000); // 2 mins default
+    final uploadSecs = (fileSize / 500000).ceil();
+    final avgAiMs = await _getAverageRunTime('meta_gen_history', 120000); 
     final estimatedDuration = Duration(seconds: uploadSecs, milliseconds: avgAiMs);
 
     final task = GenerationTask(
@@ -98,6 +99,9 @@ class GenerationManager extends ChangeNotifier {
     activeTasks.add(task);
     notifyListeners();
 
+    // Trigger Indeterminate Progress Notification
+    await NotificationService.showProgress(notifId, "Analyzing PDF", "Extracting metadata...", indeterminate: true);
+
     try {
       final stopwatch = Stopwatch()..start();
       final skeletonBook = await _aiService.generateBookSkeleton(pdfFile, filename);
@@ -110,16 +114,22 @@ class GenerationManager extends ChangeNotifier {
         task.state = BookGenState.review;
         task.statusMessage = 'Action Required: Review Splits';
         notifyListeners();
+        
+        await NotificationService.cancel(notifId);
+        await NotificationService.showActionable(notifId, "Course Skeleton Ready", "Tap to review page splits.", "review_split|$taskId");
       }
     } catch (e) {
       task.state = BookGenState.error;
       task.errorMessage = e.toString();
       task.statusMessage = 'Failed to generate structure';
       notifyListeners();
+      
+      await NotificationService.cancel(notifId);
+      await NotificationService.showActionable(notifId, "Generation Failed", "Failed to analyze PDF.", "error");
     }
   }
 
-  /// Background Stage 2: Physically splits the PDF and saves the chunked book to DB
+  /// Background Stage 2: Physically splits the PDF in Isolate and saves the chunked book to DB
   Future<void> startBackgroundSplitAndSave(String taskId, File originalPdf, Book offsetBook) async {
     final taskIndex = activeTasks.indexWhere((t) => t.id == taskId);
     if (taskIndex == -1) return;
@@ -127,10 +137,12 @@ class GenerationManager extends ChangeNotifier {
     final task = activeTasks[taskIndex];
     task.state = BookGenState.chunking;
     task.statusMessage = 'Splitting PDF chunks...';
-    // Re-estimate for chunking phase
     task.estimatedDuration = const Duration(seconds: 15);
     task.startTime = DateTime.now();
     notifyListeners();
+
+    final notifId = taskId.hashCode;
+    await NotificationService.showProgress(notifId, "Splitting PDF", "Processing pages in background...", indeterminate: true);
 
     try {
       final completeBook = await _pdfService.splitBookPdf(originalPdf, offsetBook);
@@ -138,6 +150,7 @@ class GenerationManager extends ChangeNotifier {
       task.state = BookGenState.saving;
       task.statusMessage = 'Saving to Database...';
       notifyListeners();
+      await NotificationService.showProgress(notifId, "Saving to Database", "Finalizing...", indeterminate: true);
       
       await _dbService.saveGeneratedBook(completeBook);
       
@@ -145,11 +158,17 @@ class GenerationManager extends ChangeNotifier {
       notifyListeners();
       
       onBookGenerated?.call();
+
+      await NotificationService.cancel(notifId);
+      await NotificationService.showActionable(notifId, "Course Created!", "Your book is ready.", "open_home|");
     } catch (e) {
       task.state = BookGenState.error;
       task.statusMessage = 'Error chunking file';
       task.errorMessage = e.toString();
       notifyListeners();
+      
+      await NotificationService.cancel(notifId);
+      await NotificationService.showActionable(notifId, "Error", "Failed to split file.", "error");
     }
   }
 
@@ -157,7 +176,8 @@ class GenerationManager extends ChangeNotifier {
   Future<void> startUnitGeneration(Unit unit, Book book, int modIdx, int secIdx, int unitIdx) async {
     if (activeUnitGenerations.containsKey(unit.id)) return;
     
-    final avgUnitMs = await _getAverageRunTime('unit_gen_history', 90000); // 1.5 mins default
+    final avgUnitMs = await _getAverageRunTime('unit_gen_history', 90000); 
+    final notifId = unit.id.hashCode;
 
     activeUnitGenerations[unit.id] = UnitGenTask(
       status: 'Initializing AI...',
@@ -165,6 +185,8 @@ class GenerationManager extends ChangeNotifier {
       startTime: DateTime.now()
     );
     notifyListeners();
+
+    await NotificationService.showProgress(notifId, "Generating Lesson", "AI is crafting content...", indeterminate: true);
     
     try {
       final stopwatch = Stopwatch()..start();
@@ -192,10 +214,16 @@ class GenerationManager extends ChangeNotifier {
       notifyListeners();
 
       _bookUpdateController.add(newBook);
+
+      await NotificationService.cancel(notifId);
+      await NotificationService.showActionable(notifId, "Lesson Ready!", "Tap to start learning.", "open_home|");
     } catch (e) {
       activeUnitGenerations[unit.id]?.isError = true;
       activeUnitGenerations[unit.id]?.status = 'Error: $e';
       notifyListeners();
+
+      await NotificationService.cancel(notifId);
+      await NotificationService.showActionable(notifId, "Generation Failed", "Failed to generate lesson.", "error");
     }
   }
 
@@ -208,6 +236,7 @@ class GenerationManager extends ChangeNotifier {
 
   void dismissTask(String id) {
     activeTasks.removeWhere((t) => t.id == id);
+    NotificationService.cancel(id.hashCode);
     notifyListeners();
   }
 }

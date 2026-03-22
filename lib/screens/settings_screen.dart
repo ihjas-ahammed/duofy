@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/string_list_manager.dart';
@@ -21,6 +22,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   List<String> _models = [];
   bool _isFetchingModels = false;
   bool _isLoading = true;
+
+  final user = FirebaseAuth.instance.currentUser;
 
   @override
   void initState() {
@@ -141,6 +144,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children:[
+            
+            // User Profile Section
+            Container(
+              padding: const EdgeInsets.all(20),
+              margin: const EdgeInsets.only(bottom: 32),
+              decoration: AppTheme.glassDecoration,
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: AppTheme.duoBlue,
+                    child: Text(
+                      user?.displayName?.isNotEmpty == true ? user!.displayName![0].toUpperCase() : 'U', 
+                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white)
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(user?.displayName ?? 'Guest User', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white)),
+                        Text(user?.email ?? 'Not logged in', style: const TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, fontSize: 12)),
+                      ],
+                    ),
+                  )
+                ],
+              ),
+            ),
+
             Row(
               children: [
                 Expanded(
@@ -168,7 +201,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 32),
 
-            const Text('API Keys', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('API Keys', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
             const Text('Add multiple keys to fall back automatically if rate-limited.', style: TextStyle(color: Colors.white54, fontSize: 12)),
             const SizedBox(height: 16),
@@ -180,7 +213,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 32),
 
-            const Text('AI Models Sequence', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('AI Models Sequence', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
             const Text('Add up to 5 models. Top models will be prioritized.', style: TextStyle(color: Colors.white54, fontSize: 12)),
             const SizedBox(height: 16),
@@ -216,7 +249,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: _saveSettings,
               color: AppTheme.duoGreen,
               shadowColor: AppTheme.duoGreenDark,
-            )
+            ),
+            
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: DuoButton(
+                text: 'Sign Out',
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await FirebaseAuth.instance.signOut();
+                },
+                color: AppTheme.duoRed,
+                shadowColor: AppTheme.duoRedDark,
+                isOutline: true,
+              ),
+            ),
+            const SizedBox(height: 32),
           ],
         ),
       ),

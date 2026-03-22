@@ -36,6 +36,9 @@ class Book {
   final String icon;
   final String? systemPrompt;
   final int? updatedAt;
+  final String? authorId;
+  final String? authorName;
+  final bool isGlobal;
   final List<Module> modules;
 
   Book({
@@ -45,6 +48,9 @@ class Book {
     required this.icon, 
     this.systemPrompt,
     this.updatedAt,
+    this.authorId,
+    this.authorName,
+    this.isGlobal = false,
     required this.modules
   });
 
@@ -56,6 +62,9 @@ class Book {
       icon: _str(json['icon'], 'Book'),
       systemPrompt: _strOpt(json['systemPrompt']),
       updatedAt: json['updatedAt'] is num ? (json['updatedAt'] as num).toInt() : int.tryParse(_str(json['updatedAt'])),
+      authorId: _strOpt(json['authorId']),
+      authorName: _strOpt(json['authorName']),
+      isGlobal: _bool(json['isGlobal'], false),
       modules: (json['modules'] as List?)?.map((m) => Module.fromJson(m is Map ? Map<String, dynamic>.from(m) : {})).toList() ?? [],
     );
   }
@@ -67,6 +76,9 @@ class Book {
     'icon': icon,
     if (systemPrompt != null) 'systemPrompt': systemPrompt,
     if (updatedAt != null) 'updatedAt': updatedAt,
+    if (authorId != null) 'authorId': authorId,
+    if (authorName != null) 'authorName': authorName,
+    'isGlobal': isGlobal,
     'modules': modules.map((m) => m.toJson()).toList(),
   };
 
@@ -77,6 +89,9 @@ class Book {
     String? icon,
     String? systemPrompt,
     int? updatedAt,
+    String? authorId,
+    String? authorName,
+    bool? isGlobal,
     List<Module>? modules,
   }) {
     return Book(
@@ -86,6 +101,9 @@ class Book {
       icon: icon ?? this.icon,
       systemPrompt: systemPrompt ?? this.systemPrompt,
       updatedAt: updatedAt ?? this.updatedAt,
+      authorId: authorId ?? this.authorId,
+      authorName: authorName ?? this.authorName,
+      isGlobal: isGlobal ?? this.isGlobal,
       modules: modules ?? this.modules,
     );
   }

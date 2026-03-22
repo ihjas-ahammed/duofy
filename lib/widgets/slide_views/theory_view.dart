@@ -18,7 +18,6 @@ class TheoryView extends StatelessWidget {
           decoration: AppTheme.glassDecoration,
           child: MathMarkdown(
             data: slide.content, 
-            textAlign: TextAlign.center,
           ),
         ),
       ),

@@ -5,7 +5,8 @@ import '../services/database_service.dart';
 import '../services/progress_service.dart';
 import '../services/generation_manager.dart';
 import '../theme/app_theme.dart';
-import '../widgets/book_card.dart';
+import '../widgets/compact_book_card.dart';
+import '../widgets/community_book_card.dart';
 import '../widgets/generating_book_card.dart';
 import 'main_layout_screen.dart';
 import 'settings_screen.dart';
@@ -22,18 +23,21 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final DatabaseService _db = DatabaseService();
   List<Book> books = [];
+  List<Book> globalBooks = [];
   Map<String, double> progressMap = {};
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadBooks();
-    GenerationManager.instance.onBookGenerated = () => _loadBooks(force: true);
+    _loadAllData();
+    GenerationManager.instance.onBookGenerated = () => _loadAllData(force: true);
   }
 
-  Future<void> _loadBooks({bool force = false}) async {
+  Future<void> _loadAllData({bool force = false}) async {
     final fetched = await _db.fetchBooks(forceRefresh: force);
+    final globals = await _db.fetchGlobalBooks();
+    
     Map<String, double> prog = {};
     for (var b in fetched) {
       prog[b.id] = await ProgressService.getBookProgress(b);
@@ -42,36 +46,25 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) {
       setState(() {
         books = fetched;
+        globalBooks = globals;
         progressMap = prog;
         isLoading = false;
       });
     }
   }
 
-  void _deleteBook(String id) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Delete Course?', style: TextStyle(fontWeight: FontWeight.w900)),
-        content: const Text('This will permanently delete the course and all its downloaded chunks.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              setState(() => isLoading = true);
-              await _db.deleteBook(id);
-              _loadBooks(force: true);
-            },
-            child: const Text('Delete', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      )
+  void _downloadGlobalBook(Book globalBook) async {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Downloading ${globalBook.title}...')));
+    
+    final newBook = globalBook.copyWith(
+      id: 'dl_${DateTime.now().millisecondsSinceEpoch}',
+      isGlobal: false,
     );
+    
+    await _db.saveGeneratedBook(newBook);
+    await _loadAllData(force: true);
+    
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved to your library!')));
   }
 
   @override
@@ -87,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ? const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue))
             : RefreshIndicator(
                 color: AppTheme.duoBlue,
-                onRefresh: () => _loadBooks(force: true),
+                onRefresh: () => _loadAllData(force: true),
                 child: CustomScrollView(
                   physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
                   slivers:[
@@ -95,14 +88,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       expandedHeight: 120,
                       floating: true,
                       backgroundColor: AppTheme.background,
-                      flexibleSpace: FlexibleSpaceBar(
-                        titlePadding: const EdgeInsets.only(left: 24, bottom: 16),
-                        title: const Text('Today', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 28, color: Colors.white)),
+                      flexibleSpace: const FlexibleSpaceBar(
+                        titlePadding: EdgeInsets.only(left: 24, bottom: 16),
+                        title: Text('Discover', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 28, color: Colors.white)),
                       ),
                       actions:[
                         IconButton(
                           padding: const EdgeInsets.only(right: 16),
-                          icon: const Icon(LucideIcons.settings, size: 28),
+                          icon: const Icon(LucideIcons.userCircle, size: 28),
                           onPressed: () {
                             Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
                           },
@@ -110,65 +103,113 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                     
-                    if (books.isEmpty && activeTasks.isEmpty)
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.all(40.0),
-                          child: Center(
-                            child: Column(
-                              children: [
-                                const Icon(LucideIcons.bookDown, size: 80, color: Colors.white24),
-                                const SizedBox(height: 16),
-                                const Text('No courses found.\nTap the + button to create one.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontSize: 16)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-
-                    if (books.isNotEmpty || activeTasks.isNotEmpty)
+                    // Generating Tasks Section
+                    if (activeTasks.isNotEmpty)
                       SliverPadding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                         sliver: SliverList(
                           delegate: SliverChildBuilderDelegate(
                             (context, index) {
-                              if (index < activeTasks.length) {
-                                final task = activeTasks[index];
-                                return GeneratingBookCard(
-                                  task: task,
-                                  onTap: () {
-                                    if (task.state == BookGenState.review && task.skeletonBook != null) {
-                                      Navigator.push(context, MaterialPageRoute(
-                                        builder: (_) => PdfSplitPreviewScreen(
-                                          taskId: task.id,
-                                          originalPdf: task.pdfFile,
-                                          skeletonBook: task.skeletonBook!,
-                                        )
-                                      ));
-                                    } else if (task.state == BookGenState.error) {
-                                      GenerationManager.instance.dismissTask(task.id);
-                                    }
+                              final task = activeTasks[index];
+                              return GeneratingBookCard(
+                                task: task,
+                                onTap: () {
+                                  if (task.state == BookGenState.review && task.skeletonBook != null) {
+                                    Navigator.push(context, MaterialPageRoute(
+                                      builder: (_) => PdfSplitPreviewScreen(
+                                        taskId: task.id,
+                                        originalPdf: task.pdfFile,
+                                        skeletonBook: task.skeletonBook!,
+                                      )
+                                    ));
+                                  } else if (task.state == BookGenState.error) {
+                                    GenerationManager.instance.dismissTask(task.id);
                                   }
-                                );
-                              } else {
-                                final bookIndex = index - activeTasks.length;
-                                final book = books[bookIndex];
-                                return BookCard(
-                                  book: book,
-                                  progress: progressMap[book.id] ?? 0.0,
-                                  onTap: () {
-                                    Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
-                                      .then((_) => _loadBooks());
-                                  },
-                                  onDelete: () => _deleteBook(book.id),
-                                );
-                              }
+                                }
+                              );
                             },
-                            childCount: activeTasks.length + books.length,
+                            childCount: activeTasks.length,
                           ),
                         ),
                       ),
                     
+                    // User's Library Section (Horizontal Scroll)
+                    SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(24, 16, 24, 16),
+                            child: Text('Your Library', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
+                          ),
+                          if (books.isEmpty && activeTasks.isEmpty)
+                             Container(
+                               height: 180,
+                               margin: const EdgeInsets.symmetric(horizontal: 24),
+                               decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(24)),
+                               alignment: Alignment.center,
+                               child: const Text('No courses found.\nTap + to create one!', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                             )
+                          else if (books.isNotEmpty)
+                             SizedBox(
+                               height: 220,
+                               child: ListView.builder(
+                                 scrollDirection: Axis.horizontal,
+                                 physics: const BouncingScrollPhysics(),
+                                 padding: const EdgeInsets.only(left: 8, right: 24),
+                                 itemCount: books.length,
+                                 itemBuilder: (context, index) {
+                                   final book = books[index];
+                                   return CompactBookCard(
+                                     book: book,
+                                     progress: progressMap[book.id] ?? 0.0,
+                                     onTap: () {
+                                       Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
+                                         .then((_) => _loadAllData());
+                                     },
+                                   );
+                                 },
+                               ),
+                             ),
+                        ],
+                      ),
+                    ),
+
+                    // Global Community Books Section
+                    SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(24, 32, 24, 16),
+                            child: Text('Community Picks', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
+                          ),
+                          if (globalBooks.isEmpty)
+                             const Padding(
+                               padding: EdgeInsets.symmetric(horizontal: 24.0),
+                               child: Text('No community books published yet.', style: TextStyle(color: Colors.white54)),
+                             )
+                          else
+                             SizedBox(
+                               height: 120,
+                               child: ListView.builder(
+                                 scrollDirection: Axis.horizontal,
+                                 physics: const BouncingScrollPhysics(),
+                                 padding: const EdgeInsets.only(left: 8, right: 24),
+                                 itemCount: globalBooks.length,
+                                 itemBuilder: (context, index) {
+                                   final gBook = globalBooks[index];
+                                   return CommunityBookCard(
+                                     book: gBook,
+                                     onGetPressed: () => _downloadGlobalBook(gBook),
+                                   );
+                                 },
+                               ),
+                             ),
+                        ],
+                      ),
+                    ),
+
                     const SliverToBoxAdapter(child: SizedBox(height: 100)),
                   ],
                 ),

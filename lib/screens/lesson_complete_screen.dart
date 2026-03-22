@@ -157,12 +157,9 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
                   color: AppTheme.duoGreen,
                   shadowColor: AppTheme.duoGreenDark,
                   onPressed: () {
-                    if (widget.isPractice) {
-                      Navigator.pop(context); 
-                    } else {
-                      Navigator.pop(context); 
-                      Navigator.pop(context); 
-                    }
+                    // Because pushReplacement is used in both LessonScreen and PracticeSessionScreen,
+                    // popping exactly once properly returns back to the lesson path or practice menu.
+                    Navigator.pop(context); 
                   },
                 ),
               )
