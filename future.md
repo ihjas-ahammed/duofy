@@ -1,10 +1,6 @@
 
+- Update exam paper:
+    - USe the same exam reference tab
+    - Add a seperate screen, so i can continuesly select files
 
-- Update to MultiUser:
-    Initially it will be a guest user, who has all access like a regular user, user can become a regular user by giving themself a username and password in settings
-
-    so there will be a login button in settings 
-
-
-
-- Aync PDF splitting
+- Update new course just like that I get to continuesly select files and I can add a comment to the AI prompt like the way I want it if needed (opyional)

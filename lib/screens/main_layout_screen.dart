@@ -31,7 +31,6 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     super.initState();
     _currentBook = widget.book;
 
-    // Listen to background generation updates globally
     _bookUpdateSub = GenerationManager.instance.bookUpdates.listen((updatedBook) {
       if (updatedBook.id == _currentBook.id && mounted) {
         setState(() {
@@ -47,7 +46,6 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     super.dispose();
   }
 
-  // Fallback direct update for synchronous changes if needed
   void _onBookUpdated(Book newBook) {
     if (mounted) {
       setState(() {
@@ -150,7 +148,6 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
         children: pages,
       ),
       
-      // Glass Bottom Navigation Bar (Ultra Compact Icons only)
       bottomNavigationBar: ClipRRect(
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
@@ -168,7 +165,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                   _buildNavItem(0, LucideIcons.map),
                   _buildNavItem(1, LucideIcons.dumbbell),
                   _buildNavItem(2, LucideIcons.fileText),
-                  _buildNavItem(3, LucideIcons.bookOpenCheck),
+                  _buildNavItem(3, LucideIcons.fileQuestion),
                 ],
               ),
             ),
@@ -182,13 +179,15 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     final isActive = _currentIndex == index;
     final color = isActive ? AppTheme.duoBlue : Colors.white54;
     
-    return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-        child: Icon(icon, color: color, size: 28),
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _currentIndex = index),
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Icon(icon, color: color, size: 28),
+        ),
       ),
     );
   }

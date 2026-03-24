@@ -1,10 +1,9 @@
 Make the following changes:
 
-    - Fix pdf split file size:
-        It looks like all pdfs I split have parent file size, which makes the whole idea of splitting worthless
-        So, make sure size gets reduced on split, if a new library is needed use that
-        Also while doing this make sure u wont do anything like print over pdf, u could do some new method like converting whole pdf into small quality images and combining them back based on the pages for each split, anyway use most relevent and fast method and also show each process on the loading, make sure you wont create pdf of another frame size which will lead to losing part of a page
-    - Give lesson spacing, for a better look of the lesson path
+    - Make it possible I can resplit and add deleted or missing pdf:
+        - When pdf seems missing, ask user to uplaod it again and so it will be split again
+        - This is needed because when same user use multiple devices and since the pdf is in internal storage, the pdf will be seen as missing on another device so to restore this effect we need this feature
+    
 
 
 Make sure there wont be any screensize error, our ideal screen is 720x1520 with 271 dpi

@@ -22,7 +22,7 @@ class _UnitEditor {
 
 class PdfSplitPreviewScreen extends StatefulWidget {
   final String taskId;
-  final File originalPdf;
+  final List<File> originalPdf;
   final Book skeletonBook;
 
   const PdfSplitPreviewScreen({
@@ -38,11 +38,15 @@ class PdfSplitPreviewScreen extends StatefulWidget {
 
 class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
   final PdfViewerController _pdfViewerController = PdfViewerController();
+  final PageController _imagePageController = PageController();
   List<_UnitEditor> _editors = [];
+  bool _isPdf = false;
+  int _currentImageIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    _isPdf = widget.originalPdf.length == 1 && widget.originalPdf.first.path.toLowerCase().endsWith('.pdf');
     _flattenHierarchy();
   }
 
@@ -58,7 +62,6 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
   }
 
   void _commitSplits() {
-    // Reconstruct the Book with updated ranges
     List<Module> updatedModules = List.from(widget.skeletonBook.modules);
     
     for (var editor in _editors) {
@@ -79,10 +82,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
 
     final offsetBook = widget.skeletonBook.copyWith(modules: updatedModules);
 
-    // Continue background task
     GenerationManager.instance.startBackgroundSplitAndSave(widget.taskId, widget.originalPdf, offsetBook);
-
-    // Pop back to home screen where we came from
     Navigator.pop(context);
   }
 
@@ -103,12 +103,21 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
               clipBehavior: Clip.hardEdge,
               child: Stack(
                 children: [
-                  SfPdfViewer.file(
-                    widget.originalPdf,
-                    controller: _pdfViewerController,
-                    canShowScrollHead: false,
-                    canShowScrollStatus: false,
-                  ),
+                  if (_isPdf)
+                    SfPdfViewer.file(
+                      widget.originalPdf.first,
+                      controller: _pdfViewerController,
+                      canShowScrollHead: false,
+                      canShowScrollStatus: false,
+                    )
+                  else
+                    PageView.builder(
+                      controller: _imagePageController,
+                      onPageChanged: (i) => setState(() => _currentImageIndex = i),
+                      itemCount: widget.originalPdf.length,
+                      itemBuilder: (context, index) => Image.file(widget.originalPdf[index], fit: BoxFit.contain),
+                    ),
+                  
                   Positioned(
                     bottom: 12,
                     right: 12,
@@ -121,9 +130,12 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(LucideIcons.fileText, size: 14, color: Colors.white54),
+                          Icon(_isPdf ? LucideIcons.fileText : LucideIcons.image, size: 14, color: Colors.white54),
                           const SizedBox(width: 8),
-                          const Text('Use Viewer to find exact page #', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                          Text(
+                            _isPdf ? 'Use Viewer to find exact page #' : 'Image ${_currentImageIndex + 1} of ${widget.originalPdf.length}', 
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)
+                          ),
                         ],
                       ),
                     ),
@@ -221,7 +233,11 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                                 onPressed: () {
                                   int? p = int.tryParse(editor.startCtrl.text);
                                   if (p != null) {
-                                    _pdfViewerController.jumpToPage(p);
+                                    if (_isPdf) {
+                                      _pdfViewerController.jumpToPage(p);
+                                    } else if (p - 1 >= 0 && p - 1 < widget.originalPdf.length) {
+                                      _imagePageController.jumpToPage(p - 1);
+                                    }
                                   }
                                 },
                               )

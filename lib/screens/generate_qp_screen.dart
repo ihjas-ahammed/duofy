@@ -1,20 +1,24 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import '../models/app_models.dart';
 import '../services/generation_manager.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/file_selection_list.dart';
 
-class GenerateBookScreen extends StatefulWidget {
-  const GenerateBookScreen({super.key});
+class GenerateQpScreen extends StatefulWidget {
+  final Book book;
+
+  const GenerateQpScreen({super.key, required this.book});
 
   @override
-  State<GenerateBookScreen> createState() => _GenerateBookScreenState();
+  State<GenerateQpScreen> createState() => _GenerateQpScreenState();
 }
 
-class _GenerateBookScreenState extends State<GenerateBookScreen> {
+class _GenerateQpScreenState extends State<GenerateQpScreen> {
   final List<File> _selectedFiles = [];
+  final TextEditingController _titleCtrl = TextEditingController();
   final TextEditingController _promptCtrl = TextEditingController();
 
   Future<void> _pickFiles() async {
@@ -37,18 +41,23 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select at least one file.')));
       return;
     }
+    
+    final title = _titleCtrl.text.trim();
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a name for this past paper.')));
+      return;
+    }
 
-    final filename = _selectedFiles.first.path.split('/').last;
     final prompt = _promptCtrl.text.trim().isEmpty ? null : _promptCtrl.text.trim();
     
-    GenerationManager.instance.startBookGeneration(_selectedFiles, filename, prompt);
+    GenerationManager.instance.startQpGeneration(widget.book.id, _selectedFiles, title, widget.book, prompt);
     Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('New Course', style: TextStyle(fontWeight: FontWeight.w900))),
+      appBar: AppBar(title: const Text('Add Past Paper', style: TextStyle(fontWeight: FontWeight.w900))),
       body: SafeArea(
         child: Column(
           children: [
@@ -59,8 +68,25 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const Text(
-                      "Upload PDFs or multiple images. We'll instantly analyze them to map out the course chapters. You can continuously add files below.",
+                      "Upload PDFs or photos of past exams. The AI will extract the questions and solve them interactively. You can continuously select files.",
                       style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
+                    ),
+                    const SizedBox(height: 24),
+
+                    const Text('Exam Name', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: AppTheme.glassDecoration,
+                      child: TextField(
+                        controller: _titleCtrl,
+                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                        decoration: InputDecoration(
+                          hintText: "e.g. Midterm 2023",
+                          hintStyle: const TextStyle(color: Colors.white38, fontSize: 13, fontWeight: FontWeight.normal),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                          contentPadding: const EdgeInsets.all(16),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 24),
                     
@@ -80,7 +106,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                         maxLines: 4,
                         style: const TextStyle(color: Colors.white, fontSize: 14),
                         decoration: InputDecoration(
-                          hintText: "E.g., Focus deeply on mathematical proofs, or make it suitable for a 10 year old.",
+                          hintText: "E.g., Provide extremely detailed step-by-step proofs for any calculus questions.",
                           hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                           contentPadding: const EdgeInsets.all(16),
@@ -94,10 +120,10 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
             Padding(
               padding: const EdgeInsets.all(24.0),
               child: DuoButton(
-                text: 'Analyze Document',
+                text: 'Solve & Add Paper',
                 onPressed: _generate,
-                color: _selectedFiles.isNotEmpty ? AppTheme.duoGreen : Colors.grey.shade700,
-                shadowColor: _selectedFiles.isNotEmpty ? AppTheme.duoGreenDark : Colors.grey.shade800,
+                color: _selectedFiles.isNotEmpty ? AppTheme.duoBlue : Colors.grey.shade700,
+                shadowColor: _selectedFiles.isNotEmpty ? AppTheme.duoBlueDark : Colors.grey.shade800,
               ),
             ),
           ],

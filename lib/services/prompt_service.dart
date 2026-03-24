@@ -4,10 +4,11 @@ class PromptService {
   static const String _kSkeleton = 'prompt_skeleton';
   static const String _kPlan = 'prompt_plan';
   static const String _kJson = 'prompt_json';
+  static const String _kQpJson = 'prompt_qp_json';
 
-  // The default robust AI prompts
-  static const String defaultSkeleton = '''You are an expert curriculum designer. Analyze the attached PDF document to create a high-level course skeleton.
+  static const String defaultSkeleton = '''You are an expert curriculum designer. Analyze the attached document/images to create a high-level course skeleton.
 The user uploaded a file named: "%filename%". 
+User Custom Instructions (if any): "%user_prompt%"
 
 CRITICAL INSTRUCTIONS:
 1. Generate a suitable, professional `title` for this course based on the document content or the filename.
@@ -15,8 +16,8 @@ CRITICAL INSTRUCTIONS:
    - "modules" represent the main Chapters.
    - "sections" represent the subtopics within a chapter (e.g., 2.1, 2.2).
    - "units" go deeper into the specific topics within each section.
-3. The `startPage` and `endPage` MUST refer to the ABSOLUTE PDF PAGE INDEX (1-based index where the absolute first page of the file is 1), NOT the printed page number. Ensure they accurately reflect logical splits.
-4. In the custom `systemPrompt` string you generate, STRICTLY instruct the AI to use double-escaped backslashes for all LaTeX (e.g. \\\\frac instead of \\frac).
+3. The `startPage` and `endPage` MUST refer to the ABSOLUTE PAGE INDEX (1-based index where the absolute first page of the file is 1). Ensure they accurately reflect logical splits.
+4. In the custom `systemPrompt` string you generate, STRICTLY instruct the AI to use double-escaped backslashes for all LaTeX (e.g. \\\\frac instead of \\frac). Account for any specific tone requested in the User Custom Instructions.
 
 Return ONLY valid JSON matching this exact structure:
 {
@@ -51,9 +52,9 @@ Return ONLY valid JSON matching this exact structure:
   ]
 }''';
 
-  static const String defaultPlan = '''You are an expert curriculum designer. Analyze the attached PDF chunk for the unit: "%unit_title%".
+  static const String defaultPlan = '''You are an expert curriculum designer. Analyze the attached chunk for the unit: "%unit_title%".
 Design a pedagogical lesson plan in PLAIN TEXT (do NOT output JSON yet).
-Break this unit down into multiple logical lessons based on the PDF content.
+Break this unit down into multiple logical lessons based on the content.
 
 CRITICAL DUOLINGO-STYLE MICRO-LEARNING RULES:
 1. MAXIMIZE the number of lessons. Break concepts down into extremely bite-sized pieces.
@@ -74,7 +75,7 @@ TASK:
 You previously created this optimal learning plan for the unit "%unit_title%":
 %lesson_plan%
 
-Based strictly on this plan and the attached PDF chunk, generate the full JSON content.
+Based strictly on this plan and the attached content chunk, generate the full JSON content.
 
 CRITICAL SCHEMA & MICRO-LEARNING RULES:
 1. "theory" slides: `content` MUST be a few sentences explaining a concept.
@@ -89,34 +90,32 @@ YOU MUST RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
   "lessons": [
     {
       "id": "l1", "title": "Lesson 1", "description": "...", "icon": "BookOpen",
-      "slides": [
-        {
-          "id": "s1", "type": "theory", "title": "Concept", "content": "Explanation here."
-        },
-        {
-          "id": "s2", "type": "interactive_canvas", "title": "Visualization", 
-          "content": "This wave moves constantly...",
-          "interactiveCanvasHtml": "<canvas id='myCanvas'></canvas><script>...draw loop...</script>"
-        },
-        {
-          "id": "s3", "type": "quiz", "title": "Knowledge Check",
-          "content": "WHAT IS THE ACTUAL QUESTION TEXT HERE?",
-          "options": [
-            {"id": "a", "text": "Option 1", "isCorrect": true, "explanation": "..."}
-          ]
-        },
-        {
-          "id": "s4", "type": "step_by_step", "title": "Big Problem",
-          "content": "Overall problem description here...",
-          "interactiveSteps": [
-            { "stepText": "First, let's understand X." },
-            { "prompt": "What is the formula for X?", "options": [
-                {"id": "o1", "text": "Y", "isCorrect": true, "explanation": "..."}
-            ]}
-          ]
-        }
-      ]
+      "slides": [ ... ]
     }
+  ]
+}''';
+
+  static const String defaultQpJson = '''SYSTEM PROMPT:
+%system_prompt%
+
+User Custom Instructions (if any): "%user_prompt%"
+
+TASK:
+Analyze the attached Question Paper (PDF or Images). 
+Extract each question, solve it step-by-step, and convert it into interactive learning slides based on the user's custom instructions if provided.
+
+RULES:
+1. Create a "step_by_step" or "numerical" or "quiz" slide for each question depending on its nature.
+2. Break down large math proofs into `interactiveSteps`.
+3. Ensure accurate math using double-escaped LaTeX (e.g. \\\\frac).
+4. Return ONLY valid JSON matching this schema:
+{
+  "id": "qp1",
+  "title": "Extracted Past Paper Title",
+  "slides": [ 
+      {
+         "id": "s1", "type": "step_by_step", "title": "Q1", "content": "The original question...", "interactiveSteps": [...]
+      }
   ]
 }''';
 
@@ -134,6 +133,11 @@ YOU MUST RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
   static Future<String> getJsonPrompt() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_kJson) ?? defaultJson;
+  }
+
+  static Future<String> getQpJsonPrompt() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_kQpJson) ?? defaultQpJson;
   }
 
   // Savers
@@ -157,5 +161,6 @@ YOU MUST RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
     await prefs.remove(_kSkeleton);
     await prefs.remove(_kPlan);
     await prefs.remove(_kJson);
+    await prefs.remove(_kQpJson);
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
@@ -6,6 +7,7 @@ import '../widgets/lesson_path.dart';
 import '../services/generation_manager.dart';
 import '../services/progress_service.dart';
 import '../services/database_service.dart';
+import '../widgets/missing_files_banner.dart';
 
 class BookDashboardScreen extends StatefulWidget {
   final Book book;
@@ -25,11 +27,40 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
   int currentModuleIdx = 0;
   int currentSectionIdx = 0;
   List<String> _completedLessons = [];
+  bool _hasMissingFiles = false;
 
   @override
   void initState() {
     super.initState();
     _loadProgress();
+    _checkMissingFiles();
+  }
+
+  @override
+  void didUpdateWidget(BookDashboardScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.book.id != widget.book.id || oldWidget.book.updatedAt != widget.book.updatedAt) {
+      _checkMissingFiles();
+    }
+  }
+
+  Future<void> _checkMissingFiles() async {
+    bool missing = false;
+    for (var m in widget.book.modules) {
+      for (var s in m.sections) {
+        for (var u in s.units) {
+          if (u.startPage != null && u.endPage != null) {
+            if (u.pdfPath == null || !File(u.pdfPath!).existsSync()) {
+              missing = true;
+              break;
+            }
+          }
+        }
+        if (missing) break;
+      }
+      if (missing) break;
+    }
+    if (mounted) setState(() => _hasMissingFiles = missing);
   }
 
   Future<void> _loadProgress() async {
@@ -177,6 +208,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     return Scaffold(
       body: Column(
         children: [
+          if (_hasMissingFiles)
+            MissingFilesBanner(book: widget.book),
+
           GestureDetector(
             onTap: _showHierarchySelector,
             child: Container(

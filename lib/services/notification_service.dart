@@ -42,7 +42,7 @@ class NotificationService {
           navigatorKey.currentState?.push(MaterialPageRoute(
             builder: (_) => PdfSplitPreviewScreen(
               taskId: targetTask!.id,
-              originalPdf: targetTask.pdfFile,
+              originalPdf: targetTask.sourceFiles,
               skeletonBook: targetTask.skeletonBook!,
             )
           ));

@@ -67,6 +67,28 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved to your library!')));
   }
 
+  void _deleteLocalBook(Book book) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text('Delete Course?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: const Text('Are you sure you want to delete this course from your local library?', style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _db.deleteBook(book.id);
+              _loadAllData(force: true);
+            }, 
+            child: const Text('Delete', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold))
+          ),
+        ]
+      )
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -118,7 +140,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     Navigator.push(context, MaterialPageRoute(
                                       builder: (_) => PdfSplitPreviewScreen(
                                         taskId: task.id,
-                                        originalPdf: task.pdfFile,
+                                        originalPdf: task.sourceFiles,
                                         skeletonBook: task.skeletonBook!,
                                       )
                                     ));
@@ -167,6 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                        Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
                                          .then((_) => _loadAllData());
                                      },
+                                     onDelete: () => _deleteLocalBook(book),
                                    );
                                  },
                                ),

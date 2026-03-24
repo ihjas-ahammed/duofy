@@ -31,7 +31,6 @@ class AiService {
     return models;
   }
 
-  /// Robust JSON parser that handles Markdown ticks and invalid string literal types
   Map<String, dynamic> _cleanAndDecodeJson(String text) {
     print("[AiService] Initiating JSON Cleanup and Decoding...");
     String cleaned = text;
@@ -54,129 +53,107 @@ class AiService {
       if (decoded is! Map<String, dynamic>) {
         throw Exception('Expected a JSON Object (Map), but got ${decoded.runtimeType}.');
       }
-      print("[AiService] JSON Decoded Successfully.");
       return decoded;
     } catch (e1) {
       print("[AiService] Initial parse failed. Trying fallback cleanup... $e1");
       try {
-        // Fallback: fix literal unescaped newlines which AI might fail to properly escape
         String agg = cleaned.replaceAll('\n', '\\n').replaceAll('\r', '');
         return jsonDecode(agg) as Map<String, dynamic>;
       } catch (e2) {
-        print("\n[AiService] JSON PARSE ERROR: $e2");
-        print("[AiService] === PROBLEMATIC PAYLOAD SEGMENT ===");
-        print(cleaned.substring(0, cleaned.length > 500 ? 500 : cleaned.length));
-        print("=============================================\n");
         throw Exception('Failed to parse AI JSON response: $e2');
       }
     }
   }
 
-  /// STAGE 1: Extracts the table of contents and creates the Book Skeleton
-  Future<Book?> generateBookSkeleton(File pdfFile, String filename) async {
+  Future<List<Part>> _buildFileParts(List<File> files) async {
+    List<Part> parts = [];
+    for (var f in files) {
+      final ext = f.path.split('.').last.toLowerCase();
+      if (ext == 'pdf') {
+        parts.add(DataPart('application/pdf', await f.readAsBytes()));
+      } else {
+        final mime = ext == 'png' ? 'image/png' : 'image/jpeg';
+        parts.add(DataPart(mime, await f.readAsBytes()));
+      }
+    }
+    return parts;
+  }
+
+  Future<Book?> generateBookSkeleton(List<File> inputFiles, String filename, String? userPrompt) async {
     print("\n[AiService] === STARTING STAGE 1: BOOK SKELETON GENERATION ===");
     final keys = await _getKeys();
     final models = await _getModels();
-    final pdfBytes = await pdfFile.readAsBytes();
     
     final rawPrompt = await PromptService.getSkeletonPrompt();
-    final hydratedPrompt = rawPrompt.replaceAll('%filename%', filename);
+    final hydratedPrompt = rawPrompt
+        .replaceAll('%filename%', filename)
+        .replaceAll('%user_prompt%', userPrompt ?? 'None');
     
-    final prompt = TextPart(hydratedPrompt);
+    List<Part> parts = [TextPart(hydratedPrompt)];
+    parts.addAll(await _buildFileParts(inputFiles));
 
     Exception? lastException;
     
     for (var modelName in models) {
       for (var apiKey in keys) {
         try {
-          print("[AiService] Requesting Skeleton via $modelName [Key: ...${apiKey.substring(apiKey.length > 4 ? apiKey.length - 4 : 0)}]");
-          
           final model = GenerativeModel(
             model: modelName,
             apiKey: apiKey,
             generationConfig: GenerationConfig(responseMimeType: 'application/json'),
           );
 
-          final stopwatch = Stopwatch()..start();
           final response = await model.generateContent([
-            Content.multi([prompt, DataPart('application/pdf', pdfBytes)])
+            Content.multi(parts)
           ]).timeout(const Duration(minutes: 5));
-          stopwatch.stop();
 
           if (response.text != null) {
-            print("[AiService] Skeleton Generation Success! Took ${stopwatch.elapsed.inSeconds} seconds.");
             final jsonMap = _cleanAndDecodeJson(response.text!);
-            print("[AiService] === SKELETON GENERATION COMPLETE ===\n");
             return Book.fromJson(jsonMap);
           }
         } on TimeoutException {
-          print("[AiService] Warning: Request timed out for $modelName.");
           lastException = Exception('Request timed out ($modelName).');
         } catch (e) {
-          print("[AiService] Error using $modelName: $e");
           lastException = Exception('Generation failed: $e');
         }
       }
     }
-    print("[AiService] FATAL: All models/keys exhausted for Skeleton generation.");
     throw lastException ?? Exception('Failed to generate skeleton. All models/keys exhausted.');
   }
 
-  /// STAGE 2: Generates deep lesson content for a specific chunked PDF Unit
   Future<Unit> generateUnitContent(Unit unit, Book bookContext, Function(String) onProgress) async {
-    print("\n[AiService] === STARTING UNIT CONTENT GENERATION (TWO-STAGE) ===");
-    print("[AiService] Target Unit: ${unit.title}");
-    
     final keys = await _getKeys();
     final models = await _getModels();
     
-    if (unit.pdfPath == null) throw Exception("No PDF chunk available for this unit.");
-    final pdfBytes = await File(unit.pdfPath!).readAsBytes();
+    if (unit.pdfPath == null) throw Exception("No PDF/Image chunk available for this unit.");
+    final chunkFile = File(unit.pdfPath!);
+    if (!chunkFile.existsSync()) {
+      throw Exception("Local file missing. Tap 'Restore' on the warning banner to re-link source files.");
+    }
 
     Exception? lastException;
 
     for (var modelName in models) {
       for (var apiKey in keys) {
         try {
-          print("\n[AiService] Attempting generation pipeline with $modelName [Key: ...${apiKey.substring(apiKey.length > 4 ? apiKey.length - 4 : 0)}]");
-          
-          final modelText = GenerativeModel(
-            model: modelName,
-            apiKey: apiKey,
-          );
-          
-          final modelJson = GenerativeModel(
-            model: modelName,
-            apiKey: apiKey,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
-          );
+          final modelText = GenerativeModel(model: modelName, apiKey: apiKey);
+          final modelJson = GenerativeModel(model: modelName, apiKey: apiKey, generationConfig: GenerationConfig(responseMimeType: 'application/json'));
 
-          // ------------------------------------------------------------------
-          // STEP 1: Lesson Planning (Text Generation)
-          // ------------------------------------------------------------------
-          print("[AiService] [Stage 2.1] Requesting Pedagogical Lesson Plan...");
           onProgress("Analyzing PDF & Planning Layout...");
           
           final rawPlanPrompt = await PromptService.getPlanPrompt();
           final hydratedPlanPrompt = rawPlanPrompt.replaceAll('%unit_title%', unit.title);
           
-          final planPrompt = TextPart(hydratedPlanPrompt);
+          List<Part> planParts = [TextPart(hydratedPlanPrompt)];
+          planParts.addAll(await _buildFileParts([chunkFile]));
 
-          final planStopwatch = Stopwatch()..start();
           final planResponse = await modelText.generateContent([
-            Content.multi([planPrompt, DataPart('application/pdf', pdfBytes)])
+            Content.multi(planParts)
           ]).timeout(const Duration(minutes: 4));
-          planStopwatch.stop();
 
           final lessonPlan = planResponse.text ?? '';
           if (lessonPlan.isEmpty) throw Exception("AI failed to generate a lesson plan.");
           
-          print("[AiService] [Stage 2.1] Lesson Plan Acquired in ${planStopwatch.elapsed.inSeconds}s.");
-
-          // ------------------------------------------------------------------
-          // STEP 2: JSON Instantiation
-          // ------------------------------------------------------------------
-          print("[AiService] [Stage 2.2] Requesting JSON Instantiation based on Plan...");
           onProgress("Generating Interactive Content...");
 
           final rawJsonPrompt = await PromptService.getJsonPrompt();
@@ -185,17 +162,14 @@ class AiService {
               .replaceAll('%unit_title%', unit.title)
               .replaceAll('%lesson_plan%', lessonPlan);
 
-          final jsonPrompt = TextPart(hydratedJsonPrompt);
+          List<Part> jsonParts = [TextPart(hydratedJsonPrompt)];
+          jsonParts.addAll(await _buildFileParts([chunkFile]));
 
-          final jsonStopwatch = Stopwatch()..start();
           final response = await modelJson.generateContent([
-            Content.multi([jsonPrompt, DataPart('application/pdf', pdfBytes)])
+            Content.multi(jsonParts)
           ]).timeout(const Duration(minutes: 5));
-          jsonStopwatch.stop();
 
           if (response.text != null) {
-            print("[AiService] [Stage 2.2] JSON Generation Success! Took ${jsonStopwatch.elapsed.inSeconds}s.");
-            
             onProgress("Parsing content...");
             final jsonMap = _cleanAndDecodeJson(response.text!);
             final lessonsData = jsonMap['lessons'] as List?;
@@ -203,7 +177,6 @@ class AiService {
             final newLessons = lessonsData?.map((l) {
               if (l is Map) {
                 var lesson = Lesson.fromJson(Map<String, dynamic>.from(l));
-                // Ensure globally unique IDs across different unit generations
                 final uniqueLessonId = '${unit.id}-${lesson.id}';
                 return lesson.copyWith(
                   id: uniqueLessonId,
@@ -213,19 +186,59 @@ class AiService {
               return null;
             }).whereType<Lesson>().toList() ?? [];
             
-            print("[AiService] === UNIT CONTENT GENERATION COMPLETE ===\n");
             return unit.copyWith(isGenerated: true, lessons: newLessons);
           }
-        } on TimeoutException {
-          print("[AiService] Warning: Request timed out for $modelName.");
-          lastException = Exception('Request timed out ($modelName).');
         } catch (e) {
-          print("[AiService] Error in pipeline using $modelName: $e");
           lastException = Exception('Failed: $e');
         }
       }
     }
-    print("[AiService] FATAL: All models/keys exhausted for Unit generation.");
     throw lastException ?? Exception('Failed to generate unit content. All models/keys exhausted.');
+  }
+
+  Future<QuestionPaper> generateQuestionPaper(List<File> files, String qpTitle, String? systemPrompt, String? userPrompt) async {
+    print("\n[AiService] === STARTING QP GENERATION ===");
+    final keys = await _getKeys();
+    final models = await _getModels();
+
+    final rawPrompt = await PromptService.getQpJsonPrompt();
+    final hydratedPrompt = rawPrompt
+        .replaceAll('%system_prompt%', systemPrompt ?? "You are an expert tutor.")
+        .replaceAll('%user_prompt%', userPrompt ?? 'None');
+
+    List<Part> parts = [TextPart(hydratedPrompt)];
+    parts.addAll(await _buildFileParts(files));
+
+    Exception? lastException;
+
+    for (var modelName in models) {
+      for (var apiKey in keys) {
+        try {
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: apiKey,
+            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+          );
+
+          final response = await model.generateContent([
+            Content.multi(parts)
+          ]).timeout(const Duration(minutes: 6));
+
+          if (response.text != null) {
+            final jsonMap = _cleanAndDecodeJson(response.text!);
+            final qp = QuestionPaper.fromJson(jsonMap);
+            // Ensure Title fallback overrides
+            return QuestionPaper(
+                id: qp.id, 
+                title: qpTitle.isNotEmpty ? qpTitle : qp.title, 
+                slides: qp.slides
+            );
+          }
+        } catch (e) {
+          lastException = Exception('QP Generation failed: $e');
+        }
+      }
+    }
+    throw lastException ?? Exception('Failed to generate Question Paper.');
   }
 }

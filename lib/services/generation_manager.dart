@@ -13,7 +13,7 @@ enum BookGenState { extracting, review, chunking, saving, error }
 class GenerationTask {
   final String id;
   final String title;
-  final File pdfFile;
+  final List<File> sourceFiles;
   BookGenState state;
   String statusMessage;
   Book? skeletonBook;
@@ -24,7 +24,7 @@ class GenerationTask {
   GenerationTask({
     required this.id, 
     required this.title, 
-    required this.pdfFile,
+    required this.sourceFiles,
     this.state = BookGenState.extracting,
     this.statusMessage = 'Extracting Metadata & Planning...', 
     required this.estimatedDuration,
@@ -46,12 +46,19 @@ class UnitGenTask {
   });
 }
 
+class QpGenTask {
+  String status;
+  bool isError;
+  QpGenTask({required this.status, this.isError = false});
+}
+
 class GenerationManager extends ChangeNotifier {
   static final GenerationManager instance = GenerationManager._internal();
   GenerationManager._internal();
 
   final List<GenerationTask> activeTasks = [];
-  final Map<String, UnitGenTask> activeUnitGenerations = {}; // Unit ID -> Task Status
+  final Map<String, UnitGenTask> activeUnitGenerations = {}; 
+  final Map<String, QpGenTask> activeQpTasks = {}; 
   
   final PdfService _pdfService = PdfService();
   final DatabaseService _dbService = DatabaseService();
@@ -78,20 +85,21 @@ class GenerationManager extends ChangeNotifier {
     return sum ~/ history.length;
   }
 
-  /// Background Stage 1: Async Book Skeleton Extraction
-  Future<void> startBookGeneration(File pdfFile, String filename) async {
+  Future<void> startBookGeneration(List<File> inputFiles, String filename, String? userPrompt) async {
     final taskId = DateTime.now().millisecondsSinceEpoch.toString();
     final notifId = taskId.hashCode;
     
-    final fileSize = await pdfFile.length();
-    final uploadSecs = (fileSize / 500000).ceil();
+    double totalSize = 0;
+    for (var f in inputFiles) { totalSize += await f.length(); }
+
+    final uploadSecs = (totalSize / 500000).ceil();
     final avgAiMs = await _getAverageRunTime('meta_gen_history', 120000); 
     final estimatedDuration = Duration(seconds: uploadSecs, milliseconds: avgAiMs);
 
     final task = GenerationTask(
       id: taskId,
       title: filename,
-      pdfFile: pdfFile,
+      sourceFiles: inputFiles,
       startTime: DateTime.now(),
       estimatedDuration: estimatedDuration,
     );
@@ -99,12 +107,11 @@ class GenerationManager extends ChangeNotifier {
     activeTasks.add(task);
     notifyListeners();
 
-    // Trigger Indeterminate Progress Notification
-    await NotificationService.showProgress(notifId, "Analyzing PDF", "Extracting metadata...", indeterminate: true);
+    await NotificationService.showProgress(notifId, "Analyzing Source", "Extracting metadata...", indeterminate: true);
 
     try {
       final stopwatch = Stopwatch()..start();
-      final skeletonBook = await _aiService.generateBookSkeleton(pdfFile, filename);
+      final skeletonBook = await _aiService.generateBookSkeleton(inputFiles, filename, userPrompt);
       stopwatch.stop();
 
       await _recordRunTime('meta_gen_history', stopwatch.elapsedMilliseconds);
@@ -125,36 +132,34 @@ class GenerationManager extends ChangeNotifier {
       notifyListeners();
       
       await NotificationService.cancel(notifId);
-      await NotificationService.showActionable(notifId, "Generation Failed", "Failed to analyze PDF.", "error");
+      await NotificationService.showActionable(notifId, "Generation Failed", "Failed to analyze document.", "error");
     }
   }
 
-  /// Background Stage 2: Physically splits and rasterizes the PDF and saves the chunked book to DB
-  Future<void> startBackgroundSplitAndSave(String taskId, File originalPdf, Book offsetBook) async {
+  Future<void> startBackgroundSplitAndSave(String taskId, List<File> sourceFiles, Book offsetBook) async {
     final taskIndex = activeTasks.indexWhere((t) => t.id == taskId);
     if (taskIndex == -1) return;
     
     final task = activeTasks[taskIndex];
     task.state = BookGenState.chunking;
-    task.statusMessage = 'Splitting & Compressing PDF chunks...';
-    task.estimatedDuration = const Duration(seconds: 45); // Rasterizing takes a bit longer
+    task.statusMessage = 'Native Vector Splitting...';
+    task.estimatedDuration = const Duration(seconds: 15); // Native is much faster
     task.startTime = DateTime.now();
     notifyListeners();
 
     final notifId = taskId.hashCode;
-    await NotificationService.showProgress(notifId, "Chunking PDF", "Processing pages...", indeterminate: true);
+    await NotificationService.showProgress(notifId, "Chunking Pages", "Processing natively...", indeterminate: true);
 
     try {
-      final completeBook = await _pdfService.splitBookPdf(originalPdf, offsetBook, (status) {
+      final completeBook = await _pdfService.splitBookPdf(sourceFiles, offsetBook, (status) {
         task.statusMessage = status;
         notifyListeners();
-        NotificationService.showProgress(notifId, "Chunking PDF", status, indeterminate: true);
+        NotificationService.showProgress(notifId, "Chunking Document", status, indeterminate: true);
       });
 
       task.state = BookGenState.saving;
       task.statusMessage = 'Saving to Database...';
       notifyListeners();
-      await NotificationService.showProgress(notifId, "Saving to Database", "Finalizing...", indeterminate: true);
       
       await _dbService.saveGeneratedBook(completeBook);
       
@@ -176,7 +181,58 @@ class GenerationManager extends ChangeNotifier {
     }
   }
 
-  /// Background Stage 3: Generates deep lesson content for a specific Unit asynchronously
+  Future<void> restoreBookFiles(Book book, List<File> sourceFiles) async {
+    final taskId = "restore_${book.id}";
+    if (activeTasks.any((t) => t.id == taskId)) return; // Prevent duplicate
+
+    final notifId = taskId.hashCode;
+
+    final task = GenerationTask(
+      id: taskId,
+      title: "Restoring ${book.title}",
+      sourceFiles: sourceFiles,
+      state: BookGenState.chunking,
+      statusMessage: 'Re-splitting source files...',
+      estimatedDuration: const Duration(seconds: 15),
+      startTime: DateTime.now(),
+    );
+
+    activeTasks.add(task);
+    notifyListeners();
+
+    await NotificationService.showProgress(notifId, "Restoring Files", "Re-splitting source natively...", indeterminate: true);
+
+    try {
+      final completeBook = await _pdfService.splitBookPdf(sourceFiles, book, (status) {
+        task.statusMessage = status;
+        notifyListeners();
+        NotificationService.showProgress(notifId, "Restoring Document", status, indeterminate: true);
+      });
+
+      task.state = BookGenState.saving;
+      task.statusMessage = 'Saving to Database...';
+      notifyListeners();
+
+      await _dbService.saveGeneratedBook(completeBook);
+
+      activeTasks.remove(task);
+      notifyListeners();
+
+      _bookUpdateController.add(completeBook);
+
+      await NotificationService.cancel(notifId);
+      await NotificationService.showActionable(notifId, "Files Restored!", "Your course is ready for generation.", "open_home|");
+    } catch (e) {
+      task.state = BookGenState.error;
+      task.statusMessage = 'Error restoring files';
+      task.errorMessage = e.toString();
+      notifyListeners();
+
+      await NotificationService.cancel(notifId);
+      await NotificationService.showActionable(notifId, "Error", "Failed to restore files.", "error");
+    }
+  }
+
   Future<void> startUnitGeneration(Unit unit, Book book, int modIdx, int secIdx, int unitIdx) async {
     if (activeUnitGenerations.containsKey(unit.id)) return;
     
@@ -231,9 +287,39 @@ class GenerationManager extends ChangeNotifier {
     }
   }
 
+  Future<void> startQpGeneration(String bookId, List<File> files, String qpTitle, Book currentBook, String? userPrompt) async {
+    activeQpTasks[bookId] = QpGenTask(status: 'Analyzing Exam Paper...');
+    notifyListeners();
+    
+    try {
+        final qp = await _aiService.generateQuestionPaper(files, qpTitle, currentBook.systemPrompt, userPrompt);
+        
+        final updatedBook = currentBook.copyWith(
+            questionPapers: [...currentBook.questionPapers, qp]
+        );
+        
+        await _dbService.saveGeneratedBook(updatedBook);
+        _bookUpdateController.add(updatedBook);
+        
+        activeQpTasks.remove(bookId);
+        notifyListeners();
+    } catch(e) {
+        activeQpTasks[bookId]?.status = 'Error: $e';
+        activeQpTasks[bookId]?.isError = true;
+        notifyListeners();
+    }
+  }
+
   void clearUnitError(String unitId) {
     if (activeUnitGenerations[unitId]?.isError == true) {
       activeUnitGenerations.remove(unitId);
+      notifyListeners();
+    }
+  }
+
+  void clearQpError(String bookId) {
+    if (activeQpTasks[bookId]?.isError == true) {
+      activeQpTasks.remove(bookId);
       notifyListeners();
     }
   }

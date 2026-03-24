@@ -40,6 +40,7 @@ class Book {
   final String? authorName;
   final bool isGlobal;
   final List<Module> modules;
+  final List<QuestionPaper> questionPapers;
 
   Book({
     required this.id, 
@@ -51,7 +52,8 @@ class Book {
     this.authorId,
     this.authorName,
     this.isGlobal = false,
-    required this.modules
+    required this.modules,
+    this.questionPapers = const [],
   });
 
   factory Book.fromJson(Map<String, dynamic> json) {
@@ -66,6 +68,7 @@ class Book {
       authorName: _strOpt(json['authorName']),
       isGlobal: _bool(json['isGlobal'], false),
       modules: (json['modules'] as List?)?.map((m) => Module.fromJson(m is Map ? Map<String, dynamic>.from(m) : {})).toList() ?? [],
+      questionPapers: (json['questionPapers'] as List?)?.map((q) => QuestionPaper.fromJson(q is Map ? Map<String, dynamic>.from(q) : {})).toList() ?? [],
     );
   }
 
@@ -80,6 +83,7 @@ class Book {
     if (authorName != null) 'authorName': authorName,
     'isGlobal': isGlobal,
     'modules': modules.map((m) => m.toJson()).toList(),
+    'questionPapers': questionPapers.map((q) => q.toJson()).toList(),
   };
 
   Book copyWith({
@@ -93,6 +97,7 @@ class Book {
     String? authorName,
     bool? isGlobal,
     List<Module>? modules,
+    List<QuestionPaper>? questionPapers,
   }) {
     return Book(
       id: id ?? this.id,
@@ -105,8 +110,35 @@ class Book {
       authorName: authorName ?? this.authorName,
       isGlobal: isGlobal ?? this.isGlobal,
       modules: modules ?? this.modules,
+      questionPapers: questionPapers ?? this.questionPapers,
     );
   }
+}
+
+class QuestionPaper {
+  final String id;
+  final String title;
+  final List<Slide> slides;
+
+  QuestionPaper({
+    required this.id, 
+    required this.title, 
+    required this.slides,
+  });
+
+  factory QuestionPaper.fromJson(Map<String, dynamic> json) {
+    return QuestionPaper(
+      id: _str(json['id']),
+      title: _str(json['title'], 'Past Paper'),
+      slides: (json['slides'] as List?)?.map((s) => Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'slides': slides.map((s) => s.toJson()).toList(),
+  };
 }
 
 class Module {
@@ -382,7 +414,6 @@ class Slide {
     final type = _str(json['type'], 'theory');
     List<QuizOption>? parsedOptions;
     
-    // Robust parsing: Enforce exactly 1 correct answer to avoid UI evaluation bugs
     if (json['options'] != null) {
       parsedOptions = (json['options'] as List).map((o) => QuizOption.fromJson(o is Map ? Map<String, dynamic>.from(o) : {})).toList();
       if (type == 'quiz' && parsedOptions.isNotEmpty) {
@@ -480,7 +511,6 @@ class QuizOption {
   factory QuizOption.fromJson(Map<String, dynamic> json) {
     final rawId = _strOpt(json['id']);
     final parsedText = _str(json['text'], 'Option');
-    // Generates a deterministic fallback id preventing multiple-selection logic bugs
     final effectiveId = (rawId != null && rawId.isNotEmpty) ? rawId.trim() : parsedText.trim().hashCode.toString();
 
     return QuizOption(

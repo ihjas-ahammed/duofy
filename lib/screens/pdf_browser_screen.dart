@@ -1,11 +1,10 @@
 import 'dart:io';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
+import '../services/database_service.dart';
 import 'pdf_folder_screen.dart';
 
 class PdfFolderMeta {
@@ -43,13 +42,8 @@ class _PdfBrowserScreenState extends State<PdfBrowserScreen> {
 
   Future<void> _loadFolders() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final cachedStr = prefs.getString('cached_books');
-      List<Book> books = [];
-      if (cachedStr != null) {
-        final List decoded = jsonDecode(cachedStr);
-        books = decoded.map((e) => Book.fromJson(Map<String, dynamic>.from(e))).toList();
-      }
+      // Pull dynamic namespace-aware books directly from the DatabaseService
+      final List<Book> books = await DatabaseService().fetchBooks(forceRefresh: false);
 
       final appDir = await getApplicationDocumentsDirectory();
       final booksDir = Directory('${appDir.path}/books');

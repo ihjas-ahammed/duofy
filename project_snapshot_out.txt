@@ -141,6 +141,8 @@ dependencies:
   confetti: ^0.8.0
   firebase_auth: ^6.2.0
   flutter_local_notifications: ^21.0.0
+  pdfx: ^2.9.2
+  pdf: ^3.12.0
 
 dev_dependencies:
   flutter_test:
@@ -348,6 +350,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.3.0"
+  barcode:
+    dependency: transitive
+    description:
+      name: barcode
+      sha256: "7b6729c37e3b7f34233e2318d866e8c48ddb46c1f7ad01ff7bb2a8de1da2b9f4"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.9"
+  bidi:
+    dependency: transitive
+    description:
+      name: bidi
+      sha256: "77f475165e94b261745cf1032c751e2032b8ed92ccb2bf5716036db79320637d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.13"
   boolean_selector:
     dependency: transitive
     description:
@@ -468,6 +486,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.3"
+  extension:
+    dependency: transitive
+    description:
+      name: extension
+      sha256: be3a6b7f8adad2f6e2e8c63c895d19811fcf203e23466c6296267941d0ff4f24
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.6.0"
   fake_async:
     dependency: transitive
     description:
@@ -923,6 +949,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.0"
+  pdf:
+    dependency: "direct main"
+    description:
+      name: pdf
+      sha256: e47a275b267873d5944ad5f5ff0dcc7ac2e36c02b3046a0ffac9b72fd362c44b
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.12.0"
+  pdfx:
+    dependency: "direct main"
+    description:
+      name: pdfx
+      sha256: "29db9b71d46bf2335e001f91693f2c3fbbf0760e4c2eb596bf4bafab211471c1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.9.2"
   petitparser:
     dependency: transitive
     description:
@@ -931,6 +973,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.2"
+  photo_view:
+    dependency: transitive
+    description:
+      name: photo_view
+      sha256: "1fc3d970a91295fbd1364296575f854c9863f225505c28c46e0a03e48960c75e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.15.0"
   platform:
     dependency: transitive
     description:
@@ -971,6 +1021,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.0"
+  qr:
+    dependency: transitive
+    description:
+      name: qr
+      sha256: "5a1d2586170e172b8a8c8470bbbffd5eb0cd38a66c0d77155ea138d3af3a4445"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.2"
   share_plus:
     dependency: "direct main"
     description:
@@ -1200,6 +1258,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
+  universal_platform:
+    dependency: transitive
+    description:
+      name: universal_platform
+      sha256: "64e16458a0ea9b99260ceb5467a214c1f298d647c659af1bff6d3bf82536b1ec"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
   url_launcher:
     dependency: transitive
     description:
@@ -1416,6 +1482,7 @@ flutter pub add firebase_core firebase_auth firebase_database webview_flutter go
 flutter pub add flutter_markdown_latex markdown share_plus
 flutter pub add syncfusion_flutter_pdf syncfusion_flutter_pdfviewer
 flutter pub add flutter_local_notifications
+flutter pub add pdfx pdf
 ```
 
 ### 2. Firebase Configuration
@@ -1433,35 +1500,29 @@ We use the Gemini API to analyze uploaded PDFs and generate interactive JSON les
 3. Enter your Gemini API key and save it securely.
 
 ## Project Structure Overview
-- `/lib/models`: Data structures (Book, Module, Lesson, Slide, InteractiveStep, etc.)
-- `/lib/screens`: Auth, Home, Dashboard (Path), Lesson Player, Completion Screen, PDF Generator, Practice, PDF Browser, Advanced Prompts
+- `/lib/models`: Data structures (Book, Module, Lesson, Slide, QuestionPaper, etc.)
+- `/lib/screens`: Auth, Home, Dashboard (Path), Exam, Lesson Player, Completion Screen, PDF Generator, Practice
 - `/lib/widgets`: Modular UI components (Custom Duolingo-style Buttons, Glass Panels, MathMarkdown)
 - `/lib/widgets/slide_views`: Individual renderers for theory, quiz, blanks, numericals, JS canvas, and Interactive Proofs.
 - `/lib/services`: AI, Database handling, True Async PDF Isolates, Notification routing, and Dynamic Prompting services.
 - `/lib/theme`: Colors and global styling matching the web platform
 
 ## Recent Updates & Design Process
-- **Background Notification System**: The app now integrates a seamless Notification Service that pushes progress updates and alerts even if the user minimizes or backs out of the generation screen. Tapping the "Action Required" notification routes users perfectly back to the exact required sub-view (like Page Splitting review).
-- **True Async Isolate Compute**: Relocated the heavy physical `Syncfusion PDF` chunking process into a secondary Isolate using `compute()`. The UI thread remains perfectly free, maintaining 120hz frame rates for the Zeno's psychological progress bar without micro-stutters during heavy local file I/O operations.
-- **Navigation Fix**: Solved the navigation double-pop issue after completing lessons so the user accurately lands right back on their lesson path.
-- **Multi-User & Authentication**: Implemented Firebase Authentication to allow distinct user accounts. User profiles display dynamically in settings.
-- **Global Data & App Store Home**: Transformed the home screen into an Apple App Store layout. Personal library uses compact horizontal scrolls, and users can now publish courses to the "Community Picks" global database.
-- **Data Namespacing**: Completely separated local SharedPreferences and Firebase RTDB paths using Firebase UID.
-- **Interactive Canvas Art**: Added a dedicated slide type that visualizes topics via interactive 2D HTML/JS Canvas rendered seamlessly below theory explanations.
-- **Adaptive Psychological Progress Bar**: Replaced static loading spinners with a logarithmic progress bar (Zeno's paradox algorithm) that predicts processing time based on historical AI generation averages and file size.
+- **Consolidated Exam Interface**: Merged Module Exams and Past Papers into a single, unified "Exams" tab. Users can access generated module-specific checks and manually uploaded external past papers dynamically from the same view.
+- **Continuous File Uploads**: Users can now continuously select and append multiple files (PDFs/Images) seamlessly when creating a new course or uploading a new exam paper without losing previously selected ones.
+- **Custom Prompts Injection**: Added the ability for users to pass custom directives to the AI (e.g. "Focus deeply on equations" or "Explain this for a 10 year old") when analyzing new files.
+- **Native Vector PDF Splitting**: Replaced heavy JPEG rasterization with pure native vector page extraction (`PdfDocumentTemplate`).
+- **Image Upload Integration**: Upgraded the upload workflows to accept multiple Images dynamically alongside PDFs.
+- **Adaptive Psychological Progress Bar**: Logarithmic progress bar predicting processing time based on historical AI generation averages.
 --- END OF FILE README.md ---
 
 --- START OF FILE future.md ---
 
+- Update exam paper:
+    - USe the same exam reference tab
+    - Add a seperate screen, so i can continuesly select files
 
-- Update to MultiUser:
-    Initially it will be a guest user, who has all access like a regular user, user can become a regular user by giving themself a username and password in settings
-
-    so there will be a login button in settings 
-
-
-
-- Aync PDF splitting
+- Update new course just like that I get to continuesly select files and I can add a comment to the AI prompt like the way I want it if needed (opyional)
 --- END OF FILE future.md ---
 
 --- START OF FILE lib/main.dart ---
@@ -1721,6 +1782,7 @@ class Book {
   final String? authorName;
   final bool isGlobal;
   final List<Module> modules;
+  final List<QuestionPaper> questionPapers;
 
   Book({
     required this.id, 
@@ -1732,7 +1794,8 @@ class Book {
     this.authorId,
     this.authorName,
     this.isGlobal = false,
-    required this.modules
+    required this.modules,
+    this.questionPapers = const [],
   });
 
   factory Book.fromJson(Map<String, dynamic> json) {
@@ -1747,6 +1810,7 @@ class Book {
       authorName: _strOpt(json['authorName']),
       isGlobal: _bool(json['isGlobal'], false),
       modules: (json['modules'] as List?)?.map((m) => Module.fromJson(m is Map ? Map<String, dynamic>.from(m) : {})).toList() ?? [],
+      questionPapers: (json['questionPapers'] as List?)?.map((q) => QuestionPaper.fromJson(q is Map ? Map<String, dynamic>.from(q) : {})).toList() ?? [],
     );
   }
 
@@ -1761,6 +1825,7 @@ class Book {
     if (authorName != null) 'authorName': authorName,
     'isGlobal': isGlobal,
     'modules': modules.map((m) => m.toJson()).toList(),
+    'questionPapers': questionPapers.map((q) => q.toJson()).toList(),
   };
 
   Book copyWith({
@@ -1774,6 +1839,7 @@ class Book {
     String? authorName,
     bool? isGlobal,
     List<Module>? modules,
+    List<QuestionPaper>? questionPapers,
   }) {
     return Book(
       id: id ?? this.id,
@@ -1786,8 +1852,35 @@ class Book {
       authorName: authorName ?? this.authorName,
       isGlobal: isGlobal ?? this.isGlobal,
       modules: modules ?? this.modules,
+      questionPapers: questionPapers ?? this.questionPapers,
     );
   }
+}
+
+class QuestionPaper {
+  final String id;
+  final String title;
+  final List<Slide> slides;
+
+  QuestionPaper({
+    required this.id, 
+    required this.title, 
+    required this.slides,
+  });
+
+  factory QuestionPaper.fromJson(Map<String, dynamic> json) {
+    return QuestionPaper(
+      id: _str(json['id']),
+      title: _str(json['title'], 'Past Paper'),
+      slides: (json['slides'] as List?)?.map((s) => Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'slides': slides.map((s) => s.toJson()).toList(),
+  };
 }
 
 class Module {
@@ -2063,7 +2156,6 @@ class Slide {
     final type = _str(json['type'], 'theory');
     List<QuizOption>? parsedOptions;
     
-    // Robust parsing: Enforce exactly 1 correct answer to avoid UI evaluation bugs
     if (json['options'] != null) {
       parsedOptions = (json['options'] as List).map((o) => QuizOption.fromJson(o is Map ? Map<String, dynamic>.from(o) : {})).toList();
       if (type == 'quiz' && parsedOptions.isNotEmpty) {
@@ -2161,7 +2253,6 @@ class QuizOption {
   factory QuizOption.fromJson(Map<String, dynamic> json) {
     final rawId = _strOpt(json['id']);
     final parsedText = _str(json['text'], 'Option');
-    // Generates a deterministic fallback id preventing multiple-selection logic bugs
     final effectiveId = (rawId != null && rawId.isNotEmpty) ? rawId.trim() : parsedText.trim().hashCode.toString();
 
     return QuizOption(
@@ -2689,43 +2780,41 @@ class GlobalState {
 
 --- START OF FILE lib/services/pdf_service.dart ---
 import 'dart:io';
-import 'dart:typed_data';
-import 'package:flutter/foundation.dart';
+import 'dart:ui';
 import 'package:path_provider/path_provider.dart';
-import 'package:syncfusion_flutter_pdf/pdf.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart' as sync_pdf;
+import 'package:pdf/pdf.dart' as pw_pdf;
+import 'package:pdf/widgets.dart' as pw;
 import '../models/app_models.dart';
 
 class PdfService {
-  /// True Physical Splitting using Page Removal inside an Isolate.
-  /// This fully offloads synchronous PDF parsing rendering it perfectly async,
-  /// preventing dropped frames during background chunking operations.
-  Future<Book> splitBookPdf(File originalPdf, Book book) async {
-    final bytes = await originalPdf.readAsBytes();
-    
+  /// Splitting natively prevents 49mb bloats.
+  /// If [inputFiles] contains a single PDF, it uses native vector subsetting via Syncfusion.
+  /// If [inputFiles] contains images, it bundles them cleanly into a small PDF chunks.
+  Future<Book> splitBookPdf(List<File> inputFiles, Book book, Function(String) onProgress) async {
     final dir = await getApplicationDocumentsDirectory();
     final bookDirPath = '${dir.path}/books/${book.id}';
     final bookDir = Directory(bookDirPath);
     if (!await bookDir.exists()) await bookDir.create(recursive: true);
 
-    // Offload heavy memory calculations and chunking to a background Isolate
-    return await compute(_splitPdfTask, {
-      'bytes': bytes,
-      'book': book.toJson(),
-      'bookDirPath': bookDirPath,
-    });
-  }
+    int totalUnits = 0;
+    for (var m in book.modules) {
+      for (var s in m.sections) {
+        for (var u in s.units) {
+          if (u.startPage != null && u.endPage != null) totalUnits++;
+        }
+      }
+    }
 
-  // Pure static task for Isolate execution
-  static Future<Book> _splitPdfTask(Map<String, dynamic> params) async {
-    final Uint8List bytes = params['bytes'];
-    final Book book = Book.fromJson(params['book']);
-    final String bookDirPath = params['bookDirPath'];
-
-    final dummyDoc = PdfDocument(inputBytes: bytes);
-    final int totalPages = dummyDoc.pages.count;
-    dummyDoc.dispose();
-
+    int currentUnit = 0;
     List<Module> updatedModules = [];
+    
+    bool isPdfSource = inputFiles.length == 1 && inputFiles.first.path.toLowerCase().endsWith('.pdf');
+    sync_pdf.PdfDocument? originalDoc;
+    
+    if (isPdfSource) {
+      originalDoc = sync_pdf.PdfDocument(inputBytes: await inputFiles.first.readAsBytes());
+    }
 
     for (var module in book.modules) {
       List<Section> updatedSections = [];
@@ -2735,27 +2824,51 @@ class PdfService {
         
         for (var unit in section.units) {
           if (unit.startPage != null && unit.endPage != null) {
-            
+            currentUnit++;
+            onProgress("Native chunking unit $currentUnit of $totalUnits...");
+
             int start = unit.startPage! - 1;
             int end = unit.endPage! - 1;
             if (start < 0) start = 0;
-            if (end >= totalPages) end = totalPages - 1;
-
-            final PdfDocument newDoc = PdfDocument(inputBytes: bytes);
-            
-            for (int i = newDoc.pages.count - 1; i > end; i--) {
-              newDoc.pages.removeAt(i);
-            }
-            for (int i = start - 1; i >= 0; i--) {
-              newDoc.pages.removeAt(i);
-            }
 
             final filePath = '$bookDirPath/${unit.id}.pdf';
             final file = File(filePath);
-            
-            // Synchronously save in Isolate to avoid inner event loop bottlenecks
-            file.writeAsBytesSync(newDoc.saveSync());
-            newDoc.dispose();
+
+            if (isPdfSource && originalDoc != null) {
+              if (end >= originalDoc.pages.count) end = originalDoc.pages.count - 1;
+
+              final sync_pdf.PdfDocument chunkDoc = sync_pdf.PdfDocument();
+              
+              for (int i = start; i <= end; i++) {
+                final sync_pdf.PdfPage loadedPage = originalDoc.pages[i];
+                chunkDoc.pageSettings.size = loadedPage.size;
+                chunkDoc.pageSettings.margins.all = 0;
+                
+                final sync_pdf.PdfPage newPage = chunkDoc.pages.add();
+                newPage.graphics.drawPdfTemplate(loadedPage.createTemplate(), const Offset(0, 0));
+              }
+
+              final bytes = await chunkDoc.save();
+              await file.writeAsBytes(bytes);
+              chunkDoc.dispose();
+              
+            } else {
+              // Image source bundling
+              if (end >= inputFiles.length) end = inputFiles.length - 1;
+              
+              final pw.Document pdf = pw.Document();
+              for(int i = start; i <= end; i++) {
+                 final imageBytes = await inputFiles[i].readAsBytes();
+                 final image = pw.MemoryImage(imageBytes);
+                 pdf.addPage(
+                   pw.Page(
+                     margin: pw.EdgeInsets.zero,
+                     build: (pw.Context context) => pw.FullPage(ignoreMargins: true, child: pw.Image(image, fit: pw.BoxFit.contain))
+                   )
+                 );
+              }
+              await file.writeAsBytes(await pdf.save());
+            }
 
             updatedUnits.add(unit.copyWith(pdfPath: filePath, isGenerated: false, lessons: []));
           } else {
@@ -2767,6 +2880,7 @@ class PdfService {
       updatedModules.add(module.copyWith(sections: updatedSections));
     }
 
+    originalDoc?.dispose();
     return book.copyWith(modules: updatedModules);
   }
 }
@@ -2788,7 +2902,7 @@ enum BookGenState { extracting, review, chunking, saving, error }
 class GenerationTask {
   final String id;
   final String title;
-  final File pdfFile;
+  final List<File> sourceFiles;
   BookGenState state;
   String statusMessage;
   Book? skeletonBook;
@@ -2799,7 +2913,7 @@ class GenerationTask {
   GenerationTask({
     required this.id, 
     required this.title, 
-    required this.pdfFile,
+    required this.sourceFiles,
     this.state = BookGenState.extracting,
     this.statusMessage = 'Extracting Metadata & Planning...', 
     required this.estimatedDuration,
@@ -2821,12 +2935,19 @@ class UnitGenTask {
   });
 }
 
+class QpGenTask {
+  String status;
+  bool isError;
+  QpGenTask({required this.status, this.isError = false});
+}
+
 class GenerationManager extends ChangeNotifier {
   static final GenerationManager instance = GenerationManager._internal();
   GenerationManager._internal();
 
   final List<GenerationTask> activeTasks = [];
-  final Map<String, UnitGenTask> activeUnitGenerations = {}; // Unit ID -> Task Status
+  final Map<String, UnitGenTask> activeUnitGenerations = {}; 
+  final Map<String, QpGenTask> activeQpTasks = {}; 
   
   final PdfService _pdfService = PdfService();
   final DatabaseService _dbService = DatabaseService();
@@ -2853,20 +2974,21 @@ class GenerationManager extends ChangeNotifier {
     return sum ~/ history.length;
   }
 
-  /// Background Stage 1: Async Book Skeleton Extraction
-  Future<void> startBookGeneration(File pdfFile, String filename) async {
+  Future<void> startBookGeneration(List<File> inputFiles, String filename, String? userPrompt) async {
     final taskId = DateTime.now().millisecondsSinceEpoch.toString();
     final notifId = taskId.hashCode;
     
-    final fileSize = await pdfFile.length();
-    final uploadSecs = (fileSize / 500000).ceil();
+    double totalSize = 0;
+    for (var f in inputFiles) { totalSize += await f.length(); }
+
+    final uploadSecs = (totalSize / 500000).ceil();
     final avgAiMs = await _getAverageRunTime('meta_gen_history', 120000); 
     final estimatedDuration = Duration(seconds: uploadSecs, milliseconds: avgAiMs);
 
     final task = GenerationTask(
       id: taskId,
       title: filename,
-      pdfFile: pdfFile,
+      sourceFiles: inputFiles,
       startTime: DateTime.now(),
       estimatedDuration: estimatedDuration,
     );
@@ -2874,12 +2996,11 @@ class GenerationManager extends ChangeNotifier {
     activeTasks.add(task);
     notifyListeners();
 
-    // Trigger Indeterminate Progress Notification
-    await NotificationService.showProgress(notifId, "Analyzing PDF", "Extracting metadata...", indeterminate: true);
+    await NotificationService.showProgress(notifId, "Analyzing Source", "Extracting metadata...", indeterminate: true);
 
     try {
       final stopwatch = Stopwatch()..start();
-      final skeletonBook = await _aiService.generateBookSkeleton(pdfFile, filename);
+      final skeletonBook = await _aiService.generateBookSkeleton(inputFiles, filename, userPrompt);
       stopwatch.stop();
 
       await _recordRunTime('meta_gen_history', stopwatch.elapsedMilliseconds);
@@ -2900,32 +3021,34 @@ class GenerationManager extends ChangeNotifier {
       notifyListeners();
       
       await NotificationService.cancel(notifId);
-      await NotificationService.showActionable(notifId, "Generation Failed", "Failed to analyze PDF.", "error");
+      await NotificationService.showActionable(notifId, "Generation Failed", "Failed to analyze document.", "error");
     }
   }
 
-  /// Background Stage 2: Physically splits the PDF in Isolate and saves the chunked book to DB
-  Future<void> startBackgroundSplitAndSave(String taskId, File originalPdf, Book offsetBook) async {
+  Future<void> startBackgroundSplitAndSave(String taskId, List<File> sourceFiles, Book offsetBook) async {
     final taskIndex = activeTasks.indexWhere((t) => t.id == taskId);
     if (taskIndex == -1) return;
     
     final task = activeTasks[taskIndex];
     task.state = BookGenState.chunking;
-    task.statusMessage = 'Splitting PDF chunks...';
-    task.estimatedDuration = const Duration(seconds: 15);
+    task.statusMessage = 'Native Vector Splitting...';
+    task.estimatedDuration = const Duration(seconds: 15); // Native is much faster
     task.startTime = DateTime.now();
     notifyListeners();
 
     final notifId = taskId.hashCode;
-    await NotificationService.showProgress(notifId, "Splitting PDF", "Processing pages in background...", indeterminate: true);
+    await NotificationService.showProgress(notifId, "Chunking Pages", "Processing natively...", indeterminate: true);
 
     try {
-      final completeBook = await _pdfService.splitBookPdf(originalPdf, offsetBook);
+      final completeBook = await _pdfService.splitBookPdf(sourceFiles, offsetBook, (status) {
+        task.statusMessage = status;
+        notifyListeners();
+        NotificationService.showProgress(notifId, "Chunking Document", status, indeterminate: true);
+      });
 
       task.state = BookGenState.saving;
       task.statusMessage = 'Saving to Database...';
       notifyListeners();
-      await NotificationService.showProgress(notifId, "Saving to Database", "Finalizing...", indeterminate: true);
       
       await _dbService.saveGeneratedBook(completeBook);
       
@@ -2947,7 +3070,6 @@ class GenerationManager extends ChangeNotifier {
     }
   }
 
-  /// Background Stage 3: Generates deep lesson content for a specific Unit asynchronously
   Future<void> startUnitGeneration(Unit unit, Book book, int modIdx, int secIdx, int unitIdx) async {
     if (activeUnitGenerations.containsKey(unit.id)) return;
     
@@ -3002,9 +3124,39 @@ class GenerationManager extends ChangeNotifier {
     }
   }
 
+  Future<void> startQpGeneration(String bookId, List<File> files, String qpTitle, Book currentBook, String? userPrompt) async {
+    activeQpTasks[bookId] = QpGenTask(status: 'Analyzing Exam Paper...');
+    notifyListeners();
+    
+    try {
+        final qp = await _aiService.generateQuestionPaper(files, qpTitle, currentBook.systemPrompt, userPrompt);
+        
+        final updatedBook = currentBook.copyWith(
+            questionPapers: [...currentBook.questionPapers, qp]
+        );
+        
+        await _dbService.saveGeneratedBook(updatedBook);
+        _bookUpdateController.add(updatedBook);
+        
+        activeQpTasks.remove(bookId);
+        notifyListeners();
+    } catch(e) {
+        activeQpTasks[bookId]?.status = 'Error: $e';
+        activeQpTasks[bookId]?.isError = true;
+        notifyListeners();
+    }
+  }
+
   void clearUnitError(String unitId) {
     if (activeUnitGenerations[unitId]?.isError == true) {
       activeUnitGenerations.remove(unitId);
+      notifyListeners();
+    }
+  }
+
+  void clearQpError(String bookId) {
+    if (activeQpTasks[bookId]?.isError == true) {
+      activeQpTasks.remove(bookId);
       notifyListeners();
     }
   }
@@ -3051,7 +3203,6 @@ class AiService {
     return models;
   }
 
-  /// Robust JSON parser that handles Markdown ticks and invalid string literal types
   Map<String, dynamic> _cleanAndDecodeJson(String text) {
     print("[AiService] Initiating JSON Cleanup and Decoding...");
     String cleaned = text;
@@ -3074,129 +3225,104 @@ class AiService {
       if (decoded is! Map<String, dynamic>) {
         throw Exception('Expected a JSON Object (Map), but got ${decoded.runtimeType}.');
       }
-      print("[AiService] JSON Decoded Successfully.");
       return decoded;
     } catch (e1) {
       print("[AiService] Initial parse failed. Trying fallback cleanup... $e1");
       try {
-        // Fallback: fix literal unescaped newlines which AI might fail to properly escape
         String agg = cleaned.replaceAll('\n', '\\n').replaceAll('\r', '');
         return jsonDecode(agg) as Map<String, dynamic>;
       } catch (e2) {
-        print("\n[AiService] JSON PARSE ERROR: $e2");
-        print("[AiService] === PROBLEMATIC PAYLOAD SEGMENT ===");
-        print(cleaned.substring(0, cleaned.length > 500 ? 500 : cleaned.length));
-        print("=============================================\n");
         throw Exception('Failed to parse AI JSON response: $e2');
       }
     }
   }
 
-  /// STAGE 1: Extracts the table of contents and creates the Book Skeleton
-  Future<Book?> generateBookSkeleton(File pdfFile, String filename) async {
+  Future<List<Part>> _buildFileParts(List<File> files) async {
+    List<Part> parts = [];
+    for (var f in files) {
+      final ext = f.path.split('.').last.toLowerCase();
+      if (ext == 'pdf') {
+        parts.add(DataPart('application/pdf', await f.readAsBytes()));
+      } else {
+        final mime = ext == 'png' ? 'image/png' : 'image/jpeg';
+        parts.add(DataPart(mime, await f.readAsBytes()));
+      }
+    }
+    return parts;
+  }
+
+  Future<Book?> generateBookSkeleton(List<File> inputFiles, String filename, String? userPrompt) async {
     print("\n[AiService] === STARTING STAGE 1: BOOK SKELETON GENERATION ===");
     final keys = await _getKeys();
     final models = await _getModels();
-    final pdfBytes = await pdfFile.readAsBytes();
     
     final rawPrompt = await PromptService.getSkeletonPrompt();
-    final hydratedPrompt = rawPrompt.replaceAll('%filename%', filename);
+    final hydratedPrompt = rawPrompt
+        .replaceAll('%filename%', filename)
+        .replaceAll('%user_prompt%', userPrompt ?? 'None');
     
-    final prompt = TextPart(hydratedPrompt);
+    List<Part> parts = [TextPart(hydratedPrompt)];
+    parts.addAll(await _buildFileParts(inputFiles));
 
     Exception? lastException;
     
     for (var modelName in models) {
       for (var apiKey in keys) {
         try {
-          print("[AiService] Requesting Skeleton via $modelName [Key: ...${apiKey.substring(apiKey.length > 4 ? apiKey.length - 4 : 0)}]");
-          
           final model = GenerativeModel(
             model: modelName,
             apiKey: apiKey,
             generationConfig: GenerationConfig(responseMimeType: 'application/json'),
           );
 
-          final stopwatch = Stopwatch()..start();
           final response = await model.generateContent([
-            Content.multi([prompt, DataPart('application/pdf', pdfBytes)])
+            Content.multi(parts)
           ]).timeout(const Duration(minutes: 5));
-          stopwatch.stop();
 
           if (response.text != null) {
-            print("[AiService] Skeleton Generation Success! Took ${stopwatch.elapsed.inSeconds} seconds.");
             final jsonMap = _cleanAndDecodeJson(response.text!);
-            print("[AiService] === SKELETON GENERATION COMPLETE ===\n");
             return Book.fromJson(jsonMap);
           }
         } on TimeoutException {
-          print("[AiService] Warning: Request timed out for $modelName.");
           lastException = Exception('Request timed out ($modelName).');
         } catch (e) {
-          print("[AiService] Error using $modelName: $e");
           lastException = Exception('Generation failed: $e');
         }
       }
     }
-    print("[AiService] FATAL: All models/keys exhausted for Skeleton generation.");
     throw lastException ?? Exception('Failed to generate skeleton. All models/keys exhausted.');
   }
 
-  /// STAGE 2: Generates deep lesson content for a specific chunked PDF Unit
   Future<Unit> generateUnitContent(Unit unit, Book bookContext, Function(String) onProgress) async {
-    print("\n[AiService] === STARTING UNIT CONTENT GENERATION (TWO-STAGE) ===");
-    print("[AiService] Target Unit: ${unit.title}");
-    
     final keys = await _getKeys();
     final models = await _getModels();
     
-    if (unit.pdfPath == null) throw Exception("No PDF chunk available for this unit.");
-    final pdfBytes = await File(unit.pdfPath!).readAsBytes();
+    if (unit.pdfPath == null) throw Exception("No PDF/Image chunk available for this unit.");
+    final chunkFile = File(unit.pdfPath!);
 
     Exception? lastException;
 
     for (var modelName in models) {
       for (var apiKey in keys) {
         try {
-          print("\n[AiService] Attempting generation pipeline with $modelName [Key: ...${apiKey.substring(apiKey.length > 4 ? apiKey.length - 4 : 0)}]");
-          
-          final modelText = GenerativeModel(
-            model: modelName,
-            apiKey: apiKey,
-          );
-          
-          final modelJson = GenerativeModel(
-            model: modelName,
-            apiKey: apiKey,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
-          );
+          final modelText = GenerativeModel(model: modelName, apiKey: apiKey);
+          final modelJson = GenerativeModel(model: modelName, apiKey: apiKey, generationConfig: GenerationConfig(responseMimeType: 'application/json'));
 
-          // ------------------------------------------------------------------
-          // STEP 1: Lesson Planning (Text Generation)
-          // ------------------------------------------------------------------
-          print("[AiService] [Stage 2.1] Requesting Pedagogical Lesson Plan...");
           onProgress("Analyzing PDF & Planning Layout...");
           
           final rawPlanPrompt = await PromptService.getPlanPrompt();
           final hydratedPlanPrompt = rawPlanPrompt.replaceAll('%unit_title%', unit.title);
           
-          final planPrompt = TextPart(hydratedPlanPrompt);
+          List<Part> planParts = [TextPart(hydratedPlanPrompt)];
+          planParts.addAll(await _buildFileParts([chunkFile]));
 
-          final planStopwatch = Stopwatch()..start();
           final planResponse = await modelText.generateContent([
-            Content.multi([planPrompt, DataPart('application/pdf', pdfBytes)])
+            Content.multi(planParts)
           ]).timeout(const Duration(minutes: 4));
-          planStopwatch.stop();
 
           final lessonPlan = planResponse.text ?? '';
           if (lessonPlan.isEmpty) throw Exception("AI failed to generate a lesson plan.");
           
-          print("[AiService] [Stage 2.1] Lesson Plan Acquired in ${planStopwatch.elapsed.inSeconds}s.");
-
-          // ------------------------------------------------------------------
-          // STEP 2: JSON Instantiation
-          // ------------------------------------------------------------------
-          print("[AiService] [Stage 2.2] Requesting JSON Instantiation based on Plan...");
           onProgress("Generating Interactive Content...");
 
           final rawJsonPrompt = await PromptService.getJsonPrompt();
@@ -3205,17 +3331,14 @@ class AiService {
               .replaceAll('%unit_title%', unit.title)
               .replaceAll('%lesson_plan%', lessonPlan);
 
-          final jsonPrompt = TextPart(hydratedJsonPrompt);
+          List<Part> jsonParts = [TextPart(hydratedJsonPrompt)];
+          jsonParts.addAll(await _buildFileParts([chunkFile]));
 
-          final jsonStopwatch = Stopwatch()..start();
           final response = await modelJson.generateContent([
-            Content.multi([jsonPrompt, DataPart('application/pdf', pdfBytes)])
+            Content.multi(jsonParts)
           ]).timeout(const Duration(minutes: 5));
-          jsonStopwatch.stop();
 
           if (response.text != null) {
-            print("[AiService] [Stage 2.2] JSON Generation Success! Took ${jsonStopwatch.elapsed.inSeconds}s.");
-            
             onProgress("Parsing content...");
             final jsonMap = _cleanAndDecodeJson(response.text!);
             final lessonsData = jsonMap['lessons'] as List?;
@@ -3223,7 +3346,6 @@ class AiService {
             final newLessons = lessonsData?.map((l) {
               if (l is Map) {
                 var lesson = Lesson.fromJson(Map<String, dynamic>.from(l));
-                // Ensure globally unique IDs across different unit generations
                 final uniqueLessonId = '${unit.id}-${lesson.id}';
                 return lesson.copyWith(
                   id: uniqueLessonId,
@@ -3233,20 +3355,60 @@ class AiService {
               return null;
             }).whereType<Lesson>().toList() ?? [];
             
-            print("[AiService] === UNIT CONTENT GENERATION COMPLETE ===\n");
             return unit.copyWith(isGenerated: true, lessons: newLessons);
           }
-        } on TimeoutException {
-          print("[AiService] Warning: Request timed out for $modelName.");
-          lastException = Exception('Request timed out ($modelName).');
         } catch (e) {
-          print("[AiService] Error in pipeline using $modelName: $e");
           lastException = Exception('Failed: $e');
         }
       }
     }
-    print("[AiService] FATAL: All models/keys exhausted for Unit generation.");
     throw lastException ?? Exception('Failed to generate unit content. All models/keys exhausted.');
+  }
+
+  Future<QuestionPaper> generateQuestionPaper(List<File> files, String qpTitle, String? systemPrompt, String? userPrompt) async {
+    print("\n[AiService] === STARTING QP GENERATION ===");
+    final keys = await _getKeys();
+    final models = await _getModels();
+
+    final rawPrompt = await PromptService.getQpJsonPrompt();
+    final hydratedPrompt = rawPrompt
+        .replaceAll('%system_prompt%', systemPrompt ?? "You are an expert tutor.")
+        .replaceAll('%user_prompt%', userPrompt ?? 'None');
+
+    List<Part> parts = [TextPart(hydratedPrompt)];
+    parts.addAll(await _buildFileParts(files));
+
+    Exception? lastException;
+
+    for (var modelName in models) {
+      for (var apiKey in keys) {
+        try {
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: apiKey,
+            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+          );
+
+          final response = await model.generateContent([
+            Content.multi(parts)
+          ]).timeout(const Duration(minutes: 6));
+
+          if (response.text != null) {
+            final jsonMap = _cleanAndDecodeJson(response.text!);
+            final qp = QuestionPaper.fromJson(jsonMap);
+            // Ensure Title fallback overrides
+            return QuestionPaper(
+                id: qp.id, 
+                title: qpTitle.isNotEmpty ? qpTitle : qp.title, 
+                slides: qp.slides
+            );
+          }
+        } catch (e) {
+          lastException = Exception('QP Generation failed: $e');
+        }
+      }
+    }
+    throw lastException ?? Exception('Failed to generate Question Paper.');
   }
 }
 --- END OF FILE lib/services/ai_service.dart ---
@@ -3258,10 +3420,11 @@ class PromptService {
   static const String _kSkeleton = 'prompt_skeleton';
   static const String _kPlan = 'prompt_plan';
   static const String _kJson = 'prompt_json';
+  static const String _kQpJson = 'prompt_qp_json';
 
-  // The default robust AI prompts
-  static const String defaultSkeleton = '''You are an expert curriculum designer. Analyze the attached PDF document to create a high-level course skeleton.
+  static const String defaultSkeleton = '''You are an expert curriculum designer. Analyze the attached document/images to create a high-level course skeleton.
 The user uploaded a file named: "%filename%". 
+User Custom Instructions (if any): "%user_prompt%"
 
 CRITICAL INSTRUCTIONS:
 1. Generate a suitable, professional `title` for this course based on the document content or the filename.
@@ -3269,8 +3432,8 @@ CRITICAL INSTRUCTIONS:
    - "modules" represent the main Chapters.
    - "sections" represent the subtopics within a chapter (e.g., 2.1, 2.2).
    - "units" go deeper into the specific topics within each section.
-3. The `startPage` and `endPage` MUST refer to the ABSOLUTE PDF PAGE INDEX (1-based index where the absolute first page of the file is 1), NOT the printed page number. Ensure they accurately reflect logical splits.
-4. In the custom `systemPrompt` string you generate, STRICTLY instruct the AI to use double-escaped backslashes for all LaTeX (e.g. \\\\frac instead of \\frac).
+3. The `startPage` and `endPage` MUST refer to the ABSOLUTE PAGE INDEX (1-based index where the absolute first page of the file is 1). Ensure they accurately reflect logical splits.
+4. In the custom `systemPrompt` string you generate, STRICTLY instruct the AI to use double-escaped backslashes for all LaTeX (e.g. \\\\frac instead of \\frac). Account for any specific tone requested in the User Custom Instructions.
 
 Return ONLY valid JSON matching this exact structure:
 {
@@ -3305,9 +3468,9 @@ Return ONLY valid JSON matching this exact structure:
   ]
 }''';
 
-  static const String defaultPlan = '''You are an expert curriculum designer. Analyze the attached PDF chunk for the unit: "%unit_title%".
+  static const String defaultPlan = '''You are an expert curriculum designer. Analyze the attached chunk for the unit: "%unit_title%".
 Design a pedagogical lesson plan in PLAIN TEXT (do NOT output JSON yet).
-Break this unit down into multiple logical lessons based on the PDF content.
+Break this unit down into multiple logical lessons based on the content.
 
 CRITICAL DUOLINGO-STYLE MICRO-LEARNING RULES:
 1. MAXIMIZE the number of lessons. Break concepts down into extremely bite-sized pieces.
@@ -3328,7 +3491,7 @@ TASK:
 You previously created this optimal learning plan for the unit "%unit_title%":
 %lesson_plan%
 
-Based strictly on this plan and the attached PDF chunk, generate the full JSON content.
+Based strictly on this plan and the attached content chunk, generate the full JSON content.
 
 CRITICAL SCHEMA & MICRO-LEARNING RULES:
 1. "theory" slides: `content` MUST be a few sentences explaining a concept.
@@ -3343,34 +3506,32 @@ YOU MUST RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
   "lessons": [
     {
       "id": "l1", "title": "Lesson 1", "description": "...", "icon": "BookOpen",
-      "slides": [
-        {
-          "id": "s1", "type": "theory", "title": "Concept", "content": "Explanation here."
-        },
-        {
-          "id": "s2", "type": "interactive_canvas", "title": "Visualization", 
-          "content": "This wave moves constantly...",
-          "interactiveCanvasHtml": "<canvas id='myCanvas'></canvas><script>...draw loop...</script>"
-        },
-        {
-          "id": "s3", "type": "quiz", "title": "Knowledge Check",
-          "content": "WHAT IS THE ACTUAL QUESTION TEXT HERE?",
-          "options": [
-            {"id": "a", "text": "Option 1", "isCorrect": true, "explanation": "..."}
-          ]
-        },
-        {
-          "id": "s4", "type": "step_by_step", "title": "Big Problem",
-          "content": "Overall problem description here...",
-          "interactiveSteps": [
-            { "stepText": "First, let's understand X." },
-            { "prompt": "What is the formula for X?", "options": [
-                {"id": "o1", "text": "Y", "isCorrect": true, "explanation": "..."}
-            ]}
-          ]
-        }
-      ]
+      "slides": [ ... ]
     }
+  ]
+}''';
+
+  static const String defaultQpJson = '''SYSTEM PROMPT:
+%system_prompt%
+
+User Custom Instructions (if any): "%user_prompt%"
+
+TASK:
+Analyze the attached Question Paper (PDF or Images). 
+Extract each question, solve it step-by-step, and convert it into interactive learning slides based on the user's custom instructions if provided.
+
+RULES:
+1. Create a "step_by_step" or "numerical" or "quiz" slide for each question depending on its nature.
+2. Break down large math proofs into `interactiveSteps`.
+3. Ensure accurate math using double-escaped LaTeX (e.g. \\\\frac).
+4. Return ONLY valid JSON matching this schema:
+{
+  "id": "qp1",
+  "title": "Extracted Past Paper Title",
+  "slides": [ 
+      {
+         "id": "s1", "type": "step_by_step", "title": "Q1", "content": "The original question...", "interactiveSteps": [...]
+      }
   ]
 }''';
 
@@ -3388,6 +3549,11 @@ YOU MUST RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
   static Future<String> getJsonPrompt() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_kJson) ?? defaultJson;
+  }
+
+  static Future<String> getQpJsonPrompt() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_kQpJson) ?? defaultQpJson;
   }
 
   // Savers
@@ -3411,6 +3577,7 @@ YOU MUST RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
     await prefs.remove(_kSkeleton);
     await prefs.remove(_kPlan);
     await prefs.remove(_kJson);
+    await prefs.remove(_kQpJson);
   }
 }
 --- END OF FILE lib/services/prompt_service.dart ---
@@ -3460,7 +3627,7 @@ class NotificationService {
           navigatorKey.currentState?.push(MaterialPageRoute(
             builder: (_) => PdfSplitPreviewScreen(
               taskId: targetTask!.id,
-              originalPdf: targetTask.pdfFile,
+              originalPdf: targetTask.sourceFiles,
               skeletonBook: targetTask.skeletonBook!,
             )
           ));
@@ -3585,10 +3752,60 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 
+class FloatingStartBubble extends StatefulWidget {
+  final Color color;
+  const FloatingStartBubble({super.key, required this.color});
+
+  @override
+  State<FloatingStartBubble> createState() => _FloatingStartBubbleState();
+}
+
+class _FloatingStartBubbleState extends State<FloatingStartBubble> with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000))..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (ctx, child) => Transform.translate(
+        offset: Offset(0, -6 * _ctrl.value),
+        child: child,
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(color: widget.color.withOpacity(0.5), blurRadius: 8, offset: const Offset(0, 4))
+          ],
+        ),
+        child: Text(
+          'START',
+          style: TextStyle(color: widget.color, fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 1.2),
+        ),
+      ),
+    );
+  }
+}
+
 class LessonNodeWidget extends StatelessWidget {
   final Lesson lesson;
   final bool isCompleted;
   final bool isLocked;
+  final bool isActive;
   final String sectionColorStr;
   final VoidCallback onTap;
 
@@ -3597,12 +3814,12 @@ class LessonNodeWidget extends StatelessWidget {
     required this.lesson,
     required this.isCompleted,
     required this.isLocked,
+    required this.isActive,
     required this.sectionColorStr,
     required this.onTap,
   });
 
-  Color _getColor() {
-    if (isCompleted) return Colors.amber;
+  Color _getSectionColor() {
     switch (sectionColorStr) {
       case 'duo-green': return AppTheme.duoGreen;
       case 'duo-blue': return AppTheme.duoBlue;
@@ -3612,8 +3829,7 @@ class LessonNodeWidget extends StatelessWidget {
     }
   }
 
-  Color _getShadowColor() {
-    if (isCompleted) return Colors.amber.shade700;
+  Color _getSectionShadowColor() {
     switch (sectionColorStr) {
       case 'duo-green': return AppTheme.duoGreenDark;
       case 'duo-blue': return AppTheme.duoBlueDark;
@@ -3623,51 +3839,76 @@ class LessonNodeWidget extends StatelessWidget {
     }
   }
 
+  Color _getColor() {
+    if (isLocked) return Colors.grey.shade800;
+    if (isCompleted) return Colors.amber;
+    return _getSectionColor();
+  }
+
+  Color _getShadowColor() {
+    if (isLocked) return Colors.grey.shade900;
+    if (isCompleted) return Colors.amber.shade700;
+    return _getSectionShadowColor();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final bgColor = isLocked ? Colors.grey.shade800 : _getColor();
-    final shadowColor = isLocked ? Colors.grey.shade900 : _getShadowColor();
+    final bgColor = _getColor();
+    final shadowColor = _getShadowColor();
 
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
         children: [
-          Container(
-            width: 80, 
-            height: 80, 
-            decoration: BoxDecoration(
-              color: bgColor,
-              shape: BoxShape.circle,
-              border: Border.all(color: shadowColor, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: shadowColor,
-                  offset: const Offset(0, 6),
-                )
-              ],
-            ),
-            child: Icon(
-              isLocked ? LucideIcons.lock : LucideIcons.bookOpen,
-              color: isLocked ? Colors.grey.shade500 : Colors.white,
-              size: 36, 
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), 
-            decoration: AppTheme.glassDecoration,
-            child: Text(
-              lesson.title.toUpperCase(),
-              style: const TextStyle(
-                fontSize: 11, 
-                fontWeight: FontWeight.w900,
-                color: Colors.white70,
-                letterSpacing: 1.0,
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 80, 
+                height: 80, 
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: shadowColor, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: shadowColor,
+                      offset: const Offset(0, 6),
+                    )
+                  ],
+                ),
+                child: Icon(
+                  isCompleted ? LucideIcons.check : (isLocked ? LucideIcons.lock : LucideIcons.star),
+                  color: isLocked ? Colors.grey.shade500 : Colors.white,
+                  size: 36, 
+                ),
               ),
-              textAlign: TextAlign.center,
-            ),
-          )
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), 
+                decoration: AppTheme.glassDecoration,
+                child: Text(
+                  lesson.title.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 11, 
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white70,
+                    letterSpacing: 1.0,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              )
+            ],
+          ),
+          if (isActive)
+            Positioned(
+              top: -30,
+              child: FloatingStartBubble(color: _getSectionColor()),
+            )
         ],
       ),
     );
@@ -4006,7 +4247,6 @@ class BookCard extends StatelessWidget {
 
 --- START OF FILE lib/widgets/lesson_path.dart ---
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
@@ -4051,6 +4291,8 @@ class LessonPath extends StatelessWidget {
 
     double currentY = 40; 
     bool previousCompleted = true; // The very first lesson is always unlocked
+    double amplitude = MediaQuery.of(context).size.width * 0.25; // Responsive snaking radius
+    List<double> snakingPattern = [0, 0.45, 0.8, 0.45, 0, -0.45, -0.8, -0.45];
 
     for (int i = 0; i < section.units.length; i++) {
       final unit = section.units[i];
@@ -4058,7 +4300,6 @@ class LessonPath extends StatelessWidget {
       final bool isGenerated = unit.isGenerated && unit.lessons.isNotEmpty;
       final UnitGenTask? loadingStatus = loadingUnitStatuses[unit.id];
 
-      // Compact Unit Header ensuring no overflows on small screens
       stackChildren.add(
         Positioned(
           top: currentY,
@@ -4074,25 +4315,22 @@ class LessonPath extends StatelessWidget {
         ),
       );
 
-      // Expand distance dynamically based on header size, plus added padding
-      currentY += isGenerated ? 120 : 190; 
+      currentY += isGenerated ? 160 : 210; 
 
       if (isGenerated) {
         for (int l = 0; l < unit.lessons.length; l++) {
           final lesson = unit.lessons[l];
           final bool isCompleted = completedLessons.contains(lesson.id);
           final bool isLocked = !previousCompleted && !isCompleted;
+          final bool isActive = previousCompleted && !isCompleted;
           
-          final int phase = l % 4;
-          double offsetX = 0;
-          if (phase == 1) offsetX = 50; 
-          if (phase == 3) offsetX = -50; 
+          double offsetX = snakingPattern[l % snakingPattern.length] * amplitude;
 
           double centerX = MediaQuery.of(context).size.width / 2;
           double absoluteX = centerX + offsetX;
 
-          pathPoints.add(Offset(absoluteX, currentY + 40)); 
-          nodeCompleted.add(isCompleted || previousCompleted); // Current node acts visually 'reachable' if previous is completed
+          pathPoints.add(Offset(absoluteX, currentY + 50)); 
+          nodeCompleted.add(isCompleted || previousCompleted);
 
           stackChildren.add(
             Positioned(
@@ -4105,6 +4343,7 @@ class LessonPath extends StatelessWidget {
                   lesson: lesson,
                   isCompleted: isCompleted,
                   isLocked: isLocked,
+                  isActive: isActive,
                   sectionColorStr: section.color,
                   onTap: () async {
                     if (isLocked) {
@@ -4132,19 +4371,19 @@ class LessonPath extends StatelessWidget {
             ),
           );
 
-          currentY += 140; 
+          currentY += 170; 
           previousCompleted = isCompleted;
         }
       }
       
-      currentY += 40; // Add spacing bottom padding for each unit
+      currentY += 40; 
     }
 
     stackChildren.insert(0, 
       Positioned.fill(
         child: TweenAnimationBuilder<double>(
           tween: Tween(begin: 0.0, end: 1.0),
-          duration: const Duration(milliseconds: 800),
+          duration: const Duration(milliseconds: 1200),
           curve: Curves.easeOutCubic,
           builder: (context, value, child) {
             return CustomPaint(
@@ -4152,7 +4391,7 @@ class LessonPath extends StatelessWidget {
                 points: pathPoints,
                 nodeCompleted: nodeCompleted,
                 pathColor: Colors.grey.shade800,
-                activeColor: Colors.amber, 
+                activeColor: _getPathColor(), 
                 animationValue: value,
               ),
             );
@@ -4164,10 +4403,11 @@ class LessonPath extends StatelessWidget {
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       child: SizedBox(
-        height: currentY + 120, // Extra padding for bottom nav
+        height: currentY + 120, 
         width: double.infinity,
         child: Stack(
           alignment: Alignment.topCenter,
+          clipBehavior: Clip.none,
           children: stackChildren,
         ),
       ),
@@ -4194,35 +4434,74 @@ class CurvedPathPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (points.length < 2) return;
 
-    final basePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 14 
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
+    final double trackWidth = 24.0;
 
+    final borderPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = trackWidth + 8
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..color = pathColor.withOpacity(0.5);
+
+    final fillPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = trackWidth
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..color = pathColor;
+
+    // Draw full background track
+    final fullPath = Path();
+    fullPath.moveTo(points[0].dx, points[0].dy);
     for (int i = 0; i < points.length - 1; i++) {
       final p1 = points[i];
       final p2 = points[i + 1];
-
-      final path = Path();
-      path.moveTo(p1.dx, p1.dy);
-      
       double cy = (p1.dy + p2.dy) / 2;
-      path.cubicTo(p1.dx, cy, p2.dx, cy, p2.dx, p2.dy);
+      fullPath.cubicTo(p1.dx, cy, p2.dx, cy, p2.dx, p2.dy);
+    }
+    
+    canvas.drawPath(fullPath, borderPaint);
+    canvas.drawPath(fullPath, fillPaint);
 
-      bool segmentCompleted = nodeCompleted.length > i+1 && nodeCompleted[i] && nodeCompleted[i+1];
-      
-      basePaint.color = pathColor;
-      canvas.drawPath(path, basePaint);
+    // Build completed active path
+    final activePath = Path();
+    activePath.moveTo(points[0].dx, points[0].dy);
+    bool hasActiveSegments = false;
 
-      if (segmentCompleted) {
-        PathMetrics metrics = path.computeMetrics();
-        for (PathMetric metric in metrics) {
-          Path extracted = metric.extractPath(0, metric.length * animationValue);
-          basePaint.color = activeColor;
-          canvas.drawPath(extracted, basePaint);
-        }
+    for (int i = 0; i < points.length - 1; i++) {
+      if (nodeCompleted[i] && nodeCompleted[i + 1]) {
+        hasActiveSegments = true;
+        final p1 = points[i];
+        final p2 = points[i + 1];
+        double cy = (p1.dy + p2.dy) / 2;
+        activePath.cubicTo(p1.dx, cy, p2.dx, cy, p2.dx, p2.dy);
       }
+    }
+
+    if (hasActiveSegments) {
+      PathMetrics metrics = activePath.computeMetrics();
+      Path animatedActivePath = Path();
+      
+      for (PathMetric metric in metrics) {
+        animatedActivePath.addPath(metric.extractPath(0, metric.length * animationValue), Offset.zero);
+      }
+
+      final activeBorderPaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = trackWidth + 8
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..color = activeColor.withOpacity(0.4);
+
+      final activeFillPaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = trackWidth
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..color = activeColor;
+
+      canvas.drawPath(animatedActivePath, activeBorderPaint);
+      canvas.drawPath(animatedActivePath, activeFillPaint);
     }
   }
 
@@ -4657,12 +4936,14 @@ class CompactBookCard extends StatelessWidget {
   final Book book;
   final double progress;
   final VoidCallback onTap;
+  final VoidCallback? onDelete;
 
   const CompactBookCard({
     super.key,
     required this.book,
     required this.progress,
     required this.onTap,
+    this.onDelete,
   });
 
   @override
@@ -4678,45 +4959,66 @@ class CompactBookCard extends StatelessWidget {
           border: Border.all(color: Colors.white12, width: 2),
         ),
         clipBehavior: Clip.hardEdge,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Stack(
           children: [
-            Expanded(
-              flex: 5,
-              child: Container(
-                color: AppTheme.duoBlue.withOpacity(0.8),
-                child: Center(
-                  child: Icon(LucideIcons.bookOpen, size: 40, color: Colors.white.withOpacity(0.9)),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: Container(
+                    color: AppTheme.duoBlue.withOpacity(0.8),
+                    child: Center(
+                      child: Icon(LucideIcons.bookOpen, size: 40, color: Colors.white.withOpacity(0.9)),
+                    ),
+                  ),
                 ),
-              ),
+                Expanded(
+                  flex: 4,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          book.title,
+                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Colors.white, height: 1.2),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const Spacer(),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            backgroundColor: Colors.white10,
+                            color: AppTheme.duoGreen,
+                            minHeight: 6,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              ],
             ),
-            Expanded(
-              flex: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      book.title,
-                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Colors.white, height: 1.2),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+            if (onDelete != null)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: GestureDetector(
+                  onTap: onDelete,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white24),
                     ),
-                    const Spacer(),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        backgroundColor: Colors.white10,
-                        color: AppTheme.duoGreen,
-                        minHeight: 6,
-                      ),
-                    ),
-                  ],
+                    child: const Icon(LucideIcons.trash2, size: 14, color: Colors.white),
+                  ),
                 ),
               ),
-            )
           ],
         ),
       ),
@@ -4804,6 +5106,180 @@ class CommunityBookCard extends StatelessWidget {
   }
 }
 --- END OF FILE lib/widgets/community_book_card.dart ---
+
+--- START OF FILE lib/widgets/qp_card.dart ---
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../models/app_models.dart';
+import '../theme/app_theme.dart';
+
+class QpCard extends StatelessWidget {
+  final QuestionPaper qp;
+  final VoidCallback onTap;
+
+  const QpCard({super.key, required this.qp, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppTheme.duoBlue.withOpacity(0.3), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.duoBlue.withOpacity(0.1),
+              offset: const Offset(0, 4),
+              blurRadius: 10,
+            )
+          ]
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.duoBlue.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(LucideIcons.fileSignature, size: 24, color: AppTheme.duoBlue),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    qp.title,
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${qp.slides.length} Solved Questions',
+                    style: const TextStyle(fontSize: 12, color: Colors.white54, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+            Icon(LucideIcons.chevronRight, color: AppTheme.duoBlue.withOpacity(0.5))
+          ],
+        ),
+      ),
+    );
+  }
+}
+--- END OF FILE lib/widgets/qp_card.dart ---
+
+--- START OF FILE lib/widgets/file_selection_list.dart ---
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../theme/app_theme.dart';
+
+class FileSelectionList extends StatelessWidget {
+  final List<File> files;
+  final VoidCallback onAddMore;
+  final Function(int) onRemove;
+
+  const FileSelectionList({
+    super.key,
+    required this.files,
+    required this.onAddMore,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: Colors.white12)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${files.length} File(s) Selected', 
+                  style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.white)
+                ),
+                GestureDetector(
+                  onTap: onAddMore,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppTheme.duoBlue.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(LucideIcons.plus, size: 14, color: AppTheme.duoBlue),
+                        SizedBox(width: 4),
+                        Text('Add', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                )
+              ],
+            ),
+          ),
+          
+          if (files.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(24.0),
+              child: Text(
+                'No files added yet.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white54, fontSize: 13),
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: files.length,
+              separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.white12),
+              itemBuilder: (context, index) {
+                final file = files[index];
+                final isPdf = file.path.toLowerCase().endsWith('.pdf');
+                return ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  leading: Icon(
+                    isPdf ? LucideIcons.fileText : LucideIcons.image,
+                    color: isPdf ? AppTheme.duoViolet : AppTheme.duoOrange,
+                  ),
+                  title: Text(
+                    file.path.split('/').last,
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(LucideIcons.trash2, size: 18, color: AppTheme.duoRed),
+                    onPressed: () => onRemove(index),
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+}
+--- END OF FILE lib/widgets/file_selection_list.dart ---
 
 --- START OF FILE lib/widgets/slide_views/interactive_webview.dart ---
 import 'package:flutter/material.dart';
@@ -6002,6 +6478,28 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved to your library!')));
   }
 
+  void _deleteLocalBook(Book book) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text('Delete Course?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: const Text('Are you sure you want to delete this course from your local library?', style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _db.deleteBook(book.id);
+              _loadAllData(force: true);
+            }, 
+            child: const Text('Delete', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold))
+          ),
+        ]
+      )
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -6053,7 +6551,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     Navigator.push(context, MaterialPageRoute(
                                       builder: (_) => PdfSplitPreviewScreen(
                                         taskId: task.id,
-                                        originalPdf: task.pdfFile,
+                                        originalPdf: task.sourceFiles,
                                         skeletonBook: task.skeletonBook!,
                                       )
                                     ));
@@ -6102,6 +6600,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                        Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
                                          .then((_) => _loadAllData());
                                      },
+                                     onDelete: () => _deleteLocalBook(book),
                                    );
                                  },
                                ),
@@ -7195,7 +7694,6 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     super.initState();
     _currentBook = widget.book;
 
-    // Listen to background generation updates globally
     _bookUpdateSub = GenerationManager.instance.bookUpdates.listen((updatedBook) {
       if (updatedBook.id == _currentBook.id && mounted) {
         setState(() {
@@ -7211,7 +7709,6 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     super.dispose();
   }
 
-  // Fallback direct update for synchronous changes if needed
   void _onBookUpdated(Book newBook) {
     if (mounted) {
       setState(() {
@@ -7314,7 +7811,6 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
         children: pages,
       ),
       
-      // Glass Bottom Navigation Bar (Ultra Compact Icons only)
       bottomNavigationBar: ClipRRect(
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
@@ -7332,7 +7828,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                   _buildNavItem(0, LucideIcons.map),
                   _buildNavItem(1, LucideIcons.dumbbell),
                   _buildNavItem(2, LucideIcons.fileText),
-                  _buildNavItem(3, LucideIcons.bookOpenCheck),
+                  _buildNavItem(3, LucideIcons.fileQuestion),
                 ],
               ),
             ),
@@ -7346,13 +7842,15 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     final isActive = _currentIndex == index;
     final color = isActive ? AppTheme.duoBlue : Colors.white54;
     
-    return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-        child: Icon(icon, color: color, size: 28),
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _currentIndex = index),
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Icon(icon, color: color, size: 28),
+        ),
       ),
     );
   }
@@ -7553,99 +8051,241 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
+import '../services/generation_manager.dart';
 import '../widgets/math_markdown.dart';
+import '../widgets/qp_card.dart';
+import 'lesson_screen.dart';
+import 'generate_qp_screen.dart';
 
 class ExamScreen extends StatelessWidget {
   final Book book;
 
   const ExamScreen({super.key, required this.book});
 
+  void _openQp(BuildContext context, QuestionPaper qp) {
+    final dummyLesson = Lesson(
+      id: qp.id,
+      title: qp.title,
+      description: 'Solved Question Paper',
+      icon: 'FileQuestion',
+      slides: qp.slides,
+    );
+
+    Navigator.push(context, MaterialPageRoute(builder: (_) => LessonScreen(lesson: dummyLesson)));
+  }
+
   @override
   Widget build(BuildContext context) {
     // Gather exam questions from all modules
-    List<Slide> examQuestions = [];
+    List<Slide> moduleExamQuestions = [];
     for (var module in book.modules) {
-      examQuestions.addAll(module.examQuestions);
+      moduleExamQuestions.addAll(module.examQuestions);
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Exam Reference', style: TextStyle(fontWeight: FontWeight.w900)),
-        automaticallyImplyLeading: false,
-      ),
-      body: examQuestions.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(LucideIcons.bookOpenCheck, size: 80, color: AppTheme.duoGreen.withOpacity(0.5)),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'No Exam Questions Found',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white),
-                  ),
-                ],
+    return AnimatedBuilder(
+      animation: GenerationManager.instance,
+      builder: (context, _) {
+        final qpTask = GenerationManager.instance.activeQpTasks[book.id];
+        final qps = book.questionPapers;
+
+        return Scaffold(
+          body: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverAppBar(
+                title: const Text('Exams', style: TextStyle(fontWeight: FontWeight.w900)),
+                automaticallyImplyLeading: false,
+                floating: true,
+                backgroundColor: AppTheme.background,
               ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 120), // Padding for bottom nav
-              itemCount: examQuestions.length,
-              itemBuilder: (context, index) {
-                final q = examQuestions[index];
+              
+              // === PAST PAPERS SECTION ===
+              const SliverPadding(
+                padding: EdgeInsets.only(top: 16, left: 24, bottom: 8),
+                sliver: SliverToBoxAdapter(
+                  child: Text('Past Exam Papers', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white)),
+                ),
+              ),
 
-                String answerText = '';
-                if (q.type == 'quiz') {
-                  final correctOpt = q.options?.firstWhere((o) => o.isCorrect, orElse: () => q.options!.first);
-                  answerText = r'**Answer:** ' + (correctOpt?.text ?? '') + r'\n\n*Explanation:* ' + (correctOpt?.explanation ?? '');
-                } else if (q.type == 'fill_in_blank') {
-                  answerText = r'**Answer:** $$' + (q.blankAnswer ?? '') + r'$$';
-                } else if (q.type == 'numerical') {
-                  answerText = r'**Answer:** ' + (q.numericAnswer?.toString() ?? '');
-                }
-
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: AppTheme.glassDecoration.copyWith(
-                    border: Border.all(color: AppTheme.duoOrange.withOpacity(0.3), width: 2),
-                  ),
-                  child: Theme(
-                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      iconColor: AppTheme.duoOrange,
-                      collapsedIconColor: Colors.white54,
-                      title: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            q.title.toUpperCase(),
-                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppTheme.duoOrange, letterSpacing: 1.2),
-                          ),
-                          const SizedBox(height: 8),
-                          MathMarkdown(data: q.content, textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
-                        ],
-                      ),
-                      childrenPadding: const EdgeInsets.all(20),
-                      expandedAlignment: Alignment.centerLeft,
+              if (qpTask != null)
+                SliverToBoxAdapter(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    padding: const EdgeInsets.all(16),
+                    decoration: AppTheme.glassDecoration.copyWith(
+                      border: Border.all(color: qpTask.isError ? AppTheme.duoRed : AppTheme.duoBlue, width: 2)
+                    ),
+                    child: Row(
                       children: [
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppTheme.duoOrange.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppTheme.duoOrange.withOpacity(0.5)),
+                        if (qpTask.isError)
+                          const Icon(LucideIcons.alertTriangle, color: AppTheme.duoRed, size: 24)
+                        else
+                          const SizedBox(
+                            width: 24, height: 24, 
+                            child: CircularProgressIndicator(color: AppTheme.duoBlue, strokeWidth: 3)
                           ),
-                          child: MathMarkdown(
-                            data: answerText,
-                            textStyle: const TextStyle(fontSize: 16, color: Colors.white, height: 1.5),
-                          ),
-                        )
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Text(
+                            qpTask.status, 
+                            style: TextStyle(fontWeight: FontWeight.bold, color: qpTask.isError ? AppTheme.duoRed : Colors.white),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          )
+                        ),
+                        if (qpTask.isError)
+                          IconButton(
+                            icon: const Icon(LucideIcons.x, color: Colors.white54),
+                            onPressed: () => GenerationManager.instance.clearQpError(book.id),
+                          )
                       ],
                     ),
                   ),
-                );
+                ),
+
+              if (qps.isEmpty && qpTask == null)
+                SliverToBoxAdapter(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(20)
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(LucideIcons.fileQuestion, size: 40, color: AppTheme.duoBlue.withOpacity(0.5)),
+                        const SizedBox(height: 16),
+                        const Text('No Past Papers', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white54)),
+                        const SizedBox(height: 8),
+                        const Text('Upload past exams to solve interactively.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Colors.white38)),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: QpCard(qp: qps[index], onTap: () => _openQp(context, qps[index])),
+                        );
+                      },
+                      childCount: qps.length,
+                    ),
+                  ),
+                ),
+
+              // === MODULE EXAMS SECTION ===
+              const SliverPadding(
+                padding: EdgeInsets.only(top: 32, left: 24, bottom: 8),
+                sliver: SliverToBoxAdapter(
+                  child: Text('Module Exam Questions', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white)),
+                ),
+              ),
+
+              if (moduleExamQuestions.isEmpty)
+                SliverToBoxAdapter(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(20)
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(LucideIcons.bookOpenCheck, size: 40, color: AppTheme.duoOrange.withOpacity(0.5)),
+                        const SizedBox(height: 16),
+                        const Text('No Module Exams Found', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white54)),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final q = moduleExamQuestions[index];
+
+                        String answerText = '';
+                        if (q.type == 'quiz') {
+                          final correctOpt = q.options?.firstWhere((o) => o.isCorrect, orElse: () => q.options!.first);
+                          answerText = r'**Answer:** ' + (correctOpt?.text ?? '') + r'\n\n*Explanation:* ' + (correctOpt?.explanation ?? '');
+                        } else if (q.type == 'fill_in_blank') {
+                          answerText = r'**Answer:** $$' + (q.blankAnswer ?? '') + r'$$';
+                        } else if (q.type == 'numerical') {
+                          answerText = r'**Answer:** ' + (q.numericAnswer?.toString() ?? '');
+                        }
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: AppTheme.glassDecoration.copyWith(
+                            border: Border.all(color: AppTheme.duoOrange.withOpacity(0.3), width: 2),
+                          ),
+                          child: Theme(
+                            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                            child: ExpansionTile(
+                              iconColor: AppTheme.duoOrange,
+                              collapsedIconColor: Colors.white54,
+                              title: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    q.title.toUpperCase(),
+                                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppTheme.duoOrange, letterSpacing: 1.2),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  MathMarkdown(data: q.content, textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
+                                ],
+                              ),
+                              childrenPadding: const EdgeInsets.all(16),
+                              expandedAlignment: Alignment.centerLeft,
+                              children: [
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.duoOrange.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: AppTheme.duoOrange.withOpacity(0.5)),
+                                  ),
+                                  child: MathMarkdown(
+                                    data: answerText,
+                                    textStyle: const TextStyle(fontSize: 14, color: Colors.white, height: 1.5),
+                                  ),
+                                )
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                      childCount: moduleExamQuestions.length,
+                    ),
+                  ),
+                ),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 120)), // Nav bar padding
+            ],
+          ),
+          floatingActionButton: Padding(
+            padding: const EdgeInsets.only(bottom: 80),
+            child: FloatingActionButton.extended(
+              backgroundColor: AppTheme.duoBlue,
+              icon: const Icon(LucideIcons.plus, color: Colors.white),
+              label: const Text('Add Paper', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => GenerateQpScreen(book: book)));
               },
             ),
+          ),
+        );
+      }
     );
   }
 }
@@ -8000,6 +8640,7 @@ import 'package:file_picker/file_picker.dart';
 import '../services/generation_manager.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
+import '../widgets/file_selection_list.dart';
 
 class GenerateBookScreen extends StatefulWidget {
   const GenerateBookScreen({super.key});
@@ -8009,31 +8650,34 @@ class GenerateBookScreen extends StatefulWidget {
 }
 
 class _GenerateBookScreenState extends State<GenerateBookScreen> {
-  File? _selectedFile;
+  final List<File> _selectedFiles = [];
+  final TextEditingController _promptCtrl = TextEditingController();
 
-  Future<void> _pickFile() async {
+  Future<void> _pickFiles() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['pdf'],
+      allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
+      allowMultiple: true,
     );
 
     if (result != null) {
       setState(() {
-        _selectedFile = File(result.files.single.path!);
+        final newFiles = result.paths.where((p) => p != null).map((p) => File(p!)).toList();
+        _selectedFiles.addAll(newFiles);
       });
     }
   }
 
   void _generate() {
-    if (_selectedFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a PDF file first.')));
+    if (_selectedFiles.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select at least one file.')));
       return;
     }
 
-    final filename = _selectedFile!.path.split('/').last;
+    final filename = _selectedFiles.first.path.split('/').last;
+    final prompt = _promptCtrl.text.trim().isEmpty ? null : _promptCtrl.text.trim();
     
-    // Kick off async metadata extraction immediately and return to home
-    GenerationManager.instance.startBookGeneration(_selectedFile!, filename);
+    GenerationManager.instance.startBookGeneration(_selectedFiles, filename, prompt);
     Navigator.pop(context);
   }
 
@@ -8041,35 +8685,56 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('New Course', style: TextStyle(fontWeight: FontWeight.w900))),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              "We'll instantly analyze the PDF to map out the course chapters. You can review the structure before we chunk the file in the background.",
-              style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
-            ),
-            const SizedBox(height: 32),
-            DuoButton(
-              text: _selectedFile != null ? 'PDF Selected' : 'Upload PDF',
-              onPressed: _pickFile,
-              color: AppTheme.duoBlue,
-              shadowColor: AppTheme.duoBlueDark,
-              isOutline: _selectedFile != null,
-            ),
-            if (_selectedFile != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 16.0),
-                child: Text('File: ${_selectedFile!.path.split('/').last}', style: const TextStyle(color: Colors.white54, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      "Upload PDFs or multiple images. We'll instantly analyze them to map out the course chapters. You can continuously add files below.",
+                      style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    FileSelectionList(
+                      files: _selectedFiles,
+                      onAddMore: _pickFiles,
+                      onRemove: (idx) => setState(() => _selectedFiles.removeAt(idx)),
+                    ),
+                    
+                    const SizedBox(height: 32),
+                    const Text('Custom Instructions (Optional)', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: AppTheme.glassDecoration,
+                      child: TextField(
+                        controller: _promptCtrl,
+                        maxLines: 4,
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        decoration: InputDecoration(
+                          hintText: "E.g., Focus deeply on mathematical proofs, or make it suitable for a 10 year old.",
+                          hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                          contentPadding: const EdgeInsets.all(16),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            const Spacer(),
-            
-            DuoButton(
-              text: 'Analyze PDF',
-              onPressed: _generate,
-              color: AppTheme.duoGreen,
-              shadowColor: AppTheme.duoGreenDark,
+            ),
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: DuoButton(
+                text: 'Analyze Document',
+                onPressed: _generate,
+                color: _selectedFiles.isNotEmpty ? AppTheme.duoGreen : Colors.grey.shade700,
+                shadowColor: _selectedFiles.isNotEmpty ? AppTheme.duoGreenDark : Colors.grey.shade800,
+              ),
             ),
           ],
         ),
@@ -8104,7 +8769,7 @@ class _UnitEditor {
 
 class PdfSplitPreviewScreen extends StatefulWidget {
   final String taskId;
-  final File originalPdf;
+  final List<File> originalPdf;
   final Book skeletonBook;
 
   const PdfSplitPreviewScreen({
@@ -8120,11 +8785,15 @@ class PdfSplitPreviewScreen extends StatefulWidget {
 
 class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
   final PdfViewerController _pdfViewerController = PdfViewerController();
+  final PageController _imagePageController = PageController();
   List<_UnitEditor> _editors = [];
+  bool _isPdf = false;
+  int _currentImageIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    _isPdf = widget.originalPdf.length == 1 && widget.originalPdf.first.path.toLowerCase().endsWith('.pdf');
     _flattenHierarchy();
   }
 
@@ -8140,7 +8809,6 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
   }
 
   void _commitSplits() {
-    // Reconstruct the Book with updated ranges
     List<Module> updatedModules = List.from(widget.skeletonBook.modules);
     
     for (var editor in _editors) {
@@ -8161,10 +8829,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
 
     final offsetBook = widget.skeletonBook.copyWith(modules: updatedModules);
 
-    // Continue background task
     GenerationManager.instance.startBackgroundSplitAndSave(widget.taskId, widget.originalPdf, offsetBook);
-
-    // Pop back to home screen where we came from
     Navigator.pop(context);
   }
 
@@ -8185,12 +8850,21 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
               clipBehavior: Clip.hardEdge,
               child: Stack(
                 children: [
-                  SfPdfViewer.file(
-                    widget.originalPdf,
-                    controller: _pdfViewerController,
-                    canShowScrollHead: false,
-                    canShowScrollStatus: false,
-                  ),
+                  if (_isPdf)
+                    SfPdfViewer.file(
+                      widget.originalPdf.first,
+                      controller: _pdfViewerController,
+                      canShowScrollHead: false,
+                      canShowScrollStatus: false,
+                    )
+                  else
+                    PageView.builder(
+                      controller: _imagePageController,
+                      onPageChanged: (i) => setState(() => _currentImageIndex = i),
+                      itemCount: widget.originalPdf.length,
+                      itemBuilder: (context, index) => Image.file(widget.originalPdf[index], fit: BoxFit.contain),
+                    ),
+                  
                   Positioned(
                     bottom: 12,
                     right: 12,
@@ -8203,9 +8877,12 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(LucideIcons.fileText, size: 14, color: Colors.white54),
+                          Icon(_isPdf ? LucideIcons.fileText : LucideIcons.image, size: 14, color: Colors.white54),
                           const SizedBox(width: 8),
-                          const Text('Use Viewer to find exact page #', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                          Text(
+                            _isPdf ? 'Use Viewer to find exact page #' : 'Image ${_currentImageIndex + 1} of ${widget.originalPdf.length}', 
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)
+                          ),
                         ],
                       ),
                     ),
@@ -8303,7 +8980,11 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                                 onPressed: () {
                                   int? p = int.tryParse(editor.startCtrl.text);
                                   if (p != null) {
-                                    _pdfViewerController.jumpToPage(p);
+                                    if (_isPdf) {
+                                      _pdfViewerController.jumpToPage(p);
+                                    } else if (p - 1 >= 0 && p - 1 < widget.originalPdf.length) {
+                                      _imagePageController.jumpToPage(p - 1);
+                                    }
                                   }
                                 },
                               )
@@ -8335,13 +9016,12 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
 
 --- START OF FILE lib/screens/pdf_browser_screen.dart ---
 import 'dart:io';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
+import '../services/database_service.dart';
 import 'pdf_folder_screen.dart';
 
 class PdfFolderMeta {
@@ -8379,13 +9059,8 @@ class _PdfBrowserScreenState extends State<PdfBrowserScreen> {
 
   Future<void> _loadFolders() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final cachedStr = prefs.getString('cached_books');
-      List<Book> books = [];
-      if (cachedStr != null) {
-        final List decoded = jsonDecode(cachedStr);
-        books = decoded.map((e) => Book.fromJson(Map<String, dynamic>.from(e))).toList();
-      }
+      // Pull dynamic namespace-aware books directly from the DatabaseService
+      final List<Book> books = await DatabaseService().fetchBooks(forceRefresh: false);
 
       final appDir = await getApplicationDocumentsDirectory();
       final booksDir = Directory('${appDir.path}/books');
@@ -9061,6 +9736,143 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 }
 --- END OF FILE lib/screens/auth_screen.dart ---
+
+--- START OF FILE lib/screens/generate_qp_screen.dart ---
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import '../models/app_models.dart';
+import '../services/generation_manager.dart';
+import '../theme/app_theme.dart';
+import '../widgets/duo_button.dart';
+import '../widgets/file_selection_list.dart';
+
+class GenerateQpScreen extends StatefulWidget {
+  final Book book;
+
+  const GenerateQpScreen({super.key, required this.book});
+
+  @override
+  State<GenerateQpScreen> createState() => _GenerateQpScreenState();
+}
+
+class _GenerateQpScreenState extends State<GenerateQpScreen> {
+  final List<File> _selectedFiles = [];
+  final TextEditingController _titleCtrl = TextEditingController();
+  final TextEditingController _promptCtrl = TextEditingController();
+
+  Future<void> _pickFiles() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
+      allowMultiple: true,
+    );
+
+    if (result != null) {
+      setState(() {
+        final newFiles = result.paths.where((p) => p != null).map((p) => File(p!)).toList();
+        _selectedFiles.addAll(newFiles);
+      });
+    }
+  }
+
+  void _generate() {
+    if (_selectedFiles.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select at least one file.')));
+      return;
+    }
+    
+    final title = _titleCtrl.text.trim();
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a name for this past paper.')));
+      return;
+    }
+
+    final prompt = _promptCtrl.text.trim().isEmpty ? null : _promptCtrl.text.trim();
+    
+    GenerationManager.instance.startQpGeneration(widget.book.id, _selectedFiles, title, widget.book, prompt);
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Add Past Paper', style: TextStyle(fontWeight: FontWeight.w900))),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      "Upload PDFs or photos of past exams. The AI will extract the questions and solve them interactively. You can continuously select files.",
+                      style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
+                    ),
+                    const SizedBox(height: 24),
+
+                    const Text('Exam Name', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: AppTheme.glassDecoration,
+                      child: TextField(
+                        controller: _titleCtrl,
+                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                        decoration: InputDecoration(
+                          hintText: "e.g. Midterm 2023",
+                          hintStyle: const TextStyle(color: Colors.white38, fontSize: 13, fontWeight: FontWeight.normal),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                          contentPadding: const EdgeInsets.all(16),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    FileSelectionList(
+                      files: _selectedFiles,
+                      onAddMore: _pickFiles,
+                      onRemove: (idx) => setState(() => _selectedFiles.removeAt(idx)),
+                    ),
+                    
+                    const SizedBox(height: 32),
+                    const Text('Custom Instructions (Optional)', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: AppTheme.glassDecoration,
+                      child: TextField(
+                        controller: _promptCtrl,
+                        maxLines: 4,
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        decoration: InputDecoration(
+                          hintText: "E.g., Provide extremely detailed step-by-step proofs for any calculus questions.",
+                          hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                          contentPadding: const EdgeInsets.all(16),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: DuoButton(
+                text: 'Solve & Add Paper',
+                onPressed: _generate,
+                color: _selectedFiles.isNotEmpty ? AppTheme.duoBlue : Colors.grey.shade700,
+                shadowColor: _selectedFiles.isNotEmpty ? AppTheme.duoBlueDark : Colors.grey.shade800,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+--- END OF FILE lib/screens/generate_qp_screen.dart ---
 
 --- START OF FILE test/widget_test.dart ---
 // This is a basic Flutter widget test.
