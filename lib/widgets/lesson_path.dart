@@ -68,7 +68,7 @@ class LessonPath extends StatelessWidget {
       );
 
       // Expand distance dynamically based on header size, plus added padding
-      currentY += isGenerated ? 120 : 190; 
+      currentY += isGenerated ? 160 : 210; 
 
       if (isGenerated) {
         for (int l = 0; l < unit.lessons.length; l++) {
@@ -78,13 +78,13 @@ class LessonPath extends StatelessWidget {
           
           final int phase = l % 4;
           double offsetX = 0;
-          if (phase == 1) offsetX = 50; 
-          if (phase == 3) offsetX = -50; 
+          if (phase == 1) offsetX = 75; 
+          if (phase == 3) offsetX = -75; 
 
           double centerX = MediaQuery.of(context).size.width / 2;
           double absoluteX = centerX + offsetX;
 
-          pathPoints.add(Offset(absoluteX, currentY + 40)); 
+          pathPoints.add(Offset(absoluteX, currentY + 50)); 
           nodeCompleted.add(isCompleted || previousCompleted); // Current node acts visually 'reachable' if previous is completed
 
           stackChildren.add(
@@ -125,7 +125,7 @@ class LessonPath extends StatelessWidget {
             ),
           );
 
-          currentY += 140; 
+          currentY += 170; 
           previousCompleted = isCompleted;
         }
       }
@@ -189,7 +189,7 @@ class CurvedPathPainter extends CustomPainter {
 
     final basePaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 14 
+      ..strokeWidth = 16 
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 

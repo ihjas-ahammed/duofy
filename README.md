@@ -11,6 +11,7 @@ flutter pub add firebase_core firebase_auth firebase_database webview_flutter go
 flutter pub add flutter_markdown_latex markdown share_plus
 flutter pub add syncfusion_flutter_pdf syncfusion_flutter_pdfviewer
 flutter pub add flutter_local_notifications
+flutter pub add pdfx pdf
 ```
 
 ### 2. Firebase Configuration
@@ -36,11 +37,14 @@ We use the Gemini API to analyze uploaded PDFs and generate interactive JSON les
 - `/lib/theme`: Colors and global styling matching the web platform
 
 ## Recent Updates & Design Process
+- **Rasterized PDF Chunking**: To permanently fix the bloated PDF issue from page removal, the app now uses `pdfx` and the `pdf` package to completely rasterize target pages into compressed JPEGs, maintaining their exact aspect ratio and merging them into ultra-compact chunked PDFs.
+- **Dynamic Granular Progress Updates**: Loading states directly update the UI with exact page-by-page rendering statuses during chunk operations.
+- **UI Path Enhancements**: The visual learning path now features increased amplitude and vertical spacing, adhering closer to modern micro-learning layouts.
 - **Background Notification System**: The app now integrates a seamless Notification Service that pushes progress updates and alerts even if the user minimizes or backs out of the generation screen. Tapping the "Action Required" notification routes users perfectly back to the exact required sub-view (like Page Splitting review).
 - **True Async Isolate Compute**: Relocated the heavy physical `Syncfusion PDF` chunking process into a secondary Isolate using `compute()`. The UI thread remains perfectly free, maintaining 120hz frame rates for the Zeno's psychological progress bar without micro-stutters during heavy local file I/O operations.
 - **Navigation Fix**: Solved the navigation double-pop issue after completing lessons so the user accurately lands right back on their lesson path.
 - **Multi-User & Authentication**: Implemented Firebase Authentication to allow distinct user accounts. User profiles display dynamically in settings.
 - **Global Data & App Store Home**: Transformed the home screen into an Apple App Store layout. Personal library uses compact horizontal scrolls, and users can now publish courses to the "Community Picks" global database.
 - **Data Namespacing**: Completely separated local SharedPreferences and Firebase RTDB paths using Firebase UID.
-- **Interactive Canvas Art**: Added a dedicated slide type that visualizes topics via interactive 2D HTML/JS Canvas rendered seamlessly below theory explanations.
+- **Interactive Canvas Art**: Added a dedicated slide type that visualizations topics via interactive 2D HTML/JS Canvas rendered seamlessly below theory explanations.
 - **Adaptive Psychological Progress Bar**: Replaced static loading spinners with a logarithmic progress bar (Zeno's paradox algorithm) that predicts processing time based on historical AI generation averages and file size.

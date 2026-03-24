@@ -129,23 +129,27 @@ class GenerationManager extends ChangeNotifier {
     }
   }
 
-  /// Background Stage 2: Physically splits the PDF in Isolate and saves the chunked book to DB
+  /// Background Stage 2: Physically splits and rasterizes the PDF and saves the chunked book to DB
   Future<void> startBackgroundSplitAndSave(String taskId, File originalPdf, Book offsetBook) async {
     final taskIndex = activeTasks.indexWhere((t) => t.id == taskId);
     if (taskIndex == -1) return;
     
     final task = activeTasks[taskIndex];
     task.state = BookGenState.chunking;
-    task.statusMessage = 'Splitting PDF chunks...';
-    task.estimatedDuration = const Duration(seconds: 15);
+    task.statusMessage = 'Splitting & Compressing PDF chunks...';
+    task.estimatedDuration = const Duration(seconds: 45); // Rasterizing takes a bit longer
     task.startTime = DateTime.now();
     notifyListeners();
 
     final notifId = taskId.hashCode;
-    await NotificationService.showProgress(notifId, "Splitting PDF", "Processing pages in background...", indeterminate: true);
+    await NotificationService.showProgress(notifId, "Chunking PDF", "Processing pages...", indeterminate: true);
 
     try {
-      final completeBook = await _pdfService.splitBookPdf(originalPdf, offsetBook);
+      final completeBook = await _pdfService.splitBookPdf(originalPdf, offsetBook, (status) {
+        task.statusMessage = status;
+        notifyListeners();
+        NotificationService.showProgress(notifId, "Chunking PDF", status, indeterminate: true);
+      });
 
       task.state = BookGenState.saving;
       task.statusMessage = 'Saving to Database...';
