@@ -42,7 +42,15 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
     final prompt = _promptCtrl.text.trim().isEmpty ? null : _promptCtrl.text.trim();
     
     GenerationManager.instance.startBookGeneration(_selectedFiles, filename, prompt);
-    Navigator.pop(context);
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Analyzing structure in Background! You can add another course.'))
+    );
+    
+    setState(() {
+      _selectedFiles.clear();
+      _promptCtrl.clear();
+    });
   }
 
   @override
@@ -59,7 +67,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const Text(
-                      "Upload PDFs or multiple images. We'll instantly analyze them to map out the course chapters. You can continuously add files below.",
+                      "Upload PDFs or multiple images. We'll instantly analyze them to map out the course chapters. The process happens seamlessly in the background.",
                       style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
                     ),
                     const SizedBox(height: 24),

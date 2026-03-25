@@ -11,6 +11,7 @@ import 'book_dashboard_screen.dart';
 import 'practice_screen.dart';
 import 'notes_screen.dart';
 import 'exam_screen.dart';
+import 'course_settings_screen.dart';
 
 class MainLayoutScreen extends StatefulWidget {
   final Book book;
@@ -52,6 +53,10 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
         _currentBook = newBook;
       });
     }
+  }
+
+  void _openCourseSettings() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => CourseSettingsScreen(book: _currentBook)));
   }
 
   void _publishBook() {
@@ -110,36 +115,14 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(LucideIcons.settings, size: 22, color: Colors.white70),
+            tooltip: 'Course Configuration',
+            onPressed: _openCourseSettings,
+          ),
+          IconButton(
             icon: const Icon(LucideIcons.uploadCloud, size: 22, color: AppTheme.duoBlue),
             tooltip: 'Publish to Community',
             onPressed: _publishBook,
-          ),
-          ValueListenableBuilder<int>(
-            valueListenable: GlobalState.xpNotifier,
-            builder: (context, xp, child) {
-              return Padding(
-                padding: const EdgeInsets.only(right: 16.0),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.amber.withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(LucideIcons.zap, color: Colors.amber, size: 16),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$xp', 
-                        style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.w900, fontSize: 14),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
           ),
         ],
       ),

@@ -1500,20 +1500,18 @@ We use the Gemini API to analyze uploaded PDFs and generate interactive JSON les
 3. Enter your Gemini API key and save it securely.
 
 ## Project Structure Overview
-- `/lib/models`: Data structures (Book, Module, Lesson, Slide, QuestionPaper, etc.)
-- `/lib/screens`: Auth, Home, Dashboard (Path), Exam, Lesson Player, Completion Screen, PDF Generator, Practice
-- `/lib/widgets`: Modular UI components (Custom Duolingo-style Buttons, Glass Panels, MathMarkdown)
+- `/lib/models`: Data structures (Book, Module, Lesson, Slide, QuestionPaper, SlideTemplate, etc.)
+- `/lib/screens`: Auth, Home, Dashboard (Path), Exam, Lesson Player, Course Settings, PDF Generator, Practice
+- `/lib/widgets`: Modular UI components (Custom Duolingo-style Buttons, Glass Panels, MathMarkdown, LessonAccordion)
 - `/lib/widgets/slide_views`: Individual renderers for theory, quiz, blanks, numericals, JS canvas, and Interactive Proofs.
 - `/lib/services`: AI, Database handling, True Async PDF Isolates, Notification routing, and Dynamic Prompting services.
-- `/lib/theme`: Colors and global styling matching the web platform
 
 ## Recent Updates & Design Process
-- **Consolidated Exam Interface**: Merged Module Exams and Past Papers into a single, unified "Exams" tab. Users can access generated module-specific checks and manually uploaded external past papers dynamically from the same view.
-- **Continuous File Uploads**: Users can now continuously select and append multiple files (PDFs/Images) seamlessly when creating a new course or uploading a new exam paper without losing previously selected ones.
-- **Custom Prompts Injection**: Added the ability for users to pass custom directives to the AI (e.g. "Focus deeply on equations" or "Explain this for a 10 year old") when analyzing new files.
-- **Native Vector PDF Splitting**: Replaced heavy JPEG rasterization with pure native vector page extraction (`PdfDocumentTemplate`).
-- **Image Upload Integration**: Upgraded the upload workflows to accept multiple Images dynamically alongside PDFs.
-- **Adaptive Psychological Progress Bar**: Logarithmic progress bar predicting processing time based on historical AI generation averages.
+- **Personalized Storytelling AI**: The AI now incorporates your customized interests (set in Global Settings) to generate a relatable, story-driven initial slide for every lesson, bridging real-world hobbies with academic topics.
+- **Custom Lesson Configuration**: Added an interactive drag-and-drop course config screen. Users can manually structure exactly what types of slides the AI should generate for a lesson (e.g., Story -> Theory -> Visual Canvas -> Quiz) per course.
+- **Accordion Lesson View**: Replaced the previous single-track scrolling path with a structured, collapsible Accordion view to clearly see units, their completion status, and cleanly access generated chunks.
+- **Background Exam Processing**: Uploading Question Papers now processes completely in the background with local notifications, letting you study other items or minimize the app while the AI parses complex math and logic solutions.
+- **Compact UI Views**: Theory slides have been condensed to maximize readability without wasting vertical screen space on smaller devices.
 --- END OF FILE README.md ---
 
 --- START OF FILE future.md ---
@@ -1522,7 +1520,7 @@ We use the Gemini API to analyze uploaded PDFs and generate interactive JSON les
     - USe the same exam reference tab
     - Add a seperate screen, so i can continuesly select files
 
-- Update new course just like that I get to continuesly select files and I can add a comment to the AI prompt like the way I want it if needed (opyional)
+- Update new course just like that I get to continuesly select files and I can add a comment to the AI prompt like the way I want it if needed (optional)
 --- END OF FILE future.md ---
 
 --- START OF FILE lib/main.dart ---
@@ -1771,6 +1769,34 @@ bool _bool(dynamic val, [bool def = false]) {
   return def;
 }
 
+class SlideTemplate {
+  final String type;
+  final String description;
+
+  SlideTemplate({required this.type, required this.description});
+
+  factory SlideTemplate.fromJson(Map<String, dynamic> json) {
+    return SlideTemplate(
+      type: _str(json['type']),
+      description: _str(json['description']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'type': type,
+    'description': description,
+  };
+
+  static List<SlideTemplate> get defaultTemplate => [
+    SlideTemplate(type: 'theory', description: 'A story or real-world example explaining the concept based on the user\'s interests.'),
+    SlideTemplate(type: 'theory', description: 'The original factual theory and core concepts.'),
+    SlideTemplate(type: 'theory', description: 'Connecting the initial story to the core theory.'),
+    SlideTemplate(type: 'interactive_canvas', description: 'A visual interactive 2D canvas simulation of the concept.'),
+    SlideTemplate(type: 'fill_in_blank', description: 'Recall key terms with a fill-in-the-blank question.'),
+    SlideTemplate(type: 'quiz', description: 'A multiple-choice question testing understanding.'),
+  ];
+}
+
 class Book {
   final String id;
   final String title;
@@ -1783,6 +1809,7 @@ class Book {
   final bool isGlobal;
   final List<Module> modules;
   final List<QuestionPaper> questionPapers;
+  final List<SlideTemplate>? lessonTemplate;
 
   Book({
     required this.id, 
@@ -1796,6 +1823,7 @@ class Book {
     this.isGlobal = false,
     required this.modules,
     this.questionPapers = const [],
+    this.lessonTemplate,
   });
 
   factory Book.fromJson(Map<String, dynamic> json) {
@@ -1811,6 +1839,7 @@ class Book {
       isGlobal: _bool(json['isGlobal'], false),
       modules: (json['modules'] as List?)?.map((m) => Module.fromJson(m is Map ? Map<String, dynamic>.from(m) : {})).toList() ?? [],
       questionPapers: (json['questionPapers'] as List?)?.map((q) => QuestionPaper.fromJson(q is Map ? Map<String, dynamic>.from(q) : {})).toList() ?? [],
+      lessonTemplate: (json['lessonTemplate'] as List?)?.map((t) => SlideTemplate.fromJson(t is Map ? Map<String, dynamic>.from(t) : {})).toList(),
     );
   }
 
@@ -1826,6 +1855,7 @@ class Book {
     'isGlobal': isGlobal,
     'modules': modules.map((m) => m.toJson()).toList(),
     'questionPapers': questionPapers.map((q) => q.toJson()).toList(),
+    if (lessonTemplate != null) 'lessonTemplate': lessonTemplate!.map((t) => t.toJson()).toList(),
   };
 
   Book copyWith({
@@ -1840,6 +1870,7 @@ class Book {
     bool? isGlobal,
     List<Module>? modules,
     List<QuestionPaper>? questionPapers,
+    List<SlideTemplate>? lessonTemplate,
   }) {
     return Book(
       id: id ?? this.id,
@@ -1853,33 +1884,98 @@ class Book {
       isGlobal: isGlobal ?? this.isGlobal,
       modules: modules ?? this.modules,
       questionPapers: questionPapers ?? this.questionPapers,
+      lessonTemplate: lessonTemplate ?? this.lessonTemplate,
     );
   }
+}
+
+class QpQuestion {
+  final String id;
+  final String questionText;
+  final String solutionText;
+
+  QpQuestion({
+    required this.id,
+    required this.questionText,
+    required this.solutionText,
+  });
+
+  factory QpQuestion.fromJson(Map<String, dynamic> json) {
+    return QpQuestion(
+      id: _str(json['id']),
+      questionText: _str(json['questionText']),
+      solutionText: _str(json['solutionText']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'questionText': questionText,
+    'solutionText': solutionText,
+  };
+}
+
+class QpSection {
+  final String title;
+  final List<QpQuestion> questions;
+
+  QpSection({
+    required this.title,
+    required this.questions,
+  });
+
+  factory QpSection.fromJson(Map<String, dynamic> json) {
+    return QpSection(
+      title: _str(json['title'], 'Section'),
+      questions: (json['questions'] as List?)?.map((q) => QpQuestion.fromJson(q is Map ? Map<String, dynamic>.from(q) : {})).toList() ?? [],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'title': title,
+    'questions': questions.map((q) => q.toJson()).toList(),
+  };
 }
 
 class QuestionPaper {
   final String id;
   final String title;
-  final List<Slide> slides;
+  final List<QpSection> sections;
 
   QuestionPaper({
     required this.id, 
     required this.title, 
-    required this.slides,
+    required this.sections,
   });
 
   factory QuestionPaper.fromJson(Map<String, dynamic> json) {
+    List<QpSection> parsedSections = [];
+    if (json['sections'] != null) {
+      parsedSections = (json['sections'] as List).map((s) => QpSection.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList();
+    } else if (json['slides'] != null) {
+      // Fallback parser for old Slide-based QPs
+      List<QpQuestion> fallbackQs = (json['slides'] as List).map((s) {
+        final sm = s is Map ? Map<String, dynamic>.from(s) : <String, dynamic>{};
+        return QpQuestion(
+          id: _str(sm['id']),
+          questionText: _str(sm['title']) + '\n\n' + _str(sm['content']),
+          solutionText: "Solution data is in old interactive format. Please regenerate.",
+        );
+      }).toList();
+      parsedSections = [QpSection(title: "General Questions", questions: fallbackQs)];
+    }
+
     return QuestionPaper(
       id: _str(json['id']),
       title: _str(json['title'], 'Past Paper'),
-      slides: (json['slides'] as List?)?.map((s) => Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
+      sections: parsedSections,
     );
   }
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'title': title,
-    'slides': slides.map((s) => s.toJson()).toList(),
+    'sections': sections.map((s) => s.toJson()).toList(),
   };
 }
 
@@ -1889,7 +1985,6 @@ class Module {
   final String description;
   final List<Section> sections;
   final List<Slide> practiceQuestions;
-  final List<Slide> examQuestions;
 
   Module({
     required this.id, 
@@ -1897,7 +1992,6 @@ class Module {
     required this.description, 
     required this.sections,
     required this.practiceQuestions,
-    required this.examQuestions,
   });
 
   factory Module.fromJson(Map<String, dynamic> json) {
@@ -1907,7 +2001,6 @@ class Module {
       description: _str(json['description']),
       sections: (json['sections'] as List?)?.map((s) => Section.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
       practiceQuestions: (json['practiceQuestions'] as List?)?.map((s) => Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
-      examQuestions: (json['examQuestions'] as List?)?.map((s) => Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
     );
   }
 
@@ -1917,7 +2010,6 @@ class Module {
     'description': description,
     'sections': sections.map((s) => s.toJson()).toList(),
     'practiceQuestions': practiceQuestions.map((s) => s.toJson()).toList(),
-    'examQuestions': examQuestions.map((s) => s.toJson()).toList(),
   };
 
   Module copyWith({
@@ -1926,7 +2018,6 @@ class Module {
     String? description,
     List<Section>? sections,
     List<Slide>? practiceQuestions,
-    List<Slide>? examQuestions,
   }) {
     return Module(
       id: id ?? this.id,
@@ -1934,7 +2025,6 @@ class Module {
       description: description ?? this.description,
       sections: sections ?? this.sections,
       practiceQuestions: practiceQuestions ?? this.practiceQuestions,
-      examQuestions: examQuestions ?? this.examQuestions,
     );
   }
 }
@@ -2351,26 +2441,6 @@ final List<Book> mockBooks = [
               InteractiveStep(
                 stepText: 'Now use \$p = \\gamma m v\$ to find the final momentum.'
               )
-            ]
-          ),
-        ],
-        examQuestions: [
-          Slide(
-            id: 'e-1',
-            type: 'numerical',
-            title: 'Exam: Binding Energy',
-            content: r'If the work function \$\Phi\$ is 2.0 eV and incoming light has energy 5.5 eV, what is the max kinetic energy in eV? (\$K_{max} = E - \Phi\$)',
-            numericAnswer: 3.5,
-            numericTolerance: 0.1,
-          ),
-          Slide(
-            id: 'e-2',
-            type: 'quiz',
-            title: 'Exam: Ground State',
-            content: r'What is the principal quantum number \$n\$ for the ground state of Hydrogen?',
-            options: [
-              QuizOption(id: 'a', text: '0', isCorrect: false, explanation: 'n starts at 1.'),
-              QuizOption(id: 'b', text: '1', isCorrect: true, explanation: 'The lowest energy state is n=1.'),
             ]
           ),
         ],
@@ -3070,6 +3140,58 @@ class GenerationManager extends ChangeNotifier {
     }
   }
 
+  Future<void> restoreBookFiles(Book book, List<File> sourceFiles) async {
+    final taskId = "restore_${book.id}";
+    if (activeTasks.any((t) => t.id == taskId)) return; // Prevent duplicate
+
+    final notifId = taskId.hashCode;
+
+    final task = GenerationTask(
+      id: taskId,
+      title: "Restoring ${book.title}",
+      sourceFiles: sourceFiles,
+      state: BookGenState.chunking,
+      statusMessage: 'Re-splitting source files...',
+      estimatedDuration: const Duration(seconds: 15),
+      startTime: DateTime.now(),
+    );
+
+    activeTasks.add(task);
+    notifyListeners();
+
+    await NotificationService.showProgress(notifId, "Restoring Files", "Re-splitting source natively...", indeterminate: true);
+
+    try {
+      final completeBook = await _pdfService.splitBookPdf(sourceFiles, book, (status) {
+        task.statusMessage = status;
+        notifyListeners();
+        NotificationService.showProgress(notifId, "Restoring Document", status, indeterminate: true);
+      });
+
+      task.state = BookGenState.saving;
+      task.statusMessage = 'Saving to Database...';
+      notifyListeners();
+
+      await _dbService.saveGeneratedBook(completeBook);
+
+      activeTasks.remove(task);
+      notifyListeners();
+
+      _bookUpdateController.add(completeBook);
+
+      await NotificationService.cancel(notifId);
+      await NotificationService.showActionable(notifId, "Files Restored!", "Your course is ready for generation.", "open_home|");
+    } catch (e) {
+      task.state = BookGenState.error;
+      task.statusMessage = 'Error restoring files';
+      task.errorMessage = e.toString();
+      notifyListeners();
+
+      await NotificationService.cancel(notifId);
+      await NotificationService.showActionable(notifId, "Error", "Failed to restore files.", "error");
+    }
+  }
+
   Future<void> startUnitGeneration(Unit unit, Book book, int modIdx, int secIdx, int unitIdx) async {
     if (activeUnitGenerations.containsKey(unit.id)) return;
     
@@ -3125,9 +3247,14 @@ class GenerationManager extends ChangeNotifier {
   }
 
   Future<void> startQpGeneration(String bookId, List<File> files, String qpTitle, Book currentBook, String? userPrompt) async {
+    if (activeQpTasks.containsKey(bookId)) return;
+
+    final notifId = bookId.hashCode + 1; // Unique ID avoiding collision
     activeQpTasks[bookId] = QpGenTask(status: 'Analyzing Exam Paper...');
     notifyListeners();
     
+    await NotificationService.showProgress(notifId, "Analyzing Exam", "Extracting and solving questions natively...", indeterminate: true);
+
     try {
         final qp = await _aiService.generateQuestionPaper(files, qpTitle, currentBook.systemPrompt, userPrompt);
         
@@ -3140,10 +3267,16 @@ class GenerationManager extends ChangeNotifier {
         
         activeQpTasks.remove(bookId);
         notifyListeners();
+
+        await NotificationService.cancel(notifId);
+        await NotificationService.showActionable(notifId, "Exam Ready", "Past paper solved interactively!", "open_home|");
     } catch(e) {
         activeQpTasks[bookId]?.status = 'Error: $e';
         activeQpTasks[bookId]?.isError = true;
         notifyListeners();
+
+        await NotificationService.cancel(notifId);
+        await NotificationService.showActionable(notifId, "Analysis Failed", "Failed to solve past paper.", "error");
     }
   }
 
@@ -3187,7 +3320,6 @@ class AiService {
       keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
     }
     if (keys.isEmpty) {
-      print("[AiService] FATAL: No API Keys configured.");
       throw Exception('No API Keys configured.');
     }
     return keys;
@@ -3204,7 +3336,6 @@ class AiService {
   }
 
   Map<String, dynamic> _cleanAndDecodeJson(String text) {
-    print("[AiService] Initiating JSON Cleanup and Decoding...");
     String cleaned = text;
     if (cleaned.contains('```json')) {
       cleaned = cleaned.split('```json')[1].split('```')[0];
@@ -3227,7 +3358,6 @@ class AiService {
       }
       return decoded;
     } catch (e1) {
-      print("[AiService] Initial parse failed. Trying fallback cleanup... $e1");
       try {
         String agg = cleaned.replaceAll('\n', '\\n').replaceAll('\r', '');
         return jsonDecode(agg) as Map<String, dynamic>;
@@ -3252,7 +3382,6 @@ class AiService {
   }
 
   Future<Book?> generateBookSkeleton(List<File> inputFiles, String filename, String? userPrompt) async {
-    print("\n[AiService] === STARTING STAGE 1: BOOK SKELETON GENERATION ===");
     final keys = await _getKeys();
     final models = await _getModels();
     
@@ -3296,9 +3425,17 @@ class AiService {
   Future<Unit> generateUnitContent(Unit unit, Book bookContext, Function(String) onProgress) async {
     final keys = await _getKeys();
     final models = await _getModels();
+    final prefs = await SharedPreferences.getInstance();
     
     if (unit.pdfPath == null) throw Exception("No PDF/Image chunk available for this unit.");
     final chunkFile = File(unit.pdfPath!);
+    if (!chunkFile.existsSync()) {
+      throw Exception("Local file missing. Tap 'Restore' on the warning banner to re-link source files.");
+    }
+
+    final String userInterests = prefs.getString('user_interests') ?? 'general everyday examples';
+    final List<SlideTemplate> template = bookContext.lessonTemplate ?? SlideTemplate.defaultTemplate;
+    String templateLayoutString = template.map((t) => "- Type: ${t.type} | Instructions: ${t.description}").join('\n');
 
     Exception? lastException;
 
@@ -3311,7 +3448,10 @@ class AiService {
           onProgress("Analyzing PDF & Planning Layout...");
           
           final rawPlanPrompt = await PromptService.getPlanPrompt();
-          final hydratedPlanPrompt = rawPlanPrompt.replaceAll('%unit_title%', unit.title);
+          final hydratedPlanPrompt = rawPlanPrompt
+              .replaceAll('%unit_title%', unit.title)
+              .replaceAll('%user_interests%', userInterests)
+              .replaceAll('%template_layout%', templateLayoutString);
           
           List<Part> planParts = [TextPart(hydratedPlanPrompt)];
           planParts.addAll(await _buildFileParts([chunkFile]));
@@ -3366,7 +3506,6 @@ class AiService {
   }
 
   Future<QuestionPaper> generateQuestionPaper(List<File> files, String qpTitle, String? systemPrompt, String? userPrompt) async {
-    print("\n[AiService] === STARTING QP GENERATION ===");
     final keys = await _getKeys();
     final models = await _getModels();
 
@@ -3400,7 +3539,7 @@ class AiService {
             return QuestionPaper(
                 id: qp.id, 
                 title: qpTitle.isNotEmpty ? qpTitle : qp.title, 
-                slides: qp.slides
+                sections: qp.sections
             );
           }
         } catch (e) {
@@ -3474,15 +3613,14 @@ Break this unit down into multiple logical lessons based on the content.
 
 CRITICAL DUOLINGO-STYLE MICRO-LEARNING RULES:
 1. MAXIMIZE the number of lessons. Break concepts down into extremely bite-sized pieces.
-2. For EACH lesson, list the exact sequence of slides.
-3. Theory/Concepts MUST be split across many small slides. NO MORE than 1-3 sentences per slide!
-4. Each lesson must contain:
-   - Several short Theory slides.
-   - 1 "interactive_canvas" slide that uses a 2D canvas to visually animate/illustrate the theory.
-   - 2 "fill_in_blank" slides (one question per slide).
-   - 4 "quiz" (multiple choice) objective questions (one question per slide).
-   - 1 "numerical" slide (if applicable, calculating a value).
-   - 1 "proof" or "step_by_step" interactive solution (ONE combined slide mapping the multiple stages of the problem).''';
+2. For EACH lesson, structure the slides EXACTLY matching this configuration (in order):
+
+%template_layout%
+
+USER PERSONALIZATION CONTEXT: 
+When generating the story/example slides, tailor the context to these interests: "%user_interests%".
+If no interests are provided, use universally understood real-world everyday examples.
+''';
 
   static const String defaultJson = '''SYSTEM PROMPT:
 %system_prompt%
@@ -3494,9 +3632,9 @@ You previously created this optimal learning plan for the unit "%unit_title%":
 Based strictly on this plan and the attached content chunk, generate the full JSON content.
 
 CRITICAL SCHEMA & MICRO-LEARNING RULES:
-1. "theory" slides: `content` MUST be a few sentences explaining a concept.
+1. "theory" slides: `content` MUST be a few sentences explaining a concept or story. Use Markdown.
 2. "interactive_canvas" slides: `content` MUST be the theory explanation. `interactiveCanvasHtml` MUST contain ONLY the raw HTML `<canvas id="myCanvas"></canvas>` and `<script>` that draws an engaging, responsive 2D visualization of the topic.
-3. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Do not leave it empty! Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
+3. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
 4. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word. Include an array of 3 `blankDistractors` (wrong words) for the user to choose from.
 5. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
 6. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}). Markdown math is wrapped in \$ or \$\$.
@@ -3518,20 +3656,26 @@ User Custom Instructions (if any): "%user_prompt%"
 
 TASK:
 Analyze the attached Question Paper (PDF or Images). 
-Extract each question, solve it step-by-step, and convert it into interactive learning slides based on the user's custom instructions if provided.
+Extract the questions and provide a comprehensive, step-by-step solution for each.
+Group the questions logically into sections (e.g., "Section A: Multiple Choice", "Section B: Long Answer", or by topic).
 
 RULES:
-1. Create a "step_by_step" or "numerical" or "quiz" slide for each question depending on its nature.
-2. Break down large math proofs into `interactiveSteps`.
-3. Ensure accurate math using double-escaped LaTeX (e.g. \\\\frac).
-4. Return ONLY valid JSON matching this schema:
+1. Ensure accurate math using double-escaped LaTeX (e.g. \\\\frac).
+2. Return ONLY valid JSON matching this schema:
 {
   "id": "qp1",
   "title": "Extracted Past Paper Title",
-  "slides": [ 
-      {
-         "id": "s1", "type": "step_by_step", "title": "Q1", "content": "The original question...", "interactiveSteps": [...]
-      }
+  "sections": [
+    {
+      "title": "Section A: Multiple Choice",
+      "questions": [
+        {
+          "id": "q1",
+          "questionText": "The original question text...",
+          "solutionText": "**Answer:** ... \\n\\n**Step-by-step:** ..."
+        }
+      ]
+    }
   ]
 }''';
 
@@ -5121,6 +5265,8 @@ class QpCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    int totalQuestions = qp.sections.fold<int>(0, (sum, sec) => sum + sec.questions.length);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -5160,7 +5306,7 @@ class QpCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${qp.slides.length} Solved Questions',
+                    '$totalQuestions Solved Questions',
                     style: const TextStyle(fontSize: 12, color: Colors.white54, fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -5281,6 +5427,303 @@ class FileSelectionList extends StatelessWidget {
 }
 --- END OF FILE lib/widgets/file_selection_list.dart ---
 
+--- START OF FILE lib/widgets/missing_files_banner.dart ---
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:file_picker/file_picker.dart';
+import '../models/app_models.dart';
+import '../theme/app_theme.dart';
+import '../services/generation_manager.dart';
+
+class MissingFilesBanner extends StatelessWidget {
+  final Book book;
+
+  const MissingFilesBanner({super.key, required this.book});
+
+  Future<void> _restoreFiles(BuildContext context) async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
+      allowMultiple: true,
+    );
+
+    if (result != null && result.paths.isNotEmpty) {
+      final files = result.paths.where((p) => p != null).map((p) => File(p!)).toList();
+      GenerationManager.instance.restoreBookFiles(book, files);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Restoring files natively in background...'))
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.duoOrange.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.duoOrange.withOpacity(0.5), width: 2),
+      ),
+      child: Row(
+        children: [
+          const Icon(LucideIcons.fileWarning, color: AppTheme.duoOrange, size: 28),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Missing Source Files',
+                  style: TextStyle(fontWeight: FontWeight.w900, color: AppTheme.duoOrange, fontSize: 13),
+                ),
+                Text(
+                  'Upload original files to restore generation capabilities across devices.',
+                  style: TextStyle(color: Colors.white70, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () => _restoreFiles(context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppTheme.duoOrange,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text('Restore', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}
+--- END OF FILE lib/widgets/missing_files_banner.dart ---
+
+--- START OF FILE lib/widgets/lesson_accordion.dart ---
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../models/app_models.dart';
+import '../theme/app_theme.dart';
+import '../services/generation_manager.dart';
+import '../screens/lesson_screen.dart';
+import 'unit_header.dart';
+
+class LessonAccordion extends StatefulWidget {
+  final Book book;
+  final Map<String, UnitGenTask> loadingUnitStatuses;
+  final List<String> completedLessons;
+  final VoidCallback onLessonFinished;
+  final Function(Unit, int, int, int) onGenerateUnit;
+  final Function(Unit, int, int, int) onClearUnit;
+
+  const LessonAccordion({
+    super.key,
+    required this.book,
+    required this.loadingUnitStatuses,
+    required this.completedLessons,
+    required this.onLessonFinished,
+    required this.onGenerateUnit,
+    required this.onClearUnit,
+  });
+
+  @override
+  State<LessonAccordion> createState() => _LessonAccordionState();
+}
+
+class _LessonAccordionState extends State<LessonAccordion> {
+  String? _activeUnitId;
+
+  @override
+  void initState() {
+    super.initState();
+    _findActiveUnit();
+  }
+
+  void _findActiveUnit() {
+    bool previousCompleted = true;
+    for (var m in widget.book.modules) {
+      for (var s in m.sections) {
+        for (var u in s.units) {
+          if (!u.isGenerated) continue;
+
+          for (var l in u.lessons) {
+            bool isCompleted = widget.completedLessons.contains(l.id);
+            if (!isCompleted && previousCompleted) {
+              _activeUnitId = u.id;
+              return;
+            }
+            previousCompleted = isCompleted;
+          }
+        }
+      }
+    }
+  }
+
+  Color _getSectionColor(String colorStr) {
+    switch (colorStr) {
+      case 'duo-green': return AppTheme.duoGreen;
+      case 'duo-blue': return AppTheme.duoBlue;
+      case 'duo-violet': return AppTheme.duoViolet;
+      case 'duo-orange': return AppTheme.duoOrange;
+      default: return AppTheme.duoBlue;
+    }
+  }
+
+  void _openLesson(Lesson lesson, bool isLocked) async {
+    if (isLocked) {
+      bool? preview = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppTheme.surface,
+          title: const Text('Lesson Locked', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          content: const Text('You haven\'t completed the required previous lessons yet. Do you want to preview this lesson?', style: TextStyle(color: Colors.white70)),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Preview', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold))),
+          ]
+        )
+      );
+      if (preview != true) return;
+    }
+    await Navigator.push(context, MaterialPageRoute(
+      builder: (_) => LessonScreen(lesson: lesson)
+    ));
+    widget.onLessonFinished();
+    _findActiveUnit();
+  }
+
+  Widget _buildLessonTile(Lesson lesson, bool isCompleted, bool isLocked, bool isActive, Color secColor) {
+    IconData iconData = isCompleted ? LucideIcons.checkCircle2 : (isLocked ? LucideIcons.lock : LucideIcons.playCircle);
+    Color iconColor = isCompleted ? AppTheme.duoGreen : (isLocked ? Colors.white38 : secColor);
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8, left: 16, right: 16),
+      decoration: BoxDecoration(
+        color: isCompleted ? AppTheme.duoGreen.withOpacity(0.05) : (isActive ? secColor.withOpacity(0.1) : Colors.transparent),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isActive ? secColor : (isCompleted ? AppTheme.duoGreen.withOpacity(0.3) : Colors.white10)),
+      ),
+      child: ListTile(
+        onTap: () => _openLesson(lesson, isLocked),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        leading: Icon(iconData, color: iconColor, size: 28),
+        title: Text(
+          lesson.title, 
+          style: TextStyle(
+            fontWeight: FontWeight.bold, 
+            color: isLocked ? Colors.white54 : Colors.white
+          ),
+          maxLines: 1, overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(
+          lesson.description, 
+          style: TextStyle(color: Colors.white38, fontSize: 12, decoration: isCompleted ? TextDecoration.lineThrough : null),
+          maxLines: 1, overflow: TextOverflow.ellipsis,
+        ),
+        trailing: isActive ? Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: secColor,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.2)),
+        ) : null,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    List<Widget> listItems = [];
+    bool previousCompleted = true;
+
+    for (int m = 0; m < widget.book.modules.length; m++) {
+      final module = widget.book.modules[m];
+      
+      listItems.add(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+          child: Text(
+            module.title.toUpperCase(),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.white54, letterSpacing: 1.5),
+          ),
+        )
+      );
+
+      for (int s = 0; s < module.sections.length; s++) {
+        final section = module.sections[s];
+        final secColor = _getSectionColor(section.color);
+
+        for (int u = 0; u < section.units.length; u++) {
+          final unit = section.units[u];
+          final isGenerated = unit.isGenerated && unit.lessons.isNotEmpty;
+          final isExpanded = _activeUnitId == unit.id;
+
+          listItems.add(
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppTheme.surface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: isExpanded ? secColor : Colors.white12, width: isExpanded ? 2 : 1),
+              ),
+              clipBehavior: Clip.hardEdge,
+              child: Theme(
+                data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                child: isGenerated 
+                  ? ExpansionTile(
+                      initiallyExpanded: isExpanded,
+                      iconColor: secColor,
+                      collapsedIconColor: Colors.white54,
+                      title: Text(unit.title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                      subtitle: Text(unit.description, style: const TextStyle(fontSize: 12, color: Colors.white54)),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Column(
+                            children: unit.lessons.map((lesson) {
+                              bool isCompleted = widget.completedLessons.contains(lesson.id);
+                              bool isLocked = !previousCompleted && !isCompleted;
+                              bool isActive = previousCompleted && !isCompleted;
+
+                              final tile = _buildLessonTile(lesson, isCompleted, isLocked, isActive, secColor);
+                              previousCompleted = isCompleted;
+                              return tile;
+                            }).toList(),
+                          ),
+                        )
+                      ],
+                    )
+                  : UnitHeader(
+                      unit: unit,
+                      isGenerated: false,
+                      generationTask: widget.loadingUnitStatuses[unit.id],
+                      onGenerate: () => widget.onGenerateUnit(unit, m, s, u),
+                      onClear: () {}, // Not needed for ungenerated unit
+                    ),
+              ),
+            )
+          );
+        }
+      }
+    }
+
+    listItems.add(const SizedBox(height: 120)); // bottom nav padding
+
+    return ListView(
+      physics: const BouncingScrollPhysics(),
+      children: listItems,
+    );
+  }
+}
+--- END OF FILE lib/widgets/lesson_accordion.dart ---
+
 --- START OF FILE lib/widgets/slide_views/interactive_webview.dart ---
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -5381,14 +5824,17 @@ class TheoryView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: AppTheme.glassDecoration,
-          child: MathMarkdown(
-            data: slide.content, 
-          ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+           color: AppTheme.surface,
+           borderRadius: BorderRadius.circular(16),
+           border: Border.all(color: Colors.white12)
+        ),
+        child: MathMarkdown(
+          data: slide.content, 
+          textStyle: const TextStyle(fontSize: 16, color: Colors.white, height: 1.5),
         ),
       ),
     );
@@ -6661,14 +7107,16 @@ class _HomeScreenState extends State<HomeScreen> {
 --- END OF FILE lib/screens/home_screen.dart ---
 
 --- START OF FILE lib/screens/book_dashboard_screen.dart ---
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
-import '../widgets/lesson_path.dart';
 import '../services/generation_manager.dart';
 import '../services/progress_service.dart';
 import '../services/database_service.dart';
+import '../widgets/missing_files_banner.dart';
+import '../widgets/lesson_accordion.dart';
 
 class BookDashboardScreen extends StatefulWidget {
   final Book book;
@@ -6685,14 +7133,41 @@ class BookDashboardScreen extends StatefulWidget {
 }
 
 class _BookDashboardScreenState extends State<BookDashboardScreen> {
-  int currentModuleIdx = 0;
-  int currentSectionIdx = 0;
   List<String> _completedLessons = [];
+  bool _hasMissingFiles = false;
 
   @override
   void initState() {
     super.initState();
     _loadProgress();
+    _checkMissingFiles();
+  }
+
+  @override
+  void didUpdateWidget(BookDashboardScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.book.id != widget.book.id || oldWidget.book.updatedAt != widget.book.updatedAt) {
+      _checkMissingFiles();
+    }
+  }
+
+  Future<void> _checkMissingFiles() async {
+    bool missing = false;
+    for (var m in widget.book.modules) {
+      for (var s in m.sections) {
+        for (var u in s.units) {
+          if (u.startPage != null && u.endPage != null) {
+            if (u.pdfPath == null || !File(u.pdfPath!).existsSync()) {
+              missing = true;
+              break;
+            }
+          }
+        }
+        if (missing) break;
+      }
+      if (missing) break;
+    }
+    if (mounted) setState(() => _hasMissingFiles = missing);
   }
 
   Future<void> _loadProgress() async {
@@ -6702,7 +7177,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     }
   }
 
-  void _onClearUnit(Unit unit, int unitIdx) {
+  void _onClearUnit(Unit unit, int modIdx, int secIdx, int unitIdx) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -6717,14 +7192,14 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              final List<Unit> updatedUnits = List.from(widget.book.modules[currentModuleIdx].sections[currentSectionIdx].units);
+              final List<Unit> updatedUnits = List.from(widget.book.modules[modIdx].sections[secIdx].units);
               updatedUnits[unitIdx] = unit.copyWith(isGenerated: false, lessons: []);
               
-              final List<Section> updatedSecs = List.from(widget.book.modules[currentModuleIdx].sections);
-              updatedSecs[currentSectionIdx] = updatedSecs[currentSectionIdx].copyWith(units: updatedUnits);
+              final List<Section> updatedSecs = List.from(widget.book.modules[modIdx].sections);
+              updatedSecs[secIdx] = updatedSecs[secIdx].copyWith(units: updatedUnits);
 
               final List<Module> updatedMods = List.from(widget.book.modules);
-              updatedMods[currentModuleIdx] = updatedMods[currentModuleIdx].copyWith(sections: updatedSecs);
+              updatedMods[modIdx] = updatedMods[modIdx].copyWith(sections: updatedSecs);
 
               final newBook = widget.book.copyWith(modules: updatedMods);
               await DatabaseService().saveGeneratedBook(newBook);
@@ -6737,159 +7212,31 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     );
   }
 
-  void _showHierarchySelector() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        return AppTheme.applyGlassBlur(
-          borderRadius: 24,
-          child: Container(
-            padding: const EdgeInsets.only(top: 24, left: 16, right: 16),
-            height: MediaQuery.of(context).size.height * 0.7,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.only(left: 8.0),
-                  child: Text('COURSE STRUCTURE', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white54, letterSpacing: 1.5)),
-                ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: widget.book.modules.length,
-                    itemBuilder: (ctx, mIdx) {
-                      final m = widget.book.modules[mIdx];
-                      final bool isModuleActive = mIdx == currentModuleIdx;
-                      
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: isModuleActive ? Colors.white.withOpacity(0.05) : Colors.transparent,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: isModuleActive ? Colors.white24 : Colors.transparent),
-                        ),
-                        child: Theme(
-                          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                          child: ExpansionTile(
-                            initiallyExpanded: isModuleActive,
-                            iconColor: AppTheme.duoBlue,
-                            collapsedIconColor: Colors.white54,
-                            leading: Icon(LucideIcons.folder, color: isModuleActive ? AppTheme.duoBlue : Colors.white54),
-                            title: Text(
-                              m.title,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold, 
-                                color: isModuleActive ? Colors.white : Colors.white70
-                              ),
-                            ),
-                            children: m.sections.asMap().entries.map((entry) {
-                              final sIdx = entry.key;
-                              final s = entry.value;
-                              final isSectionActive = isModuleActive && sIdx == currentSectionIdx;
-                              
-                              return Padding(
-                                padding: const EdgeInsets.only(left: 32, right: 8, bottom: 8),
-                                child: ListTile(
-                                  onTap: () {
-                                    setState(() {
-                                      currentModuleIdx = mIdx;
-                                      currentSectionIdx = sIdx;
-                                    });
-                                    Navigator.pop(ctx);
-                                  },
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  tileColor: isSectionActive ? AppTheme.duoBlue.withOpacity(0.2) : Colors.transparent,
-                                  title: Text(
-                                    s.title,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold, 
-                                      color: isSectionActive ? AppTheme.duoBlue : Colors.white
-                                    ),
-                                  ),
-                                  trailing: isSectionActive 
-                                    ? const Icon(LucideIcons.checkCircle2, color: AppTheme.duoBlue, size: 20)
-                                    : null,
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                )
-              ],
-            ),
-          ),
-        );
-      }
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     if (widget.book.modules.isEmpty) {
-      return const Center(child: Text("This book is empty."));
+      return const Center(child: Text("This book is empty.", style: TextStyle(color: Colors.white54)));
     }
-
-    final module = widget.book.modules[currentModuleIdx];
-    final section = module.sections[currentSectionIdx];
 
     return Scaffold(
       body: Column(
         children: [
-          GestureDetector(
-            onTap: _showHierarchySelector,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              decoration: AppTheme.glassDecoration.copyWith(
-                border: const Border(bottom: BorderSide(color: AppTheme.duoBlue, width: 4)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(LucideIcons.book, color: AppTheme.duoBlue, size: 20),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          module.title.toUpperCase(),
-                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: Colors.white54, letterSpacing: 1.2),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          section.title,
-                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Colors.white),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(LucideIcons.chevronDown, color: Colors.white54, size: 20),
-                ],
-              ),
-            ),
-          ),
-          
+          if (_hasMissingFiles)
+            MissingFilesBanner(book: widget.book),
+
           Expanded(
             child: AnimatedBuilder(
               animation: GenerationManager.instance,
               builder: (context, _) {
-                return LessonPath(
-                  section: section,
+                return LessonAccordion(
+                  book: widget.book,
                   loadingUnitStatuses: GenerationManager.instance.activeUnitGenerations,
                   completedLessons: _completedLessons,
                   onLessonFinished: _loadProgress,
                   onClearUnit: _onClearUnit,
-                  onGenerateUnit: (unit, unitIdx) {
+                  onGenerateUnit: (unit, modIdx, secIdx, unitIdx) {
                     GenerationManager.instance.startUnitGeneration(
-                      unit, widget.book, currentModuleIdx, currentSectionIdx, unitIdx
+                      unit, widget.book, modIdx, secIdx, unitIdx
                     );
                   },
                 );
@@ -7233,6 +7580,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   List<String> _models = [];
   bool _isFetchingModels = false;
   bool _isLoading = true;
+  final _interestsCtrl = TextEditingController();
 
   final user = FirebaseAuth.instance.currentUser;
 
@@ -7257,6 +7605,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
        models = [oldModel];
     }
     
+    _interestsCtrl.text = prefs.getString('user_interests') ?? '';
+
     _keys = List.from(keys);
     _models = List.from(models);
 
@@ -7269,6 +7619,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList('gemini_api_keys_list', _keys);
     await prefs.setStringList('gemini_models_list', _models);
+    await prefs.setString('user_interests', _interestsCtrl.text.trim());
     
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Settings Saved Successfully')));
@@ -7409,6 +7760,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 32),
+
+            const Text('Personalized Interests', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            const Text('The AI will try to explain concepts using stories related to your hobbies and interests.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _interestsCtrl,
+              maxLines: 2,
+              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.05),
+                hintText: "E.g., Formula 1 racing, cooking, ancient history, sci-fi movies...",
+                hintStyle: const TextStyle(color: Colors.white38, fontWeight: FontWeight.normal),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.white12, width: 2)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppTheme.duoBlue, width: 2)),
+              ),
             ),
             const SizedBox(height: 32),
 
@@ -7674,6 +8044,7 @@ import 'book_dashboard_screen.dart';
 import 'practice_screen.dart';
 import 'notes_screen.dart';
 import 'exam_screen.dart';
+import 'course_settings_screen.dart';
 
 class MainLayoutScreen extends StatefulWidget {
   final Book book;
@@ -7715,6 +8086,10 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
         _currentBook = newBook;
       });
     }
+  }
+
+  void _openCourseSettings() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => CourseSettingsScreen(book: _currentBook)));
   }
 
   void _publishBook() {
@@ -7773,36 +8148,14 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(LucideIcons.settings, size: 22, color: Colors.white70),
+            tooltip: 'Course Configuration',
+            onPressed: _openCourseSettings,
+          ),
+          IconButton(
             icon: const Icon(LucideIcons.uploadCloud, size: 22, color: AppTheme.duoBlue),
             tooltip: 'Publish to Community',
             onPressed: _publishBook,
-          ),
-          ValueListenableBuilder<int>(
-            valueListenable: GlobalState.xpNotifier,
-            builder: (context, xp, child) {
-              return Padding(
-                padding: const EdgeInsets.only(right: 16.0),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.amber.withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(LucideIcons.zap, color: Colors.amber, size: 16),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$xp', 
-                        style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.w900, fontSize: 14),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
           ),
         ],
       ),
@@ -8052,10 +8405,9 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../services/generation_manager.dart';
-import '../widgets/math_markdown.dart';
 import '../widgets/qp_card.dart';
-import 'lesson_screen.dart';
 import 'generate_qp_screen.dart';
+import 'qp_detail_screen.dart';
 
 class ExamScreen extends StatelessWidget {
   final Book book;
@@ -8063,25 +8415,11 @@ class ExamScreen extends StatelessWidget {
   const ExamScreen({super.key, required this.book});
 
   void _openQp(BuildContext context, QuestionPaper qp) {
-    final dummyLesson = Lesson(
-      id: qp.id,
-      title: qp.title,
-      description: 'Solved Question Paper',
-      icon: 'FileQuestion',
-      slides: qp.slides,
-    );
-
-    Navigator.push(context, MaterialPageRoute(builder: (_) => LessonScreen(lesson: dummyLesson)));
+    Navigator.push(context, MaterialPageRoute(builder: (_) => QpDetailScreen(qp: qp)));
   }
 
   @override
   Widget build(BuildContext context) {
-    // Gather exam questions from all modules
-    List<Slide> moduleExamQuestions = [];
-    for (var module in book.modules) {
-      moduleExamQuestions.addAll(module.examQuestions);
-    }
-
     return AnimatedBuilder(
       animation: GenerationManager.instance,
       builder: (context, _) {
@@ -8099,7 +8437,6 @@ class ExamScreen extends StatelessWidget {
                 backgroundColor: AppTheme.background,
               ),
               
-              // === PAST PAPERS SECTION ===
               const SliverPadding(
                 padding: EdgeInsets.only(top: 16, left: 24, bottom: 8),
                 sliver: SliverToBoxAdapter(
@@ -8175,97 +8512,6 @@ class ExamScreen extends StatelessWidget {
                         );
                       },
                       childCount: qps.length,
-                    ),
-                  ),
-                ),
-
-              // === MODULE EXAMS SECTION ===
-              const SliverPadding(
-                padding: EdgeInsets.only(top: 32, left: 24, bottom: 8),
-                sliver: SliverToBoxAdapter(
-                  child: Text('Module Exam Questions', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white)),
-                ),
-              ),
-
-              if (moduleExamQuestions.isEmpty)
-                SliverToBoxAdapter(
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(20)
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(LucideIcons.bookOpenCheck, size: 40, color: AppTheme.duoOrange.withOpacity(0.5)),
-                        const SizedBox(height: 16),
-                        const Text('No Module Exams Found', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white54)),
-                      ],
-                    ),
-                  ),
-                )
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final q = moduleExamQuestions[index];
-
-                        String answerText = '';
-                        if (q.type == 'quiz') {
-                          final correctOpt = q.options?.firstWhere((o) => o.isCorrect, orElse: () => q.options!.first);
-                          answerText = r'**Answer:** ' + (correctOpt?.text ?? '') + r'\n\n*Explanation:* ' + (correctOpt?.explanation ?? '');
-                        } else if (q.type == 'fill_in_blank') {
-                          answerText = r'**Answer:** $$' + (q.blankAnswer ?? '') + r'$$';
-                        } else if (q.type == 'numerical') {
-                          answerText = r'**Answer:** ' + (q.numericAnswer?.toString() ?? '');
-                        }
-
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          decoration: AppTheme.glassDecoration.copyWith(
-                            border: Border.all(color: AppTheme.duoOrange.withOpacity(0.3), width: 2),
-                          ),
-                          child: Theme(
-                            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                            child: ExpansionTile(
-                              iconColor: AppTheme.duoOrange,
-                              collapsedIconColor: Colors.white54,
-                              title: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    q.title.toUpperCase(),
-                                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppTheme.duoOrange, letterSpacing: 1.2),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  MathMarkdown(data: q.content, textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
-                                ],
-                              ),
-                              childrenPadding: const EdgeInsets.all(16),
-                              expandedAlignment: Alignment.centerLeft,
-                              children: [
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.duoOrange.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: AppTheme.duoOrange.withOpacity(0.5)),
-                                  ),
-                                  child: MathMarkdown(
-                                    data: answerText,
-                                    textStyle: const TextStyle(fontSize: 14, color: Colors.white, height: 1.5),
-                                  ),
-                                )
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                      childCount: moduleExamQuestions.length,
                     ),
                   ),
                 ),
@@ -9791,6 +10037,8 @@ class _GenerateQpScreenState extends State<GenerateQpScreen> {
     final prompt = _promptCtrl.text.trim().isEmpty ? null : _promptCtrl.text.trim();
     
     GenerationManager.instance.startQpGeneration(widget.book.id, _selectedFiles, title, widget.book, prompt);
+    
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Processing Exam in Background!')));
     Navigator.pop(context);
   }
 
@@ -9808,7 +10056,7 @@ class _GenerateQpScreenState extends State<GenerateQpScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const Text(
-                      "Upload PDFs or photos of past exams. The AI will extract the questions and solve them interactively. You can continuously select files.",
+                      "Upload PDFs or photos of past exams. The AI will extract the questions and solve them interactively. You can safely minimize the app during processing.",
                       style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
                     ),
                     const SizedBox(height: 24),
@@ -9873,6 +10121,357 @@ class _GenerateQpScreenState extends State<GenerateQpScreen> {
   }
 }
 --- END OF FILE lib/screens/generate_qp_screen.dart ---
+
+--- START OF FILE lib/screens/qp_detail_screen.dart ---
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../models/app_models.dart';
+import '../theme/app_theme.dart';
+import '../widgets/math_markdown.dart';
+
+class QpDetailScreen extends StatelessWidget {
+  final QuestionPaper qp;
+
+  const QpDetailScreen({super.key, required this.qp});
+
+  Widget _buildQuestionCard(BuildContext context, QpQuestion q, int sIdx, int qIdx) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16, left: 24, right: 24),
+      decoration: AppTheme.glassDecoration.copyWith(
+        border: Border.all(color: AppTheme.duoBlue.withOpacity(0.3), width: 2),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          iconColor: AppTheme.duoOrange,
+          collapsedIconColor: Colors.white54,
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          childrenPadding: const EdgeInsets.all(16),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(LucideIcons.helpCircle, size: 16, color: AppTheme.duoBlue),
+                  const SizedBox(width: 8),
+                  Text(
+                    'QUESTION ${qIdx + 1}',
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppTheme.duoBlue, letterSpacing: 1.2),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              MathMarkdown(data: q.questionText, textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+            ],
+          ),
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.duoOrange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppTheme.duoOrange.withOpacity(0.5)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(LucideIcons.lightbulb, size: 16, color: AppTheme.duoOrange),
+                      const SizedBox(width: 8),
+                      Text(
+                        'SOLUTION',
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppTheme.duoOrange.withOpacity(0.8), letterSpacing: 1.2),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  MathMarkdown(
+                    data: q.solutionText,
+                    textStyle: const TextStyle(fontSize: 15, color: Colors.white, height: 1.5),
+                  ),
+                ],
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverAppBar(
+            pinned: true,
+            title: Text(
+              qp.title, 
+              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+            ),
+            backgroundColor: AppTheme.background,
+          ),
+          if (qp.sections.isEmpty)
+            const SliverFillRemaining(
+              child: Center(
+                child: Text('No questions found in this paper.', style: TextStyle(color: Colors.white54)),
+              ),
+            )
+          else
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, sIdx) {
+                  final section = qp.sections[sIdx];
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                        child: Text(
+                          section.title.toUpperCase(),
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: AppTheme.duoOrange, letterSpacing: 1.2),
+                        ),
+                      ),
+                      ...section.questions.asMap().entries.map((entry) {
+                        return _buildQuestionCard(context, entry.value, sIdx, entry.key);
+                      }),
+                      if (sIdx == qp.sections.length - 1)
+                        const SizedBox(height: 80),
+                    ],
+                  );
+                },
+                childCount: qp.sections.length,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+--- END OF FILE lib/screens/qp_detail_screen.dart ---
+
+--- START OF FILE lib/screens/course_settings_screen.dart ---
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../models/app_models.dart';
+import '../theme/app_theme.dart';
+import '../services/database_service.dart';
+import '../widgets/duo_button.dart';
+
+class CourseSettingsScreen extends StatefulWidget {
+  final Book book;
+
+  const CourseSettingsScreen({super.key, required this.book});
+
+  @override
+  State<CourseSettingsScreen> createState() => _CourseSettingsScreenState();
+}
+
+class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
+  late List<SlideTemplate> _templates;
+
+  @override
+  void initState() {
+    super.initState();
+    _templates = List.from(widget.book.lessonTemplate ?? SlideTemplate.defaultTemplate);
+  }
+
+  Future<void> _saveConfig() async {
+    final updatedBook = widget.book.copyWith(lessonTemplate: _templates);
+    await DatabaseService().saveGeneratedBook(updatedBook);
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Course Configuration Saved!')));
+      Navigator.pop(context);
+    }
+  }
+
+  void _addSlide() {
+    setState(() {
+      _templates.add(SlideTemplate(type: 'theory', description: 'New description...'));
+    });
+  }
+
+  void _editSlide(int index) {
+    final slide = _templates[index];
+    final typeCtrl = TextEditingController(text: slide.type);
+    final descCtrl = TextEditingController(text: slide.description);
+
+    final List<String> types = [
+      'theory', 'quiz', 'fill_in_blank', 'numerical', 
+      'interactive_canvas', 'proof', 'step_by_step'
+    ];
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text('Edit Slide Template', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            DropdownButtonFormField<String>(
+              value: types.contains(slide.type) ? slide.type : 'theory',
+              dropdownColor: AppTheme.background,
+              items: types.map((t) => DropdownMenuItem(value: t, child: Text(t, style: const TextStyle(color: Colors.white)))).toList(),
+              onChanged: (v) => typeCtrl.text = v ?? 'theory',
+              decoration: InputDecoration(
+                labelText: 'Slide Type',
+                labelStyle: const TextStyle(color: Colors.white54),
+                filled: true,
+                fillColor: Colors.black26,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: descCtrl,
+              maxLines: 3,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: 'Instruction to AI',
+                labelStyle: const TextStyle(color: Colors.white54),
+                filled: true,
+                fillColor: Colors.black26,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _templates[index] = SlideTemplate(type: typeCtrl.text, description: descCtrl.text);
+              });
+              Navigator.pop(ctx);
+            },
+            child: const Text('Save', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
+          )
+        ],
+      )
+    );
+  }
+
+  IconData _getIconForType(String type) {
+    switch (type) {
+      case 'theory': return LucideIcons.bookOpen;
+      case 'quiz': return LucideIcons.list;
+      case 'fill_in_blank': return LucideIcons.minus;
+      case 'numerical': return LucideIcons.calculator;
+      case 'interactive_canvas': return LucideIcons.mousePointer2;
+      case 'proof':
+      case 'step_by_step': return LucideIcons.brainCircuit;
+      default: return LucideIcons.file;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Lesson Configuration', style: TextStyle(fontWeight: FontWeight.w900)),
+        actions: [
+          IconButton(
+            icon: const Icon(LucideIcons.refreshCcw, color: AppTheme.duoOrange),
+            tooltip: 'Reset Defaults',
+            onPressed: () => setState(() => _templates = List.from(SlideTemplate.defaultTemplate)),
+          )
+        ],
+      ),
+      body: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(24, 16, 24, 16),
+            child: Text(
+              'Define the default sequence of slides the AI should generate for every new lesson in this course. Long press to reorder.',
+              style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
+            ),
+          ),
+          Expanded(
+            child: ReorderableListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _templates.length,
+              onReorder: (oldIndex, newIndex) {
+                setState(() {
+                  if (newIndex > oldIndex) newIndex -= 1;
+                  final item = _templates.removeAt(oldIndex);
+                  _templates.insert(newIndex, item);
+                });
+              },
+              itemBuilder: (context, index) {
+                final slide = _templates[index];
+                return Container(
+                  key: ValueKey('slide_$index'),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white12),
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    leading: Icon(_getIconForType(slide.type), color: AppTheme.duoViolet),
+                    title: Text(slide.type.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: AppTheme.duoViolet, letterSpacing: 1.0)),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Text(slide.description, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(LucideIcons.edit2, size: 18, color: Colors.white54),
+                          onPressed: () => _editSlide(index),
+                        ),
+                        IconButton(
+                          icon: const Icon(LucideIcons.trash2, size: 18, color: AppTheme.duoRed),
+                          onPressed: () => setState(() => _templates.removeAt(index)),
+                        ),
+                        const Icon(LucideIcons.gripVertical, color: Colors.white38),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: DuoButton(
+                    text: 'Add Slide',
+                    onPressed: _addSlide,
+                    color: AppTheme.surface,
+                    shadowColor: Colors.black,
+                    isOutline: true,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: DuoButton(
+                    text: 'Save Sequence',
+                    onPressed: _saveConfig,
+                    color: AppTheme.duoBlue,
+                    shadowColor: AppTheme.duoBlueDark,
+                  ),
+                ),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}
+--- END OF FILE lib/screens/course_settings_screen.dart ---
 
 --- START OF FILE test/widget_test.dart ---
 // This is a basic Flutter widget test.

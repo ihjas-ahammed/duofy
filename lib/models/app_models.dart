@@ -29,6 +29,37 @@ bool _bool(dynamic val, [bool def = false]) {
   return def;
 }
 
+class SlideTemplate {
+  final String type;
+  final String condition;
+  final String description;
+
+  SlideTemplate({required this.type, required this.condition, required this.description});
+
+  factory SlideTemplate.fromJson(Map<String, dynamic> json) {
+    return SlideTemplate(
+      type: _str(json['type']),
+      condition: _str(json['condition'], 'Always'),
+      description: _str(json['description']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'type': type,
+    'condition': condition,
+    'description': description,
+  };
+
+  static List<SlideTemplate> get defaultTemplate => [
+    SlideTemplate(type: 'theory', condition: 'Always', description: 'A story or real-world example explaining the concept based on the user\'s interests.'),
+    SlideTemplate(type: 'theory', condition: 'Always', description: 'The original factual theory and core concepts.'),
+    SlideTemplate(type: 'interactive_canvas', condition: 'Only if the concept benefits from a 2D spatial or visual simulation.', description: 'A visual interactive 2D canvas simulation of the concept.'),
+    SlideTemplate(type: 'proof', condition: 'Only if a mathematical, physical, or logical proof is being taught.', description: 'Interactive step-by-step logic proof.'),
+    SlideTemplate(type: 'fill_in_blank', condition: 'Always', description: 'Recall key terms with a fill-in-the-blank question.'),
+    SlideTemplate(type: 'quiz', condition: 'Always', description: 'A multiple-choice question testing understanding.'),
+  ];
+}
+
 class Book {
   final String id;
   final String title;
@@ -41,6 +72,7 @@ class Book {
   final bool isGlobal;
   final List<Module> modules;
   final List<QuestionPaper> questionPapers;
+  final List<SlideTemplate>? lessonTemplate;
 
   Book({
     required this.id, 
@@ -54,6 +86,7 @@ class Book {
     this.isGlobal = false,
     required this.modules,
     this.questionPapers = const [],
+    this.lessonTemplate,
   });
 
   factory Book.fromJson(Map<String, dynamic> json) {
@@ -69,6 +102,7 @@ class Book {
       isGlobal: _bool(json['isGlobal'], false),
       modules: (json['modules'] as List?)?.map((m) => Module.fromJson(m is Map ? Map<String, dynamic>.from(m) : {})).toList() ?? [],
       questionPapers: (json['questionPapers'] as List?)?.map((q) => QuestionPaper.fromJson(q is Map ? Map<String, dynamic>.from(q) : {})).toList() ?? [],
+      lessonTemplate: (json['lessonTemplate'] as List?)?.map((t) => SlideTemplate.fromJson(t is Map ? Map<String, dynamic>.from(t) : {})).toList(),
     );
   }
 
@@ -84,6 +118,7 @@ class Book {
     'isGlobal': isGlobal,
     'modules': modules.map((m) => m.toJson()).toList(),
     'questionPapers': questionPapers.map((q) => q.toJson()).toList(),
+    if (lessonTemplate != null) 'lessonTemplate': lessonTemplate!.map((t) => t.toJson()).toList(),
   };
 
   Book copyWith({
@@ -98,6 +133,7 @@ class Book {
     bool? isGlobal,
     List<Module>? modules,
     List<QuestionPaper>? questionPapers,
+    List<SlideTemplate>? lessonTemplate,
   }) {
     return Book(
       id: id ?? this.id,
@@ -111,33 +147,98 @@ class Book {
       isGlobal: isGlobal ?? this.isGlobal,
       modules: modules ?? this.modules,
       questionPapers: questionPapers ?? this.questionPapers,
+      lessonTemplate: lessonTemplate ?? this.lessonTemplate,
     );
   }
+}
+
+class QpQuestion {
+  final String id;
+  final String questionText;
+  final String solutionText;
+
+  QpQuestion({
+    required this.id,
+    required this.questionText,
+    required this.solutionText,
+  });
+
+  factory QpQuestion.fromJson(Map<String, dynamic> json) {
+    return QpQuestion(
+      id: _str(json['id']),
+      questionText: _str(json['questionText']),
+      solutionText: _str(json['solutionText']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'questionText': questionText,
+    'solutionText': solutionText,
+  };
+}
+
+class QpSection {
+  final String title;
+  final List<QpQuestion> questions;
+
+  QpSection({
+    required this.title,
+    required this.questions,
+  });
+
+  factory QpSection.fromJson(Map<String, dynamic> json) {
+    return QpSection(
+      title: _str(json['title'], 'Section'),
+      questions: (json['questions'] as List?)?.map((q) => QpQuestion.fromJson(q is Map ? Map<String, dynamic>.from(q) : {})).toList() ?? [],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'title': title,
+    'questions': questions.map((q) => q.toJson()).toList(),
+  };
 }
 
 class QuestionPaper {
   final String id;
   final String title;
-  final List<Slide> slides;
+  final List<QpSection> sections;
 
   QuestionPaper({
     required this.id, 
     required this.title, 
-    required this.slides,
+    required this.sections,
   });
 
   factory QuestionPaper.fromJson(Map<String, dynamic> json) {
+    List<QpSection> parsedSections = [];
+    if (json['sections'] != null) {
+      parsedSections = (json['sections'] as List).map((s) => QpSection.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList();
+    } else if (json['slides'] != null) {
+      // Fallback parser for old Slide-based QPs
+      List<QpQuestion> fallbackQs = (json['slides'] as List).map((s) {
+        final sm = s is Map ? Map<String, dynamic>.from(s) : <String, dynamic>{};
+        return QpQuestion(
+          id: _str(sm['id']),
+          questionText: _str(sm['title']) + '\n\n' + _str(sm['content']),
+          solutionText: "Solution data is in old interactive format. Please regenerate.",
+        );
+      }).toList();
+      parsedSections = [QpSection(title: "General Questions", questions: fallbackQs)];
+    }
+
     return QuestionPaper(
       id: _str(json['id']),
       title: _str(json['title'], 'Past Paper'),
-      slides: (json['slides'] as List?)?.map((s) => Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
+      sections: parsedSections,
     );
   }
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'title': title,
-    'slides': slides.map((s) => s.toJson()).toList(),
+    'sections': sections.map((s) => s.toJson()).toList(),
   };
 }
 
@@ -147,7 +248,6 @@ class Module {
   final String description;
   final List<Section> sections;
   final List<Slide> practiceQuestions;
-  final List<Slide> examQuestions;
 
   Module({
     required this.id, 
@@ -155,7 +255,6 @@ class Module {
     required this.description, 
     required this.sections,
     required this.practiceQuestions,
-    required this.examQuestions,
   });
 
   factory Module.fromJson(Map<String, dynamic> json) {
@@ -165,7 +264,6 @@ class Module {
       description: _str(json['description']),
       sections: (json['sections'] as List?)?.map((s) => Section.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
       practiceQuestions: (json['practiceQuestions'] as List?)?.map((s) => Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
-      examQuestions: (json['examQuestions'] as List?)?.map((s) => Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
     );
   }
 
@@ -175,7 +273,6 @@ class Module {
     'description': description,
     'sections': sections.map((s) => s.toJson()).toList(),
     'practiceQuestions': practiceQuestions.map((s) => s.toJson()).toList(),
-    'examQuestions': examQuestions.map((s) => s.toJson()).toList(),
   };
 
   Module copyWith({
@@ -184,7 +281,6 @@ class Module {
     String? description,
     List<Section>? sections,
     List<Slide>? practiceQuestions,
-    List<Slide>? examQuestions,
   }) {
     return Module(
       id: id ?? this.id,
@@ -192,7 +288,6 @@ class Module {
       description: description ?? this.description,
       sections: sections ?? this.sections,
       practiceQuestions: practiceQuestions ?? this.practiceQuestions,
-      examQuestions: examQuestions ?? this.examQuestions,
     );
   }
 }

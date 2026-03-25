@@ -3,10 +3,9 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../services/generation_manager.dart';
-import '../widgets/math_markdown.dart';
 import '../widgets/qp_card.dart';
-import 'lesson_screen.dart';
 import 'generate_qp_screen.dart';
+import 'qp_detail_screen.dart';
 
 class ExamScreen extends StatelessWidget {
   final Book book;
@@ -14,25 +13,11 @@ class ExamScreen extends StatelessWidget {
   const ExamScreen({super.key, required this.book});
 
   void _openQp(BuildContext context, QuestionPaper qp) {
-    final dummyLesson = Lesson(
-      id: qp.id,
-      title: qp.title,
-      description: 'Solved Question Paper',
-      icon: 'FileQuestion',
-      slides: qp.slides,
-    );
-
-    Navigator.push(context, MaterialPageRoute(builder: (_) => LessonScreen(lesson: dummyLesson)));
+    Navigator.push(context, MaterialPageRoute(builder: (_) => QpDetailScreen(qp: qp)));
   }
 
   @override
   Widget build(BuildContext context) {
-    // Gather exam questions from all modules
-    List<Slide> moduleExamQuestions = [];
-    for (var module in book.modules) {
-      moduleExamQuestions.addAll(module.examQuestions);
-    }
-
     return AnimatedBuilder(
       animation: GenerationManager.instance,
       builder: (context, _) {
@@ -50,7 +35,6 @@ class ExamScreen extends StatelessWidget {
                 backgroundColor: AppTheme.background,
               ),
               
-              // === PAST PAPERS SECTION ===
               const SliverPadding(
                 padding: EdgeInsets.only(top: 16, left: 24, bottom: 8),
                 sliver: SliverToBoxAdapter(
@@ -126,97 +110,6 @@ class ExamScreen extends StatelessWidget {
                         );
                       },
                       childCount: qps.length,
-                    ),
-                  ),
-                ),
-
-              // === MODULE EXAMS SECTION ===
-              const SliverPadding(
-                padding: EdgeInsets.only(top: 32, left: 24, bottom: 8),
-                sliver: SliverToBoxAdapter(
-                  child: Text('Module Exam Questions', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white)),
-                ),
-              ),
-
-              if (moduleExamQuestions.isEmpty)
-                SliverToBoxAdapter(
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(20)
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(LucideIcons.bookOpenCheck, size: 40, color: AppTheme.duoOrange.withOpacity(0.5)),
-                        const SizedBox(height: 16),
-                        const Text('No Module Exams Found', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white54)),
-                      ],
-                    ),
-                  ),
-                )
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final q = moduleExamQuestions[index];
-
-                        String answerText = '';
-                        if (q.type == 'quiz') {
-                          final correctOpt = q.options?.firstWhere((o) => o.isCorrect, orElse: () => q.options!.first);
-                          answerText = r'**Answer:** ' + (correctOpt?.text ?? '') + r'\n\n*Explanation:* ' + (correctOpt?.explanation ?? '');
-                        } else if (q.type == 'fill_in_blank') {
-                          answerText = r'**Answer:** $$' + (q.blankAnswer ?? '') + r'$$';
-                        } else if (q.type == 'numerical') {
-                          answerText = r'**Answer:** ' + (q.numericAnswer?.toString() ?? '');
-                        }
-
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          decoration: AppTheme.glassDecoration.copyWith(
-                            border: Border.all(color: AppTheme.duoOrange.withOpacity(0.3), width: 2),
-                          ),
-                          child: Theme(
-                            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                            child: ExpansionTile(
-                              iconColor: AppTheme.duoOrange,
-                              collapsedIconColor: Colors.white54,
-                              title: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    q.title.toUpperCase(),
-                                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppTheme.duoOrange, letterSpacing: 1.2),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  MathMarkdown(data: q.content, textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
-                                ],
-                              ),
-                              childrenPadding: const EdgeInsets.all(16),
-                              expandedAlignment: Alignment.centerLeft,
-                              children: [
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.duoOrange.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: AppTheme.duoOrange.withOpacity(0.5)),
-                                  ),
-                                  child: MathMarkdown(
-                                    data: answerText,
-                                    textStyle: const TextStyle(fontSize: 14, color: Colors.white, height: 1.5),
-                                  ),
-                                )
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                      childCount: moduleExamQuestions.length,
                     ),
                   ),
                 ),

@@ -9,6 +9,7 @@ import '../widgets/duo_button.dart';
 import '../widgets/string_list_manager.dart';
 import 'pdf_browser_screen.dart';
 import 'advanced_prompts_screen.dart';
+import 'onboarding_survey_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -22,6 +23,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   List<String> _models = [];
   bool _isFetchingModels = false;
   bool _isLoading = true;
+  final _interestsCtrl = TextEditingController();
 
   final user = FirebaseAuth.instance.currentUser;
 
@@ -46,6 +48,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
        models = [oldModel];
     }
     
+    _interestsCtrl.text = prefs.getString('user_interests') ?? '';
+
     _keys = List.from(keys);
     _models = List.from(models);
 
@@ -58,6 +62,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList('gemini_api_keys_list', _keys);
     await prefs.setStringList('gemini_models_list', _models);
+    await prefs.setString('user_interests', _interestsCtrl.text.trim());
     
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Settings Saved Successfully')));
@@ -144,8 +149,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children:[
-            
-            // User Profile Section
             Container(
               padding: const EdgeInsets.all(20),
               margin: const EdgeInsets.only(bottom: 32),
@@ -198,6 +201,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 32),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Personalized Interests', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const OnboardingSurveyScreen()))
+                      .then((_) => _loadSettings());
+                  },
+                  child: const Text('Retake Survey', style: TextStyle(color: AppTheme.duoViolet, fontWeight: FontWeight.bold, fontSize: 12)),
+                )
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text('The AI will try to explain concepts using stories related to your hobbies and interests.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _interestsCtrl,
+              maxLines: 2,
+              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.05),
+                hintText: "E.g., Formula 1 racing, cooking, ancient history, sci-fi movies...",
+                hintStyle: const TextStyle(color: Colors.white38, fontWeight: FontWeight.normal),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.white12, width: 2)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppTheme.duoBlue, width: 2)),
+              ),
             ),
             const SizedBox(height: 32),
 

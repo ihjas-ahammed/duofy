@@ -42,8 +42,38 @@ class _LessonScreenState extends State<LessonScreen> {
   void initState() {
     super.initState();
     _startTime = DateTime.now();
-    _slideQueue = List.from(widget.lesson.slides);
+    _buildSlideQueue();
+  }
+
+  void _buildSlideQueue() {
+    _slideQueue = [];
+    Slide? prevTheory;
     
+    // Group adjacent theory slides into a single "theory_group" slide separated by ---
+    for (var slide in widget.lesson.slides) {
+      if (slide.type == 'theory') {
+        if (prevTheory != null) {
+          _slideQueue.add(prevTheory.copyWith(
+            id: '${prevTheory.id}_${slide.id}',
+            content: '${prevTheory.content}\n\n---\n\n${slide.content}',
+          ));
+          prevTheory = null; // Grouped, reset
+        } else {
+          prevTheory = slide;
+        }
+      } else {
+        if (prevTheory != null) {
+          _slideQueue.add(prevTheory);
+          prevTheory = null;
+        }
+        _slideQueue.add(slide);
+      }
+    }
+    
+    if (prevTheory != null) {
+      _slideQueue.add(prevTheory);
+    }
+
     for (var slide in _slideQueue) {
       if (['quiz', 'fill_in_blank', 'numerical', 'proof', 'step_by_step'].contains(slide.type)) {
         _totalInteractive++;
@@ -71,7 +101,6 @@ class _LessonScreenState extends State<LessonScreen> {
     int accuracy = _totalInteractive > 0 ? ((_correctAttempts / _totalInteractive) * 100).round() : 100;
     int xpEarned = 15;
 
-    // Save unlock progress and XP Globally
     await ProgressService.markLessonCompleted(widget.lesson.id);
     await GlobalState.addXp(xpEarned);
     
@@ -94,7 +123,6 @@ class _LessonScreenState extends State<LessonScreen> {
       final opt = slide.options!.firstWhere((o) => o.id == _selectedQuizOption);
       correct = opt.isCorrect;
       
-      // Fallback robust check to overcome AI JSON generation un-mapped identical text bugs
       if (!correct) {
         final correctOpts = slide.options!.where((o) => o.isCorrect);
         if (correctOpts.any((c) => c.text.trim().toLowerCase() == opt.text.trim().toLowerCase())) {
@@ -112,10 +140,8 @@ class _LessonScreenState extends State<LessonScreen> {
 
     if (correct) {
       HapticFeedback.heavyImpact();
-      // SystemSound.play(SystemSoundType.click); 
     } else {
       HapticFeedback.vibrate();
-      // Push missed question to end of the queue
       _slideQueue.add(slide);
     }
 
@@ -189,6 +215,7 @@ class _LessonScreenState extends State<LessonScreen> {
           onChanged: (val) => setState(() => _numericInput = val),
         );
       case 'theory':
+      case 'theory_group':
       default:
         return TheoryView(slide: slide);
     }
@@ -234,7 +261,6 @@ class _LessonScreenState extends State<LessonScreen> {
             
             Expanded(child: _buildSlideContent(slide)),
             
-            // Native Bottom Check / Continue Bar (Hide if child implements its own)
             if (!hasCustomBar)
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),

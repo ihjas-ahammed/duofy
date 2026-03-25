@@ -288,9 +288,14 @@ class GenerationManager extends ChangeNotifier {
   }
 
   Future<void> startQpGeneration(String bookId, List<File> files, String qpTitle, Book currentBook, String? userPrompt) async {
+    if (activeQpTasks.containsKey(bookId)) return;
+
+    final notifId = bookId.hashCode + 1; // Unique ID avoiding collision
     activeQpTasks[bookId] = QpGenTask(status: 'Analyzing Exam Paper...');
     notifyListeners();
     
+    await NotificationService.showProgress(notifId, "Analyzing Exam", "Extracting and solving questions natively...", indeterminate: true);
+
     try {
         final qp = await _aiService.generateQuestionPaper(files, qpTitle, currentBook.systemPrompt, userPrompt);
         
@@ -303,10 +308,16 @@ class GenerationManager extends ChangeNotifier {
         
         activeQpTasks.remove(bookId);
         notifyListeners();
+
+        await NotificationService.cancel(notifId);
+        await NotificationService.showActionable(notifId, "Exam Ready", "Past paper solved interactively!", "open_home|");
     } catch(e) {
         activeQpTasks[bookId]?.status = 'Error: $e';
         activeQpTasks[bookId]?.isError = true;
         notifyListeners();
+
+        await NotificationService.cancel(notifId);
+        await NotificationService.showActionable(notifId, "Analysis Failed", "Failed to solve past paper.", "error");
     }
   }
 

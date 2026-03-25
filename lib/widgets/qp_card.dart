@@ -11,6 +11,8 @@ class QpCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    int totalQuestions = qp.sections.fold<int>(0, (sum, sec) => sum + sec.questions.length);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -50,7 +52,7 @@ class QpCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${qp.slides.length} Solved Questions',
+                    '$totalQuestions Solved Questions',
                     style: const TextStyle(fontSize: 12, color: Colors.white54, fontWeight: FontWeight.bold),
                   ),
                 ],

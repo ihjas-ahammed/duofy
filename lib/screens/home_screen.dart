@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
 import '../services/database_service.dart';
 import '../services/progress_service.dart';
@@ -12,6 +13,7 @@ import 'main_layout_screen.dart';
 import 'settings_screen.dart';
 import 'generate_book_screen.dart';
 import 'pdf_split_preview_screen.dart';
+import 'onboarding_survey_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -30,8 +32,18 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _checkOnboarding();
     _loadAllData();
     GenerationManager.instance.onBookGenerated = () => _loadAllData(force: true);
+  }
+
+  Future<void> _checkOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool('has_completed_survey') != true) {
+      if (mounted) {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const OnboardingSurveyScreen()));
+      }
+    }
   }
 
   Future<void> _loadAllData({bool force = false}) async {
@@ -125,7 +137,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                     
-                    // Generating Tasks Section
                     if (activeTasks.isNotEmpty)
                       SliverPadding(
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -155,7 +166,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     
-                    // User's Library Section (Horizontal Scroll)
                     SliverToBoxAdapter(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -198,7 +208,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
 
-                    // Global Community Books Section
                     SliverToBoxAdapter(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

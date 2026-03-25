@@ -79,26 +79,6 @@ final List<Book> mockBooks = [
             ]
           ),
         ],
-        examQuestions: [
-          Slide(
-            id: 'e-1',
-            type: 'numerical',
-            title: 'Exam: Binding Energy',
-            content: r'If the work function \$\Phi\$ is 2.0 eV and incoming light has energy 5.5 eV, what is the max kinetic energy in eV? (\$K_{max} = E - \Phi\$)',
-            numericAnswer: 3.5,
-            numericTolerance: 0.1,
-          ),
-          Slide(
-            id: 'e-2',
-            type: 'quiz',
-            title: 'Exam: Ground State',
-            content: r'What is the principal quantum number \$n\$ for the ground state of Hydrogen?',
-            options: [
-              QuizOption(id: 'a', text: '0', isCorrect: false, explanation: 'n starts at 1.'),
-              QuizOption(id: 'b', text: '1', isCorrect: true, explanation: 'The lowest energy state is n=1.'),
-            ]
-          ),
-        ],
         sections: [
           Section(
             id: 's-phys-1-1',

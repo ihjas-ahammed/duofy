@@ -24,27 +24,27 @@ class BlankBuilder extends MarkdownElementBuilder {
 
   @override
   Widget? visitElementAfter(md.Element element, TextStyle? preferredStyle) {
-    return IntrinsicWidth(
-      child: Container(
-        height: 35,
-        constraints: const BoxConstraints(minWidth: 80),
-        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        child: TextField(
-          controller: controller,
-          enabled: !isAnswered,
-          onChanged: onChanged,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.amber,
-          ),
-          decoration: InputDecoration(
-            contentPadding: const EdgeInsets.only(bottom: 12, left: 12, right: 12),
-            filled: true,
-            fillColor: Colors.black45,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-          ),
+    return Container(
+      height: 24,
+      width: 100,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      alignment: Alignment.center,
+      child: TextField(
+        controller: controller,
+        enabled: !isAnswered,
+        onChanged: onChanged,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.amber,
+        ),
+        decoration: InputDecoration(
+          isDense: true,
+          contentPadding: const EdgeInsets.only(bottom: 8), // Perfect vertical alignment
+          filled: true,
+          fillColor: Colors.black45,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide.none),
         ),
       ),
     );
@@ -185,7 +185,6 @@ class _FillInBlankViewState extends State<FillInBlankView> {
       );
     }
 
-    // Fallback: Standard block input logic if not written inline
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(

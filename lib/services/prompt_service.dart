@@ -58,15 +58,15 @@ Break this unit down into multiple logical lessons based on the content.
 
 CRITICAL DUOLINGO-STYLE MICRO-LEARNING RULES:
 1. MAXIMIZE the number of lessons. Break concepts down into extremely bite-sized pieces.
-2. For EACH lesson, list the exact sequence of slides.
-3. Theory/Concepts MUST be split across many small slides. NO MORE than 1-3 sentences per slide!
-4. Each lesson must contain:
-   - Several short Theory slides.
-   - 1 "interactive_canvas" slide that uses a 2D canvas to visually animate/illustrate the theory.
-   - 2 "fill_in_blank" slides (one question per slide).
-   - 4 "quiz" (multiple choice) objective questions (one question per slide).
-   - 1 "numerical" slide (if applicable, calculating a value).
-   - 1 "proof" or "step_by_step" interactive solution (ONE combined slide mapping the multiple stages of the problem).''';
+2. For EACH lesson, evaluate the possible slide types and their conditions:
+%template_layout%
+EVALUATE THE "CONDITION" FOR EACH SLIDE. ONLY include a slide if the condition logically applies to the topic. 
+Do not force a slide type if its condition is not met!
+
+USER PERSONALIZATION CONTEXT: 
+When generating the story/example slides, deeply tailor the context to these interests: "%user_interests%".
+If no interests are provided, use universally understood real-world everyday examples.
+''';
 
   static const String defaultJson = '''SYSTEM PROMPT:
 %system_prompt%
@@ -78,9 +78,9 @@ You previously created this optimal learning plan for the unit "%unit_title%":
 Based strictly on this plan and the attached content chunk, generate the full JSON content.
 
 CRITICAL SCHEMA & MICRO-LEARNING RULES:
-1. "theory" slides: `content` MUST be a few sentences explaining a concept.
+1. "theory" slides: `content` MUST be a few sentences explaining a concept or story. Use Markdown.
 2. "interactive_canvas" slides: `content` MUST be the theory explanation. `interactiveCanvasHtml` MUST contain ONLY the raw HTML `<canvas id="myCanvas"></canvas>` and `<script>` that draws an engaging, responsive 2D visualization of the topic.
-3. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Do not leave it empty! Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
+3. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
 4. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word. Include an array of 3 `blankDistractors` (wrong words) for the user to choose from.
 5. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
 6. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}). Markdown math is wrapped in \$ or \$\$.
@@ -102,20 +102,26 @@ User Custom Instructions (if any): "%user_prompt%"
 
 TASK:
 Analyze the attached Question Paper (PDF or Images). 
-Extract each question, solve it step-by-step, and convert it into interactive learning slides based on the user's custom instructions if provided.
+Extract the questions and provide a comprehensive, step-by-step solution for each.
+Group the questions logically into sections (e.g., "Section A: Multiple Choice", "Section B: Long Answer", or by topic).
 
 RULES:
-1. Create a "step_by_step" or "numerical" or "quiz" slide for each question depending on its nature.
-2. Break down large math proofs into `interactiveSteps`.
-3. Ensure accurate math using double-escaped LaTeX (e.g. \\\\frac).
-4. Return ONLY valid JSON matching this schema:
+1. Ensure accurate math using double-escaped LaTeX (e.g. \\\\frac).
+2. Return ONLY valid JSON matching this schema:
 {
   "id": "qp1",
   "title": "Extracted Past Paper Title",
-  "slides": [ 
-      {
-         "id": "s1", "type": "step_by_step", "title": "Q1", "content": "The original question...", "interactiveSteps": [...]
-      }
+  "sections": [
+    {
+      "title": "Section A: Multiple Choice",
+      "questions": [
+        {
+          "id": "q1",
+          "questionText": "The original question text...",
+          "solutionText": "**Answer:** ... \\n\\n**Step-by-step:** ..."
+        }
+      ]
+    }
   ]
 }''';
 

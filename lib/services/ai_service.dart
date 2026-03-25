@@ -15,7 +15,6 @@ class AiService {
       keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
     }
     if (keys.isEmpty) {
-      print("[AiService] FATAL: No API Keys configured.");
       throw Exception('No API Keys configured.');
     }
     return keys;
@@ -32,7 +31,6 @@ class AiService {
   }
 
   Map<String, dynamic> _cleanAndDecodeJson(String text) {
-    print("[AiService] Initiating JSON Cleanup and Decoding...");
     String cleaned = text;
     if (cleaned.contains('```json')) {
       cleaned = cleaned.split('```json')[1].split('```')[0];
@@ -55,7 +53,6 @@ class AiService {
       }
       return decoded;
     } catch (e1) {
-      print("[AiService] Initial parse failed. Trying fallback cleanup... $e1");
       try {
         String agg = cleaned.replaceAll('\n', '\\n').replaceAll('\r', '');
         return jsonDecode(agg) as Map<String, dynamic>;
@@ -80,7 +77,6 @@ class AiService {
   }
 
   Future<Book?> generateBookSkeleton(List<File> inputFiles, String filename, String? userPrompt) async {
-    print("\n[AiService] === STARTING STAGE 1: BOOK SKELETON GENERATION ===");
     final keys = await _getKeys();
     final models = await _getModels();
     
@@ -124,12 +120,17 @@ class AiService {
   Future<Unit> generateUnitContent(Unit unit, Book bookContext, Function(String) onProgress) async {
     final keys = await _getKeys();
     final models = await _getModels();
+    final prefs = await SharedPreferences.getInstance();
     
     if (unit.pdfPath == null) throw Exception("No PDF/Image chunk available for this unit.");
     final chunkFile = File(unit.pdfPath!);
     if (!chunkFile.existsSync()) {
       throw Exception("Local file missing. Tap 'Restore' on the warning banner to re-link source files.");
     }
+
+    final String userInterests = prefs.getString('user_interests') ?? 'general everyday examples';
+    final List<SlideTemplate> template = bookContext.lessonTemplate ?? SlideTemplate.defaultTemplate;
+    String templateLayoutString = template.map((t) => "- Type: ${t.type} | Condition: ${t.condition} | Instructions: ${t.description}").join('\n');
 
     Exception? lastException;
 
@@ -142,7 +143,10 @@ class AiService {
           onProgress("Analyzing PDF & Planning Layout...");
           
           final rawPlanPrompt = await PromptService.getPlanPrompt();
-          final hydratedPlanPrompt = rawPlanPrompt.replaceAll('%unit_title%', unit.title);
+          final hydratedPlanPrompt = rawPlanPrompt
+              .replaceAll('%unit_title%', unit.title)
+              .replaceAll('%user_interests%', userInterests)
+              .replaceAll('%template_layout%', templateLayoutString);
           
           List<Part> planParts = [TextPart(hydratedPlanPrompt)];
           planParts.addAll(await _buildFileParts([chunkFile]));
@@ -197,7 +201,6 @@ class AiService {
   }
 
   Future<QuestionPaper> generateQuestionPaper(List<File> files, String qpTitle, String? systemPrompt, String? userPrompt) async {
-    print("\n[AiService] === STARTING QP GENERATION ===");
     final keys = await _getKeys();
     final models = await _getModels();
 
@@ -227,11 +230,10 @@ class AiService {
           if (response.text != null) {
             final jsonMap = _cleanAndDecodeJson(response.text!);
             final qp = QuestionPaper.fromJson(jsonMap);
-            // Ensure Title fallback overrides
             return QuestionPaper(
                 id: qp.id, 
                 title: qpTitle.isNotEmpty ? qpTitle : qp.title, 
-                slides: qp.slides
+                sections: qp.sections
             );
           }
         } catch (e) {

@@ -29,18 +29,15 @@ We use the Gemini API to analyze uploaded PDFs and generate interactive JSON les
 3. Enter your Gemini API key and save it securely.
 
 ## Project Structure Overview
-- `/lib/models`: Data structures (Book, Module, Lesson, Slide, QuestionPaper, etc.)
-- `/lib/screens`: Auth, Home, Dashboard (Path), Exam, Lesson Player, Completion Screen, PDF Generator, Practice
-- `/lib/widgets`: Modular UI components (Custom Duolingo-style Buttons, Glass Panels, MathMarkdown)
+- `/lib/models`: Data structures (Book, Module, Lesson, Slide, QuestionPaper, SlideTemplate, etc.)
+- `/lib/screens`: Auth, Home, Dashboard (Path), Exam, Lesson Player, Course Settings, PDF Generator, Practice
+- `/lib/widgets`: Modular UI components (Custom Duolingo-style Buttons, Glass Panels, MathMarkdown, LessonAccordion)
 - `/lib/widgets/slide_views`: Individual renderers for theory, quiz, blanks, numericals, JS canvas, and Interactive Proofs.
 - `/lib/services`: AI, Database handling, True Async PDF Isolates, Notification routing, and Dynamic Prompting services.
-- `/lib/theme`: Colors and global styling matching the web platform
 
 ## Recent Updates & Design Process
-- **Consolidated Exam Interface**: Merged Module Exams and Past Papers into a single, unified "Exams" tab. Users can access generated module-specific checks and manually uploaded external past papers dynamically from the same view.
-- **Continuous File Uploads**: Users can now continuously select and append multiple files (PDFs/Images) seamlessly when creating a new course or uploading a new exam paper without losing previously selected ones.
-- **Custom Prompts Injection**: Added the ability for users to pass custom directives to the AI (e.g. "Focus deeply on equations" or "Explain this for a 10 year old") when analyzing new files.
-- **Native Vector PDF Splitting**: Replaced heavy JPEG rasterization with pure native vector page extraction (`PdfDocumentTemplate`).
-- **Image Upload Integration**: Upgraded the upload workflows to accept multiple Images dynamically alongside PDFs.
-- **Adaptive Psychological Progress Bar**: Logarithmic progress bar predicting processing time based on historical AI generation averages.
-- **Cross-Device File Syncing & Restoring Missing Files**: Local PDF storage chunks are natively tied to devices to save bandwidth. If you switch devices and your synced course is missing the raw local PDF source files, a smart banner will prompt you to quickly re-upload the original document to automatically re-split and restore functionality without losing progress.
+- **Onboarding Personalization Survey**: New users are presented with a quick survey defining their learning style, favorite genres, and interests to deeply contextualize AI generated stories.
+- **Conditional Slide Generation Priorities**: `CourseSettingsScreen` now allows users to define custom slide types and set explicit logical conditions (e.g., "Only if math proof is required") guiding exactly *when* the AI should output specific interactive blocks.
+- **Compact UI Views & Theory Batching**: Theory slides have been dynamically batched to display up to two cards seamlessly per screen. Fill-in-the-blank text fields have been minified to fit perfectly inline with markdown text.
+- **Continuous Background Processing**: You can now endlessly queue up Exam Papers and Courses. The generation screens remain active and reset instantly while pushing the intense vector-splitting and AI processing tasks entirely to the background with progress notifications.
+- **Restored Horizontal Selectors**: Replaced vertical accordion bloat with sleek, Duolingo-style horizontal scrollable Module and Section selectors inside the main path view.

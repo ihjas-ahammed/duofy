@@ -51,7 +51,16 @@ class _GenerateQpScreenState extends State<GenerateQpScreen> {
     final prompt = _promptCtrl.text.trim().isEmpty ? null : _promptCtrl.text.trim();
     
     GenerationManager.instance.startQpGeneration(widget.book.id, _selectedFiles, title, widget.book, prompt);
-    Navigator.pop(context);
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Processing Exam in Background! You can queue another.'))
+    );
+    
+    setState(() {
+      _selectedFiles.clear();
+      _titleCtrl.clear();
+      _promptCtrl.clear();
+    });
   }
 
   @override
@@ -68,7 +77,7 @@ class _GenerateQpScreenState extends State<GenerateQpScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const Text(
-                      "Upload PDFs or photos of past exams. The AI will extract the questions and solve them interactively. You can continuously select files.",
+                      "Upload PDFs or photos of past exams. The AI will extract the questions and solve them interactively. You can safely minimize the app during processing.",
                       style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
                     ),
                     const SizedBox(height: 24),
