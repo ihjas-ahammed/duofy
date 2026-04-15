@@ -77,7 +77,7 @@ class QuizView extends StatelessWidget {
                   ),
                 ),
               );
-            }).toList(),
+            }),
         ],
       ),
     );

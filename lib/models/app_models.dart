@@ -53,7 +53,6 @@ class SlideTemplate {
   static List<SlideTemplate> get defaultTemplate => [
     SlideTemplate(type: 'theory', condition: 'Always', description: 'A story or real-world example explaining the concept based on the user\'s interests.'),
     SlideTemplate(type: 'theory', condition: 'Always', description: 'The original factual theory and core concepts.'),
-    SlideTemplate(type: 'interactive_canvas', condition: 'Only if the concept benefits from a 2D spatial or visual simulation.', description: 'A visual interactive 2D canvas simulation of the concept.'),
     SlideTemplate(type: 'proof', condition: 'Only if a mathematical, physical, or logical proof is being taught.', description: 'Interactive step-by-step logic proof.'),
     SlideTemplate(type: 'fill_in_blank', condition: 'Always', description: 'Recall key terms with a fill-in-the-blank question.'),
     SlideTemplate(type: 'quiz', condition: 'Always', description: 'A multiple-choice question testing understanding.'),
@@ -221,7 +220,7 @@ class QuestionPaper {
         final sm = s is Map ? Map<String, dynamic>.from(s) : <String, dynamic>{};
         return QpQuestion(
           id: _str(sm['id']),
-          questionText: _str(sm['title']) + '\n\n' + _str(sm['content']),
+          questionText: '${_str(sm['title'])}\n\n${_str(sm['content'])}',
           solutionText: "Solution data is in old interactive format. Please regenerate.",
         );
       }).toList();

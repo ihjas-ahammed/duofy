@@ -6,11 +6,13 @@ import '../theme/app_theme.dart';
 class CommunityBookCard extends StatelessWidget {
   final Book book;
   final VoidCallback onGetPressed;
+  final VoidCallback? onDeletePressed;
 
   const CommunityBookCard({
     super.key,
     required this.book,
     required this.onGetPressed,
+    this.onDeletePressed,
   });
 
   @override
@@ -58,7 +60,21 @@ class CommunityBookCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          
+          if (onDeletePressed != null)
+            GestureDetector(
+              onTap: onDeletePressed,
+              child: Container(
+                margin: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(LucideIcons.trash2, color: Colors.red, size: 18),
+              ),
+            ),
+
           GestureDetector(
             onTap: onGetPressed,
             child: Container(

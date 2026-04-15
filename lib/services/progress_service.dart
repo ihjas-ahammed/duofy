@@ -17,6 +17,8 @@ class ProgressService {
       completed.add(lessonId);
       await prefs.setStringList(_completedKey, completed);
       
+      await prefs.setString('recently_completed', lessonId);
+      
       // Add XP
       int currentXp = prefs.getInt(_xpKey) ?? 0;
       await prefs.setInt(_xpKey, currentXp + 20);

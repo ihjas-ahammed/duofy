@@ -21,7 +21,7 @@ class InteractiveProofView extends StatefulWidget {
 
 class _InteractiveProofViewState extends State<InteractiveProofView> {
   int _currentStepIndex = 0;
-  List<String> _revealedSteps = [];
+  final List<String> _revealedSteps = [];
   
   String? _selectedOptionId;
   bool _isSubmitted = false;
@@ -160,7 +160,7 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                       ],
                     ),
                   ),
-                )).toList(),
+                )),
 
                 if (!isFinished && currentStep != null)
                   Container(
@@ -234,7 +234,7 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                                 ),
                               ),
                             );
-                          }).toList(),
+                          }),
                       ],
                     ),
                   )

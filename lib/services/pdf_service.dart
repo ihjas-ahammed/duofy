@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart' as sync_pdf;
-import 'package:pdf/pdf.dart' as pw_pdf;
 import 'package:pdf/widgets.dart' as pw;
 import '../models/app_models.dart';
 

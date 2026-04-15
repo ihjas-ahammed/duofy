@@ -122,7 +122,6 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
       case 'quiz': return LucideIcons.list;
       case 'fill_in_blank': return LucideIcons.minus;
       case 'numerical': return LucideIcons.calculator;
-      case 'interactive_canvas': return LucideIcons.mousePointer2;
       case 'proof':
       case 'step_by_step': return LucideIcons.brainCircuit;
       default: return LucideIcons.file;

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -7,11 +8,9 @@ import '../services/global_state.dart';
 import '../services/progress_service.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/math_markdown.dart';
-import '../widgets/slide_views/theory_view.dart';
 import '../widgets/slide_views/quiz_view.dart';
 import '../widgets/slide_views/fill_in_blank_view.dart';
 import '../widgets/slide_views/numerical_view.dart';
-import '../widgets/slide_views/interactive_webview.dart';
 import '../widgets/slide_views/interactive_proof_view.dart';
 import 'lesson_complete_screen.dart';
 
@@ -49,7 +48,6 @@ class _LessonScreenState extends State<LessonScreen> {
     _slideQueue = [];
     Slide? prevTheory;
     
-    // Group adjacent theory slides into a single "theory_group" slide separated by ---
     for (var slide in widget.lesson.slides) {
       if (slide.type == 'theory') {
         if (prevTheory != null) {
@@ -57,7 +55,7 @@ class _LessonScreenState extends State<LessonScreen> {
             id: '${prevTheory.id}_${slide.id}',
             content: '${prevTheory.content}\n\n---\n\n${slide.content}',
           ));
-          prevTheory = null; // Grouped, reset
+          prevTheory = null; 
         } else {
           prevTheory = slide;
         }
@@ -99,7 +97,9 @@ class _LessonScreenState extends State<LessonScreen> {
   Future<void> _finishLesson() async {
     int timeSpent = DateTime.now().difference(_startTime).inSeconds;
     int accuracy = _totalInteractive > 0 ? ((_correctAttempts / _totalInteractive) * 100).round() : 100;
-    int xpEarned = 15;
+    
+    bool isNewCompletion = !(await ProgressService.getCompletedLessons()).contains(widget.lesson.id);
+    int xpEarned = isNewCompletion ? 20 : 5;
 
     await ProgressService.markLessonCompleted(widget.lesson.id);
     await GlobalState.addXp(xpEarned);
@@ -175,8 +175,6 @@ class _LessonScreenState extends State<LessonScreen> {
 
   Widget _buildSlideContent(Slide slide) {
     switch (slide.type) {
-      case 'interactive_canvas':
-        return InteractiveWebview(slide: slide);
       case 'step_by_step':
       case 'proof':
         return InteractiveProofView(
@@ -217,14 +215,53 @@ class _LessonScreenState extends State<LessonScreen> {
       case 'theory':
       case 'theory_group':
       default:
-        return TheoryView(slide: slide);
+        // Wrap theory content matching LessonView.tsx default renderer (glass panel)
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+          child: SingleChildScrollView(
+             physics: const BouncingScrollPhysics(),
+             child: Column(
+                children: [
+                   if (slide.title.isNotEmpty)
+                     Padding(
+                        padding: const EdgeInsets.only(bottom: 24.0, top: 16.0),
+                        child: Text(
+                          slide.title,
+                          style: const TextStyle(
+                            fontSize: 24, 
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: -0.5,
+                          ),
+                          textAlign: TextAlign.center,
+                        )
+                     ),
+                   Container(
+                     width: double.infinity,
+                     padding: const EdgeInsets.all(24),
+                     decoration: AppTheme.glassDecoration.copyWith(
+                        borderRadius: BorderRadius.circular(24),
+                        color: Colors.black.withOpacity(0.4),
+                     ),
+                     child: MathMarkdown(
+                       data: slide.content,
+                       textStyle: const TextStyle(fontSize: 16, color: Colors.white),
+                     ),
+                   )
+                ]
+             )
+          ),
+        );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_slideQueue.isEmpty) {
-      return Scaffold(appBar: AppBar(), body: const Center(child: Text("Empty Lesson")));
+      return Scaffold(
+        backgroundColor: const Color(0xFF0B0F19), // Match React lesson bg
+        body: const Center(child: Text("Empty Lesson")),
+      );
     }
 
     final slide = _slideQueue[_currentIndex];
@@ -233,47 +270,74 @@ class _LessonScreenState extends State<LessonScreen> {
     final hasCustomBar = _isCustomBottomBar(slide);
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(LucideIcons.x),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: LinearProgressIndicator(
-          value: progress,
-          backgroundColor: Colors.white12,
-          color: AppTheme.duoGreen,
-          minHeight: 12,
-          borderRadius: BorderRadius.circular(6),
-        ),
-      ),
+      backgroundColor: const Color(0xFF0B0F19),
       body: SafeArea(
         child: Column(
           children: [
-            if (slide.title.isNotEmpty && !hasCustomBar)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-                child: Text(
-                  slide.title, 
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            
-            Expanded(child: _buildSlideContent(slide)),
-            
-            if (!hasCustomBar)
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-                decoration: BoxDecoration(
-                  color: _answered 
-                    ? (_isCorrect ? AppTheme.duoGreen.withOpacity(0.15) : AppTheme.duoRed.withOpacity(0.15))
-                    : Colors.transparent,
-                  border: Border(top: BorderSide(
-                    color: _answered ? (_isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.white10, 
-                    width: 2)
+            // Header Bar exactly as LessonView.tsx
+            ClipRRect( // To clip the BackdropFilter
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  height: 64,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.05),
+                    border: const Border(bottom: BorderSide(color: Colors.white10)),
+                  ),
+                  child: Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: const BoxDecoration(shape: BoxShape.circle),
+                          child: const Icon(LucideIcons.x, color: Colors.white54, size: 28),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            backgroundColor: Colors.white10,
+                            valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.duoGreen),
+                            minHeight: 16,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8), // Match spacing symmetrically
+                    ],
                   ),
                 ),
+              ),
+            ),
+            
+            // Slide Main Content
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+                child: _buildSlideContent(slide),
+              )
+            ),
+            
+            // Action Bottom Bar
+            if (!hasCustomBar)
+              Container(
+                decoration: BoxDecoration(
+                  color: _answered 
+                    ? (_isCorrect ? AppTheme.duoGreen.withOpacity(0.1) : AppTheme.duoRed.withOpacity(0.1))
+                    : Colors.transparent,
+                  border: Border(
+                    top: BorderSide(
+                      color: _answered ? (_isCorrect ? AppTheme.duoGreen.withOpacity(0.3) : AppTheme.duoRed.withOpacity(0.3)) : Colors.white10, 
+                      width: 1
+                    )
+                  ),
+                ),
+                padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 24),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -282,20 +346,20 @@ class _LessonScreenState extends State<LessonScreen> {
                       Padding(
                         padding: const EdgeInsets.only(bottom: 16),
                         child: Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: AppTheme.duoRed.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppTheme.duoRed.withOpacity(0.3)),
+                            color: AppTheme.duoRed.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppTheme.duoRed.withOpacity(0.4)),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('CORRECT ANSWER:', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.2)),
-                              const SizedBox(height: 4),
+                              const Text('CORRECT ANSWER:', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.2)),
+                              const SizedBox(height: 8),
                               MathMarkdown(
                                 data: _getCorrectAnswerText(slide), 
-                                textStyle: const TextStyle(color: AppTheme.duoRed, fontSize: 16, fontWeight: FontWeight.bold)
+                                textStyle: const TextStyle(color: AppTheme.duoRed, fontSize: 18, fontWeight: FontWeight.bold)
                               ),
                             ],
                           ),
@@ -304,17 +368,17 @@ class _LessonScreenState extends State<LessonScreen> {
                       
                     isInteractive && !_answered
                         ? DuoButton(
-                            text: 'Check',
-                            color: _canCheck(slide) ? AppTheme.duoGreen : Colors.grey.shade700,
-                            shadowColor: _canCheck(slide) ? AppTheme.duoGreenDark : Colors.grey.shade800,
+                            text: 'CHECK',
+                            color: _canCheck(slide) ? AppTheme.duoGreen : const Color(0xFF334155),
+                            shadowColor: _canCheck(slide) ? AppTheme.duoGreenDark : const Color(0xFF1E293B),
                             onPressed: () {
                               if (_canCheck(slide)) _checkAnswer(slide);
                             },
                           )
                         : DuoButton(
-                            text: _answered && !_isCorrect ? 'Got It' : 'Continue',
-                            color: _answered && !_isCorrect ? AppTheme.duoRed : AppTheme.duoBlue,
-                            shadowColor: _answered && !_isCorrect ? AppTheme.duoRedDark : AppTheme.duoBlueDark,
+                            text: _answered && !_isCorrect ? 'GOT IT' : 'CONTINUE',
+                            color: _answered && !_isCorrect ? AppTheme.duoRed : AppTheme.duoGreen, // React defaults to green for continue
+                            shadowColor: _answered && !_isCorrect ? AppTheme.duoRedDark : AppTheme.duoGreenDark,
                             onPressed: _nextSlide,
                           ),
                   ],

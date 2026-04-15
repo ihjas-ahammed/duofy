@@ -132,7 +132,7 @@ class GenerationManager extends ChangeNotifier {
       task.statusMessage = 'Failed to generate structure';
       notifyListeners();
       
-      final shortError = e.toString().length > 200 ? e.toString().substring(0, 200) + "..." : e.toString();
+      final shortError = e.toString().length > 200 ? "${e.toString().substring(0, 200)}..." : e.toString();
       await NotificationService.cancel(notifId);
       await NotificationService.showActionable(notifId, "Generation Failed", shortError, "error");
     }

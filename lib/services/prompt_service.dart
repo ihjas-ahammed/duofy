@@ -79,11 +79,10 @@ Based strictly on this plan and the attached content chunk, generate the full JS
 
 CRITICAL SCHEMA & MICRO-LEARNING RULES:
 1. "theory" slides: `content` MUST be a few sentences explaining a concept or story. Use Markdown.
-2. "interactive_canvas" slides: `content` MUST be the theory explanation. `interactiveCanvasHtml` MUST contain ONLY the raw HTML `<canvas id="myCanvas"></canvas>` and `<script>` that draws an engaging, responsive 2D visualization of the topic.
-3. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
-4. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word. Include an array of 3 `blankDistractors` (wrong words) for the user to choose from.
-5. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
-6. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}). Markdown math is wrapped in \$ or \$\$.
+2. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
+3. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word. Include an array of 3 `blankDistractors` (wrong words) for the user to choose from.
+4. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
+5. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}). Markdown math is wrapped in \$ or \$\$.
 
 YOU MUST RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
 {

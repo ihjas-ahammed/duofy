@@ -171,4 +171,13 @@ class DatabaseService {
     );
     await _dbRef.child('global_books').child(book.id).set(publishedBook.toJson());
   }
+
+  Future<void> deleteGlobalBook(String id) async {
+    try {
+      await _dbRef.child('global_books').child(id).remove();
+      print("[DatabaseService] Admin deleted global book: $id");
+    } catch (e) {
+      print("[DatabaseService] Error deleting global book: $e");
+    }
+  }
 }

@@ -73,7 +73,7 @@ class FileSelectionList extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: files.length,
-              separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.white12),
+              separatorBuilder: (_, _) => const Divider(height: 1, color: Colors.white12),
               itemBuilder: (context, index) {
                 final file = files[index];
                 final isPdf = file.path.toLowerCase().endsWith('.pdf');

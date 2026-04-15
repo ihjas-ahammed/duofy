@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
-import '../services/global_state.dart';
 import '../services/database_service.dart';
 import '../services/generation_manager.dart';
 import 'book_dashboard_screen.dart';
@@ -93,7 +92,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
 
     return Scaffold(
       extendBody: true, 
-      appBar: AppBar(
+      appBar: _currentIndex == 0 ? null : AppBar(
         backgroundColor: AppTheme.background.withOpacity(0.9),
         flexibleSpace: ClipRRect(
           child: BackdropFilter(

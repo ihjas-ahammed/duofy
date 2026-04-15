@@ -26,7 +26,6 @@ class AppTheme {
         primary: duoBlue,
         secondary: duoGreen,
         surface: surface,
-        background: background,
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,

@@ -27,9 +27,14 @@ class UnitHeader extends StatelessWidget {
     bool isError = generationTask?.isError ?? false;
     String? status = generationTask?.status;
 
-    return AppTheme.applyGlassBlur(
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F1319),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white10, width: 1),
+      ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         child: Column(
           children: [
             Text(

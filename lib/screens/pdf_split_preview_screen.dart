@@ -39,7 +39,7 @@ class PdfSplitPreviewScreen extends StatefulWidget {
 class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
   final PdfViewerController _pdfViewerController = PdfViewerController();
   final PageController _imagePageController = PageController();
-  List<_UnitEditor> _editors = [];
+  final List<_UnitEditor> _editors = [];
   bool _isPdf = false;
   int _currentImageIndex = 0;
 
