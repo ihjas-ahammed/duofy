@@ -86,6 +86,7 @@ class GenerationManager extends ChangeNotifier {
   }
 
   Future<void> startBookGeneration(List<File> inputFiles, String filename, String? userPrompt) async {
+    inputFiles = inputFiles.toList();
     final taskId = DateTime.now().millisecondsSinceEpoch.toString();
     final notifId = taskId.hashCode;
     
@@ -131,8 +132,9 @@ class GenerationManager extends ChangeNotifier {
       task.statusMessage = 'Failed to generate structure';
       notifyListeners();
       
+      final shortError = e.toString().length > 200 ? e.toString().substring(0, 200) + "..." : e.toString();
       await NotificationService.cancel(notifId);
-      await NotificationService.showActionable(notifId, "Generation Failed", "Failed to analyze document.", "error");
+      await NotificationService.showActionable(notifId, "Generation Failed", shortError, "error");
     }
   }
 
