@@ -38,10 +38,15 @@ class _LessonPathState extends State<LessonPath> {
   static const double _pathWidth = 400;
   static const double _centerX = 200;
   static const double _zigOffset = 65;
-  static const double _headerHeight = 120;
+  // Header height varies: when the unit is not yet generated the header shows
+  // a tall "Generate Unit" button (~155px); once generated it collapses to a
+  // shorter glass panel (~120px). Reserve enough space below it so the first
+  // lesson node never collides with the title.
+  static const double _headerHeightGenerated = 180;
+  static const double _headerHeightNeedsGen = 240;
   static const double _nodeSpacing = 155;
-  static const double _interUnitGap = 50;
-  static const double _topPad = 40;
+  static const double _interUnitGap = 70;
+  static const double _topPad = 0;
   static const double _bottomPad = 40;
 
   Set<String> _unlockedLessons() {
@@ -77,7 +82,7 @@ class _LessonPathState extends State<LessonPath> {
       final bool generated = unit.isGenerated && unit.lessons.isNotEmpty;
 
       elements.add(_Element.header(unit: unit, unitIdx: uIdx, y: y));
-      y += _headerHeight;
+      y += generated ? _headerHeightGenerated : _headerHeightNeedsGen;
 
       if (generated) {
         for (final lesson in unit.lessons) {
@@ -133,10 +138,12 @@ class _LessonPathState extends State<LessonPath> {
                         final unit = el.unit!;
                         final loading = widget.loadingUnitStatuses[unit.id];
                         final isGenerated = unit.isGenerated && unit.lessons.isNotEmpty;
+                        // Top-anchored at el.y; the slot below reserves
+                        // _headerHeight{Generated,NeedsGen} of vertical space.
                         return Positioned(
                           left: 16,
                           right: 16,
-                          top: el.y - 50, // header center anchored at el.y, total ~100 tall
+                          top: el.y - 20,
                           child: UnitHeader(
                             unit: unit,
                             isGenerated: isGenerated,

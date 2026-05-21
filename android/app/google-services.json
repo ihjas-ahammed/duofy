@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "627087433319",
+    "firebase_url": "https://duofy-database-default-rtdb.asia-southeast1.firebasedatabase.app",
     "project_id": "duofy-database",
     "storage_bucket": "duofy-database.firebasestorage.app"
   },

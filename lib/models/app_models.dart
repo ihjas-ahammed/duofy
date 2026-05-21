@@ -51,7 +51,7 @@ class SlideTemplate {
   };
 
   static List<SlideTemplate> get defaultTemplate => [
-    SlideTemplate(type: 'theory', condition: 'Always', description: 'A story or real-world example explaining the concept based on the user\'s interests.'),
+    SlideTemplate(type: 'theory', condition: 'Always', description: 'A real-world example explaining the concept based on the user\'s interests.'),
     SlideTemplate(type: 'theory', condition: 'Always', description: 'The original factual theory and core concepts.'),
     SlideTemplate(type: 'proof', condition: 'Only if a mathematical, physical, or logical proof is being taught.', description: 'Interactive step-by-step logic proof.'),
     SlideTemplate(type: 'fill_in_blank', condition: 'Always', description: 'Recall key terms with a fill-in-the-blank question.'),

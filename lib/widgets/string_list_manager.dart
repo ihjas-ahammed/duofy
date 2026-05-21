@@ -9,18 +9,18 @@ class StringListManager extends StatefulWidget {
   final Function(List<String>) onChanged;
 
   const StringListManager({
-    super.key, 
-    required this.initialItems, 
+    super.key,
+    required this.initialItems,
     required this.hintText,
     required this.itemIcon,
     required this.onChanged
   });
 
   @override
-  State<StringListManager> createState() => _StringListManagerState();
+  State<StringListManager> createState() => StringListManagerState();
 }
 
-class _StringListManagerState extends State<StringListManager> {
+class StringListManagerState extends State<StringListManager> {
   late List<String> _items;
   final _controller = TextEditingController();
 
@@ -30,19 +30,27 @@ class _StringListManagerState extends State<StringListManager> {
     _items = List.from(widget.initialItems);
   }
 
-  void _addItem() {
+  /// Commits whatever is currently typed in the input field as an item.
+  /// Returns true if something was added. Safe to call when empty.
+  bool commitPending() {
+    return _addItem();
+  }
+
+  bool _addItem() {
     final val = _controller.text.trim();
     if (val.isNotEmpty && !_items.contains(val)) {
       if (_items.length >= 5) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Maximum 5 items allowed.')));
-        return;
+        return false;
       }
       setState(() {
         _items.add(val);
         _controller.clear();
       });
       widget.onChanged(_items);
+      return true;
     }
+    return false;
   }
 
   void _removeItem(int index) {
@@ -62,6 +70,8 @@ class _StringListManagerState extends State<StringListManager> {
             Expanded(
               child: TextField(
                 controller: _controller,
+                onSubmitted: (_) => _addItem(),
+                textInputAction: TextInputAction.done,
                 decoration: InputDecoration(
                   hintText: widget.hintText,
                   border: const OutlineInputBorder(),

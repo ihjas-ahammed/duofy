@@ -4,12 +4,11 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/string_list_manager.dart';
 import 'pdf_browser_screen.dart';
-import 'advanced_prompts_screen.dart';
-import 'onboarding_survey_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -23,7 +22,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   List<String> _models = [];
   bool _isFetchingModels = false;
   bool _isLoading = true;
-  final _interestsCtrl = TextEditingController();
+  final GlobalKey<StringListManagerState> _keysManagerKey = GlobalKey<StringListManagerState>();
+  final DatabaseService _db = DatabaseService();
 
   final user = FirebaseAuth.instance.currentUser;
 
@@ -35,20 +35,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     List<String> keys = prefs.getStringList('gemini_api_keys_list') ?? [];
     if (keys.isEmpty) {
        final keysString = prefs.getString('gemini_api_keys') ?? '';
        keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
     }
-    
+
     List<String> models = prefs.getStringList('gemini_models_list') ?? [];
     if (models.isEmpty) {
        final oldModel = prefs.getString('gemini_model') ?? 'gemini-1.5-flash';
        models = [oldModel];
     }
-    
-    _interestsCtrl.text = prefs.getString('user_interests') ?? '';
+
+    // Hydrate from Firestore if local is empty (e.g. fresh install on a new device).
+    if (keys.isEmpty || models.isEmpty) {
+      final remote = await _db.fetchUserSettings();
+      if (remote != null) {
+        if (keys.isEmpty && remote['apiKeys']!.isNotEmpty) {
+          keys = remote['apiKeys']!;
+          await prefs.setStringList('gemini_api_keys_list', keys);
+        }
+        if (models.isEmpty && remote['models']!.isNotEmpty) {
+          models = remote['models']!;
+          await prefs.setStringList('gemini_models_list', models);
+        }
+      }
+    }
 
     _keys = List.from(keys);
     _models = List.from(models);
@@ -59,13 +72,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _saveSettings() async {
+    // Commit any pending text in the API-key input field before reading the list.
+    _keysManagerKey.currentState?.commitPending();
+
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('gemini_api_keys_list', _keys);
-    await prefs.setStringList('gemini_models_list', _models);
-    await prefs.setString('user_interests', _interestsCtrl.text.trim());
-    
+    final keysSaved = await prefs.setStringList('gemini_api_keys_list', _keys);
+    final modelsSaved = await prefs.setStringList('gemini_models_list', _models);
+
+    if (!keysSaved || !modelsSaved) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Local save failed — syncing to cloud only.')));
+      }
+    }
+
+    await _db.saveUserSettings(apiKeys: _keys, models: _models);
+
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Settings Saved Successfully')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Saved ${_keys.length} key(s), ${_models.length} model(s).')));
       Navigator.pop(context);
     }
   }
@@ -87,8 +110,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
         for (var m in fetched) {
           String name = m['name'];
           if (name.startsWith('models/')) name = name.substring(7);
-          if (name.contains('gemini')) fetchedModels.add(name);
+          if (name.contains('gemini') || name.contains('gemma')) fetchedModels.add(name);
         }
+
+        // Ensure Gemma 4 IDs are pickable even if the listing endpoint omits them.
+        for (final id in const ['gemma-4-31b-it', 'gemma-4-26b-a4b-it']) {
+          if (!fetchedModels.contains(id)) fetchedModels.add(id);
+        }
+
+        fetchedModels.sort((a, b) {
+          int rank(String n) {
+            if (n.startsWith('gemma-4')) return 0;
+            if (n.startsWith('gemini-2')) return 1;
+            if (n.startsWith('gemini')) return 2;
+            if (n.startsWith('gemma')) return 3;
+            return 4;
+          }
+          final r = rank(a).compareTo(rank(b));
+          return r != 0 ? r : a.compareTo(b);
+        });
 
         if (fetchedModels.isNotEmpty && mounted) {
            showModalBottomSheet(
@@ -177,60 +217,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
 
-            Row(
-              children: [
-                Expanded(
-                  child: DuoButton(
-                    text: 'PDF Browser',
-                    onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const PdfBrowserScreen()));
-                    },
-                    color: AppTheme.duoViolet,
-                    shadowColor: AppTheme.duoVioletDark,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: DuoButton(
-                    text: 'Advanced',
-                    onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const AdvancedPromptsScreen()));
-                    },
-                    color: AppTheme.duoOrange,
-                    shadowColor: AppTheme.duoOrangeDark,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Personalized Interests', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const OnboardingSurveyScreen()))
-                      .then((_) => _loadSettings());
-                  },
-                  child: const Text('Retake Survey', style: TextStyle(color: AppTheme.duoViolet, fontWeight: FontWeight.bold, fontSize: 12)),
-                )
-              ],
-            ),
-            const SizedBox(height: 8),
-            const Text('The AI will try to explain concepts using stories related to your hobbies and interests.', style: TextStyle(color: Colors.white54, fontSize: 12)),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _interestsCtrl,
-              maxLines: 2,
-              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
-                hintText: "E.g., Formula 1 racing, cooking, ancient history, sci-fi movies...",
-                hintStyle: const TextStyle(color: Colors.white38, fontWeight: FontWeight.normal),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.white12, width: 2)),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppTheme.duoBlue, width: 2)),
+            SizedBox(
+              width: double.infinity,
+              child: DuoButton(
+                text: 'PDF Browser',
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const PdfBrowserScreen()));
+                },
+                color: AppTheme.duoViolet,
+                shadowColor: AppTheme.duoVioletDark,
               ),
             ),
             const SizedBox(height: 32),
@@ -240,6 +235,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const Text('Add multiple keys to fall back automatically if rate-limited.', style: TextStyle(color: Colors.white54, fontSize: 12)),
             const SizedBox(height: 16),
             StringListManager(
+              key: _keysManagerKey,
               initialItems: _keys,
               hintText: 'Enter Gemini API Key',
               itemIcon: LucideIcons.key,

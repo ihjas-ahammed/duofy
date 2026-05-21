@@ -85,7 +85,7 @@ class GenerationManager extends ChangeNotifier {
     return sum ~/ history.length;
   }
 
-  Future<void> startBookGeneration(List<File> inputFiles, String filename, String? userPrompt) async {
+  Future<void> startBookGeneration(List<File> inputFiles, String filename) async {
     inputFiles = inputFiles.toList();
     final taskId = DateTime.now().millisecondsSinceEpoch.toString();
     final notifId = taskId.hashCode;
@@ -112,7 +112,7 @@ class GenerationManager extends ChangeNotifier {
 
     try {
       final stopwatch = Stopwatch()..start();
-      final skeletonBook = await _aiService.generateBookSkeleton(inputFiles, filename, userPrompt);
+      final skeletonBook = await _aiService.generateBookSkeleton(inputFiles, filename);
       stopwatch.stop();
 
       await _recordRunTime('meta_gen_history', stopwatch.elapsedMilliseconds);
@@ -259,19 +259,23 @@ class GenerationManager extends ChangeNotifier {
       stopwatch.stop();
       await _recordRunTime('unit_gen_history', stopwatch.elapsedMilliseconds);
 
-      final List<Unit> updatedUnits = List.from(book.modules[modIdx].sections[secIdx].units);
+      // Pull the freshest cached copy so we don't overwrite concurrent updates
+      // (e.g. another unit that finished generating while this one was running).
+      final baseBook = (await _dbService.getBookFromCache(book.id)) ?? book;
+
+      final List<Unit> updatedUnits = List.from(baseBook.modules[modIdx].sections[secIdx].units);
       updatedUnits[unitIdx] = updatedUnit;
-      
-      final List<Section> updatedSections = List.from(book.modules[modIdx].sections);
+
+      final List<Section> updatedSections = List.from(baseBook.modules[modIdx].sections);
       updatedSections[secIdx] = updatedSections[secIdx].copyWith(units: updatedUnits);
 
-      final List<Module> updatedModules = List.from(book.modules);
+      final List<Module> updatedModules = List.from(baseBook.modules);
       updatedModules[modIdx] = updatedModules[modIdx].copyWith(sections: updatedSections);
 
-      final newBook = book.copyWith(modules: updatedModules);
+      final newBook = baseBook.copyWith(modules: updatedModules);
 
       await _dbService.saveGeneratedBook(newBook);
-      
+
       activeUnitGenerations.remove(unit.id);
       notifyListeners();
 
@@ -289,7 +293,7 @@ class GenerationManager extends ChangeNotifier {
     }
   }
 
-  Future<void> startQpGeneration(String bookId, List<File> files, String qpTitle, Book currentBook, String? userPrompt) async {
+  Future<void> startQpGeneration(String bookId, List<File> files, String qpTitle, Book currentBook) async {
     if (activeQpTasks.containsKey(bookId)) return;
 
     final notifId = bookId.hashCode + 1; // Unique ID avoiding collision
@@ -299,12 +303,14 @@ class GenerationManager extends ChangeNotifier {
     await NotificationService.showProgress(notifId, "Analyzing Exam", "Extracting and solving questions natively...", indeterminate: true);
 
     try {
-        final qp = await _aiService.generateQuestionPaper(files, qpTitle, currentBook.systemPrompt, userPrompt);
-        
-        final updatedBook = currentBook.copyWith(
-            questionPapers: [...currentBook.questionPapers, qp]
+        final qp = await _aiService.generateQuestionPaper(files, qpTitle, currentBook.systemPrompt);
+
+        // Re-read the freshest book so we don't clobber other concurrent edits.
+        final baseBook = (await _dbService.getBookFromCache(currentBook.id)) ?? currentBook;
+        final updatedBook = baseBook.copyWith(
+            questionPapers: [...baseBook.questionPapers, qp]
         );
-        
+
         await _dbService.saveGeneratedBook(updatedBook);
         _bookUpdateController.add(updatedBook);
         

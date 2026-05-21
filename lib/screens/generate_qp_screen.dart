@@ -19,7 +19,6 @@ class GenerateQpScreen extends StatefulWidget {
 class _GenerateQpScreenState extends State<GenerateQpScreen> {
   final List<File> _selectedFiles = [];
   final TextEditingController _titleCtrl = TextEditingController();
-  final TextEditingController _promptCtrl = TextEditingController();
 
   Future<void> _pickFiles() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -48,18 +47,15 @@ class _GenerateQpScreenState extends State<GenerateQpScreen> {
       return;
     }
 
-    final prompt = _promptCtrl.text.trim().isEmpty ? null : _promptCtrl.text.trim();
-    
-    GenerationManager.instance.startQpGeneration(widget.book.id, _selectedFiles, title, widget.book, prompt);
-    
+    GenerationManager.instance.startQpGeneration(widget.book.id, _selectedFiles, title, widget.book);
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Processing Exam in Background! You can queue another.'))
     );
-    
+
     setState(() {
       _selectedFiles.clear();
       _titleCtrl.clear();
-      _promptCtrl.clear();
     });
   }
 
@@ -103,24 +99,6 @@ class _GenerateQpScreenState extends State<GenerateQpScreen> {
                       files: _selectedFiles,
                       onAddMore: _pickFiles,
                       onRemove: (idx) => setState(() => _selectedFiles.removeAt(idx)),
-                    ),
-                    
-                    const SizedBox(height: 32),
-                    const Text('Custom Instructions (Optional)', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
-                    const SizedBox(height: 8),
-                    Container(
-                      decoration: AppTheme.glassDecoration,
-                      child: TextField(
-                        controller: _promptCtrl,
-                        maxLines: 4,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
-                        decoration: InputDecoration(
-                          hintText: "E.g., Provide extremely detailed step-by-step proofs for any calculus questions.",
-                          hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                          contentPadding: const EdgeInsets.all(16),
-                        ),
-                      ),
                     ),
                   ],
                 ),

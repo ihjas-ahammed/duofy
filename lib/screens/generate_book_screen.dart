@@ -15,7 +15,6 @@ class GenerateBookScreen extends StatefulWidget {
 
 class _GenerateBookScreenState extends State<GenerateBookScreen> {
   final List<File> _selectedFiles = [];
-  final TextEditingController _promptCtrl = TextEditingController();
 
   Future<void> _pickFiles() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -39,17 +38,15 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
     }
 
     final filename = _selectedFiles.first.path.split('/').last;
-    final prompt = _promptCtrl.text.trim().isEmpty ? null : _promptCtrl.text.trim();
-    
-    GenerationManager.instance.startBookGeneration(_selectedFiles, filename, prompt);
-    
+
+    GenerationManager.instance.startBookGeneration(_selectedFiles, filename);
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Analyzing structure in Background! You can add another course.'))
     );
-    
+
     setState(() {
       _selectedFiles.clear();
-      _promptCtrl.clear();
     });
   }
 
@@ -76,24 +73,6 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                       files: _selectedFiles,
                       onAddMore: _pickFiles,
                       onRemove: (idx) => setState(() => _selectedFiles.removeAt(idx)),
-                    ),
-                    
-                    const SizedBox(height: 32),
-                    const Text('Custom Instructions (Optional)', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
-                    const SizedBox(height: 8),
-                    Container(
-                      decoration: AppTheme.glassDecoration,
-                      child: TextField(
-                        controller: _promptCtrl,
-                        maxLines: 4,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
-                        decoration: InputDecoration(
-                          hintText: "E.g., Focus deeply on mathematical proofs, or make it suitable for a 10 year old.",
-                          hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                          contentPadding: const EdgeInsets.all(16),
-                        ),
-                      ),
                     ),
                   ],
                 ),
