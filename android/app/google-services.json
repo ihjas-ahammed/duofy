@@ -1,14 +1,13 @@
 {
   "project_info": {
-    "project_number": "893487649041",
-    "firebase_url": "https://duofy-mobile-default-rtdb.asia-southeast1.firebasedatabase.app",
-    "project_id": "duofy-mobile",
-    "storage_bucket": "duofy-mobile.firebasestorage.app"
+    "project_number": "627087433319",
+    "project_id": "duofy-database",
+    "storage_bucket": "duofy-database.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:893487649041:android:bc141c5e7a34db44c1bcb0",
+        "mobilesdk_app_id": "1:627087433319:android:eabb5c3edb1dddb079fec2",
         "android_client_info": {
           "package_name": "com.example.duofy"
         }
@@ -16,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyC60Cuy9ppgsEar_SiQZXZlnT8WwsWEL1k"
+          "current_key": "AIzaSyBsQEnlNNjins5B16wGYuAiWTNA1I6OPWQ"
         }
       ],
       "services": {

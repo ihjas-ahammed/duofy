@@ -41,52 +41,47 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDgN0RvGOhHDQV5Wc7-4MDIry7ZiluFOJQ',
-    appId: '1:893487649041:web:09808ecc8b2b38dac1bcb0',
-    messagingSenderId: '893487649041',
-    projectId: 'duofy-mobile',
-    authDomain: 'duofy-mobile.firebaseapp.com',
-    databaseURL: 'https://duofy-mobile-default-rtdb.asia-southeast1.firebasedatabase.app',
-    storageBucket: 'duofy-mobile.firebasestorage.app',
+    apiKey: 'AIzaSyC6BuQvYUAb5kFd5W2tazuD0kAtTSuYMfs',
+    appId: '1:627087433319:web:692ecabeaf47717f79fec2',
+    messagingSenderId: '627087433319',
+    projectId: 'duofy-database',
+    authDomain: 'duofy-database.firebaseapp.com',
+    storageBucket: 'duofy-database.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyC60Cuy9ppgsEar_SiQZXZlnT8WwsWEL1k',
-    appId: '1:893487649041:android:bc141c5e7a34db44c1bcb0',
-    messagingSenderId: '893487649041',
-    projectId: 'duofy-mobile',
-    databaseURL: 'https://duofy-mobile-default-rtdb.asia-southeast1.firebasedatabase.app',
-    storageBucket: 'duofy-mobile.firebasestorage.app',
+    apiKey: 'AIzaSyBsQEnlNNjins5B16wGYuAiWTNA1I6OPWQ',
+    appId: '1:627087433319:android:eabb5c3edb1dddb079fec2',
+    messagingSenderId: '627087433319',
+    projectId: 'duofy-database',
+    storageBucket: 'duofy-database.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCCzekcgP7issZ9ozkvkBocm94IOLUmPs8',
-    appId: '1:893487649041:ios:d7017f4e1f10bac2c1bcb0',
-    messagingSenderId: '893487649041',
-    projectId: 'duofy-mobile',
-    databaseURL: 'https://duofy-mobile-default-rtdb.asia-southeast1.firebasedatabase.app',
-    storageBucket: 'duofy-mobile.firebasestorage.app',
+    apiKey: 'AIzaSyBIrk933a1Znimvs9Ge7YwgdxmTOE0tjtc',
+    appId: '1:627087433319:ios:7621750a6702416379fec2',
+    messagingSenderId: '627087433319',
+    projectId: 'duofy-database',
+    storageBucket: 'duofy-database.firebasestorage.app',
     iosBundleId: 'com.example.duofy',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyCCzekcgP7issZ9ozkvkBocm94IOLUmPs8',
-    appId: '1:893487649041:ios:d7017f4e1f10bac2c1bcb0',
-    messagingSenderId: '893487649041',
-    projectId: 'duofy-mobile',
-    databaseURL: 'https://duofy-mobile-default-rtdb.asia-southeast1.firebasedatabase.app',
-    storageBucket: 'duofy-mobile.firebasestorage.app',
+    apiKey: 'AIzaSyBIrk933a1Znimvs9Ge7YwgdxmTOE0tjtc',
+    appId: '1:627087433319:ios:7621750a6702416379fec2',
+    messagingSenderId: '627087433319',
+    projectId: 'duofy-database',
+    storageBucket: 'duofy-database.firebasestorage.app',
     iosBundleId: 'com.example.duofy',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyDgN0RvGOhHDQV5Wc7-4MDIry7ZiluFOJQ',
-    appId: '1:893487649041:web:257a39e69050c3f0c1bcb0',
-    messagingSenderId: '893487649041',
-    projectId: 'duofy-mobile',
-    authDomain: 'duofy-mobile.firebaseapp.com',
-    databaseURL: 'https://duofy-mobile-default-rtdb.asia-southeast1.firebasedatabase.app',
-    storageBucket: 'duofy-mobile.firebasestorage.app',
+    apiKey: 'AIzaSyC6BuQvYUAb5kFd5W2tazuD0kAtTSuYMfs',
+    appId: '1:627087433319:web:9054103b7c754b1079fec2',
+    messagingSenderId: '627087433319',
+    projectId: 'duofy-database',
+    authDomain: 'duofy-database.firebaseapp.com',
+    storageBucket: 'duofy-database.firebasestorage.app',
   );
 
 }
