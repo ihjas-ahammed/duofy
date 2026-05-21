@@ -132,7 +132,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => FractionallySizedBox(
-        heightFactor: 0.85,
+        heightFactor: 0.25 + 0.2*(widget.book.modules[_activeModuleIdx].sections.length < 2 ? widget.book.modules[_activeModuleIdx].sections.length: 2),
         child: SectionBottomSheet(
           book: widget.book,
           activeModuleIdx: _activeModuleIdx,
