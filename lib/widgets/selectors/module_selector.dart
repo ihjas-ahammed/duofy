@@ -94,20 +94,18 @@ class ModuleSelectorSheet extends StatelessWidget {
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.2),
-                            border: Border(
-                              bottom: BorderSide(color: Colors.white.withOpacity(0.05)),
-                            ),
-                          ),
-                          child: const Text(
-                            'SELECT MODULE',
+                         
+                          child: const Padding(
+                          padding: EdgeInsets.only(bottom: 0),
+                          child: Text(
+                            'MODULES',
+                            textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Colors.white,
+                              fontSize: 24,
                               fontWeight: FontWeight.w900,
-                              fontSize: 16,
-                              letterSpacing: 1.0,
                             ),
+                          ),
                           ),
                         ),
                         ConstrainedBox(

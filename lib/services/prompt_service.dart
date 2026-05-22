@@ -63,8 +63,7 @@ CRITICAL DUOLINGO-STYLE MICRO-LEARNING RULES:
 %template_layout%
 EVALUATE THE "CONDITION" FOR EACH SLIDE. ONLY include a slide if the condition logically applies to the topic.
 Do not force a slide type if its condition is not met!
-
-For example slides, use universally understood real-world everyday examples that directly illustrate the underlying concept.
+3. NO STORY MODE: never frame content as a story, scenario, anecdote, or narrative ("Imagine you are...", "Sara walks into a shop...", etc.). Present theory and concepts directly and factually.
 ''';
 
   static const String json = '''SYSTEM PROMPT:
@@ -77,11 +76,11 @@ You previously created this optimal learning plan for the unit "%unit_title%":
 Based strictly on this plan and the attached content chunk, generate the full JSON content.
 
 CRITICAL SCHEMA & MICRO-LEARNING RULES:
-1. "theory" slides: `content` MUST be a few sentences explaining a concept. Use Markdown.
+1. "theory" slides: `content` MUST be a few sentences explaining a concept DIRECTLY. Use Markdown. NEVER use storytelling, narrative framings, characters, or imagined scenarios — present facts and definitions plainly.
 2. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
 3. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word. Include an array of 3 `blankDistractors` (wrong words) for the user to choose from.
 4. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
-5. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}). Markdown math is wrapped in \$ or \$\$.
+5. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}). Markdown math is wrapped in \$ for inline (must flow inside a sentence) or \$\$ for display blocks. Do NOT put a single short inline equation on its own line — keep it inline with surrounding text.
 
 YOU MUST RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
 {
@@ -106,11 +105,11 @@ Now generate ONLY lesson number %lesson_index% from that plan, with full slide c
 Do not generate any other lessons in this response.
 
 CRITICAL SCHEMA & MICRO-LEARNING RULES:
-1. "theory" slides: `content` MUST be a few sentences explaining a concept. Use Markdown.
+1. "theory" slides: `content` MUST be a few sentences explaining a concept DIRECTLY. Use Markdown. NEVER use storytelling, narrative framings, characters, or imagined scenarios — present facts and definitions plainly.
 2. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
 3. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word. Include an array of 3 `blankDistractors` (wrong words) for the user to choose from.
 4. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
-5. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}). Markdown math is wrapped in \$ or \$\$.
+5. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}). Markdown math is wrapped in \$ for inline (must flow inside a sentence) or \$\$ for display blocks. Do NOT put a single short inline equation on its own line — keep it inline with surrounding text.
 
 RETURN ONLY VALID JSON FOR THIS ONE LESSON (no wrapping array, no other keys):
 {

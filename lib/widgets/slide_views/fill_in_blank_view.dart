@@ -1,55 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:markdown/markdown.dart' as md;
-import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../models/app_models.dart';
 import '../../theme/app_theme.dart';
 import '../math_markdown.dart';
-
-class BlankSyntax extends md.InlineSyntax {
-  BlankSyntax() : super(r'___+'); // Matches 3 or more underscores
-  @override
-  bool onMatch(md.InlineParser parser, Match match) {
-    parser.addNode(md.Element.empty('blank'));
-    return true;
-  }
-}
-
-class BlankBuilder extends MarkdownElementBuilder {
-  final TextEditingController controller;
-  final bool isAnswered;
-  final bool isCorrect;
-  final Function(String) onChanged;
-
-  BlankBuilder({required this.controller, required this.isAnswered, required this.isCorrect, required this.onChanged});
-
-  @override
-  Widget? visitElementAfter(md.Element element, TextStyle? preferredStyle) {
-    return Container(
-      height: 24,
-      width: 100,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      alignment: Alignment.center,
-      child: TextField(
-        controller: controller,
-        enabled: !isAnswered,
-        onChanged: onChanged,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.amber,
-        ),
-        decoration: InputDecoration(
-          isDense: true,
-          contentPadding: const EdgeInsets.only(bottom: 8), // Perfect vertical alignment
-          filled: true,
-          fillColor: Colors.black45,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide.none),
-        ),
-      ),
-    );
-  }
-}
+// BlankSyntax and BlankBuilder are now internal to MathMarkdown.
 
 class FillInBlankView extends StatefulWidget {
   final Slide slide;
@@ -59,12 +12,12 @@ class FillInBlankView extends StatefulWidget {
   final Function(String) onChanged;
 
   const FillInBlankView({
-    super.key, 
-    required this.slide, 
-    required this.value, 
-    required this.isAnswered, 
-    required this.isCorrect, 
-    required this.onChanged
+    super.key,
+    required this.slide,
+    required this.value,
+    required this.isAnswered,
+    required this.isCorrect,
+    required this.onChanged,
   });
 
   @override
@@ -118,7 +71,7 @@ class _FillInBlankViewState extends State<FillInBlankView> {
 
   Widget _buildSuggestionsBank() {
     if (_suggestions.isEmpty || widget.isAnswered) return const SizedBox.shrink();
-    
+
     return Padding(
       padding: const EdgeInsets.only(top: 24.0),
       child: Wrap(
@@ -159,6 +112,9 @@ class _FillInBlankViewState extends State<FillInBlankView> {
     bool hasInlineBlank = widget.slide.content.contains('___');
 
     if (hasInlineBlank) {
+      String displayWord = widget.value.isEmpty ? r'\_\_\_\_\_' : widget.value;
+      String updatedContent = widget.slide.content.replaceAll('___', '**$displayWord**');
+
       return SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -167,16 +123,7 @@ class _FillInBlankViewState extends State<FillInBlankView> {
               padding: const EdgeInsets.all(20),
               decoration: AppTheme.glassDecoration,
               child: MathMarkdown(
-                data: widget.slide.content,
-                customSyntaxes: [BlankSyntax()],
-                customBuilders: {
-                  'blank': BlankBuilder(
-                    controller: _controller,
-                    isAnswered: widget.isAnswered,
-                    isCorrect: widget.isCorrect,
-                    onChanged: widget.onChanged,
-                  )
-                },
+                data: updatedContent,
               ),
             ),
             _buildSuggestionsBank(),
@@ -213,7 +160,7 @@ class _FillInBlankViewState extends State<FillInBlankView> {
                   onChanged: widget.onChanged,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 22, 
+                    fontSize: 22,
                     fontWeight: FontWeight.w900,
                     color: widget.isAnswered ? (widget.isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.amber,
                   ),

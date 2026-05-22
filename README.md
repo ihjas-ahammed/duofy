@@ -41,3 +41,11 @@ We use the Gemini API to analyze uploaded PDFs and generate interactive JSON les
 - **Compact UI Views & Theory Batching**: Theory slides have been dynamically batched to display up to two cards seamlessly per screen. Fill-in-the-blank text fields have been minified to fit perfectly inline with markdown text.
 - **Continuous Background Processing**: You can now endlessly queue up Exam Papers and Courses. The generation screens remain active and reset instantly while pushing the intense vector-splitting and AI processing tasks entirely to the background with progress notifications.
 - **Restored Horizontal Selectors**: Replaced vertical accordion bloat with sleek, Duolingo-style horizontal scrollable Module and Section selectors inside the main path view.
+- **3D Lesson Nodes**: Lesson path nodes now render with a real depth lip, radial highlight, top gloss sliver, and a soft ground shadow — the Duolingo "physical disc" look. Pressing sinks the cap into the lip for tactile feedback.
+- **Story Mode Removed**: Theory slides are no longer paired or split by a `---` divider on the lesson screen, and the default slide template + AI generation prompts now explicitly forbid narrative/storytelling framings.
+- **Auto-Expanding Inline Blanks**: The fill-in-the-blank widget no longer uses a fixed 100px slot that wrapped to a new line. A new `InlineBlankField` widget measures the typed text and grows from a 64px minimum up to 220px so the blank flows inline with the surrounding sentence.
+- **Inline LaTeX Fix**: Replaced `LatexElementBuilder` (which wrapped every equation in a horizontal `SingleChildScrollView`, forcing it to its own line) with a new `InlineMathBuilder`. Inline `$x^2$` now sits inside its sentence; only true display `$$...$$` blocks remain scrollable horizontally.
+
+## Process Notes
+- For UI changes the target screen is 720×1520 @ ~271 dpi (Pixel-class portrait). The 3D lesson node, inline blank, and inline LaTeX widgets were sized against that frame and use clamped widths/heights to avoid render overflow on smaller cards.
+- When introducing new visual components, extract them into their own files under `/lib/widgets` or `/lib/widgets/slide_views/` rather than inlining them into screens — the recent inline blank/math refactor follows that pattern.

@@ -85,10 +85,14 @@ class _NextNodePopState extends State<NextNodePop> with SingleTickerProviderStat
   }
 }
 
-/// Single lesson node: 80x80 circular button + glass title pill below.
-/// The disc silhouette is a perfect circle; the Duolingo-style depth is
-/// rendered INSIDE the circle as a darker bottom lip via a ClipOval, so the
-/// overall footprint never becomes vertically elliptical.
+/// Three-circle lesson node:
+///   1. **Glow** — soft radial halo behind everything; subtle/dark when idle,
+///      colored and pulsing when this is the next lesson to start.
+///   2. **Shadow** — same-size disc as the body, offset downward by
+///      [_depthOffset]. The exposed crescent at the bottom is the moon-style
+///      shadow lip.
+///   3. **Body** — bright disc with the icon. Sinks down onto the shadow when
+///      pressed so the lip visually disappears.
 class LessonNodeWidget extends StatefulWidget {
   static const double nodeSize = 80;
   static const double labelTopGap = 14;
@@ -121,6 +125,8 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget> with SingleTickerPr
   bool _isPressed = false;
   late AnimationController _glowCtrl;
 
+  static const double _depthOffset = 9;
+
   @override
   void initState() {
     super.initState();
@@ -149,7 +155,6 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget> with SingleTickerPr
     super.dispose();
   }
 
-  @override
   Widget build(BuildContext context) {
     final sectionColor = SectionColors.base(widget.sectionColorStr);
     final sectionDark = SectionColors.dark(widget.sectionColorStr);
@@ -171,17 +176,19 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget> with SingleTickerPr
       iconColor = Colors.white;
     }
 
-    const double depthOffset = 0;
-    final double currentDepth = (_isPressed && !widget.isLocked) ? 0 : depthOffset;
-    // Lift the icon a touch so it appears centered inside the bright cap
-    // (which is shorter than the full circle by `currentDepth`).
-    final double iconLift = -currentDepth / 2;
+    final Color highlightColor = widget.isLocked
+        ? Colors.white.withOpacity(0.06)
+        : Colors.white.withOpacity(0.22);
+    final Color rimShade = Colors.black.withOpacity(0.18);
+
+    // When NOT pressed, the top face is shifted UP by _depthOffset.
+    // When pressed, it shifts to 0, covering the shadow.
+    final double topFaceOffset = (_isPressed && !widget.isLocked) ? 0 : -_depthOffset;
 
     return Stack(
       clipBehavior: Clip.none,
       alignment: Alignment.topCenter,
       children: [
-        // Circular button — silhouette is a true circle, depth lives inside.
         NextNodePop(
           animate: widget.isNextToStart && !widget.isLocked,
           child: GestureDetector(
@@ -191,117 +198,172 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget> with SingleTickerPr
               if (!widget.isLocked) widget.onTap();
             },
             onTapCancel: () => setState(() => _isPressed = false),
-            child: AnimatedBuilder(
-              animation: _glowCtrl,
-              builder: (context, child) {
-                final t = Curves.easeInOut.transform(_glowCtrl.value);
-                // Small (~2mm) animated glow that blends with the disc color.
-                final glow = widget.isActive
-                    ? <BoxShadow>[
-                        BoxShadow(
-                          color: bgColor.withOpacity(0.35 + 0.25 * t),
-                          blurRadius: 6 + 4 * t,
-                          spreadRadius: 1 + 1.5 * t,
-                        ),
-                        BoxShadow(
-                          color: Colors.white.withOpacity(0.10 + 0.10 * t),
-                          blurRadius: 4 + 3 * t,
-                        ),
-                      ]
-                    : const <BoxShadow>[];
+            child: SizedBox(
+              width: LessonNodeWidget.nodeSize,
+              height: LessonNodeWidget.nodeSize,
+              child: AnimatedBuilder(
+                animation: _glowCtrl,
+                builder: (context, _) {
+                  final t = Curves.easeInOut.transform(_glowCtrl.value);
 
-                return Container(
-                  width: LessonNodeWidget.nodeSize,
-                  height: LessonNodeWidget.nodeSize,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: glow,
-                  ),
-                  child: child,
-                );
-              },
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  // The actual disc: clipped to a perfect circle so the
-                  // silhouette stays round.
-                  ClipOval(
-                    child: SizedBox(
-                      width: LessonNodeWidget.nodeSize,
-                      height: LessonNodeWidget.nodeSize,
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          // Dark base — only the bottom strip remains visible
-                          // as the "depth" lip; the rest is covered by the
-                          // bright cap.
-                          Positioned.fill(
-                            child: Container(color: borderColor),
-                          ),
-                          // Bright top cap, leaves `currentDepth` of dark at
-                          // bottom.
-                          AnimatedPositioned(
-                            duration: const Duration(milliseconds: 80),
-                            curve: Curves.easeOut,
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: currentDepth,
-                            child: Container(color: bgColor),
-                          ),
-                          // Icon, vertically nudged so it reads centered
-                          // within the bright cap rather than the full
-                          // geometric circle.
-                          Positioned.fill(
-                            child: AnimatedSlide(
-                              duration: const Duration(milliseconds: 80),
-                              curve: Curves.easeOut,
-                              offset: Offset(0, iconLift / LessonNodeWidget.nodeSize),
-                              child: Center(
-                                child: Icon(
-                                  getIconData(widget.lesson.icon),
-                                  color: iconColor,
-                                  size: 32,
-                                ),
+                  // GLOW dimensions / intensity depend on active state.
+                  final bool active = widget.isActive && !widget.isLocked;
+                  final double extra = active ? 14 + 8 * t : 10;
+                  final double glowSize = LessonNodeWidget.nodeSize + extra * 2;
+                  final Color glowColor = active ? bgColor : Colors.black;
+                  final double glowOpacity = active
+                      ? 0.35 + 0.30 * t
+                      : (widget.isLocked ? 0.20 : 0.35);
+
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      // 1. GLOW — circle behind everything.
+                      Positioned(
+                        left: -extra,
+                        top: -extra,
+                        width: glowSize,
+                        height: glowSize,
+                        child: IgnorePointer(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  glowColor.withOpacity(glowOpacity),
+                                  glowColor.withOpacity(0),
+                                ],
+                                stops: const [0.42, 1.0],
                               ),
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Crown badge lives OUTSIDE the ClipOval so it can overflow
-                  // the disc's circular boundary into the top-right corner —
-                  // otherwise the yellow badge would be clipped to a sliver
-                  // that blends into the equally-yellow completed disc and
-                  // looks transparent.
-                  if (widget.isCompleted)
-                    Positioned(
-                      top: -6,
-                      right: -6,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFBBF24),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: const Color(0xFFD97706), width: 2),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.35),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
                         ),
-                        child: const Icon(LucideIcons.crown, size: 14, color: Color(0xFF92400E)),
                       ),
-                    ),
-                ],
+
+                      // 2. The 3D Button Container
+                      Positioned(
+                        left: 0,
+                        top: 0,
+                        width: LessonNodeWidget.nodeSize,
+                        height: LessonNodeWidget.nodeSize,
+                        child: Container(
+                          clipBehavior: Clip.antiAlias,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                          ),
+                          child: Stack(
+                            children: [
+                              // Circle 1: Background
+                              Positioned.fill(
+                                child: Container(
+                                  color: bgColor,
+                                ),
+                              ),
+                              
+                              // Circle 2: Transparent black for shadow effect
+                              Positioned.fill(
+                                child: Container(
+                                  color: Colors.black.withOpacity(0.2),
+                                ),
+                              ),
+
+                              // Circle 3: Top face
+                              AnimatedPositioned(
+                                duration: const Duration(milliseconds: 80),
+                                curve: Curves.easeOut,
+                                left: 0,
+                                top: topFaceOffset,
+                                width: LessonNodeWidget.nodeSize,
+                                height: LessonNodeWidget.nodeSize,
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: RadialGradient(
+                                      center: const Alignment(-0.2, -0.55),
+                                      radius: 0.95,
+                                      colors: [
+                                        Color.alphaBlend(highlightColor, bgColor),
+                                        bgColor,
+                                        Color.alphaBlend(rimShade, bgColor),
+                                      ],
+                                      stops: const [0.0, 0.55, 1.0],
+                                    ),
+                                  ),
+                                  child: Stack(
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      // glossy top sliver — sells the spherical feel
+                                      Positioned(
+                                        top: 6,
+                                        left: 14,
+                                        right: 14,
+                                        height: 14,
+                                        child: IgnorePointer(
+                                          child: DecoratedBox(
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(40),
+                                              gradient: LinearGradient(
+                                                begin: Alignment.topCenter,
+                                                end: Alignment.bottomCenter,
+                                                colors: [
+                                                  Colors.white.withOpacity(widget.isLocked ? 0.10 : 0.28),
+                                                  Colors.white.withOpacity(0.0),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+
+                              // Icon perfectly centered in the overall node (both focus)
+                              Positioned.fill(
+                                child: Center(
+                                  child: Icon(
+                                    getIconData(widget.lesson.icon),
+                                    color: iconColor,
+                                    size: 34,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Crown badge — positioned at the top right of the perfect circle
+                      if (widget.isCompleted)
+                        Positioned(
+                          top: -4,
+                          right: -4,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFBBF24),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: const Color(0xFFD97706), width: 2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.35),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(LucideIcons.crown, size: 14, color: Color(0xFF92400E)),
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
         ),
-        // Title pill below — allowed to overflow horizontally
+        // Title pill below
         Positioned(
           top: LessonNodeWidget.nodeSize + LessonNodeWidget.labelTopGap,
           left: (LessonNodeWidget.nodeSize - LessonNodeWidget.labelWidth) / 2,

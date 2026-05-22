@@ -37,6 +37,15 @@ class _LessonScreenState extends State<LessonScreen> {
   String _blankInput = '';
   String _numericInput = '';
 
+  bool _isEditingMode = false;
+  final TextEditingController _editController = TextEditingController();
+
+  @override
+  void dispose() {
+    _editController.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -45,32 +54,7 @@ class _LessonScreenState extends State<LessonScreen> {
   }
 
   void _buildSlideQueue() {
-    _slideQueue = [];
-    Slide? prevTheory;
-    
-    for (var slide in widget.lesson.slides) {
-      if (slide.type == 'theory') {
-        if (prevTheory != null) {
-          _slideQueue.add(prevTheory.copyWith(
-            id: '${prevTheory.id}_${slide.id}',
-            content: '${prevTheory.content}\n\n---\n\n${slide.content}',
-          ));
-          prevTheory = null; 
-        } else {
-          prevTheory = slide;
-        }
-      } else {
-        if (prevTheory != null) {
-          _slideQueue.add(prevTheory);
-          prevTheory = null;
-        }
-        _slideQueue.add(slide);
-      }
-    }
-    
-    if (prevTheory != null) {
-      _slideQueue.add(prevTheory);
-    }
+    _slideQueue = List.of(widget.lesson.slides);
 
     for (var slide in _slideQueue) {
       if (['quiz', 'fill_in_blank', 'numerical', 'proof', 'step_by_step'].contains(slide.type)) {
@@ -255,6 +239,8 @@ class _LessonScreenState extends State<LessonScreen> {
     }
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     if (_slideQueue.isEmpty) {
@@ -319,12 +305,55 @@ class _LessonScreenState extends State<LessonScreen> {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
-                child: _buildSlideContent(slide),
+                child: _isEditingMode
+                    ? TextField(
+                        controller: _editController,
+                        maxLines: null,
+                        expands: true,
+                        textAlignVertical: TextAlignVertical.top,
+                        style: const TextStyle(color: Colors.white, fontFamily: 'monospace', fontSize: 14),
+                        decoration: const InputDecoration(
+                          filled: true,
+                          fillColor: Color(0xFF1E293B),
+                          border: OutlineInputBorder(),
+                          hintText: 'Markdown content...',
+                          hintStyle: TextStyle(color: Colors.white24),
+                        ),
+                      )
+                    : GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onDoubleTap: () {
+                          setState(() {
+                            _editController.text = slide.content;
+                            _isEditingMode = true;
+                          });
+                        },
+                        child: _buildSlideContent(slide),
+                      ),
               )
             ),
             
             // Action Bottom Bar
-            if (!hasCustomBar)
+            if (_isEditingMode)
+              Container(
+                decoration: const BoxDecoration(
+                  color: Colors.transparent,
+                  border: Border(top: BorderSide(color: Colors.white10, width: 1)),
+                ),
+                padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 24),
+                child: DuoButton(
+                  text: 'SAVE',
+                  color: AppTheme.duoGreen,
+                  shadowColor: AppTheme.duoGreenDark,
+                  onPressed: () {
+                    setState(() {
+                      slide.content = _editController.text;
+                      _isEditingMode = false;
+                    });
+                  },
+                ),
+              )
+            else if (!hasCustomBar)
               Container(
                 decoration: BoxDecoration(
                   color: _answered 

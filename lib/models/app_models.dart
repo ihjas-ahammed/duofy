@@ -51,8 +51,7 @@ class SlideTemplate {
   };
 
   static List<SlideTemplate> get defaultTemplate => [
-    SlideTemplate(type: 'theory', condition: 'Always', description: 'A real-world example explaining the concept based on the user\'s interests.'),
-    SlideTemplate(type: 'theory', condition: 'Always', description: 'The original factual theory and core concepts.'),
+    SlideTemplate(type: 'theory', condition: 'Always', description: 'The original factual theory and core concepts presented directly, with no storytelling, narrative framing, or example-based scenarios.'),
     SlideTemplate(type: 'proof', condition: 'Only if a mathematical, physical, or logical proof is being taught.', description: 'Interactive step-by-step logic proof.'),
     SlideTemplate(type: 'fill_in_blank', condition: 'Always', description: 'Recall key terms with a fill-in-the-blank question.'),
     SlideTemplate(type: 'quiz', condition: 'Always', description: 'A multiple-choice question testing understanding.'),
@@ -479,7 +478,7 @@ class Slide {
   final String id;
   final String type; 
   final String title;
-  final String content;
+  String content;
   final String? interactiveCanvasHtml;
   final List<QuizOption>? options;
   final List<InteractiveStep>? interactiveSteps;
