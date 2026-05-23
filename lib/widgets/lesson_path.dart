@@ -19,6 +19,11 @@ class LessonPath extends StatefulWidget {
   final Function(Unit, int) onClearUnit;
   final List<String> completedLessons;
   final VoidCallback onLessonFinished;
+  /// Status of the lazy unit-manifest call for this section (new flow).
+  /// Null means no manifest call is in flight or needed.
+  final UnitGenTask? sectionManifestStatus;
+  /// Re-runs the unit-manifest call (used to recover from a failed manifest).
+  final VoidCallback? onRetryManifest;
 
   const LessonPath({
     super.key,
@@ -28,6 +33,8 @@ class LessonPath extends StatefulWidget {
     required this.onClearUnit,
     required this.completedLessons,
     required this.onLessonFinished,
+    this.sectionManifestStatus,
+    this.onRetryManifest,
   });
 
   @override
@@ -67,6 +74,19 @@ class _LessonPathState extends State<LessonPath> {
   @override
   Widget build(BuildContext context) {
     final color = SectionColors.base(widget.section.color);
+
+    // New-flow section that hasn\'t produced its units yet — show a manifest
+    // panel instead of the (empty) lesson path. Status comes from the
+    // GenerationManager via the parent.
+    if (widget.section.units.isEmpty) {
+      return _SectionManifestPanel(
+        section: widget.section,
+        task: widget.sectionManifestStatus,
+        sectionColor: color,
+        onRetry: widget.onRetryManifest,
+      );
+    }
+
     final unlocked = _unlockedLessons();
 
     // First pass: layout (compute y positions and points)

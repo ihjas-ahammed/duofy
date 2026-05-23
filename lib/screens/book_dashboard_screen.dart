@@ -187,9 +187,20 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                           child: Text('No sections available.', style: TextStyle(color: Colors.white54)),
                         );
                       }
+                      // New-flow sections carry their own PDF chunk but don\'t
+                      // have units yet — kick off the lazy unit-manifest call
+                      // the first time the user lands on them. The manager
+                      // dedupes on section.id so retriggering is safe.
+                      if (activeSec.needsUnitManifest) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          GenerationManager.instance.startSectionUnitManifest(widget.book, mIdx, sIdx);
+                        });
+                      }
+                      final manifestTask = GenerationManager.instance.activeSectionManifests[activeSec.id];
                       return LessonPath(
                         section: activeSec,
                         loadingUnitStatuses: GenerationManager.instance.activeUnitGenerations,
+                        sectionManifestStatus: manifestTask,
                         completedLessons: _completedLessons,
                         onLessonFinished: _loadProgress,
                         onGenerateUnit: (unit, unitIdx) {
@@ -199,6 +210,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         },
                         onClearUnit: (unit, unitIdx) {
                           _onClearUnit(unit, mIdx, sIdx, unitIdx);
+                        },
+                        onRetryManifest: () {
+                          GenerationManager.instance.clearSectionManifestError(activeSec.id);
+                          GenerationManager.instance.startSectionUnitManifest(widget.book, mIdx, sIdx);
                         },
                       );
                     },

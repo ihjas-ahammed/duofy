@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import '../services/generation_manager.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/file_selection_list.dart';
+import 'index_picker_screen.dart';
 
 class GenerateBookScreen extends StatefulWidget {
   const GenerateBookScreen({super.key});
@@ -37,13 +37,25 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
       return;
     }
 
-    final filename = _selectedFiles.first.path.split('/').last;
+    // The TOC-only flow needs a single PDF so the user can scroll to the
+    // index pages and to Chapter 1. Image-only inputs aren\'t supported for
+    // skeleton generation right now — surface that explicitly rather than
+    // silently falling back to old behaviour.
+    final isSinglePdf = _selectedFiles.length == 1 &&
+        _selectedFiles.first.path.toLowerCase().endsWith('.pdf');
+    if (!isSinglePdf) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('New course generation needs a single PDF (so you can pick its index pages).'),
+      ));
+      return;
+    }
 
-    GenerationManager.instance.startBookGeneration(_selectedFiles, filename);
+    final pdf = _selectedFiles.first;
+    final filename = pdf.path.split(RegExp(r'[\\/]')).last;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Analyzing structure in Background! You can add another course.'))
-    );
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => IndexPickerScreen(sourcePdf: pdf, filename: filename),
+    ));
 
     setState(() {
       _selectedFiles.clear();

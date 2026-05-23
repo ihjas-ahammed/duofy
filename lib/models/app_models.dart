@@ -296,13 +296,25 @@ class Section {
   final String description;
   final String color;
   final List<Unit> units;
+  // New-flow fields: when a section is generated from a TOC-only skeleton,
+  // the section itself owns the PDF chunk and page range, and `units` starts
+  // empty until a lazy unit-manifest call fills it. Old books leave these
+  // null and continue to use per-unit pdfPath.
+  final int? startPage;
+  final int? endPage;
+  final String? pdfPath;
+  final bool unitsGenerated;
 
   Section({
-    required this.id, 
-    required this.title, 
-    required this.description, 
-    required this.color, 
-    required this.units
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.color,
+    required this.units,
+    this.startPage,
+    this.endPage,
+    this.pdfPath,
+    this.unitsGenerated = false,
   });
 
   factory Section.fromJson(Map<String, dynamic> json) {
@@ -312,6 +324,10 @@ class Section {
       description: _str(json['description']),
       color: _str(json['color'], 'duo-blue'),
       units: (json['units'] as List?)?.map((u) => Unit.fromJson(u is Map ? Map<String, dynamic>.from(u) : {})).toList() ?? [],
+      startPage: json['startPage'] is num ? (json['startPage'] as num).toInt() : int.tryParse(_str(json['startPage'])),
+      endPage: json['endPage'] is num ? (json['endPage'] as num).toInt() : int.tryParse(_str(json['endPage'])),
+      pdfPath: _strOpt(json['pdfPath']),
+      unitsGenerated: _bool(json['unitsGenerated'], false),
     );
   }
 
@@ -321,7 +337,20 @@ class Section {
     'description': description,
     'color': color,
     'units': units.map((u) => u.toJson()).toList(),
+    if (startPage != null) 'startPage': startPage,
+    if (endPage != null) 'endPage': endPage,
+    if (pdfPath != null) 'pdfPath': pdfPath,
+    if (unitsGenerated) 'unitsGenerated': unitsGenerated,
   };
+
+  /// True for skeletons that carry their own page-range and PDF chunk and
+  /// expect a lazy unit-manifest pass before lessons can be generated.
+  bool get isLazySection => pdfPath != null || startPage != null;
+
+  /// Whether the unit list still needs to be produced by the AI. Old-flow
+  /// books always return false here because their units are baked in at
+  /// skeleton time.
+  bool get needsUnitManifest => isLazySection && !unitsGenerated;
 
   Section copyWith({
     String? id,
@@ -329,6 +358,10 @@ class Section {
     String? description,
     String? color,
     List<Unit>? units,
+    int? startPage,
+    int? endPage,
+    String? pdfPath,
+    bool? unitsGenerated,
   }) {
     return Section(
       id: id ?? this.id,
@@ -336,6 +369,10 @@ class Section {
       description: description ?? this.description,
       color: color ?? this.color,
       units: units ?? this.units,
+      startPage: startPage ?? this.startPage,
+      endPage: endPage ?? this.endPage,
+      pdfPath: pdfPath ?? this.pdfPath,
+      unitsGenerated: unitsGenerated ?? this.unitsGenerated,
     );
   }
 }

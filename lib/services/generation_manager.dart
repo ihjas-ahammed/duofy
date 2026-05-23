@@ -85,26 +85,38 @@ class GenerationManager extends ChangeNotifier {
     return sum ~/ history.length;
   }
 
-  Future<void> startBookGeneration(List<File> inputFiles, String filename) async {
-    inputFiles = inputFiles.toList();
+  /// Starts the new TOC-only book generation flow.
+  ///
+  /// [sourceFiles] is the full original PDF/images (kept for the later
+  /// chunking step). [indexFiles] is the trimmed index/TOC PDF the AI sees
+  /// during skeleton generation. [chapter1AbsolutePage] is the absolute PDF
+  /// page number where Chapter 1 starts in [sourceFiles], used for offset
+  /// correction in the prompt.
+  Future<void> startBookGeneration(
+    List<File> sourceFiles,
+    String filename, {
+    required List<File> indexFiles,
+    required int chapter1AbsolutePage,
+  }) async {
+    sourceFiles = sourceFiles.toList();
     final taskId = DateTime.now().millisecondsSinceEpoch.toString();
     final notifId = taskId.hashCode;
-    
+
     double totalSize = 0;
-    for (var f in inputFiles) { totalSize += await f.length(); }
+    for (var f in sourceFiles) { totalSize += await f.length(); }
 
     final uploadSecs = (totalSize / 500000).ceil();
-    final avgAiMs = await _getAverageRunTime('meta_gen_history', 120000); 
+    final avgAiMs = await _getAverageRunTime('meta_gen_history', 120000);
     final estimatedDuration = Duration(seconds: uploadSecs, milliseconds: avgAiMs);
 
     final task = GenerationTask(
       id: taskId,
       title: filename,
-      sourceFiles: inputFiles,
+      sourceFiles: sourceFiles,
       startTime: DateTime.now(),
       estimatedDuration: estimatedDuration,
     );
-    
+
     activeTasks.add(task);
     notifyListeners();
 
@@ -112,7 +124,11 @@ class GenerationManager extends ChangeNotifier {
 
     try {
       final stopwatch = Stopwatch()..start();
-      final skeletonBook = await _aiService.generateBookSkeleton(inputFiles, filename);
+      final skeletonBook = await _aiService.generateBookSkeleton(
+        indexFiles,
+        filename,
+        chapter1AbsolutePage: chapter1AbsolutePage,
+      );
       stopwatch.stop();
 
       await _recordRunTime('meta_gen_history', stopwatch.elapsedMilliseconds);
@@ -238,8 +254,8 @@ class GenerationManager extends ChangeNotifier {
 
   Future<void> startUnitGeneration(Unit unit, Book book, int modIdx, int secIdx, int unitIdx) async {
     if (activeUnitGenerations.containsKey(unit.id)) return;
-    
-    final avgUnitMs = await _getAverageRunTime('unit_gen_history', 90000); 
+
+    final avgUnitMs = await _getAverageRunTime('unit_gen_history', 90000);
     final notifId = unit.id.hashCode;
 
     activeUnitGenerations[unit.id] = UnitGenTask(
@@ -250,13 +266,21 @@ class GenerationManager extends ChangeNotifier {
     notifyListeners();
 
     await NotificationService.showProgress(notifId, "Generating Lesson", "AI is crafting content...", indeterminate: true);
-    
+
     try {
       final stopwatch = Stopwatch()..start();
-      final updatedUnit = await _aiService.generateUnitContent(unit, book, (status) {
-        activeUnitGenerations[unit.id]?.status = status;
-        notifyListeners();
-      });
+      // New-flow units share the section\'s PDF chunk. Pass it through so the
+      // AI call can still hit a real on-disk file.
+      final String? sectionPdfPath = book.modules[modIdx].sections[secIdx].pdfPath;
+      final updatedUnit = await _aiService.generateUnitContent(
+        unit,
+        book,
+        (status) {
+          activeUnitGenerations[unit.id]?.status = status;
+          notifyListeners();
+        },
+        sectionPdfPath: sectionPdfPath,
+      );
       stopwatch.stop();
       await _recordRunTime('unit_gen_history', stopwatch.elapsedMilliseconds);
 
@@ -291,6 +315,61 @@ class GenerationManager extends ChangeNotifier {
 
       await NotificationService.cancel(notifId);
       await NotificationService.showActionable(notifId, "Generation Failed", "Failed to generate lesson.", "error");
+    }
+  }
+
+  /// Tracks in-flight unit-manifest generations. Keyed by section id so the
+  /// UI can show a loading state on the right section card.
+  final Map<String, UnitGenTask> activeSectionManifests = {};
+
+  /// Lazily generates the unit list for a section in a new-flow book.
+  /// Idempotent: if the section already has units or a manifest is already
+  /// in flight, this is a no-op. Persists the populated section back to the
+  /// DB and emits a book update on success.
+  Future<void> startSectionUnitManifest(Book book, int modIdx, int secIdx) async {
+    final section = book.modules[modIdx].sections[secIdx];
+    if (!section.needsUnitManifest) return;
+    if (activeSectionManifests.containsKey(section.id)) return;
+
+    final notifId = section.id.hashCode;
+    activeSectionManifests[section.id] = UnitGenTask(
+      status: 'Planning units for "${section.title}"...',
+      estimatedDuration: const Duration(seconds: 30),
+      startTime: DateTime.now(),
+    );
+    notifyListeners();
+    await NotificationService.showProgress(notifId, 'Planning section', 'Generating unit list...', indeterminate: true);
+
+    try {
+      final units = await _aiService.generateUnitManifest(section, book);
+
+      // Re-read freshest book so concurrent edits don\'t clobber.
+      final baseBook = (await _dbService.getBookFromCache(book.id)) ?? book;
+      final modules = List<Module>.from(baseBook.modules);
+      final sections = List<Section>.from(modules[modIdx].sections);
+      sections[secIdx] = sections[secIdx].copyWith(units: units, unitsGenerated: true);
+      modules[modIdx] = modules[modIdx].copyWith(sections: sections);
+      final newBook = baseBook.copyWith(modules: modules);
+
+      await _dbService.saveGeneratedBook(newBook);
+      activeSectionManifests.remove(section.id);
+      notifyListeners();
+      _bookUpdateController.add(newBook);
+
+      await NotificationService.cancel(notifId);
+    } catch (e) {
+      activeSectionManifests[section.id]?.isError = true;
+      activeSectionManifests[section.id]?.status = 'Error: ${e.toString()}';
+      notifyListeners();
+      await NotificationService.cancel(notifId);
+      await NotificationService.showActionable(notifId, 'Section Planning Failed', 'Could not generate units.', 'error');
+    }
+  }
+
+  void clearSectionManifestError(String sectionId) {
+    if (activeSectionManifests[sectionId]?.isError == true) {
+      activeSectionManifests.remove(sectionId);
+      notifyListeners();
     }
   }
 

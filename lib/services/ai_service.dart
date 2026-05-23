@@ -185,16 +185,30 @@ class AiService {
     return parts;
   }
 
-  Future<Book?> generateBookSkeleton(List<File> inputFiles, String filename) async {
+  /// Generates the course skeleton from a TOC-only PDF.
+  ///
+  /// [indexFiles] is the cropped index/TOC PDF (typically a few pages cut
+  /// out of the full source PDF by [PdfService.extractPages]).
+  /// [chapter1AbsolutePage] is the ABSOLUTE PDF page number (1-based) where
+  /// Chapter 1 actually starts in the original full source PDF. We pass it
+  /// through to the prompt so the AI offsets every TOC page number into
+  /// absolute coordinates.
+  Future<Book?> generateBookSkeleton(
+    List<File> indexFiles,
+    String filename, {
+    required int chapter1AbsolutePage,
+  }) async {
     final keys = await _getKeys();
     final liteModel = await _getLiteModel();
     final fallbackModels = await _getModels();
     final List<String> modelsToTry = [liteModel, ...fallbackModels.where((m) => m != liteModel)];
 
-    final hydratedPrompt = PromptService.skeleton.replaceAll('%filename%', filename);
+    final hydratedPrompt = PromptService.skeleton
+        .replaceAll('%filename%', filename)
+        .replaceAll('%chapter1_abs_page%', '$chapter1AbsolutePage');
 
     List<Part> parts = [TextPart(hydratedPrompt)];
-    parts.addAll(await _buildFileParts(inputFiles));
+    parts.addAll(await _buildFileParts(indexFiles));
 
     Exception? lastException;
     
@@ -227,7 +241,7 @@ class AiService {
     throw lastException ?? Exception('Failed to generate skeleton. All models/keys exhausted.');
   }
 
-  Future<Unit> generateUnitContent(Unit unit, Book bookContext, Function(String) onProgress) async {
+  Future<Unit> generateUnitContent(Unit unit, Book bookContext, Function(String) onProgress, {String? sectionPdfPath}) async {
     final keys = await _getKeys();
     final textModel = await _getPrimaryTextModel();
     final liteModel = await _getLiteModel();
@@ -236,8 +250,11 @@ class AiService {
     final List<String> liteModelsToTry = [liteModel, ...fallbackModels.where((m) => m != liteModel)];
     final List<String> textModelsToTry = [textModel, ...fallbackModels.where((m) => m != textModel)];
 
-    if (unit.pdfPath == null) throw Exception("No PDF/Image chunk available for this unit.");
-    final chunkFile = File(unit.pdfPath!);
+    // New-flow units share the section\'s PDF chunk; old-flow units have
+    // their own pdfPath. Either way, we need a real, on-disk file.
+    final String? chunkPath = unit.pdfPath ?? sectionPdfPath;
+    if (chunkPath == null) throw Exception("No PDF/Image chunk available for this unit.");
+    final chunkFile = File(chunkPath);
     if (!chunkFile.existsSync()) {
       throw Exception("Local file missing. Tap 'Restore' on the warning banner to re-link source files.");
     }
@@ -344,6 +361,85 @@ class AiService {
       }
     }
     throw lastException ?? Exception('Failed to generate unit content. All models/keys exhausted.');
+  }
+
+  /// Asks the AI to break a section\'s PDF chunk into a list of units
+  /// (manifest only — no slides). Used by the new TOC-only flow the first
+  /// time a section is opened. Returns units with empty `lessons` and
+  /// `isGenerated == false`, so the existing per-unit lesson generation
+  /// path continues to work unchanged.
+  Future<List<Unit>> generateUnitManifest(Section section, Book bookContext) async {
+    if (section.pdfPath == null) {
+      throw Exception('Section has no PDF chunk — cannot generate unit manifest.');
+    }
+    final chunkFile = File(section.pdfPath!);
+    if (!chunkFile.existsSync()) {
+      throw Exception("Local file missing. Tap 'Restore' on the warning banner to re-link source files.");
+    }
+
+    final keys = await _getKeys();
+    final liteModel = await _getLiteModel();
+    final fallbackModels = await _getModels();
+    final List<String> modelsToTry = [liteModel, ...fallbackModels.where((m) => m != liteModel)];
+
+    final hydratedPrompt = PromptService.unitManifest
+        .replaceAll('%section_title%', section.title)
+        .replaceAll('%section_description%', section.description);
+
+    final parts = <Part>[TextPart(hydratedPrompt), ...await _buildFileParts([chunkFile])];
+
+    Exception? lastException;
+    for (final modelName in modelsToTry) {
+      for (final apiKey in keys) {
+        try {
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: apiKey,
+            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+          );
+          final response = await _retryTransient(
+            () => model.generateContent([Content.multi(parts)])
+                .timeout(const Duration(minutes: 3)),
+            onRetry: (a, e) => print('[AiService] Unit manifest transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+          );
+
+          final text = response.text;
+          if (text == null || text.trim().isEmpty) {
+            throw Exception('Empty response from unit manifest call.');
+          }
+          final jsonMap = _cleanAndDecodeJson(text);
+          final unitsData = jsonMap['units'] as List?;
+          if (unitsData == null || unitsData.isEmpty) {
+            throw Exception('Unit manifest contained no units.');
+          }
+
+          final units = <Unit>[];
+          for (var i = 0; i < unitsData.length; i++) {
+            final raw = unitsData[i];
+            if (raw is! Map) continue;
+            final base = Unit.fromJson(Map<String, dynamic>.from(raw));
+            final id = base.id.isNotEmpty ? base.id : 'u${i + 1}';
+            units.add(base.copyWith(
+              id: '${section.id}-$id',
+              isGenerated: false,
+              lessons: const [],
+              // The unit shares the section\'s PDF chunk — it does not get
+              // its own pdfPath or page range.
+              pdfPath: null,
+              startPage: null,
+              endPage: null,
+            ));
+          }
+          if (units.isEmpty) throw Exception('Unit manifest had no usable entries.');
+          return units;
+        } on TimeoutException {
+          lastException = Exception('Unit manifest request timed out ($modelName).');
+        } catch (e) {
+          lastException = Exception('Unit manifest failed ($modelName): ${_cleanErrMsg(e)}');
+        }
+      }
+    }
+    throw lastException ?? Exception('Failed to generate unit manifest. All models/keys exhausted.');
   }
 
   /// Per-lesson generation used for Gemma models. Builds [Lesson]s one by one
