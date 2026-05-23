@@ -34,10 +34,24 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        // Override the default debug signing config to point at the
+        // checked-in keystore at android/app/debug.keystore. This way every
+        // machine and CI runner signs APKs with the same key — no per-dev
+        // setup, and installs upgrade cleanly across builds.
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // Reuse the checked-in debug key for release too, so
+            // `flutter build apk --release` works out of the box. Swap for
+            // a real upload key before publishing to the Play Store.
             signingConfig = signingConfigs.getByName("debug")
         }
     }

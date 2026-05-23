@@ -63,11 +63,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
        keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
     }
 
+    // Legacy generic-models list. No UI binds to it anymore — the three
+    // slots (Text / Graphics / Lite) own their own fallback ladders. We
+    // still round-trip whatever the user previously had so we don\'t lose
+    // it, but we no longer inject a hardcoded default (which used to be
+    // gemini-1.5-flash and silently poisoned the ladder).
     List<String> models = prefs.getStringList('gemini_models_list') ?? [];
-    if (models.isEmpty) {
-       final oldModel = prefs.getString('gemini_model') ?? 'gemini-1.5-flash';
-       models = [oldModel];
-    }
 
     List<String> primaryText = await _loadModelList(prefs, 'model_primary_text_list', 'model_primary_text', 'gemma4');
     List<String> primaryGraphics = await _loadModelList(prefs, 'model_primary_graphics_list', 'model_primary_graphics', 'gemini-3.5-flash');

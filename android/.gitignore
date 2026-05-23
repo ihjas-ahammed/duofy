@@ -12,3 +12,8 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# Exception: the project-wide debug keystore is intentionally committed so
+# every machine and CI runner signs builds with the same key (no per-dev
+# setup, installs upgrade cleanly). Do NOT commit real release keystores.
+!app/debug.keystore

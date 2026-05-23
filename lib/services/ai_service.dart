@@ -20,16 +20,6 @@ class AiService {
     return keys;
   }
 
-  Future<List<String>> _getModels() async {
-    final prefs = await SharedPreferences.getInstance();
-    List<String> models = prefs.getStringList('gemini_models_list') ?? [];
-    if (models.isEmpty) {
-      final oldModel = prefs.getString('gemini_model') ?? 'gemini-1.5-flash';
-      models = [oldModel];
-    }
-    return models;
-  }
-
   /// Reads an ordered list of preferred models for one slot. Falls back to
   /// the legacy single-string key when the new list key is empty so older
   /// installs keep working without migration. The returned list is never
@@ -206,14 +196,7 @@ class AiService {
     required int chapter1AbsolutePage,
   }) async {
     final keys = await _getKeys();
-    final liteModels = await _getLiteModels();
-    final fallbackModels = await _getModels();
-    // Try each preferred lite model in user order, then any extra fallback
-    // models the user added in the generic models list (without duplicates).
-    final List<String> modelsToTry = [
-      ...liteModels,
-      ...fallbackModels.where((m) => !liteModels.contains(m)),
-    ];
+    final modelsToTry = await _getLiteModels();
 
     final hydratedPrompt = PromptService.skeleton
         .replaceAll('%filename%', filename)
@@ -255,18 +238,8 @@ class AiService {
 
   Future<Unit> generateUnitContent(Unit unit, Book bookContext, Function(String) onProgress, {String? sectionPdfPath}) async {
     final keys = await _getKeys();
-    final textModels = await _getPrimaryTextModels();
-    final liteModels = await _getLiteModels();
-    final fallbackModels = await _getModels();
-
-    final List<String> liteModelsToTry = [
-      ...liteModels,
-      ...fallbackModels.where((m) => !liteModels.contains(m)),
-    ];
-    final List<String> textModelsToTry = [
-      ...textModels,
-      ...fallbackModels.where((m) => !textModels.contains(m)),
-    ];
+    final textModelsToTry = await _getPrimaryTextModels();
+    final liteModelsToTry = await _getLiteModels();
 
     // New-flow units share the section\'s PDF chunk; old-flow units have
     // their own pdfPath. Either way, we need a real, on-disk file.
@@ -404,19 +377,13 @@ class AiService {
     if (canvasPrompt.trim().isEmpty) return null;
 
     final keys = await _getKeys();
-    final graphicsModels = await _getPrimaryGraphicsModels();
-    final fallbackModels = await _getModels();
+    final modelsToTry = await _getPrimaryGraphicsModels();
     // Cap context to keep prompts small — the SVG diagram doesn\'t need the
     // entire lesson, only a few sentences for tone matching.
     final trimmedContext = contextText.length > 800 ? contextText.substring(0, 800) : contextText;
     final hydrated = PromptService.canvasArt
         .replaceAll('%canvas_prompt%', canvasPrompt.trim())
         .replaceAll('%lesson_context%', trimmedContext);
-
-    final List<String> modelsToTry = [
-      ...graphicsModels,
-      ...fallbackModels.where((m) => !graphicsModels.contains(m)),
-    ];
 
     Object? lastErr;
     for (final modelName in modelsToTry) {
@@ -509,12 +476,7 @@ class AiService {
     }
 
     final keys = await _getKeys();
-    final liteModels = await _getLiteModels();
-    final fallbackModels = await _getModels();
-    final List<String> modelsToTry = [
-      ...liteModels,
-      ...fallbackModels.where((m) => !liteModels.contains(m)),
-    ];
+    final modelsToTry = await _getLiteModels();
 
     // Build the catalog the AI picks `formatId` from. Each entry is one
     // line: "- <id> :: <name> — <one-line summary>".
@@ -663,12 +625,7 @@ class AiService {
 
   Future<QuestionPaper> generateQuestionPaper(List<File> files, String qpTitle, String? systemPrompt) async {
     final keys = await _getKeys();
-    final textModels = await _getPrimaryTextModels();
-    final fallbackModels = await _getModels();
-    final List<String> modelsToTry = [
-      ...textModels,
-      ...fallbackModels.where((m) => !textModels.contains(m)),
-    ];
+    final modelsToTry = await _getPrimaryTextModels();
 
     final hydratedPrompt = PromptService.qpJson
         .replaceAll('%system_prompt%', systemPrompt ?? "You are an expert tutor.");

@@ -23,6 +23,20 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   GlobalState.xpNotifier.value = prefs.getInt('user_xp') ?? 0;
 
+  // One-time cleanup: older builds auto-saved `gemini-1.5-flash` into the
+  // generic models list / legacy scalar key whenever settings opened with
+  // nothing configured. That model is no longer routable on the Gemini
+  // API, so it kept poisoning every fallback ladder and surfaced as
+  // "model not found" errors mid-generation. Strip it on startup.
+  final legacyModels = prefs.getStringList('gemini_models_list') ?? const [];
+  if (legacyModels.contains('gemini-1.5-flash')) {
+    final cleaned = legacyModels.where((m) => m != 'gemini-1.5-flash').toList();
+    await prefs.setStringList('gemini_models_list', cleaned);
+  }
+  if (prefs.getString('gemini_model') == 'gemini-1.5-flash') {
+    await prefs.remove('gemini_model');
+  }
+
   runApp(const DuoFyApp());
 }
 
