@@ -297,13 +297,25 @@ class Section {
   final String description;
   final String color;
   final List<Unit> units;
+  // New-flow fields: when a section is generated from a TOC-only skeleton,
+  // the section itself owns the PDF chunk and page range, and `units` starts
+  // empty until a lazy unit-manifest call fills it. Old books leave these
+  // null and continue to use per-unit pdfPath.
+  final int? startPage;
+  final int? endPage;
+  final String? pdfPath;
+  final bool unitsGenerated;
 
   Section({
-    required this.id, 
-    required this.title, 
-    required this.description, 
-    required this.color, 
-    required this.units
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.color,
+    required this.units,
+    this.startPage,
+    this.endPage,
+    this.pdfPath,
+    this.unitsGenerated = false,
   });
 
   factory Section.fromJson(Map<String, dynamic> json) {
@@ -313,6 +325,10 @@ class Section {
       description: _str(json['description']),
       color: _str(json['color'], 'duo-blue'),
       units: (json['units'] as List?)?.map((u) => Unit.fromJson(u is Map ? Map<String, dynamic>.from(u) : {})).toList() ?? [],
+      startPage: json['startPage'] is num ? (json['startPage'] as num).toInt() : int.tryParse(_str(json['startPage'])),
+      endPage: json['endPage'] is num ? (json['endPage'] as num).toInt() : int.tryParse(_str(json['endPage'])),
+      pdfPath: _strOpt(json['pdfPath']),
+      unitsGenerated: _bool(json['unitsGenerated'], false),
     );
   }
 
@@ -322,7 +338,20 @@ class Section {
     'description': description,
     'color': color,
     'units': units.map((u) => u.toJson()).toList(),
+    if (startPage != null) 'startPage': startPage,
+    if (endPage != null) 'endPage': endPage,
+    if (pdfPath != null) 'pdfPath': pdfPath,
+    if (unitsGenerated) 'unitsGenerated': unitsGenerated,
   };
+
+  /// True for skeletons that carry their own page-range and PDF chunk and
+  /// expect a lazy unit-manifest pass before lessons can be generated.
+  bool get isLazySection => pdfPath != null || startPage != null;
+
+  /// Whether the unit list still needs to be produced by the AI. Old-flow
+  /// books always return false here because their units are baked in at
+  /// skeleton time.
+  bool get needsUnitManifest => isLazySection && !unitsGenerated;
 
   Section copyWith({
     String? id,
@@ -330,6 +359,10 @@ class Section {
     String? description,
     String? color,
     List<Unit>? units,
+    int? startPage,
+    int? endPage,
+    String? pdfPath,
+    bool? unitsGenerated,
   }) {
     return Section(
       id: id ?? this.id,
@@ -337,6 +370,10 @@ class Section {
       description: description ?? this.description,
       color: color ?? this.color,
       units: units ?? this.units,
+      startPage: startPage ?? this.startPage,
+      endPage: endPage ?? this.endPage,
+      pdfPath: pdfPath ?? this.pdfPath,
+      unitsGenerated: unitsGenerated ?? this.unitsGenerated,
     );
   }
 }
@@ -1547,16 +1584,30 @@ class AiService {
     return parts;
   }
 
-  Future<Book?> generateBookSkeleton(List<File> inputFiles, String filename) async {
+  /// Generates the course skeleton from a TOC-only PDF.
+  ///
+  /// [indexFiles] is the cropped index/TOC PDF (typically a few pages cut
+  /// out of the full source PDF by [PdfService.extractPages]).
+  /// [chapter1AbsolutePage] is the ABSOLUTE PDF page number (1-based) where
+  /// Chapter 1 actually starts in the original full source PDF. We pass it
+  /// through to the prompt so the AI offsets every TOC page number into
+  /// absolute coordinates.
+  Future<Book?> generateBookSkeleton(
+    List<File> indexFiles,
+    String filename, {
+    required int chapter1AbsolutePage,
+  }) async {
     final keys = await _getKeys();
     final liteModel = await _getLiteModel();
     final fallbackModels = await _getModels();
     final List<String> modelsToTry = [liteModel, ...fallbackModels.where((m) => m != liteModel)];
 
-    final hydratedPrompt = PromptService.skeleton.replaceAll('%filename%', filename);
+    final hydratedPrompt = PromptService.skeleton
+        .replaceAll('%filename%', filename)
+        .replaceAll('%chapter1_abs_page%', '$chapter1AbsolutePage');
 
     List<Part> parts = [TextPart(hydratedPrompt)];
-    parts.addAll(await _buildFileParts(inputFiles));
+    parts.addAll(await _buildFileParts(indexFiles));
 
     Exception? lastException;
     
@@ -1589,7 +1640,7 @@ class AiService {
     throw lastException ?? Exception('Failed to generate skeleton. All models/keys exhausted.');
   }
 
-  Future<Unit> generateUnitContent(Unit unit, Book bookContext, Function(String) onProgress) async {
+  Future<Unit> generateUnitContent(Unit unit, Book bookContext, Function(String) onProgress, {String? sectionPdfPath}) async {
     final keys = await _getKeys();
     final textModel = await _getPrimaryTextModel();
     final liteModel = await _getLiteModel();
@@ -1598,8 +1649,11 @@ class AiService {
     final List<String> liteModelsToTry = [liteModel, ...fallbackModels.where((m) => m != liteModel)];
     final List<String> textModelsToTry = [textModel, ...fallbackModels.where((m) => m != textModel)];
 
-    if (unit.pdfPath == null) throw Exception("No PDF/Image chunk available for this unit.");
-    final chunkFile = File(unit.pdfPath!);
+    // New-flow units share the section\'s PDF chunk; old-flow units have
+    // their own pdfPath. Either way, we need a real, on-disk file.
+    final String? chunkPath = unit.pdfPath ?? sectionPdfPath;
+    if (chunkPath == null) throw Exception("No PDF/Image chunk available for this unit.");
+    final chunkFile = File(chunkPath);
     if (!chunkFile.existsSync()) {
       throw Exception("Local file missing. Tap 'Restore' on the warning banner to re-link source files.");
     }
@@ -1706,6 +1760,85 @@ class AiService {
       }
     }
     throw lastException ?? Exception('Failed to generate unit content. All models/keys exhausted.');
+  }
+
+  /// Asks the AI to break a section\'s PDF chunk into a list of units
+  /// (manifest only — no slides). Used by the new TOC-only flow the first
+  /// time a section is opened. Returns units with empty `lessons` and
+  /// `isGenerated == false`, so the existing per-unit lesson generation
+  /// path continues to work unchanged.
+  Future<List<Unit>> generateUnitManifest(Section section, Book bookContext) async {
+    if (section.pdfPath == null) {
+      throw Exception('Section has no PDF chunk — cannot generate unit manifest.');
+    }
+    final chunkFile = File(section.pdfPath!);
+    if (!chunkFile.existsSync()) {
+      throw Exception("Local file missing. Tap 'Restore' on the warning banner to re-link source files.");
+    }
+
+    final keys = await _getKeys();
+    final liteModel = await _getLiteModel();
+    final fallbackModels = await _getModels();
+    final List<String> modelsToTry = [liteModel, ...fallbackModels.where((m) => m != liteModel)];
+
+    final hydratedPrompt = PromptService.unitManifest
+        .replaceAll('%section_title%', section.title)
+        .replaceAll('%section_description%', section.description);
+
+    final parts = <Part>[TextPart(hydratedPrompt), ...await _buildFileParts([chunkFile])];
+
+    Exception? lastException;
+    for (final modelName in modelsToTry) {
+      for (final apiKey in keys) {
+        try {
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: apiKey,
+            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+          );
+          final response = await _retryTransient(
+            () => model.generateContent([Content.multi(parts)])
+                .timeout(const Duration(minutes: 3)),
+            onRetry: (a, e) => print('[AiService] Unit manifest transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+          );
+
+          final text = response.text;
+          if (text == null || text.trim().isEmpty) {
+            throw Exception('Empty response from unit manifest call.');
+          }
+          final jsonMap = _cleanAndDecodeJson(text);
+          final unitsData = jsonMap['units'] as List?;
+          if (unitsData == null || unitsData.isEmpty) {
+            throw Exception('Unit manifest contained no units.');
+          }
+
+          final units = <Unit>[];
+          for (var i = 0; i < unitsData.length; i++) {
+            final raw = unitsData[i];
+            if (raw is! Map) continue;
+            final base = Unit.fromJson(Map<String, dynamic>.from(raw));
+            final id = base.id.isNotEmpty ? base.id : 'u${i + 1}';
+            units.add(base.copyWith(
+              id: '${section.id}-$id',
+              isGenerated: false,
+              lessons: const [],
+              // The unit shares the section\'s PDF chunk — it does not get
+              // its own pdfPath or page range.
+              pdfPath: null,
+              startPage: null,
+              endPage: null,
+            ));
+          }
+          if (units.isEmpty) throw Exception('Unit manifest had no usable entries.');
+          return units;
+        } on TimeoutException {
+          lastException = Exception('Unit manifest request timed out ($modelName).');
+        } catch (e) {
+          lastException = Exception('Unit manifest failed ($modelName): ${_cleanErrMsg(e)}');
+        }
+      }
+    }
+    throw lastException ?? Exception('Failed to generate unit manifest. All models/keys exhausted.');
   }
 
   /// Per-lesson generation used for Gemma models. Builds [Lesson]s one by one
@@ -2325,102 +2458,6 @@ class MathMarkdown extends StatelessWidget {
         .replaceAll(r'\\pi', r'\pi');
   }
 
-  String _manualTextWrap(String rawData, double maxRowWidth, TextStyle baseStyle) {
-    if (maxRowWidth <= 100.0) return rawData;
-
-    final lines = rawData.split('\n');
-    final wrappedLines = <String>[];
-
-    for (var line in lines) {
-      if (line.trim().isEmpty) {
-        wrappedLines.add(line);
-        continue;
-      }
-
-      // Check if this line contains LaTeX or blank input
-      if (!line.contains(r'$') && !line.contains('___')) {
-        wrappedLines.add(line);
-        continue;
-      }
-
-      // Tokenize the line into math blocks ($...$ or $$...$$), words, or spaces.
-      final regex = RegExp(r'(\$\$.*?\$\$)|(\$.*?\$)|([^\s$]+)|(\s+)', dotAll: true);
-      final matches = regex.allMatches(line);
-
-      final tokens = <String>[];
-      for (final match in matches) {
-        final token = match.group(0);
-        if (token != null) {
-          tokens.add(token);
-        }
-      }
-
-      final currentLineBuffer = StringBuffer();
-      double currentLineWidth = 0.0;
-
-      for (var token in tokens) {
-        if (RegExp(r'^\s+$').hasMatch(token)) {
-          if (currentLineBuffer.isEmpty) continue; // Skip leading spaces on wrapped line
-          
-          final spaceWidth = _measureTokenWidth(token, baseStyle);
-          currentLineWidth += spaceWidth;
-          currentLineBuffer.write(token);
-          continue;
-        }
-
-        final tokenWidth = _measureTokenWidth(token, baseStyle);
-
-        if (currentLineWidth + tokenWidth > maxRowWidth && currentLineBuffer.isNotEmpty) {
-          wrappedLines.add(currentLineBuffer.toString().trimRight());
-          currentLineBuffer.clear();
-          currentLineWidth = 0.0;
-        }
-
-        currentLineBuffer.write(token);
-        currentLineWidth += tokenWidth;
-      }
-
-      if (currentLineBuffer.isNotEmpty) {
-        wrappedLines.add(currentLineBuffer.toString().trimRight());
-      }
-    }
-
-    final result = StringBuffer();
-    for (int i = 0; i < wrappedLines.length; i++) {
-      result.write(wrappedLines[i]);
-      if (i < wrappedLines.length - 1) {
-        if (wrappedLines[i].isEmpty || wrappedLines[i + 1].isEmpty) {
-          result.write('\n'); // Plain newline for paragraph transitions
-        } else {
-          result.write('  \n'); // Hard line break for wrapped segments
-        }
-      }
-    }
-    return result.toString();
-  }
-
-  double _measureTokenWidth(String token, TextStyle style) {
-    if (token.startsWith(r'$') && token.endsWith(r'$')) {
-      // Stripping common LaTeX math commands to get a more accurate character count estimation
-      String plain = token.replaceAll(RegExp(r'\$[dD]isplaystyle'), '');
-      plain = plain.replaceAll(RegExp(r'\\[a-zA-Z]+'), 'x'); // Replace commands with 'x'
-      plain = plain.replaceAll(RegExp(r'[{}]'), ''); // Remove braces
-      plain = plain.replaceAll(r'$', ''); // Remove $ delimiters
-      
-      final tp = TextPainter(
-        text: TextSpan(text: plain, style: style),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      return tp.width;
-    } else {
-      final tp = TextPainter(
-        text: TextSpan(text: token, style: style),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      return tp.width;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final baseStyle = textStyle ??
@@ -2434,7 +2471,6 @@ class MathMarkdown extends StatelessWidget {
 
     final mathStyle = baseStyle.copyWith(color: Colors.white);
 
-    // Build the inline syntaxes list.
     final inlineSyntaxes = <md.InlineSyntax>[
       LatexInlineSyntax(),
       if (blankController != null) _BlankSyntax(),
@@ -2442,7 +2478,6 @@ class MathMarkdown extends StatelessWidget {
       ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes,
     ];
 
-    // Build the element builders map.
     final builders = <String, MarkdownElementBuilder>{
       'latex': _MathBuilder(textStyle: mathStyle),
       if (blankController != null)
@@ -2455,58 +2490,42 @@ class MathMarkdown extends StatelessWidget {
       if (customBuilders != null) ...customBuilders!,
     };
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        double maxRowWidth = constraints.maxWidth;
-        double screenWidth = 360.0;
-        try {
-          screenWidth = MediaQuery.of(context).size.width;
-        } catch (_) {}
-
-        if (maxRowWidth.isInfinite || maxRowWidth < 250.0) {
-          maxRowWidth = screenWidth - 48.0;
-        }
-
-        final safeData = _manualTextWrap(_sanitize(data), maxRowWidth, baseStyle);
-
-        return MarkdownBody(
-          data: safeData,
-          selectable: selectable,
-          softLineBreak: false,
-          styleSheet: MarkdownStyleSheet(
-            p: baseStyle,
-            textAlign: wrapAlign,
-            h1: baseStyle.copyWith(fontSize: (baseStyle.fontSize ?? 16) * 1.6, fontWeight: FontWeight.w900),
-            h2: baseStyle.copyWith(fontSize: (baseStyle.fontSize ?? 16) * 1.4, fontWeight: FontWeight.w800),
-            h3: baseStyle.copyWith(fontSize: (baseStyle.fontSize ?? 16) * 1.2, fontWeight: FontWeight.w700),
-            strong: baseStyle.copyWith(fontWeight: FontWeight.w900),
-            em: baseStyle.copyWith(fontStyle: FontStyle.italic),
-            code: baseStyle.copyWith(
-              fontFamily: 'monospace',
-              fontSize: (baseStyle.fontSize ?? 16) * 0.92,
-              backgroundColor: Colors.white.withValues(alpha: 0.08),
-            ),
-            codeblockDecoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            blockquoteDecoration: BoxDecoration(
-              border: Border(left: BorderSide(color: Colors.white.withValues(alpha: 0.25), width: 3)),
-            ),
-            blockquote: baseStyle.copyWith(color: Colors.white.withValues(alpha: 0.85)),
-            listBullet: baseStyle,
-            tableBody: baseStyle,
-            tableHead: baseStyle.copyWith(fontWeight: FontWeight.w800),
-            tableBorder: TableBorder.all(color: Colors.white.withValues(alpha: 0.15)),
-            tableHeadAlign: TextAlign.left,
-          ),
-          builders: builders,
-          extensionSet: md.ExtensionSet(
-            [LatexBlockSyntax(), ...md.ExtensionSet.gitHubFlavored.blockSyntaxes],
-            inlineSyntaxes,
-          ),
-        );
-      },
+    return MarkdownBody(
+      data: _sanitize(data),
+      selectable: selectable,
+      softLineBreak: false,
+      styleSheet: MarkdownStyleSheet(
+        p: baseStyle,
+        textAlign: wrapAlign,
+        h1: baseStyle.copyWith(fontSize: (baseStyle.fontSize ?? 16) * 1.6, fontWeight: FontWeight.w900),
+        h2: baseStyle.copyWith(fontSize: (baseStyle.fontSize ?? 16) * 1.4, fontWeight: FontWeight.w800),
+        h3: baseStyle.copyWith(fontSize: (baseStyle.fontSize ?? 16) * 1.2, fontWeight: FontWeight.w700),
+        strong: baseStyle.copyWith(fontWeight: FontWeight.w900),
+        em: baseStyle.copyWith(fontStyle: FontStyle.italic),
+        code: baseStyle.copyWith(
+          fontFamily: 'monospace',
+          fontSize: (baseStyle.fontSize ?? 16) * 0.92,
+          backgroundColor: Colors.white.withValues(alpha: 0.08),
+        ),
+        codeblockDecoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        blockquoteDecoration: BoxDecoration(
+          border: Border(left: BorderSide(color: Colors.white.withValues(alpha: 0.25), width: 3)),
+        ),
+        blockquote: baseStyle.copyWith(color: Colors.white.withValues(alpha: 0.85)),
+        listBullet: baseStyle,
+        tableBody: baseStyle,
+        tableHead: baseStyle.copyWith(fontWeight: FontWeight.w800),
+        tableBorder: TableBorder.all(color: Colors.white.withValues(alpha: 0.15)),
+        tableHeadAlign: TextAlign.left,
+      ),
+      builders: builders,
+      extensionSet: md.ExtensionSet(
+        [LatexBlockSyntax(), ...md.ExtensionSet.gitHubFlavored.blockSyntaxes],
+        inlineSyntaxes,
+      ),
     );
   }
 }
@@ -2530,26 +2549,38 @@ class _MathBuilder extends MarkdownElementBuilder {
 
     final isDisplay = element.attributes['MathStyle'] == 'display';
     final mathStyle = isDisplay ? MathStyle.display : MathStyle.text;
+    final effectiveStyle = textStyle ?? parentStyle ?? preferredStyle;
 
     final math = Math.tex(
       text,
-      textStyle: textStyle,
+      textStyle: effectiveStyle,
       mathStyle: mathStyle,
       onErrorFallback: (err) {
-        // Just render as normal text to prevent layout breaking
         final String fallbackText = isDisplay ? '\$\$$text\$\$' : '\$$text\$';
-        return Text(
-          fallbackText,
-          style: textStyle,
-        );
+        return Text(fallbackText, style: effectiveStyle);
       },
     );
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      clipBehavior: Clip.antiAlias,
-      child: math,
+    if (isDisplay) {
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        clipBehavior: Clip.antiAlias,
+        child: math,
+      );
+    }
+
+    // Inline math: embed via WidgetSpan with baseline alignment so the math
+    // sits on the surrounding text's alphabetic baseline, and flutter_markdown
+    // merges this Text widget into the same span run as adjacent text (no
+    // extra padding, no forced line break).
+    return Text.rich(
+      WidgetSpan(
+        alignment: PlaceholderAlignment.baseline,
+        baseline: TextBaseline.alphabetic,
+        child: math,
+      ),
+      style: effectiveStyle,
     );
   }
 }
@@ -2782,26 +2813,38 @@ class GenerationManager extends ChangeNotifier {
     return sum ~/ history.length;
   }
 
-  Future<void> startBookGeneration(List<File> inputFiles, String filename) async {
-    inputFiles = inputFiles.toList();
+  /// Starts the new TOC-only book generation flow.
+  ///
+  /// [sourceFiles] is the full original PDF/images (kept for the later
+  /// chunking step). [indexFiles] is the trimmed index/TOC PDF the AI sees
+  /// during skeleton generation. [chapter1AbsolutePage] is the absolute PDF
+  /// page number where Chapter 1 starts in [sourceFiles], used for offset
+  /// correction in the prompt.
+  Future<void> startBookGeneration(
+    List<File> sourceFiles,
+    String filename, {
+    required List<File> indexFiles,
+    required int chapter1AbsolutePage,
+  }) async {
+    sourceFiles = sourceFiles.toList();
     final taskId = DateTime.now().millisecondsSinceEpoch.toString();
     final notifId = taskId.hashCode;
-    
+
     double totalSize = 0;
-    for (var f in inputFiles) { totalSize += await f.length(); }
+    for (var f in sourceFiles) { totalSize += await f.length(); }
 
     final uploadSecs = (totalSize / 500000).ceil();
-    final avgAiMs = await _getAverageRunTime('meta_gen_history', 120000); 
+    final avgAiMs = await _getAverageRunTime('meta_gen_history', 120000);
     final estimatedDuration = Duration(seconds: uploadSecs, milliseconds: avgAiMs);
 
     final task = GenerationTask(
       id: taskId,
       title: filename,
-      sourceFiles: inputFiles,
+      sourceFiles: sourceFiles,
       startTime: DateTime.now(),
       estimatedDuration: estimatedDuration,
     );
-    
+
     activeTasks.add(task);
     notifyListeners();
 
@@ -2809,7 +2852,11 @@ class GenerationManager extends ChangeNotifier {
 
     try {
       final stopwatch = Stopwatch()..start();
-      final skeletonBook = await _aiService.generateBookSkeleton(inputFiles, filename);
+      final skeletonBook = await _aiService.generateBookSkeleton(
+        indexFiles,
+        filename,
+        chapter1AbsolutePage: chapter1AbsolutePage,
+      );
       stopwatch.stop();
 
       await _recordRunTime('meta_gen_history', stopwatch.elapsedMilliseconds);
@@ -2935,8 +2982,8 @@ class GenerationManager extends ChangeNotifier {
 
   Future<void> startUnitGeneration(Unit unit, Book book, int modIdx, int secIdx, int unitIdx) async {
     if (activeUnitGenerations.containsKey(unit.id)) return;
-    
-    final avgUnitMs = await _getAverageRunTime('unit_gen_history', 90000); 
+
+    final avgUnitMs = await _getAverageRunTime('unit_gen_history', 90000);
     final notifId = unit.id.hashCode;
 
     activeUnitGenerations[unit.id] = UnitGenTask(
@@ -2947,13 +2994,21 @@ class GenerationManager extends ChangeNotifier {
     notifyListeners();
 
     await NotificationService.showProgress(notifId, "Generating Lesson", "AI is crafting content...", indeterminate: true);
-    
+
     try {
       final stopwatch = Stopwatch()..start();
-      final updatedUnit = await _aiService.generateUnitContent(unit, book, (status) {
-        activeUnitGenerations[unit.id]?.status = status;
-        notifyListeners();
-      });
+      // New-flow units share the section\'s PDF chunk. Pass it through so the
+      // AI call can still hit a real on-disk file.
+      final String? sectionPdfPath = book.modules[modIdx].sections[secIdx].pdfPath;
+      final updatedUnit = await _aiService.generateUnitContent(
+        unit,
+        book,
+        (status) {
+          activeUnitGenerations[unit.id]?.status = status;
+          notifyListeners();
+        },
+        sectionPdfPath: sectionPdfPath,
+      );
       stopwatch.stop();
       await _recordRunTime('unit_gen_history', stopwatch.elapsedMilliseconds);
 
@@ -2988,6 +3043,61 @@ class GenerationManager extends ChangeNotifier {
 
       await NotificationService.cancel(notifId);
       await NotificationService.showActionable(notifId, "Generation Failed", "Failed to generate lesson.", "error");
+    }
+  }
+
+  /// Tracks in-flight unit-manifest generations. Keyed by section id so the
+  /// UI can show a loading state on the right section card.
+  final Map<String, UnitGenTask> activeSectionManifests = {};
+
+  /// Lazily generates the unit list for a section in a new-flow book.
+  /// Idempotent: if the section already has units or a manifest is already
+  /// in flight, this is a no-op. Persists the populated section back to the
+  /// DB and emits a book update on success.
+  Future<void> startSectionUnitManifest(Book book, int modIdx, int secIdx) async {
+    final section = book.modules[modIdx].sections[secIdx];
+    if (!section.needsUnitManifest) return;
+    if (activeSectionManifests.containsKey(section.id)) return;
+
+    final notifId = section.id.hashCode;
+    activeSectionManifests[section.id] = UnitGenTask(
+      status: 'Planning units for "${section.title}"...',
+      estimatedDuration: const Duration(seconds: 30),
+      startTime: DateTime.now(),
+    );
+    notifyListeners();
+    await NotificationService.showProgress(notifId, 'Planning section', 'Generating unit list...', indeterminate: true);
+
+    try {
+      final units = await _aiService.generateUnitManifest(section, book);
+
+      // Re-read freshest book so concurrent edits don\'t clobber.
+      final baseBook = (await _dbService.getBookFromCache(book.id)) ?? book;
+      final modules = List<Module>.from(baseBook.modules);
+      final sections = List<Section>.from(modules[modIdx].sections);
+      sections[secIdx] = sections[secIdx].copyWith(units: units, unitsGenerated: true);
+      modules[modIdx] = modules[modIdx].copyWith(sections: sections);
+      final newBook = baseBook.copyWith(modules: modules);
+
+      await _dbService.saveGeneratedBook(newBook);
+      activeSectionManifests.remove(section.id);
+      notifyListeners();
+      _bookUpdateController.add(newBook);
+
+      await NotificationService.cancel(notifId);
+    } catch (e) {
+      activeSectionManifests[section.id]?.isError = true;
+      activeSectionManifests[section.id]?.status = 'Error: ${e.toString()}';
+      notifyListeners();
+      await NotificationService.cancel(notifId);
+      await NotificationService.showActionable(notifId, 'Section Planning Failed', 'Could not generate units.', 'error');
+    }
+  }
+
+  void clearSectionManifestError(String sectionId) {
+    if (activeSectionManifests[sectionId]?.isError == true) {
+      activeSectionManifests.remove(sectionId);
+      notifyListeners();
     }
   }
 
