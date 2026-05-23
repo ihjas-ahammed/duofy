@@ -4,24 +4,166 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../utils/progress_utils.dart';
 
+/// Maps a string icon identifier (e.g. coming from AI-generated lesson JSON)
+/// to a concrete [IconData]. Falls back to [LucideIcons.bookOpen] when the
+/// name is missing or unknown. Accepts kebab-case, snake_case, PascalCase
+/// and camelCase variants by normalising first.
 IconData getIconData(String? iconName) {
-  switch (iconName) {
-    case 'book-open':
-    case 'BookOpen':
-      return LucideIcons.bookOpen;
-    case 'star':
-    case 'Star':
-      return LucideIcons.star;
-    case 'zap':
-    case 'Zap':
-      return LucideIcons.zap;
-    case 'flask-conical':
-    case 'FlaskConical':
-      return LucideIcons.flaskConical;
-    default:
-      return LucideIcons.bookOpen;
-  }
+  if (iconName == null || iconName.trim().isEmpty) return LucideIcons.bookOpen;
+  // Normalise: lowercase, strip non-letters so 'Book-Open', 'book_open',
+  // 'BookOpen' and 'bookOpen' all collapse to 'bookopen'.
+  final key = iconName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+  return _lessonIcons[key] ?? LucideIcons.bookOpen;
 }
+
+/// Canonical icon vocabulary the AI is allowed to choose from. The keys are
+/// the normalised forms produced by [getIconData]; the [lessonIconChoices]
+/// list below is the human-readable version used in prompts.
+final Map<String, IconData> _lessonIcons = {
+  // Books / general study
+  'book': LucideIcons.book,
+  'bookopen': LucideIcons.bookOpen,
+  'bookmark': LucideIcons.bookmark,
+  'filetext': LucideIcons.fileText,
+  'scroll': LucideIcons.scroll,
+  'clipboard': LucideIcons.clipboard,
+  'pencil': LucideIcons.pencil,
+  'feather': LucideIcons.feather,
+  'graduationcap': LucideIcons.graduationCap,
+  'lightbulb': LucideIcons.lightbulb,
+  'brain': LucideIcons.brain,
+  'sparkles': LucideIcons.sparkles,
+  'star': LucideIcons.star,
+  'trophy': LucideIcons.trophy,
+  'medal': LucideIcons.medal,
+  'award': LucideIcons.award,
+  'target': LucideIcons.target,
+  'crown': LucideIcons.crown,
+  'gem': LucideIcons.gem,
+  'wand': LucideIcons.wand,
+  'puzzle': LucideIcons.puzzle,
+  // Maths
+  'calculator': LucideIcons.calculator,
+  'function': LucideIcons.functionSquare,
+  'functionsquare': LucideIcons.functionSquare,
+  'variable': LucideIcons.variable,
+  'infinity': LucideIcons.infinity,
+  'sigma': LucideIcons.sigma,
+  'pi': LucideIcons.pi,
+  'percent': LucideIcons.percent,
+  'plus': LucideIcons.plus,
+  'minus': LucideIcons.minus,
+  'divide': LucideIcons.divide,
+  'equal': LucideIcons.equal,
+  'hash': LucideIcons.hash,
+  'piechart': LucideIcons.pieChart,
+  'barchart': LucideIcons.barChart,
+  'linechart': LucideIcons.lineChart,
+  'trendingup': LucideIcons.trendingUp,
+  // Physical sciences
+  'atom': LucideIcons.atom,
+  'orbit': LucideIcons.orbit,
+  'rocket': LucideIcons.rocket,
+  'magnet': LucideIcons.magnet,
+  'zap': LucideIcons.zap,
+  'flame': LucideIcons.flame,
+  'thermometer': LucideIcons.thermometer,
+  'flask': LucideIcons.flaskConical,
+  'flaskconical': LucideIcons.flaskConical,
+  'flaskround': LucideIcons.flaskRound,
+  'beaker': LucideIcons.beaker,
+  'microscope': LucideIcons.microscope,
+  'circuitboard': LucideIcons.circuitBoard,
+  'cpu': LucideIcons.cpu,
+  // Life sciences
+  'dna': LucideIcons.dna,
+  'leaf': LucideIcons.leaf,
+  'sprout': LucideIcons.sprout,
+  'tree': LucideIcons.treeDeciduous,
+  'treedeciduous': LucideIcons.treeDeciduous,
+  'treepine': LucideIcons.treePine,
+  'trees': LucideIcons.trees,
+  'heart': LucideIcons.heart,
+  'eye': LucideIcons.eye,
+  'bone': LucideIcons.bone,
+  'pill': LucideIcons.pill,
+  'stethoscope': LucideIcons.stethoscope,
+  'syringe': LucideIcons.syringe,
+  // Earth / geography
+  'globe': LucideIcons.globe,
+  'map': LucideIcons.map,
+  'sun': LucideIcons.sun,
+  'moon': LucideIcons.moon,
+  'cloud': LucideIcons.cloud,
+  'wind': LucideIcons.wind,
+  'droplets': LucideIcons.droplets,
+  // History / humanities
+  'history': LucideIcons.history,
+  'landmark': LucideIcons.landmark,
+  'swords': LucideIcons.swords,
+  'shield': LucideIcons.shield,
+  'languages': LucideIcons.languages,
+  'messagecircle': LucideIcons.messageCircle,
+  // Tech / engineering
+  'code': LucideIcons.code,
+  'database': LucideIcons.database,
+  'key': LucideIcons.key,
+  'lock': LucideIcons.lock,
+  'wrench': LucideIcons.wrench,
+  'hammer': LucideIcons.hammer,
+  'cog': LucideIcons.cog,
+  // Arts / media
+  'palette': LucideIcons.palette,
+  'paintbrush': LucideIcons.paintbrush,
+  'paintbucket': LucideIcons.paintBucket,
+  'image': LucideIcons.image,
+  'camera': LucideIcons.camera,
+  'video': LucideIcons.video,
+  'film': LucideIcons.film,
+  'music': LucideIcons.music,
+  'mic': LucideIcons.mic,
+  'drum': LucideIcons.drumstick,
+  'drumstick': LucideIcons.drumstick,
+  'radio': LucideIcons.radio,
+  // Misc real-world
+  'building': LucideIcons.building,
+  'home': LucideIcons.home,
+  'car': LucideIcons.car,
+  'plane': LucideIcons.plane,
+  'ship': LucideIcons.ship,
+  'cake': LucideIcons.cake,
+  'coffee': LucideIcons.coffee,
+  'utensils': LucideIcons.utensils,
+  'dice': LucideIcons.dices,
+  'dices': LucideIcons.dices,
+  'gamepad': LucideIcons.gamepad,
+  'users': LucideIcons.users,
+  'user': LucideIcons.user,
+};
+
+/// Human-readable list of icon names the AI is allowed to choose from. Kept
+/// in sync with [_lessonIcons]. Surface this in prompts so the model picks
+/// from the supported vocabulary.
+const List<String> lessonIconChoices = [
+  'book', 'book-open', 'bookmark', 'file-text', 'scroll',
+  'clipboard', 'pencil', 'feather', 'graduation-cap', 'lightbulb', 'brain',
+  'sparkles', 'star', 'trophy', 'medal', 'award', 'target', 'crown', 'gem',
+  'wand', 'puzzle',
+  'calculator', 'function', 'variable', 'infinity', 'sigma', 'pi', 'percent',
+  'plus', 'minus', 'divide', 'equal', 'hash', 'pie-chart', 'bar-chart',
+  'line-chart', 'trending-up',
+  'atom', 'orbit', 'rocket', 'magnet', 'zap', 'flame',
+  'thermometer', 'flask', 'beaker', 'microscope', 'circuit-board', 'cpu',
+  'dna', 'leaf', 'sprout', 'tree', 'trees', 'heart', 'eye', 'bone', 'pill',
+  'stethoscope', 'syringe',
+  'globe', 'map', 'sun', 'moon', 'cloud', 'wind', 'droplets',
+  'history', 'landmark', 'swords', 'shield', 'languages', 'message-circle',
+  'code', 'database', 'key', 'lock', 'wrench', 'hammer', 'cog',
+  'palette', 'paintbrush', 'paint-bucket', 'image', 'camera', 'video',
+  'film', 'music', 'mic', 'drum', 'radio',
+  'building', 'home', 'car', 'plane', 'ship', 'cake', 'coffee', 'utensils',
+  'dice', 'gamepad', 'users', 'user',
+];
 
 class NextNodePop extends StatefulWidget {
   final Widget child;

@@ -237,32 +237,13 @@ class _LessonScreenState extends State<LessonScreen> {
                              if (line.isEmpty) {
                                return const SizedBox(height: 8);
                              }
-                             final hasMath = line.contains(r'$') ||
-                                 line.contains(r'\[') ||
-                                 line.contains(r'\]') ||
-                                 line.contains(r'\(') ||
-                                 line.contains(r'\)');
-                             if (hasMath) {
-                               return Padding(
-                                 padding: const EdgeInsets.symmetric(vertical: 4.0),
-                                 child: SingleChildScrollView(
-                                   scrollDirection: Axis.horizontal,
-                                   physics: const BouncingScrollPhysics(),
-                                   child: MathMarkdown(
-                                     data: line,
-                                     textStyle: const TextStyle(fontSize: 16, color: Colors.white),
-                                   ),
-                                 ),
-                               );
-                             } else {
-                               return Padding(
-                                 padding: const EdgeInsets.symmetric(vertical: 4.0),
-                                 child: MathMarkdown(
-                                   data: line,
-                                   textStyle: const TextStyle(fontSize: 16, color: Colors.white),
-                                 ),
-                               );
-                             }
+                             return Padding(
+                               padding: const EdgeInsets.symmetric(vertical: 4.0),
+                               child: MathMarkdown(
+                                 data: line,
+                                 textStyle: const TextStyle(fontSize: 16, color: Colors.white),
+                               ),
+                             );
                            }).toList(),
                          );
                        }

@@ -56,7 +56,6 @@ class MathMarkdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final safeData = _sanitize(data);
     final baseStyle = textStyle ??
         const TextStyle(fontSize: 16, color: Colors.white, height: 1.5, fontWeight: FontWeight.w600);
 
@@ -68,7 +67,6 @@ class MathMarkdown extends StatelessWidget {
 
     final mathStyle = baseStyle.copyWith(color: Colors.white);
 
-    // Build the inline syntaxes list.
     final inlineSyntaxes = <md.InlineSyntax>[
       LatexInlineSyntax(),
       if (blankController != null) _BlankSyntax(),
@@ -76,7 +74,6 @@ class MathMarkdown extends StatelessWidget {
       ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes,
     ];
 
-    // Build the element builders map.
     final builders = <String, MarkdownElementBuilder>{
       'latex': _MathBuilder(textStyle: mathStyle),
       if (blankController != null)
@@ -90,8 +87,9 @@ class MathMarkdown extends StatelessWidget {
     };
 
     return MarkdownBody(
-      data: safeData,
+      data: _sanitize(data),
       selectable: selectable,
+      softLineBreak: false,
       styleSheet: MarkdownStyleSheet(
         p: baseStyle,
         textAlign: wrapAlign,
@@ -147,30 +145,39 @@ class _MathBuilder extends MarkdownElementBuilder {
 
     final isDisplay = element.attributes['MathStyle'] == 'display';
     final mathStyle = isDisplay ? MathStyle.display : MathStyle.text;
+    final effectiveStyle = textStyle ?? parentStyle ?? preferredStyle;
 
     final math = Math.tex(
       text,
-      textStyle: textStyle,
+      textStyle: effectiveStyle,
       mathStyle: mathStyle,
       onErrorFallback: (err) {
-        // Just render as normal text to prevent layout breaking
         final String fallbackText = isDisplay ? '\$\$$text\$\$' : '\$$text\$';
-        return Text(
-          fallbackText,
-          style: textStyle,
-        );
+        return Text(fallbackText, style: effectiveStyle);
       },
     );
 
     if (isDisplay) {
       return SingleChildScrollView(
         scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
         clipBehavior: Clip.antiAlias,
         child: math,
       );
     }
 
-    return math;
+    // Inline math: embed via WidgetSpan with baseline alignment so the math
+    // sits on the surrounding text's alphabetic baseline, and flutter_markdown
+    // merges this Text widget into the same span run as adjacent text (no
+    // extra padding, no forced line break).
+    return Text.rich(
+      WidgetSpan(
+        alignment: PlaceholderAlignment.baseline,
+        baseline: TextBaseline.alphabetic,
+        child: math,
+      ),
+      style: effectiveStyle,
+    );
   }
 }
 

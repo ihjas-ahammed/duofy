@@ -1,8 +1,18 @@
+import '../widgets/lesson_node.dart' show lessonIconChoices;
+
 /// Hardcoded AI prompts. Custom user prompts are intentionally not supported —
 /// every call uses these defaults verbatim. The only runtime substitutions are
 /// for structural placeholders (`%filename%`, `%unit_title%`, etc.); there is
 /// no `%user_prompt%` or `%user_interests%`.
 class PromptService {
+  /// Comma-separated list of allowed `icon` values for lessons, derived from
+  /// the actual icon vocabulary supported by the renderer. Anything not in
+  /// this list will silently fall back to `book-open` at render time.
+  static final String _iconChoiceList = lessonIconChoices.join(', ');
+
+  static final String _iconRule =
+      'Pick the most thematically appropriate `icon` for each lesson from this exact list (use the kebab-case form): $_iconChoiceList. Examples: a lesson on integration → "sigma" or "function"; on Newton\'s laws → "atom" or "rocket"; on cell biology → "dna" or "microscope"; on World War II → "history" or "swords"; on French vocabulary → "languages". Only use "book-open" when no other icon clearly fits.';
+
   static const String skeleton = '''You are an expert curriculum designer. Analyze the attached document/images to create a high-level course skeleton.
 The user uploaded a file named: "%filename%".
 
@@ -66,7 +76,7 @@ Do not force a slide type if its condition is not met!
 3. NO STORY MODE: never frame content as a story, scenario, anecdote, or narrative ("Imagine you are...", "Sara walks into a shop...", etc.). Present theory and concepts directly and factually.
 ''';
 
-  static const String json = '''SYSTEM PROMPT:
+  static final String json = '''SYSTEM PROMPT:
 %system_prompt%
 
 TASK:
@@ -81,12 +91,13 @@ CRITICAL SCHEMA & MICRO-LEARNING RULES:
 3. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word. Include an array of 3 `blankDistractors` (wrong words) for the user to choose from.
 4. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
 5. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}). Markdown math is wrapped in \$ for inline (must flow inside a sentence) or \$\$ for display blocks. Do NOT put a single short inline equation on its own line — keep it inline with surrounding text.
+6. $_iconRule
 
 YOU MUST RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
 {
   "lessons": [
     {
-      "id": "l1", "title": "Lesson 1", "description": "...", "icon": "BookOpen",
+      "id": "l1", "title": "Lesson 1", "description": "...", "icon": "<one value from the icon list>",
       "slides": [ ... ]
     }
   ]
@@ -94,7 +105,7 @@ YOU MUST RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
 
   /// Used by Gemma path which generates one lesson at a time to keep each
   /// request small and reduce the chance of malformed or truncated JSON output.
-  static const String singleLessonJson = '''SYSTEM PROMPT:
+  static final String singleLessonJson = '''SYSTEM PROMPT:
 %system_prompt%
 
 TASK:
@@ -110,13 +121,14 @@ CRITICAL SCHEMA & MICRO-LEARNING RULES:
 3. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word. Include an array of 3 `blankDistractors` (wrong words) for the user to choose from.
 4. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
 5. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}). Markdown math is wrapped in \$ for inline (must flow inside a sentence) or \$\$ for display blocks. Do NOT put a single short inline equation on its own line — keep it inline with surrounding text.
+6. $_iconRule
 
 RETURN ONLY VALID JSON FOR THIS ONE LESSON (no wrapping array, no other keys):
 {
   "id": "l%lesson_index%",
   "title": "Lesson Title",
   "description": "...",
-  "icon": "BookOpen",
+  "icon": "<one value from the icon list>",
   "slides": [ ... ]
 }''';
 
