@@ -107,7 +107,6 @@ class _LessonPathState extends State<LessonPath> {
       return _UnitFormatConfirmPanel(
         section: widget.section,
         formats: widget.book.lessonFormats,
-        defaultFormatId: widget.book.defaultFormatId,
         sectionColor: color,
         onConfirm: widget.onConfirmFormats,
       );
@@ -445,52 +444,24 @@ class _SectionManifestPanel extends StatelessWidget {
   }
 }
 
-/// Per-unit lesson-format picker shown right after the AI returns the unit
-/// manifest. Each unit row carries a dropdown defaulted to the AI\'s
-/// suggested format (or the book default if none). Tapping Confirm hands
-/// the updated unit list back to the parent, which persists it and flips
-/// [Section.unitFormatsConfirmed] true so lessons become unlocked.
-class _UnitFormatConfirmPanel extends StatefulWidget {
+/// Per-unit confirmation panel shown right after the AI returns the unit
+/// manifest. Lists the units that will be generated, along with a reference
+/// of the available lesson formats. Tapping Confirm unlocks the lessons.
+class _UnitFormatConfirmPanel extends StatelessWidget {
   final Section section;
   final List<LessonFormat> formats;
-  final String defaultFormatId;
   final Color sectionColor;
   final void Function(List<Unit> confirmedUnits)? onConfirm;
 
   const _UnitFormatConfirmPanel({
     required this.section,
     required this.formats,
-    required this.defaultFormatId,
     required this.sectionColor,
     required this.onConfirm,
   });
 
-  @override
-  State<_UnitFormatConfirmPanel> createState() => _UnitFormatConfirmPanelState();
-}
-
-class _UnitFormatConfirmPanelState extends State<_UnitFormatConfirmPanel> {
-  late Map<String, String> _picked;
-
-  @override
-  void initState() {
-    super.initState();
-    _picked = {
-      for (final u in widget.section.units)
-        u.id: _resolveValid(u.formatId) ?? widget.defaultFormatId,
-    };
-  }
-
-  String? _resolveValid(String? id) {
-    if (id == null) return null;
-    return widget.formats.any((f) => f.id == id) ? id : null;
-  }
-
   void _confirm() {
-    final updated = widget.section.units
-        .map((u) => u.copyWith(formatId: _picked[u.id] ?? widget.defaultFormatId))
-        .toList();
-    widget.onConfirm?.call(updated);
+    onConfirm?.call(section.units);
   }
 
   @override
@@ -509,25 +480,26 @@ class _UnitFormatConfirmPanelState extends State<_UnitFormatConfirmPanel> {
                 alignment: Alignment.center,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: widget.sectionColor.withOpacity(0.18),
+                  color: sectionColor.withOpacity(0.18),
                   shape: BoxShape.circle,
-                  border: Border.all(color: widget.sectionColor.withOpacity(0.55), width: 2),
+                  border: Border.all(color: sectionColor.withOpacity(0.55), width: 2),
                 ),
-                child: Icon(Icons.tune, color: widget.sectionColor, size: 26),
+                child: Icon(Icons.tune, color: sectionColor, size: 26),
               ),
               const Text(
-                'Confirm lesson formats',
+                'Confirm units',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
               ),
               const SizedBox(height: 6),
               const Text(
-                'The AI picked one lesson format per unit based on its content. Review and adjust before any lesson is generated.',
+                'The AI has broken this section into the following units. Review the scope before generating lessons.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.white60, fontSize: 13, height: 1.4),
               ),
               const SizedBox(height: 20),
-              for (final unit in widget.section.units)
+              
+              for (final unit in section.units)
                 Container(
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(12),
@@ -548,41 +520,51 @@ class _UnitFormatConfirmPanelState extends State<_UnitFormatConfirmPanel> {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis),
                       ],
-                      const SizedBox(height: 10),
-                      DropdownButtonFormField<String>(
-                        value: _picked[unit.id],
-                        isDense: true,
-                        dropdownColor: const Color(0xFF1E293B),
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
-                        decoration: InputDecoration(
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          filled: true,
-                          fillColor: Colors.black26,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                        ),
-                        items: [
-                          for (final f in widget.formats)
-                            DropdownMenuItem(
-                              value: f.id,
-                              child: Text(f.name, style: const TextStyle(color: Colors.white)),
-                            ),
-                        ],
-                        onChanged: (v) {
-                          if (v != null) setState(() => _picked[unit.id] = v);
-                        },
-                      ),
                     ],
                   ),
                 ),
-              const SizedBox(height: 16),
+                
+              const SizedBox(height: 20),
+              
+              const Text(
+                'Available lesson formats:',
+                style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w800, fontSize: 13),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.02),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (var i = 0; i < formats.length; i++) ...[
+                      if (i > 0) const Divider(color: Colors.white10, height: 16),
+                      Text(
+                        formats[i].name,
+                        style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        formats[i].description,
+                        style: const TextStyle(color: Colors.white54, fontSize: 11, height: 1.4),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: _confirm,
                 icon: const Icon(Icons.check, size: 18),
-                label: const Text('Confirm and unlock lessons',
+                label: const Text('Confirm and unlock units',
                     style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: widget.sectionColor,
+                  backgroundColor: sectionColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),

@@ -237,10 +237,10 @@ class Book {
     'defaultFormatId': defaultFormatId,
   };
 
-  /// Returns the format the AI should use for [unit] — its explicit
-  /// [Unit.formatId] when valid, otherwise the book\'s default. Never null.
-  LessonFormat formatForUnit(Unit unit) {
-    final wanted = unit.formatId;
+  /// Returns the format the AI should use for [lesson] — its explicit
+  /// [Lesson.formatId] when valid, otherwise the book's default. Never null.
+  LessonFormat formatForLesson(Lesson lesson) {
+    final wanted = lesson.formatId;
     if (wanted != null) {
       for (final f in lessonFormats) {
         if (f.id == wanted) return f;

@@ -277,15 +277,14 @@ class AiService {
       throw Exception("Local file missing. Tap 'Restore' on the warning banner to re-link source files.");
     }
 
-    // Pick the format for THIS unit. Books carry multiple formats so units
-    // teaching different things (theory vs example vs proof) get generated
-    // against different slide structures. Falls back to the book default
-    // when unit.formatId is unset or stale.
-    final LessonFormat format = bookContext.formatForUnit(unit);
-    final List<SlideTemplate> template = format.slides;
-    final String templateLayoutString = template
-        .map((t) => "- Type: ${t.type} | Condition: ${t.condition} | Instructions: ${t.description}")
-        .join('\n');
+    // Build a layout descriptor of all available lesson formats in the book.
+    // Different lessons in the same unit can follow different formats.
+    final String formatsLayoutString = bookContext.lessonFormats.map((f) {
+      final slidesStr = f.slides
+          .map((t) => "  * Type: ${t.type} | Condition: ${t.condition} | Instructions: ${t.description}")
+          .join('\n');
+      return "- Format: ${f.id} (${f.name}) — ${f.description}\n$slidesStr";
+    }).join('\n\n');
 
     Exception? lastException;
 
@@ -302,7 +301,7 @@ class AiService {
 
           final hydratedPlanPrompt = PromptService.plan
               .replaceAll('%unit_title%', unit.title)
-              .replaceAll('%template_layout%', templateLayoutString);
+              .replaceAll('%formats_layout%', formatsLayoutString);
 
           List<Part> planParts = [TextPart(hydratedPlanPrompt)];
           planParts.addAll(await _buildFileParts([chunkFile]));
@@ -562,25 +561,15 @@ class AiService {
             if (raw is! Map) continue;
             final base = Unit.fromJson(Map<String, dynamic>.from(raw));
             final id = base.id.isNotEmpty ? base.id : 'u${i + 1}';
-            // Validate the AI\'s formatId — models sometimes invent ids,
-            // case-mangle them, or omit them entirely. We accept only ids
-            // that match one of the configured formats; everything else
-            // falls back to the book default so unit generation never
-            // breaks on a bad suggestion.
-            final claimedFormat = base.formatId;
-            final acceptedFormat = (claimedFormat != null && validFormatIds.contains(claimedFormat))
-                ? claimedFormat
-                : bookContext.defaultFormatId;
             units.add(base.copyWith(
               id: '${section.id}-$id',
               isGenerated: false,
               lessons: const [],
-              // The unit shares the section\'s PDF chunk — it does not get
+              // The unit shares the section's PDF chunk — it does not get
               // its own pdfPath or page range.
               pdfPath: null,
               startPage: null,
               endPage: null,
-              formatId: acceptedFormat,
             ));
           }
           if (units.isEmpty) throw Exception('Unit manifest had no usable entries.');
@@ -649,8 +638,14 @@ class AiService {
         final jsonMap = _cleanAndDecodeJson(text);
         final lesson = Lesson.fromJson(jsonMap);
         final uniqueLessonId = '${unit.id}-${lesson.id.isNotEmpty ? lesson.id : 'l$i'}';
+        final validFormatIds = bookContext.lessonFormats.map((f) => f.id).toSet();
+        final claimedFormat = lesson.formatId;
+        final acceptedFormat = (claimedFormat != null && validFormatIds.contains(claimedFormat))
+            ? claimedFormat
+            : bookContext.defaultFormatId;
         collected.add(lesson.copyWith(
           id: uniqueLessonId,
+          formatId: acceptedFormat,
           slides: lesson.slides.map((s) => s.copyWith(id: '$uniqueLessonId-${s.id}')).toList(),
         ));
       } catch (e) {

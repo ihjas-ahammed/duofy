@@ -84,15 +84,11 @@ Section title: "%section_title%"
 Section description: "%section_description%"
 
 TASK:
-Break this section into a small number of pedagogical units (typically 2-5). Each unit groups a few closely related lessons. Do NOT generate lesson slides here — just the unit metadata. Additionally, assign each unit the lesson format that best fits its content.
-
-AVAILABLE LESSON FORMATS (pick one `formatId` per unit, from this exact list):
-%format_catalog%
+Break this section into a small number of pedagogical units (typically 2-5). Each unit groups a few closely related lessons. Do NOT generate lesson slides here — just the unit metadata.
 
 CRITICAL RULES:
 1. Cover the entire content of the attached PDF. Do not skip topics.
 2. Each unit should be roughly self-contained and digestible in one short study session.
-3. `formatId` MUST be one of the ids listed in AVAILABLE LESSON FORMATS above — do not invent new ids. Match by what the unit is teaching: a derivation/theorem → the proof-walkthrough-style format; a solved problem → the worked-example-style format; conceptual material → the theory-style format.
 
 Return ONLY valid JSON matching this exact structure:
 {
@@ -100,8 +96,7 @@ Return ONLY valid JSON matching this exact structure:
     {
       "id": "u1",
       "title": "Unit Title",
-      "description": "Short summary of what this unit covers",
-      "formatId": "<one of the available format ids>"
+      "description": "Short summary of what this unit covers"
     }
   ]
 }''';
@@ -117,10 +112,9 @@ OUTPUT FORMAT (STRICT):
 
 CRITICAL DUOLINGO-STYLE MICRO-LEARNING RULES:
 1. MAXIMIZE the number of lessons. Break concepts down into extremely bite-sized pieces.
-2. For EACH lesson, evaluate the possible slide types and their conditions:
-%template_layout%
-EVALUATE THE "CONDITION" FOR EACH SLIDE. ONLY include a slide if the condition logically applies to the topic.
-Do not force a slide type if its condition is not met!
+2. For EACH lesson, choose the most appropriate format from the available formats:
+%formats_layout%
+For the chosen format, evaluate its slide templates. Only include a slide if its condition logically applies.
 3. NO STORY MODE: never frame content as a story, scenario, anecdote, or narrative ("Imagine you are...", "Sara walks into a shop...", etc.). Present theory and concepts directly and factually.
 ''';
 
@@ -142,12 +136,14 @@ CRITICAL SCHEMA & MICRO-LEARNING RULES:
 6. $_iconRule
 7. Each lesson MUST include a `canvasPrompt` field: a 1–2 sentence natural-language description of the single most useful diagram for this lesson (e.g. "Free-body diagram of a block on an inclined plane with friction and normal force vectors labeled"). The diagram should illustrate the lesson\'s core concept and be drawable as a static SVG. Keep it concrete and visual.
 8. For "proof" and "step_by_step" slides ONLY: include a `canvasPrompt` on the slide itself if and only if the proof or worked example genuinely needs a figure to follow (geometry, circuits, triangles, graphs, free-body diagrams, etc.). If the proof is purely algebraic and no figure adds value, omit `canvasPrompt` on the slide.
+9. Each lesson MUST specify a `formatId` corresponding to the lesson format type it follows (e.g., "theory", "example", or "proof" based on the available formats).
 
 YOU MUST RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
 {
   "lessons": [
     {
       "id": "l1", "title": "Lesson 1", "description": "...", "icon": "<one value from the icon list>",
+      "formatId": "<the format id for this lesson>",
       "canvasPrompt": "One concise sentence describing the lesson\'s key diagram.",
       "slides": [ ... ]
     }
@@ -175,6 +171,7 @@ CRITICAL SCHEMA & MICRO-LEARNING RULES:
 6. $_iconRule
 7. Include a `canvasPrompt` field on the lesson: a 1–2 sentence natural-language description of the single most useful diagram for this lesson, illustrating its core concept and drawable as a static SVG.
 8. For "proof" and "step_by_step" slides ONLY: include a `canvasPrompt` on the slide itself if and only if the proof / worked example genuinely needs a figure (geometry, circuits, triangles, graphs, free-body diagrams). Omit on purely algebraic slides.
+9. Specify the `formatId` corresponding to the lesson format type this lesson follows (e.g., "theory", "example", or "proof" based on the available formats).
 
 RETURN ONLY VALID JSON FOR THIS ONE LESSON (no wrapping array, no other keys):
 {
@@ -182,6 +179,7 @@ RETURN ONLY VALID JSON FOR THIS ONE LESSON (no wrapping array, no other keys):
   "title": "Lesson Title",
   "description": "...",
   "icon": "<one value from the icon list>",
+  "formatId": "<the format id for this lesson>",
   "canvasPrompt": "One concise sentence describing the lesson\'s key diagram.",
   "slides": [ ... ]
 }''';
