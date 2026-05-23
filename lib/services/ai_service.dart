@@ -30,6 +30,21 @@ class AiService {
     return models;
   }
 
+  Future<String> _getPrimaryTextModel() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('model_primary_text') ?? 'gemma4';
+  }
+
+  Future<String> _getPrimaryGraphicsModel() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('model_primary_graphics') ?? 'gemini-3.5-flash';
+  }
+
+  Future<String> _getLiteModel() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('model_lite') ?? 'gemini-flash-lite-latest';
+  }
+
   Map<String, dynamic> _cleanAndDecodeJson(String text) {
     String cleaned = text.trim();
 
@@ -172,7 +187,9 @@ class AiService {
 
   Future<Book?> generateBookSkeleton(List<File> inputFiles, String filename) async {
     final keys = await _getKeys();
-    final models = await _getModels();
+    final liteModel = await _getLiteModel();
+    final fallbackModels = await _getModels();
+    final List<String> modelsToTry = [liteModel, ...fallbackModels.where((m) => m != liteModel)];
 
     final hydratedPrompt = PromptService.skeleton.replaceAll('%filename%', filename);
 
@@ -181,7 +198,7 @@ class AiService {
 
     Exception? lastException;
     
-    for (var modelName in models) {
+    for (var modelName in modelsToTry) {
       for (var apiKey in keys) {
         try {
           final model = GenerativeModel(
@@ -212,7 +229,12 @@ class AiService {
 
   Future<Unit> generateUnitContent(Unit unit, Book bookContext, Function(String) onProgress) async {
     final keys = await _getKeys();
-    final models = await _getModels();
+    final textModel = await _getPrimaryTextModel();
+    final liteModel = await _getLiteModel();
+    final fallbackModels = await _getModels();
+
+    final List<String> liteModelsToTry = [liteModel, ...fallbackModels.where((m) => m != liteModel)];
+    final List<String> textModelsToTry = [textModel, ...fallbackModels.where((m) => m != textModel)];
 
     if (unit.pdfPath == null) throw Exception("No PDF/Image chunk available for this unit.");
     final chunkFile = File(unit.pdfPath!);
@@ -225,11 +247,14 @@ class AiService {
 
     Exception? lastException;
 
-    for (var modelName in models) {
+    for (int idx = 0; idx < textModelsToTry.length; idx++) {
+      final currentTextModel = textModelsToTry[idx];
+      final currentLiteModel = idx < liteModelsToTry.length ? liteModelsToTry[idx] : liteModelsToTry.first;
+
       for (var apiKey in keys) {
         try {
-          final modelText = GenerativeModel(model: modelName, apiKey: apiKey);
-          final modelJson = GenerativeModel(model: modelName, apiKey: apiKey, generationConfig: GenerationConfig(responseMimeType: 'application/json'));
+          final modelText = GenerativeModel(model: currentLiteModel, apiKey: apiKey);
+          final modelJson = GenerativeModel(model: currentTextModel, apiKey: apiKey, generationConfig: GenerationConfig(responseMimeType: 'application/json'));
 
           onProgress("Analyzing PDF & Planning Layout...");
 
@@ -245,7 +270,7 @@ class AiService {
                 .timeout(const Duration(minutes: 4)),
             onRetry: (a, e) {
               final msg = _cleanErrMsg(e);
-              print('[AiService] Unit plan transient ($modelName) attempt $a: $msg');
+              print('[AiService] Unit plan transient ($currentLiteModel) attempt $a: $msg');
               onProgress('Server hiccup — retrying ($a/3)...');
             },
           );
@@ -254,12 +279,12 @@ class AiService {
           if (lessonPlan.isEmpty) throw Exception("AI failed to generate a lesson plan.");
 
           final List<Lesson> newLessons;
-          if (_isGemma(modelName)) {
+          if (_isGemma(currentTextModel)) {
             // Gemma: generate one lesson at a time. Smaller, more reliable
             // requests; user sees concrete per-lesson progress.
             newLessons = await _generateLessonsBatched(
               modelJson: modelJson,
-              modelName: modelName,
+              modelName: currentTextModel,
               chunkFile: chunkFile,
               unit: unit,
               bookContext: bookContext,
@@ -283,7 +308,7 @@ class AiService {
                   .timeout(const Duration(minutes: 5)),
               onRetry: (a, e) {
                 final msg = _cleanErrMsg(e);
-                print('[AiService] Unit json transient ($modelName) attempt $a: $msg');
+                print('[AiService] Unit json transient ($currentTextModel) attempt $a: $msg');
                 onProgress('Server hiccup — retrying ($a/3)...');
               },
             );
@@ -314,7 +339,7 @@ class AiService {
           }
           return unit.copyWith(isGenerated: true, lessons: newLessons);
         } catch (e) {
-          lastException = Exception('Failed ($modelName): ${_cleanErrMsg(e)}');
+          lastException = Exception('Failed ($currentTextModel): ${_cleanErrMsg(e)}');
         }
       }
     }
@@ -394,7 +419,9 @@ class AiService {
 
   Future<QuestionPaper> generateQuestionPaper(List<File> files, String qpTitle, String? systemPrompt) async {
     final keys = await _getKeys();
-    final models = await _getModels();
+    final textModel = await _getPrimaryTextModel();
+    final fallbackModels = await _getModels();
+    final List<String> modelsToTry = [textModel, ...fallbackModels.where((m) => m != textModel)];
 
     final hydratedPrompt = PromptService.qpJson
         .replaceAll('%system_prompt%', systemPrompt ?? "You are an expert tutor.");
@@ -404,7 +431,7 @@ class AiService {
 
     Exception? lastException;
 
-    for (var modelName in models) {
+    for (var modelName in modelsToTry) {
       for (var apiKey in keys) {
         try {
           final model = GenerativeModel(

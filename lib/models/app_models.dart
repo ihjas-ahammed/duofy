@@ -463,7 +463,20 @@ class InteractiveStep {
     return InteractiveStep(
       prompt: _strOpt(json['prompt']),
       stepText: _strOpt(json['stepText']),
-      options: (json['options'] as List?)?.map((o) => QuizOption.fromJson(o is Map ? Map<String, dynamic>.from(o) : {})).toList(),
+      options: (json['options'] as List?)?.map((o) {
+        if (o is String) {
+          return QuizOption(
+            id: o.trim().hashCode.toString(),
+            text: o.trim(),
+            isCorrect: false,
+            explanation: '',
+          );
+        } else if (o is Map) {
+          return QuizOption.fromJson(Map<String, dynamic>.from(o));
+        } else {
+          return QuizOption(id: 'opt', text: 'Option', isCorrect: false, explanation: '');
+        }
+      }).toList(),
     );
   }
 
@@ -508,7 +521,20 @@ class Slide {
     List<QuizOption>? parsedOptions;
     
     if (json['options'] != null) {
-      parsedOptions = (json['options'] as List).map((o) => QuizOption.fromJson(o is Map ? Map<String, dynamic>.from(o) : {})).toList();
+      parsedOptions = (json['options'] as List).map((o) {
+        if (o is String) {
+          return QuizOption(
+            id: o.trim().hashCode.toString(),
+            text: o.trim(),
+            isCorrect: false,
+            explanation: '',
+          );
+        } else if (o is Map) {
+          return QuizOption.fromJson(Map<String, dynamic>.from(o));
+        } else {
+          return QuizOption(id: 'opt', text: 'Option', isCorrect: false, explanation: '');
+        }
+      }).toList();
       if (type == 'quiz' && parsedOptions.isNotEmpty) {
         int correctCount = parsedOptions.where((o) => o.isCorrect).length;
         if (correctCount != 1) {
@@ -603,12 +629,26 @@ class QuizOption {
 
   factory QuizOption.fromJson(Map<String, dynamic> json) {
     final rawId = _strOpt(json['id']);
-    final parsedText = _str(json['text'], 'Option');
-    final effectiveId = (rawId != null && rawId.isNotEmpty) ? rawId.trim() : parsedText.trim().hashCode.toString();
+    
+    String optionText = '';
+    if (json['text'] != null) {
+      optionText = _str(json['text']);
+    } else if (json['option'] != null) {
+      optionText = _str(json['option']);
+    } else if (json['answer'] != null) {
+      optionText = _str(json['answer']);
+    } else if (json['content'] != null) {
+      optionText = _str(json['content']);
+    } else {
+      optionText = 'Option';
+    }
+
+    final parsedText = optionText.trim().isNotEmpty ? optionText.trim() : 'Option';
+    final effectiveId = (rawId != null && rawId.isNotEmpty) ? rawId.trim() : parsedText.hashCode.toString();
 
     return QuizOption(
       id: effectiveId,
-      text: parsedText.trim(),
+      text: parsedText,
       isCorrect: _bool(json['isCorrect']),
       explanation: _str(json['explanation']).trim(),
     );

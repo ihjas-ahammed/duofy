@@ -162,15 +162,15 @@ class _MathBuilder extends MarkdownElementBuilder {
       },
     );
 
-    // Always wrap in a horizontal SingleChildScrollView.
-    // For small inline equations, it shrinks to fit perfectly.
-    // For long inline equations that exceed the screen width, it becomes scrollable
-    // rather than clipping or forcing unreadable line breaks.
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      clipBehavior: Clip.antiAlias,
-      child: math,
-    );
+    if (isDisplay) {
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.antiAlias,
+        child: math,
+      );
+    }
+
+    return math;
   }
 }
 

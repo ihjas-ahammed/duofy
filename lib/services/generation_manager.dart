@@ -168,6 +168,7 @@ class GenerationManager extends ChangeNotifier {
       activeTasks.remove(task);
       notifyListeners();
       
+      _bookUpdateController.add(completeBook);
       onBookGenerated?.call();
 
       await NotificationService.cancel(notifId);

@@ -20,6 +20,9 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   List<String> _keys = [];
   List<String> _models = [];
+  String _modelPrimaryText = 'gemma4';
+  String _modelPrimaryGraphics = 'gemini-3.5-flash';
+  String _modelLite = 'gemini-flash-lite-latest';
   bool _isFetchingModels = false;
   bool _isLoading = true;
   final GlobalKey<StringListManagerState> _keysManagerKey = GlobalKey<StringListManagerState>();
@@ -48,23 +51,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
        models = [oldModel];
     }
 
-    // Hydrate from Firestore if local is empty (e.g. fresh install on a new device).
+    String modelPrimaryText = prefs.getString('model_primary_text') ?? 'gemma4';
+    String modelPrimaryGraphics = prefs.getString('model_primary_graphics') ?? 'gemini-3.5-flash';
+    String modelLite = prefs.getString('model_lite') ?? 'gemini-flash-lite-latest';
+
+    // Hydrate from Firestore if local is empty.
     if (keys.isEmpty || models.isEmpty) {
       final remote = await _db.fetchUserSettings();
       if (remote != null) {
-        if (keys.isEmpty && remote['apiKeys']!.isNotEmpty) {
-          keys = remote['apiKeys']!;
+        if (keys.isEmpty && remote['apiKeys'] != null && (remote['apiKeys'] as List).isNotEmpty) {
+          keys = List<String>.from(remote['apiKeys']!);
           await prefs.setStringList('gemini_api_keys_list', keys);
         }
-        if (models.isEmpty && remote['models']!.isNotEmpty) {
-          models = remote['models']!;
+        if (models.isEmpty && remote['models'] != null && (remote['models'] as List).isNotEmpty) {
+          models = List<String>.from(remote['models']!);
           await prefs.setStringList('gemini_models_list', models);
+        }
+        if (remote['modelPrimaryText'] != null) {
+          modelPrimaryText = remote['modelPrimaryText'];
+          await prefs.setString('model_primary_text', modelPrimaryText);
+        }
+        if (remote['modelPrimaryGraphics'] != null) {
+          modelPrimaryGraphics = remote['modelPrimaryGraphics'];
+          await prefs.setString('model_primary_graphics', modelPrimaryGraphics);
+        }
+        if (remote['modelLite'] != null) {
+          modelLite = remote['modelLite'];
+          await prefs.setString('model_lite', modelLite);
         }
       }
     }
 
     _keys = List.from(keys);
     _models = List.from(models);
+    _modelPrimaryText = modelPrimaryText;
+    _modelPrimaryGraphics = modelPrimaryGraphics;
+    _modelLite = modelLite;
 
     setState(() {
       _isLoading = false;
@@ -78,22 +100,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     final keysSaved = await prefs.setStringList('gemini_api_keys_list', _keys);
     final modelsSaved = await prefs.setStringList('gemini_models_list', _models);
+    final pTextSaved = await prefs.setString('model_primary_text', _modelPrimaryText);
+    final pGraphicsSaved = await prefs.setString('model_primary_graphics', _modelPrimaryGraphics);
+    final liteSaved = await prefs.setString('model_lite', _modelLite);
 
-    if (!keysSaved || !modelsSaved) {
+    if (!keysSaved || !modelsSaved || !pTextSaved || !pGraphicsSaved || !liteSaved) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Local save failed — syncing to cloud only.')));
       }
     }
 
-    await _db.saveUserSettings(apiKeys: _keys, models: _models);
+    await _db.saveUserSettings(
+      apiKeys: _keys,
+      models: _models,
+      modelPrimaryText: _modelPrimaryText,
+      modelPrimaryGraphics: _modelPrimaryGraphics,
+      modelLite: _modelLite,
+    );
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Saved ${_keys.length} key(s), ${_models.length} model(s).')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Saved ${_keys.length} key(s) and assigned models.')));
       Navigator.pop(context);
     }
   }
 
-  Future<void> _fetchModels() async {
+  Future<void> _showModelPicker(String slotName) async {
     if (_keys.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please add an API key first.')));
       return;
@@ -113,14 +144,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (name.contains('gemini') || name.contains('gemma')) fetchedModels.add(name);
         }
 
-        // Ensure Gemma 4 IDs are pickable even if the listing endpoint omits them.
-        for (final id in const ['gemma-4-31b-it', 'gemma-4-26b-a4b-it']) {
+        // Add custom Gemma 4 names if not present
+        for (final id in const ['gemma4', 'gemini-3.5-flash', 'gemini-flash-lite-latest', 'gemma-4-31b-it', 'gemma-4-26b-a4b-it']) {
           if (!fetchedModels.contains(id)) fetchedModels.add(id);
         }
 
         fetchedModels.sort((a, b) {
           int rank(String n) {
-            if (n.startsWith('gemma-4')) return 0;
+            if (n.startsWith('gemma-4') || n == 'gemma4') return 0;
             if (n.startsWith('gemini-2')) return 1;
             if (n.startsWith('gemini')) return 2;
             if (n.startsWith('gemma')) return 3;
@@ -140,7 +171,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                child: Column(
                  crossAxisAlignment: CrossAxisAlignment.start,
                  children: [
-                   const Text('Available Models', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white)),
+                   Text('Select Model for $slotName', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white)),
                    const SizedBox(height: 16),
                    Expanded(
                      child: ListView.builder(
@@ -150,8 +181,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                          title: Text(fetchedModels[i], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                          onTap: () {
                             setState(() {
-                              if (!_models.contains(fetchedModels[i]) && _models.length < 5) {
-                                _models.add(fetchedModels[i]);
+                              if (slotName == 'Primary - Text') {
+                                _modelPrimaryText = fetchedModels[i];
+                              } else if (slotName == 'Primary - Graphics') {
+                                _modelPrimaryGraphics = fetchedModels[i];
+                              } else if (slotName == 'Lite') {
+                                _modelLite = fetchedModels[i];
                               }
                             });
                             Navigator.pop(ctx);
@@ -172,6 +207,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } finally {
       setState(() => _isFetchingModels = false);
     }
+  }
+
+  Widget _buildModelSlotCard({
+    required String title,
+    required String subtitle,
+    required String selectedModel,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppTheme.duoBlue, size: 28),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white)),
+                const SizedBox(height: 4),
+                Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black38,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  child: Text(
+                    selectedModel,
+                    style: const TextStyle(fontFamily: 'monospace', fontSize: 13, color: Colors.amber, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(LucideIcons.edit2, color: Colors.white54),
+            onPressed: onTap,
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -243,34 +328,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 32),
 
-            const Text('AI Models Sequence', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const Text('AI Model Assignments', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
-            const Text('Add up to 5 models. Top models will be prioritized.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const Text('Select specialized models for text, graphics, and light-weight tasks.', style: TextStyle(color: Colors.white54, fontSize: 12)),
             const SizedBox(height: 16),
-            
-            if (_models.isNotEmpty)
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _models.map((m) => Chip(
-                  label: Text(m, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                  deleteIcon: const Icon(LucideIcons.x, size: 16, color: Colors.white54),
-                  backgroundColor: Colors.white.withOpacity(0.1),
-                  side: const BorderSide(color: Colors.white24),
-                  onDeleted: () => setState(() => _models.remove(m)),
-                )).toList(),
-              ),
-              
+
+            _buildModelSlotCard(
+              title: 'Primary - Text',
+              subtitle: 'Generates final interactive lessons & quizzes.',
+              selectedModel: _modelPrimaryText,
+              icon: LucideIcons.fileText,
+              onTap: () => _showModelPicker('Primary - Text'),
+            ),
             const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: DuoButton(
-                text: _isFetchingModels ? 'Fetching...' : 'Browse Available Models',
-                onPressed: _isFetchingModels ? () {} : _fetchModels,
-                color: AppTheme.duoBlue,
-                shadowColor: AppTheme.duoBlueDark,
-                isOutline: true,
-              ),
+
+            _buildModelSlotCard(
+              title: 'Primary - Graphics',
+              subtitle: 'Used for rendering and generating media assets.',
+              selectedModel: _modelPrimaryGraphics,
+              icon: LucideIcons.image,
+              onTap: () => _showModelPicker('Primary - Graphics'),
+            ),
+            const SizedBox(height: 16),
+
+            _buildModelSlotCard(
+              title: 'Lite',
+              subtitle: 'Creates skeletons and maps lesson plan lists.',
+              selectedModel: _modelLite,
+              icon: LucideIcons.zap,
+              onTap: () => _showModelPicker('Lite'),
             ),
             
             const SizedBox(height: 48),

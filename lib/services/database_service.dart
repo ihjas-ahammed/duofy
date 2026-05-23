@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -20,28 +21,41 @@ class DatabaseService {
   DocumentReference<Map<String, dynamic>> get _userSettingsDoc =>
       _db.collection('users').doc(uid).collection('meta').doc('settings');
 
-  Future<void> saveUserSettings({required List<String> apiKeys, required List<String> models}) async {
+  Future<void> saveUserSettings({
+    required List<String> apiKeys,
+    required List<String> models,
+    String? modelPrimaryText,
+    String? modelPrimaryGraphics,
+    String? modelLite,
+  }) async {
     if (uid == 'guest') return;
-    try {
-      await _userSettingsDoc.set({
-        'apiKeys': apiKeys,
-        'models': models,
-        'updatedAt': DateTime.now().millisecondsSinceEpoch,
-      });
-    } catch (e) {
+    // Save to Firestore in background without awaiting (non-blocking)
+    _userSettingsDoc.set({
+      'apiKeys': apiKeys,
+      'models': models,
+      if (modelPrimaryText != null) 'modelPrimaryText': modelPrimaryText,
+      if (modelPrimaryGraphics != null) 'modelPrimaryGraphics': modelPrimaryGraphics,
+      if (modelLite != null) 'modelLite': modelLite,
+      'updatedAt': DateTime.now().millisecondsSinceEpoch,
+    }).then((_) {
+      print("[DatabaseService] User settings saved successfully to Firestore.");
+    }).catchError((e) {
       print("[DatabaseService] Error saving user settings: $e");
-    }
+    });
   }
 
-  Future<Map<String, List<String>>?> fetchUserSettings() async {
+  Future<Map<String, dynamic>?> fetchUserSettings() async {
     if (uid == 'guest') return null;
     try {
-      final snap = await _userSettingsDoc.get();
+      final snap = await _userSettingsDoc.get().timeout(const Duration(seconds: 4));
       if (!snap.exists) return null;
       final data = snap.data() ?? {};
       return {
         'apiKeys': List<String>.from((data['apiKeys'] as List?) ?? []),
         'models': List<String>.from((data['models'] as List?) ?? []),
+        'modelPrimaryText': data['modelPrimaryText'] as String?,
+        'modelPrimaryGraphics': data['modelPrimaryGraphics'] as String?,
+        'modelLite': data['modelLite'] as String?,
       };
     } catch (e) {
       print("[DatabaseService] Error fetching user settings: $e");
@@ -73,10 +87,10 @@ class DatabaseService {
       return localBooks;
     }
 
-    // 2. Perform Intelligent Two-Way Sync
+    // 2. Perform Intelligent Two-Way Sync with timeout
     print("[DatabaseService] Initiating Two-Way Firestore Sync...");
     try {
-      final snapshot = await _userBooks.get();
+      final snapshot = await _userBooks.get().timeout(const Duration(seconds: 4));
       Map<String, Book> remoteBooksMap = {};
 
       for (final doc in snapshot.docs) {
@@ -108,17 +122,21 @@ class DatabaseService {
 
       final mergedList = mergedBooksMap.values.toList();
 
-      // Push required updates to Remote DB
+      // Push required updates to Remote DB in background without awaiting (non-blocking)
       if (needsRemoteUpdate) {
-        print("[DatabaseService] Pushing updated local books to Firestore...");
+        print("[DatabaseService] Pushing updated local books to Firestore in background...");
         for (var book in mergedList) {
-          await _userBooks.doc(book.id).set(book.toJson());
+          _userBooks.doc(book.id).set(book.toJson()).catchError((e) {
+            print("[DatabaseService] Error syncing local book to remote: $e");
+          });
         }
       } else if (remoteBooksMap.isEmpty && localBooks.isEmpty && uid == 'guest') {
         print("[DatabaseService] System is completely empty for guest. Populating mock books...");
         for (var book in mockBooks) {
           final mockWithTime = book.copyWith(updatedAt: DateTime.now().millisecondsSinceEpoch);
-          await _userBooks.doc(mockWithTime.id).set(mockWithTime.toJson());
+          _userBooks.doc(mockWithTime.id).set(mockWithTime.toJson()).catchError((e) {
+            print("[DatabaseService] Guest mock sync failed: $e");
+          });
           mergedList.add(mockWithTime);
         }
       }
@@ -182,13 +200,12 @@ class DatabaseService {
       print("[DatabaseService] LOCAL CACHE ERROR during saveGeneratedBook: $e");
     }
 
-    // 2. Then push to Firestore. Failures here are non-fatal — local copy stands.
-    try {
-      await _userBooks.doc(updatedBook.id).set(updatedBook.toJson());
+    // 2. Then push to Firestore in the background without awaiting (non-blocking)
+    _userBooks.doc(updatedBook.id).set(updatedBook.toJson()).then((_) {
       print("[DatabaseService] Firestore push complete.");
-    } catch (e) {
+    }).catchError((e) {
       print("[DatabaseService] FIRESTORE PUSH FAILED (book is still saved locally): $e");
-    }
+    });
   }
 
   Future<void> deleteBook(String id) async {
@@ -207,24 +224,51 @@ class DatabaseService {
       print("[DatabaseService] LOCAL CACHE ERROR during deletion: $e");
     }
 
-    try {
-      await _userBooks.doc(id).delete();
-    } catch (e) {
+    // Firestore delete in the background without awaiting (non-blocking)
+    _userBooks.doc(id).delete().then((_) {
+      print("[DatabaseService] Firestore delete complete.");
+    }).catchError((e) {
       print("[DatabaseService] FIRESTORE DELETE FAILED: $e");
-    }
+    });
   }
 
+  String get _globalCacheKey => 'cached_global_books';
+
   // GLOBAL COMMUNITY DB METHODS
-  Future<List<Book>> fetchGlobalBooks() async {
+  Future<List<Book>> fetchGlobalBooks({bool useCacheOnly = false}) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // 1. Fetch Local Cache
+    final cachedStr = prefs.getString(_globalCacheKey);
+    List<Book> cachedGlobals = [];
+    if (cachedStr != null) {
+      try {
+        final List decoded = jsonDecode(cachedStr);
+        cachedGlobals = decoded.map((e) => Book.fromJson(Map<String, dynamic>.from(e))).toList();
+        print("[DatabaseService] Found ${cachedGlobals.length} global books in local cache.");
+      } catch (e) {
+        print("[DatabaseService] Error parsing global cache: $e");
+      }
+    }
+
+    if (useCacheOnly && cachedGlobals.isNotEmpty) {
+      return cachedGlobals;
+    }
+
+    // 2. Perform Firestore Fetch with timeout
     try {
-      final snapshot = await _globalBooks.get();
-      return snapshot.docs
+      final snapshot = await _globalBooks.get().timeout(const Duration(seconds: 4));
+      final freshGlobals = snapshot.docs
           .map((d) => Book.fromJson(Map<String, dynamic>.from(d.data())))
           .toList();
+
+      // Update cache
+      await prefs.setString(_globalCacheKey, jsonEncode(freshGlobals.map((b) => b.toJson()).toList()));
+      return freshGlobals;
     } catch (e) {
       print("[DatabaseService] Error fetching global books: $e");
+      return cachedGlobals;
     }
-    return [];
   }
 
   Future<void> publishToGlobal(Book book) async {
@@ -235,15 +279,20 @@ class DatabaseService {
        isGlobal: true,
        updatedAt: DateTime.now().millisecondsSinceEpoch,
     );
-    await _globalBooks.doc(book.id).set(publishedBook.toJson());
+    // Push to Firestore in background without awaiting (non-blocking)
+    _globalBooks.doc(book.id).set(publishedBook.toJson()).then((_) {
+      print("[DatabaseService] Published to global successfully.");
+    }).catchError((e) {
+      print("[DatabaseService] Error publishing to global: $e");
+    });
   }
 
   Future<void> deleteGlobalBook(String id) async {
-    try {
-      await _globalBooks.doc(id).delete();
+    // Delete from Firestore in background without awaiting (non-blocking)
+    _globalBooks.doc(id).delete().then((_) {
       print("[DatabaseService] Admin deleted global book: $id");
-    } catch (e) {
+    }).catchError((e) {
       print("[DatabaseService] Error deleting global book: $e");
-    }
+    });
   }
 }

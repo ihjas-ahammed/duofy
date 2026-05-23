@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -28,16 +29,50 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, double> progressMap = {};
   bool isLoading = true;
 
+  StreamSubscription<Book>? _bookUpdateSubscription;
+  List<GenerationTask> _prevActiveTasks = [];
+
   @override
   void initState() {
     super.initState();
-    _loadAllData();
-    GenerationManager.instance.onBookGenerated = () => _loadAllData(force: true);
+    _prevActiveTasks = List.from(GenerationManager.instance.activeTasks);
+    _loadAllData(force: false);
+    _syncRemoteData();
+
+    GenerationManager.instance.addListener(_handleGenerationTasksChange);
+    _bookUpdateSubscription = GenerationManager.instance.bookUpdates.listen((_) {
+      _loadAllData(force: false);
+    });
+    GenerationManager.instance.onBookGenerated = () => _loadAllData(force: false);
+  }
+
+  @override
+  void dispose() {
+    GenerationManager.instance.removeListener(_handleGenerationTasksChange);
+    _bookUpdateSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _handleGenerationTasksChange() {
+    final currentTasks = GenerationManager.instance.activeTasks;
+    bool taskRemoved = false;
+    for (var prev in _prevActiveTasks) {
+      if (!currentTasks.any((t) => t.id == prev.id)) {
+        taskRemoved = true;
+        break;
+      }
+    }
+    _prevActiveTasks = List.from(currentTasks);
+
+    if (taskRemoved) {
+      _loadAllData(force: false);
+    }
   }
 
   Future<void> _loadAllData({bool force = false}) async {
-    final fetched = await _db.fetchBooks(forceRefresh: force);
-    final globals = await _db.fetchGlobalBooks();
+    // 1. Fetch Local Cache immediately
+    final fetched = await _db.fetchBooks(forceRefresh: false);
+    final globals = await _db.fetchGlobalBooks(useCacheOnly: true);
     
     Map<String, double> prog = {};
     for (var b in fetched) {
@@ -47,10 +82,39 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) {
       setState(() {
         books = fetched;
-        globalBooks = globals;
+        if (globals.isNotEmpty) {
+          globalBooks = globals;
+        }
         progressMap = prog;
         isLoading = false;
       });
+    }
+
+    // 2. Perform background sync if force is true
+    if (force) {
+      _syncRemoteData();
+    }
+  }
+
+  Future<void> _syncRemoteData() async {
+    try {
+      final fetched = await _db.fetchBooks(forceRefresh: true);
+      final globals = await _db.fetchGlobalBooks(useCacheOnly: false);
+      
+      Map<String, double> prog = {};
+      for (var b in fetched) {
+        prog[b.id] = await ProgressService.getBookProgress(b);
+      }
+
+      if (mounted) {
+        setState(() {
+          books = fetched;
+          globalBooks = globals;
+          progressMap = prog;
+        });
+      }
+    } catch (e) {
+      print("[HomeScreen] Background sync error: $e");
     }
   }
 
@@ -63,7 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     
     await _db.saveGeneratedBook(newBook);
-    await _loadAllData(force: true);
+    await _loadAllData(force: false);
     
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved to your library!')));
   }
@@ -103,7 +167,10 @@ class _HomeScreenState extends State<HomeScreen> {
             ? const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue))
             : RefreshIndicator(
                 color: AppTheme.duoBlue,
-                onRefresh: () => _loadAllData(force: true),
+                onRefresh: () async {
+                  await _loadAllData(force: false);
+                  await _syncRemoteData();
+                },
                 child: CustomScrollView(
                   physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
                   slivers:[
@@ -120,7 +187,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           padding: const EdgeInsets.only(right: 16),
                           icon: const Icon(LucideIcons.userCircle, size: 28),
                           onPressed: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()))
+                              .then((_) => _loadAllData(force: false));
                           },
                         )
                       ],
@@ -143,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         originalPdf: task.sourceFiles,
                                         skeletonBook: task.skeletonBook!,
                                       )
-                                    ));
+                                    )).then((_) => _loadAllData(force: false));
                                   } else if (task.state == BookGenState.error) {
                                     GenerationManager.instance.dismissTask(task.id);
                                   }
@@ -186,7 +254,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                      progress: progressMap[book.id] ?? 0.0,
                                      onTap: () {
                                        Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
-                                         .then((_) => _loadAllData());
+                                         .then((_) => _loadAllData(force: false));
                                      },
                                      onDelete: () => _deleteLocalBook(book),
                                    );
@@ -245,7 +313,10 @@ class _HomeScreenState extends State<HomeScreen> {
           floatingActionButton: FloatingActionButton(
             backgroundColor: AppTheme.duoGreen,
             child: const Icon(LucideIcons.plus, color: Colors.white, size: 32),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GenerateBookScreen())),
+            onPressed: () => Navigator.push(
+              context, 
+              MaterialPageRoute(builder: (_) => const GenerateBookScreen())
+            ).then((_) => _loadAllData(force: false)),
           ),
         );
       }
