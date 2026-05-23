@@ -208,6 +208,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                       final manifestTask = GenerationManager.instance.activeSectionManifests[activeSec.id];
                       return LessonPath(
                         section: activeSec,
+                        book: widget.book,
+                        modIdx: mIdx,
+                        secIdx: sIdx,
                         loadingUnitStatuses: GenerationManager.instance.activeUnitGenerations,
                         sectionManifestStatus: manifestTask,
                         completedLessons: _completedLessons,
@@ -223,6 +226,21 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         onRetryManifest: () {
                           GenerationManager.instance.clearSectionManifestError(activeSec.id);
                           GenerationManager.instance.startSectionUnitManifest(widget.book, mIdx, sIdx);
+                        },
+                        onConfirmFormats: (confirmedUnits) async {
+                          // User signed off on per-unit format assignments.
+                          // Persist them and flip the section\'s confirmation
+                          // flag so the lesson path opens up.
+                          final modules = List<Module>.from(widget.book.modules);
+                          final secs = List<Section>.from(modules[mIdx].sections);
+                          secs[sIdx] = secs[sIdx].copyWith(
+                            units: confirmedUnits,
+                            unitFormatsConfirmed: true,
+                          );
+                          modules[mIdx] = modules[mIdx].copyWith(sections: secs);
+                          final newBook = widget.book.copyWith(modules: modules);
+                          await DatabaseService().saveGeneratedBook(newBook);
+                          widget.onBookUpdated(newBook);
                         },
                       );
                     },

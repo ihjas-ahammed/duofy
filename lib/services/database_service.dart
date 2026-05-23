@@ -24,18 +24,29 @@ class DatabaseService {
   Future<void> saveUserSettings({
     required List<String> apiKeys,
     required List<String> models,
-    String? modelPrimaryText,
-    String? modelPrimaryGraphics,
-    String? modelLite,
+    List<String>? modelPrimaryTextList,
+    List<String>? modelPrimaryGraphicsList,
+    List<String>? modelLiteList,
   }) async {
     if (uid == 'guest') return;
-    // Save to Firestore in background without awaiting (non-blocking)
+    // Save to Firestore in background without awaiting (non-blocking).
+    // Note: we write the new *List fields and also mirror the first entry
+    // into the legacy scalar key so older app versions still read a value.
     _userSettingsDoc.set({
       'apiKeys': apiKeys,
       'models': models,
-      if (modelPrimaryText != null) 'modelPrimaryText': modelPrimaryText,
-      if (modelPrimaryGraphics != null) 'modelPrimaryGraphics': modelPrimaryGraphics,
-      if (modelLite != null) 'modelLite': modelLite,
+      if (modelPrimaryTextList != null) ...{
+        'modelPrimaryTextList': modelPrimaryTextList,
+        if (modelPrimaryTextList.isNotEmpty) 'modelPrimaryText': modelPrimaryTextList.first,
+      },
+      if (modelPrimaryGraphicsList != null) ...{
+        'modelPrimaryGraphicsList': modelPrimaryGraphicsList,
+        if (modelPrimaryGraphicsList.isNotEmpty) 'modelPrimaryGraphics': modelPrimaryGraphicsList.first,
+      },
+      if (modelLiteList != null) ...{
+        'modelLiteList': modelLiteList,
+        if (modelLiteList.isNotEmpty) 'modelLite': modelLiteList.first,
+      },
       'updatedAt': DateTime.now().millisecondsSinceEpoch,
     }).then((_) {
       print("[DatabaseService] User settings saved successfully to Firestore.");
@@ -50,12 +61,21 @@ class DatabaseService {
       final snap = await _userSettingsDoc.get().timeout(const Duration(seconds: 4));
       if (!snap.exists) return null;
       final data = snap.data() ?? {};
+      // Reads new *List fields when present; otherwise wraps the legacy
+      // scalar value into a one-element list so callers always get a list.
+      List<String> readList(String listKey, String scalarKey) {
+        final list = data[listKey] as List?;
+        if (list != null && list.isNotEmpty) return List<String>.from(list);
+        final scalar = data[scalarKey] as String?;
+        if (scalar != null && scalar.trim().isNotEmpty) return [scalar.trim()];
+        return [];
+      }
       return {
         'apiKeys': List<String>.from((data['apiKeys'] as List?) ?? []),
         'models': List<String>.from((data['models'] as List?) ?? []),
-        'modelPrimaryText': data['modelPrimaryText'] as String?,
-        'modelPrimaryGraphics': data['modelPrimaryGraphics'] as String?,
-        'modelLite': data['modelLite'] as String?,
+        'modelPrimaryTextList': readList('modelPrimaryTextList', 'modelPrimaryText'),
+        'modelPrimaryGraphicsList': readList('modelPrimaryGraphicsList', 'modelPrimaryGraphics'),
+        'modelLiteList': readList('modelLiteList', 'modelLite'),
       };
     } catch (e) {
       print("[DatabaseService] Error fetching user settings: $e");

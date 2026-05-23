@@ -284,27 +284,51 @@ class GenerationManager extends ChangeNotifier {
       stopwatch.stop();
       await _recordRunTime('unit_gen_history', stopwatch.elapsedMilliseconds);
 
-      // Pull the freshest cached copy so we don't overwrite concurrent updates
-      // (e.g. another unit that finished generating while this one was running).
-      final baseBook = (await _dbService.getBookFromCache(book.id)) ?? book;
+      // Persist the text-only unit first so the lesson is usable immediately
+      // while the graphics pass runs in the background. Same merge pattern
+      // is reused later for the SVG-enriched unit.
+      Book applyUnit(Book base, Unit u) {
+        final List<Unit> uns = List.from(base.modules[modIdx].sections[secIdx].units);
+        uns[unitIdx] = u;
+        final List<Section> secs = List.from(base.modules[modIdx].sections);
+        secs[secIdx] = secs[secIdx].copyWith(units: uns);
+        final List<Module> mods = List.from(base.modules);
+        mods[modIdx] = mods[modIdx].copyWith(sections: secs);
+        return base.copyWith(modules: mods);
+      }
 
-      final List<Unit> updatedUnits = List.from(baseBook.modules[modIdx].sections[secIdx].units);
-      updatedUnits[unitIdx] = updatedUnit;
+      Book baseBook = (await _dbService.getBookFromCache(book.id)) ?? book;
+      final textOnlyBook = applyUnit(baseBook, updatedUnit);
+      await _dbService.saveGeneratedBook(textOnlyBook);
+      _bookUpdateController.add(textOnlyBook);
 
-      final List<Section> updatedSections = List.from(baseBook.modules[modIdx].sections);
-      updatedSections[secIdx] = updatedSections[secIdx].copyWith(units: updatedUnits);
+      // Stage 2: graphics pass. Failures here don\'t fail the whole lesson —
+      // the user just sees the text-only version. Runs after the text save
+      // so the lesson is immediately usable.
+      try {
+        activeUnitGenerations[unit.id]?.status = 'Rendering diagrams...';
+        notifyListeners();
+        await NotificationService.showProgress(notifId, "Generating Diagrams", "Drawing lesson art...", indeterminate: true);
 
-      final List<Module> updatedModules = List.from(baseBook.modules);
-      updatedModules[modIdx] = updatedModules[modIdx].copyWith(sections: updatedSections);
+        final unitWithArt = await _aiService.generateCanvasArtForUnit(
+          updatedUnit,
+          onProgress: (s) {
+            activeUnitGenerations[unit.id]?.status = s;
+            notifyListeners();
+          },
+        );
 
-      final newBook = baseBook.copyWith(modules: updatedModules);
-
-      await _dbService.saveGeneratedBook(newBook);
+        final freshBase = (await _dbService.getBookFromCache(book.id)) ?? textOnlyBook;
+        final artBook = applyUnit(freshBase, unitWithArt);
+        await _dbService.saveGeneratedBook(artBook);
+        _bookUpdateController.add(artBook);
+      } catch (e) {
+        // Best-effort: log and continue. Lesson is still usable without SVG.
+        print('[GenerationManager] Canvas pass failed for ${unit.id}: $e');
+      }
 
       activeUnitGenerations.remove(unit.id);
       notifyListeners();
-
-      _bookUpdateController.add(newBook);
 
       await NotificationService.cancel(notifId);
       await NotificationService.showActionable(notifId, "Lesson Ready!", "Tap to start learning.", "open_home|");
@@ -321,6 +345,12 @@ class GenerationManager extends ChangeNotifier {
   /// Tracks in-flight unit-manifest generations. Keyed by section id so the
   /// UI can show a loading state on the right section card.
   final Map<String, UnitGenTask> activeSectionManifests = {};
+
+  /// Set of "art target" ids currently regenerating their canvas SVG. The
+  /// id is the lesson id (for the lesson-top diagram) or the slide id (for
+  /// the proof diagram). The UI checks this set to disable the regenerate
+  /// button while a call is in flight.
+  final Set<String> activeCanvasRegens = {};
 
   /// Lazily generates the unit list for a section in a new-flow book.
   /// Idempotent: if the section already has units or a manifest is already
@@ -363,6 +393,81 @@ class GenerationManager extends ChangeNotifier {
       notifyListeners();
       await NotificationService.cancel(notifId);
       await NotificationService.showActionable(notifId, 'Section Planning Failed', 'Could not generate units.', 'error');
+    }
+  }
+
+  /// Regenerates the diagram for a single lesson (top-of-lesson art).
+  /// No-op if the lesson has no `canvasPrompt` set. Persists the new SVG
+  /// to the book and broadcasts the update.
+  Future<void> regenerateLessonCanvas({
+    required Book book,
+    required int modIdx,
+    required int secIdx,
+    required int unitIdx,
+    required int lessonIdx,
+  }) async {
+    final lesson = book.modules[modIdx].sections[secIdx].units[unitIdx].lessons[lessonIdx];
+    if ((lesson.canvasPrompt?.trim().isEmpty ?? true) || activeCanvasRegens.contains(lesson.id)) return;
+    activeCanvasRegens.add(lesson.id);
+    notifyListeners();
+    try {
+      final svg = await _aiService.generateCanvasArt(
+        lesson.canvasPrompt!,
+        contextText: lesson.slides.isNotEmpty ? lesson.slides.first.content : '',
+      );
+      if (svg == null) return; // best-effort: keep old SVG if call failed
+      final base = (await _dbService.getBookFromCache(book.id)) ?? book;
+      final mods = List<Module>.from(base.modules);
+      final secs = List<Section>.from(mods[modIdx].sections);
+      final uns = List<Unit>.from(secs[secIdx].units);
+      final lessons = List<Lesson>.from(uns[unitIdx].lessons);
+      lessons[lessonIdx] = lessons[lessonIdx].copyWith(canvasSvg: svg);
+      uns[unitIdx] = uns[unitIdx].copyWith(lessons: lessons);
+      secs[secIdx] = secs[secIdx].copyWith(units: uns);
+      mods[modIdx] = mods[modIdx].copyWith(sections: secs);
+      final newBook = base.copyWith(modules: mods);
+      await _dbService.saveGeneratedBook(newBook);
+      _bookUpdateController.add(newBook);
+    } finally {
+      activeCanvasRegens.remove(lesson.id);
+      notifyListeners();
+    }
+  }
+
+  /// Regenerates the diagram for a single proof / step_by_step slide. Same
+  /// best-effort semantics as [regenerateLessonCanvas].
+  Future<void> regenerateSlideCanvas({
+    required Book book,
+    required int modIdx,
+    required int secIdx,
+    required int unitIdx,
+    required int lessonIdx,
+    required int slideIdx,
+  }) async {
+    final slide = book.modules[modIdx].sections[secIdx].units[unitIdx].lessons[lessonIdx].slides[slideIdx];
+    if ((slide.canvasPrompt?.trim().isEmpty ?? true) || activeCanvasRegens.contains(slide.id)) return;
+    activeCanvasRegens.add(slide.id);
+    notifyListeners();
+    try {
+      final svg = await _aiService.generateCanvasArt(slide.canvasPrompt!, contextText: slide.content);
+      if (svg == null) return;
+      final base = (await _dbService.getBookFromCache(book.id)) ?? book;
+      final mods = List<Module>.from(base.modules);
+      final secs = List<Section>.from(mods[modIdx].sections);
+      final uns = List<Unit>.from(secs[secIdx].units);
+      final lessons = List<Lesson>.from(uns[unitIdx].lessons);
+      final slides = List<Slide>.from(lessons[lessonIdx].slides);
+      slides[slideIdx] = slides[slideIdx].copyWith(canvasSvg: svg);
+      lessons[lessonIdx] = lessons[lessonIdx].copyWith(slides: slides);
+      uns[unitIdx] = uns[unitIdx].copyWith(lessons: lessons);
+      secs[secIdx] = secs[secIdx].copyWith(units: uns);
+      mods[modIdx] = mods[modIdx].copyWith(sections: secs);
+      final newBook = base.copyWith(modules: mods);
+      await _dbService.saveGeneratedBook(newBook);
+      _bookUpdateController.add(newBook);
+    } finally {
+      activeCanvasRegens.remove(slide.id);
+      notifyListeners();
     }
   }
 

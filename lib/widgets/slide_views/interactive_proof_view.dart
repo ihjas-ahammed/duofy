@@ -2,17 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../models/app_models.dart';
 import '../../theme/app_theme.dart';
+import '../canvas_art_view.dart';
 import '../math_markdown.dart';
 import '../duo_button.dart';
 
 class InteractiveProofView extends StatefulWidget {
   final Slide slide;
   final VoidCallback onComplete;
+  /// Triggered when the user taps the regenerate button on the slide\'s
+  /// canvas. Null disables the regenerate affordance — used when the
+  /// caller doesn\'t know the slide\'s position in the book.
+  final VoidCallback? onRegenerateCanvas;
+  /// Set true while a regenerate call for this slide is in flight so the
+  /// canvas swaps to its spinner state.
+  final bool canvasIsLoading;
 
   const InteractiveProofView({
     super.key,
     required this.slide,
     required this.onComplete,
+    this.onRegenerateCanvas,
+    this.canvasIsLoading = false,
   });
 
   @override
@@ -131,6 +141,16 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                       textAlign: TextAlign.center,
                     ),
                   ),
+
+                // Per-proof canvas art. Only shows when the text AI tagged
+                // the slide with a canvasPrompt (i.e. the proof actually
+                // benefits from a figure). Render-only if the SVG arrived.
+                CanvasArtView(
+                  svg: widget.slide.canvasSvg,
+                  hasPrompt: (widget.slide.canvasPrompt?.trim().isNotEmpty ?? false),
+                  isLoading: widget.canvasIsLoading,
+                  onRegenerate: widget.onRegenerateCanvas,
+                ),
 
                 if (widget.slide.content.isNotEmpty)
                   Container(

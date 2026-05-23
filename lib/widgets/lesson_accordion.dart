@@ -67,7 +67,14 @@ class _LessonAccordionState extends State<LessonAccordion> {
     }
   }
 
-  void _openLesson(Lesson lesson, bool isLocked) async {
+  void _openLesson(
+    Lesson lesson,
+    bool isLocked, {
+    required int modIdx,
+    required int secIdx,
+    required int unitIdx,
+    required int lessonIdx,
+  }) async {
     if (isLocked) {
       bool? preview = await showDialog<bool>(
         context: context,
@@ -84,13 +91,30 @@ class _LessonAccordionState extends State<LessonAccordion> {
       if (preview != true) return;
     }
     await Navigator.push(context, MaterialPageRoute(
-      builder: (_) => LessonScreen(lesson: lesson)
+      builder: (_) => LessonScreen(
+        lesson: lesson,
+        book: widget.book,
+        modIdx: modIdx,
+        secIdx: secIdx,
+        unitIdx: unitIdx,
+        lessonIdx: lessonIdx,
+      ),
     ));
     widget.onLessonFinished();
     _findActiveUnit();
   }
 
-  Widget _buildLessonTile(Lesson lesson, bool isCompleted, bool isLocked, bool isActive, Color secColor) {
+  Widget _buildLessonTile(
+    Lesson lesson,
+    bool isCompleted,
+    bool isLocked,
+    bool isActive,
+    Color secColor, {
+    required int modIdx,
+    required int secIdx,
+    required int unitIdx,
+    required int lessonIdx,
+  }) {
     IconData iconData = isCompleted ? LucideIcons.checkCircle2 : (isLocked ? LucideIcons.lock : LucideIcons.playCircle);
     Color iconColor = isCompleted ? AppTheme.duoGreen : (isLocked ? Colors.white38 : secColor);
     
@@ -102,7 +126,14 @@ class _LessonAccordionState extends State<LessonAccordion> {
         border: Border.all(color: isActive ? secColor : (isCompleted ? AppTheme.duoGreen.withOpacity(0.3) : Colors.white10)),
       ),
       child: ListTile(
-        onTap: () => _openLesson(lesson, isLocked),
+        onTap: () => _openLesson(
+          lesson,
+          isLocked,
+          modIdx: modIdx,
+          secIdx: secIdx,
+          unitIdx: unitIdx,
+          lessonIdx: lessonIdx,
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         leading: Icon(iconData, color: iconColor, size: 28),
         title: Text(
@@ -179,15 +210,20 @@ class _LessonAccordionState extends State<LessonAccordion> {
                         Padding(
                           padding: const EdgeInsets.only(bottom: 8.0),
                           child: Column(
-                            children: unit.lessons.map((lesson) {
-                              bool isCompleted = widget.completedLessons.contains(lesson.id);
-                              bool isLocked = !previousCompleted && !isCompleted;
-                              bool isActive = previousCompleted && !isCompleted;
-
-                              final tile = _buildLessonTile(lesson, isCompleted, isLocked, isActive, secColor);
-                              previousCompleted = isCompleted;
-                              return tile;
-                            }).toList(),
+                            children: [
+                              for (int lIdx = 0; lIdx < unit.lessons.length; lIdx++) ...(() {
+                                final lesson = unit.lessons[lIdx];
+                                final bool isCompleted = widget.completedLessons.contains(lesson.id);
+                                final bool isLocked = !previousCompleted && !isCompleted;
+                                final bool isActive = previousCompleted && !isCompleted;
+                                final tile = _buildLessonTile(
+                                  lesson, isCompleted, isLocked, isActive, secColor,
+                                  modIdx: m, secIdx: s, unitIdx: u, lessonIdx: lIdx,
+                                );
+                                previousCompleted = isCompleted;
+                                return [tile];
+                              })(),
+                            ],
                           ),
                         )
                       ],

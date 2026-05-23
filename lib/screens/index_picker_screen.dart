@@ -297,7 +297,7 @@ class _IndexPickerScreenState extends State<IndexPickerScreen> {
                                   ),
                                 ],
                               ),
-                              const Spacer(),
+                              const SizedBox(height: 8),
                               DuoButton(
                                 text: _isStarting ? 'Starting…' : 'Continue',
                                 color: _isStarting ? Colors.grey.shade700 : AppTheme.duoGreen,

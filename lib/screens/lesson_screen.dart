@@ -4,8 +4,11 @@ import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
+import '../services/database_service.dart';
+import '../services/generation_manager.dart';
 import '../services/global_state.dart';
 import '../services/progress_service.dart';
+import '../widgets/canvas_art_view.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/math_markdown.dart';
 import '../widgets/slide_views/quiz_view.dart';
@@ -16,8 +19,24 @@ import 'lesson_complete_screen.dart';
 
 class LessonScreen extends StatefulWidget {
   final Lesson lesson;
+  /// The following are optional because callers in older paths (e.g. quick
+  /// preview from a non-dashboard surface) may not know them. When all four
+  /// are non-null the in-lesson canvas regenerate button is wired up.
+  final Book? book;
+  final int? modIdx;
+  final int? secIdx;
+  final int? unitIdx;
+  final int? lessonIdx;
 
-  const LessonScreen({super.key, required this.lesson});
+  const LessonScreen({
+    super.key,
+    required this.lesson,
+    this.book,
+    this.modIdx,
+    this.secIdx,
+    this.unitIdx,
+    this.lessonIdx,
+  });
 
   @override
   State<LessonScreen> createState() => _LessonScreenState();
@@ -32,6 +51,11 @@ class _LessonScreenState extends State<LessonScreen> {
   int _totalInteractive = 0;
   int _correctAttempts = 0;
   List<Slide> _slideQueue = [];
+  /// Live copy of the lesson. Starts as the one we were constructed with and
+  /// gets refreshed whenever [GenerationManager] notifies — this is how the
+  /// background canvas-art pass and the user-triggered regenerate button
+  /// reach this screen without it being popped/rebuilt.
+  late Lesson _lesson;
 
   String? _selectedQuizOption;
   String _blankInput = '';
@@ -40,21 +64,70 @@ class _LessonScreenState extends State<LessonScreen> {
   bool _isEditingMode = false;
   final TextEditingController _editController = TextEditingController();
 
-  @override
-  void dispose() {
-    _editController.dispose();
-    super.dispose();
-  }
+  bool get _canRegenerateCanvas =>
+      widget.book != null &&
+      widget.modIdx != null &&
+      widget.secIdx != null &&
+      widget.unitIdx != null &&
+      widget.lessonIdx != null;
 
   @override
   void initState() {
     super.initState();
     _startTime = DateTime.now();
+    _lesson = widget.lesson;
     _buildSlideQueue();
+    GenerationManager.instance.addListener(_onGenerationManagerChange);
+    // Pull the latest from cache once on open in case background art landed
+    // between the dashboard build and this screen mounting.
+    _refreshFromCache();
+  }
+
+  @override
+  void dispose() {
+    GenerationManager.instance.removeListener(_onGenerationManagerChange);
+    _editController.dispose();
+    super.dispose();
+  }
+
+  void _onGenerationManagerChange() {
+    if (!mounted) return;
+    _refreshFromCache();
+  }
+
+  /// Reads the freshest book snapshot from the cache and updates [_lesson]
+  /// with the latest copy at our indices. Cheap — `getBookFromCache` is an
+  /// in-memory map lookup in DatabaseService.
+  Future<void> _refreshFromCache() async {
+    if (!_canRegenerateCanvas) return;
+    try {
+      final fresh = await DatabaseService().getBookFromCache(widget.book!.id);
+      if (fresh == null || !mounted) return;
+      final lesson = fresh
+          .modules[widget.modIdx!]
+          .sections[widget.secIdx!]
+          .units[widget.unitIdx!]
+          .lessons[widget.lessonIdx!];
+      // Only setState if the slides identity or the canvas svg actually
+      // changed, to avoid rebuilds on every notifier tick.
+      if (lesson.canvasSvg != _lesson.canvasSvg ||
+          identical(lesson.slides, _lesson.slides) == false) {
+        setState(() {
+          _lesson = lesson;
+          // Refresh the queue so each Slide object reflects the latest
+          // canvasSvg / content. Length and order remain stable because
+          // we\'re looking up the same lesson in the same book.
+          _slideQueue = List.of(_lesson.slides);
+        });
+      }
+    } catch (_) {
+      // Indices may be stale (book regenerated). Ignore — we keep showing
+      // the snapshot we were constructed with.
+    }
   }
 
   void _buildSlideQueue() {
-    _slideQueue = List.of(widget.lesson.slides);
+    _slideQueue = List.of(_lesson.slides);
 
     for (var slide in _slideQueue) {
       if (['quiz', 'fill_in_blank', 'numerical', 'proof', 'step_by_step'].contains(slide.type)) {
@@ -161,8 +234,20 @@ class _LessonScreenState extends State<LessonScreen> {
     switch (slide.type) {
       case 'step_by_step':
       case 'proof':
+        final slideIdx = _slideQueue.indexOf(slide);
         return InteractiveProofView(
           slide: slide,
+          canvasIsLoading: GenerationManager.instance.activeCanvasRegens.contains(slide.id),
+          onRegenerateCanvas: (_canRegenerateCanvas && slideIdx >= 0)
+              ? () => GenerationManager.instance.regenerateSlideCanvas(
+                    book: widget.book!,
+                    modIdx: widget.modIdx!,
+                    secIdx: widget.secIdx!,
+                    unitIdx: widget.unitIdx!,
+                    lessonIdx: widget.lessonIdx!,
+                    slideIdx: slideIdx,
+                  )
+              : null,
           onComplete: () {
             HapticFeedback.heavyImpact();
             setState(() {
@@ -318,10 +403,32 @@ class _LessonScreenState extends State<LessonScreen> {
               ),
             ),
             
+            // Lesson-level canvas art (when the text AI requested one). Sits
+            // above every slide in this lesson. Proof slides additionally
+            // get their own per-slide canvas inside InteractiveProofView.
+            if (!_isEditingMode)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: CanvasArtView(
+                  svg: _lesson.canvasSvg,
+                  hasPrompt: (_lesson.canvasPrompt?.trim().isNotEmpty ?? false),
+                  isLoading: GenerationManager.instance.activeCanvasRegens.contains(_lesson.id),
+                  onRegenerate: _canRegenerateCanvas
+                      ? () => GenerationManager.instance.regenerateLessonCanvas(
+                            book: widget.book!,
+                            modIdx: widget.modIdx!,
+                            secIdx: widget.secIdx!,
+                            unitIdx: widget.unitIdx!,
+                            lessonIdx: widget.lessonIdx!,
+                          )
+                      : null,
+                ),
+              ),
+
             // Slide Main Content
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                 child: _isEditingMode
                     ? TextField(
                         controller: _editController,

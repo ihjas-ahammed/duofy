@@ -20,10 +20,12 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   List<String> _keys = [];
   List<String> _models = [];
-  String _modelPrimaryText = 'gemma4';
-  String _modelPrimaryGraphics = 'gemini-3.5-flash';
-  String _modelLite = 'gemini-flash-lite-latest';
-  bool _isFetchingModels = false;
+  // Each slot is now an ordered list — the first model is tried first, the
+  // next is the fallback, and so on. Empty list means "use the built-in
+  // default" but the UI keeps at least one entry to avoid that state.
+  List<String> _modelPrimaryText = ['gemma4'];
+  List<String> _modelPrimaryGraphics = ['gemini-3.5-flash'];
+  List<String> _modelLite = ['gemini-flash-lite-latest'];
   bool _isLoading = true;
   final GlobalKey<StringListManagerState> _keysManagerKey = GlobalKey<StringListManagerState>();
   final DatabaseService _db = DatabaseService();
@@ -34,6 +36,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _loadSettings();
+  }
+
+  /// Reads a per-slot model list, falling back to the legacy scalar key for
+  /// users coming from an older install. Always returns a non-empty list
+  /// (uses the supplied [defaultModel] when nothing is stored).
+  Future<List<String>> _loadModelList(
+    SharedPreferences prefs,
+    String listKey,
+    String legacyScalarKey,
+    String defaultModel,
+  ) async {
+    final list = prefs.getStringList(listKey) ?? [];
+    if (list.isNotEmpty) return list;
+    final scalar = prefs.getString(legacyScalarKey);
+    if (scalar != null && scalar.trim().isNotEmpty) return [scalar.trim()];
+    return [defaultModel];
   }
 
   Future<void> _loadSettings() async {
@@ -51,9 +69,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
        models = [oldModel];
     }
 
-    String modelPrimaryText = prefs.getString('model_primary_text') ?? 'gemma4';
-    String modelPrimaryGraphics = prefs.getString('model_primary_graphics') ?? 'gemini-3.5-flash';
-    String modelLite = prefs.getString('model_lite') ?? 'gemini-flash-lite-latest';
+    List<String> primaryText = await _loadModelList(prefs, 'model_primary_text_list', 'model_primary_text', 'gemma4');
+    List<String> primaryGraphics = await _loadModelList(prefs, 'model_primary_graphics_list', 'model_primary_graphics', 'gemini-3.5-flash');
+    List<String> lite = await _loadModelList(prefs, 'model_lite_list', 'model_lite', 'gemini-flash-lite-latest');
 
     // Hydrate from Firestore if local is empty.
     if (keys.isEmpty || models.isEmpty) {
@@ -67,26 +85,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
           models = List<String>.from(remote['models']!);
           await prefs.setStringList('gemini_models_list', models);
         }
-        if (remote['modelPrimaryText'] != null) {
-          modelPrimaryText = remote['modelPrimaryText'];
-          await prefs.setString('model_primary_text', modelPrimaryText);
+        // Each *List remote key returns a (possibly empty) list. Adopt it
+        // only when non-empty so we don\'t clobber the local default.
+        final remotePT = remote['modelPrimaryTextList'] as List? ?? const [];
+        if (remotePT.isNotEmpty) {
+          primaryText = List<String>.from(remotePT);
+          await prefs.setStringList('model_primary_text_list', primaryText);
         }
-        if (remote['modelPrimaryGraphics'] != null) {
-          modelPrimaryGraphics = remote['modelPrimaryGraphics'];
-          await prefs.setString('model_primary_graphics', modelPrimaryGraphics);
+        final remotePG = remote['modelPrimaryGraphicsList'] as List? ?? const [];
+        if (remotePG.isNotEmpty) {
+          primaryGraphics = List<String>.from(remotePG);
+          await prefs.setStringList('model_primary_graphics_list', primaryGraphics);
         }
-        if (remote['modelLite'] != null) {
-          modelLite = remote['modelLite'];
-          await prefs.setString('model_lite', modelLite);
+        final remoteLite = remote['modelLiteList'] as List? ?? const [];
+        if (remoteLite.isNotEmpty) {
+          lite = List<String>.from(remoteLite);
+          await prefs.setStringList('model_lite_list', lite);
         }
       }
     }
 
     _keys = List.from(keys);
     _models = List.from(models);
-    _modelPrimaryText = modelPrimaryText;
-    _modelPrimaryGraphics = modelPrimaryGraphics;
-    _modelLite = modelLite;
+    _modelPrimaryText = primaryText;
+    _modelPrimaryGraphics = primaryGraphics;
+    _modelLite = lite;
 
     setState(() {
       _isLoading = false;
@@ -100,9 +123,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     final keysSaved = await prefs.setStringList('gemini_api_keys_list', _keys);
     final modelsSaved = await prefs.setStringList('gemini_models_list', _models);
-    final pTextSaved = await prefs.setString('model_primary_text', _modelPrimaryText);
-    final pGraphicsSaved = await prefs.setString('model_primary_graphics', _modelPrimaryGraphics);
-    final liteSaved = await prefs.setString('model_lite', _modelLite);
+    final pTextSaved = await prefs.setStringList('model_primary_text_list', _modelPrimaryText);
+    final pGraphicsSaved = await prefs.setStringList('model_primary_graphics_list', _modelPrimaryGraphics);
+    final liteSaved = await prefs.setStringList('model_lite_list', _modelLite);
+
+    // Mirror the head of each list back into the legacy scalar key so other
+    // code paths still relying on it (older app versions, tests) keep
+    // working without a follow-up migration.
+    if (_modelPrimaryText.isNotEmpty) await prefs.setString('model_primary_text', _modelPrimaryText.first);
+    if (_modelPrimaryGraphics.isNotEmpty) await prefs.setString('model_primary_graphics', _modelPrimaryGraphics.first);
+    if (_modelLite.isNotEmpty) await prefs.setString('model_lite', _modelLite.first);
 
     if (!keysSaved || !modelsSaved || !pTextSaved || !pGraphicsSaved || !liteSaved) {
       if (mounted) {
@@ -113,9 +143,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await _db.saveUserSettings(
       apiKeys: _keys,
       models: _models,
-      modelPrimaryText: _modelPrimaryText,
-      modelPrimaryGraphics: _modelPrimaryGraphics,
-      modelLite: _modelLite,
+      modelPrimaryTextList: _modelPrimaryText,
+      modelPrimaryGraphicsList: _modelPrimaryGraphics,
+      modelLiteList: _modelLite,
     );
 
     if (mounted) {
@@ -124,98 +154,150 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _showModelPicker(String slotName) async {
+  /// Fetches the list of models available to the current API key. Mixed
+  /// remote response + the hard-coded model names we want to keep
+  /// discoverable even when the API doesn\'t list them.
+  Future<List<String>> _fetchAvailableModels() async {
+    final response = await http.get(Uri.parse('https://generativelanguage.googleapis.com/v1beta/models?key=${_keys.first}'));
+    if (response.statusCode != 200) {
+      throw Exception('Failed to fetch: ${response.statusCode}');
+    }
+    final data = jsonDecode(response.body);
+    final List fetched = data['models'] ?? [];
+    final List<String> fetchedModels = [];
+    for (var m in fetched) {
+      String name = m['name'];
+      if (name.startsWith('models/')) name = name.substring(7);
+      if (name.contains('gemini') || name.contains('gemma')) fetchedModels.add(name);
+    }
+    for (final id in const ['gemma4', 'gemini-3.5-flash', 'gemini-flash-lite-latest', 'gemma-4-31b-it', 'gemma-4-26b-a4b-it']) {
+      if (!fetchedModels.contains(id)) fetchedModels.add(id);
+    }
+    fetchedModels.sort((a, b) {
+      int rank(String n) {
+        if (n.startsWith('gemma-4') || n == 'gemma4') return 0;
+        if (n.startsWith('gemini-2')) return 1;
+        if (n.startsWith('gemini')) return 2;
+        if (n.startsWith('gemma')) return 3;
+        return 4;
+      }
+      final r = rank(a).compareTo(rank(b));
+      return r != 0 ? r : a.compareTo(b);
+    });
+    return fetchedModels;
+  }
+
+  /// Opens the picker sheet for a slot and appends the chosen model to that
+  /// slot\'s ordered list. Skips duplicates and bumps an existing entry to
+  /// the front if the user re-picks it.
+  Future<void> _addModelToSlot(String slotName) async {
     if (_keys.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please add an API key first.')));
       return;
     }
-
-    setState(() => _isFetchingModels = true);
+    List<String> fetched;
     try {
-      final response = await http.get(Uri.parse('https://generativelanguage.googleapis.com/v1beta/models?key=${_keys.first}'));
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final List fetched = data['models'] ?? [];
-        List<String> fetchedModels = [];
-        
-        for (var m in fetched) {
-          String name = m['name'];
-          if (name.startsWith('models/')) name = name.substring(7);
-          if (name.contains('gemini') || name.contains('gemma')) fetchedModels.add(name);
-        }
-
-        // Add custom Gemma 4 names if not present
-        for (final id in const ['gemma4', 'gemini-3.5-flash', 'gemini-flash-lite-latest', 'gemma-4-31b-it', 'gemma-4-26b-a4b-it']) {
-          if (!fetchedModels.contains(id)) fetchedModels.add(id);
-        }
-
-        fetchedModels.sort((a, b) {
-          int rank(String n) {
-            if (n.startsWith('gemma-4') || n == 'gemma4') return 0;
-            if (n.startsWith('gemini-2')) return 1;
-            if (n.startsWith('gemini')) return 2;
-            if (n.startsWith('gemma')) return 3;
-            return 4;
-          }
-          final r = rank(a).compareTo(rank(b));
-          return r != 0 ? r : a.compareTo(b);
-        });
-
-        if (fetchedModels.isNotEmpty && mounted) {
-           showModalBottomSheet(
-             context: context,
-             backgroundColor: AppTheme.surface,
-             shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-             builder: (ctx) => Padding(
-               padding: const EdgeInsets.all(16.0),
-               child: Column(
-                 crossAxisAlignment: CrossAxisAlignment.start,
-                 children: [
-                   Text('Select Model for $slotName', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white)),
-                   const SizedBox(height: 16),
-                   Expanded(
-                     child: ListView.builder(
-                       itemCount: fetchedModels.length,
-                       itemBuilder: (c, i) => ListTile(
-                         leading: const Icon(LucideIcons.bot, color: AppTheme.duoBlue),
-                         title: Text(fetchedModels[i], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                         onTap: () {
-                            setState(() {
-                              if (slotName == 'Primary - Text') {
-                                _modelPrimaryText = fetchedModels[i];
-                              } else if (slotName == 'Primary - Graphics') {
-                                _modelPrimaryGraphics = fetchedModels[i];
-                              } else if (slotName == 'Lite') {
-                                _modelLite = fetchedModels[i];
-                              }
-                            });
-                            Navigator.pop(ctx);
-                         },
-                       )
-                     ),
-                   ),
-                 ],
-               ),
-             )
-           );
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to fetch: ${response.statusCode}')));
-      }
+      fetched = await _fetchAvailableModels();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-    } finally {
-      setState(() => _isFetchingModels = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+      return;
     }
+    if (!mounted || fetched.isEmpty) return;
+
+    final List<String> current = _listForSlot(slotName);
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Add Fallback Model for $slotName', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white)),
+            const SizedBox(height: 6),
+            const Text(
+              'Models are tried in the order you list them. The first one that succeeds wins.',
+              style: TextStyle(color: Colors.white54, fontSize: 12),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: ListView.builder(
+                itemCount: fetched.length,
+                itemBuilder: (c, i) {
+                  final name = fetched[i];
+                  final alreadyIn = current.contains(name);
+                  return ListTile(
+                    leading: Icon(alreadyIn ? LucideIcons.checkCircle : LucideIcons.bot,
+                        color: alreadyIn ? AppTheme.duoGreen : AppTheme.duoBlue),
+                    title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                    subtitle: alreadyIn
+                        ? const Text('Already in this slot', style: TextStyle(color: Colors.white38, fontSize: 11))
+                        : null,
+                    onTap: () {
+                      setState(() {
+                        final list = _listForSlot(slotName);
+                        // Bump to the end if re-added so user can reorder by
+                        // re-picking, then dedupe.
+                        list.remove(name);
+                        list.add(name);
+                      });
+                      Navigator.pop(ctx);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<String> _listForSlot(String slotName) {
+    switch (slotName) {
+      case 'Primary - Text':
+        return _modelPrimaryText;
+      case 'Primary - Graphics':
+        return _modelPrimaryGraphics;
+      case 'Lite':
+        return _modelLite;
+      default:
+        return [];
+    }
+  }
+
+  void _reorderSlot(String slotName, int oldIndex, int newIndex) {
+    setState(() {
+      final list = _listForSlot(slotName);
+      if (newIndex > oldIndex) newIndex -= 1;
+      final item = list.removeAt(oldIndex);
+      list.insert(newIndex, item);
+    });
+  }
+
+  void _removeFromSlot(String slotName, int index) {
+    setState(() {
+      final list = _listForSlot(slotName);
+      if (list.length <= 1) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Need at least one model per slot.')),
+        );
+        return;
+      }
+      list.removeAt(index);
+    });
   }
 
   Widget _buildModelSlotCard({
     required String title,
     required String subtitle,
-    required String selectedModel,
+    required String slotName,
     required IconData icon,
-    required VoidCallback onTap,
   }) {
+    final List<String> models = _listForSlot(slotName);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -223,36 +305,98 @@ class _SettingsScreenState extends State<SettingsScreen> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white12),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AppTheme.duoBlue, size: 28),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white)),
-                const SizedBox(height: 4),
-                Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.black38,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white10),
-                  ),
-                  child: Text(
-                    selectedModel,
-                    style: const TextStyle(fontFamily: 'monospace', fontSize: 13, color: Colors.amber, fontWeight: FontWeight.bold),
-                  ),
+          Row(
+            children: [
+              Icon(icon, color: AppTheme.duoBlue, size: 28),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white)),
+                    const SizedBox(height: 4),
+                    Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              TextButton.icon(
+                onPressed: () => _addModelToSlot(slotName),
+                icon: const Icon(LucideIcons.plus, size: 14, color: AppTheme.duoBlue),
+                label: const Text('Add fallback', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.w900, fontSize: 11)),
+              ),
+            ],
           ),
-          IconButton(
-            icon: const Icon(LucideIcons.edit2, color: Colors.white54),
-            onPressed: onTap,
+          const SizedBox(height: 8),
+          // Ordered fallback ladder. Drag the handle to change priority,
+          // tap the trash to remove (at least one entry required).
+          ReorderableListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            buildDefaultDragHandles: false,
+            itemCount: models.length,
+            onReorder: (oldIndex, newIndex) => _reorderSlot(slotName, oldIndex, newIndex),
+            itemBuilder: (context, i) {
+              final m = models[i];
+              final isPrimary = i == 0;
+              return Container(
+                key: ValueKey('${slotName}_$i'),
+                margin: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black38,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: isPrimary ? AppTheme.duoBlue.withOpacity(0.6) : Colors.white10),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 22,
+                      height: 22,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: isPrimary ? AppTheme.duoBlue : Colors.white12,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text('${i + 1}',
+                          style: TextStyle(
+                            color: isPrimary ? Colors.white : Colors.white70,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 11,
+                          )),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        m,
+                        style: TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 12,
+                          color: isPrimary ? Colors.amber : Colors.white70,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    if (models.length > 1)
+                      IconButton(
+                        icon: const Icon(LucideIcons.trash2, size: 16, color: Colors.white38),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        onPressed: () => _removeFromSlot(slotName, i),
+                      ),
+                    ReorderableDragStartListener(
+                      index: i,
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 4),
+                        child: Icon(LucideIcons.gripVertical, size: 16, color: Colors.white38),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -336,27 +480,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildModelSlotCard(
               title: 'Primary - Text',
               subtitle: 'Generates final interactive lessons & quizzes.',
-              selectedModel: _modelPrimaryText,
+              slotName: 'Primary - Text',
               icon: LucideIcons.fileText,
-              onTap: () => _showModelPicker('Primary - Text'),
             ),
             const SizedBox(height: 16),
 
             _buildModelSlotCard(
               title: 'Primary - Graphics',
-              subtitle: 'Used for rendering and generating media assets.',
-              selectedModel: _modelPrimaryGraphics,
+              subtitle: 'Generates SVG diagrams for lessons & proofs.',
+              slotName: 'Primary - Graphics',
               icon: LucideIcons.image,
-              onTap: () => _showModelPicker('Primary - Graphics'),
             ),
             const SizedBox(height: 16),
 
             _buildModelSlotCard(
               title: 'Lite',
               subtitle: 'Creates skeletons and maps lesson plan lists.',
-              selectedModel: _modelLite,
+              slotName: 'Lite',
               icon: LucideIcons.zap,
-              onTap: () => _showModelPicker('Lite'),
             ),
             
             const SizedBox(height: 48),

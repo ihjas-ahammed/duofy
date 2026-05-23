@@ -73,16 +73,26 @@ Return ONLY valid JSON matching this exact structure (note: no "units" array):
   /// when the user first opens a section in the new-flow. The attached PDF
   /// is the section\'s pre-chunked content (already offset-corrected at
   /// skeleton time), so the AI does NOT need to think about page numbers.
+  ///
+  /// The book\'s available lesson formats are inlined into the prompt so
+  /// the AI can tag each unit with the format most appropriate for the
+  /// pedagogical content (theory recap, worked example, proof, etc.). The
+  /// user then confirms / edits those assignments before lessons are
+  /// generated.
   static const String unitManifest = '''You are an expert curriculum designer. The attached PDF is the content of ONE section of a textbook:
 Section title: "%section_title%"
 Section description: "%section_description%"
 
 TASK:
-Break this section into a small number of pedagogical units (typically 2-5). Each unit groups a few closely related lessons. Do NOT generate lesson slides here — just the unit metadata.
+Break this section into a small number of pedagogical units (typically 2-5). Each unit groups a few closely related lessons. Do NOT generate lesson slides here — just the unit metadata. Additionally, assign each unit the lesson format that best fits its content.
+
+AVAILABLE LESSON FORMATS (pick one `formatId` per unit, from this exact list):
+%format_catalog%
 
 CRITICAL RULES:
 1. Cover the entire content of the attached PDF. Do not skip topics.
 2. Each unit should be roughly self-contained and digestible in one short study session.
+3. `formatId` MUST be one of the ids listed in AVAILABLE LESSON FORMATS above — do not invent new ids. Match by what the unit is teaching: a derivation/theorem → the proof-walkthrough-style format; a solved problem → the worked-example-style format; conceptual material → the theory-style format.
 
 Return ONLY valid JSON matching this exact structure:
 {
@@ -90,7 +100,8 @@ Return ONLY valid JSON matching this exact structure:
     {
       "id": "u1",
       "title": "Unit Title",
-      "description": "Short summary of what this unit covers"
+      "description": "Short summary of what this unit covers",
+      "formatId": "<one of the available format ids>"
     }
   ]
 }''';
@@ -129,12 +140,15 @@ CRITICAL SCHEMA & MICRO-LEARNING RULES:
 4. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
 5. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}). Markdown math is wrapped in \$ for inline (must flow inside a sentence) or \$\$ for display blocks. Do NOT put a single short inline equation on its own line — keep it inline with surrounding text.
 6. $_iconRule
+7. Each lesson MUST include a `canvasPrompt` field: a 1–2 sentence natural-language description of the single most useful diagram for this lesson (e.g. "Free-body diagram of a block on an inclined plane with friction and normal force vectors labeled"). The diagram should illustrate the lesson\'s core concept and be drawable as a static SVG. Keep it concrete and visual.
+8. For "proof" and "step_by_step" slides ONLY: include a `canvasPrompt` on the slide itself if and only if the proof or worked example genuinely needs a figure to follow (geometry, circuits, triangles, graphs, free-body diagrams, etc.). If the proof is purely algebraic and no figure adds value, omit `canvasPrompt` on the slide.
 
 YOU MUST RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
 {
   "lessons": [
     {
       "id": "l1", "title": "Lesson 1", "description": "...", "icon": "<one value from the icon list>",
+      "canvasPrompt": "One concise sentence describing the lesson\'s key diagram.",
       "slides": [ ... ]
     }
   ]
@@ -159,6 +173,8 @@ CRITICAL SCHEMA & MICRO-LEARNING RULES:
 4. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
 5. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}). Markdown math is wrapped in \$ for inline (must flow inside a sentence) or \$\$ for display blocks. Do NOT put a single short inline equation on its own line — keep it inline with surrounding text.
 6. $_iconRule
+7. Include a `canvasPrompt` field on the lesson: a 1–2 sentence natural-language description of the single most useful diagram for this lesson, illustrating its core concept and drawable as a static SVG.
+8. For "proof" and "step_by_step" slides ONLY: include a `canvasPrompt` on the slide itself if and only if the proof / worked example genuinely needs a figure (geometry, circuits, triangles, graphs, free-body diagrams). Omit on purely algebraic slides.
 
 RETURN ONLY VALID JSON FOR THIS ONE LESSON (no wrapping array, no other keys):
 {
@@ -166,8 +182,32 @@ RETURN ONLY VALID JSON FOR THIS ONE LESSON (no wrapping array, no other keys):
   "title": "Lesson Title",
   "description": "...",
   "icon": "<one value from the icon list>",
+  "canvasPrompt": "One concise sentence describing the lesson\'s key diagram.",
   "slides": [ ... ]
 }''';
+
+  /// Stage-2 prompt: feeds a single `canvasPrompt` (produced by the text
+  /// model) into the graphics model and asks it to return a self-contained
+  /// SVG diagram suitable for embedding in the lesson UI. The result is
+  /// rendered with flutter_svg, so the model must emit raw SVG (no HTML
+  /// wrapper, no scripts, no external font/image links).
+  static const String canvasArt = '''You are a diagram artist. Produce a single static SVG diagram that visually illustrates the following concept.
+
+CONCEPT TO ILLUSTRATE:
+%canvas_prompt%
+
+LESSON CONTEXT (for tone and reference only — do NOT add unrelated decoration):
+%lesson_context%
+
+STRICT REQUIREMENTS:
+1. Output ONE complete `<svg ...>...</svg>` element. No surrounding text, no Markdown fences, no `<html>` / `<body>` wrappers, no XML declaration.
+2. Use `viewBox="0 0 400 240"` and DO NOT set width/height attributes (so the SVG scales to its container). Stay within the viewBox.
+3. Pure inline SVG: shapes (`rect`, `circle`, `line`, `path`, `polygon`, `polyline`), labels (`text`), and grouping (`g`). NO `<script>`, NO `<foreignObject>`, NO `<image href=...>` to external URLs, NO `<style>` blocks (use inline `style="..."` / `stroke=` / `fill=` attributes instead).
+4. Dark UI: assume a dark background. Use light-on-dark colors — strokes around `#E2E8F0` for primary lines, accent fills `#3B82F6` / `#58CC02` / `#FBBF24`, label text `fill="#F8FAFC"`. NEVER assume a white page.
+5. Use `font-family="sans-serif"` and modest font-size (10–14) for labels. Keep labels short.
+6. The diagram must be clearly LEGIBLE at the SVG\'s natural size — leave 8–12px padding inside the viewBox, avoid clutter, prefer 4–10 elements over 30.
+
+Return ONLY the raw SVG markup.''';
 
   static const String qpJson = '''SYSTEM PROMPT:
 %system_prompt%

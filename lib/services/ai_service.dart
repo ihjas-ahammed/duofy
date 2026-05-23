@@ -30,20 +30,27 @@ class AiService {
     return models;
   }
 
-  Future<String> _getPrimaryTextModel() async {
+  /// Reads an ordered list of preferred models for one slot. Falls back to
+  /// the legacy single-string key when the new list key is empty so older
+  /// installs keep working without migration. The returned list is never
+  /// empty — the caller can safely iterate it as a model-fallback ladder.
+  Future<List<String>> _getModelsForSlot(String slotKey, String legacyKey, String fallback) async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('model_primary_text') ?? 'gemma4';
+    final list = prefs.getStringList(slotKey) ?? [];
+    if (list.isNotEmpty) return list;
+    final legacy = prefs.getString(legacyKey);
+    if (legacy != null && legacy.trim().isNotEmpty) return [legacy.trim()];
+    return [fallback];
   }
 
-  Future<String> _getPrimaryGraphicsModel() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('model_primary_graphics') ?? 'gemini-3.5-flash';
-  }
+  Future<List<String>> _getPrimaryTextModels() =>
+      _getModelsForSlot('model_primary_text_list', 'model_primary_text', 'gemma4');
 
-  Future<String> _getLiteModel() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('model_lite') ?? 'gemini-flash-lite-latest';
-  }
+  Future<List<String>> _getPrimaryGraphicsModels() =>
+      _getModelsForSlot('model_primary_graphics_list', 'model_primary_graphics', 'gemini-3.5-flash');
+
+  Future<List<String>> _getLiteModels() =>
+      _getModelsForSlot('model_lite_list', 'model_lite', 'gemini-flash-lite-latest');
 
   Map<String, dynamic> _cleanAndDecodeJson(String text) {
     String cleaned = text.trim();
@@ -199,9 +206,14 @@ class AiService {
     required int chapter1AbsolutePage,
   }) async {
     final keys = await _getKeys();
-    final liteModel = await _getLiteModel();
+    final liteModels = await _getLiteModels();
     final fallbackModels = await _getModels();
-    final List<String> modelsToTry = [liteModel, ...fallbackModels.where((m) => m != liteModel)];
+    // Try each preferred lite model in user order, then any extra fallback
+    // models the user added in the generic models list (without duplicates).
+    final List<String> modelsToTry = [
+      ...liteModels,
+      ...fallbackModels.where((m) => !liteModels.contains(m)),
+    ];
 
     final hydratedPrompt = PromptService.skeleton
         .replaceAll('%filename%', filename)
@@ -243,12 +255,18 @@ class AiService {
 
   Future<Unit> generateUnitContent(Unit unit, Book bookContext, Function(String) onProgress, {String? sectionPdfPath}) async {
     final keys = await _getKeys();
-    final textModel = await _getPrimaryTextModel();
-    final liteModel = await _getLiteModel();
+    final textModels = await _getPrimaryTextModels();
+    final liteModels = await _getLiteModels();
     final fallbackModels = await _getModels();
 
-    final List<String> liteModelsToTry = [liteModel, ...fallbackModels.where((m) => m != liteModel)];
-    final List<String> textModelsToTry = [textModel, ...fallbackModels.where((m) => m != textModel)];
+    final List<String> liteModelsToTry = [
+      ...liteModels,
+      ...fallbackModels.where((m) => !liteModels.contains(m)),
+    ];
+    final List<String> textModelsToTry = [
+      ...textModels,
+      ...fallbackModels.where((m) => !textModels.contains(m)),
+    ];
 
     // New-flow units share the section\'s PDF chunk; old-flow units have
     // their own pdfPath. Either way, we need a real, on-disk file.
@@ -259,8 +277,15 @@ class AiService {
       throw Exception("Local file missing. Tap 'Restore' on the warning banner to re-link source files.");
     }
 
-    final List<SlideTemplate> template = bookContext.lessonTemplate ?? SlideTemplate.defaultTemplate;
-    final String templateLayoutString = template.map((t) => "- Type: ${t.type} | Condition: ${t.condition} | Instructions: ${t.description}").join('\n');
+    // Pick the format for THIS unit. Books carry multiple formats so units
+    // teaching different things (theory vs example vs proof) get generated
+    // against different slide structures. Falls back to the book default
+    // when unit.formatId is unset or stale.
+    final LessonFormat format = bookContext.formatForUnit(unit);
+    final List<SlideTemplate> template = format.slides;
+    final String templateLayoutString = template
+        .map((t) => "- Type: ${t.type} | Condition: ${t.condition} | Instructions: ${t.description}")
+        .join('\n');
 
     Exception? lastException;
 
@@ -367,6 +392,113 @@ class AiService {
   /// (manifest only — no slides). Used by the new TOC-only flow the first
   /// time a section is opened. Returns units with empty `lessons` and
   /// `isGenerated == false`, so the existing per-unit lesson generation
+  /// Stage-2 graphics call: turn a single natural-language `canvasPrompt`
+  /// into SVG markup using the user\'s configured graphics models (with
+  /// fallback). Returns null when every model/key combination fails so the
+  /// caller can persist the lesson without art rather than blow up the
+  /// whole generation.
+  ///
+  /// [contextText] is a short snippet of the surrounding lesson content so
+  /// the model can keep the diagram thematically consistent (e.g. variable
+  /// names, units). Pass an empty string when not relevant.
+  Future<String?> generateCanvasArt(String canvasPrompt, {String contextText = ''}) async {
+    if (canvasPrompt.trim().isEmpty) return null;
+
+    final keys = await _getKeys();
+    final graphicsModels = await _getPrimaryGraphicsModels();
+    final fallbackModels = await _getModels();
+    // Cap context to keep prompts small — the SVG diagram doesn\'t need the
+    // entire lesson, only a few sentences for tone matching.
+    final trimmedContext = contextText.length > 800 ? contextText.substring(0, 800) : contextText;
+    final hydrated = PromptService.canvasArt
+        .replaceAll('%canvas_prompt%', canvasPrompt.trim())
+        .replaceAll('%lesson_context%', trimmedContext);
+
+    final List<String> modelsToTry = [
+      ...graphicsModels,
+      ...fallbackModels.where((m) => !graphicsModels.contains(m)),
+    ];
+
+    Object? lastErr;
+    for (final modelName in modelsToTry) {
+      for (final apiKey in keys) {
+        try {
+          final model = GenerativeModel(model: modelName, apiKey: apiKey);
+          final response = await _retryTransient(
+            () => model.generateContent([Content.text(hydrated)])
+                .timeout(const Duration(minutes: 2)),
+            onRetry: (a, e) => print('[AiService] Canvas art transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+          );
+          final text = response.text;
+          if (text == null || text.trim().isEmpty) continue;
+          final svg = _extractSvg(text);
+          if (svg != null) return svg;
+        } catch (e) {
+          lastErr = e;
+          print('[AiService] Canvas art failed ($modelName): ${_cleanErrMsg(e)}');
+        }
+      }
+    }
+    if (lastErr != null) {
+      print('[AiService] Canvas art exhausted all models. Last: ${_cleanErrMsg(lastErr)}');
+    }
+    return null;
+  }
+
+  /// Pulls a clean `<svg ...>...</svg>` substring out of the model\'s raw
+  /// response. Strips Markdown code fences (```svg / ```xml / ```), and any
+  /// chatty text the model added around the diagram.
+  String? _extractSvg(String raw) {
+    var s = raw.trim();
+    // Strip code fences if present.
+    final fence = RegExp(r'```(?:svg|xml|html)?\s*([\s\S]*?)```', multiLine: true);
+    final fenceMatch = fence.firstMatch(s);
+    if (fenceMatch != null) s = fenceMatch.group(1)!.trim();
+    // Find the SVG envelope.
+    final svgOpen = s.indexOf('<svg');
+    final svgClose = s.lastIndexOf('</svg>');
+    if (svgOpen < 0 || svgClose < 0 || svgClose < svgOpen) return null;
+    return s.substring(svgOpen, svgClose + '</svg>'.length).trim();
+  }
+
+  /// Walks every lesson + every proof/step_by_step slide in [unit] that has
+  /// a `canvasPrompt` but no `canvasSvg` yet, and fills the SVG in via
+  /// [generateCanvasArt]. Failures are tolerated — missing art just means
+  /// the corresponding screen renders without a diagram. [onProgress] is
+  /// invoked after each lesson so the UI can show "Rendering diagrams…".
+  Future<Unit> generateCanvasArtForUnit(Unit unit, {void Function(String status)? onProgress}) async {
+    final List<Lesson> updatedLessons = [];
+    int idx = 0;
+    final total = unit.lessons.length;
+    for (final lesson in unit.lessons) {
+      idx++;
+      onProgress?.call('Rendering diagrams $idx of $total...');
+
+      // 1. Lesson-level diagram.
+      String? lessonSvg = lesson.canvasSvg;
+      if (lessonSvg == null && (lesson.canvasPrompt?.trim().isNotEmpty ?? false)) {
+        // Use the lesson\'s first theory slide (or whatever\'s first) as
+        // context so the SVG is thematically consistent.
+        final ctx = lesson.slides.isNotEmpty ? lesson.slides.first.content : '';
+        lessonSvg = await generateCanvasArt(lesson.canvasPrompt!, contextText: ctx);
+      }
+
+      // 2. Per-slide diagrams for proof / step_by_step slides only.
+      final List<Slide> updatedSlides = [];
+      for (final slide in lesson.slides) {
+        final isProofLike = slide.type == 'proof' || slide.type == 'step_by_step';
+        String? slideSvg = slide.canvasSvg;
+        if (isProofLike && slideSvg == null && (slide.canvasPrompt?.trim().isNotEmpty ?? false)) {
+          slideSvg = await generateCanvasArt(slide.canvasPrompt!, contextText: slide.content);
+        }
+        updatedSlides.add(slide.copyWith(canvasSvg: slideSvg));
+      }
+
+      updatedLessons.add(lesson.copyWith(canvasSvg: lessonSvg, slides: updatedSlides));
+    }
+    return unit.copyWith(lessons: updatedLessons);
+  }
+
   /// path continues to work unchanged.
   Future<List<Unit>> generateUnitManifest(Section section, Book bookContext) async {
     if (section.pdfPath == null) {
@@ -378,13 +510,23 @@ class AiService {
     }
 
     final keys = await _getKeys();
-    final liteModel = await _getLiteModel();
+    final liteModels = await _getLiteModels();
     final fallbackModels = await _getModels();
-    final List<String> modelsToTry = [liteModel, ...fallbackModels.where((m) => m != liteModel)];
+    final List<String> modelsToTry = [
+      ...liteModels,
+      ...fallbackModels.where((m) => !liteModels.contains(m)),
+    ];
+
+    // Build the catalog the AI picks `formatId` from. Each entry is one
+    // line: "- <id> :: <name> — <one-line summary>".
+    final formatCatalog = bookContext.lessonFormats
+        .map((f) => '- ${f.id} :: ${f.name} — ${f.description}')
+        .join('\n');
 
     final hydratedPrompt = PromptService.unitManifest
         .replaceAll('%section_title%', section.title)
-        .replaceAll('%section_description%', section.description);
+        .replaceAll('%section_description%', section.description)
+        .replaceAll('%format_catalog%', formatCatalog);
 
     final parts = <Part>[TextPart(hydratedPrompt), ...await _buildFileParts([chunkFile])];
 
@@ -413,12 +555,22 @@ class AiService {
             throw Exception('Unit manifest contained no units.');
           }
 
+          final validFormatIds = bookContext.lessonFormats.map((f) => f.id).toSet();
           final units = <Unit>[];
           for (var i = 0; i < unitsData.length; i++) {
             final raw = unitsData[i];
             if (raw is! Map) continue;
             final base = Unit.fromJson(Map<String, dynamic>.from(raw));
             final id = base.id.isNotEmpty ? base.id : 'u${i + 1}';
+            // Validate the AI\'s formatId — models sometimes invent ids,
+            // case-mangle them, or omit them entirely. We accept only ids
+            // that match one of the configured formats; everything else
+            // falls back to the book default so unit generation never
+            // breaks on a bad suggestion.
+            final claimedFormat = base.formatId;
+            final acceptedFormat = (claimedFormat != null && validFormatIds.contains(claimedFormat))
+                ? claimedFormat
+                : bookContext.defaultFormatId;
             units.add(base.copyWith(
               id: '${section.id}-$id',
               isGenerated: false,
@@ -428,6 +580,7 @@ class AiService {
               pdfPath: null,
               startPage: null,
               endPage: null,
+              formatId: acceptedFormat,
             ));
           }
           if (units.isEmpty) throw Exception('Unit manifest had no usable entries.');
@@ -515,9 +668,12 @@ class AiService {
 
   Future<QuestionPaper> generateQuestionPaper(List<File> files, String qpTitle, String? systemPrompt) async {
     final keys = await _getKeys();
-    final textModel = await _getPrimaryTextModel();
+    final textModels = await _getPrimaryTextModels();
     final fallbackModels = await _getModels();
-    final List<String> modelsToTry = [textModel, ...fallbackModels.where((m) => m != textModel)];
+    final List<String> modelsToTry = [
+      ...textModels,
+      ...fallbackModels.where((m) => !textModels.contains(m)),
+    ];
 
     final hydratedPrompt = PromptService.qpJson
         .replaceAll('%system_prompt%', systemPrompt ?? "You are an expert tutor.");

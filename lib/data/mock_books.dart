@@ -234,6 +234,8 @@ final List<Book> mockBooks = [
           )
         ]
       )
-    ]
+    ],
+    lessonFormats: LessonFormat.defaultFormats,
+    defaultFormatId: 'default',
   )
 ];

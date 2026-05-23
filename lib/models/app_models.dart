@@ -58,6 +58,84 @@ class SlideTemplate {
   ];
 }
 
+/// A named collection of [SlideTemplate]s used to generate one kind of
+/// lesson (e.g. "Theory", "Worked Example", "Proof Walkthrough"). A book
+/// owns multiple formats; each unit can be tagged with one so different
+/// units in the same book are generated against different pedagogical
+/// templates.
+class LessonFormat {
+  final String id;
+  final String name;
+  final String description;
+  final List<SlideTemplate> slides;
+
+  LessonFormat({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.slides,
+  });
+
+  factory LessonFormat.fromJson(Map<String, dynamic> json) {
+    return LessonFormat(
+      id: _str(json['id']),
+      name: _str(json['name'], 'Format'),
+      description: _str(json['description']),
+      slides: (json['slides'] as List?)
+              ?.map((s) => SlideTemplate.fromJson(s is Map ? Map<String, dynamic>.from(s) : {}))
+              .toList() ??
+          SlideTemplate.defaultTemplate,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'description': description,
+        'slides': slides.map((s) => s.toJson()).toList(),
+      };
+
+  LessonFormat copyWith({String? id, String? name, String? description, List<SlideTemplate>? slides}) =>
+      LessonFormat(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        description: description ?? this.description,
+        slides: slides ?? this.slides,
+      );
+
+  /// The starter pack a new book gets when the user hasn\'t configured
+  /// anything yet. Three commonly-needed formats covering general theory,
+  /// worked examples, and proofs. Settings can add/edit/remove freely.
+  static List<LessonFormat> get defaultFormats => [
+        LessonFormat(
+          id: 'default',
+          name: 'Theory',
+          description: 'Standard theory lesson: definitions, explanation, recall checks, quiz.',
+          slides: SlideTemplate.defaultTemplate,
+        ),
+        LessonFormat(
+          id: 'worked-example',
+          name: 'Worked Example',
+          description: 'A single solved problem broken into interactive steps.',
+          slides: [
+            SlideTemplate(type: 'theory', condition: 'Always', description: 'Restate the problem and the technique being used in 1-2 sentences.'),
+            SlideTemplate(type: 'step_by_step', condition: 'Always', description: 'Solve the example as an interactive multi-step walkthrough where the learner picks the next step.'),
+            SlideTemplate(type: 'quiz', condition: 'Always', description: 'A multiple-choice follow-up applying the same technique to a near-identical problem.'),
+          ],
+        ),
+        LessonFormat(
+          id: 'proof-walkthrough',
+          name: 'Proof Walkthrough',
+          description: 'Step-by-step derivation of a theorem or formula.',
+          slides: [
+            SlideTemplate(type: 'theory', condition: 'Always', description: 'State the theorem/result and the intuition for why it holds in 1-2 sentences.'),
+            SlideTemplate(type: 'proof', condition: 'Always', description: 'Full interactive step-by-step proof.'),
+            SlideTemplate(type: 'fill_in_blank', condition: 'Always', description: 'Recall the key inequality, identity or definition that powered the proof.'),
+          ],
+        ),
+      ];
+}
+
 class Book {
   final String id;
   final String title;
@@ -70,13 +148,22 @@ class Book {
   final bool isGlobal;
   final List<Module> modules;
   final List<QuestionPaper> questionPapers;
-  final List<SlideTemplate>? lessonTemplate;
+  /// Named collections of slide templates. A book carries several so that
+  /// different units (theory vs. example vs. proof) can be generated with
+  /// different pedagogical structures. Always non-empty after parsing — an
+  /// old book\'s single `lessonTemplate` is migrated into a "default"
+  /// format on read, and books missing both fields fall back to
+  /// [LessonFormat.defaultFormats].
+  final List<LessonFormat> lessonFormats;
+  /// Id of the format used when a unit has no explicit `formatId` assigned.
+  /// Always points to a real entry in [lessonFormats] after migration.
+  final String defaultFormatId;
 
   Book({
-    required this.id, 
-    required this.title, 
-    required this.description, 
-    required this.icon, 
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.icon,
     this.systemPrompt,
     this.updatedAt,
     this.authorId,
@@ -84,10 +171,39 @@ class Book {
     this.isGlobal = false,
     required this.modules,
     this.questionPapers = const [],
-    this.lessonTemplate,
+    required this.lessonFormats,
+    required this.defaultFormatId,
   });
 
   factory Book.fromJson(Map<String, dynamic> json) {
+    // ---- Format-list migration --------------------------------------------
+    // Three cases to handle, in order of preference:
+    //   1. Modern: `lessonFormats` array + `defaultFormatId`.
+    //   2. Legacy: a single `lessonTemplate` slide list — wrap into one
+    //      "Default" format so existing books keep working unchanged.
+    //   3. Brand-new book with neither: use the starter pack.
+    List<LessonFormat> formats;
+    String defaultId;
+    final formatsJson = json['lessonFormats'] as List?;
+    if (formatsJson != null && formatsJson.isNotEmpty) {
+      formats = formatsJson
+          .map((f) => LessonFormat.fromJson(f is Map ? Map<String, dynamic>.from(f) : {}))
+          .toList();
+      final claimedDefault = _strOpt(json['defaultFormatId']);
+      defaultId = (claimedDefault != null && formats.any((f) => f.id == claimedDefault))
+          ? claimedDefault
+          : formats.first.id;
+    } else if (json['lessonTemplate'] is List) {
+      final slides = (json['lessonTemplate'] as List)
+          .map((t) => SlideTemplate.fromJson(t is Map ? Map<String, dynamic>.from(t) : {}))
+          .toList();
+      formats = [LessonFormat(id: 'default', name: 'Default', description: 'Migrated from previous single-template setup.', slides: slides)];
+      defaultId = 'default';
+    } else {
+      formats = LessonFormat.defaultFormats;
+      defaultId = formats.first.id;
+    }
+
     return Book(
       id: _str(json['id']),
       title: _str(json['title']),
@@ -100,7 +216,8 @@ class Book {
       isGlobal: _bool(json['isGlobal'], false),
       modules: (json['modules'] as List?)?.map((m) => Module.fromJson(m is Map ? Map<String, dynamic>.from(m) : {})).toList() ?? [],
       questionPapers: (json['questionPapers'] as List?)?.map((q) => QuestionPaper.fromJson(q is Map ? Map<String, dynamic>.from(q) : {})).toList() ?? [],
-      lessonTemplate: (json['lessonTemplate'] as List?)?.map((t) => SlideTemplate.fromJson(t is Map ? Map<String, dynamic>.from(t) : {})).toList(),
+      lessonFormats: formats,
+      defaultFormatId: defaultId,
     );
   }
 
@@ -116,8 +233,24 @@ class Book {
     'isGlobal': isGlobal,
     'modules': modules.map((m) => m.toJson()).toList(),
     'questionPapers': questionPapers.map((q) => q.toJson()).toList(),
-    if (lessonTemplate != null) 'lessonTemplate': lessonTemplate!.map((t) => t.toJson()).toList(),
+    'lessonFormats': lessonFormats.map((f) => f.toJson()).toList(),
+    'defaultFormatId': defaultFormatId,
   };
+
+  /// Returns the format the AI should use for [unit] — its explicit
+  /// [Unit.formatId] when valid, otherwise the book\'s default. Never null.
+  LessonFormat formatForUnit(Unit unit) {
+    final wanted = unit.formatId;
+    if (wanted != null) {
+      for (final f in lessonFormats) {
+        if (f.id == wanted) return f;
+      }
+    }
+    for (final f in lessonFormats) {
+      if (f.id == defaultFormatId) return f;
+    }
+    return lessonFormats.first;
+  }
 
   Book copyWith({
     String? id,
@@ -131,7 +264,8 @@ class Book {
     bool? isGlobal,
     List<Module>? modules,
     List<QuestionPaper>? questionPapers,
-    List<SlideTemplate>? lessonTemplate,
+    List<LessonFormat>? lessonFormats,
+    String? defaultFormatId,
   }) {
     return Book(
       id: id ?? this.id,
@@ -145,7 +279,8 @@ class Book {
       isGlobal: isGlobal ?? this.isGlobal,
       modules: modules ?? this.modules,
       questionPapers: questionPapers ?? this.questionPapers,
-      lessonTemplate: lessonTemplate ?? this.lessonTemplate,
+      lessonFormats: lessonFormats ?? this.lessonFormats,
+      defaultFormatId: defaultFormatId ?? this.defaultFormatId,
     );
   }
 }
@@ -304,6 +439,10 @@ class Section {
   final int? endPage;
   final String? pdfPath;
   final bool unitsGenerated;
+  /// Set to true once the user has reviewed the AI\'s per-unit format
+  /// suggestions (or accepted them as-is). Lessons stay gated behind a
+  /// confirmation panel until this flips true.
+  final bool unitFormatsConfirmed;
 
   Section({
     required this.id,
@@ -315,6 +454,7 @@ class Section {
     this.endPage,
     this.pdfPath,
     this.unitsGenerated = false,
+    this.unitFormatsConfirmed = false,
   });
 
   factory Section.fromJson(Map<String, dynamic> json) {
@@ -328,6 +468,7 @@ class Section {
       endPage: json['endPage'] is num ? (json['endPage'] as num).toInt() : int.tryParse(_str(json['endPage'])),
       pdfPath: _strOpt(json['pdfPath']),
       unitsGenerated: _bool(json['unitsGenerated'], false),
+      unitFormatsConfirmed: _bool(json['unitFormatsConfirmed'], false),
     );
   }
 
@@ -341,6 +482,7 @@ class Section {
     if (endPage != null) 'endPage': endPage,
     if (pdfPath != null) 'pdfPath': pdfPath,
     if (unitsGenerated) 'unitsGenerated': unitsGenerated,
+    if (unitFormatsConfirmed) 'unitFormatsConfirmed': unitFormatsConfirmed,
   };
 
   /// True for skeletons that carry their own page-range and PDF chunk and
@@ -352,6 +494,11 @@ class Section {
   /// skeleton time.
   bool get needsUnitManifest => isLazySection && !unitsGenerated;
 
+  /// True when the units are present but the user hasn\'t signed off on
+  /// the AI\'s per-unit format assignments yet.
+  bool get needsFormatConfirmation =>
+      isLazySection && unitsGenerated && units.isNotEmpty && !unitFormatsConfirmed;
+
   Section copyWith({
     String? id,
     String? title,
@@ -362,6 +509,7 @@ class Section {
     int? endPage,
     String? pdfPath,
     bool? unitsGenerated,
+    bool? unitFormatsConfirmed,
   }) {
     return Section(
       id: id ?? this.id,
@@ -373,6 +521,7 @@ class Section {
       endPage: endPage ?? this.endPage,
       pdfPath: pdfPath ?? this.pdfPath,
       unitsGenerated: unitsGenerated ?? this.unitsGenerated,
+      unitFormatsConfirmed: unitFormatsConfirmed ?? this.unitFormatsConfirmed,
     );
   }
 }
@@ -388,14 +537,14 @@ class Unit {
   final List<Lesson> lessons;
 
   Unit({
-    required this.id, 
-    required this.title, 
-    required this.description, 
+    required this.id,
+    required this.title,
+    required this.description,
     this.startPage,
     this.endPage,
     required this.isGenerated,
     this.pdfPath,
-    required this.lessons
+    required this.lessons,
   });
 
   factory Unit.fromJson(Map<String, dynamic> json) {
@@ -451,8 +600,32 @@ class Lesson {
   final String description;
   final String icon;
   final List<Slide> slides;
+  /// Id of the [LessonFormat] this specific lesson follows. Different
+  /// lessons in the same unit may pick different formats (e.g. a unit on
+  /// "Newton\'s laws" can contain a theory lesson, a worked-example lesson
+  /// and a proof lesson). The AI picks one per lesson during generation;
+  /// null falls back to the book\'s default format.
+  final String? formatId;
+  /// Natural-language description of the diagram that best illustrates
+  /// this lesson. The text AI emits it during lesson generation; the
+  /// graphics AI later turns it into [canvasSvg]. Null only on lessons
+  /// generated before canvas-art support existed.
+  final String? canvasPrompt;
+  /// Raw SVG markup for the diagram, ready to render via flutter_svg.
+  /// Lives separately from [canvasPrompt] so the user can regenerate the
+  /// art at any time without losing the prompt.
+  final String? canvasSvg;
 
-  Lesson({required this.id, required this.title, required this.description, required this.icon, required this.slides});
+  Lesson({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.slides,
+    this.formatId,
+    this.canvasPrompt,
+    this.canvasSvg,
+  });
 
   factory Lesson.fromJson(Map<String, dynamic> json) {
     return Lesson(
@@ -461,6 +634,9 @@ class Lesson {
       description: _str(json['description']),
       icon: _str(json['icon'], 'BookOpen'),
       slides: (json['slides'] as List?)?.map((s) => Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
+      formatId: _strOpt(json['formatId']),
+      canvasPrompt: _strOpt(json['canvasPrompt']),
+      canvasSvg: _strOpt(json['canvasSvg']),
     );
   }
 
@@ -470,6 +646,9 @@ class Lesson {
     'description': description,
     'icon': icon,
     'slides': slides.map((s) => s.toJson()).toList(),
+    if (formatId != null) 'formatId': formatId,
+    if (canvasPrompt != null) 'canvasPrompt': canvasPrompt,
+    if (canvasSvg != null) 'canvasSvg': canvasSvg,
   };
 
   Lesson copyWith({
@@ -478,6 +657,9 @@ class Lesson {
     String? description,
     String? icon,
     List<Slide>? slides,
+    String? formatId,
+    String? canvasPrompt,
+    String? canvasSvg,
   }) {
     return Lesson(
       id: id ?? this.id,
@@ -485,6 +667,9 @@ class Lesson {
       description: description ?? this.description,
       icon: icon ?? this.icon,
       slides: slides ?? this.slides,
+      formatId: formatId ?? this.formatId,
+      canvasPrompt: canvasPrompt ?? this.canvasPrompt,
+      canvasSvg: canvasSvg ?? this.canvasSvg,
     );
   }
 }
@@ -526,7 +711,7 @@ class InteractiveStep {
 
 class Slide {
   final String id;
-  final String type; 
+  final String type;
   final String title;
   String content;
   final String? interactiveCanvasHtml;
@@ -537,6 +722,12 @@ class Slide {
   final List<String>? blankDistractors;
   final double? numericAnswer;
   final double? numericTolerance;
+  /// Optional per-slide diagram (only used today by proof/step_by_step
+  /// slides). When the slide\'s content actually demands a visual the AI
+  /// emits a [canvasPrompt]; otherwise this stays null and no diagram is
+  /// shown. Mirror of [Lesson.canvasPrompt]/[Lesson.canvasSvg].
+  final String? canvasPrompt;
+  final String? canvasSvg;
 
   Slide({
     required this.id,
@@ -551,6 +742,8 @@ class Slide {
     this.blankDistractors,
     this.numericAnswer,
     this.numericTolerance,
+    this.canvasPrompt,
+    this.canvasSvg,
   });
 
   factory Slide.fromJson(Map<String, dynamic> json) {
@@ -607,6 +800,8 @@ class Slide {
       blankDistractors: (json['blankDistractors'] as List?)?.map((s) => _str(s)).toList(),
       numericAnswer: _dblOpt(json['numericAnswer']),
       numericTolerance: _dblOpt(json['numericTolerance']) ?? 0.01,
+      canvasPrompt: _strOpt(json['canvasPrompt']),
+      canvasSvg: _strOpt(json['canvasSvg']),
     );
   }
 
@@ -623,6 +818,8 @@ class Slide {
     if (blankDistractors != null) 'blankDistractors': blankDistractors,
     if (numericAnswer != null) 'numericAnswer': numericAnswer,
     if (numericTolerance != null) 'numericTolerance': numericTolerance,
+    if (canvasPrompt != null) 'canvasPrompt': canvasPrompt,
+    if (canvasSvg != null) 'canvasSvg': canvasSvg,
   };
 
   Slide copyWith({
@@ -638,6 +835,8 @@ class Slide {
     List<String>? blankDistractors,
     double? numericAnswer,
     double? numericTolerance,
+    String? canvasPrompt,
+    String? canvasSvg,
   }) {
     return Slide(
       id: id ?? this.id,
@@ -652,6 +851,8 @@ class Slide {
       blankDistractors: blankDistractors ?? this.blankDistractors,
       numericAnswer: numericAnswer ?? this.numericAnswer,
       numericTolerance: numericTolerance ?? this.numericTolerance,
+      canvasPrompt: canvasPrompt ?? this.canvasPrompt,
+      canvasSvg: canvasSvg ?? this.canvasSvg,
     );
   }
 }
