@@ -7,17 +7,37 @@ import '../services/generation_manager.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 
-class _UnitEditor {
+/// A single editable page-range row. Wraps either a Unit (legacy flow) or a
+/// Section (new TOC-only flow); only the indices needed to write the value
+/// back into the right slot of the Book change between the two cases.
+class _RangeEditor {
   final int modIdx;
   final int secIdx;
-  final int unitIdx;
-  final Unit originalUnit;
+  final int? unitIdx; // null for section-level (new-flow) editors
+  final String title;
+  final String subtitle;
   final TextEditingController startCtrl;
   final TextEditingController endCtrl;
 
-  _UnitEditor(this.modIdx, this.secIdx, this.unitIdx, this.originalUnit)
-      : startCtrl = TextEditingController(text: originalUnit.startPage?.toString() ?? ''),
-        endCtrl = TextEditingController(text: originalUnit.endPage?.toString() ?? '');
+  _RangeEditor.section({
+    required this.modIdx,
+    required this.secIdx,
+    required Section section,
+  })  : unitIdx = null,
+        title = section.title,
+        subtitle = 'M${modIdx + 1} • S${secIdx + 1}',
+        startCtrl = TextEditingController(text: section.startPage?.toString() ?? ''),
+        endCtrl = TextEditingController(text: section.endPage?.toString() ?? '');
+
+  _RangeEditor.unit({
+    required this.modIdx,
+    required this.secIdx,
+    required int this.unitIdx,
+    required Unit unit,
+  })  : title = unit.title,
+        subtitle = 'M${modIdx + 1} • S${secIdx + 1} • U${unitIdx + 1}',
+        startCtrl = TextEditingController(text: unit.startPage?.toString() ?? ''),
+        endCtrl = TextEditingController(text: unit.endPage?.toString() ?? '');
 }
 
 class PdfSplitPreviewScreen extends StatefulWidget {
@@ -39,7 +59,7 @@ class PdfSplitPreviewScreen extends StatefulWidget {
 class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
   final PdfViewerController _pdfViewerController = PdfViewerController();
   final PageController _imagePageController = PageController();
-  final List<_UnitEditor> _editors = [];
+  final List<_RangeEditor> _editors = [];
   bool _isPdf = false;
   int _currentImageIndex = 0;
 
@@ -53,9 +73,16 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
   void _flattenHierarchy() {
     for (int m = 0; m < widget.skeletonBook.modules.length; m++) {
       for (int s = 0; s < widget.skeletonBook.modules[m].sections.length; s++) {
-        for (int u = 0; u < widget.skeletonBook.modules[m].sections[s].units.length; u++) {
-          final unit = widget.skeletonBook.modules[m].sections[s].units[u];
-          _editors.add(_UnitEditor(m, s, u, unit));
+        final section = widget.skeletonBook.modules[m].sections[s];
+        // New-flow sections own the page range; show one editor per section.
+        if (section.startPage != null || section.endPage != null) {
+          _editors.add(_RangeEditor.section(modIdx: m, secIdx: s, section: section));
+          continue;
+        }
+        // Old-flow sections delegate to their units.
+        for (int u = 0; u < section.units.length; u++) {
+          final unit = section.units[u];
+          _editors.add(_RangeEditor.unit(modIdx: m, secIdx: s, unitIdx: u, unit: unit));
         }
       }
     }
@@ -63,20 +90,25 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
 
   void _commitSplits() {
     List<Module> updatedModules = List.from(widget.skeletonBook.modules);
-    
+
     for (var editor in _editors) {
       int? sPage = int.tryParse(editor.startCtrl.text);
       int? ePage = int.tryParse(editor.endCtrl.text);
-      
+
       final mIdx = editor.modIdx;
       final sIdx = editor.secIdx;
-      final uIdx = editor.unitIdx;
-      
+
       final List<Section> modSections = List.from(updatedModules[mIdx].sections);
-      final List<Unit> secUnits = List.from(modSections[sIdx].units);
-      
-      secUnits[uIdx] = secUnits[uIdx].copyWith(startPage: sPage, endPage: ePage);
-      modSections[sIdx] = modSections[sIdx].copyWith(units: secUnits);
+
+      if (editor.unitIdx == null) {
+        // Section-level (new flow) — page range lives on the section itself.
+        modSections[sIdx] = modSections[sIdx].copyWith(startPage: sPage, endPage: ePage);
+      } else {
+        // Unit-level (old flow).
+        final List<Unit> secUnits = List.from(modSections[sIdx].units);
+        secUnits[editor.unitIdx!] = secUnits[editor.unitIdx!].copyWith(startPage: sPage, endPage: ePage);
+        modSections[sIdx] = modSections[sIdx].copyWith(units: secUnits);
+      }
       updatedModules[mIdx] = updatedModules[mIdx].copyWith(sections: modSections);
     }
 
@@ -183,13 +215,13 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      editor.originalUnit.title, 
+                                      editor.title,
                                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     const SizedBox(height: 4),
-                                    Text('M${editor.modIdx + 1} • S${editor.secIdx + 1}', style: const TextStyle(color: Colors.white54, fontSize: 9, fontWeight: FontWeight.w900)),
+                                    Text(editor.subtitle, style: const TextStyle(color: Colors.white54, fontSize: 9, fontWeight: FontWeight.w900)),
                                   ],
                                 ),
                               ),

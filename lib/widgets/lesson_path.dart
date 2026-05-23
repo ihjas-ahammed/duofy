@@ -313,3 +313,92 @@ class _PathConnectorPainter extends CustomPainter {
         old.scaleX != scaleX;
   }
 }
+
+/// Shown when a new-flow section has no units yet. Renders one of three
+/// states based on [task]: in-flight (spinner + status), errored (retry
+/// button), or waiting/preparing (idle hint that the trigger fires
+/// automatically the moment the section is opened).
+class _SectionManifestPanel extends StatelessWidget {
+  final Section section;
+  final UnitGenTask? task;
+  final Color sectionColor;
+  final VoidCallback? onRetry;
+
+  const _SectionManifestPanel({
+    required this.section,
+    required this.task,
+    required this.sectionColor,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isError = task?.isError ?? false;
+    final isRunning = task != null && !isError;
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                alignment: Alignment.center,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: sectionColor.withOpacity(0.18),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: sectionColor.withOpacity(0.5), width: 2),
+                ),
+                child: isError
+                    ? const Icon(Icons.error_outline, color: Colors.amber, size: 32)
+                    : (isRunning
+                        ? SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: CircularProgressIndicator(color: sectionColor, strokeWidth: 3),
+                          )
+                        : Icon(Icons.auto_awesome, color: sectionColor, size: 28)),
+              ),
+              Text(
+                isError
+                    ? 'Couldn\'t plan units for this section'
+                    : (isRunning ? 'Planning units…' : 'Preparing units for "${section.title}"'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isError
+                    ? (task?.status ?? 'Unknown error.')
+                    : (isRunning
+                        ? (task?.status ?? 'AI is breaking this section into units.')
+                        : 'This runs once. Lesson generation stays per-unit and on-demand.'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white60, fontSize: 13, height: 1.4),
+              ),
+              if (isError && onRetry != null) ...[
+                const SizedBox(height: 20),
+                ElevatedButton.icon(
+                  onPressed: onRetry,
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label: const Text('Try again', style: TextStyle(fontWeight: FontWeight.w900)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: sectionColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

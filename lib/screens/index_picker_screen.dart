@@ -284,7 +284,7 @@ class _IndexPickerScreenState extends State<IndexPickerScreen> {
                       text: _isStarting ? 'Starting…' : 'Continue',
                       color: _isStarting ? Colors.grey.shade700 : AppTheme.duoGreen,
                       shadowColor: _isStarting ? Colors.grey.shade800 : AppTheme.duoGreenDark,
-                      onPressed: _isStarting ? null : _continue,
+                      onPressed: () { if (!_isStarting) _continue(); },
                     ),
                   ],
                 ),

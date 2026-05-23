@@ -53,6 +53,15 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     bool missing = false;
     for (final m in widget.book.modules) {
       for (final s in m.sections) {
+        // New-flow: section owns the PDF chunk.
+        if (s.startPage != null && s.endPage != null) {
+          if (s.pdfPath == null || !File(s.pdfPath!).existsSync()) {
+            missing = true;
+            break;
+          }
+          continue;
+        }
+        // Old-flow: each unit owns its chunk.
         for (final u in s.units) {
           if (u.startPage != null && u.endPage != null) {
             if (u.pdfPath == null || !File(u.pdfPath!).existsSync()) {
