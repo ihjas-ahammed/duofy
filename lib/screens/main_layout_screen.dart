@@ -71,8 +71,13 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
             onPressed: () async {
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Publishing...')));
-              await DatabaseService().publishToGlobal(_currentBook);
-              if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Published Successfully!')));
+              final published = await DatabaseService().publishToGlobal(_currentBook);
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text(published
+                    ? 'Published Successfully!'
+                    : 'Enable Cloud Sync in Settings to publish to the community.'),
+              ));
             },
             child: const Text('Publish', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
           )

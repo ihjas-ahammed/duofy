@@ -1,16 +1,45 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
 import '../data/mock_books.dart';
 
+/// Local-first storage.
+///
+/// Books are the source of truth **on the device**: each book is a single
+/// JSON file under the app's documents directory, mirrored by an in-memory
+/// map so reads are cheap and a per-lesson streaming save only rewrites that
+/// one small file (not the whole library, as the old single-key
+/// SharedPreferences cache did).
+///
+/// Cloud (Firestore) is an **optional backup/sync layer**, controlled by the
+/// [cloudSyncPrefKey] setting and OFF by default. When disabled, no Firestore
+/// reads or writes occur at all — the app works fully offline.
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   String get uid => FirebaseAuth.instance.currentUser?.uid ?? 'guest';
-  String get _cacheKey => 'cached_books_$uid';
+
+  // ---------------------------------------------------------------------------
+  // Cloud sync toggle (local-first: OFF unless the user opts in from Settings)
+  // ---------------------------------------------------------------------------
+  static const String cloudSyncPrefKey = 'cloud_sync_enabled';
+
+  /// Whether cloud backup/sync is enabled. Defaults to false so the app is
+  /// fully local unless the user turns it on.
+  Future<bool> isCloudEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(cloudSyncPrefKey) ?? false;
+  }
+
+  Future<void> setCloudEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(cloudSyncPrefKey, enabled);
+  }
 
   CollectionReference<Map<String, dynamic>> get _userBooks =>
       _db.collection('users').doc(uid).collection('books');
@@ -21,6 +50,117 @@ class DatabaseService {
   DocumentReference<Map<String, dynamic>> get _userSettingsDoc =>
       _db.collection('users').doc(uid).collection('meta').doc('settings');
 
+  // ---------------------------------------------------------------------------
+  // Local file store (per-book JSON files + an in-memory index)
+  // ---------------------------------------------------------------------------
+  // Keyed by uid so switching accounts keeps libraries separate. Static so the
+  // cache survives the short-lived `DatabaseService()` instances call sites
+  // create.
+  static final Map<String, Map<String, Book>> _mem = {};
+  static final Map<String, Future<Map<String, Book>>> _loading = {};
+
+  Future<Directory> _booksDir(String forUid) async {
+    final base = await getApplicationDocumentsDirectory();
+    final dir = Directory('${base.path}/duofy_books/$forUid');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  File _bookFile(Directory dir, String id) {
+    // Keep ids filename-safe (book ids are app-generated, but be defensive).
+    final safe = id.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+    return File('${dir.path}/$safe.json');
+  }
+
+  /// Loads (once per uid) the on-disk library into memory, migrating any data
+  /// left behind in the legacy single-key SharedPreferences cache.
+  Future<Map<String, Book>> _ensureLoaded() {
+    final u = uid;
+    final cached = _mem[u];
+    if (cached != null) return Future.value(cached);
+    final inFlight = _loading[u];
+    if (inFlight != null) return inFlight;
+    final fut = _loadFromDisk(u);
+    _loading[u] = fut;
+    return fut;
+  }
+
+  Future<Map<String, Book>> _loadFromDisk(String u) async {
+    final Map<String, Book> result = {};
+    try {
+      final dir = await _booksDir(u);
+      final files = dir
+          .listSync()
+          .whereType<File>()
+          .where((f) => f.path.toLowerCase().endsWith('.json'));
+      for (final f in files) {
+        try {
+          final txt = await f.readAsString();
+          if (txt.trim().isEmpty) continue;
+          final b = Book.fromJson(Map<String, dynamic>.from(jsonDecode(txt)));
+          if (b.id.isNotEmpty) result[b.id] = b;
+        } catch (e) {
+          // One bad file no longer nukes the whole library.
+          print("[DatabaseService] Skipping unreadable book file ${f.path}: $e");
+        }
+      }
+
+      // One-time migration from the old `cached_books_<uid>` blob. Guarded by a
+      // flag so deleting every book doesn't resurrect them on next launch.
+      final prefs = await SharedPreferences.getInstance();
+      final migrated = prefs.getBool('books_migrated_$u') ?? false;
+      if (result.isEmpty && !migrated) {
+        final legacy = prefs.getString('cached_books_$u');
+        if (legacy != null && legacy.trim().isNotEmpty) {
+          try {
+            final List decoded = jsonDecode(legacy);
+            for (final e in decoded) {
+              final b = Book.fromJson(Map<String, dynamic>.from(e));
+              if (b.id.isNotEmpty) {
+                result[b.id] = b;
+                await _writeBookFile(u, b);
+              }
+            }
+            print("[DatabaseService] Migrated ${result.length} books from legacy cache for $u.");
+          } catch (e) {
+            print("[DatabaseService] Legacy cache migration failed: $e");
+          }
+        }
+        await prefs.setBool('books_migrated_$u', true);
+      }
+    } catch (e) {
+      print("[DatabaseService] _loadFromDisk error for $u: $e");
+    }
+    _mem[u] = result;
+    _loading.remove(u);
+    return result;
+  }
+
+  /// Atomic-ish single-book write: write to a temp file then rename, so an
+  /// interrupted write can never leave a half-written (corrupt) book file.
+  Future<void> _writeBookFile(String forUid, Book book) async {
+    final dir = await _booksDir(forUid);
+    final target = _bookFile(dir, book.id);
+    final tmp = File('${target.path}.tmp');
+    await tmp.writeAsString(jsonEncode(book.toJson()), flush: true);
+    if (await target.exists()) await target.delete();
+    await tmp.rename(target.path);
+  }
+
+  Future<void> _deleteBookFile(String forUid, String id) async {
+    try {
+      final dir = await _booksDir(forUid);
+      final f = _bookFile(dir, id);
+      if (await f.exists()) await f.delete();
+    } catch (e) {
+      print("[DatabaseService] _deleteBookFile error: $e");
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Settings (cloud-only convenience — local settings live in SharedPreferences
+  // and are owned by SettingsScreen). Gated behind the cloud toggle.
+  // ---------------------------------------------------------------------------
   Future<void> saveUserSettings({
     required List<String> apiKeys,
     required List<String> models,
@@ -29,9 +169,7 @@ class DatabaseService {
     List<String>? modelLiteList,
   }) async {
     if (uid == 'guest') return;
-    // Save to Firestore in background without awaiting (non-blocking).
-    // Note: we write the new *List fields and also mirror the first entry
-    // into the legacy scalar key so older app versions still read a value.
+    if (!await isCloudEnabled()) return; // local-first: nothing to push
     _userSettingsDoc.set({
       'apiKeys': apiKeys,
       'models': models,
@@ -49,7 +187,7 @@ class DatabaseService {
       },
       'updatedAt': DateTime.now().millisecondsSinceEpoch,
     }).then((_) {
-      print("[DatabaseService] User settings saved successfully to Firestore.");
+      print("[DatabaseService] User settings saved to Firestore.");
     }).catchError((e) {
       print("[DatabaseService] Error saving user settings: $e");
     });
@@ -57,12 +195,11 @@ class DatabaseService {
 
   Future<Map<String, dynamic>?> fetchUserSettings() async {
     if (uid == 'guest') return null;
+    if (!await isCloudEnabled()) return null; // local-first: don't hit network
     try {
       final snap = await _userSettingsDoc.get().timeout(const Duration(seconds: 4));
       if (!snap.exists) return null;
       final data = snap.data() ?? {};
-      // Reads new *List fields when present; otherwise wraps the legacy
-      // scalar value into a one-element list so callers always get a list.
       List<String> readList(String listKey, String scalarKey) {
         final list = data[listKey] as List?;
         if (list != null && list.isNotEmpty) return List<String>.from(list);
@@ -83,206 +220,160 @@ class DatabaseService {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Books
+  // ---------------------------------------------------------------------------
   Future<List<Book>> fetchBooks({bool forceRefresh = false}) async {
-    print("\n[DatabaseService] === FETCH BOOKS REQUESTED for $uid ===");
-    print("[DatabaseService] Force Refresh: $forceRefresh");
+    final local = await _ensureLoaded();
+    final cloud = await isCloudEnabled();
 
-    final prefs = await SharedPreferences.getInstance();
-
-    // 1. Fetch Local Cache
-    final cachedStr = prefs.getString(_cacheKey);
-    List<Book> localBooks = [];
-    if (cachedStr != null) {
-      try {
-        final List decoded = jsonDecode(cachedStr);
-        localBooks = decoded.map((e) => Book.fromJson(Map<String, dynamic>.from(e))).toList();
-        print("[DatabaseService] Found ${localBooks.length} books in local cache.");
-      } catch (e) {
-        print("[DatabaseService] Error parsing local cache: $e");
+    // Local-first path: when cloud is off we never touch the network.
+    if (!cloud) {
+      if (local.isEmpty && uid == 'guest') {
+        await _seedGuestMocks(local);
       }
+      return _sorted(local.values);
     }
 
-    if (!forceRefresh && localBooks.isNotEmpty) {
-      print("[DatabaseService] Returning local cache without network sync.");
-      return localBooks;
+    // Cloud enabled: return local immediately unless a refresh was requested.
+    if (!forceRefresh && local.isNotEmpty) {
+      return _sorted(local.values);
     }
 
-    // 2. Perform Intelligent Two-Way Sync with timeout
-    print("[DatabaseService] Initiating Two-Way Firestore Sync...");
+    // Two-way sync: pull remote, merge by updatedAt, push back local-newer
+    // books, and persist the merged set to the local file store.
     try {
       final snapshot = await _userBooks.get().timeout(const Duration(seconds: 4));
-      Map<String, Book> remoteBooksMap = {};
-
+      final Map<String, Book> remote = {};
       for (final doc in snapshot.docs) {
         final b = Book.fromJson(Map<String, dynamic>.from(doc.data()));
-        remoteBooksMap[b.id] = b;
+        remote[b.id] = b;
       }
-      print("[DatabaseService] Fetched ${remoteBooksMap.length} books from Firestore.");
 
-      Map<String, Book> mergedBooksMap = {...remoteBooksMap};
-      bool needsRemoteUpdate = false;
+      final Map<String, Book> merged = {...remote};
+      final List<Book> toPush = [];
 
-      // Compare local against remote
-      print("[DatabaseService] Comparing Local vs Remote Timestamps...");
-      for (var localBook in localBooks) {
-        if (!remoteBooksMap.containsKey(localBook.id)) {
-          mergedBooksMap[localBook.id] = localBook;
-          needsRemoteUpdate = true;
-        } else {
-          final remoteBook = remoteBooksMap[localBook.id]!;
-          final localTime = localBook.updatedAt ?? 0;
-          final remoteTime = remoteBook.updatedAt ?? 0;
-
-          if (localTime > remoteTime) {
-            mergedBooksMap[localBook.id] = localBook;
-            needsRemoteUpdate = true;
-          }
+      for (final localBook in local.values) {
+        final remoteBook = remote[localBook.id];
+        if (remoteBook == null) {
+          merged[localBook.id] = localBook;
+          toPush.add(localBook);
+        } else if ((localBook.updatedAt ?? 0) > (remoteBook.updatedAt ?? 0)) {
+          merged[localBook.id] = localBook;
+          toPush.add(localBook);
         }
       }
 
-      final mergedList = mergedBooksMap.values.toList();
-
-      // Push required updates to Remote DB in background without awaiting (non-blocking)
-      if (needsRemoteUpdate) {
-        print("[DatabaseService] Pushing updated local books to Firestore in background...");
-        for (var book in mergedList) {
-          _userBooks.doc(book.id).set(book.toJson()).catchError((e) {
-            print("[DatabaseService] Error syncing local book to remote: $e");
-          });
-        }
-      } else if (remoteBooksMap.isEmpty && localBooks.isEmpty && uid == 'guest') {
-        print("[DatabaseService] System is completely empty for guest. Populating mock books...");
-        for (var book in mockBooks) {
-          final mockWithTime = book.copyWith(updatedAt: DateTime.now().millisecondsSinceEpoch);
-          _userBooks.doc(mockWithTime.id).set(mockWithTime.toJson()).catchError((e) {
-            print("[DatabaseService] Guest mock sync failed: $e");
-          });
-          mergedList.add(mockWithTime);
-        }
+      // Persist merged set locally (remote-only books land on disk too).
+      for (final b in merged.values) {
+        local[b.id] = b;
+        await _writeBookFile(uid, b);
       }
 
-      // Update Local Cache
-      await prefs.setString(_cacheKey, jsonEncode(mergedList.map((b) => b.toJson()).toList()));
-      return mergedList;
+      // Background push of local-newer books (non-blocking).
+      for (final b in toPush) {
+        _userBooks.doc(b.id).set(b.toJson()).catchError((e) {
+          print("[DatabaseService] Error syncing local book ${b.id} to remote: $e");
+        });
+      }
 
+      if (merged.isEmpty && uid == 'guest') {
+        await _seedGuestMocks(local);
+        return _sorted(local.values);
+      }
+
+      return _sorted(merged.values);
     } catch (e) {
-      print("[DatabaseService] SYNC ERROR: $e");
-      return localBooks;
+      print("[DatabaseService] SYNC ERROR (returning local): $e");
+      return _sorted(local.values);
     }
   }
 
-  /// Returns the most recent locally-cached copy of [bookId], or null if not
-  /// present. Use this when applying a partial mutation (e.g. one unit's newly
-  /// generated lessons) to avoid clobbering concurrent edits that already
-  /// landed in cache.
-  Future<Book?> getBookFromCache(String bookId) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final cachedStr = prefs.getString(_cacheKey);
-      if (cachedStr == null) return null;
-      final List decoded = jsonDecode(cachedStr);
-      for (final e in decoded) {
-        final b = Book.fromJson(Map<String, dynamic>.from(e));
-        if (b.id == bookId) return b;
-      }
-    } catch (e) {
-      print("[DatabaseService] getBookFromCache error: $e");
+  List<Book> _sorted(Iterable<Book> books) {
+    final list = books.toList();
+    list.sort((a, b) => (b.updatedAt ?? 0).compareTo(a.updatedAt ?? 0));
+    return list;
+  }
+
+  Future<void> _seedGuestMocks(Map<String, Book> into) async {
+    for (final book in mockBooks) {
+      final seeded = book.copyWith(updatedAt: DateTime.now().millisecondsSinceEpoch);
+      into[seeded.id] = seeded;
+      await _writeBookFile('guest', seeded);
     }
-    return null;
+    print("[DatabaseService] Seeded ${mockBooks.length} mock books for guest (local).");
+  }
+
+  /// Returns the freshest in-memory copy of [bookId] (or null). Backed by the
+  /// file store, so partial mutations during generation read each other's
+  /// latest writes without re-reading the disk every time.
+  Future<Book?> getBookFromCache(String bookId) async {
+    final books = await _ensureLoaded();
+    return books[bookId];
   }
 
   Future<void> saveGeneratedBook(Book book) async {
-    print("\n[DatabaseService] Saving Generated Book: ${book.id}");
-    final updatedTime = DateTime.now().millisecondsSinceEpoch;
-    final updatedBook = book.copyWith(updatedAt: updatedTime);
+    final updatedBook = book.copyWith(updatedAt: DateTime.now().millisecondsSinceEpoch);
 
-    // 1. Local cache first — must always succeed so the book appears in the UI
-    //    even if Firestore writes are blocked (db not enabled / rules deny).
+    // 1. Local file store first — this is the source of truth and must succeed
+    //    for the book to appear in the UI. Only this one book's file is
+    //    rewritten, so per-lesson streaming saves stay cheap.
+    final books = await _ensureLoaded();
+    books[updatedBook.id] = updatedBook;
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final cachedStr = prefs.getString(_cacheKey);
-      List<Book> localBooks = [];
-      if (cachedStr != null) {
-        final List decoded = jsonDecode(cachedStr);
-        localBooks = decoded.map((e) => Book.fromJson(Map<String, dynamic>.from(e))).toList();
-      }
-
-      final index = localBooks.indexWhere((b) => b.id == updatedBook.id);
-      if (index >= 0) {
-        localBooks[index] = updatedBook;
-      } else {
-        localBooks.add(updatedBook);
-      }
-
-      await prefs.setString(_cacheKey, jsonEncode(localBooks.map((b) => b.toJson()).toList()));
-      print("[DatabaseService] Local cache updated.");
+      await _writeBookFile(uid, updatedBook);
     } catch (e) {
-      print("[DatabaseService] LOCAL CACHE ERROR during saveGeneratedBook: $e");
+      print("[DatabaseService] LOCAL WRITE ERROR during saveGeneratedBook: $e");
     }
 
-    // 2. Then push to Firestore in the background without awaiting (non-blocking)
-    _userBooks.doc(updatedBook.id).set(updatedBook.toJson()).then((_) {
-      print("[DatabaseService] Firestore push complete.");
-    }).catchError((e) {
-      print("[DatabaseService] FIRESTORE PUSH FAILED (book is still saved locally): $e");
-    });
+    // 2. Optional cloud backup (background, non-blocking).
+    if (await isCloudEnabled()) {
+      _userBooks.doc(updatedBook.id).set(updatedBook.toJson()).catchError((e) {
+        print("[DatabaseService] Cloud push failed (book is still saved locally): $e");
+      });
+    }
   }
 
   Future<void> deleteBook(String id) async {
-    print("\n[DatabaseService] Deleting Book: $id");
+    final books = await _ensureLoaded();
+    books.remove(id);
+    await _deleteBookFile(uid, id);
 
-    // Local cache first so the UI updates regardless of Firestore state.
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final cachedStr = prefs.getString(_cacheKey);
-      if (cachedStr != null) {
-        List decoded = jsonDecode(cachedStr);
-        decoded.removeWhere((e) => e['id'] == id);
-        await prefs.setString(_cacheKey, jsonEncode(decoded));
-      }
-    } catch (e) {
-      print("[DatabaseService] LOCAL CACHE ERROR during deletion: $e");
+    if (await isCloudEnabled()) {
+      _userBooks.doc(id).delete().catchError((e) {
+        print("[DatabaseService] Cloud delete failed: $e");
+      });
     }
-
-    // Firestore delete in the background without awaiting (non-blocking)
-    _userBooks.doc(id).delete().then((_) {
-      print("[DatabaseService] Firestore delete complete.");
-    }).catchError((e) {
-      print("[DatabaseService] FIRESTORE DELETE FAILED: $e");
-    });
   }
 
+  // ---------------------------------------------------------------------------
+  // Global / community books (inherently a cloud feature)
+  // ---------------------------------------------------------------------------
   String get _globalCacheKey => 'cached_global_books';
 
-  // GLOBAL COMMUNITY DB METHODS
   Future<List<Book>> fetchGlobalBooks({bool useCacheOnly = false}) async {
     final prefs = await SharedPreferences.getInstance();
 
-    // 1. Fetch Local Cache
     final cachedStr = prefs.getString(_globalCacheKey);
     List<Book> cachedGlobals = [];
     if (cachedStr != null) {
       try {
         final List decoded = jsonDecode(cachedStr);
         cachedGlobals = decoded.map((e) => Book.fromJson(Map<String, dynamic>.from(e))).toList();
-        print("[DatabaseService] Found ${cachedGlobals.length} global books in local cache.");
       } catch (e) {
         print("[DatabaseService] Error parsing global cache: $e");
       }
     }
 
-    if (useCacheOnly && cachedGlobals.isNotEmpty) {
-      return cachedGlobals;
-    }
+    if (useCacheOnly && cachedGlobals.isNotEmpty) return cachedGlobals;
+    // Community browsing needs the network; respect the local-first toggle.
+    if (!await isCloudEnabled()) return cachedGlobals;
 
-    // 2. Perform Firestore Fetch with timeout
     try {
       final snapshot = await _globalBooks.get().timeout(const Duration(seconds: 4));
       final freshGlobals = snapshot.docs
           .map((d) => Book.fromJson(Map<String, dynamic>.from(d.data())))
           .toList();
-
-      // Update cache
       await prefs.setString(_globalCacheKey, jsonEncode(freshGlobals.map((b) => b.toJson()).toList()));
       return freshGlobals;
     } catch (e) {
@@ -291,24 +382,27 @@ class DatabaseService {
     }
   }
 
-  Future<void> publishToGlobal(Book book) async {
+  /// Publishes [book] to the community. Returns false (no-op) when cloud sync
+  /// is disabled, so the caller can prompt the user to enable it.
+  Future<bool> publishToGlobal(Book book) async {
+    if (!await isCloudEnabled()) return false;
     final user = FirebaseAuth.instance.currentUser;
     final publishedBook = book.copyWith(
-       authorId: user?.uid,
-       authorName: user?.displayName ?? 'Anonymous User',
-       isGlobal: true,
-       updatedAt: DateTime.now().millisecondsSinceEpoch,
+      authorId: user?.uid,
+      authorName: user?.displayName ?? 'Anonymous User',
+      isGlobal: true,
+      updatedAt: DateTime.now().millisecondsSinceEpoch,
     );
-    // Push to Firestore in background without awaiting (non-blocking)
     _globalBooks.doc(book.id).set(publishedBook.toJson()).then((_) {
       print("[DatabaseService] Published to global successfully.");
     }).catchError((e) {
       print("[DatabaseService] Error publishing to global: $e");
     });
+    return true;
   }
 
   Future<void> deleteGlobalBook(String id) async {
-    // Delete from Firestore in background without awaiting (non-blocking)
+    if (!await isCloudEnabled()) return;
     _globalBooks.doc(id).delete().then((_) {
       print("[DatabaseService] Admin deleted global book: $id");
     }).catchError((e) {

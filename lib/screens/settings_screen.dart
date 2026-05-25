@@ -30,6 +30,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// 'auto' lets the app pick from the device's capacity; otherwise a fixed
   /// count string ('1'..'4'). Read by AiService via the `gen_concurrency` pref.
   String _genConcurrency = 'auto';
+  /// Local-first: cloud backup/sync is opt-in. Mirrors
+  /// [DatabaseService.cloudSyncPrefKey].
+  bool _cloudSync = false;
   bool _isLoading = true;
   final GlobalKey<StringListManagerState> _keysManagerKey = GlobalKey<StringListManagerState>();
   final DatabaseService _db = DatabaseService();
@@ -60,6 +63,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
+
+    _cloudSync = await _db.isCloudEnabled();
 
     List<String> keys = prefs.getStringList('gemini_api_keys_list') ?? [];
     if (keys.isEmpty) {
@@ -133,6 +138,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final pGraphicsSaved = await prefs.setStringList('model_primary_graphics_list', _modelPrimaryGraphics);
     final liteSaved = await prefs.setStringList('model_lite_list', _modelLite);
     await prefs.setString('gen_concurrency', _genConcurrency);
+    await _db.setCloudEnabled(_cloudSync);
 
     // Mirror the head of each list back into the legacy scalar key so other
     // code paths still relying on it (older app versions, tests) keep
@@ -410,6 +416,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildCloudSyncCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _cloudSync ? AppTheme.duoBlue.withOpacity(0.5) : Colors.white12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(_cloudSync ? LucideIcons.cloud : LucideIcons.cloudOff,
+                  color: _cloudSync ? AppTheme.duoBlue : Colors.white54, size: 28),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Text('Cloud Backup & Sync',
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white)),
+              ),
+              Switch(
+                value: _cloudSync,
+                activeColor: AppTheme.duoBlue,
+                onChanged: _isGuest
+                    ? null
+                    : (v) async {
+                        setState(() => _cloudSync = v);
+                        // Persist immediately so a refresh elsewhere honours it
+                        // even before "Save Settings" is tapped.
+                        await _db.setCloudEnabled(v);
+                      },
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _isGuest
+                ? 'Sign in to back up your courses to the cloud. Everything is currently stored on this device.'
+                : _cloudSync
+                    ? 'Your courses and settings are backed up to your account and synced across devices. Local storage stays the source of truth.'
+                    : 'Off — courses are stored only on this device (no network used). Turn on to back up and sync across devices, and to publish to the community.',
+            style: const TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool get _isGuest => user == null;
+
   Widget _buildConcurrencyCard() {
     const options = <String, String>{
       'auto': 'Auto (recommended)',
@@ -513,6 +569,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 shadowColor: AppTheme.duoVioletDark,
               ),
             ),
+            const SizedBox(height: 32),
+
+            const Text('Storage', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            const Text('Courses are saved on this device first. Cloud sync is optional.',
+                style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 16),
+            _buildCloudSyncCard(),
             const SizedBox(height: 32),
 
             const Text('API Keys', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
