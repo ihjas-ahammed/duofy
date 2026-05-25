@@ -39,6 +39,7 @@ class IndexPickerScreen extends StatefulWidget {
 class _IndexPickerScreenState extends State<IndexPickerScreen> {
   final PdfViewerController _pdfCtrl = PdfViewerController();
   final TextEditingController _chapter1Ctrl = TextEditingController();
+  final TextEditingController _instructionsCtrl = TextEditingController();
   final Set<int> _selectedPages = <int>{};
   int _currentPage = 1;
   int _pageCount = 0;
@@ -47,6 +48,7 @@ class _IndexPickerScreenState extends State<IndexPickerScreen> {
   @override
   void dispose() {
     _chapter1Ctrl.dispose();
+    _instructionsCtrl.dispose();
     super.dispose();
   }
 
@@ -106,11 +108,13 @@ class _IndexPickerScreenState extends State<IndexPickerScreen> {
     // "review splits" notification when the skeleton is ready, so we don\'t
     // need to keep this screen open while it runs.
     // ignore: unawaited_futures
+    final instructions = _instructionsCtrl.text.trim();
     GenerationManager.instance.startBookGeneration(
       [widget.sourcePdf],
       widget.filename,
       indexFiles: [indexPdf],
       chapter1AbsolutePage: ch1,
+      customInstructions: instructions.isEmpty ? null : instructions,
     );
 
     if (!mounted) return;
@@ -297,7 +301,31 @@ class _IndexPickerScreenState extends State<IndexPickerScreen> {
                                   ),
                                 ],
                               ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'Custom instructions (optional)',
+                                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Colors.white),
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                'Guidance applied across the whole course — structure, lesson planning, and every lesson. e.g. "Focus on exam-style worked examples and keep theory concise."',
+                                style: TextStyle(color: Colors.white54, fontSize: 11, height: 1.4),
+                              ),
                               const SizedBox(height: 8),
+                              TextField(
+                                controller: _instructionsCtrl,
+                                maxLines: 3,
+                                minLines: 2,
+                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                decoration: InputDecoration(
+                                  isDense: true,
+                                  hintText: 'Optional — leave blank for defaults',
+                                  hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
                               DuoButton(
                                 text: _isStarting ? 'Starting…' : 'Continue',
                                 color: _isStarting ? Colors.grey.shade700 : AppTheme.duoGreen,

@@ -90,10 +90,6 @@ class AiService {
     }
   }
 
-  /// Gemma models on the Gemini API are less reliable at returning large
-  /// well-formed JSON blobs — we generate one lesson per call for them.
-  bool _isGemma(String modelName) => modelName.toLowerCase().contains('gemma');
-
   /// Reads "TOTAL_LESSONS: N" from the first non-empty lines of the plan, or
   /// falls back to the highest "Lesson N" index found in the text.
   int _parseLessonCount(String plan) {
@@ -194,13 +190,15 @@ class AiService {
     List<File> indexFiles,
     String filename, {
     required int chapter1AbsolutePage,
+    String? customInstructions,
   }) async {
     final keys = await _getKeys();
     final modelsToTry = await _getLiteModels();
 
     final hydratedPrompt = PromptService.skeleton
         .replaceAll('%filename%', filename)
-        .replaceAll('%chapter1_abs_page%', '$chapter1AbsolutePage');
+        .replaceAll('%chapter1_abs_page%', '$chapter1AbsolutePage')
+        .replaceAll('%custom_instructions%', PromptService.instructionsBlock(customInstructions));
 
     List<Part> parts = [TextPart(hydratedPrompt)];
     parts.addAll(await _buildFileParts(indexFiles));
@@ -224,7 +222,9 @@ class AiService {
 
           if (response.text != null) {
             final jsonMap = _cleanAndDecodeJson(response.text!);
-            return Book.fromJson(jsonMap);
+            // Persist the user's verbatim instructions on the book so every
+            // later generation step (planner, lessons, slide regen) reuses it.
+            return Book.fromJson(jsonMap).copyWith(customInstructions: customInstructions);
           }
         } on TimeoutException {
           lastException = Exception('Request timed out ($modelName).');
@@ -236,7 +236,25 @@ class AiService {
     throw lastException ?? Exception('Failed to generate skeleton. All models/keys exhausted.');
   }
 
-  Future<Unit> generateUnitContent(Unit unit, Book bookContext, Function(String) onProgress, {String? sectionPdfPath}) async {
+  /// Generates all lessons for [unit] off the section's shared PDF chunk.
+  ///
+  /// Pipeline: (1) a lite-model lesson *plan*, then (2) per-lesson JSON calls
+  /// run in parallel (bounded by [_resolveConcurrency]) and streamed back via
+  /// [onLessonGenerated] so the UI can reveal lessons one at a time.
+  ///
+  /// [previousUnit]/[nextUnit] give the AI this unit's boundaries inside the
+  /// shared chunk; [previousGeneratedUnits] is a short summary of units already
+  /// generated in this section so the model doesn't re-teach covered material.
+  Future<Unit> generateUnitContent(
+    Unit unit,
+    Book bookContext,
+    Function(String) onProgress, {
+    String? sectionPdfPath,
+    Unit? previousUnit,
+    Unit? nextUnit,
+    List<Unit> previousGeneratedUnits = const [],
+    void Function(List<Lesson> lessonsSoFar)? onLessonGenerated,
+  }) async {
     final keys = await _getKeys();
     final textModelsToTry = await _getPrimaryTextModels();
     final liteModelsToTry = await _getLiteModels();
@@ -259,105 +277,302 @@ class AiService {
       return "- Format: ${f.id} (${f.name}) — ${f.description}\n$slidesStr";
     }).join('\n\n');
 
-    Exception? lastException;
+    // Context shared by the plan + per-lesson prompts: the unit's neighbours
+    // (so generation stays inside this unit's slice of the shared section PDF)
+    // and a summary of already-generated units (so material isn't repeated).
+    final String neighborContext = _buildNeighborContext(previousUnit, unit, nextUnit);
+    final String previousUnitsContent = _buildPreviousUnitsContent(previousGeneratedUnits);
+    final String instructionsBlock = PromptService.instructionsBlock(bookContext.customInstructions);
 
-    for (int idx = 0; idx < textModelsToTry.length; idx++) {
-      final currentTextModel = textModelsToTry[idx];
-      final currentLiteModel = idx < liteModelsToTry.length ? liteModelsToTry[idx] : liteModelsToTry.first;
+    // --- Stage 1: lesson plan (lite-model fallback ladder) ----------------
+    onProgress("Analyzing PDF & Planning Layout...");
+    final hydratedPlanPrompt = PromptService.plan
+        .replaceAll('%unit_title%', unit.title)
+        .replaceAll('%formats_layout%', formatsLayoutString)
+        .replaceAll('%custom_instructions%', instructionsBlock)
+        .replaceAll('%neighbor_context%', neighborContext);
 
-      for (var apiKey in keys) {
+    final planFileParts = await _buildFileParts([chunkFile]);
+    String? lessonPlan;
+    Exception? planError;
+    for (final liteModel in liteModelsToTry) {
+      for (final apiKey in keys) {
         try {
-          final modelText = GenerativeModel(model: currentLiteModel, apiKey: apiKey);
-          final modelJson = GenerativeModel(model: currentTextModel, apiKey: apiKey, generationConfig: GenerationConfig(responseMimeType: 'application/json'));
-
-          onProgress("Analyzing PDF & Planning Layout...");
-
-          final hydratedPlanPrompt = PromptService.plan
-              .replaceAll('%unit_title%', unit.title)
-              .replaceAll('%formats_layout%', formatsLayoutString);
-
-          List<Part> planParts = [TextPart(hydratedPlanPrompt)];
-          planParts.addAll(await _buildFileParts([chunkFile]));
-
+          final modelText = GenerativeModel(model: liteModel, apiKey: apiKey);
           final planResponse = await _retryTransient(
-            () => modelText.generateContent([Content.multi(planParts)])
+            () => modelText
+                .generateContent([Content.multi([TextPart(hydratedPlanPrompt), ...planFileParts])])
                 .timeout(const Duration(minutes: 4)),
             onRetry: (a, e) {
-              final msg = _cleanErrMsg(e);
-              print('[AiService] Unit plan transient ($currentLiteModel) attempt $a: $msg');
+              print('[AiService] Unit plan transient ($liteModel) attempt $a: ${_cleanErrMsg(e)}');
               onProgress('Server hiccup — retrying ($a/3)...');
             },
           );
-
-          final lessonPlan = planResponse.text ?? '';
-          if (lessonPlan.isEmpty) throw Exception("AI failed to generate a lesson plan.");
-
-          final List<Lesson> newLessons;
-          if (_isGemma(currentTextModel)) {
-            // Gemma: generate one lesson at a time. Smaller, more reliable
-            // requests; user sees concrete per-lesson progress.
-            newLessons = await _generateLessonsBatched(
-              modelJson: modelJson,
-              modelName: currentTextModel,
-              chunkFile: chunkFile,
-              unit: unit,
-              bookContext: bookContext,
-              lessonPlan: lessonPlan,
-              onProgress: onProgress,
-            );
-          } else {
-            // Gemini: single bulk JSON call (faster when it succeeds).
-            onProgress("Generating Interactive Content...");
-
-            final hydratedJsonPrompt = PromptService.json
-                .replaceAll('%system_prompt%', bookContext.systemPrompt ?? "You are an expert tutor.")
-                .replaceAll('%unit_title%', unit.title)
-                .replaceAll('%lesson_plan%', lessonPlan);
-
-            List<Part> jsonParts = [TextPart(hydratedJsonPrompt)];
-            jsonParts.addAll(await _buildFileParts([chunkFile]));
-
-            final response = await _retryTransient(
-              () => modelJson.generateContent([Content.multi(jsonParts)])
-                  .timeout(const Duration(minutes: 5)),
-              onRetry: (a, e) {
-                final msg = _cleanErrMsg(e);
-                print('[AiService] Unit json transient ($currentTextModel) attempt $a: $msg');
-                onProgress('Server hiccup — retrying ($a/3)...');
-              },
-            );
-
-            if (response.text == null) {
-              throw Exception('AI returned a null response body.');
-            }
-
-            onProgress("Parsing content...");
-            final jsonMap = _cleanAndDecodeJson(response.text!);
-            final lessonsData = jsonMap['lessons'] as List?;
-
-            newLessons = lessonsData?.map((l) {
-              if (l is Map) {
-                var lesson = Lesson.fromJson(Map<String, dynamic>.from(l));
-                final uniqueLessonId = '${unit.id}-${lesson.id}';
-                return lesson.copyWith(
-                  id: uniqueLessonId,
-                  slides: lesson.slides.map((s) => s.copyWith(id: '$uniqueLessonId-${s.id}')).toList(),
-                );
-              }
-              return null;
-            }).whereType<Lesson>().toList() ?? [];
+          final text = planResponse.text ?? '';
+          if (text.trim().isNotEmpty) {
+            lessonPlan = text;
+            break;
           }
-
-          if (newLessons.isEmpty) {
-            throw Exception('AI returned no usable lessons.');
-          }
-          return unit.copyWith(isGenerated: true, lessons: newLessons);
         } catch (e) {
-          lastException = Exception('Failed ($currentTextModel): ${_cleanErrMsg(e)}');
+          planError = Exception('Plan failed ($liteModel): ${_cleanErrMsg(e)}');
+        }
+      }
+      if (lessonPlan != null) break;
+    }
+    if (lessonPlan == null) {
+      throw planError ?? Exception('AI failed to generate a lesson plan.');
+    }
+    // Capture into a final non-nullable so the worker closure below can read
+    // it without null-promotion concerns.
+    final String planText = lessonPlan;
+
+    int lessonCount = _parseLessonCount(planText);
+    if (lessonCount <= 0) {
+      throw Exception('Could not determine lesson count from plan. Expected a "TOTAL_LESSONS: N" line.');
+    }
+    // Soft cap so a hallucinated count of, say, 99 doesn't blow up the unit.
+    if (lessonCount > 30) lessonCount = 30;
+
+    // --- Stage 2: per-lesson generation, parallelised ---------------------
+    // Each lesson is an independent request, so we run several at once (bounded
+    // by the user's concurrency setting / an auto device heuristic). Completed
+    // lessons are streamed back via [onLessonGenerated], kept in plan order.
+    final int concurrency = (await _resolveConcurrency()).clamp(1, lessonCount);
+    final lessonFileParts = await _buildFileParts([chunkFile]);
+    final List<Lesson?> slots = List<Lesson?>.filled(lessonCount, null);
+    int completed = 0;
+    Object? lastLessonError;
+
+    List<Lesson> collected() => slots.whereType<Lesson>().toList();
+
+    int nextIndex = 0;
+    Future<void> worker() async {
+      while (true) {
+        final i = nextIndex;
+        if (i >= lessonCount) break;
+        nextIndex++;
+        try {
+          final lesson = await _generateOneLesson(
+            index: i + 1,
+            unit: unit,
+            bookContext: bookContext,
+            lessonPlan: planText,
+            neighborContext: neighborContext,
+            previousUnitsContent: previousUnitsContent,
+            instructionsBlock: instructionsBlock,
+            fileParts: lessonFileParts,
+            textModels: textModelsToTry,
+            keys: keys,
+          );
+          if (lesson != null) slots[i] = lesson;
+        } catch (e) {
+          lastLessonError = e;
+          print('[AiService] Lesson ${i + 1} failed permanently: ${_cleanErrMsg(e)}');
+        } finally {
+          completed++;
+          onProgress('Generating lessons ($completed/$lessonCount)...');
+          onLessonGenerated?.call(collected());
         }
       }
     }
-    throw lastException ?? Exception('Failed to generate unit content. All models/keys exhausted.');
+
+    await Future.wait(List.generate(concurrency, (_) => worker()));
+
+    final newLessons = collected();
+    if (newLessons.isEmpty) {
+      throw Exception(
+        'AI returned no usable lessons.${lastLessonError != null ? ' Last error: ${_cleanErrMsg(lastLessonError!)}' : ''}',
+      );
+    }
+    return unit.copyWith(isGenerated: true, lessons: newLessons);
+  }
+
+  /// One natural-language boundary descriptor for the unit currently being
+  /// generated, so the model knows which slice of the shared section chunk
+  /// belongs to it (and which neighbouring units to leave alone).
+  String _buildNeighborContext(Unit? prev, Unit current, Unit? next) {
+    final b = StringBuffer();
+    b.writeln('- CURRENT unit (generate ONLY this): "${current.title}" — ${current.description}');
+    b.writeln(prev != null
+        ? '- PREVIOUS unit (already handled — do NOT cover): "${prev.title}" — ${prev.description}'
+        : '- PREVIOUS unit: (none — this is the first unit in the section)');
+    b.writeln(next != null
+        ? '- NEXT unit (handled separately later — do NOT cover): "${next.title}" — ${next.description}'
+        : '- NEXT unit: (none — this is the last unit in the section)');
+    return b.toString().trim();
+  }
+
+  /// Compact summary of up to a couple of already-generated units, used to
+  /// stop the model from re-teaching content the learner has already seen.
+  /// Length-capped so it never dominates the prompt.
+  String _buildPreviousUnitsContent(List<Unit> prevUnits) {
+    if (prevUnits.isEmpty) {
+      return '(none — this is the first generated unit in the section)';
+    }
+    final b = StringBuffer();
+    for (final u in prevUnits) {
+      b.writeln('UNIT "${u.title}":');
+      for (final l in u.lessons) {
+        final desc = l.description.trim();
+        b.writeln('  • ${l.title}${desc.isNotEmpty ? ' — $desc' : ''}');
+      }
+    }
+    var s = b.toString().trim();
+    if (s.length > 2000) s = '${s.substring(0, 2000)}…';
+    return s;
+  }
+
+  /// Resolves how many lesson requests to run concurrently. Reads the
+  /// `gen_concurrency` pref ('auto' or a number); 'auto' picks a value from
+  /// the device's core count as a rough device/network capacity proxy.
+  Future<int> _resolveConcurrency() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final setting = prefs.getString('gen_concurrency') ?? 'auto';
+      if (setting != 'auto') {
+        final n = int.tryParse(setting);
+        if (n != null && n >= 1) return n.clamp(1, 6);
+      }
+      final cores = Platform.numberOfProcessors;
+      if (cores >= 8) return 4;
+      if (cores >= 4) return 3;
+      return 2;
+    } catch (_) {
+      return 2;
+    }
+  }
+
+  /// Generates a single lesson (number [index] in the plan) as JSON, walking
+  /// the text-model × key fallback ladder. Returns the parsed [Lesson] with
+  /// unit-scoped ids, or null if every combination produced no usable output.
+  /// Throws only when every combination errored.
+  Future<Lesson?> _generateOneLesson({
+    required int index,
+    required Unit unit,
+    required Book bookContext,
+    required String lessonPlan,
+    required String neighborContext,
+    required String previousUnitsContent,
+    required String instructionsBlock,
+    required List<Part> fileParts,
+    required List<String> textModels,
+    required List<String> keys,
+  }) async {
+    final prompt = PromptService.singleLessonJson
+        .replaceAll('%system_prompt%', bookContext.systemPrompt ?? 'You are an expert tutor.')
+        .replaceAll('%custom_instructions%', instructionsBlock)
+        .replaceAll('%unit_title%', unit.title)
+        .replaceAll('%lesson_plan%', lessonPlan)
+        .replaceAll('%lesson_index%', '$index')
+        .replaceAll('%neighbor_context%', neighborContext)
+        .replaceAll('%previous_units_content%', previousUnitsContent);
+
+    final parts = <Part>[TextPart(prompt), ...fileParts];
+    final validFormatIds = bookContext.lessonFormats.map((f) => f.id).toSet();
+
+    Object? lastErr;
+    for (final modelName in textModels) {
+      for (final apiKey in keys) {
+        try {
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: apiKey,
+            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+          );
+          final response = await _retryTransient(
+            () => model.generateContent([Content.multi(parts)]).timeout(const Duration(minutes: 3)),
+            onRetry: (a, e) => print('[AiService] Lesson $index transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+          );
+          final text = response.text;
+          if (text == null || text.trim().isEmpty) {
+            throw Exception('Empty response for lesson $index.');
+          }
+          final jsonMap = _cleanAndDecodeJson(text);
+          final lesson = Lesson.fromJson(jsonMap);
+          final uniqueLessonId = '${unit.id}-${lesson.id.isNotEmpty ? lesson.id : 'l$index'}';
+          final claimedFormat = lesson.formatId;
+          final acceptedFormat = (claimedFormat != null && validFormatIds.contains(claimedFormat))
+              ? claimedFormat
+              : bookContext.defaultFormatId;
+          return lesson.copyWith(
+            id: uniqueLessonId,
+            formatId: acceptedFormat,
+            slides: lesson.slides.map((s) => s.copyWith(id: '$uniqueLessonId-${s.id}')).toList(),
+          );
+        } catch (e) {
+          lastErr = e;
+        }
+      }
+    }
+    if (lastErr != null) throw Exception(_cleanErrMsg(lastErr));
+    return null;
+  }
+
+  /// Regenerates a single [slide] inside [lesson], optionally steered by a
+  /// free-text [note]. Re-uses the source [chunkPath] (the section/unit PDF)
+  /// for grounding. Returns a fresh [Slide] of the same type and id, or null
+  /// when every model/key combination fails (caller keeps the old slide).
+  Future<Slide?> regenerateSlide({
+    required Slide slide,
+    required Lesson lesson,
+    required Book bookContext,
+    String? chunkPath,
+    String? note,
+  }) async {
+    final keys = await _getKeys();
+    final textModels = await _getPrimaryTextModels();
+
+    final noteLine = (note?.trim().isNotEmpty ?? false)
+        ? 'USER STEERING NOTE FOR THIS REGENERATION: ${note!.trim()}\n'
+        : '';
+    final prompt = PromptService.singleSlideJson
+        .replaceAll('%system_prompt%', bookContext.systemPrompt ?? 'You are an expert tutor.')
+        .replaceAll('%custom_instructions%', PromptService.instructionsBlock(bookContext.customInstructions))
+        .replaceAll('%lesson_title%', lesson.title)
+        .replaceAll('%unit_title%', lesson.title)
+        .replaceAll('%slide_type%', slide.type)
+        .replaceAll('%slide_content%', slide.content)
+        .replaceAll('%slide_id%', slide.id)
+        .replaceAll('%regen_note%', noteLine);
+
+    // Attach the source chunk when we still have it on disk — improves
+    // accuracy — but regeneration must still work without it.
+    final List<Part> fileParts = [];
+    if (chunkPath != null) {
+      final f = File(chunkPath);
+      if (f.existsSync()) fileParts.addAll(await _buildFileParts([f]));
+    }
+    final parts = <Part>[TextPart(prompt), ...fileParts];
+
+    Object? lastErr;
+    for (final modelName in textModels) {
+      for (final apiKey in keys) {
+        try {
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: apiKey,
+            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+          );
+          final response = await _retryTransient(
+            () => model.generateContent([Content.multi(parts)]).timeout(const Duration(minutes: 3)),
+            onRetry: (a, e) => print('[AiService] Slide regen transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+          );
+          final text = response.text;
+          if (text == null || text.trim().isEmpty) continue;
+          final jsonMap = _cleanAndDecodeJson(text);
+          final fresh = Slide.fromJson(jsonMap);
+          // Preserve the slide's identity and type; the model only supplies
+          // the new content/options. Keep any existing diagram SVG.
+          return fresh.copyWith(id: slide.id, type: slide.type, canvasSvg: slide.canvasSvg);
+        } catch (e) {
+          lastErr = e;
+        }
+      }
+    }
+    if (lastErr != null) {
+      print('[AiService] Slide regen exhausted all models. Last: ${_cleanErrMsg(lastErr)}');
+    }
+    return null;
   }
 
   /// Asks the AI to break a section\'s PDF chunk into a list of units
@@ -465,8 +680,14 @@ class AiService {
     return unit.copyWith(lessons: updatedLessons);
   }
 
-  /// path continues to work unchanged.
-  Future<List<Unit>> generateUnitManifest(Section section, Book bookContext) async {
+  /// path continues to work unchanged. [customInstructions] is the planner
+  /// guidance captured on the "Plan units" panel (pre-filled from the book's
+  /// instructions but editable per-section); injected into the prompt.
+  Future<List<Unit>> generateUnitManifest(
+    Section section,
+    Book bookContext, {
+    String? customInstructions,
+  }) async {
     if (section.pdfPath == null) {
       throw Exception('Section has no PDF chunk — cannot generate unit manifest.');
     }
@@ -487,7 +708,8 @@ class AiService {
     final hydratedPrompt = PromptService.unitManifest
         .replaceAll('%section_title%', section.title)
         .replaceAll('%section_description%', section.description)
-        .replaceAll('%format_catalog%', formatCatalog);
+        .replaceAll('%format_catalog%', formatCatalog)
+        .replaceAll('%custom_instructions%', PromptService.instructionsBlock(customInstructions));
 
     final parts = <Part>[TextPart(hydratedPrompt), ...await _buildFileParts([chunkFile])];
 
@@ -516,7 +738,6 @@ class AiService {
             throw Exception('Unit manifest contained no units.');
           }
 
-          final validFormatIds = bookContext.lessonFormats.map((f) => f.id).toSet();
           final units = <Unit>[];
           for (var i = 0; i < unitsData.length; i++) {
             final raw = unitsData[i];
@@ -544,83 +765,6 @@ class AiService {
       }
     }
     throw lastException ?? Exception('Failed to generate unit manifest. All models/keys exhausted.');
-  }
-
-  /// Per-lesson generation used for Gemma models. Builds [Lesson]s one by one
-  /// off the plan; partial successes are kept so users don't lose work if a
-  /// late lesson fails after several earlier ones already succeeded.
-  Future<List<Lesson>> _generateLessonsBatched({
-    required GenerativeModel modelJson,
-    required String modelName,
-    required File chunkFile,
-    required Unit unit,
-    required Book bookContext,
-    required String lessonPlan,
-    required Function(String) onProgress,
-  }) async {
-    int lessonCount = _parseLessonCount(lessonPlan);
-    if (lessonCount <= 0) {
-      throw Exception(
-        'Could not determine lesson count from plan. Expected a "TOTAL_LESSONS: N" line.',
-      );
-    }
-    // Soft cap so a hallucinated count of, say, 99 doesn't blow up the unit.
-    if (lessonCount > 30) lessonCount = 30;
-
-    final filePartsForLesson = await _buildFileParts([chunkFile]);
-    final List<Lesson> collected = [];
-    Object? lastLessonError;
-
-    for (int i = 1; i <= lessonCount; i++) {
-      onProgress('Generating lesson $i of $lessonCount...');
-
-      final hydratedPrompt = PromptService.singleLessonJson
-          .replaceAll('%system_prompt%', bookContext.systemPrompt ?? 'You are an expert tutor.')
-          .replaceAll('%unit_title%', unit.title)
-          .replaceAll('%lesson_plan%', lessonPlan)
-          .replaceAll('%lesson_index%', '$i');
-
-      final parts = <Part>[TextPart(hydratedPrompt), ...filePartsForLesson];
-
-      try {
-        final response = await _retryTransient(
-          () => modelJson.generateContent([Content.multi(parts)])
-              .timeout(const Duration(minutes: 3)),
-          onRetry: (a, e) {
-            print('[AiService] Lesson $i/$lessonCount transient ($modelName) attempt $a: ${_cleanErrMsg(e)}');
-            onProgress('Lesson $i of $lessonCount — retrying ($a/3)...');
-          },
-        );
-
-        final text = response.text;
-        if (text == null || text.trim().isEmpty) {
-          throw Exception('Empty response for lesson $i.');
-        }
-
-        final jsonMap = _cleanAndDecodeJson(text);
-        final lesson = Lesson.fromJson(jsonMap);
-        final uniqueLessonId = '${unit.id}-${lesson.id.isNotEmpty ? lesson.id : 'l$i'}';
-        final validFormatIds = bookContext.lessonFormats.map((f) => f.id).toSet();
-        final claimedFormat = lesson.formatId;
-        final acceptedFormat = (claimedFormat != null && validFormatIds.contains(claimedFormat))
-            ? claimedFormat
-            : bookContext.defaultFormatId;
-        collected.add(lesson.copyWith(
-          id: uniqueLessonId,
-          formatId: acceptedFormat,
-          slides: lesson.slides.map((s) => s.copyWith(id: '$uniqueLessonId-${s.id}')).toList(),
-        ));
-      } catch (e) {
-        lastLessonError = e;
-        print('[AiService] Lesson $i failed permanently ($modelName): ${_cleanErrMsg(e)}');
-        // Continue with remaining lessons — partial unit is better than none.
-      }
-    }
-
-    if (collected.isEmpty && lastLessonError != null) {
-      throw Exception('All lessons failed. Last error: ${_cleanErrMsg(lastLessonError)}');
-    }
-    return collected;
   }
 
   Future<QuestionPaper> generateQuestionPaper(List<File> files, String qpTitle, String? systemPrompt) async {

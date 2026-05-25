@@ -26,6 +26,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   List<String> _modelPrimaryText = ['gemma4'];
   List<String> _modelPrimaryGraphics = ['gemini-3.5-flash'];
   List<String> _modelLite = ['gemini-flash-lite-latest'];
+  /// How many lesson requests to fire in parallel during generation.
+  /// 'auto' lets the app pick from the device's capacity; otherwise a fixed
+  /// count string ('1'..'4'). Read by AiService via the `gen_concurrency` pref.
+  String _genConcurrency = 'auto';
   bool _isLoading = true;
   final GlobalKey<StringListManagerState> _keysManagerKey = GlobalKey<StringListManagerState>();
   final DatabaseService _db = DatabaseService();
@@ -111,6 +115,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _modelPrimaryText = primaryText;
     _modelPrimaryGraphics = primaryGraphics;
     _modelLite = lite;
+    _genConcurrency = prefs.getString('gen_concurrency') ?? 'auto';
 
     setState(() {
       _isLoading = false;
@@ -127,6 +132,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final pTextSaved = await prefs.setStringList('model_primary_text_list', _modelPrimaryText);
     final pGraphicsSaved = await prefs.setStringList('model_primary_graphics_list', _modelPrimaryGraphics);
     final liteSaved = await prefs.setStringList('model_lite_list', _modelLite);
+    await prefs.setString('gen_concurrency', _genConcurrency);
 
     // Mirror the head of each list back into the legacy scalar key so other
     // code paths still relying on it (older app versions, tests) keep
@@ -404,6 +410,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildConcurrencyCard() {
+    const options = <String, String>{
+      'auto': 'Auto (recommended)',
+      '1': '1 (safest)',
+      '2': '2',
+      '3': '3',
+      '4': '4',
+    };
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Row(
+        children: [
+          const Icon(LucideIcons.gauge, color: AppTheme.duoBlue, size: 28),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Text('Parallel requests',
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white)),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: Colors.black38,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.white10),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: options.containsKey(_genConcurrency) ? _genConcurrency : 'auto',
+                dropdownColor: AppTheme.surface,
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                items: options.entries
+                    .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+                    .toList(),
+                onChanged: (v) {
+                  if (v != null) setState(() => _genConcurrency = v);
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -500,7 +555,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               slotName: 'Lite',
               icon: LucideIcons.zap,
             ),
-            
+
+            const SizedBox(height: 32),
+            const Text('Generation', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            const Text('How many lessons to generate at once. Higher is faster but uses more bandwidth and may hit rate limits.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 16),
+            _buildConcurrencyCard(),
+
             const SizedBox(height: 48),
             DuoButton(
               text: 'Save Settings',

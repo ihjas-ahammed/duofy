@@ -1,10 +1,26 @@
 import '../widgets/lesson_node.dart' show lessonIconChoices;
 
-/// Hardcoded AI prompts. Custom user prompts are intentionally not supported —
-/// every call uses these defaults verbatim. The only runtime substitutions are
-/// for structural placeholders (`%filename%`, `%unit_title%`, etc.); there is
-/// no `%user_prompt%` or `%user_interests%`.
+/// AI prompt templates. The structural skeleton of each prompt is fixed, but
+/// two kinds of runtime substitution happen at call time:
+///   - structural placeholders (`%filename%`, `%unit_title%`, …), and
+///   - user-supplied `%custom_instructions%` captured at book creation (and,
+///     for the planner, optionally tweaked per-section). When the user gives
+///     no instructions the caller substitutes an empty string and the
+///     surrounding `USER INSTRUCTIONS` block is omitted via [instructionsBlock].
 class PromptService {
+  /// Wraps free-text user [instructions] into a clearly delimited block so the
+  /// model treats it as high-priority guidance. Returns an empty string when
+  /// there are no instructions, so prompts stay clean for the common case.
+  static String instructionsBlock(String? instructions) {
+    final trimmed = instructions?.trim() ?? '';
+    if (trimmed.isEmpty) return '';
+    return '''
+
+USER INSTRUCTIONS (HIGHEST PRIORITY — follow these unless they conflict with the JSON schema):
+$trimmed
+''';
+  }
+
   /// Comma-separated list of allowed `icon` values for lessons, derived from
   /// the actual icon vocabulary supported by the renderer. Anything not in
   /// this list will silently fall back to `book-open` at render time.
@@ -26,7 +42,7 @@ class PromptService {
   ///                  later AI call when the user opens a section.
   static const String skeleton = '''You are an expert curriculum designer. The attached PDF contains ONLY the table of contents / index pages of a textbook.
 The original source file is named: "%filename%".
-
+%custom_instructions%
 OFFSET CORRECTION (CRITICAL):
 The TOC lists the textbook's printed page numbers. We need ABSOLUTE PDF page numbers (1-based, where the first page of the whole source PDF is 1).
 The user has told us that Chapter 1 actually starts on absolute PDF page %chapter1_abs_page%. That means: when the TOC says "printed page 1" you must output absolute page %chapter1_abs_page%. The offset to add to every printed page number is therefore (%chapter1_abs_page% - 1).
@@ -82,7 +98,7 @@ Return ONLY valid JSON matching this exact structure (note: no "units" array):
   static const String unitManifest = '''You are an expert curriculum designer. The attached PDF is the content of ONE section of a textbook:
 Section title: "%section_title%"
 Section description: "%section_description%"
-
+%custom_instructions%
 TASK:
 Break this section into a small number of pedagogical units (typically 2-5). Each unit groups a few closely related lessons. Do NOT generate lesson slides here — just the unit metadata.
 
@@ -104,6 +120,10 @@ Return ONLY valid JSON matching this exact structure:
   static const String plan = '''You are an expert curriculum designer. Analyze the attached chunk for the unit: "%unit_title%".
 Design a pedagogical lesson plan in PLAIN TEXT (do NOT output JSON yet).
 Break this unit down into multiple logical lessons based on the content.
+%custom_instructions%
+UNIT SCOPE (CRITICAL — the attached PDF is shared by several units, so stay strictly inside THIS unit's boundary):
+%neighbor_context%
+Only plan lessons for the content belonging to "%unit_title%". Do NOT plan lessons that belong to the previous or next unit listed above — those are generated separately and duplicating them creates repeated lessons.
 
 OUTPUT FORMAT (STRICT):
 - The VERY FIRST line of your response MUST be exactly: "TOTAL_LESSONS: <N>" where <N> is an integer.
@@ -154,13 +174,19 @@ YOU MUST RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
   /// request small and reduce the chance of malformed or truncated JSON output.
   static final String singleLessonJson = '''SYSTEM PROMPT:
 %system_prompt%
-
+%custom_instructions%
 TASK:
 You previously created this learning plan for the unit "%unit_title%":
 %lesson_plan%
 
 Now generate ONLY lesson number %lesson_index% from that plan, with full slide content.
 Do not generate any other lessons in this response.
+
+UNIT SCOPE (the attached PDF is shared by several units — stay strictly inside THIS unit):
+%neighbor_context%
+
+ALREADY-COVERED CONTENT (from previously generated units in this section — do NOT re-teach or duplicate any of this; build on it instead):
+%previous_units_content%
 
 CRITICAL SCHEMA & MICRO-LEARNING RULES:
 1. "theory" slides: `content` MUST be a few sentences explaining a concept DIRECTLY. Use Markdown. NEVER use storytelling, narrative framings, characters, or imagined scenarios — present facts and definitions plainly.
@@ -182,6 +208,39 @@ RETURN ONLY VALID JSON FOR THIS ONE LESSON (no wrapping array, no other keys):
   "formatId": "<the format id for this lesson>",
   "canvasPrompt": "One concise sentence describing the lesson\'s key diagram.",
   "slides": [ ... ]
+}''';
+
+  /// Regenerates a SINGLE slide inside an already-generated lesson. The user
+  /// taps "regenerate" on a slide they're unhappy with and can optionally add
+  /// a steering note (e.g. "make it simpler", "use a different example"). We
+  /// feed the lesson title, the slide's current type + content, and the
+  /// source chunk back in, and ask for one fresh slide JSON object of the
+  /// same `type`.
+  static final String singleSlideJson = '''SYSTEM PROMPT:
+%system_prompt%
+%custom_instructions%
+TASK:
+You are regenerating ONE slide inside the lesson "%lesson_title%" (part of the unit "%unit_title%").
+The slide you must regenerate has type "%slide_type%". Here is its current content, which the user wants replaced:
+-------- CURRENT SLIDE --------
+%slide_content%
+-------------------------------
+%regen_note%
+Produce a single, improved slide of the SAME type ("%slide_type%") covering the same pedagogical point, using the attached source content for accuracy. Keep it self-contained — do not reference "the previous slide".
+
+CRITICAL SCHEMA & MICRO-LEARNING RULES:
+1. "theory" slides: `content` MUST be a few sentences explaining a concept DIRECTLY. Use Markdown. NEVER use storytelling, narrative framings, characters, or imagined scenarios.
+2. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
+3. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word. Include an array of 3 `blankDistractors`.
+4. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array of stages; a step can be static (`stepText` only) or a question (`prompt` and `options`). Include a `canvasPrompt` only if a figure is genuinely needed.
+5. LaTeX must be double-escaped (e.g., \\\\frac{1}{2}). Inline math in \$…\$, display math in \$\$…\$\$.
+
+RETURN ONLY VALID JSON FOR THIS ONE SLIDE (no wrapping array, no other keys), e.g.:
+{
+  "id": "%slide_id%",
+  "type": "%slide_type%",
+  "title": "Slide title",
+  "content": "..."
 }''';
 
   /// Stage-2 prompt: feeds a single `canvasPrompt` (produced by the text

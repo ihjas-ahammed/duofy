@@ -7,9 +7,8 @@ import '../widgets/duo_button.dart';
 
 /// Lets the user manage the list of named [LessonFormat]s a book ships with
 /// (e.g. "Theory", "Worked Example", "Proof Walkthrough"). Each format is a
-/// separate slide-template pipeline; units pick one and lesson generation
-/// uses the matching slide structure. The user-marked default applies when
-/// a unit has no explicit assignment.
+/// separate slide-template pipeline. There is no "default" format — the AI
+/// picks the format that fits each lesson's concept during generation.
 class CourseSettingsScreen extends StatefulWidget {
   final Book book;
 
@@ -127,13 +126,12 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
               itemCount: _formats.length,
               itemBuilder: (context, i) {
                 final f = _formats[i];
-                final isDefault = f.id == _defaultFormatId;
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
                     color: AppTheme.surface,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: isDefault ? AppTheme.duoBlue : Colors.white12, width: isDefault ? 2 : 1),
+                    border: Border.all(color: Colors.white12, width: 1),
                   ),
                   child: InkWell(
                     onTap: () => _openEditor(i),
@@ -143,26 +141,9 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  f.name,
-                                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900),
-                                ),
-                              ),
-                              if (isDefault)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.duoBlue.withOpacity(0.18),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: AppTheme.duoBlue),
-                                  ),
-                                  child: const Text('DEFAULT',
-                                      style: TextStyle(color: AppTheme.duoBlue, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.0)),
-                                ),
-                            ],
+                          Text(
+                            f.name,
+                            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900),
                           ),
                           const SizedBox(height: 4),
                           Text(f.description,
@@ -179,13 +160,6 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
                           const SizedBox(height: 12),
                           Row(
                             children: [
-                              if (!isDefault)
-                                TextButton.icon(
-                                  onPressed: () => setState(() => _defaultFormatId = f.id),
-                                  icon: const Icon(LucideIcons.star, size: 14, color: AppTheme.duoBlue),
-                                  label: const Text('Make default', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.w800, fontSize: 12)),
-                                  style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
-                                ),
                               const Spacer(),
                               IconButton(
                                 tooltip: 'Edit',

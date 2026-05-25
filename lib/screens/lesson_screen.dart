@@ -249,6 +249,68 @@ class _LessonScreenState extends State<LessonScreen> {
     );
   }
 
+  /// Asks for an optional steering note, then regenerates [slide]'s content
+  /// via the AI. The refreshed content lands through [_refreshFromCache] when
+  /// the GenerationManager broadcasts the updated book.
+  Future<void> _promptRegenerateSlide(Slide slide) async {
+    final noteCtrl = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text('Regenerate this slide?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'The AI will rewrite this slide using the source material. Optionally tell it what to change.',
+              style: TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: noteCtrl,
+              maxLines: 2,
+              autofocus: true,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Optional note — e.g. "make it simpler"',
+                hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+                filled: true,
+                fillColor: Colors.black26,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Regenerate', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    final note = noteCtrl.text.trim();
+    noteCtrl.dispose();
+    if (confirmed != true || !_canRegenerateCanvas) return;
+
+    final slideIdx = _lesson.slides.indexWhere((s) => s.id == slide.id);
+    if (slideIdx < 0) return;
+
+    await GenerationManager.instance.regenerateSlide(
+      book: widget.book!,
+      modIdx: widget.modIdx!,
+      secIdx: widget.secIdx!,
+      unitIdx: widget.unitIdx!,
+      lessonIdx: widget.lessonIdx!,
+      slideIdx: slideIdx,
+      note: note.isEmpty ? null : note,
+    );
+  }
+
   Widget _buildSlideContent(Slide slide) {
     switch (slide.type) {
       case 'step_by_step':
@@ -419,7 +481,33 @@ class _LessonScreenState extends State<LessonScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8), // Match spacing symmetrically
+                      const SizedBox(width: 8),
+                      if (_canRegenerateCanvas)
+                        AnimatedBuilder(
+                          animation: GenerationManager.instance,
+                          builder: (context, _) {
+                            final busy = GenerationManager.instance.activeSlideRegens.contains(slide.id);
+                            return GestureDetector(
+                              onTap: busy ? null : () => _promptRegenerateSlide(slide),
+                              child: SizedBox(
+                                width: 40,
+                                height: 48,
+                                child: Center(
+                                  child: busy
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.5,
+                                            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.duoBlue),
+                                          ),
+                                        )
+                                      : const Icon(LucideIcons.refreshCcw, color: Colors.white54, size: 22),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                     ],
                   ),
                 ),

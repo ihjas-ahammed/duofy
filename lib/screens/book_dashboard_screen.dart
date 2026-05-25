@@ -197,14 +197,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         );
                       }
                       // New-flow sections carry their own PDF chunk but don\'t
-                      // have units yet — kick off the lazy unit-manifest call
-                      // the first time the user lands on them. The manager
-                      // dedupes on section.id so retriggering is safe.
-                      if (activeSec.needsUnitManifest) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          GenerationManager.instance.startSectionUnitManifest(widget.book, mIdx, sIdx);
-                        });
-                      }
+                      // have units yet. Planning is now user-triggered from the
+                      // manifest panel (so they can tweak the planner
+                      // instructions first) rather than auto-firing here.
                       final manifestTask = GenerationManager.instance.activeSectionManifests[activeSec.id];
                       return LessonPath(
                         section: activeSec,
@@ -223,9 +218,12 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         onClearUnit: (unit, unitIdx) {
                           _onClearUnit(unit, mIdx, sIdx, unitIdx);
                         },
-                        onRetryManifest: () {
+                        onPlanManifest: (instructions) {
                           GenerationManager.instance.clearSectionManifestError(activeSec.id);
-                          GenerationManager.instance.startSectionUnitManifest(widget.book, mIdx, sIdx);
+                          GenerationManager.instance.startSectionUnitManifest(
+                            widget.book, mIdx, sIdx,
+                            instructions: instructions,
+                          );
                         },
                         onConfirmFormats: (confirmedUnits) async {
                           // User signed off on per-unit format assignments.

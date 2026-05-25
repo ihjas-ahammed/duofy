@@ -142,6 +142,12 @@ class Book {
   final String description;
   final String icon;
   final String? systemPrompt;
+  /// Free-text instructions the user supplies at book-creation time. Unlike
+  /// [systemPrompt] (which the AI generates), this is verbatim user guidance
+  /// (e.g. "focus on exam-style worked examples", "keep theory minimal").
+  /// It is injected into every downstream generation prompt — skeleton,
+  /// unit planner, and lesson generation — so the whole course honours it.
+  final String? customInstructions;
   final int? updatedAt;
   final String? authorId;
   final String? authorName;
@@ -165,6 +171,7 @@ class Book {
     required this.description,
     required this.icon,
     this.systemPrompt,
+    this.customInstructions,
     this.updatedAt,
     this.authorId,
     this.authorName,
@@ -210,6 +217,7 @@ class Book {
       description: _str(json['description']),
       icon: _str(json['icon'], 'Book'),
       systemPrompt: _strOpt(json['systemPrompt']),
+      customInstructions: _strOpt(json['customInstructions']),
       updatedAt: json['updatedAt'] is num ? (json['updatedAt'] as num).toInt() : int.tryParse(_str(json['updatedAt'])),
       authorId: _strOpt(json['authorId']),
       authorName: _strOpt(json['authorName']),
@@ -227,6 +235,7 @@ class Book {
     'description': description,
     'icon': icon,
     if (systemPrompt != null) 'systemPrompt': systemPrompt,
+    if (customInstructions != null) 'customInstructions': customInstructions,
     if (updatedAt != null) 'updatedAt': updatedAt,
     if (authorId != null) 'authorId': authorId,
     if (authorName != null) 'authorName': authorName,
@@ -258,6 +267,7 @@ class Book {
     String? description,
     String? icon,
     String? systemPrompt,
+    String? customInstructions,
     int? updatedAt,
     String? authorId,
     String? authorName,
@@ -273,6 +283,7 @@ class Book {
       description: description ?? this.description,
       icon: icon ?? this.icon,
       systemPrompt: systemPrompt ?? this.systemPrompt,
+      customInstructions: customInstructions ?? this.customInstructions,
       updatedAt: updatedAt ?? this.updatedAt,
       authorId: authorId ?? this.authorId,
       authorName: authorName ?? this.authorName,
@@ -443,6 +454,11 @@ class Section {
   /// suggestions (or accepted them as-is). Lessons stay gated behind a
   /// confirmation panel until this flips true.
   final bool unitFormatsConfirmed;
+  /// Per-section planner instructions, captured on the "Plan units" panel.
+  /// Pre-filled from the book\'s [Book.customInstructions] but editable so a
+  /// section can be planned with a tweaked focus. Persisted so a manifest
+  /// retry reuses the same guidance.
+  final String? customInstructions;
 
   Section({
     required this.id,
@@ -455,6 +471,7 @@ class Section {
     this.pdfPath,
     this.unitsGenerated = false,
     this.unitFormatsConfirmed = false,
+    this.customInstructions,
   });
 
   factory Section.fromJson(Map<String, dynamic> json) {
@@ -469,6 +486,7 @@ class Section {
       pdfPath: _strOpt(json['pdfPath']),
       unitsGenerated: _bool(json['unitsGenerated'], false),
       unitFormatsConfirmed: _bool(json['unitFormatsConfirmed'], false),
+      customInstructions: _strOpt(json['customInstructions']),
     );
   }
 
@@ -483,6 +501,7 @@ class Section {
     if (pdfPath != null) 'pdfPath': pdfPath,
     if (unitsGenerated) 'unitsGenerated': unitsGenerated,
     if (unitFormatsConfirmed) 'unitFormatsConfirmed': unitFormatsConfirmed,
+    if (customInstructions != null) 'customInstructions': customInstructions,
   };
 
   /// True for skeletons that carry their own page-range and PDF chunk and
@@ -510,6 +529,7 @@ class Section {
     String? pdfPath,
     bool? unitsGenerated,
     bool? unitFormatsConfirmed,
+    String? customInstructions,
   }) {
     return Section(
       id: id ?? this.id,
@@ -522,6 +542,7 @@ class Section {
       pdfPath: pdfPath ?? this.pdfPath,
       unitsGenerated: unitsGenerated ?? this.unitsGenerated,
       unitFormatsConfirmed: unitFormatsConfirmed ?? this.unitFormatsConfirmed,
+      customInstructions: customInstructions ?? this.customInstructions,
     );
   }
 }

@@ -27,8 +27,10 @@ class LessonPath extends StatefulWidget {
   /// Status of the lazy unit-manifest call for this section (new flow).
   /// Null means no manifest call is in flight or needed.
   final UnitGenTask? sectionManifestStatus;
-  /// Re-runs the unit-manifest call (used to recover from a failed manifest).
-  final VoidCallback? onRetryManifest;
+  /// Starts (or retries) the unit-manifest call with optional planner
+  /// instructions captured on the panel. Replaces the old auto-trigger so the
+  /// user can review/tweak the guidance before units are planned.
+  final void Function(String? instructions)? onPlanManifest;
   /// Commits the user\'s per-unit format selections and flips
   /// [Section.unitFormatsConfirmed] true so lessons become reachable.
   final void Function(List<Unit> confirmedUnits)? onConfirmFormats;
@@ -45,7 +47,7 @@ class LessonPath extends StatefulWidget {
     required this.completedLessons,
     required this.onLessonFinished,
     this.sectionManifestStatus,
-    this.onRetryManifest,
+    this.onPlanManifest,
     this.onConfirmFormats,
   });
 
@@ -95,7 +97,8 @@ class _LessonPathState extends State<LessonPath> {
         section: widget.section,
         task: widget.sectionManifestStatus,
         sectionColor: color,
-        onRetry: widget.onRetryManifest,
+        initialInstructions: widget.section.customInstructions ?? widget.book.customInstructions,
+        onPlan: widget.onPlanManifest,
       );
     }
 
@@ -124,12 +127,18 @@ class _LessonPathState extends State<LessonPath> {
     for (int uIdx = 0; uIdx < widget.section.units.length; uIdx++) {
       if (uIdx > 0) y += _interUnitGap;
       final unit = widget.section.units[uIdx];
-      final bool generated = unit.isGenerated && unit.lessons.isNotEmpty;
+      final bool hasLessons = unit.lessons.isNotEmpty;
+      final bool generating = widget.loadingUnitStatuses.containsKey(unit.id);
+      final bool fullyGenerated = unit.isGenerated && hasLessons;
 
       elements.add(_Element.header(unit: unit, unitIdx: uIdx, y: y));
-      y += generated ? _headerHeightGenerated : _headerHeightNeedsGen;
+      // While generating (even with some lessons already streamed in) the
+      // header still shows a progress bar, so keep the taller slot reserved.
+      y += (fullyGenerated && !generating) ? _headerHeightGenerated : _headerHeightNeedsGen;
 
-      if (generated) {
+      // Render lesson nodes for any lessons we have so far — this is what
+      // makes streamed lessons appear one-by-one during generation.
+      if (hasLessons) {
         for (int lIdx = 0; lIdx < unit.lessons.length; lIdx++) {
           final lesson = unit.lessons[lIdx];
           double offset = 0;
@@ -355,33 +364,62 @@ class _PathConnectorPainter extends CustomPainter {
   }
 }
 
-/// Shown when a new-flow section has no units yet. Renders one of three
-/// states based on [task]: in-flight (spinner + status), errored (retry
-/// button), or waiting/preparing (idle hint that the trigger fires
-/// automatically the moment the section is opened).
-class _SectionManifestPanel extends StatelessWidget {
+/// Shown when a new-flow section has no units yet. Three states based on
+/// [task]: in-flight (spinner + status), errored (message + editable
+/// instructions + retry), or idle (editable planner instructions + "Plan
+/// units"). The instructions field is pre-filled from the book's custom
+/// instructions and can be tweaked per-section before planning.
+class _SectionManifestPanel extends StatefulWidget {
   final Section section;
   final UnitGenTask? task;
   final Color sectionColor;
-  final VoidCallback? onRetry;
+  final String? initialInstructions;
+  final void Function(String? instructions)? onPlan;
 
   const _SectionManifestPanel({
     required this.section,
     required this.task,
     required this.sectionColor,
-    required this.onRetry,
+    required this.initialInstructions,
+    required this.onPlan,
   });
 
   @override
+  State<_SectionManifestPanel> createState() => _SectionManifestPanelState();
+}
+
+class _SectionManifestPanelState extends State<_SectionManifestPanel> {
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: widget.initialInstructions ?? '');
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _plan() {
+    final text = _ctrl.text.trim();
+    widget.onPlan?.call(text.isEmpty ? null : text);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final task = widget.task;
+    final sectionColor = widget.sectionColor;
     final isError = task?.isError ?? false;
     final isRunning = task != null && !isError;
 
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 400),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -409,7 +447,7 @@ class _SectionManifestPanel extends StatelessWidget {
               Text(
                 isError
                     ? 'Couldn\'t plan units for this section'
-                    : (isRunning ? 'Planning units…' : 'Preparing units for "${section.title}"'),
+                    : (isRunning ? 'Planning units…' : 'Plan units for "${widget.section.title}"'),
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
               ),
@@ -418,21 +456,45 @@ class _SectionManifestPanel extends StatelessWidget {
                 isError
                     ? (task?.status ?? 'Unknown error.')
                     : (isRunning
-                        ? (task?.status ?? 'AI is breaking this section into units.')
-                        : 'This runs once. Lesson generation stays per-unit and on-demand.'),
+                        ? (task.status)
+                        : 'Review the planning guidance below, then plan this section into units. This runs once; lessons stay per-unit and on-demand.'),
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.white60, fontSize: 13, height: 1.4),
               ),
-              if (isError && onRetry != null) ...[
-                const SizedBox(height: 20),
+              // Editable instructions + action are hidden while a call is
+              // actively in flight, shown for the idle and error states.
+              if (!isRunning) ...[
+                const SizedBox(height: 24),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Planning instructions (optional)',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13)),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _ctrl,
+                  maxLines: 4,
+                  minLines: 2,
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'e.g. Emphasise derivations; one worked example per concept.',
+                    hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.04),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 ElevatedButton.icon(
-                  onPressed: onRetry,
-                  icon: const Icon(Icons.refresh, size: 16),
-                  label: const Text('Try again', style: TextStyle(fontWeight: FontWeight.w900)),
+                  onPressed: widget.onPlan == null ? null : _plan,
+                  icon: Icon(isError ? Icons.refresh : Icons.auto_awesome, size: 16),
+                  label: Text(isError ? 'Try again' : 'Plan units',
+                      style: const TextStyle(fontWeight: FontWeight.w900)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: sectionColor,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                   ),
                 ),
               ],

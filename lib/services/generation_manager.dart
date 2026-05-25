@@ -97,6 +97,7 @@ class GenerationManager extends ChangeNotifier {
     String filename, {
     required List<File> indexFiles,
     required int chapter1AbsolutePage,
+    String? customInstructions,
   }) async {
     sourceFiles = sourceFiles.toList();
     final taskId = DateTime.now().millisecondsSinceEpoch.toString();
@@ -128,6 +129,7 @@ class GenerationManager extends ChangeNotifier {
         indexFiles,
         filename,
         chapter1AbsolutePage: chapter1AbsolutePage,
+        customInstructions: customInstructions,
       );
       stopwatch.stop();
 
@@ -267,36 +269,77 @@ class GenerationManager extends ChangeNotifier {
 
     await NotificationService.showProgress(notifId, "Generating Lesson", "AI is crafting content...", indeterminate: true);
 
+    // Merge helper: drop unit [u] into a fresh copy of [base] at our indices.
+    Book applyUnit(Book base, Unit u) {
+      final List<Unit> uns = List.from(base.modules[modIdx].sections[secIdx].units);
+      uns[unitIdx] = u;
+      final List<Section> secs = List.from(base.modules[modIdx].sections);
+      secs[secIdx] = secs[secIdx].copyWith(units: uns);
+      final List<Module> mods = List.from(base.modules);
+      mods[modIdx] = mods[modIdx].copyWith(sections: secs);
+      return base.copyWith(modules: mods);
+    }
+
     try {
       final stopwatch = Stopwatch()..start();
       // New-flow units share the section\'s PDF chunk. Pass it through so the
       // AI call can still hit a real on-disk file.
       final String? sectionPdfPath = book.modules[modIdx].sections[secIdx].pdfPath;
+
+      // Gather neighbour context off the freshest book so the AI stays inside
+      // this unit's slice of the shared chunk, and so it knows which earlier
+      // units were already covered (to avoid re-teaching them).
+      final Book ctxBook = (await _dbService.getBookFromCache(book.id)) ?? book;
+      final List<Unit> sectionUnits = ctxBook.modules[modIdx].sections[secIdx].units;
+      final Unit? previousUnit = unitIdx > 0 ? sectionUnits[unitIdx - 1] : null;
+      final Unit? nextUnit =
+          unitIdx < sectionUnits.length - 1 ? sectionUnits[unitIdx + 1] : null;
+      final List<Unit> previousGeneratedUnits = [];
+      for (int i = unitIdx - 1; i >= 0 && previousGeneratedUnits.length < 2; i--) {
+        final u = sectionUnits[i];
+        if (u.isGenerated && u.lessons.isNotEmpty) previousGeneratedUnits.insert(0, u);
+      }
+
+      // Serialize streaming saves so concurrent per-lesson callbacks don't
+      // race on the shared book cache. Each save writes the full set of
+      // lessons collected so far, so the book converges regardless of order.
+      Future<void> saveChain = Future.value();
+      void onLessonGenerated(List<Lesson> lessonsSoFar) {
+        final snapshot = List<Lesson>.from(lessonsSoFar);
+        if (snapshot.isEmpty) return;
+        saveChain = saveChain.then((_) async {
+          final base = (await _dbService.getBookFromCache(book.id)) ?? book;
+          // Keep isGenerated false while streaming so the unit header still
+          // shows a progress state; lessons already render as they land.
+          final partial = applyUnit(base, unit.copyWith(isGenerated: false, lessons: snapshot));
+          await _dbService.saveGeneratedBook(partial);
+          _bookUpdateController.add(partial);
+        }).catchError((e) {
+          print('[GenerationManager] Streaming save failed for ${unit.id}: $e');
+        });
+      }
+
       final updatedUnit = await _aiService.generateUnitContent(
         unit,
-        book,
+        ctxBook,
         (status) {
           activeUnitGenerations[unit.id]?.status = status;
           notifyListeners();
         },
         sectionPdfPath: sectionPdfPath,
+        previousUnit: previousUnit,
+        nextUnit: nextUnit,
+        previousGeneratedUnits: previousGeneratedUnits,
+        onLessonGenerated: onLessonGenerated,
       );
       stopwatch.stop();
       await _recordRunTime('unit_gen_history', stopwatch.elapsedMilliseconds);
 
-      // Persist the text-only unit first so the lesson is usable immediately
-      // while the graphics pass runs in the background. Same merge pattern
-      // is reused later for the SVG-enriched unit.
-      Book applyUnit(Book base, Unit u) {
-        final List<Unit> uns = List.from(base.modules[modIdx].sections[secIdx].units);
-        uns[unitIdx] = u;
-        final List<Section> secs = List.from(base.modules[modIdx].sections);
-        secs[secIdx] = secs[secIdx].copyWith(units: uns);
-        final List<Module> mods = List.from(base.modules);
-        mods[modIdx] = mods[modIdx].copyWith(sections: secs);
-        return base.copyWith(modules: mods);
-      }
+      // Let any in-flight streaming saves settle before the final write.
+      await saveChain;
 
+      // Persist the finished text-only unit so the lesson is usable
+      // immediately while the graphics pass runs in the background.
       Book baseBook = (await _dbService.getBookFromCache(book.id)) ?? book;
       final textOnlyBook = applyUnit(baseBook, updatedUnit);
       await _dbService.saveGeneratedBook(textOnlyBook);
@@ -352,14 +395,31 @@ class GenerationManager extends ChangeNotifier {
   /// button while a call is in flight.
   final Set<String> activeCanvasRegens = {};
 
+  /// Set of slide ids whose textual content is currently being regenerated
+  /// by [regenerateSlide]. The lesson screen watches this to show a spinner
+  /// and disable the regenerate control while a call is in flight.
+  final Set<String> activeSlideRegens = {};
+
   /// Lazily generates the unit list for a section in a new-flow book.
   /// Idempotent: if the section already has units or a manifest is already
   /// in flight, this is a no-op. Persists the populated section back to the
   /// DB and emits a book update on success.
-  Future<void> startSectionUnitManifest(Book book, int modIdx, int secIdx) async {
+  Future<void> startSectionUnitManifest(
+    Book book,
+    int modIdx,
+    int secIdx, {
+    String? instructions,
+  }) async {
     final section = book.modules[modIdx].sections[secIdx];
     if (!section.needsUnitManifest) return;
     if (activeSectionManifests.containsKey(section.id)) return;
+
+    // Effective planner guidance: what the user typed on the panel, else any
+    // previously-saved section instructions, else the book-wide instructions.
+    final String? effectiveInstructions =
+        (instructions?.trim().isNotEmpty ?? false)
+            ? instructions!.trim()
+            : (section.customInstructions ?? book.customInstructions);
 
     final notifId = section.id.hashCode;
     activeSectionManifests[section.id] = UnitGenTask(
@@ -371,13 +431,21 @@ class GenerationManager extends ChangeNotifier {
     await NotificationService.showProgress(notifId, 'Planning section', 'Generating unit list...', indeterminate: true);
 
     try {
-      final units = await _aiService.generateUnitManifest(section, book);
+      final units = await _aiService.generateUnitManifest(
+        section,
+        book,
+        customInstructions: effectiveInstructions,
+      );
 
       // Re-read freshest book so concurrent edits don\'t clobber.
       final baseBook = (await _dbService.getBookFromCache(book.id)) ?? book;
       final modules = List<Module>.from(baseBook.modules);
       final sections = List<Section>.from(modules[modIdx].sections);
-      sections[secIdx] = sections[secIdx].copyWith(units: units, unitsGenerated: true);
+      sections[secIdx] = sections[secIdx].copyWith(
+        units: units,
+        unitsGenerated: true,
+        customInstructions: effectiveInstructions,
+      );
       modules[modIdx] = modules[modIdx].copyWith(sections: sections);
       final newBook = baseBook.copyWith(modules: modules);
 
@@ -467,6 +535,54 @@ class GenerationManager extends ChangeNotifier {
       _bookUpdateController.add(newBook);
     } finally {
       activeCanvasRegens.remove(slide.id);
+      notifyListeners();
+    }
+  }
+
+  /// Regenerates the textual content of a single slide via the AI, optionally
+  /// steered by [note]. Best-effort: if the call fails the old slide is kept.
+  /// Persists the new slide into the book and broadcasts the update.
+  Future<void> regenerateSlide({
+    required Book book,
+    required int modIdx,
+    required int secIdx,
+    required int unitIdx,
+    required int lessonIdx,
+    required int slideIdx,
+    String? note,
+  }) async {
+    final lesson = book.modules[modIdx].sections[secIdx].units[unitIdx].lessons[lessonIdx];
+    final slide = lesson.slides[slideIdx];
+    if (activeSlideRegens.contains(slide.id)) return;
+    activeSlideRegens.add(slide.id);
+    notifyListeners();
+    try {
+      final String? chunkPath = book.modules[modIdx].sections[secIdx].units[unitIdx].pdfPath ??
+          book.modules[modIdx].sections[secIdx].pdfPath;
+      final fresh = await _aiService.regenerateSlide(
+        slide: slide,
+        lesson: lesson,
+        bookContext: book,
+        chunkPath: chunkPath,
+        note: note,
+      );
+      if (fresh == null) return; // keep old slide if the call failed
+      final base = (await _dbService.getBookFromCache(book.id)) ?? book;
+      final mods = List<Module>.from(base.modules);
+      final secs = List<Section>.from(mods[modIdx].sections);
+      final uns = List<Unit>.from(secs[secIdx].units);
+      final lessons = List<Lesson>.from(uns[unitIdx].lessons);
+      final slides = List<Slide>.from(lessons[lessonIdx].slides);
+      slides[slideIdx] = fresh;
+      lessons[lessonIdx] = lessons[lessonIdx].copyWith(slides: slides);
+      uns[unitIdx] = uns[unitIdx].copyWith(lessons: lessons);
+      secs[secIdx] = secs[secIdx].copyWith(units: uns);
+      mods[modIdx] = mods[modIdx].copyWith(sections: secs);
+      final newBook = base.copyWith(modules: mods);
+      await _dbService.saveGeneratedBook(newBook);
+      _bookUpdateController.add(newBook);
+    } finally {
+      activeSlideRegens.remove(slide.id);
       notifyListeners();
     }
   }
