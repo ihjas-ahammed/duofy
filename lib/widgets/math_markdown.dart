@@ -40,18 +40,29 @@ class MathMarkdown extends StatelessWidget {
   });
 
   String _sanitize(String input) {
-    return input
-        .replaceAll(r'\$', r'$')
-        .replaceAll(r'\[', r'$$')
-        .replaceAll(r'\]', r'$$')
-        .replaceAll(r'\(', r'$')
-        .replaceAll(r'\)', r'$')
-        .replaceAll(r'\\frac', r'\frac')
-        .replaceAll(r'\\sqrt', r'\sqrt')
-        .replaceAll(r'\\text', r'\text')
-        .replaceAll(r'\\cdot', r'\cdot')
-        .replaceAll(r'\\Delta', r'\Delta')
-        .replaceAll(r'\\pi', r'\pi');
+    var s = input;
+
+    // Normalise alternative math delimiters → $ / $$ before the markdown
+    // parser runs so LatexInlineSyntax always has a consistent delimiter.
+    s = s.replaceAll(r'\[', r'$$');
+    s = s.replaceAll(r'\]', r'$$');
+    s = s.replaceAll(r'\(', r'$');
+    s = s.replaceAll(r'\)', r'$');
+
+    // The AI is prompted to double-escape LaTeX (\\frac → \frac in the
+    // runtime string). Fix ALL double-escaped commands, not just a handful.
+    s = s.replaceAllMapped(
+      RegExp(r'\\\\([a-zA-Z]+)'),
+      (m) => '\\${m[1]}',
+    );
+
+    // HTML entities that occasionally appear in AI output
+    s = s.replaceAll('&amp;', '&');
+    s = s.replaceAll('&lt;', '<');
+    s = s.replaceAll('&gt;', '>');
+    s = s.replaceAll('&nbsp;', ' ');
+
+    return s;
   }
 
   @override
@@ -68,7 +79,7 @@ class MathMarkdown extends StatelessWidget {
     final mathStyle = baseStyle.copyWith(color: Colors.white);
 
     final inlineSyntaxes = <md.InlineSyntax>[
-      LatexInlineSyntax(),
+      _PermissiveLatexInlineSyntax(),
       if (blankController != null) _BlankSyntax(),
       if (customSyntaxes != null) ...customSyntaxes!,
       ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes,
@@ -127,7 +138,58 @@ class MathMarkdown extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Math builder (mirrors the old inline_math_builder.dart)
+// Permissive inline LaTeX syntax (replaces flutter_markdown_latex's version)
+// ---------------------------------------------------------------------------
+// The upstream LatexInlineSyntax uses a strict lookahead that only allows
+// whitespace and a few punctuation marks after the closing delimiter. This
+// means ($4$) or $x$+1 silently fails. Our version drops the lookahead so
+// math is recognised regardless of the surrounding characters.
+class _PermissiveLatexInlineSyntax extends md.InlineSyntax {
+  _PermissiveLatexInlineSyntax() : super(_pattern);
+
+  // Order matters: $$ before $ so the greedy display match is tried first.
+  static const _delimiters = [
+    (left: r'$$', right: r'$$', display: true),
+    (left: r'$',  right: r'$',  display: false),
+  ];
+
+  static String _esc(String s) =>
+      s.replaceAllMapped(RegExp(r'[-/\\^$*+?.()|[\]{}]'), (m) => '\\${m[0]}');
+
+  static final String _pattern = _delimiters.map((d) {
+    final l = _esc(d.left);
+    final r = _esc(d.right);
+    // Capture the content between delimiters (non-greedy, no unescaped
+    // newlines). The outer group lets onMatch retrieve the full match
+    // including delimiters.
+    return '$l((?:\\\\.|[^\\\\\\n])*?)$r';
+  }).join('|');
+
+  @override
+  bool onMatch(md.InlineParser parser, Match match) {
+    final raw = match.group(0) ?? '';
+
+    // Determine which delimiter matched.
+    var display = false;
+    var delimLen = 1;
+    for (final d in _delimiters) {
+      if (raw.startsWith(d.left) && raw.endsWith(d.right)) {
+        display = d.display;
+        delimLen = d.left.length;
+        break;
+      }
+    }
+
+    final equation = raw.substring(delimLen, raw.length - delimLen);
+    final element = md.Element.text('latex', equation);
+    element.attributes['MathStyle'] = display ? 'display' : 'text';
+    parser.addNode(element);
+    return true;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Math builder with auto-fix pipeline
 // ---------------------------------------------------------------------------
 class _MathBuilder extends MarkdownElementBuilder {
   _MathBuilder({this.textStyle});
@@ -151,9 +213,24 @@ class _MathBuilder extends MarkdownElementBuilder {
       text,
       textStyle: effectiveStyle,
       mathStyle: mathStyle,
-      onErrorFallback: (err) {
-        final String fallbackText = isDisplay ? '\$\$$text\$\$' : '\$$text\$';
-        return Text(fallbackText, style: effectiveStyle);
+      onErrorFallback: (_) {
+        // First failure — run the fix pipeline and retry once.
+        final fixed = _fixLatex(text);
+        return Math.tex(
+          fixed,
+          textStyle: effectiveStyle,
+          mathStyle: mathStyle,
+          onErrorFallback: (_) {
+            // Still broken — render readable plain text.
+            return Text(
+              _latexToPlainText(text),
+              style: effectiveStyle?.copyWith(
+                fontStyle: FontStyle.italic,
+                color: effectiveStyle.color?.withOpacity(0.85),
+              ),
+            );
+          },
+        );
       },
     );
 
@@ -166,10 +243,6 @@ class _MathBuilder extends MarkdownElementBuilder {
       );
     }
 
-    // Inline math: embed via WidgetSpan with baseline alignment so the math
-    // sits on the surrounding text's alphabetic baseline, and flutter_markdown
-    // merges this Text widget into the same span run as adjacent text (no
-    // extra padding, no forced line break).
     return Text.rich(
       WidgetSpan(
         alignment: PlaceholderAlignment.baseline,
@@ -179,6 +252,146 @@ class _MathBuilder extends MarkdownElementBuilder {
       style: effectiveStyle,
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// LaTeX auto-fix pipeline (offline, no network)
+// ---------------------------------------------------------------------------
+
+/// Applies a series of heuristic fixes to malformed LaTeX so that
+/// flutter_math_fork can parse it. Each fix is intentionally narrow
+/// so multiple fixes compose safely.
+String _fixLatex(String tex) {
+  var s = tex;
+
+  // ── 1. HTML entities that sneak in from AI output ──
+  s = s.replaceAll('&amp;', '&');
+  s = s.replaceAll('&lt;', '<');
+  s = s.replaceAll('&gt;', '>');
+  s = s.replaceAll('&nbsp;', ' ');
+
+  // ── 2. Double-escaped commands (\\frac → \frac) ──
+  s = s.replaceAllMapped(
+    RegExp(r'\\\\([a-zA-Z]+)'),
+    (m) => '\\${m[1]}',
+  );
+
+  // ── 3. Bare well-known commands missing the leading backslash ──
+  const knownCmds = [
+    'frac', 'sqrt', 'text', 'mathrm', 'mathbf', 'mathit', 'mathbb',
+    'cdot', 'times', 'div', 'pm', 'mp', 'leq', 'geq', 'neq', 'approx',
+    'infty', 'sum', 'prod', 'int', 'lim', 'sin', 'cos', 'tan', 'log',
+    'ln', 'exp', 'max', 'min', 'sup', 'inf', 'det', 'gcd',
+    'alpha', 'beta', 'gamma', 'delta', 'epsilon', 'theta', 'lambda',
+    'mu', 'pi', 'sigma', 'omega', 'phi', 'psi', 'rho', 'tau', 'chi',
+    'Delta', 'Gamma', 'Lambda', 'Sigma', 'Omega', 'Phi', 'Psi', 'Theta',
+    'to', 'rightarrow', 'leftarrow', 'Rightarrow', 'Leftarrow',
+    'quad', 'qquad', 'space', 'not', 'in', 'notin', 'subset', 'subseteq',
+    'cup', 'cap', 'forall', 'exists', 'partial', 'nabla',
+    'binom', 'choose', 'over', 'atop',
+  ];
+  final cmdPattern = knownCmds.join('|');
+  s = s.replaceAllMapped(
+    RegExp('(?<!\\\\)\\b($cmdPattern)(?=\\b|[{(\\[^_])'),
+    (m) => '\\${m[1]}',
+  );
+
+  // ── 4. Balance curly braces ──
+  int depth = 0;
+  for (final c in s.codeUnits) {
+    if (c == 0x7B) depth++;  // {
+    if (c == 0x7D) depth--;  // }
+  }
+  if (depth > 0) s += '}' * depth;
+  if (depth < 0) s = '{' * (-depth) + s;
+
+  // ── 5. \left / \right balance ──
+  final nLeft  = RegExp(r'\\left[\s]*[(.|\[{|]').allMatches(s).length;
+  final nRight = RegExp(r'\\right[\s]*[).|\]}|]').allMatches(s).length;
+  if (nLeft > nRight) s += r'\right.' * (nLeft - nRight);
+  if (nRight > nLeft) s = r'\left.' * (nRight - nLeft) + s;
+
+  // ── 6. \begin without matching \end ──
+  for (final m in RegExp(r'\\begin\{(\w+)\}').allMatches(s).toList()) {
+    final env = m.group(1)!;
+    final opens  = RegExp('\\\\begin\\{$env\\}').allMatches(s).length;
+    final closes = RegExp('\\\\end\\{$env\\}').allMatches(s).length;
+    if (opens > closes) {
+      for (var i = 0; i < opens - closes; i++) s += '\\end{$env}';
+    }
+  }
+
+  // ── 7. Remove commands flutter_math_fork doesn't support ──
+  s = s.replaceAll(RegExp(r'\\(color|textcolor|colorbox)\{[^}]*\}\{'), '{');
+  s = s.replaceAll(RegExp(r'\\(color|textcolor|colorbox)\{[^}]*\}'), '');
+  s = s.replaceAll(RegExp(r'\\(hspace|vspace|phantom|hphantom|vphantom)\{[^}]*\}'), ' ');
+  s = s.replaceAll(RegExp(r'\\(label|tag|ref|eqref|nonumber|notag)\{[^}]*\}'), '');
+  s = s.replaceAll(RegExp(r'\\(label|tag|ref|eqref|nonumber|notag)\b'), '');
+  s = s.replaceAll(RegExp(r'\\(displaystyle|textstyle|scriptstyle)\s*'), '');
+  s = s.replaceAll(RegExp(r'\\(boxed)\{'), '{');
+
+  // ── 8. Empty superscript / subscript (^ or _ not followed by { or a char) ──
+  s = s.replaceAll(RegExp(r'\^(?=[+\-*/=\s}\\]|$)'), '');
+  s = s.replaceAll(RegExp(r'_(?=[+\-*/=\s}\\]|$)'), '');
+
+  // ── 9. Fix \text{} containing nested $ math delimiters (strip the $) ──
+  s = s.replaceAllMapped(
+    RegExp(r'\\text\{([^}]*)\}'),
+    (m) => '\\text{${m[1]!.replaceAll(r'$', '')}}',
+  );
+
+  // ── 10. Fix common typos ──
+  s = s.replaceAll(r'\fracr', r'\frac');
+  s = s.replaceAll(r'\sqrtr', r'\sqrt');
+  s = s.replaceAll(r'\overwithdelims', r'\over');
+  s = s.replaceAll(RegExp(r'\\limits\s*_'), '_');
+  s = s.replaceAll(RegExp(r'\\limits\s*\^'), '^');
+
+  return s;
+}
+
+/// Best-effort conversion of LaTeX to readable plain text for the final
+/// fallback when all fix attempts fail.
+String _latexToPlainText(String tex) {
+  var s = tex;
+  // \frac{a}{b} → (a)/(b)
+  s = s.replaceAllMapped(RegExp(r'\\frac\s*\{([^}]*)\}\s*\{([^}]*)\}'), (m) => '(${m[1]})/(${m[2]})');
+  // \sqrt{x} → √(x)
+  s = s.replaceAllMapped(RegExp(r'\\sqrt\s*\{([^}]*)\}'), (m) => '√(${m[1]})');
+  // \text{...} → ...
+  s = s.replaceAllMapped(RegExp(r'\\(?:text|mathrm|mathit|mathbf|mathbb)\s*\{([^}]*)\}'), (m) => m[1]!);
+  // Symbol commands → unicode
+  const symbols = {
+    r'\cdot': '·', r'\times': '×', r'\div': '÷',
+    r'\pm': '±', r'\mp': '∓', r'\leq': '≤', r'\geq': '≥',
+    r'\neq': '≠', r'\approx': '≈', r'\infty': '∞',
+    r'\alpha': 'α', r'\beta': 'β', r'\gamma': 'γ',
+    r'\delta': 'δ', r'\epsilon': 'ε', r'\theta': 'θ',
+    r'\lambda': 'λ', r'\mu': 'μ', r'\pi': 'π',
+    r'\sigma': 'σ', r'\omega': 'ω', r'\phi': 'φ',
+    r'\psi': 'ψ', r'\rho': 'ρ', r'\tau': 'τ',
+    r'\chi': 'χ', r'\Delta': 'Δ', r'\Gamma': 'Γ',
+    r'\Lambda': 'Λ', r'\Sigma': 'Σ', r'\Omega': 'Ω',
+    r'\Phi': 'Φ', r'\Psi': 'Ψ', r'\Theta': 'Θ',
+    r'\rightarrow': '→', r'\leftarrow': '←', r'\to': '→',
+    r'\Rightarrow': '⇒', r'\Leftarrow': '⇐',
+    r'\forall': '∀', r'\exists': '∃', r'\partial': '∂',
+    r'\nabla': '∇', r'\in': '∈', r'\notin': '∉',
+    r'\subset': '⊂', r'\subseteq': '⊆',
+    r'\cup': '∪', r'\cap': '∩',
+    r'\sum': 'Σ', r'\prod': 'Π', r'\int': '∫',
+    r'\quad': '  ', r'\qquad': '    ', r'\,': ' ',
+    r'\;': ' ', r'\!': '',
+    r'\left': '', r'\right': '',
+  };
+  symbols.forEach((cmd, char) => s = s.replaceAll(cmd, char));
+  // Remaining \command → command
+  s = s.replaceAllMapped(RegExp(r'\\([a-zA-Z]+)'), (m) => m[1]!);
+  // Strip structural braces
+  s = s.replaceAll('{', '').replaceAll('}', '');
+  // Collapse whitespace
+  s = s.replaceAll(RegExp(r'\s+'), ' ').trim();
+  return s;
 }
 
 // ---------------------------------------------------------------------------

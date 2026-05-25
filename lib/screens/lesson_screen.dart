@@ -230,6 +230,25 @@ class _LessonScreenState extends State<LessonScreen> {
     return '';
   }
 
+  /// Lesson-level canvas widget. Returns SizedBox.shrink when the canvas
+  /// has no prompt so callers can embed it unconditionally.
+  Widget _buildLessonCanvas() {
+    return CanvasArtView(
+      svg: _lesson.canvasSvg,
+      hasPrompt: (_lesson.canvasPrompt?.trim().isNotEmpty ?? false),
+      isLoading: GenerationManager.instance.activeCanvasRegens.contains(_lesson.id),
+      onRegenerate: _canRegenerateCanvas
+          ? () => GenerationManager.instance.regenerateLessonCanvas(
+                book: widget.book!,
+                modIdx: widget.modIdx!,
+                secIdx: widget.secIdx!,
+                unitIdx: widget.unitIdx!,
+                lessonIdx: widget.lessonIdx!,
+              )
+          : null,
+    );
+  }
+
   Widget _buildSlideContent(Slide slide) {
     switch (slide.type) {
       case 'step_by_step':
@@ -237,6 +256,7 @@ class _LessonScreenState extends State<LessonScreen> {
         final slideIdx = _slideQueue.indexOf(slide);
         return InteractiveProofView(
           slide: slide,
+          lessonCanvas: _buildLessonCanvas(),
           canvasIsLoading: GenerationManager.instance.activeCanvasRegens.contains(slide.id),
           onRegenerateCanvas: (_canRegenerateCanvas && slideIdx >= 0)
               ? () => GenerationManager.instance.regenerateSlideCanvas(
@@ -291,13 +311,16 @@ class _LessonScreenState extends State<LessonScreen> {
              physics: const BouncingScrollPhysics(),
              child: Column(
                 children: [
+                   // Lesson-level canvas stacked above the theory text
+                   _buildLessonCanvas(),
+
                    if (slide.title.isNotEmpty)
                      Padding(
                         padding: const EdgeInsets.only(bottom: 24.0, top: 16.0),
                         child: Text(
                           slide.title,
                           style: const TextStyle(
-                            fontSize: 24, 
+                            fontSize: 24,
                             fontWeight: FontWeight.w900,
                             color: Colors.white,
                             letterSpacing: -0.5,
@@ -403,28 +426,6 @@ class _LessonScreenState extends State<LessonScreen> {
               ),
             ),
             
-            // Lesson-level canvas art (when the text AI requested one). Sits
-            // above every slide in this lesson. Proof slides additionally
-            // get their own per-slide canvas inside InteractiveProofView.
-            if (!_isEditingMode)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: CanvasArtView(
-                  svg: _lesson.canvasSvg,
-                  hasPrompt: (_lesson.canvasPrompt?.trim().isNotEmpty ?? false),
-                  isLoading: GenerationManager.instance.activeCanvasRegens.contains(_lesson.id),
-                  onRegenerate: _canRegenerateCanvas
-                      ? () => GenerationManager.instance.regenerateLessonCanvas(
-                            book: widget.book!,
-                            modIdx: widget.modIdx!,
-                            secIdx: widget.secIdx!,
-                            unitIdx: widget.unitIdx!,
-                            lessonIdx: widget.lessonIdx!,
-                          )
-                      : null,
-                ),
-              ),
-
             // Slide Main Content
             Expanded(
               child: Padding(

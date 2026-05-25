@@ -50,9 +50,9 @@ class CanvasArtView extends StatelessWidget {
       child: Stack(
         children: [
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(8),
             child: AspectRatio(
-              aspectRatio: 400 / 240,
+              aspectRatio: 16 / 7,
               child: hasSvg
                   ? SvgPicture.string(
                       svg!,

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"C:\\\\Users\\\\Hii\\\\Documents\\\\flutter\\\\flutter\\\\bin\\\\flutter.bat\" pub:*)",
+      "Bash(C:\\\\Users\\\\Hii\\\\Documents\\\\flutter\\\\flutter\\\\bin\\\\flutter.bat:*)",
+      "Skill(update-config)"
+    ]
+  }
+}

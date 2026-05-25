@@ -16,6 +16,8 @@ class InteractiveProofView extends StatefulWidget {
   /// Set true while a regenerate call for this slide is in flight so the
   /// canvas swaps to its spinner state.
   final bool canvasIsLoading;
+  /// Optional lesson-level canvas widget to stack above the content.
+  final Widget? lessonCanvas;
 
   const InteractiveProofView({
     super.key,
@@ -23,6 +25,7 @@ class InteractiveProofView extends StatefulWidget {
     required this.onComplete,
     this.onRegenerateCanvas,
     this.canvasIsLoading = false,
+    this.lessonCanvas,
   });
 
   @override
@@ -77,9 +80,9 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
 
   void _checkAnswer() {
     if (_selectedOptionId == null) return;
-    
+
     final currentStep = _steps[_currentStepIndex];
-    final correctOpt = currentStep.options?.firstWhere((o) => o.isCorrect);
+    final correctOpt = currentStep.options?.cast<QuizOption?>().firstWhere((o) => o!.isCorrect, orElse: () => null);
     final correct = correctOpt?.id == _selectedOptionId;
 
     setState(() {
@@ -90,7 +93,7 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
 
   void _handleNextInteractive() {
     final currentStep = _steps[_currentStepIndex];
-    final correctOpt = currentStep.options?.firstWhere((o) => o.isCorrect);
+    final correctOpt = currentStep.options?.cast<QuizOption?>().firstWhere((o) => o!.isCorrect, orElse: () => null);
     
     // Sometimes the AI puts the question in stepText. If it did, don't reveal the question as the "learned fact".
     // Rely on the correct option text instead.
@@ -132,6 +135,9 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Lesson-level canvas stacked above proof content
+                if (widget.lessonCanvas != null) widget.lessonCanvas!,
+
                 if (widget.slide.title.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16.0),
@@ -142,9 +148,7 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                     ),
                   ),
 
-                // Per-proof canvas art. Only shows when the text AI tagged
-                // the slide with a canvasPrompt (i.e. the proof actually
-                // benefits from a figure). Render-only if the SVG arrived.
+                // Per-proof canvas art — scrolls with the rest of the content.
                 CanvasArtView(
                   svg: widget.slide.canvasSvg,
                   hasPrompt: (widget.slide.canvasPrompt?.trim().isNotEmpty ?? false),
