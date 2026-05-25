@@ -254,7 +254,14 @@ class GenerationManager extends ChangeNotifier {
     }
   }
 
-  Future<void> startUnitGeneration(Unit unit, Book book, int modIdx, int secIdx, int unitIdx) async {
+  Future<void> startUnitGeneration(
+    Unit unit,
+    Book book,
+    int modIdx,
+    int secIdx,
+    int unitIdx, {
+    bool generateGraphics = true,
+  }) async {
     if (activeUnitGenerations.containsKey(unit.id)) return;
 
     final avgUnitMs = await _getAverageRunTime('unit_gen_history', 90000);
@@ -345,29 +352,50 @@ class GenerationManager extends ChangeNotifier {
       await _dbService.saveGeneratedBook(textOnlyBook);
       _bookUpdateController.add(textOnlyBook);
 
-      // Stage 2: graphics pass. Failures here don\'t fail the whole lesson —
-      // the user just sees the text-only version. Runs after the text save
-      // so the lesson is immediately usable.
-      try {
-        activeUnitGenerations[unit.id]?.status = 'Rendering diagrams...';
-        notifyListeners();
-        await NotificationService.showProgress(notifId, "Generating Diagrams", "Drawing lesson art...", indeterminate: true);
+      // Stage 2: graphics pass — only when the user opted into diagrams for
+      // this unit. Failures here don\'t fail the whole lesson — the user just
+      // sees the text-only version. Runs after the text save so the lesson is
+      // immediately usable, and persists lesson-by-lesson so diagrams pop in
+      // incrementally rather than all at once.
+      if (generateGraphics) {
+        try {
+          activeUnitGenerations[unit.id]?.status = 'Rendering diagrams...';
+          notifyListeners();
+          await NotificationService.showProgress(notifId, "Generating Diagrams", "Drawing lesson art...", indeterminate: true);
 
-        final unitWithArt = await _aiService.generateCanvasArtForUnit(
-          updatedUnit,
-          onProgress: (s) {
-            activeUnitGenerations[unit.id]?.status = s;
-            notifyListeners();
-          },
-        );
+          // Serialize incremental art saves the same way the text pass does.
+          Future<void> artSaveChain = Future.value();
+          void onLessonArt(Unit partialUnit) {
+            artSaveChain = artSaveChain.then((_) async {
+              final base = (await _dbService.getBookFromCache(book.id)) ?? textOnlyBook;
+              final partialBook = applyUnit(base, partialUnit);
+              await _dbService.saveGeneratedBook(partialBook);
+              _bookUpdateController.add(partialBook);
+            }).catchError((e) {
+              print('[GenerationManager] Incremental art save failed for ${unit.id}: $e');
+            });
+          }
 
-        final freshBase = (await _dbService.getBookFromCache(book.id)) ?? textOnlyBook;
-        final artBook = applyUnit(freshBase, unitWithArt);
-        await _dbService.saveGeneratedBook(artBook);
-        _bookUpdateController.add(artBook);
-      } catch (e) {
-        // Best-effort: log and continue. Lesson is still usable without SVG.
-        print('[GenerationManager] Canvas pass failed for ${unit.id}: $e');
+          final unitWithArt = await _aiService.generateCanvasArtForUnit(
+            updatedUnit,
+            onProgress: (s) {
+              activeUnitGenerations[unit.id]?.status = s;
+              notifyListeners();
+            },
+            onLessonArt: onLessonArt,
+          );
+
+          // Let the streamed art saves settle, then write the final unit.
+          await artSaveChain;
+
+          final freshBase = (await _dbService.getBookFromCache(book.id)) ?? textOnlyBook;
+          final artBook = applyUnit(freshBase, unitWithArt);
+          await _dbService.saveGeneratedBook(artBook);
+          _bookUpdateController.add(artBook);
+        } catch (e) {
+          // Best-effort: log and continue. Lesson is still usable without SVG.
+          print('[GenerationManager] Canvas pass failed for ${unit.id}: $e');
+        }
       }
 
       activeUnitGenerations.remove(unit.id);

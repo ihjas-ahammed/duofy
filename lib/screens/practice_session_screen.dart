@@ -14,9 +14,18 @@ import 'lesson_complete_screen.dart';
 
 class PracticeSessionScreen extends StatefulWidget {
   final Book book;
-  final String practiceType; 
+  final String practiceType;
+  /// When non-null and non-empty, the practice pool is drawn only from
+  /// lessons belonging to these unit ids (set on the Practice screen via the
+  /// unit-range selector). Null/empty keeps the original whole-book behaviour.
+  final List<String>? unitIds;
 
-  const PracticeSessionScreen({super.key, required this.book, required this.practiceType});
+  const PracticeSessionScreen({
+    super.key,
+    required this.book,
+    required this.practiceType,
+    this.unitIds,
+  });
 
   @override
   State<PracticeSessionScreen> createState() => _PracticeSessionScreenState();
@@ -46,19 +55,16 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
 
   void _extractInteractiveSlides() {
     List<Slide> pool = [];
-    
-    // Scan practice questions in modules
-    for (var module in widget.book.modules) {
-      for (var slide in module.practiceQuestions) {
-        if (_isTargetType(slide.type)) pool.add(slide);
-      }
-    }
+    final unitFilter = widget.unitIds;
+    final bool hasFilter = unitFilter != null && unitFilter.isNotEmpty;
 
-    // If still empty, scan lessons
-    if (pool.isEmpty) {
+    if (hasFilter) {
+      // Range-scoped practice: pull only from lessons in the selected units.
+      final wanted = unitFilter.toSet();
       for (var module in widget.book.modules) {
         for (var section in module.sections) {
           for (var unit in section.units) {
+            if (!wanted.contains(unit.id)) continue;
             for (var lesson in unit.lessons) {
               for (var slide in lesson.slides) {
                 if (_isTargetType(slide.type)) pool.add(slide);
@@ -67,8 +73,30 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
           }
         }
       }
+    } else {
+      // Scan curated practice questions in modules first.
+      for (var module in widget.book.modules) {
+        for (var slide in module.practiceQuestions) {
+          if (_isTargetType(slide.type)) pool.add(slide);
+        }
+      }
+
+      // If still empty, scan all lessons.
+      if (pool.isEmpty) {
+        for (var module in widget.book.modules) {
+          for (var section in module.sections) {
+            for (var unit in section.units) {
+              for (var lesson in unit.lessons) {
+                for (var slide in lesson.slides) {
+                  if (_isTargetType(slide.type)) pool.add(slide);
+                }
+              }
+            }
+          }
+        }
+      }
     }
-    
+
     pool.shuffle();
     if (pool.length > 5) {
       _queue = pool.sublist(0, 5);

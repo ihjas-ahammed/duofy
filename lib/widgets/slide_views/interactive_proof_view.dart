@@ -152,6 +152,7 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                 CanvasArtView(
                   svg: widget.slide.canvasSvg,
                   hasPrompt: (widget.slide.canvasPrompt?.trim().isNotEmpty ?? false),
+                  prompt: widget.slide.canvasPrompt,
                   isLoading: widget.canvasIsLoading,
                   onRegenerate: widget.onRegenerateCanvas,
                 ),

@@ -64,9 +64,14 @@ class _LessonPathState extends State<LessonPath> {
   // shorter glass panel (~120px). Reserve enough space below it so the first
   // lesson node never collides with the title.
   static const double _headerHeightGenerated = 180;
-  static const double _headerHeightNeedsGen = 240;
+  static const double _headerHeightNeedsGen = 200;
   static const double _nodeSpacing = 155;
   static const double _interUnitGap = 70;
+  // Tighter gap used between consecutive units that have no lesson nodes yet
+  // (not generated). Without this, ungenerated unit headers float far apart
+  // because the full node-spacing slot is reserved even though nothing is
+  // drawn below the header.
+  static const double _interUnitGapUngenerated = 16;
   static const double _topPad = 0;
   static const double _bottomPad = 40;
 
@@ -124,12 +129,17 @@ class _LessonPathState extends State<LessonPath> {
     final List<_PathPoint> points = [];
     final List<_Element> elements = [];
 
+    bool prevUnitHadNodes = false;
     for (int uIdx = 0; uIdx < widget.section.units.length; uIdx++) {
-      if (uIdx > 0) y += _interUnitGap;
       final unit = widget.section.units[uIdx];
       final bool hasLessons = unit.lessons.isNotEmpty;
       final bool generating = widget.loadingUnitStatuses.containsKey(unit.id);
       final bool fullyGenerated = unit.isGenerated && hasLessons;
+      // Use a tight gap when neither this nor the previous unit drew lesson
+      // nodes, so a run of ungenerated unit headers stacks compactly.
+      if (uIdx > 0) {
+        y += (prevUnitHadNodes || hasLessons) ? _interUnitGap : _interUnitGapUngenerated;
+      }
 
       elements.add(_Element.header(unit: unit, unitIdx: uIdx, y: y));
       // While generating (even with some lessons already streamed in) the
@@ -153,6 +163,7 @@ class _LessonPathState extends State<LessonPath> {
           globalIdx++;
         }
       }
+      prevUnitHadNodes = hasLessons;
     }
 
     final double containerHeight = y + _bottomPad;

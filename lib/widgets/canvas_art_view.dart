@@ -9,16 +9,21 @@ import '../theme/app_theme.dart';
 ///
 /// Behaviour:
 /// - [svg] non-null & valid → diagram renders inside a glass card.
-/// - [svg] null & [hasPrompt] true → "Generating…" placeholder while the
-///   background canvas pass is still running, OR a "Tap to generate"
-///   affordance if [isLoading] is false.
+/// - [svg] null & [isLoading] true → "Generating…" placeholder box while the
+///   background canvas pass is still running.
+/// - [svg] null & not loading (generation failed / not yet run) → a compact
+///   "tap to generate" prompt card showing the diagram description. We do NOT
+///   reserve the full empty image box in this state.
 /// - [svg] null & [hasPrompt] false → returns [SizedBox.shrink] so no
 ///   space is reserved.
-/// - SVG render failure → silently hides the panel so a malformed model
-///   response never breaks the lesson layout.
+/// - SVG render failure → falls back to the same "tap to generate" prompt
+///   card so a malformed model response never breaks the lesson layout.
 class CanvasArtView extends StatelessWidget {
   final String? svg;
   final bool hasPrompt;
+  /// The natural-language diagram description. Shown in the "tap to generate"
+  /// state so the user knows what the diagram would depict.
+  final String? prompt;
   final bool isLoading;
   final VoidCallback? onRegenerate;
 
@@ -26,6 +31,7 @@ class CanvasArtView extends StatelessWidget {
     super.key,
     required this.svg,
     required this.hasPrompt,
+    this.prompt,
     this.isLoading = false,
     this.onRegenerate,
   });
@@ -39,6 +45,13 @@ class CanvasArtView extends StatelessWidget {
     }
 
     final hasSvg = svg != null && svg!.trim().isNotEmpty;
+
+    // No SVG and not actively generating → the diagram either failed or was
+    // never generated. Instead of a blank placeholder box, show the prompt
+    // text with a "tap to generate" affordance.
+    if (!hasSvg && !isLoading) {
+      return _TapToGenerateCard(prompt: prompt, onTap: onRegenerate);
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -58,17 +71,14 @@ class CanvasArtView extends StatelessWidget {
                       svg!,
                       fit: BoxFit.contain,
                       // If the model returned malformed SVG we don\'t want a
-                      // red error widget breaking the layout — show the
-                      // generating placeholder instead.
-                      placeholderBuilder: (_) => const _CanvasPlaceholder(label: 'Rendering diagram…', spinning: true),
+                      // red error widget breaking the layout — fall back to
+                      // the tap-to-generate prompt card.
+                      placeholderBuilder: (_) => _TapToGenerateCard(prompt: prompt, onTap: onRegenerate, embedded: true),
                     )
-                  : _CanvasPlaceholder(
-                      label: isLoading ? 'Generating diagram…' : 'Tap regenerate to draw the diagram.',
-                      spinning: isLoading,
-                    ),
+                  : const _CanvasPlaceholder(label: 'Generating diagram…', spinning: true),
             ),
           ),
-          if (onRegenerate != null)
+          if (onRegenerate != null && hasSvg)
             Positioned(
               top: 6,
               right: 6,
@@ -94,6 +104,92 @@ class CanvasArtView extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// Compact card shown when there is a diagram prompt but no rendered SVG
+/// (generation failed, or hasn\'t run yet). Tapping it triggers [onTap]
+/// (regenerate). Shows the prompt so the learner knows what would be drawn.
+class _TapToGenerateCard extends StatelessWidget {
+  final String? prompt;
+  final VoidCallback? onTap;
+  /// When true the card is rendered inside an existing AspectRatio box (the
+  /// SVG render-failure fallback), so it fills its parent instead of adding
+  /// its own outer margin.
+  final bool embedded;
+
+  const _TapToGenerateCard({this.prompt, this.onTap, this.embedded = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final trimmed = prompt?.trim() ?? '';
+    final card = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppTheme.duoBlue.withOpacity(0.06),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppTheme.duoBlue.withOpacity(0.3)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.duoBlue.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(LucideIcons.imagePlus, size: 18, color: AppTheme.duoBlue),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          'TAP TO GENERATE DIAGRAM',
+                          style: TextStyle(
+                            color: AppTheme.duoBlue,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        if (onTap != null) ...[
+                          const SizedBox(width: 6),
+                          const Icon(LucideIcons.refreshCcw, size: 12, color: AppTheme.duoBlue),
+                        ],
+                      ],
+                    ),
+                    if (trimmed.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        trimmed,
+                        style: const TextStyle(color: Colors.white60, fontSize: 12, height: 1.35),
+                        maxLines: embedded ? 3 : 4,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (embedded) return Center(child: card);
+    return Padding(padding: const EdgeInsets.only(bottom: 16), child: card);
   }
 }
 

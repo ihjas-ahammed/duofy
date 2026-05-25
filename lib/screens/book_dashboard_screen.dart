@@ -120,6 +120,40 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     );
   }
 
+  /// Asks whether to also render diagrams for this unit, then kicks off
+  /// generation. Graphics are optional (and slower), so we let the user
+  /// decide per unit instead of always generating them.
+  Future<void> _promptAndGenerateUnit(Unit unit, int modIdx, int secIdx, int unitIdx) async {
+    final wantsGraphics = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text('Generate diagrams?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: const Text(
+          'Diagrams make lessons more visual but take extra time to render. '
+          'You can always add them later from inside a lesson.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Text only', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('With diagrams', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    // Dialog dismissed (tapped outside) → don\'t start anything.
+    if (wantsGraphics == null) return;
+    GenerationManager.instance.startUnitGeneration(
+      unit, widget.book, modIdx, secIdx, unitIdx,
+      generateGraphics: wantsGraphics,
+    );
+  }
+
   void _openModuleSelector() {
     ModuleSelectorSheet.show(
       context: context,
@@ -211,9 +245,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         completedLessons: _completedLessons,
                         onLessonFinished: _loadProgress,
                         onGenerateUnit: (unit, unitIdx) {
-                          GenerationManager.instance.startUnitGeneration(
-                            unit, widget.book, mIdx, sIdx, unitIdx,
-                          );
+                          _promptAndGenerateUnit(unit, mIdx, sIdx, unitIdx);
                         },
                         onClearUnit: (unit, unitIdx) {
                           _onClearUnit(unit, mIdx, sIdx, unitIdx);

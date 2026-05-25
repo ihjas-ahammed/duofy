@@ -110,35 +110,81 @@ class AiService {
     return max;
   }
 
-  /// True for upstream-server failures that are typically transient — HTML
-  /// error pages (502/503/504), socket drops, generic timeouts. We retry these
-  /// before falling back to the next model/key.
+  /// True for failures that are typically transient — HTML error pages
+  /// (502/503/504), 500 "internal error", overload/rate-limit (429, RESOURCE
+  /// EXHAUSTED, overloaded), socket drops, and generic timeouts. We retry
+  /// these (bounded backoff) before falling back to the next model/key. The
+  /// caller's model×key ladder then handles anything that survives the retry,
+  /// so e.g. a persistent "internal error" on one model moves on to the next.
   bool _isTransient(Object e) {
     final s = e.toString().toLowerCase();
-    return s.contains('502') ||
+    return s.contains('500') ||
+        s.contains('502') ||
         s.contains('503') ||
         s.contains('504') ||
+        s.contains('internal error') ||
+        s.contains('internal server') ||
         s.contains('bad gateway') ||
         s.contains('service unavailable') ||
         s.contains('gateway timeout') ||
+        s.contains('overloaded') ||
+        s.contains('try again') ||
+        s.contains('deadline exceeded') ||
+        s.contains('429') ||
+        s.contains('rate limit') ||
+        s.contains('resource exhausted') ||
+        s.contains('quota') ||
+        s.contains('unavailable') ||
         s.contains('doctype html') ||
         s.contains('<html') ||
         s.contains('socketexception') ||
+        s.contains('timeoutexception') ||
         s.contains('connection closed') ||
         s.contains('connection reset');
   }
 
-  /// Strips HTML error pages out of error strings for cleaner UI display.
+  /// Maps a raw error into a short category label used for logging/UI so each
+  /// kind of generation failure is acknowledged explicitly rather than lumped
+  /// into one opaque "failed" message.
+  String _classifyError(Object e) {
+    final s = e.toString().toLowerCase();
+    if (s.contains('internal error') || s.contains('500') || s.contains('internal server')) {
+      return 'Model internal error';
+    }
+    if (s.contains('429') || s.contains('rate limit') || s.contains('resource exhausted') || s.contains('quota')) {
+      return 'Rate limited / quota exceeded';
+    }
+    if (s.contains('overloaded') || s.contains('503') || s.contains('unavailable')) {
+      return 'Model overloaded';
+    }
+    if (s.contains('timeout') || s.contains('deadline exceeded')) {
+      return 'Request timed out';
+    }
+    if (s.contains('api key') || s.contains('permission') || s.contains('401') || s.contains('403')) {
+      return 'API key / permission error';
+    }
+    if (s.contains('json') || s.contains('parse')) {
+      return 'Malformed AI response';
+    }
+    if (s.contains('safety') || s.contains('blocked')) {
+      return 'Blocked by safety filter';
+    }
+    return 'Generation error';
+  }
+
+  /// Strips HTML error pages out of error strings and prefixes a short
+  /// category so the surfaced message names what kind of failure occurred.
   String _cleanErrMsg(Object e) {
+    final category = _classifyError(e);
     final s = e.toString();
     final lower = s.toLowerCase();
     if (lower.contains('<html') || lower.contains('doctype html')) {
-      if (lower.contains('502')) return 'Server error 502 (Bad Gateway) — the model is temporarily unavailable. Try again in a moment.';
-      if (lower.contains('503')) return 'Server error 503 — the model is overloaded.';
-      if (lower.contains('504')) return 'Server error 504 — upstream timeout.';
-      return 'Upstream returned an HTML error page (model unavailable).';
+      if (lower.contains('502')) return '$category — server 502 (Bad Gateway), model temporarily unavailable.';
+      if (lower.contains('503')) return '$category — server 503, model overloaded.';
+      if (lower.contains('504')) return '$category — server 504, upstream timeout.';
+      return '$category — upstream returned an HTML error page (model unavailable).';
     }
-    return s;
+    return '$category: $s';
   }
 
   /// Wraps an async call with bounded exponential backoff for transient errors.
@@ -647,7 +693,15 @@ class AiService {
   /// [generateCanvasArt]. Failures are tolerated — missing art just means
   /// the corresponding screen renders without a diagram. [onProgress] is
   /// invoked after each lesson so the UI can show "Rendering diagrams…".
-  Future<Unit> generateCanvasArtForUnit(Unit unit, {void Function(String status)? onProgress}) async {
+  /// [onLessonArt] is invoked after each lesson's diagrams are rendered with a
+  /// partial unit (lessons done so far + the remaining originals untouched).
+  /// The caller persists this partial so diagrams pop in lesson-by-lesson
+  /// rather than all at once at the end — much better perceived progress.
+  Future<Unit> generateCanvasArtForUnit(
+    Unit unit, {
+    void Function(String status)? onProgress,
+    void Function(Unit partialUnit)? onLessonArt,
+  }) async {
     final List<Lesson> updatedLessons = [];
     int idx = 0;
     final total = unit.lessons.length;
@@ -676,6 +730,13 @@ class AiService {
       }
 
       updatedLessons.add(lesson.copyWith(canvasSvg: lessonSvg, slides: updatedSlides));
+
+      // Emit a partial unit so the diagram for this lesson shows immediately,
+      // keeping later (not-yet-processed) lessons exactly as they were.
+      if (onLessonArt != null) {
+        final remaining = unit.lessons.sublist(updatedLessons.length);
+        onLessonArt(unit.copyWith(lessons: [...updatedLessons, ...remaining]));
+      }
     }
     return unit.copyWith(lessons: updatedLessons);
   }

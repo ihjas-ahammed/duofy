@@ -118,6 +118,13 @@ class _LessonScreenState extends State<LessonScreen> {
           // canvasSvg / content. Length and order remain stable because
           // we\'re looking up the same lesson in the same book.
           _slideQueue = List.of(_lesson.slides);
+          // The queue may have grown earlier (wrong-answer repeats are
+          // appended) and _currentIndex advanced into that region. Rebuilding
+          // from the base slides shrinks it, so clamp the cursor back into
+          // range to avoid a RangeError on the next build.
+          if (_currentIndex >= _slideQueue.length) {
+            _currentIndex = _slideQueue.isEmpty ? 0 : _slideQueue.length - 1;
+          }
         });
       }
     } catch (_) {
@@ -236,6 +243,7 @@ class _LessonScreenState extends State<LessonScreen> {
     return CanvasArtView(
       svg: _lesson.canvasSvg,
       hasPrompt: (_lesson.canvasPrompt?.trim().isNotEmpty ?? false),
+      prompt: _lesson.canvasPrompt,
       isLoading: GenerationManager.instance.activeCanvasRegens.contains(_lesson.id),
       onRegenerate: _canRegenerateCanvas
           ? () => GenerationManager.instance.regenerateLessonCanvas(
@@ -436,6 +444,14 @@ class _LessonScreenState extends State<LessonScreen> {
         body: const Center(child: Text("Empty Lesson")),
       );
     }
+
+    // Defensive clamp: a background cache refresh can shrink _slideQueue
+    // (wrong-answer repeats dropped) after _currentIndex has advanced, which
+    // would otherwise index out of range here.
+    if (_currentIndex >= _slideQueue.length) {
+      _currentIndex = _slideQueue.length - 1;
+    }
+    if (_currentIndex < 0) _currentIndex = 0;
 
     final slide = _slideQueue[_currentIndex];
     final progress = (_currentIndex) / _slideQueue.length;

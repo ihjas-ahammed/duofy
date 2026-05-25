@@ -79,7 +79,12 @@ class ModuleSelectorSheet extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                  child: Container(
+                  // Material ancestor supplies a DefaultTextStyle so bare Text
+                  // (e.g. the "MODULES" title) doesn\'t render with the yellow
+                  // debug double-underline that showGeneralDialog leaves behind.
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.03),
                       borderRadius: BorderRadius.circular(20),
@@ -131,6 +136,7 @@ class ModuleSelectorSheet extends StatelessWidget {
                         ),
                       ],
                     ),
+                  ),
                   ),
                 ),
               ),
