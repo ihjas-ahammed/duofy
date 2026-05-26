@@ -224,62 +224,242 @@ class AiService {
     return parts;
   }
 
-  /// Generates the course skeleton from a TOC-only PDF.
+  int? _asInt(dynamic v) {
+    if (v is num) return v.toInt();
+    if (v is String) return int.tryParse(v.trim());
+    return null;
+  }
+
+  /// Generates the course skeleton from a TOC-only PDF, in TWO batched stages
+  /// so the lite model stops skipping chapters and merging sections:
+  ///   1. [PromptService.chapterList] — enumerate every top-level chapter
+  ///      (one focused job → far fewer omissions), plus the course metadata.
+  ///   2. [PromptService.sectionList] — for EACH chapter, in parallel, detail
+  ///      its sub-topics bounded to that chapter's page range (so sections
+  ///      never bleed across, or merge with, neighbouring chapters).
   ///
-  /// [indexFiles] is the cropped index/TOC PDF (typically a few pages cut
-  /// out of the full source PDF by [PdfService.extractPages]).
-  /// [chapter1AbsolutePage] is the ABSOLUTE PDF page number (1-based) where
-  /// Chapter 1 actually starts in the original full source PDF. We pass it
-  /// through to the prompt so the AI offsets every TOC page number into
-  /// absolute coordinates.
+  /// [indexFiles] is the cropped index/TOC PDF (a few pages cut out of the
+  /// full source PDF by [PdfService.extractPages]). [chapter1AbsolutePage] is
+  /// the ABSOLUTE PDF page (1-based) where Chapter 1 actually starts, used for
+  /// offset correction. [onProgress] reports REAL progress — null fraction
+  /// during the single chapter call (indeterminate), then chapters-completed /
+  /// total as sections fill in.
   Future<Book?> generateBookSkeleton(
     List<File> indexFiles,
     String filename, {
     required int chapter1AbsolutePage,
     String? customInstructions,
+    void Function(String status, double? progress)? onProgress,
   }) async {
     final keys = await _getKeys();
     final modelsToTry = await _getLiteModels();
+    final instructionsBlock = PromptService.instructionsBlock(customInstructions);
+    final fileParts = await _buildFileParts(indexFiles);
 
-    final hydratedPrompt = PromptService.skeleton
+    // ---- Stage 1: chapter list (one focused call → indeterminate) ----------
+    onProgress?.call('Mapping chapters…', null);
+    final chapterPrompt = PromptService.chapterList
         .replaceAll('%filename%', filename)
         .replaceAll('%chapter1_abs_page%', '$chapter1AbsolutePage')
-        .replaceAll('%custom_instructions%', PromptService.instructionsBlock(customInstructions));
+        .replaceAll('%custom_instructions%', instructionsBlock);
 
-    List<Part> parts = [TextPart(hydratedPrompt)];
-    parts.addAll(await _buildFileParts(indexFiles));
-
+    Map<String, dynamic>? meta;
     Exception? lastException;
-    
-    for (var modelName in modelsToTry) {
-      for (var apiKey in keys) {
+    for (final modelName in modelsToTry) {
+      for (final apiKey in keys) {
         try {
           final model = GenerativeModel(
             model: modelName,
             apiKey: apiKey,
             generationConfig: GenerationConfig(responseMimeType: 'application/json'),
           );
-
           final response = await _retryTransient(
-            () => model.generateContent([Content.multi(parts)])
-                .timeout(const Duration(minutes: 5)),
-            onRetry: (a, e) => print('[AiService] Skeleton transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+            () => model.generateContent([Content.multi([TextPart(chapterPrompt), ...fileParts])])
+                .timeout(const Duration(minutes: 4)),
+            onRetry: (a, e) => print('[AiService] Chapter list transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
           );
-
           if (response.text != null) {
-            final jsonMap = _cleanAndDecodeJson(response.text!);
-            // Persist the user's verbatim instructions on the book so every
-            // later generation step (planner, lessons, slide regen) reuses it.
-            return Book.fromJson(jsonMap).copyWith(customInstructions: customInstructions);
+            meta = _cleanAndDecodeJson(response.text!);
+            break;
           }
         } on TimeoutException {
-          lastException = Exception('Request timed out ($modelName).');
+          lastException = Exception('Chapter mapping timed out ($modelName).');
         } catch (e) {
-          lastException = Exception('Generation failed ($modelName): ${_cleanErrMsg(e)}');
+          lastException = Exception('Chapter mapping failed ($modelName): ${_cleanErrMsg(e)}');
+        }
+      }
+      if (meta != null) break;
+    }
+    if (meta == null) throw lastException ?? Exception('Failed to map chapters. All models/keys exhausted.');
+
+    final rawChapters = (meta['chapters'] ?? meta['modules']) as List?;
+    if (rawChapters == null || rawChapters.isEmpty) {
+      throw Exception('The model returned no chapters for this table of contents.');
+    }
+
+    // Normalize: stable ids + parsed page bounds.
+    final chapters = <Map<String, dynamic>>[];
+    for (var i = 0; i < rawChapters.length; i++) {
+      final c = rawChapters[i] is Map ? Map<String, dynamic>.from(rawChapters[i]) : <String, dynamic>{};
+      final cid = (c['id']?.toString().trim().isNotEmpty ?? false) ? c['id'].toString() : 'm${i + 1}';
+      chapters.add({
+        'id': cid,
+        'title': c['title']?.toString() ?? 'Chapter ${i + 1}',
+        'description': c['description']?.toString() ?? '',
+        'startPage': _asInt(c['startPage']),
+        'endPage': _asInt(c['endPage']),
+      });
+    }
+    // Resolve bounds left-to-right: a missing/invalid endPage falls back to the
+    // page before the next chapter starts, so every section call has a range.
+    for (var i = 0; i < chapters.length; i++) {
+      int? start = chapters[i]['startPage'] as int?;
+      start ??= (i == 0 ? chapter1AbsolutePage : null);
+      int? end = chapters[i]['endPage'] as int?;
+      final nextStart = i + 1 < chapters.length ? chapters[i + 1]['startPage'] as int? : null;
+      if (end == null || (start != null && end < start)) {
+        end = nextStart != null ? nextStart - 1 : (start != null ? start + 9 : null);
+      }
+      chapters[i]['startPage'] = start;
+      chapters[i]['endPage'] = end;
+    }
+
+    // ---- Stage 2: sections per chapter (real progress, bounded concurrency) -
+    final int chapterCount = chapters.length;
+    onProgress?.call('Mapping sections (0/$chapterCount)…', 0);
+    final List<List<Map<String, dynamic>>?> sectionSlots =
+        List<List<Map<String, dynamic>>?>.filled(chapterCount, null);
+    int done = 0;
+    int nextIdx = 0;
+    final int concurrency = (await _resolveConcurrency()).clamp(1, chapterCount);
+
+    Future<void> worker() async {
+      while (true) {
+        final i = nextIdx;
+        if (i >= chapterCount) break;
+        nextIdx++;
+        final ch = chapters[i];
+        List<Map<String, dynamic>>? secs;
+        try {
+          secs = await _generateSectionsForChapter(
+            chapter: ch,
+            filename: filename,
+            chapter1AbsolutePage: chapter1AbsolutePage,
+            instructionsBlock: instructionsBlock,
+            fileParts: fileParts,
+            models: modelsToTry,
+            keys: keys,
+          );
+        } catch (e) {
+          print('[AiService] Sections for chapter ${ch['id']} failed: ${_cleanErrMsg(e)}');
+        }
+        // Never drop a chapter: fall back to one whole-chapter section.
+        if (secs == null || secs.isEmpty) {
+          secs = [
+            {
+              'id': '${ch['id']}-s1',
+              'title': ch['title'],
+              'description': ch['description'],
+              'color': 'duo-blue',
+              if (ch['startPage'] != null) 'startPage': ch['startPage'],
+              if (ch['endPage'] != null) 'endPage': ch['endPage'],
+            }
+          ];
+        }
+        sectionSlots[i] = secs;
+        done++;
+        onProgress?.call('Mapping sections ($done/$chapterCount)…', done / chapterCount);
+      }
+    }
+
+    await Future.wait(List.generate(concurrency, (_) => worker()));
+
+    // ---- Assemble via Book.fromJson (reuses defensive parsing + format
+    //      defaults). Persist the user's verbatim instructions on the book. ---
+    final assembled = <String, dynamic>{
+      'id': 'book-${DateTime.now().millisecondsSinceEpoch}',
+      'title': meta['title']?.toString() ?? filename,
+      'description': meta['description']?.toString() ?? 'Auto-generated course',
+      'icon': meta['icon']?.toString() ?? 'Book',
+      if (meta['systemPrompt'] != null) 'systemPrompt': meta['systemPrompt'],
+      'modules': [
+        for (var i = 0; i < chapterCount; i++)
+          {
+            'id': chapters[i]['id'],
+            'title': chapters[i]['title'],
+            'description': chapters[i]['description'],
+            'sections': sectionSlots[i] ?? const <Map<String, dynamic>>[],
+          }
+      ],
+    };
+    onProgress?.call('Finalizing structure…', 1.0);
+    return Book.fromJson(assembled).copyWith(customInstructions: customInstructions);
+  }
+
+  /// Stage-2 helper: details the sections of ONE [chapter] via
+  /// [PromptService.sectionList], bounded to that chapter's page range.
+  /// Returns normalized section JSON maps (chapter-scoped ids), or null when
+  /// every model/key combination fails so the caller can fall back to a
+  /// single whole-chapter section rather than lose the chapter.
+  Future<List<Map<String, dynamic>>?> _generateSectionsForChapter({
+    required Map<String, dynamic> chapter,
+    required String filename,
+    required int chapter1AbsolutePage,
+    required String instructionsBlock,
+    required List<Part> fileParts,
+    required List<String> models,
+    required List<String> keys,
+  }) async {
+    final prompt = PromptService.sectionList
+        .replaceAll('%filename%', filename)
+        .replaceAll('%chapter1_abs_page%', '$chapter1AbsolutePage')
+        .replaceAll('%custom_instructions%', instructionsBlock)
+        .replaceAll('%chapter_title%', chapter['title']?.toString() ?? '')
+        .replaceAll('%chapter_start%', (chapter['startPage'])?.toString() ?? '?')
+        .replaceAll('%chapter_end%', (chapter['endPage'])?.toString() ?? '?');
+
+    final parts = <Part>[TextPart(prompt), ...fileParts];
+    Object? lastErr;
+    for (final modelName in models) {
+      for (final apiKey in keys) {
+        try {
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: apiKey,
+            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+          );
+          final response = await _retryTransient(
+            () => model.generateContent([Content.multi(parts)]).timeout(const Duration(minutes: 3)),
+            onRetry: (a, e) => print('[AiService] Sections (${chapter['id']}) transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+          );
+          final text = response.text;
+          if (text == null || text.trim().isEmpty) continue;
+          final jsonMap = _cleanAndDecodeJson(text);
+          final rawSecs = jsonMap['sections'] as List?;
+          if (rawSecs == null || rawSecs.isEmpty) continue;
+          final out = <Map<String, dynamic>>[];
+          for (var j = 0; j < rawSecs.length; j++) {
+            final s = rawSecs[j] is Map ? Map<String, dynamic>.from(rawSecs[j]) : <String, dynamic>{};
+            final sid = (s['id']?.toString().trim().isNotEmpty ?? false) ? s['id'].toString() : 's${j + 1}';
+            out.add({
+              'id': '${chapter['id']}-$sid',
+              'title': s['title']?.toString() ?? 'Section ${j + 1}',
+              'description': s['description']?.toString() ?? '',
+              'color': s['color']?.toString() ?? 'duo-blue',
+              if (_asInt(s['startPage']) != null) 'startPage': _asInt(s['startPage']),
+              if (_asInt(s['endPage']) != null) 'endPage': _asInt(s['endPage']),
+            });
+          }
+          if (out.isNotEmpty) return out;
+        } catch (e) {
+          lastErr = e;
         }
       }
     }
-    throw lastException ?? Exception('Failed to generate skeleton. All models/keys exhausted.');
+    if (lastErr != null) {
+      print('[AiService] Sections (${chapter['id']}) exhausted: ${_cleanErrMsg(lastErr)}');
+    }
+    return null;
   }
 
   /// Generates all lessons for [unit] off the section's shared PDF chunk.
@@ -288,17 +468,23 @@ class AiService {
   /// run in parallel (bounded by [_resolveConcurrency]) and streamed back via
   /// [onLessonGenerated] so the UI can reveal lessons one at a time.
   ///
+  /// When [generateGraphics] is true, each lesson's diagram(s) are rendered
+  /// *right after that lesson's text* (and streamed again), so art pops in
+  /// lesson-by-lesson during generation instead of in a separate whole-unit
+  /// pass at the end — much better perceived progress.
+  ///
   /// [previousUnit]/[nextUnit] give the AI this unit's boundaries inside the
   /// shared chunk; [previousGeneratedUnits] is a short summary of units already
   /// generated in this section so the model doesn't re-teach covered material.
   Future<Unit> generateUnitContent(
     Unit unit,
     Book bookContext,
-    Function(String) onProgress, {
+    void Function(String status, [double? progress]) onProgress, {
     String? sectionPdfPath,
     Unit? previousUnit,
     Unit? nextUnit,
     List<Unit> previousGeneratedUnits = const [],
+    bool generateGraphics = true,
     void Function(List<Lesson> lessonsSoFar)? onLessonGenerated,
   }) async {
     final keys = await _getKeys();
@@ -381,15 +567,21 @@ class AiService {
 
     // --- Stage 2: per-lesson generation, parallelised ---------------------
     // Each lesson is an independent request, so we run several at once (bounded
-    // by the user's concurrency setting / an auto device heuristic). Completed
-    // lessons are streamed back via [onLessonGenerated], kept in plan order.
+    // by the user's concurrency setting / an auto device heuristic). Each
+    // lesson's text streams back immediately via [onLessonGenerated]; when
+    // diagrams are on, that lesson's art is rendered right after and streamed
+    // again, so visuals appear lesson-by-lesson rather than in a final pass.
     final int concurrency = (await _resolveConcurrency()).clamp(1, lessonCount);
     final lessonFileParts = await _buildFileParts([chunkFile]);
     final List<Lesson?> slots = List<Lesson?>.filled(lessonCount, null);
-    int completed = 0;
+    // Combined step accounting: one text step per lesson, plus one art step
+    // per lesson when diagrams are enabled, so progress covers the whole run.
+    final int totalSteps = generateGraphics ? lessonCount * 2 : lessonCount;
+    int doneSteps = 0;
     Object? lastLessonError;
 
     List<Lesson> collected() => slots.whereType<Lesson>().toList();
+    int landed() => slots.whereType<Lesson>().length;
 
     int nextIndex = 0;
     Future<void> worker() async {
@@ -397,8 +589,10 @@ class AiService {
         final i = nextIndex;
         if (i >= lessonCount) break;
         nextIndex++;
+
+        Lesson? lesson;
         try {
-          final lesson = await _generateOneLesson(
+          lesson = await _generateOneLesson(
             index: i + 1,
             unit: unit,
             bookContext: bookContext,
@@ -410,14 +604,29 @@ class AiService {
             textModels: textModelsToTry,
             keys: keys,
           );
-          if (lesson != null) slots[i] = lesson;
         } catch (e) {
           lastLessonError = e;
           print('[AiService] Lesson ${i + 1} failed permanently: ${_cleanErrMsg(e)}');
-        } finally {
-          completed++;
-          onProgress('Generating lessons ($completed/$lessonCount)...');
-          onLessonGenerated?.call(collected());
+        }
+
+        // Stream the lesson text right away so it shows up immediately.
+        if (lesson != null) slots[i] = lesson;
+        doneSteps++;
+        onProgress('Generating lessons (${landed()}/$lessonCount)...', doneSteps / totalSteps);
+        onLessonGenerated?.call(collected());
+
+        // Then render this lesson's diagram(s) and stream the updated lesson.
+        if (generateGraphics) {
+          if (lesson != null) {
+            try {
+              slots[i] = await _attachArtToLesson(lesson);
+            } catch (e) {
+              print('[AiService] Art for lesson ${i + 1} failed: ${_cleanErrMsg(e)}');
+            }
+          }
+          doneSteps++; // counted even on a failed/empty lesson so totals reconcile
+          onProgress('Rendering diagrams (${i + 1}/$lessonCount)...', doneSteps / totalSteps);
+          if (lesson != null) onLessonGenerated?.call(collected());
         }
       }
     }
@@ -706,57 +915,32 @@ class AiService {
     return null; // unbalanced — discard rather than embed broken JS
   }
 
-  /// Walks every lesson + every proof/step_by_step slide in [unit] that has
-  /// a `canvasPrompt` but no `canvasSvg` yet, and fills the art in via
-  /// [generateCanvasArt]. Failures are tolerated — missing art just means
-  /// the corresponding screen renders without a diagram. [onProgress] is
-  /// invoked after each lesson so the UI can show "Rendering diagrams…".
-  /// [onLessonArt] is invoked after each lesson's diagrams are rendered with a
-  /// partial unit (lessons done so far + the remaining originals untouched).
-  /// The caller persists this partial so diagrams pop in lesson-by-lesson
-  /// rather than all at once at the end — much better perceived progress.
-  Future<Unit> generateCanvasArtForUnit(
-    Unit unit, {
-    void Function(String status)? onProgress,
-    void Function(Unit partialUnit)? onLessonArt,
-  }) async {
-    final List<Lesson> updatedLessons = [];
-    int idx = 0;
-    final total = unit.lessons.length;
-    for (final lesson in unit.lessons) {
-      idx++;
-      onProgress?.call('Rendering diagrams $idx of $total...');
-
-      // 1. Lesson-level diagram.
-      String? lessonSvg = lesson.canvasSvg;
-      if (lessonSvg == null && (lesson.canvasPrompt?.trim().isNotEmpty ?? false)) {
-        // Use the lesson\'s first theory slide (or whatever\'s first) as
-        // context so the SVG is thematically consistent.
-        final ctx = lesson.slides.isNotEmpty ? lesson.slides.first.content : '';
-        lessonSvg = await generateCanvasArt(lesson.canvasPrompt!, contextText: ctx);
-      }
-
-      // 2. Per-slide diagrams for proof / step_by_step slides only.
-      final List<Slide> updatedSlides = [];
-      for (final slide in lesson.slides) {
-        final isProofLike = slide.type == 'proof' || slide.type == 'step_by_step';
-        String? slideSvg = slide.canvasSvg;
-        if (isProofLike && slideSvg == null && (slide.canvasPrompt?.trim().isNotEmpty ?? false)) {
-          slideSvg = await generateCanvasArt(slide.canvasPrompt!, contextText: slide.content);
-        }
-        updatedSlides.add(slide.copyWith(canvasSvg: slideSvg));
-      }
-
-      updatedLessons.add(lesson.copyWith(canvasSvg: lessonSvg, slides: updatedSlides));
-
-      // Emit a partial unit so the diagram for this lesson shows immediately,
-      // keeping later (not-yet-processed) lessons exactly as they were.
-      if (onLessonArt != null) {
-        final remaining = unit.lessons.sublist(updatedLessons.length);
-        onLessonArt(unit.copyWith(lessons: [...updatedLessons, ...remaining]));
-      }
+  /// Renders the diagram(s) for a SINGLE [lesson]: the lesson-level diagram
+  /// plus any proof/step_by_step slide that asked for one. Only fills art that
+  /// is missing (a non-null `canvasSvg` is left as-is). Failures are tolerated
+  /// — a lesson simply renders without that diagram. Called per-lesson right
+  /// after the lesson's text is generated, so visuals appear incrementally.
+  Future<Lesson> _attachArtToLesson(Lesson lesson) async {
+    // 1. Lesson-level diagram. Use the first slide's content as context so the
+    //    art stays thematically consistent with the lesson.
+    String? lessonArt = lesson.canvasSvg;
+    if (lessonArt == null && (lesson.canvasPrompt?.trim().isNotEmpty ?? false)) {
+      final ctx = lesson.slides.isNotEmpty ? lesson.slides.first.content : '';
+      lessonArt = await generateCanvasArt(lesson.canvasPrompt!, contextText: ctx);
     }
-    return unit.copyWith(lessons: updatedLessons);
+
+    // 2. Per-slide diagrams for proof / step_by_step slides only.
+    final List<Slide> updatedSlides = [];
+    for (final slide in lesson.slides) {
+      final isProofLike = slide.type == 'proof' || slide.type == 'step_by_step';
+      String? slideArt = slide.canvasSvg;
+      if (isProofLike && slideArt == null && (slide.canvasPrompt?.trim().isNotEmpty ?? false)) {
+        slideArt = await generateCanvasArt(slide.canvasPrompt!, contextText: slide.content);
+      }
+      updatedSlides.add(slide.copyWith(canvasSvg: slideArt));
+    }
+
+    return lesson.copyWith(canvasSvg: lessonArt, slides: updatedSlides);
   }
 
   /// path continues to work unchanged. [customInstructions] is the planner

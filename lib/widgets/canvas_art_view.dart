@@ -53,6 +53,11 @@ class CanvasArtView extends StatelessWidget {
       return _TapToGenerateCard(prompt: prompt, onTap: onRegenerate);
     }
 
+    // Full-width hero sized by aspect ratio (not a fixed screen fraction) so
+    // the box hugs the diagram's shape — no empty bands above/below — while
+    // still filling the width. 3:2 is a roomy landscape close to the diagrams'
+    // own proportions. The full-screen / refresh buttons float on top, and the
+    // canvas is allowed to sit directly beneath them.
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       clipBehavior: Clip.antiAlias,
@@ -63,62 +68,59 @@ class CanvasArtView extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: AspectRatio(
-              aspectRatio: 16 / 7,
-              child: hasArt
-                  // Renders an SVG or a JS canvas draw function depending on
-                  // what the model produced. Malformed SVG falls back to the
-                  // tap-to-generate card instead of a red error widget.
-                  ? buildCanvasArt(
-                      svg!,
-                      svgPlaceholder: (_) => _TapToGenerateCard(prompt: prompt, onTap: onRegenerate, embedded: true),
-                    )
-                  : const _CanvasPlaceholder(label: 'Generating diagram…', spinning: true),
-            ),
+          AspectRatio(
+            aspectRatio: 3 / 2,
+            child: hasArt
+                // Renders an SVG or a JS canvas draw function depending on what
+                // the model produced. Malformed SVG falls back to the
+                // tap-to-generate card instead of a red error widget.
+                ? buildCanvasArt(
+                    svg!,
+                    svgPlaceholder: (_) => _TapToGenerateCard(prompt: prompt, onTap: onRegenerate, embedded: true),
+                  )
+                : const _CanvasPlaceholder(label: 'Generating diagram…', spinning: true),
           ),
           // Expand-to-full-screen affordance (top-left).
           if (hasArt)
-            Positioned(
-              top: 6,
-              left: 6,
-              child: Material(
-                color: Colors.black54,
-                shape: const CircleBorder(),
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: () => showCanvasFullScreen(context, svg!),
-                  child: const Padding(
-                    padding: EdgeInsets.all(6.0),
-                    child: Icon(LucideIcons.maximize2, size: 14, color: Colors.white70),
+              Positioned(
+                top: 6,
+                left: 6,
+                child: Material(
+                  color: Colors.black54,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () => showCanvasFullScreen(context, svg!),
+                    child: const Padding(
+                      padding: EdgeInsets.all(6.0),
+                      child: Icon(LucideIcons.maximize2, size: 14, color: Colors.white70),
+                    ),
                   ),
                 ),
               ),
-            ),
-          if (onRegenerate != null && hasArt)
-            Positioned(
-              top: 6,
-              right: 6,
-              child: Material(
-                color: Colors.black54,
-                shape: const CircleBorder(),
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: isLoading ? null : onRegenerate,
-                  child: Padding(
-                    padding: const EdgeInsets.all(6.0),
-                    child: isLoading
-                        ? const SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
-                          )
-                        : const Icon(LucideIcons.refreshCcw, size: 14, color: Colors.white70),
+            if (onRegenerate != null && hasArt)
+              Positioned(
+                top: 6,
+                right: 6,
+                child: Material(
+                  color: Colors.black54,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: isLoading ? null : onRegenerate,
+                    child: Padding(
+                      padding: const EdgeInsets.all(6.0),
+                      child: isLoading
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
+                            )
+                          : const Icon(LucideIcons.refreshCcw, size: 14, color: Colors.white70),
+                    ),
                   ),
                 ),
               ),
-            ),
         ],
       ),
     );

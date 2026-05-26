@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../services/generation_manager.dart';
 import '../theme/app_theme.dart';
-import 'psychological_progress_bar.dart';
+import 'real_progress_bar.dart';
 
 class GeneratingBookCard extends StatelessWidget {
   final GenerationTask task;
@@ -58,9 +58,8 @@ class GeneratingBookCard extends StatelessWidget {
               ),
               child: Center(
                 child: task.state == BookGenState.extracting || task.state == BookGenState.chunking || task.state == BookGenState.saving
-                  ? PsychologicalProgressBar(
-                      estimatedDuration: task.estimatedDuration,
-                      startTime: task.startTime,
+                  ? RealProgressBar(
+                      progress: task.progress,
                       isCircular: true,
                     )
                   : Icon(statusIcon, size: 50, color: iconColor),

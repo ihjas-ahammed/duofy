@@ -54,7 +54,11 @@ class PdfService {
   ///
   /// A single PDF source uses native vector subsetting via Syncfusion;
   /// image sources are re-bundled into per-chunk PDFs.
-  Future<Book> splitBookPdf(List<File> inputFiles, Book book, Function(String) onProgress) async {
+  Future<Book> splitBookPdf(
+    List<File> inputFiles,
+    Book book,
+    void Function(String status, double progress) onProgress,
+  ) async {
     final dir = await getApplicationDocumentsDirectory();
     final bookDirPath = '${dir.path}/books/${book.id}';
     final bookDir = Directory(bookDirPath);
@@ -124,7 +128,7 @@ class PdfService {
         // New-flow: section owns the chunk.
         if (section.startPage != null && section.endPage != null) {
           currentChunk++;
-          onProgress("Chunking section $currentChunk of $totalChunks...");
+          onProgress("Chunking section $currentChunk of $totalChunks...", totalChunks == 0 ? 1.0 : currentChunk / totalChunks);
           final path = await writeChunk(section.id, section.startPage!, section.endPage!);
           updatedSections.add(section.copyWith(pdfPath: path));
           continue;
@@ -135,7 +139,7 @@ class PdfService {
         for (final unit in section.units) {
           if (unit.startPage != null && unit.endPage != null) {
             currentChunk++;
-            onProgress("Chunking unit $currentChunk of $totalChunks...");
+            onProgress("Chunking unit $currentChunk of $totalChunks...", totalChunks == 0 ? 1.0 : currentChunk / totalChunks);
             final path = await writeChunk(unit.id, unit.startPage!, unit.endPage!);
             updatedUnits.add(unit.copyWith(pdfPath: path, isGenerated: false, lessons: []));
           } else {

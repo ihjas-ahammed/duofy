@@ -20,6 +20,9 @@ class GenerationTask {
   String? errorMessage;
   Duration estimatedDuration;
   DateTime startTime;
+  /// Real progress in [0,1], or null when the current phase is indeterminate
+  /// (e.g. the single chapter-mapping AI call). Drives [RealProgressBar].
+  double? progress;
 
   GenerationTask({
     required this.id, 
@@ -37,12 +40,16 @@ class UnitGenTask {
   Duration estimatedDuration;
   DateTime startTime;
   bool isError;
+  /// Real progress in [0,1], or null while indeterminate (planning phase /
+  /// section-manifest call). Drives [RealProgressBar].
+  double? progress;
 
   UnitGenTask({
-    required this.status, 
-    required this.estimatedDuration, 
-    required this.startTime, 
-    this.isError = false
+    required this.status,
+    required this.estimatedDuration,
+    required this.startTime,
+    this.isError = false,
+    this.progress,
   });
 }
 
@@ -130,6 +137,11 @@ class GenerationManager extends ChangeNotifier {
         filename,
         chapter1AbsolutePage: chapter1AbsolutePage,
         customInstructions: customInstructions,
+        onProgress: (status, progress) {
+          task.statusMessage = status;
+          task.progress = progress;
+          notifyListeners();
+        },
       );
       stopwatch.stop();
 
@@ -163,6 +175,7 @@ class GenerationManager extends ChangeNotifier {
     final task = activeTasks[taskIndex];
     task.state = BookGenState.chunking;
     task.statusMessage = 'Native Vector Splitting...';
+    task.progress = null; // indeterminate until the first chunk reports
     task.estimatedDuration = const Duration(seconds: 15); // Native is much faster
     task.startTime = DateTime.now();
     notifyListeners();
@@ -171,8 +184,9 @@ class GenerationManager extends ChangeNotifier {
     await NotificationService.showProgress(notifId, "Chunking Pages", "Processing natively...", indeterminate: true);
 
     try {
-      final completeBook = await _pdfService.splitBookPdf(sourceFiles, offsetBook, (status) {
+      final completeBook = await _pdfService.splitBookPdf(sourceFiles, offsetBook, (status, progress) {
         task.statusMessage = status;
+        task.progress = progress;
         notifyListeners();
         NotificationService.showProgress(notifId, "Chunking Document", status, indeterminate: true);
       });
@@ -224,8 +238,9 @@ class GenerationManager extends ChangeNotifier {
     await NotificationService.showProgress(notifId, "Restoring Files", "Re-splitting source natively...", indeterminate: true);
 
     try {
-      final completeBook = await _pdfService.splitBookPdf(sourceFiles, book, (status) {
+      final completeBook = await _pdfService.splitBookPdf(sourceFiles, book, (status, progress) {
         task.statusMessage = status;
+        task.progress = progress;
         notifyListeners();
         NotificationService.showProgress(notifId, "Restoring Document", status, indeterminate: true);
       });
@@ -326,17 +341,26 @@ class GenerationManager extends ChangeNotifier {
         });
       }
 
+      // Diagrams (when enabled) are now rendered per-lesson inside
+      // generateUnitContent, right after each lesson's text — so each streamed
+      // lesson already carries its art and pops in incrementally via the same
+      // [onLessonGenerated] save chain. Progress is a single 0→1 across the
+      // whole run (text + art); the planning phase stays indeterminate (null).
       final updatedUnit = await _aiService.generateUnitContent(
         unit,
         ctxBook,
-        (status) {
-          activeUnitGenerations[unit.id]?.status = status;
+        (status, [progress]) {
+          final t = activeUnitGenerations[unit.id];
+          if (t == null) return;
+          t.status = status;
+          t.progress = progress;
           notifyListeners();
         },
         sectionPdfPath: sectionPdfPath,
         previousUnit: previousUnit,
         nextUnit: nextUnit,
         previousGeneratedUnits: previousGeneratedUnits,
+        generateGraphics: generateGraphics,
         onLessonGenerated: onLessonGenerated,
       );
       stopwatch.stop();
@@ -345,58 +369,11 @@ class GenerationManager extends ChangeNotifier {
       // Let any in-flight streaming saves settle before the final write.
       await saveChain;
 
-      // Persist the finished text-only unit so the lesson is usable
-      // immediately while the graphics pass runs in the background.
+      // Persist the finished unit (lessons already carry their diagrams).
       Book baseBook = (await _dbService.getBookFromCache(book.id)) ?? book;
-      final textOnlyBook = applyUnit(baseBook, updatedUnit);
-      await _dbService.saveGeneratedBook(textOnlyBook);
-      _bookUpdateController.add(textOnlyBook);
-
-      // Stage 2: graphics pass — only when the user opted into diagrams for
-      // this unit. Failures here don\'t fail the whole lesson — the user just
-      // sees the text-only version. Runs after the text save so the lesson is
-      // immediately usable, and persists lesson-by-lesson so diagrams pop in
-      // incrementally rather than all at once.
-      if (generateGraphics) {
-        try {
-          activeUnitGenerations[unit.id]?.status = 'Rendering diagrams...';
-          notifyListeners();
-          await NotificationService.showProgress(notifId, "Generating Diagrams", "Drawing lesson art...", indeterminate: true);
-
-          // Serialize incremental art saves the same way the text pass does.
-          Future<void> artSaveChain = Future.value();
-          void onLessonArt(Unit partialUnit) {
-            artSaveChain = artSaveChain.then((_) async {
-              final base = (await _dbService.getBookFromCache(book.id)) ?? textOnlyBook;
-              final partialBook = applyUnit(base, partialUnit);
-              await _dbService.saveGeneratedBook(partialBook);
-              _bookUpdateController.add(partialBook);
-            }).catchError((e) {
-              print('[GenerationManager] Incremental art save failed for ${unit.id}: $e');
-            });
-          }
-
-          final unitWithArt = await _aiService.generateCanvasArtForUnit(
-            updatedUnit,
-            onProgress: (s) {
-              activeUnitGenerations[unit.id]?.status = s;
-              notifyListeners();
-            },
-            onLessonArt: onLessonArt,
-          );
-
-          // Let the streamed art saves settle, then write the final unit.
-          await artSaveChain;
-
-          final freshBase = (await _dbService.getBookFromCache(book.id)) ?? textOnlyBook;
-          final artBook = applyUnit(freshBase, unitWithArt);
-          await _dbService.saveGeneratedBook(artBook);
-          _bookUpdateController.add(artBook);
-        } catch (e) {
-          // Best-effort: log and continue. Lesson is still usable without SVG.
-          print('[GenerationManager] Canvas pass failed for ${unit.id}: $e');
-        }
-      }
+      final finalBook = applyUnit(baseBook, updatedUnit);
+      await _dbService.saveGeneratedBook(finalBook);
+      _bookUpdateController.add(finalBook);
 
       activeUnitGenerations.remove(unit.id);
       notifyListeners();

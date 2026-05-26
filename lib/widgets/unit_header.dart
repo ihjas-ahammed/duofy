@@ -5,7 +5,7 @@ import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../services/generation_manager.dart';
 import 'duo_button.dart';
-import 'psychological_progress_bar.dart';
+import 'real_progress_bar.dart';
 
 /// Inline unit header used by LessonPath.
 /// Mirrors the React glass-panel: black/60 rounded-3xl centered.
@@ -101,9 +101,8 @@ class UnitHeader extends StatelessWidget {
                                 ),
                               ],
                             )
-                          : PsychologicalProgressBar(
-                              estimatedDuration: generationTask!.estimatedDuration,
-                              startTime: generationTask!.startTime,
+                          : RealProgressBar(
+                              progress: generationTask!.progress,
                               isCircular: true,
                               label: status ?? 'Loading...',
                             ))

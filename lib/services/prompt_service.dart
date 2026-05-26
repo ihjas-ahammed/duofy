@@ -29,59 +29,75 @@ $trimmed
   static final String _iconRule =
       'Pick the most thematically appropriate `icon` for each lesson from this exact list (use the kebab-case form): $_iconChoiceList. Examples: a lesson on integration → "sigma" or "function"; on Newton\'s laws → "atom" or "rocket"; on cell biology → "dna" or "microscope"; on World War II → "history" or "swords"; on French vocabulary → "languages". Only use "book-open" when no other icon clearly fits.';
 
-  /// Skeleton prompt for the new TOC-only flow. The user picks the index/TOC
-  /// pages of the source PDF, and tells us which absolute PDF page contains
-  /// the start of Chapter 1. We pass that offset so the AI converts the
-  /// printed page numbers (TOC page 1) into absolute PDF page numbers.
-  ///
-  /// The skeleton is now two levels deep:
-  ///   - Modules    = Chapters (top-level entries in the TOC).
-  ///   - Sections   = Sub-chapters / numbered subtopics (e.g. 2.1, 2.2), each
-  ///                  carrying its own absolute startPage/endPage.
-  ///   - Units      = NOT generated here. They are produced lazily by a
-  ///                  later AI call when the user opens a section.
-  static const String skeleton = '''You are an expert curriculum designer. The attached PDF contains ONLY the table of contents / index pages of a textbook.
-The original source file is named: "%filename%".
-%custom_instructions%
-OFFSET CORRECTION (CRITICAL):
+  /// Shared offset-correction block reused by both skeleton-stage prompts so
+  /// the model converts the TOC's printed page numbers into absolute PDF page
+  /// numbers identically in each call.
+  static const String _offsetBlock = '''OFFSET CORRECTION (CRITICAL):
 The TOC lists the textbook's printed page numbers. We need ABSOLUTE PDF page numbers (1-based, where the first page of the whole source PDF is 1).
 The user has told us that Chapter 1 actually starts on absolute PDF page %chapter1_abs_page%. That means: when the TOC says "printed page 1" you must output absolute page %chapter1_abs_page%. The offset to add to every printed page number is therefore (%chapter1_abs_page% - 1).
-Apply this offset to EVERY startPage and endPage you output. Never emit printed/TOC page numbers verbatim.
+Apply this offset to EVERY startPage and endPage you output. Never emit printed/TOC page numbers verbatim.''';
 
-STRUCTURE HIERARCHY:
-- "modules" = the main Chapters listed in the TOC (e.g. "Chapter 1: Mechanics").
-- "sections" = the numbered subtopics under each chapter (e.g. "1.1 Kinematics", "1.2 Newton\'s Laws"). EVERY section MUST have an absolute startPage and endPage derived from the TOC plus the offset above. If a chapter has no listed subtopics, emit a single section that spans the whole chapter.
-- DO NOT generate "units" here. Units will be produced later by a separate AI call when the user opens a section.
+  /// Stage 1 of the batched TOC flow: enumerate ONLY the top-level chapters.
+  ///
+  /// Splitting chapter enumeration into its own focused call fixes two failure
+  /// modes the single-shot skeleton had with the lite model: skipping whole
+  /// chapters, and silently merging adjacent chapters. Here the model has one
+  /// job — list every chapter, in order, with absolute page ranges — and the
+  /// per-chapter [sectionList] call fills in subtopics afterwards.
+  static const String chapterList = '''You are an expert curriculum designer. The attached PDF contains ONLY the table of contents / index pages of a textbook named "%filename%".
+%custom_instructions%
+$_offsetBlock
 
-CRITICAL INSTRUCTIONS:
-1. Generate a suitable, professional `title` for this course based on the TOC content or the filename.
-2. Pick an `icon` for the book that reflects the subject matter.
-3. End each section\'s endPage one page BEFORE the next section\'s startPage (so ranges are contiguous, not overlapping). The final section in a chapter should end where the chapter ends.
-4. In the `systemPrompt` string you generate, STRICTLY instruct the AI to use double-escaped backslashes for all LaTeX (e.g. \\\\frac instead of \\frac).
+TASK: List EVERY top-level chapter (the main numbered entries / parts) in the TOC, in order. Do NOT break them into sub-topics yet. COMPLETENESS IS CRITICAL — do not skip, merge, or combine chapters; if the TOC lists 14 chapters you must return 14 chapter objects.
 
-Return ONLY valid JSON matching this exact structure (note: no "units" array):
+For each chapter provide:
+- "title": the chapter heading exactly as printed (keep its number, e.g. "Chapter 3: Thermodynamics").
+- "description": a one-line summary of the chapter.
+- "startPage": the ABSOLUTE PDF page where the chapter begins (apply the offset above).
+- "endPage": the ABSOLUTE PDF page where the chapter ends — one page before the next chapter begins (for the final chapter, its last content page per the TOC).
+
+Also generate, for the whole course:
+- a professional `title` (from the TOC content or filename),
+- an `icon` reflecting the subject matter,
+- a `description`,
+- a `systemPrompt` for a tutor AI that STRICTLY instructs it to use double-escaped backslashes for all LaTeX (e.g. \\\\frac instead of \\frac).
+
+Return ONLY valid JSON matching this exact structure:
 {
-  "id": "generated-book-123",
   "title": "Generated Course Title Here",
-  "description": "Auto-generated book overview",
   "icon": "Book",
+  "description": "Auto-generated book overview",
   "systemPrompt": "You are an expert tutor...",
-  "modules":[
-    {
-      "id": "m1",
-      "title": "Chapter 1: Title",
-      "description": "...",
-      "sections": [
-        {
-          "id": "s1",
-          "title": "1.1 Subtopic Title",
-          "description": "...",
-          "color": "duo-blue",
-          "startPage": 12,
-          "endPage": 18
-        }
-      ]
-    }
+  "chapters": [
+    { "id": "m1", "title": "Chapter 1: Title", "description": "...", "startPage": 12, "endPage": 34 }
+  ]
+}''';
+
+  /// Stage 2 of the batched TOC flow: detail the sections of ONE chapter.
+  ///
+  /// Called once per chapter returned by [chapterList], with that chapter's
+  /// absolute page bounds inlined so the model keeps every section strictly
+  /// inside the chapter (no bleeding into neighbours, no merging subtopics).
+  static const String sectionList = '''You are an expert curriculum designer. The attached PDF contains ONLY the table of contents / index pages of the textbook "%filename%".
+%custom_instructions%
+$_offsetBlock
+
+We are now detailing exactly ONE chapter:
+- Chapter: "%chapter_title%"
+- This chapter spans ABSOLUTE PDF pages %chapter_start% to %chapter_end% (inclusive).
+
+TASK: From the TOC, list the numbered sub-topics / sections that belong ONLY to this chapter (e.g. "3.1 ...", "3.2 ..."). Rules:
+1. Do NOT include sub-topics from any other chapter.
+2. Do NOT merge two sub-topics into one entry — keep them separate so each gets its own page range.
+3. If this chapter lists no sub-topics, return a SINGLE section that spans the whole chapter.
+4. Keep ranges contiguous and inside [%chapter_start%, %chapter_end%]: end each section one page before the next begins; the last section ends at %chapter_end%.
+
+For each section provide "title", "description", a "color" (one of: duo-blue, duo-green, duo-violet, duo-orange, duo-red), and absolute "startPage"/"endPage".
+
+Return ONLY valid JSON matching this exact structure (no "units" array):
+{
+  "sections": [
+    { "id": "s1", "title": "3.1 Subtopic Title", "description": "...", "color": "duo-blue", "startPage": 12, "endPage": 18 }
   ]
 }''';
 
@@ -258,6 +274,8 @@ RETURN ONLY VALID JSON FOR THIS ONE SLIDE (no wrapping array, no other keys), e.
   /// page scaffold. The example below shows the exact expected shape.
   static const String canvasArt = '''You are a diagram artist who draws with the HTML5 Canvas 2D API. Write ONLY a single JavaScript function that renders a clear static diagram of the concept below.
 
+Think VISUALLY: the goal is a strong diagrammatic representation — shapes, structure, spatial relationships, arrows and colour that convey the idea at a glance. Words are a last resort, not the content.
+
 CONCEPT TO ILLUSTRATE:
 %canvas_prompt%
 
@@ -266,10 +284,10 @@ LESSON CONTEXT (for tone and reference only — do NOT add unrelated decoration)
 
 CONTRACT (follow EXACTLY):
 1. Output ONLY one JavaScript function with this exact signature: `function draw(ctx, W, H) { ... }`. No HTML, no `<canvas>`, no `<script>`, no Markdown fences, no prose. The host page already creates the canvas and calls `draw()` for you.
-2. `ctx` is a CanvasRenderingContext2D; `W` and `H` are the canvas width and height in CSS pixels. Compute every coordinate relative to `W`/`H` so the drawing scales — NEVER hardcode a fixed canvas size.
+2. `ctx` is a CanvasRenderingContext2D; `W` and `H` are the canvas width and height in CSS pixels. Compute every coordinate relative to `W`/`H` so the drawing scales — NEVER hardcode a fixed canvas size. Use the full canvas; leave only ~6% padding inside W/H so the drawing fills the frame.
 3. Assume a DARK, already-cleared, transparent background. Use light-on-dark colors: primary strokes `#E2E8F0`, accents `#3B82F6` / `#58CC02` / `#FBBF24`, label text `#F8FAFC`. Never assume a white page.
-4. Labels: `ctx.font = "13px sans-serif"` (scale modestly with W if you like); keep them short. Leave ~8% padding inside W/H, avoid clutter — prefer a few clear elements over many.
-5. Pure 2D drawing only (paths, rects, arcs, lines, text). NO external images, NO network, NO DOM access, NO animation loop — draw a single static frame.
+4. Text is SECONDARY. Do NOT draw a title, heading, caption, or sentences. Add at most a few SHORT labels (axis names, a key variable, a single value) only where the diagram is unreadable without them. `ctx.font = "13px sans-serif"`. Carry the meaning with the drawing itself, not with words.
+5. Pure 2D drawing only (paths, rects, arcs, lines, the occasional short label). NO external images, NO network, NO DOM access, NO animation loop — draw a single static frame.
 
 EXAMPLE (structure only — adapt the actual drawing to the concept above):
 function draw(ctx, W, H) {
