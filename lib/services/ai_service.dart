@@ -194,6 +194,7 @@ class AiService {
     Future<T> Function() op, {
     int maxAttempts = 3,
     Duration baseDelay = const Duration(seconds: 2),
+    bool retryTimeouts = true,
     void Function(int attempt, Object err)? onRetry,
   }) async {
     Object? last;
@@ -202,6 +203,10 @@ class AiService {
         return await op();
       } catch (e) {
         last = e;
+        // When [retryTimeouts] is false, a timeout is rethrown immediately so
+        // the caller can fall back to the NEXT model/key instead of burning
+        // more attempts (and more wall-clock) on a model that's already slow.
+        if (e is TimeoutException && !retryTimeouts) rethrow;
         if (!_isTransient(e) || attempt == maxAttempts) rethrow;
         onRetry?.call(attempt, e);
         await Future.delayed(baseDelay * (1 << (attempt - 1)));
@@ -465,13 +470,17 @@ class AiService {
   /// Generates all lessons for [unit] off the section's shared PDF chunk.
   ///
   /// Pipeline: (1) a lite-model lesson *plan*, then (2) per-lesson JSON calls
-  /// run in parallel (bounded by [_resolveConcurrency]) and streamed back via
-  /// [onLessonGenerated] so the UI can reveal lessons one at a time.
+  /// generated ONE AT A TIME, IN ORDER. Each lesson's text is streamed back via
+  /// [onLessonGenerated] the moment it's ready (so it shows immediately); when
+  /// [generateGraphics] is true its diagram is then rendered and the lesson is
+  /// streamed again — so the learner watches lesson → its diagram → next lesson
+  /// appear in sequence, rather than a chunk of texts followed by a chunk of
+  /// diagrams.
   ///
-  /// When [generateGraphics] is true, each lesson's diagram(s) are rendered
-  /// *right after that lesson's text* (and streamed again), so art pops in
-  /// lesson-by-lesson during generation instead of in a separate whole-unit
-  /// pass at the end — much better perceived progress.
+  /// RESUME: any lessons already present on [unit] (from an interrupted run)
+  /// are kept and shown straight away; only the missing lessons are generated
+  /// and only missing diagrams are filled — so generation continues from where
+  /// it left off instead of restarting.
   ///
   /// [previousUnit]/[nextUnit] give the AI this unit's boundaries inside the
   /// shared chunk; [previousGeneratedUnits] is a short summary of units already
@@ -517,6 +526,12 @@ class AiService {
     final String instructionsBlock = PromptService.instructionsBlock(bookContext.customInstructions);
 
     // --- Stage 1: lesson plan (lite-model fallback ladder) ----------------
+    // The plan is a small text outline; a lite model that hasn't answered in
+    // ~75s is misbehaving (overloaded / stuck), so we cap the wait and jump to
+    // the NEXT model/key rather than blocking the whole unit on one slow model.
+    // A genuine transient server blip (502/overload) still gets one quick retry
+    // on the same model before we move on; timeouts do NOT (retryTimeouts:false).
+    const planTimeout = Duration(seconds: 75);
     onProgress("Analyzing PDF & Planning Layout...");
     final hydratedPlanPrompt = PromptService.plan
         .replaceAll('%unit_title%', unit.title)
@@ -534,10 +549,13 @@ class AiService {
           final planResponse = await _retryTransient(
             () => modelText
                 .generateContent([Content.multi([TextPart(hydratedPlanPrompt), ...planFileParts])])
-                .timeout(const Duration(minutes: 4)),
+                .timeout(planTimeout),
+            maxAttempts: 2,
+            baseDelay: const Duration(seconds: 1),
+            retryTimeouts: false,
             onRetry: (a, e) {
               print('[AiService] Unit plan transient ($liteModel) attempt $a: ${_cleanErrMsg(e)}');
-              onProgress('Server hiccup — retrying ($a/3)...');
+              onProgress('Server hiccup — retrying...');
             },
           );
           final text = planResponse.text ?? '';
@@ -545,8 +563,13 @@ class AiService {
             lessonPlan = text;
             break;
           }
+        } on TimeoutException {
+          planError = Exception('Plan timed out on "$liteModel" after ${planTimeout.inSeconds}s.');
+          print('[AiService] Unit plan TIMEOUT ($liteModel) — switching to next model/key.');
+          onProgress('"$liteModel" is slow — trying another model...');
         } catch (e) {
           planError = Exception('Plan failed ($liteModel): ${_cleanErrMsg(e)}');
+          if (_isTransient(e)) onProgress('Model busy — trying another model...');
         }
       }
       if (lessonPlan != null) break;
@@ -565,32 +588,45 @@ class AiService {
     // Soft cap so a hallucinated count of, say, 99 doesn't blow up the unit.
     if (lessonCount > 30) lessonCount = 30;
 
-    // --- Stage 2: per-lesson generation, parallelised ---------------------
-    // Each lesson is an independent request, so we run several at once (bounded
-    // by the user's concurrency setting / an auto device heuristic). Each
-    // lesson's text streams back immediately via [onLessonGenerated]; when
-    // diagrams are on, that lesson's art is rendered right after and streamed
-    // again, so visuals appear lesson-by-lesson rather than in a final pass.
-    final int concurrency = (await _resolveConcurrency()).clamp(1, lessonCount);
+    // --- Stage 2: per-lesson, IN ORDER --------------------------------------
+    // Lessons are produced one at a time. Each lesson's text is streamed the
+    // moment it lands; its diagram is then rendered and streamed too, before we
+    // move to the next lesson — so the learner sees lesson → diagram → next.
+    // Lessons already on [unit] (an interrupted/resumed run) are pre-seeded and
+    // shown immediately, and only the gaps (missing lessons / missing art) are
+    // filled, so we continue from where we left off.
     final lessonFileParts = await _buildFileParts([chunkFile]);
-    final List<Lesson?> slots = List<Lesson?>.filled(lessonCount, null);
+    final List<Lesson> existing = List.of(unit.lessons);
+    final int total = lessonCount > existing.length ? lessonCount : existing.length;
+    final List<Lesson?> slots = List<Lesson?>.filled(total, null);
+    for (int i = 0; i < existing.length && i < total; i++) {
+      slots[i] = existing[i];
+    }
+
     // Combined step accounting: one text step per lesson, plus one art step
     // per lesson when diagrams are enabled, so progress covers the whole run.
-    final int totalSteps = generateGraphics ? lessonCount * 2 : lessonCount;
+    final int totalSteps = generateGraphics ? total * 2 : total;
     int doneSteps = 0;
     Object? lastLessonError;
 
     List<Lesson> collected() => slots.whereType<Lesson>().toList();
-    int landed() => slots.whereType<Lesson>().length;
 
-    int nextIndex = 0;
-    Future<void> worker() async {
-      while (true) {
-        final i = nextIndex;
-        if (i >= lessonCount) break;
-        nextIndex++;
+    // A lesson still needs art if its own diagram, or any proof/step diagram,
+    // has a prompt but no rendered canvas yet.
+    bool needsArt(Lesson l) {
+      bool empty(String? s) => s == null || s.trim().isEmpty;
+      if ((l.canvasPrompt?.trim().isNotEmpty ?? false) && empty(l.canvasSvg)) return true;
+      return l.slides.any((s) =>
+          (s.type == 'proof' || s.type == 'step_by_step') &&
+          (s.canvasPrompt?.trim().isNotEmpty ?? false) &&
+          empty(s.canvasSvg));
+    }
 
-        Lesson? lesson;
+    for (int i = 0; i < total; i++) {
+      Lesson? lesson = slots[i];
+
+      // 1. Text — generate only when this slot isn't already filled (resume).
+      if (lesson == null) {
         try {
           lesson = await _generateOneLesson(
             index: i + 1,
@@ -608,35 +644,31 @@ class AiService {
           lastLessonError = e;
           print('[AiService] Lesson ${i + 1} failed permanently: ${_cleanErrMsg(e)}');
         }
-
-        // Stream the lesson text right away so it shows up immediately.
         if (lesson != null) slots[i] = lesson;
-        doneSteps++;
-        onProgress('Generating lessons (${landed()}/$lessonCount)...', doneSteps / totalSteps);
-        onLessonGenerated?.call(collected());
+      }
+      doneSteps++;
+      onProgress('Generating lessons (${collected().length}/$total)...', doneSteps / totalSteps);
+      onLessonGenerated?.call(collected()); // show this lesson right away
 
-        // Then render this lesson's diagram(s) and stream the updated lesson.
-        if (generateGraphics) {
-          if (lesson != null) {
-            try {
-              slots[i] = await _attachArtToLesson(lesson);
-            } catch (e) {
-              print('[AiService] Art for lesson ${i + 1} failed: ${_cleanErrMsg(e)}');
-            }
+      // 2. This lesson's diagram(s), then stream the lesson again with its art.
+      if (generateGraphics) {
+        if (lesson != null && needsArt(lesson)) {
+          try {
+            slots[i] = await _attachArtToLesson(lesson);
+            onLessonGenerated?.call(collected());
+          } catch (e) {
+            print('[AiService] Art for lesson ${i + 1} failed: ${_cleanErrMsg(e)}');
           }
-          doneSteps++; // counted even on a failed/empty lesson so totals reconcile
-          onProgress('Rendering diagrams (${i + 1}/$lessonCount)...', doneSteps / totalSteps);
-          if (lesson != null) onLessonGenerated?.call(collected());
         }
+        doneSteps++; // counted even when skipped/failed so totals reconcile
+        onProgress('Rendering diagrams (${i + 1}/$total)...', doneSteps / totalSteps);
       }
     }
-
-    await Future.wait(List.generate(concurrency, (_) => worker()));
 
     final newLessons = collected();
     if (newLessons.isEmpty) {
       throw Exception(
-        'AI returned no usable lessons.${lastLessonError != null ? ' Last error: ${_cleanErrMsg(lastLessonError!)}' : ''}',
+        'AI returned no usable lessons.${lastLessonError != null ? ' Last error: ${_cleanErrMsg(lastLessonError)}' : ''}',
       );
     }
     return unit.copyWith(isGenerated: true, lessons: newLessons);
