@@ -329,6 +329,8 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
         return LucideIcons.list;
       case 'fill_in_blank':
         return LucideIcons.minus;
+      case 'one_word':
+        return LucideIcons.pencil;
       case 'numerical':
         return LucideIcons.calculator;
       case 'proof':

@@ -9,6 +9,7 @@ import '../widgets/math_markdown.dart';
 import '../widgets/slide_views/quiz_view.dart';
 import '../widgets/slide_views/fill_in_blank_view.dart';
 import '../widgets/slide_views/numerical_view.dart';
+import '../widgets/slide_views/one_word_view.dart';
 import '../widgets/slide_views/interactive_proof_view.dart';
 import 'lesson_complete_screen.dart';
 
@@ -45,6 +46,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
   String? _selectedQuizOption;
   String _blankInput = '';
   String _numericInput = '';
+  String _wordInput = '';
 
   @override
   void initState() {
@@ -111,6 +113,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     if (widget.practiceType == 'proof' && slideType == 'proof') return true;
     if (widget.practiceType == 'step_by_step' && (slideType == 'step_by_step' || slideType == 'proof')) return true;
     if (widget.practiceType == 'fill_in_blank' && slideType == 'fill_in_blank') return true;
+    if (widget.practiceType == 'one_word' && slideType == 'one_word') return true;
     if (widget.practiceType == 'numerical' && slideType == 'numerical') return true;
     return false;
   }
@@ -155,6 +158,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
         _selectedQuizOption = null;
         _blankInput = '';
         _numericInput = '';
+        _wordInput = '';
       });
     }
   }
@@ -176,6 +180,8 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
       }
     } else if (slide.type == 'fill_in_blank') {
       correct = _blankInput.trim().toLowerCase() == slide.blankAnswer?.toLowerCase().replaceAll(r'\', '');
+    } else if (slide.type == 'one_word') {
+      correct = _wordInput.trim().toLowerCase() == (slide.blankAnswer ?? '').trim().toLowerCase().replaceAll(r'\', '');
     } else if (slide.type == 'numerical') {
       final val = double.tryParse(_numericInput);
       if (val != null && slide.numericAnswer != null) {
@@ -200,6 +206,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     final slide = _queue.first;
     if (slide.type == 'quiz') return _selectedQuizOption != null;
     if (slide.type == 'fill_in_blank') return _blankInput.trim().isNotEmpty;
+    if (slide.type == 'one_word') return _wordInput.trim().isNotEmpty;
     if (slide.type == 'numerical') return _numericInput.trim().isNotEmpty;
     return false;
   }
@@ -216,6 +223,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
       return opt?.text ?? '';
     }
     if (slide.type == 'fill_in_blank') return slide.blankAnswer ?? '';
+    if (slide.type == 'one_word') return slide.blankAnswer ?? '';
     if (slide.type == 'numerical') return slide.numericAnswer?.toString() ?? '';
     return '';
   }
@@ -243,6 +251,14 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
         isAnswered: _answered,
         isCorrect: _isCorrect,
         onChanged: (val) => setState(() => _numericInput = val),
+      );
+    } else if (slide.type == 'one_word') {
+      return OneWordView(
+        slide: slide,
+        value: _wordInput,
+        isAnswered: _answered,
+        isCorrect: _isCorrect,
+        onChanged: (val) => setState(() => _wordInput = val),
       );
     } else if (slide.type == 'proof' || slide.type == 'step_by_step') {
       return InteractiveProofView(

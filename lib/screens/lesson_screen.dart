@@ -14,6 +14,7 @@ import '../widgets/math_markdown.dart';
 import '../widgets/slide_views/quiz_view.dart';
 import '../widgets/slide_views/fill_in_blank_view.dart';
 import '../widgets/slide_views/numerical_view.dart';
+import '../widgets/slide_views/one_word_view.dart';
 import '../widgets/slide_views/interactive_proof_view.dart';
 import 'lesson_complete_screen.dart';
 
@@ -60,6 +61,7 @@ class _LessonScreenState extends State<LessonScreen> {
   String? _selectedQuizOption;
   String _blankInput = '';
   String _numericInput = '';
+  String _wordInput = '';
 
   bool _isEditingMode = false;
   final TextEditingController _editController = TextEditingController();
@@ -137,7 +139,7 @@ class _LessonScreenState extends State<LessonScreen> {
     _slideQueue = List.of(_lesson.slides);
 
     for (var slide in _slideQueue) {
-      if (['quiz', 'fill_in_blank', 'numerical', 'proof', 'step_by_step'].contains(slide.type)) {
+      if (['quiz', 'fill_in_blank', 'one_word', 'numerical', 'proof', 'step_by_step'].contains(slide.type)) {
         _totalInteractive++;
       }
     }
@@ -152,6 +154,7 @@ class _LessonScreenState extends State<LessonScreen> {
         _selectedQuizOption = null;
         _blankInput = '';
         _numericInput = '';
+        _wordInput = '';
       });
     } else {
       _finishLesson();
@@ -195,6 +198,8 @@ class _LessonScreenState extends State<LessonScreen> {
       }
     } else if (slide.type == 'fill_in_blank') {
       correct = _blankInput.trim().toLowerCase() == slide.blankAnswer?.toLowerCase().replaceAll(r'\', '');
+    } else if (slide.type == 'one_word') {
+      correct = _wordInput.trim().toLowerCase() == (slide.blankAnswer ?? '').trim().toLowerCase().replaceAll(r'\', '');
     } else if (slide.type == 'numerical') {
       final val = double.tryParse(_numericInput);
       if (val != null && slide.numericAnswer != null) {
@@ -219,8 +224,9 @@ class _LessonScreenState extends State<LessonScreen> {
   bool _canCheck(Slide slide) {
     if (slide.type == 'quiz') return _selectedQuizOption != null;
     if (slide.type == 'fill_in_blank') return _blankInput.trim().isNotEmpty;
+    if (slide.type == 'one_word') return _wordInput.trim().isNotEmpty;
     if (slide.type == 'numerical') return _numericInput.trim().isNotEmpty;
-    return true; 
+    return true;
   }
 
   bool _isCustomBottomBar(Slide slide) {
@@ -233,6 +239,7 @@ class _LessonScreenState extends State<LessonScreen> {
       return opt?.text ?? '';
     }
     if (slide.type == 'fill_in_blank') return slide.blankAnswer ?? '';
+    if (slide.type == 'one_word') return slide.blankAnswer ?? '';
     if (slide.type == 'numerical') return slide.numericAnswer?.toString() ?? '';
     return '';
   }
@@ -371,6 +378,14 @@ class _LessonScreenState extends State<LessonScreen> {
           isCorrect: _isCorrect,
           onChanged: (val) => setState(() => _numericInput = val),
         );
+      case 'one_word':
+        return OneWordView(
+          slide: slide,
+          value: _wordInput,
+          isAnswered: _answered,
+          isCorrect: _isCorrect,
+          onChanged: (val) => setState(() => _wordInput = val),
+        );
       case 'theory':
       case 'theory_group':
       default:
@@ -455,7 +470,7 @@ class _LessonScreenState extends State<LessonScreen> {
 
     final slide = _slideQueue[_currentIndex];
     final progress = (_currentIndex) / _slideQueue.length;
-    final isInteractive = ['quiz', 'fill_in_blank', 'numerical'].contains(slide.type);
+    final isInteractive = ['quiz', 'fill_in_blank', 'one_word', 'numerical'].contains(slide.type);
     final hasCustomBar = _isCustomBottomBar(slide);
 
     return Scaffold(

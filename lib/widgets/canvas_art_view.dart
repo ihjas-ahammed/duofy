@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../theme/app_theme.dart';
+import 'canvas_html_view.dart';
 
 /// Top-of-lesson / top-of-proof diagram widget. Renders an SVG produced by
 /// the graphics AI and exposes a small regenerate affordance overlaid on
@@ -44,17 +44,18 @@ class CanvasArtView extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final hasSvg = svg != null && svg!.trim().isNotEmpty;
+    final hasArt = svg != null && svg!.trim().isNotEmpty;
 
-    // No SVG and not actively generating → the diagram either failed or was
+    // No art and not actively generating → the diagram either failed or was
     // never generated. Instead of a blank placeholder box, show the prompt
     // text with a "tap to generate" affordance.
-    if (!hasSvg && !isLoading) {
+    if (!hasArt && !isLoading) {
       return _TapToGenerateCard(prompt: prompt, onTap: onRegenerate);
     }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.04),
         borderRadius: BorderRadius.circular(16),
@@ -66,19 +67,36 @@ class CanvasArtView extends StatelessWidget {
             padding: const EdgeInsets.all(8),
             child: AspectRatio(
               aspectRatio: 16 / 7,
-              child: hasSvg
-                  ? SvgPicture.string(
+              child: hasArt
+                  // Renders an SVG or a JS canvas draw function depending on
+                  // what the model produced. Malformed SVG falls back to the
+                  // tap-to-generate card instead of a red error widget.
+                  ? buildCanvasArt(
                       svg!,
-                      fit: BoxFit.contain,
-                      // If the model returned malformed SVG we don\'t want a
-                      // red error widget breaking the layout — fall back to
-                      // the tap-to-generate prompt card.
-                      placeholderBuilder: (_) => _TapToGenerateCard(prompt: prompt, onTap: onRegenerate, embedded: true),
+                      svgPlaceholder: (_) => _TapToGenerateCard(prompt: prompt, onTap: onRegenerate, embedded: true),
                     )
                   : const _CanvasPlaceholder(label: 'Generating diagram…', spinning: true),
             ),
           ),
-          if (onRegenerate != null && hasSvg)
+          // Expand-to-full-screen affordance (top-left).
+          if (hasArt)
+            Positioned(
+              top: 6,
+              left: 6,
+              child: Material(
+                color: Colors.black54,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => showCanvasFullScreen(context, svg!),
+                  child: const Padding(
+                    padding: EdgeInsets.all(6.0),
+                    child: Icon(LucideIcons.maximize2, size: 14, color: Colors.white70),
+                  ),
+                ),
+              ),
+            ),
+          if (onRegenerate != null && hasArt)
             Positioned(
               top: 6,
               right: 6,

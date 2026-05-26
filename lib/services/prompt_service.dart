@@ -151,12 +151,14 @@ CRITICAL SCHEMA & MICRO-LEARNING RULES:
 1. "theory" slides: `content` MUST be a few sentences explaining a concept DIRECTLY. Use Markdown. NEVER use storytelling, narrative framings, characters, or imagined scenarios — present facts and definitions plainly.
 2. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
 3. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word. Include an array of 3 `blankDistractors` (wrong words) for the user to choose from.
-4. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
-5. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}). Markdown math is wrapped in \$ for inline (must flow inside a sentence) or \$\$ for display blocks. Do NOT put a single short inline equation on its own line — keep it inline with surrounding text.
-6. $_iconRule
-7. Each lesson MUST include a `canvasPrompt` field: a 1–2 sentence natural-language description of the single most useful diagram for this lesson (e.g. "Free-body diagram of a block on an inclined plane with friction and normal force vectors labeled"). The diagram should illustrate the lesson\'s core concept and be drawable as a static SVG. Keep it concrete and visual.
-8. For "proof" and "step_by_step" slides ONLY: include a `canvasPrompt` on the slide itself if and only if the proof or worked example genuinely needs a figure to follow (geometry, circuits, triangles, graphs, free-body diagrams, etc.). If the proof is purely algebraic and no figure adds value, omit `canvasPrompt` on the slide.
-9. Each lesson MUST specify a `formatId` corresponding to the lesson format type it follows (e.g., "theory", "example", or "proof" based on the available formats).
+4. "one_word" slides: `content` is a question whose answer is a SINGLE word or very short term — do NOT put a `___` blank in it. `blankAnswer` is that exact word/term; the learner types it freely, so do NOT provide `options` or `blankDistractors`. Only use questions that have one unambiguous answer.
+5. "numerical" slides: `content` is a problem whose answer is a NUMBER the learner computes and types. `numericAnswer` is that answer as a plain number (no units, no commas, no thousands separators). `numericTolerance` is the allowed absolute error (use 0.01 for precise answers, or a larger value scaled to the magnitude). Do NOT provide `options`. State any required units inside `content`, never in the answer.
+6. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
+7. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}). Markdown math is wrapped in \$ for inline (must flow inside a sentence) or \$\$ for display blocks. Do NOT put a single short inline equation on its own line — keep it inline with surrounding text.
+8. $_iconRule
+9. Each lesson MUST include a `canvasPrompt` field: a 1–2 sentence natural-language description of the single most useful diagram for this lesson (e.g. "Free-body diagram of a block on an inclined plane with friction and normal force vectors labeled"). The diagram should illustrate the lesson\'s core concept and be drawable as a simple 2D diagram. Keep it concrete and visual.
+10. For "proof" and "step_by_step" slides ONLY: include a `canvasPrompt` on the slide itself if and only if the proof or worked example genuinely needs a figure to follow (geometry, circuits, triangles, graphs, free-body diagrams, etc.). If the proof is purely algebraic and no figure adds value, omit `canvasPrompt` on the slide.
+11. Each lesson MUST specify a `formatId` corresponding to the lesson format type it follows (e.g., "theory", "example", or "proof" based on the available formats).
 
 YOU MUST RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
 {
@@ -192,12 +194,14 @@ CRITICAL SCHEMA & MICRO-LEARNING RULES:
 1. "theory" slides: `content` MUST be a few sentences explaining a concept DIRECTLY. Use Markdown. NEVER use storytelling, narrative framings, characters, or imagined scenarios — present facts and definitions plainly.
 2. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
 3. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word. Include an array of 3 `blankDistractors` (wrong words) for the user to choose from.
-4. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
-5. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}). Markdown math is wrapped in \$ for inline (must flow inside a sentence) or \$\$ for display blocks. Do NOT put a single short inline equation on its own line — keep it inline with surrounding text.
-6. $_iconRule
-7. Include a `canvasPrompt` field on the lesson: a 1–2 sentence natural-language description of the single most useful diagram for this lesson, illustrating its core concept and drawable as a static SVG.
-8. For "proof" and "step_by_step" slides ONLY: include a `canvasPrompt` on the slide itself if and only if the proof / worked example genuinely needs a figure (geometry, circuits, triangles, graphs, free-body diagrams). Omit on purely algebraic slides.
-9. Specify the `formatId` corresponding to the lesson format type this lesson follows (e.g., "theory", "example", or "proof" based on the available formats).
+4. "one_word" slides: `content` is a question whose answer is a SINGLE word or very short term — no `___` blank. `blankAnswer` is that exact word/term; the learner types it freely, so do NOT provide `options` or `blankDistractors`. Only use questions with one unambiguous answer.
+5. "numerical" slides: `content` is a problem whose answer is a NUMBER the learner computes and types. `numericAnswer` is that answer as a plain number (no units, no commas). `numericTolerance` is the allowed absolute error (0.01 for precise answers, larger when scaled to the magnitude). Do NOT provide `options`. State any units inside `content`.
+6. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
+7. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}). Markdown math is wrapped in \$ for inline (must flow inside a sentence) or \$\$ for display blocks. Do NOT put a single short inline equation on its own line — keep it inline with surrounding text.
+8. $_iconRule
+9. Include a `canvasPrompt` field on the lesson: a 1–2 sentence natural-language description of the single most useful diagram for this lesson, illustrating its core concept and drawable as a simple 2D diagram.
+10. For "proof" and "step_by_step" slides ONLY: include a `canvasPrompt` on the slide itself if and only if the proof / worked example genuinely needs a figure (geometry, circuits, triangles, graphs, free-body diagrams). Omit on purely algebraic slides.
+11. Specify the `formatId` corresponding to the lesson format type this lesson follows (e.g., "theory", "example", or "proof" based on the available formats).
 
 RETURN ONLY VALID JSON FOR THIS ONE LESSON (no wrapping array, no other keys):
 {
@@ -232,8 +236,10 @@ CRITICAL SCHEMA & MICRO-LEARNING RULES:
 1. "theory" slides: `content` MUST be a few sentences explaining a concept DIRECTLY. Use Markdown. NEVER use storytelling, narrative framings, characters, or imagined scenarios.
 2. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
 3. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word. Include an array of 3 `blankDistractors`.
-4. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array of stages; a step can be static (`stepText` only) or a question (`prompt` and `options`). Include a `canvasPrompt` only if a figure is genuinely needed.
-5. LaTeX must be double-escaped (e.g., \\\\frac{1}{2}). Inline math in \$…\$, display math in \$\$…\$\$.
+4. "one_word" slides: `content` is a question with a SINGLE-word answer (no `___`). `blankAnswer` is that exact word; no `options` or `blankDistractors`.
+5. "numerical" slides: `content` is a problem with a numeric answer. `numericAnswer` is that plain number (no units); `numericTolerance` is the allowed absolute error (0.01 default). No `options`.
+6. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array of stages; a step can be static (`stepText` only) or a question (`prompt` and `options`). Include a `canvasPrompt` only if a figure is genuinely needed.
+7. LaTeX must be double-escaped (e.g., \\\\frac{1}{2}). Inline math in \$…\$, display math in \$\$…\$\$.
 
 RETURN ONLY VALID JSON FOR THIS ONE SLIDE (no wrapping array, no other keys), e.g.:
 {
@@ -244,11 +250,13 @@ RETURN ONLY VALID JSON FOR THIS ONE SLIDE (no wrapping array, no other keys), e.
 }''';
 
   /// Stage-2 prompt: feeds a single `canvasPrompt` (produced by the text
-  /// model) into the graphics model and asks it to return a self-contained
-  /// SVG diagram suitable for embedding in the lesson UI. The result is
-  /// rendered with flutter_svg, so the model must emit raw SVG (no HTML
-  /// wrapper, no scripts, no external font/image links).
-  static const String canvasArt = '''You are a diagram artist. Produce a single static SVG diagram that visually illustrates the following concept.
+  /// model) into the graphics model and asks it for ONLY a JavaScript
+  /// `draw(ctx, W, H)` function. The app embeds that function in a fixed,
+  /// reusable HTML5 `<canvas>` host (see [CanvasArtView] / canvas_html_view)
+  /// that owns the canvas, handles devicePixelRatio scaling, and calls
+  /// `draw()` — so the model only ever supplies the drawing logic, never the
+  /// page scaffold. The example below shows the exact expected shape.
+  static const String canvasArt = '''You are a diagram artist who draws with the HTML5 Canvas 2D API. Write ONLY a single JavaScript function that renders a clear static diagram of the concept below.
 
 CONCEPT TO ILLUSTRATE:
 %canvas_prompt%
@@ -256,15 +264,41 @@ CONCEPT TO ILLUSTRATE:
 LESSON CONTEXT (for tone and reference only — do NOT add unrelated decoration):
 %lesson_context%
 
-STRICT REQUIREMENTS:
-1. Output ONE complete `<svg ...>...</svg>` element. No surrounding text, no Markdown fences, no `<html>` / `<body>` wrappers, no XML declaration.
-2. Use `viewBox="0 0 400 240"` and DO NOT set width/height attributes (so the SVG scales to its container). Stay within the viewBox.
-3. Pure inline SVG: shapes (`rect`, `circle`, `line`, `path`, `polygon`, `polyline`), labels (`text`), and grouping (`g`). NO `<script>`, NO `<foreignObject>`, NO `<image href=...>` to external URLs, NO `<style>` blocks (use inline `style="..."` / `stroke=` / `fill=` attributes instead).
-4. Dark UI: assume a dark background. Use light-on-dark colors — strokes around `#E2E8F0` for primary lines, accent fills `#3B82F6` / `#58CC02` / `#FBBF24`, label text `fill="#F8FAFC"`. NEVER assume a white page.
-5. Use `font-family="sans-serif"` and modest font-size (10–14) for labels. Keep labels short.
-6. The diagram must be clearly LEGIBLE at the SVG\'s natural size — leave 8–12px padding inside the viewBox, avoid clutter, prefer 4–10 elements over 30.
+CONTRACT (follow EXACTLY):
+1. Output ONLY one JavaScript function with this exact signature: `function draw(ctx, W, H) { ... }`. No HTML, no `<canvas>`, no `<script>`, no Markdown fences, no prose. The host page already creates the canvas and calls `draw()` for you.
+2. `ctx` is a CanvasRenderingContext2D; `W` and `H` are the canvas width and height in CSS pixels. Compute every coordinate relative to `W`/`H` so the drawing scales — NEVER hardcode a fixed canvas size.
+3. Assume a DARK, already-cleared, transparent background. Use light-on-dark colors: primary strokes `#E2E8F0`, accents `#3B82F6` / `#58CC02` / `#FBBF24`, label text `#F8FAFC`. Never assume a white page.
+4. Labels: `ctx.font = "13px sans-serif"` (scale modestly with W if you like); keep them short. Leave ~8% padding inside W/H, avoid clutter — prefer a few clear elements over many.
+5. Pure 2D drawing only (paths, rects, arcs, lines, text). NO external images, NO network, NO DOM access, NO animation loop — draw a single static frame.
 
-Return ONLY the raw SVG markup.''';
+EXAMPLE (structure only — adapt the actual drawing to the concept above):
+function draw(ctx, W, H) {
+  const pad = W * 0.08;
+  ctx.lineWidth = 2;
+  // axes
+  ctx.strokeStyle = "#E2E8F0";
+  ctx.beginPath();
+  ctx.moveTo(pad, H - pad); ctx.lineTo(W - pad, H - pad);
+  ctx.moveTo(pad, H - pad); ctx.lineTo(pad, pad);
+  ctx.stroke();
+  // curve y = x^2 mapped into the plotting box
+  ctx.strokeStyle = "#3B82F6";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  for (let i = 0; i <= 100; i++) {
+    const t = i / 100;
+    const x = pad + t * (W - 2 * pad);
+    const y = (H - pad) - t * t * (H - 2 * pad);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  // label
+  ctx.fillStyle = "#F8FAFC";
+  ctx.font = "13px sans-serif";
+  ctx.fillText("y = x^2", W * 0.58, H * 0.32);
+}
+
+Return ONLY the draw function.''';
 
   static const String qpJson = '''SYSTEM PROMPT:
 %system_prompt%

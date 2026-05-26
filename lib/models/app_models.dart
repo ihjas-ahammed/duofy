@@ -54,6 +54,8 @@ class SlideTemplate {
     SlideTemplate(type: 'theory', condition: 'Always', description: 'The original factual theory and core concepts presented directly, with no storytelling, narrative framing, or example-based scenarios.'),
     SlideTemplate(type: 'proof', condition: 'Only if a mathematical, physical, or logical proof is being taught.', description: 'Interactive step-by-step logic proof.'),
     SlideTemplate(type: 'fill_in_blank', condition: 'Always', description: 'Recall key terms with a fill-in-the-blank question.'),
+    SlideTemplate(type: 'one_word', condition: 'Always', description: 'Recall a single key term by typing it as a one-word answer (no options shown).'),
+    SlideTemplate(type: 'numerical', condition: 'Only if the topic involves a calculation or a quantitative value the learner can compute.', description: 'A problem whose answer is a number the learner types in.'),
     SlideTemplate(type: 'quiz', condition: 'Always', description: 'A multiple-choice question testing understanding.'),
   ];
 }
@@ -120,6 +122,7 @@ class LessonFormat {
           slides: [
             SlideTemplate(type: 'theory', condition: 'Always', description: 'Restate the problem and the technique being used in 1-2 sentences.'),
             SlideTemplate(type: 'step_by_step', condition: 'Always', description: 'Solve the example as an interactive multi-step walkthrough where the learner picks the next step.'),
+            SlideTemplate(type: 'numerical', condition: 'Only if the example produces a numeric result.', description: 'A follow-up problem where the learner computes and types the numeric answer.'),
             SlideTemplate(type: 'quiz', condition: 'Always', description: 'A multiple-choice follow-up applying the same technique to a near-identical problem.'),
           ],
         ),
@@ -632,9 +635,11 @@ class Lesson {
   /// graphics AI later turns it into [canvasSvg]. Null only on lessons
   /// generated before canvas-art support existed.
   final String? canvasPrompt;
-  /// Raw SVG markup for the diagram, ready to render via flutter_svg.
-  /// Lives separately from [canvasPrompt] so the user can regenerate the
-  /// art at any time without losing the prompt.
+  /// The rendered diagram source. Newer art is a JavaScript `draw(ctx, W, H)`
+  /// function executed inside a reusable HTML5 `<canvas>` host; legacy art is
+  /// raw `<svg>` markup. The renderer ([CanvasArtView]) auto-detects which by
+  /// looking for an `<svg` tag. Lives separately from [canvasPrompt] so the
+  /// user can regenerate the art without losing the prompt.
   final String? canvasSvg;
 
   Lesson({
@@ -746,7 +751,9 @@ class Slide {
   /// Optional per-slide diagram (only used today by proof/step_by_step
   /// slides). When the slide\'s content actually demands a visual the AI
   /// emits a [canvasPrompt]; otherwise this stays null and no diagram is
-  /// shown. Mirror of [Lesson.canvasPrompt]/[Lesson.canvasSvg].
+  /// shown. Mirror of [Lesson.canvasPrompt]/[Lesson.canvasSvg]. Like the
+  /// lesson field, [canvasSvg] holds either a JS `draw(ctx, W, H)` function
+  /// (new) or raw `<svg>` markup (legacy).
   final String? canvasPrompt;
   final String? canvasSvg;
 

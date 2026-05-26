@@ -9,7 +9,6 @@ import '../services/generation_manager.dart';
 import 'book_dashboard_screen.dart';
 import 'practice_screen.dart';
 import 'notes_screen.dart';
-import 'exam_screen.dart';
 import 'course_settings_screen.dart';
 
 class MainLayoutScreen extends StatefulWidget {
@@ -88,11 +87,13 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // NOTE: the Exams / Question-Papers tab is intentionally omitted from the
+    // nav for now — it's being reworked in a later development stage. The
+    // ExamScreen + QP generation code is kept intact for when it returns.
     final List<Widget> pages = [
       BookDashboardScreen(book: _currentBook, onBookUpdated: _onBookUpdated),
       PracticeScreen(book: _currentBook),
       NotesScreen(book: _currentBook),
-      ExamScreen(book: _currentBook),
     ];
 
     return Scaffold(
@@ -152,7 +153,6 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                   _buildNavItem(0, LucideIcons.map),
                   _buildNavItem(1, LucideIcons.dumbbell),
                   _buildNavItem(2, LucideIcons.fileText),
-                  _buildNavItem(3, LucideIcons.fileQuestion),
                 ],
               ),
             ),

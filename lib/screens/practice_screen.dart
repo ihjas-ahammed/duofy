@@ -43,6 +43,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
     _PracticeMode('proof', 'Proofs & Logic', 'Step-by-step', LucideIcons.brainCircuit, AppTheme.duoViolet),
     _PracticeMode('step_by_step', 'Big Questions', 'Multi-stage', LucideIcons.layers, AppTheme.duoOrange),
     _PracticeMode('fill_in_blank', 'Fill in Blanks', 'Recall terms', LucideIcons.type, AppTheme.duoRed),
+    _PracticeMode('one_word', 'One Word', 'Type the term', LucideIcons.pencil, AppTheme.duoViolet),
     _PracticeMode('numerical', 'Numericals', 'Calculate values', LucideIcons.calculator, AppTheme.duoGreen),
   ];
 
@@ -83,6 +84,8 @@ class _PracticeScreenState extends State<PracticeScreen> {
         return slideType == 'step_by_step' || slideType == 'proof';
       case 'fill_in_blank':
         return slideType == 'fill_in_blank';
+      case 'one_word':
+        return slideType == 'one_word';
       case 'numerical':
         return slideType == 'numerical';
     }

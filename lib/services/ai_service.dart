@@ -626,10 +626,11 @@ class AiService {
   /// time a section is opened. Returns units with empty `lessons` and
   /// `isGenerated == false`, so the existing per-unit lesson generation
   /// Stage-2 graphics call: turn a single natural-language `canvasPrompt`
-  /// into SVG markup using the user\'s configured graphics models (with
-  /// fallback). Returns null when every model/key combination fails so the
-  /// caller can persist the lesson without art rather than blow up the
-  /// whole generation.
+  /// into a JavaScript `draw(ctx, W, H)` function using the user\'s configured
+  /// graphics models (with fallback). The function is later run inside a
+  /// reusable HTML5 `<canvas>` host. Returns null when every model/key
+  /// combination fails so the caller can persist the lesson without art
+  /// rather than blow up the whole generation.
   ///
   /// [contextText] is a short snippet of the surrounding lesson content so
   /// the model can keep the diagram thematically consistent (e.g. variable
@@ -658,8 +659,8 @@ class AiService {
           );
           final text = response.text;
           if (text == null || text.trim().isEmpty) continue;
-          final svg = _extractSvg(text);
-          if (svg != null) return svg;
+          final drawFn = _extractDrawFunction(text);
+          if (drawFn != null) return drawFn;
         } catch (e) {
           lastErr = e;
           print('[AiService] Canvas art failed ($modelName): ${_cleanErrMsg(e)}');
@@ -672,24 +673,41 @@ class AiService {
     return null;
   }
 
-  /// Pulls a clean `<svg ...>...</svg>` substring out of the model\'s raw
-  /// response. Strips Markdown code fences (```svg / ```xml / ```), and any
-  /// chatty text the model added around the diagram.
-  String? _extractSvg(String raw) {
+  /// Pulls a clean JavaScript `draw(ctx, W, H)` function out of the model\'s
+  /// raw response. Strips Markdown code fences (```js / ```javascript / ```),
+  /// then isolates the `function draw(...) { ... }` block by brace-matching so
+  /// any chatty text the model wrapped around it is dropped. Returns null when
+  /// no balanced function is found, so the caller keeps the lesson art-free
+  /// rather than embedding broken JS.
+  String? _extractDrawFunction(String raw) {
     var s = raw.trim();
     // Strip code fences if present.
-    final fence = RegExp(r'```(?:svg|xml|html)?\s*([\s\S]*?)```', multiLine: true);
+    final fence = RegExp(r'```(?:js|javascript)?\s*([\s\S]*?)```', multiLine: true);
     final fenceMatch = fence.firstMatch(s);
     if (fenceMatch != null) s = fenceMatch.group(1)!.trim();
-    // Find the SVG envelope.
-    final svgOpen = s.indexOf('<svg');
-    final svgClose = s.lastIndexOf('</svg>');
-    if (svgOpen < 0 || svgClose < 0 || svgClose < svgOpen) return null;
-    return s.substring(svgOpen, svgClose + '</svg>'.length).trim();
+
+    final start = s.indexOf('function draw');
+    if (start < 0) return null;
+    final braceOpen = s.indexOf('{', start);
+    if (braceOpen < 0) return null;
+
+    // Walk braces to find the matching close for the function body. Good
+    // enough for canvas code (which rarely puts stray braces inside strings).
+    int depth = 0;
+    for (int i = braceOpen; i < s.length; i++) {
+      final c = s[i];
+      if (c == '{') {
+        depth++;
+      } else if (c == '}') {
+        depth--;
+        if (depth == 0) return s.substring(start, i + 1).trim();
+      }
+    }
+    return null; // unbalanced — discard rather than embed broken JS
   }
 
   /// Walks every lesson + every proof/step_by_step slide in [unit] that has
-  /// a `canvasPrompt` but no `canvasSvg` yet, and fills the SVG in via
+  /// a `canvasPrompt` but no `canvasSvg` yet, and fills the art in via
   /// [generateCanvasArt]. Failures are tolerated — missing art just means
   /// the corresponding screen renders without a diagram. [onProgress] is
   /// invoked after each lesson so the UI can show "Rendering diagrams…".

@@ -607,7 +607,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             _buildModelSlotCard(
               title: 'Primary - Graphics',
-              subtitle: 'Generates SVG diagrams for lessons & proofs.',
+              subtitle: 'Generates canvas diagrams for lessons & proofs.',
               slotName: 'Primary - Graphics',
               icon: LucideIcons.image,
             ),
