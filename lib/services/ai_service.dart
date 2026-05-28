@@ -3,8 +3,10 @@ import 'dart:io';
 import 'dart:async';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pdfx/pdfx.dart' as pdfx;
 import '../models/app_models.dart';
 import 'prompt_service.dart';
+import 'pdf_service.dart';
 
 class AiService {
   Future<List<String>> _getKeys() async {
@@ -215,12 +217,40 @@ class AiService {
     throw last ?? Exception('Retry exhausted');
   }
 
-  Future<List<Part>> _buildFileParts(List<File> files) async {
+  Future<List<Part>> _buildFileParts(List<File> files, {bool extractText = false}) async {
     List<Part> parts = [];
     for (var f in files) {
       final ext = f.path.split('.').last.toLowerCase();
       if (ext == 'pdf') {
-        parts.add(DataPart('application/pdf', await f.readAsBytes()));
+        if (extractText) {
+          final text = await PdfService().extractTextFromPdf(f);
+          if (text.trim().isNotEmpty) {
+            parts.add(TextPart('--- SYLLABUS CONTENT START ---\n$text\n--- SYLLABUS CONTENT END ---'));
+          }
+        } else {
+          try {
+            final doc = await pdfx.PdfDocument.openFile(f.path);
+            for (int i = 1; i <= doc.pagesCount; i++) {
+              final page = await doc.getPage(i);
+              final pageImage = await page.render(
+                width: page.width * 1.5,
+                height: page.height * 1.5,
+                format: pdfx.PdfPageImageFormat.jpeg,
+              );
+              if (pageImage != null) {
+                parts.add(DataPart('image/jpeg', pageImage.bytes));
+              }
+              await page.close();
+            }
+          } catch (e) {
+            print('PDF to Image fallback error: $e');
+            // Last resort: extract text if image conversion fails
+            final text = await PdfService().extractTextFromPdf(f);
+            if (text.trim().isNotEmpty) {
+              parts.add(TextPart('--- CONTENT START ---\n$text\n--- CONTENT END ---'));
+            }
+          }
+        }
       } else {
         final mime = ext == 'png' ? 'image/png' : 'image/jpeg';
         parts.add(DataPart(mime, await f.readAsBytes()));
@@ -232,6 +262,111 @@ class AiService {
   int? _asInt(dynamic v) {
     if (v is num) return v.toInt();
     if (v is String) return int.tryParse(v.trim());
+    return null;
+  }
+
+  Future<List<String>?> generateCourseQuestions({
+    required File sourcePdf,
+    required int chapter1StartPage,
+  }) async {
+    final keys = await _getKeys();
+    final modelsToTry = await _getLiteModels();
+    
+    // Read preface: pages 1 to chapter1StartPage - 1
+    if (chapter1StartPage <= 1) return null;
+    int endPage = chapter1StartPage - 1;
+    if (endPage > 30) endPage = 30; // cap to 30 pages of preface to save tokens
+    
+    final chunkPages = List.generate(endPage, (i) => i + 1);
+    final pdfChunk = await PdfService().extractPages(sourcePdf, chunkPages);
+    final pdfBytes = await pdfChunk.readAsBytes();
+
+    final prompt = '''
+Analyze the attached preface/guide pages of this textbook.
+Generate 2-3 questions to ask the student about how they want this book structured or taught, based specifically on the book's stated goals in the preface.
+For example, if the preface mentions "focus on proofs", ask "This book contains many proofs. Should we emphasize them or focus on application?"
+
+Keep the questions very short and concise (under 10 words each).
+
+Return JSON format:
+{
+  "questions": ["Question 1", "Question 2"]
+}
+''';
+
+    for (var key in keys) {
+      for (var modelName in modelsToTry) {
+        try {
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: key,
+            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+          );
+          final response = await _retryTransient(
+            () => model.generateContent([
+              Content.multi([TextPart(prompt), DataPart('application/pdf', pdfBytes)])
+            ]).timeout(const Duration(minutes: 2)),
+            onRetry: (a, e) => print('[AiService] Questions transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+          );
+
+          if (response.text != null) {
+            final jsonMap = _cleanAndDecodeJson(response.text!);
+            if (jsonMap['questions'] is List) {
+              return (jsonMap['questions'] as List).map((e) => e.toString()).toList();
+            }
+          }
+        } catch (e) {
+          print('[AiService] generateCourseQuestions ($modelName) failed: ${_cleanErrMsg(e)}');
+        }
+      }
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> scanIndexChunk(File chunkPdf, int startPage, int endPage) async {
+    final keys = await _getKeys();
+    final modelsToTry = await _getLiteModels();
+    final pdfBytes = await chunkPdf.readAsBytes();
+
+    final prompt = '''
+Analyze the attached PDF chunk (which represents physical pages $startPage to $endPage of a textbook).
+Identify if this chunk contains the Table of Contents / Index. If so, return the absolute page numbers.
+Also identify if this chunk contains the exact start of "Chapter 1" (or the first main content chapter). If so, return its absolute page number.
+
+Respond strictly in JSON format:
+{
+  "indexPages": [list of integers, or empty array],
+  "chapter1StartPage": integer or null
+}
+
+Important Rules:
+1. The page numbers you return MUST be the absolute PDF page numbers ($startPage to $endPage), NOT the printed page numbers on the page itself.
+2. For "chapter1StartPage", DO NOT return a page from the Table of Contents just because it lists "Chapter 1". You must only return the page where the actual content/text of Chapter 1 begins!
+''';
+
+    for (var key in keys) {
+      for (var modelName in modelsToTry) {
+        try {
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: key,
+            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+          );
+          final response = await _retryTransient(
+            () => model.generateContent([
+              Content.multi([TextPart(prompt), DataPart('application/pdf', pdfBytes)])
+            ]).timeout(const Duration(minutes: 2)),
+            onRetry: (a, e) => print('[AiService] Index scan transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+          );
+
+          if (response.text != null) {
+            return _cleanAndDecodeJson(response.text!);
+          }
+        } catch (e) {
+          print('[AiService] scanIndexChunk ($modelName) failed: ${_cleanErrMsg(e)}');
+        }
+      }
+    }
     return null;
   }
 
@@ -254,12 +389,14 @@ class AiService {
     String filename, {
     required int chapter1AbsolutePage,
     String? customInstructions,
+    List<File> syllabusFiles = const [],
     void Function(String status, double? progress)? onProgress,
   }) async {
     final keys = await _getKeys();
     final modelsToTry = await _getLiteModels();
     final instructionsBlock = PromptService.instructionsBlock(customInstructions);
     final fileParts = await _buildFileParts(indexFiles);
+    final syllabusParts = await _buildFileParts(syllabusFiles, extractText: true);
 
     // ---- Stage 1: chapter list (one focused call → indeterminate) ----------
     onProgress?.call('Mapping chapters…', null);
@@ -279,7 +416,7 @@ class AiService {
             generationConfig: GenerationConfig(responseMimeType: 'application/json'),
           );
           final response = await _retryTransient(
-            () => model.generateContent([Content.multi([TextPart(chapterPrompt), ...fileParts])])
+            () => model.generateContent([Content.multi([TextPart(chapterPrompt), ...syllabusParts, ...fileParts])])
                 .timeout(const Duration(minutes: 4)),
             onRetry: (a, e) => print('[AiService] Chapter list transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
           );

@@ -7,6 +7,7 @@ import '../services/generation_manager.dart';
 import '../services/pdf_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
+import 'course_questionnaire_screen.dart';
 
 /// Step 1 of the new book-generation flow.
 ///
@@ -25,11 +26,19 @@ import '../widgets/duo_button.dart';
 class IndexPickerScreen extends StatefulWidget {
   final File sourcePdf;
   final String filename;
+  final List<File> syllabusFiles;
+  final bool isCourse;
+  final List<int>? initialIndexPages;
+  final int? initialChapter1Page;
 
   const IndexPickerScreen({
     super.key,
     required this.sourcePdf,
     required this.filename,
+    this.syllabusFiles = const [],
+    this.isCourse = false,
+    this.initialIndexPages,
+    this.initialChapter1Page,
   });
 
   @override
@@ -39,16 +48,25 @@ class IndexPickerScreen extends StatefulWidget {
 class _IndexPickerScreenState extends State<IndexPickerScreen> {
   final PdfViewerController _pdfCtrl = PdfViewerController();
   final TextEditingController _chapter1Ctrl = TextEditingController();
-  final TextEditingController _instructionsCtrl = TextEditingController();
   final Set<int> _selectedPages = <int>{};
   int _currentPage = 1;
   int _pageCount = 0;
   bool _isStarting = false;
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.initialIndexPages != null) {
+      _selectedPages.addAll(widget.initialIndexPages!);
+    }
+    if (widget.initialChapter1Page != null) {
+      _chapter1Ctrl.text = widget.initialChapter1Page.toString();
+    }
+  }
+
+  @override
   void dispose() {
     _chapter1Ctrl.dispose();
-    _instructionsCtrl.dispose();
     super.dispose();
   }
 
@@ -82,46 +100,21 @@ class _IndexPickerScreenState extends State<IndexPickerScreen> {
       return;
     }
 
-    setState(() => _isStarting = true);
-    File? indexPdf;
-    try {
-      // Slicing the mini-PDF is the only foreground work — it\'s fast (just a
-      // few pages of native vector copying) and we need its file path before
-      // we can hand control off to the background task.
-      final pages = _selectedPages.toList()..sort();
-      indexPdf = await PdfService().extractPages(
-        widget.sourcePdf,
-        pages,
-        outputName: 'index_${widget.filename}',
-      );
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isStarting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not extract index pages: $e')),
-      );
-      return;
-    }
-
-    // Fire-and-forget the AI skeleton call. GenerationManager owns the task
-    // lifecycle, surfaces progress via its ChangeNotifier, and posts the
-    // "review splits" notification when the skeleton is ready, so we don\'t
-    // need to keep this screen open while it runs.
-    // ignore: unawaited_futures
-    final instructions = _instructionsCtrl.text.trim();
-    GenerationManager.instance.startBookGeneration(
-      [widget.sourcePdf],
-      widget.filename,
-      indexFiles: [indexPdf],
-      chapter1AbsolutePage: ch1,
-      customInstructions: instructions.isEmpty ? null : instructions,
-    );
-
+    // The mini-PDF is NOT extracted here anymore! We pass the pages directly
+    // to CourseQuestionnaireScreen, which will extract it and ask questions.
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Analyzing index in background. You can add another course.')),
-    );
-    Navigator.of(context).pop();
+    
+    final pages = _selectedPages.toList()..sort();
+    Navigator.of(context).pushReplacement(MaterialPageRoute(
+      builder: (_) => CourseQuestionnaireScreen(
+        sourcePdf: widget.sourcePdf,
+        filename: widget.filename,
+        syllabusFiles: widget.syllabusFiles,
+        isCourse: widget.isCourse,
+        indexPages: pages,
+        chapter1StartPage: ch1,
+      ),
+    ));
   }
 
   @override
@@ -302,30 +295,6 @@ class _IndexPickerScreenState extends State<IndexPickerScreen> {
                                 ],
                               ),
                               const SizedBox(height: 16),
-                              const Text(
-                                'Custom instructions (optional)',
-                                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Colors.white),
-                              ),
-                              const SizedBox(height: 6),
-                              const Text(
-                                'Guidance applied across the whole course — structure, lesson planning, and every lesson. e.g. "Focus on exam-style worked examples and keep theory concise."',
-                                style: TextStyle(color: Colors.white54, fontSize: 11, height: 1.4),
-                              ),
-                              const SizedBox(height: 8),
-                              TextField(
-                                controller: _instructionsCtrl,
-                                maxLines: 3,
-                                minLines: 2,
-                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                                decoration: InputDecoration(
-                                  isDense: true,
-                                  hintText: 'Optional — leave blank for defaults',
-                                  hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
                               DuoButton(
                                 text: _isStarting ? 'Starting…' : 'Continue',
                                 color: _isStarting ? Colors.grey.shade700 : AppTheme.duoGreen,

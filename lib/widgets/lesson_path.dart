@@ -35,7 +35,7 @@ class LessonPath extends StatefulWidget {
   /// Starts (or retries) the unit-manifest call with optional planner
   /// instructions captured on the panel. Replaces the old auto-trigger so the
   /// user can review/tweak the guidance before units are planned.
-  final void Function(String? instructions)? onPlanManifest;
+  final void Function(String? instructions, bool saveGlobally)? onPlanManifest;
   /// Commits the user\'s per-unit format selections and flips
   /// [Section.unitFormatsConfirmed] true so lessons become reachable.
   final void Function(List<Unit> confirmedUnits)? onConfirmFormats;
@@ -404,7 +404,7 @@ class _SectionManifestPanel extends StatefulWidget {
   final UnitGenTask? task;
   final Color sectionColor;
   final String? initialInstructions;
-  final void Function(String? instructions)? onPlan;
+  final void Function(String? instructions, bool saveGlobally)? onPlan;
 
   const _SectionManifestPanel({
     required this.section,
@@ -420,6 +420,15 @@ class _SectionManifestPanel extends StatefulWidget {
 
 class _SectionManifestPanelState extends State<_SectionManifestPanel> {
   late final TextEditingController _ctrl;
+  bool _saveGlobally = false;
+  final Set<String> _selectedChips = {};
+  final List<String> _chipOptions = [
+    'Theory Heavy',
+    'Practical Examples',
+    'Exam Focused',
+    'Step-by-Step Proofs',
+    'Concise Summaries',
+  ];
 
   @override
   void initState() {
@@ -435,7 +444,12 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
 
   void _plan() {
     final text = _ctrl.text.trim();
-    widget.onPlan?.call(text.isEmpty ? null : text);
+    final chips = _selectedChips.join(', ');
+    String combined = text;
+    if (chips.isNotEmpty) {
+      combined = combined.isEmpty ? 'Style preferences: $chips' : 'Style preferences: $chips\n\n$combined';
+    }
+    widget.onPlan?.call(combined.isEmpty ? null : combined, _saveGlobally);
   }
 
   @override
@@ -497,7 +511,34 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
                 const SizedBox(height: 24),
                 const Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('Planning instructions (optional)',
+                  child: Text('Objectives & Focus',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13)),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _chipOptions.map((chip) {
+                    final isSelected = _selectedChips.contains(chip);
+                    return ChoiceChip(
+                      label: Text(chip, style: TextStyle(color: isSelected ? Colors.white : Colors.white54, fontSize: 12)),
+                      selected: isSelected,
+                      selectedColor: sectionColor.withOpacity(0.5),
+                      backgroundColor: Colors.white.withOpacity(0.04),
+                      side: BorderSide(color: isSelected ? sectionColor : Colors.white12),
+                      onSelected: (val) {
+                        setState(() {
+                          if (val) _selectedChips.add(chip);
+                          else _selectedChips.remove(chip);
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 24),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Additional instructions (optional)',
                       style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13)),
                 ),
                 const SizedBox(height: 8),
@@ -514,6 +555,15 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
+                ),
+                const SizedBox(height: 12),
+                CheckboxListTile(
+                  value: _saveGlobally,
+                  onChanged: (val) => setState(() => _saveGlobally = val ?? false),
+                  title: const Text('Save these preferences for all future units in this course', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  activeColor: sectionColor,
+                  contentPadding: EdgeInsets.zero,
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton.icon(

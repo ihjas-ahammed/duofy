@@ -106,6 +106,7 @@ class GenerationManager extends ChangeNotifier {
     required List<File> indexFiles,
     required int chapter1AbsolutePage,
     String? customInstructions,
+    List<File> syllabusFiles = const [],
   }) async {
     sourceFiles = sourceFiles.toList();
     final taskId = DateTime.now().millisecondsSinceEpoch.toString();
@@ -138,6 +139,7 @@ class GenerationManager extends ChangeNotifier {
         filename,
         chapter1AbsolutePage: chapter1AbsolutePage,
         customInstructions: customInstructions,
+        syllabusFiles: syllabusFiles,
         onProgress: (status, progress) {
           task.statusMessage = status;
           task.progress = progress;
@@ -420,6 +422,7 @@ class GenerationManager extends ChangeNotifier {
     int modIdx,
     int secIdx, {
     String? instructions,
+    bool saveGlobally = false,
   }) async {
     final section = book.modules[modIdx].sections[secIdx];
     if (!section.needsUnitManifest) return;
@@ -458,7 +461,10 @@ class GenerationManager extends ChangeNotifier {
         customInstructions: effectiveInstructions,
       );
       modules[modIdx] = modules[modIdx].copyWith(sections: sections);
-      final newBook = baseBook.copyWith(modules: modules);
+      final newBook = baseBook.copyWith(
+        modules: modules,
+        customInstructions: saveGlobally ? effectiveInstructions : baseBook.customInstructions,
+      );
 
       await _dbService.saveGeneratedBook(newBook);
       activeSectionManifests.remove(section.id);

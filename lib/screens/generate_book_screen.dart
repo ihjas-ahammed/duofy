@@ -1,10 +1,16 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/file_selection_list.dart';
 import 'index_picker_screen.dart';
+import 'auto_index_screen.dart';
+import '../services/generation_manager.dart';
+
+enum GenerationMode { book, handout, course }
+enum IndexMode { auto, manual }
 
 class GenerateBookScreen extends StatefulWidget {
   const GenerateBookScreen({super.key});
@@ -14,38 +20,54 @@ class GenerateBookScreen extends StatefulWidget {
 }
 
 class _GenerateBookScreenState extends State<GenerateBookScreen> {
+  GenerationMode _mode = GenerationMode.book;
+  IndexMode _indexMode = IndexMode.auto;
   final List<File> _selectedFiles = [];
+  final List<File> _syllabusFiles = [];
 
-  Future<void> _pickFiles() async {
+  Future<void> _pickFiles(bool forSyllabus) async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
-      allowMultiple: true,
+      allowMultiple: !forSyllabus,
     );
 
     if (result != null) {
       setState(() {
         final newFiles = result.paths.where((p) => p != null).map((p) => File(p!)).toList();
-        _selectedFiles.addAll(newFiles);
+        if (forSyllabus) {
+          _syllabusFiles.clear();
+          _syllabusFiles.addAll(newFiles);
+        } else {
+          if (_mode == GenerationMode.book || _mode == GenerationMode.handout) {
+            _selectedFiles.clear(); // only 1 allowed for book/handout
+          }
+          _selectedFiles.addAll(newFiles);
+        }
       });
     }
   }
 
   void _generate() {
     if (_selectedFiles.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select at least one file.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select the required file(s).')));
+      return;
+    }
+    if (_mode == GenerationMode.course && _syllabusFiles.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a syllabus file for the course.')));
       return;
     }
 
-    // The TOC-only flow needs a single PDF so the user can scroll to the
-    // index pages and to Chapter 1. Image-only inputs aren\'t supported for
-    // skeleton generation right now — surface that explicitly rather than
-    // silently falling back to old behaviour.
-    final isSinglePdf = _selectedFiles.length == 1 &&
-        _selectedFiles.first.path.toLowerCase().endsWith('.pdf');
-    if (!isSinglePdf) {
+    final isSinglePdf = _selectedFiles.length == 1 && _selectedFiles.first.path.toLowerCase().endsWith('.pdf');
+
+    if (_mode == GenerationMode.handout) {
+      _showHandoutPrompt();
+      return;
+    }
+
+    if (!isSinglePdf && _mode == GenerationMode.book) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('New course generation needs a single PDF (so you can pick its index pages).'),
+        content: Text('Book generation needs a single PDF.'),
       ));
       return;
     }
@@ -53,19 +75,154 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
     final pdf = _selectedFiles.first;
     final filename = pdf.path.split(RegExp(r'[\\/]')).last;
 
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => IndexPickerScreen(sourcePdf: pdf, filename: filename),
-    ));
+    if (_indexMode == IndexMode.manual) {
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => IndexPickerScreen(
+          sourcePdf: pdf,
+          filename: filename,
+          syllabusFiles: _mode == GenerationMode.course ? _syllabusFiles : [],
+          isCourse: _mode == GenerationMode.course,
+        ),
+      ));
+    } else {
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => AutoIndexScreen(
+          sourcePdf: pdf,
+          filename: filename,
+          syllabusFiles: _mode == GenerationMode.course ? _syllabusFiles : [],
+          isCourse: _mode == GenerationMode.course,
+        ),
+      ));
+    }
+  }
 
-    setState(() {
-      _selectedFiles.clear();
-    });
+  void _showHandoutPrompt() {
+    final TextEditingController instructionsCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text('Handout Info', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: instructionsCtrl,
+          maxLines: 3,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: 'Enter any instructions or context for this handout...',
+            hintStyle: TextStyle(color: Colors.white54),
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.duoGreen),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              final filename = _selectedFiles.first.path.split(RegExp(r'[\\/]')).last;
+              GenerationManager.instance.startBookGeneration(
+                _selectedFiles,
+                filename,
+                indexFiles: [],
+                chapter1AbsolutePage: 1,
+                customInstructions: instructionsCtrl.text.trim().isEmpty ? null : instructionsCtrl.text.trim(),
+              );
+              Navigator.of(context).pop();
+            },
+            child: const Text('Generate', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModeSelector() {
+    return Row(
+      children: [
+        _buildModeTab(GenerationMode.book, 'Book', LucideIcons.book),
+        const SizedBox(width: 8),
+        _buildModeTab(GenerationMode.handout, 'Handout', LucideIcons.file),
+        const SizedBox(width: 8),
+        _buildModeTab(GenerationMode.course, 'Course', LucideIcons.graduationCap),
+      ],
+    );
+  }
+
+  Widget _buildModeTab(GenerationMode mode, String label, IconData icon) {
+    final isSelected = _mode == mode;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _mode = mode;
+            _selectedFiles.clear();
+            _syllabusFiles.clear();
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? AppTheme.duoBlue : AppTheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: isSelected ? AppTheme.duoBlueDark : Colors.white12),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: isSelected ? Colors.white : Colors.white54, size: 24),
+              const SizedBox(height: 4),
+              Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.white54, fontWeight: FontWeight.bold, fontSize: 13)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIndexModeSelector() {
+    if (_mode == GenerationMode.handout) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 24),
+        const Text('INDEXING METHOD', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: RadioListTile<IndexMode>(
+                value: IndexMode.auto,
+                groupValue: _indexMode,
+                onChanged: (v) => setState(() => _indexMode = v!),
+                title: const Text('Auto-Detect', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+                subtitle: const Text('AI finds TOC', style: TextStyle(fontSize: 12, color: Colors.white54)),
+                activeColor: AppTheme.duoGreen,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+            Expanded(
+              child: RadioListTile<IndexMode>(
+                value: IndexMode.manual,
+                groupValue: _indexMode,
+                onChanged: (v) => setState(() => _indexMode = v!),
+                title: const Text('Manual', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+                subtitle: const Text('You pick pages', style: TextStyle(fontSize: 12, color: Colors.white54)),
+                activeColor: AppTheme.duoGreen,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('New Course', style: TextStyle(fontWeight: FontWeight.w900))),
+      appBar: AppBar(title: const Text('New Material', style: TextStyle(fontWeight: FontWeight.w900))),
       body: SafeArea(
         child: Column(
           children: [
@@ -75,17 +232,33 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text(
-                      "Upload PDFs or multiple images. We'll instantly analyze them to map out the course chapters. The process happens seamlessly in the background.",
-                      style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
-                    ),
+                    _buildModeSelector(),
                     const SizedBox(height: 24),
                     
+                    if (_mode == GenerationMode.course) ...[
+                      const Text('SYLLABUS (PDF)', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                      const SizedBox(height: 12),
+                      FileSelectionList(
+                        files: _syllabusFiles,
+                        onAddMore: () => _pickFiles(true),
+                        onRemove: (idx) => setState(() => _syllabusFiles.removeAt(idx)),
+                      ),
+                      const SizedBox(height: 24),
+                      const Text('REFERENCE BOOKS (PDF)', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                    ] else if (_mode == GenerationMode.book) ...[
+                      const Text('TEXTBOOK (PDF)', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                    ] else ...[
+                      const Text('DOCUMENT (PDF / Images)', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                    ],
+                    
+                    const SizedBox(height: 12),
                     FileSelectionList(
                       files: _selectedFiles,
-                      onAddMore: _pickFiles,
+                      onAddMore: () => _pickFiles(false),
                       onRemove: (idx) => setState(() => _selectedFiles.removeAt(idx)),
                     ),
+
+                    _buildIndexModeSelector(),
                   ],
                 ),
               ),
@@ -93,10 +266,10 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
             Padding(
               padding: const EdgeInsets.all(24.0),
               child: DuoButton(
-                text: 'Analyze Document',
+                text: 'Continue',
                 onPressed: _generate,
-                color: _selectedFiles.isNotEmpty ? AppTheme.duoGreen : Colors.grey.shade700,
-                shadowColor: _selectedFiles.isNotEmpty ? AppTheme.duoGreenDark : Colors.grey.shade800,
+                color: _selectedFiles.isNotEmpty && (_mode != GenerationMode.course || _syllabusFiles.isNotEmpty) ? AppTheme.duoGreen : Colors.grey.shade700,
+                shadowColor: _selectedFiles.isNotEmpty && (_mode != GenerationMode.course || _syllabusFiles.isNotEmpty) ? AppTheme.duoGreenDark : Colors.grey.shade800,
               ),
             ),
           ],

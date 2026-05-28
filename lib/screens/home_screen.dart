@@ -6,7 +6,6 @@ import '../models/app_models.dart';
 import '../services/database_service.dart';
 import '../services/progress_service.dart';
 import '../services/generation_manager.dart';
-import '../services/pdf_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/compact_book_card.dart';
 import '../widgets/community_book_card.dart';

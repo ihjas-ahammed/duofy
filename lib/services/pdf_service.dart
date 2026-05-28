@@ -44,6 +44,22 @@ class PdfService {
     }
   }
 
+  /// Extracts all text from a PDF file locally.
+  /// Useful for sending dense documents (like syllabuses) to the AI as plain text
+  /// to avoid "unable to process input image" errors with inline PDFs.
+  Future<String> extractTextFromPdf(File pdfFile) async {
+    final doc = sync_pdf.PdfDocument(inputBytes: await pdfFile.readAsBytes());
+    try {
+      final extractor = sync_pdf.PdfTextExtractor(doc);
+      return extractor.extractText();
+    } catch (e) {
+      print('PdfService extractText error: $e');
+      return '';
+    } finally {
+      doc.dispose();
+    }
+  }
+
   /// Splits the source file(s) into per-section or per-unit PDF chunks.
   ///
   /// - **New-flow books** (any section with `startPage`/`endPage` set):

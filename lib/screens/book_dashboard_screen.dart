@@ -311,11 +311,12 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         onRegenerateLesson: (unitIdx, lessonIdx, lesson) {
                           _promptRegenerateLesson(mIdx, sIdx, unitIdx, lessonIdx, lesson);
                         },
-                        onPlanManifest: (instructions) {
+                        onPlanManifest: (instructions, saveGlobally) {
                           GenerationManager.instance.clearSectionManifestError(activeSec.id);
                           GenerationManager.instance.startSectionUnitManifest(
                             widget.book, mIdx, sIdx,
                             instructions: instructions,
+                            saveGlobally: saveGlobally,
                           );
                         },
                         onConfirmFormats: (confirmedUnits) async {
