@@ -18,6 +18,11 @@ class InteractiveProofView extends StatefulWidget {
   final bool canvasIsLoading;
   /// Optional lesson-level canvas widget to stack above the content.
   final Widget? lessonCanvas;
+  /// Fires when the user double-taps a step or option to edit its text.
+  /// The view passes back the new [Slide] (with the relevant interactive
+  /// step or option text replaced) and the lesson screen handles state +
+  /// persistence. Null disables the affordance.
+  final void Function(Slide updated)? onUpdateSlide;
 
   const InteractiveProofView({
     super.key,
@@ -26,6 +31,7 @@ class InteractiveProofView extends StatefulWidget {
     this.onRegenerateCanvas,
     this.canvasIsLoading = false,
     this.lessonCanvas,
+    this.onUpdateSlide,
   });
 
   @override
@@ -121,6 +127,104 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
     });
   }
 
+  Future<void> _editText({
+    required String label,
+    required String initial,
+    required void Function(String) onSave,
+  }) async {
+    if (widget.onUpdateSlide == null) return;
+    final ctrl = TextEditingController(text: initial);
+    final newText = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: ctrl,
+          maxLines: null,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.black26,
+            hintText: 'Markdown / LaTeX supported',
+            hintStyle: const TextStyle(color: Colors.white38),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: const Text('Save', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (newText == null || newText.isEmpty || newText == initial) return;
+    onSave(newText);
+  }
+
+  void _saveStepText(int stepIdx, String newText) {
+    final steps = List<InteractiveStep>.from(_steps);
+    steps[stepIdx] = steps[stepIdx].copyWith(stepText: newText);
+    setState(() => _steps = steps);
+    widget.onUpdateSlide?.call(widget.slide.copyWith(interactiveSteps: steps));
+  }
+
+  void _saveStepPrompt(int stepIdx, String newText) {
+    final steps = List<InteractiveStep>.from(_steps);
+    steps[stepIdx] = steps[stepIdx].copyWith(prompt: newText);
+    setState(() => _steps = steps);
+    widget.onUpdateSlide?.call(widget.slide.copyWith(interactiveSteps: steps));
+  }
+
+  void _saveStepOption(int stepIdx, QuizOption opt, String newText) {
+    final steps = List<InteractiveStep>.from(_steps);
+    final newOpts = steps[stepIdx]
+        .options!
+        .map((o) => o.id == opt.id ? o.copyWith(text: newText) : o)
+        .toList();
+    steps[stepIdx] = steps[stepIdx].copyWith(options: newOpts);
+    setState(() => _steps = steps);
+    widget.onUpdateSlide?.call(widget.slide.copyWith(interactiveSteps: steps));
+  }
+
+  void _saveRevealedStep(int revealedIdx, String newText) {
+    final revised = List<String>.from(_revealedSteps);
+    revised[revealedIdx] = newText;
+    setState(() {
+      _revealedSteps
+        ..clear()
+        ..addAll(revised);
+    });
+    // Best-effort persistence: rewrite the matching interactive step. The
+    // revealed list mirrors stepText for static steps and the correct option
+    // text for interactive ones, so finding the source is straightforward.
+    final steps = List<InteractiveStep>.from(_steps);
+    int seen = 0;
+    for (int i = 0; i < steps.length; i++) {
+      final s = steps[i];
+      final hasReveal = (s.stepText != null && s.stepText!.isNotEmpty) ||
+          (s.options?.any((o) => o.isCorrect) ?? false);
+      if (!hasReveal) continue;
+      if (seen == revealedIdx) {
+        if (s.stepText != null && s.stepText!.isNotEmpty && s.prompt == null) {
+          steps[i] = s.copyWith(stepText: newText);
+        } else if (s.options != null) {
+          final newOpts = s.options!.map((o) {
+            return o.isCorrect ? o.copyWith(text: newText) : o;
+          }).toList();
+          steps[i] = s.copyWith(options: newOpts);
+        }
+        widget.onUpdateSlide?.call(widget.slide.copyWith(interactiveSteps: steps));
+        return;
+      }
+      seen++;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     bool isFinished = _currentStepIndex >= _steps.length;
@@ -165,27 +269,40 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                     child: MathMarkdown(data: widget.slide.content, textStyle: const TextStyle(fontSize: 16, color: Colors.white)),
                   ),
 
-                ..._revealedSteps.map((stepText) => Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppTheme.duoGreen.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppTheme.duoGreen.withOpacity(0.3)),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.only(top: 2, right: 12),
-                          child: Icon(LucideIcons.checkCircle2, color: AppTheme.duoGreen, size: 20),
+                ..._revealedSteps.asMap().entries.map((entry) {
+                  final revealedIdx = entry.key;
+                  final stepText = entry.value;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: GestureDetector(
+                      onDoubleTap: widget.onUpdateSlide == null
+                          ? null
+                          : () => _editText(
+                                label: 'Edit step',
+                                initial: stepText,
+                                onSave: (v) => _saveRevealedStep(revealedIdx, v),
+                              ),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppTheme.duoGreen.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppTheme.duoGreen.withOpacity(0.3)),
                         ),
-                        Expanded(child: MathMarkdown(data: stepText, textStyle: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold))),
-                      ],
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.only(top: 2, right: 12),
+                              child: Icon(LucideIcons.checkCircle2, color: AppTheme.duoGreen, size: 20),
+                            ),
+                            Expanded(child: MathMarkdown(data: stepText, textStyle: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold))),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                )),
+                  );
+                }),
 
                 if (!isFinished && currentStep != null)
                   Container(
@@ -211,16 +328,43 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                         if (currentStep.prompt != null && currentStep.prompt!.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 16.0),
-                            child: MathMarkdown(data: currentStep.prompt!, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                            child: GestureDetector(
+                              onDoubleTap: widget.onUpdateSlide == null
+                                  ? null
+                                  : () => _editText(
+                                        label: 'Edit prompt',
+                                        initial: currentStep.prompt!,
+                                        onSave: (v) => _saveStepPrompt(_currentStepIndex, v),
+                                      ),
+                              child: MathMarkdown(data: currentStep.prompt!, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                            ),
                           )
                         else if (hasOptions && currentStep.stepText != null && currentStep.stepText!.isNotEmpty)
                           // Fallback: AI mistakenly put the question inside `stepText` instead of `prompt`
                           Padding(
                             padding: const EdgeInsets.only(bottom: 16.0),
-                            child: MathMarkdown(data: currentStep.stepText!, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                            child: GestureDetector(
+                              onDoubleTap: widget.onUpdateSlide == null
+                                  ? null
+                                  : () => _editText(
+                                        label: 'Edit step text',
+                                        initial: currentStep.stepText!,
+                                        onSave: (v) => _saveStepText(_currentStepIndex, v),
+                                      ),
+                              child: MathMarkdown(data: currentStep.stepText!, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                            ),
                           )
                         else if (!hasOptions && currentStep.stepText != null && currentStep.stepText!.isNotEmpty)
-                          MathMarkdown(data: currentStep.stepText!, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                          GestureDetector(
+                            onDoubleTap: widget.onUpdateSlide == null
+                                ? null
+                                : () => _editText(
+                                      label: 'Edit step text',
+                                      initial: currentStep.stepText!,
+                                      onSave: (v) => _saveStepText(_currentStepIndex, v),
+                                    ),
+                            child: MathMarkdown(data: currentStep.stepText!, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                          ),
 
                         if (hasOptions)
                           ...currentStep.options!.map((opt) {
@@ -247,6 +391,13 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                               padding: const EdgeInsets.only(bottom: 12),
                               child: InkWell(
                                 onTap: _isSubmitted ? null : () => setState(() => _selectedOptionId = opt.id),
+                                onDoubleTap: widget.onUpdateSlide == null
+                                    ? null
+                                    : () => _editText(
+                                          label: 'Edit option',
+                                          initial: opt.text,
+                                          onSave: (v) => _saveStepOption(_currentStepIndex, opt, v),
+                                        ),
                                 borderRadius: BorderRadius.circular(16),
                                 child: Container(
                                   padding: const EdgeInsets.all(16),

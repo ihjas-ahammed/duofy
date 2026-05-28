@@ -795,6 +795,89 @@ class AiService {
     return null;
   }
 
+  /// Regenerates a whole [lesson] in [unit]. Synthesises a single-lesson plan
+  /// from the lesson's title + description so the model knows exactly what to
+  /// recreate, then runs the same per-lesson JSON call used during full unit
+  /// generation. Diagrams are re-rendered when [generateGraphics] is true.
+  /// Returns the fresh lesson (with the same id as the original so it slots
+  /// back into the unit at the same position), or null when every model/key
+  /// combination fails.
+  Future<Lesson?> regenerateLesson({
+    required Lesson lesson,
+    required Unit unit,
+    required Book bookContext,
+    String? sectionPdfPath,
+    Unit? previousUnit,
+    Unit? nextUnit,
+    bool generateGraphics = true,
+  }) async {
+    final keys = await _getKeys();
+    final textModels = await _getPrimaryTextModels();
+
+    final String? chunkPath = unit.pdfPath ?? sectionPdfPath;
+    if (chunkPath == null) {
+      throw Exception('No PDF chunk available for this unit — cannot regenerate.');
+    }
+    final chunkFile = File(chunkPath);
+    if (!chunkFile.existsSync()) {
+      throw Exception("Local file missing. Tap 'Restore' on the warning banner to re-link source files.");
+    }
+
+    final neighborContext = _buildNeighborContext(previousUnit, unit, nextUnit);
+    final instructionsBlock = PromptService.instructionsBlock(bookContext.customInstructions);
+
+    // Synthesise a one-lesson plan so the model regenerates THIS lesson
+    // specifically rather than picking a new topic.
+    final synthPlan = StringBuffer()
+      ..writeln('TOTAL_LESSONS: 1')
+      ..writeln('Lesson 1: ${lesson.title}')
+      ..writeln(lesson.description);
+    if (lesson.canvasPrompt != null && lesson.canvasPrompt!.trim().isNotEmpty) {
+      synthPlan.writeln('Diagram: ${lesson.canvasPrompt!.trim()}');
+    }
+    synthPlan.writeln('Cover the same pedagogical point. Use the same lesson format ("${lesson.formatId ?? bookContext.defaultFormatId}") and a similar slide structure.');
+
+    final fileParts = await _buildFileParts([chunkFile]);
+    Lesson? fresh;
+    try {
+      fresh = await _generateOneLesson(
+        index: 1,
+        unit: unit,
+        bookContext: bookContext,
+        lessonPlan: synthPlan.toString(),
+        neighborContext: neighborContext,
+        previousUnitsContent: '(regeneration of an existing lesson — no prior-unit context needed)',
+        instructionsBlock: instructionsBlock,
+        fileParts: fileParts,
+        textModels: textModels,
+        keys: keys,
+      );
+    } catch (e) {
+      print('[AiService] Lesson regen failed: ${_cleanErrMsg(e)}');
+      return null;
+    }
+    if (fresh == null) return null;
+
+    // Preserve the original lesson id so the unit's lesson order stays stable.
+    fresh = fresh.copyWith(
+      id: lesson.id,
+      slides: fresh.slides.map((s) {
+        // Rewrite slide ids so they're rooted on the kept lesson id.
+        final tail = s.id.split('-').last;
+        return s.copyWith(id: '${lesson.id}-$tail');
+      }).toList(),
+    );
+
+    if (generateGraphics) {
+      try {
+        fresh = await _attachArtToLesson(fresh);
+      } catch (e) {
+        print('[AiService] Lesson regen art failed: ${_cleanErrMsg(e)}');
+      }
+    }
+    return fresh;
+  }
+
   /// Regenerates a single [slide] inside [lesson], optionally steered by a
   /// free-text [note]. Re-uses the source [chunkPath] (the section/unit PDF)
   /// for grounding. Returns a fresh [Slide] of the same type and id, or null
@@ -914,12 +997,14 @@ class AiService {
     return null;
   }
 
-  /// Pulls a clean JavaScript `draw(ctx, W, H)` function out of the model\'s
-  /// raw response. Strips Markdown code fences (```js / ```javascript / ```),
-  /// then isolates the `function draw(...) { ... }` block by brace-matching so
-  /// any chatty text the model wrapped around it is dropped. Returns null when
-  /// no balanced function is found, so the caller keeps the lesson art-free
-  /// rather than embedding broken JS.
+  /// Pulls a clean JavaScript program out of the model's raw response.
+  /// Accepts either the static `function draw(ctx, W, H)` entry point or
+  /// the richer `function sketch(canvas, W, H)` entry point used for
+  /// interactive 2D and THREE.js-powered 3D diagrams. Strips Markdown code
+  /// fences first, then isolates the chosen function block by brace-matching
+  /// so any chatty text the model wrapped around it is dropped. Returns
+  /// null when no balanced function is found, so the caller keeps the
+  /// lesson art-free rather than embedding broken JS.
   String? _extractDrawFunction(String raw) {
     var s = raw.trim();
     // Strip code fences if present.
@@ -927,7 +1012,10 @@ class AiService {
     final fenceMatch = fence.firstMatch(s);
     if (fenceMatch != null) s = fenceMatch.group(1)!.trim();
 
-    final start = s.indexOf('function draw');
+    // Prefer `sketch` (interactive / 3D) when present, otherwise fall back
+    // to `draw` (static 2D). Either keyword is acceptable.
+    int start = s.indexOf('function sketch');
+    if (start < 0) start = s.indexOf('function draw');
     if (start < 0) return null;
     final braceOpen = s.indexOf('{', start);
     if (braceOpen < 0) return null;

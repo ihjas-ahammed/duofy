@@ -733,6 +733,13 @@ class InteractiveStep {
     if (stepText != null) 'stepText': stepText,
     if (options != null) 'options': options!.map((o) => o.toJson()).toList(),
   };
+
+  InteractiveStep copyWith({String? prompt, String? stepText, List<QuizOption>? options}) =>
+      InteractiveStep(
+        prompt: prompt ?? this.prompt,
+        stepText: stepText ?? this.stepText,
+        options: options ?? this.options,
+      );
 }
 
 class Slide {
@@ -926,4 +933,12 @@ class QuizOption {
     'isCorrect': isCorrect,
     'explanation': explanation,
   };
+
+  QuizOption copyWith({String? id, String? text, bool? isCorrect, String? explanation}) =>
+      QuizOption(
+        id: id ?? this.id,
+        text: text ?? this.text,
+        isCorrect: isCorrect ?? this.isCorrect,
+        explanation: explanation ?? this.explanation,
+      );
 }

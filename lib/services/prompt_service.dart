@@ -321,13 +321,15 @@ RETURN ONLY VALID JSON FOR THIS ONE SLIDE (no wrapping array, no other keys), e.
 }''';
 
   /// Stage-2 prompt: feeds a single `canvasPrompt` (produced by the text
-  /// model) into the graphics model and asks it for ONLY a JavaScript
-  /// `draw(ctx, W, H)` function. The app embeds that function in a fixed,
+  /// model) into the graphics model and asks it for a JavaScript program
+  /// that renders the concept. The app embeds that program in a fixed,
   /// reusable HTML5 `<canvas>` host (see [CanvasArtView] / canvas_html_view)
-  /// that owns the canvas, handles devicePixelRatio scaling, and calls
-  /// `draw()` — so the model only ever supplies the drawing logic, never the
-  /// page scaffold. The example below shows the exact expected shape.
-  static const String canvasArt = '''You are a diagram artist who draws with the HTML5 Canvas 2D API. Write ONLY a single JavaScript function that renders a clear static diagram of the concept below.
+  /// which auto-loads three.js and dispatches to either:
+  ///   - `function draw(ctx, W, H)` for STATIC 2D diagrams (default), or
+  ///   - `function sketch(canvas, W, H)` for INTERACTIVE 2D and/or 3D
+  ///     (animation loops, mouse/touch input, WebGL via THREE.js).
+  /// The model only ever supplies the drawing logic, never the page scaffold.
+  static const String canvasArt = '''You are a diagram artist who renders explanatory graphics with the HTML5 Canvas API and (when 3D is needed) THREE.js. Write a SINGLE JavaScript program that renders the concept below as a clear, visually strong diagram.
 
 Think VISUALLY: the goal is a strong diagrammatic representation — shapes, structure, spatial relationships, arrows and colour that convey the idea at a glance. Words are a last resort, not the content.
 
@@ -337,26 +339,42 @@ CONCEPT TO ILLUSTRATE:
 LESSON CONTEXT (for tone and reference only — do NOT add unrelated decoration):
 %lesson_context%
 
-CONTRACT (follow EXACTLY):
-1. Output ONLY one JavaScript function with this exact signature: `function draw(ctx, W, H) { ... }`. No HTML, no `<canvas>`, no `<script>`, no Markdown fences, no prose. The host page already creates the canvas and calls `draw()` for you.
-2. `ctx` is a CanvasRenderingContext2D; `W` and `H` are the canvas width and height in CSS pixels. Compute every coordinate relative to `W`/`H` so the drawing scales — NEVER hardcode a fixed canvas size. Use the full canvas; leave only ~6% padding inside W/H so the drawing fills the frame.
-3. Assume a DARK, already-cleared, transparent background. Use light-on-dark colors: primary strokes `#E2E8F0`, accents `#3B82F6` / `#58CC02` / `#FBBF24`, label text `#F8FAFC`. Never assume a white page.
-4. Text is SECONDARY. Do NOT draw a title, heading, caption, or sentences. Add at most a few SHORT labels (axis names, a key variable, a single value) only where the diagram is unreadable without them. `ctx.font = "13px sans-serif"`. Carry the meaning with the drawing itself, not with words.
-5. Pure 2D drawing only (paths, rects, arcs, lines, the occasional short label). NO external images, NO network, NO DOM access, NO animation loop — draw a single static frame.
+RENDERING SURFACE:
+- Your drawing is shown inside a fixed card with aspect ratio ~3:2 (landscape; roughly 1.5× wider than tall). Design FOR THAT FRAME — do NOT design for a full-screen / portrait window.
+- The host already creates the canvas, scales it for devicePixelRatio, and clears to a dark transparent background BEFORE calling your function. Never resize the canvas yourself, never set a fixed size in CSS, never create a second canvas.
+- `W` and `H` are the canvas CSS-pixel width and height of THAT 3:2 card. Compute every coordinate relative to `W`/`H` so the drawing fills the card; leave only ~6% padding inside.
 
-EXAMPLE (structure only — adapt the actual drawing to the concept above):
+PICK THE RIGHT ENTRY POINT — define EXACTLY ONE of the following (no others). The host detects which is present.
+
+  (A) STATIC 2D — default. Output one function:
+        function draw(ctx, W, H) { /* … */ }
+      `ctx` is a CanvasRenderingContext2D. Use this for anything that is fundamentally a single frame: free-body diagrams, vector triangles, function graphs, geometry, flowcharts, labeled illustrations.
+
+  (B) INTERACTIVE / ANIMATED 2D — use when the concept benefits from motion or user input (oscillation, particle motion, draggable parameter, click-to-add-point). Output one function:
+        function sketch(canvas, W, H) { /* … */ }
+      Inside it: get `canvas.getContext('2d')`, attach `canvas.addEventListener('pointermove' | 'pointerdown' | ...)`, drive animation with `requestAnimationFrame`. You MUST clear the canvas at the top of each frame (`ctx.clearRect(0, 0, W, H)`). Animation should be smooth and bounded — do NOT spawn unbounded objects.
+
+  (C) 3D — use when the concept is inherently three-dimensional (rotatable solid, molecule, vector field in 3-space, orbiting body). Output one function:
+        function sketch(canvas, W, H) { /* … */ }
+      Inside it use the globally-available `THREE` (the host pre-loads three.js r150 on `window.THREE`). Create a `WebGLRenderer({ canvas, alpha: true, antialias: true })`, a `PerspectiveCamera` with `aspect = W/H`, a `Scene`, lights, the geometry, and a render loop with `requestAnimationFrame`. Make the object rotate slowly so all faces are visible; OR attach pointer listeners to spin it on drag. Set `renderer.setSize(W, H, false)` ONCE (the host handles devicePixelRatio).
+
+STYLE RULES (apply to A, B, C):
+1. Dark, already-cleared background. Light-on-dark colors: primary strokes `#E2E8F0`, accents `#3B82F6` (blue), `#58CC02` (green), `#FBBF24` (amber), `#F472B6` (pink). Label text `#F8FAFC`. Never assume a white page.
+2. Text is SECONDARY. Do NOT draw a title, heading, caption, or sentences. Add at most a few SHORT labels (axis names, a key variable, a single value) only where the diagram is unreadable without them. `ctx.font = "13px sans-serif"`. Carry meaning with the drawing itself, not words.
+3. No external images, no `fetch`, no `XMLHttpRequest`, no DOM mutation outside the canvas, no popups, no `alert`, no `setInterval` (use `requestAnimationFrame`).
+4. Output ONLY the JavaScript — no HTML, no `<script>` tags, no Markdown fences, no prose, no `import` statements.
+5. Keep the program SMALL (≲ 120 lines). Prefer clear math over fancy shaders. Pure functions, no globals besides the one entry-point function.
+
+EXAMPLE A — STATIC 2D (y = x²):
 function draw(ctx, W, H) {
   const pad = W * 0.08;
   ctx.lineWidth = 2;
-  // axes
   ctx.strokeStyle = "#E2E8F0";
   ctx.beginPath();
   ctx.moveTo(pad, H - pad); ctx.lineTo(W - pad, H - pad);
   ctx.moveTo(pad, H - pad); ctx.lineTo(pad, pad);
   ctx.stroke();
-  // curve y = x^2 mapped into the plotting box
-  ctx.strokeStyle = "#3B82F6";
-  ctx.lineWidth = 3;
+  ctx.strokeStyle = "#3B82F6"; ctx.lineWidth = 3;
   ctx.beginPath();
   for (let i = 0; i <= 100; i++) {
     const t = i / 100;
@@ -365,13 +383,90 @@ function draw(ctx, W, H) {
     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.stroke();
-  // label
-  ctx.fillStyle = "#F8FAFC";
-  ctx.font = "13px sans-serif";
+  ctx.fillStyle = "#F8FAFC"; ctx.font = "13px sans-serif";
   ctx.fillText("y = x^2", W * 0.58, H * 0.32);
 }
 
-Return ONLY the draw function.''';
+EXAMPLE B — INTERACTIVE 2D (drag the slider to change a sine wave's frequency):
+function sketch(canvas, W, H) {
+  const ctx = canvas.getContext('2d');
+  let freq = 2;             // cycles across the canvas
+  let dragging = false;
+  const sliderY = H * 0.88, knobR = 10;
+  let knobX = W * 0.5;
+  function onDown(e) {
+    const r = canvas.getBoundingClientRect();
+    const x = e.clientX - r.left, y = e.clientY - r.top;
+    if (Math.hypot(x - knobX, y - sliderY) < knobR * 2) dragging = true;
+  }
+  function onMove(e) {
+    if (!dragging) return;
+    const r = canvas.getBoundingClientRect();
+    knobX = Math.max(W * 0.1, Math.min(W * 0.9, e.clientX - r.left));
+    freq = 0.5 + 6 * ((knobX - W * 0.1) / (W * 0.8));
+  }
+  function onUp() { dragging = false; }
+  canvas.addEventListener('pointerdown', onDown);
+  canvas.addEventListener('pointermove', onMove);
+  canvas.addEventListener('pointerup', onUp);
+  canvas.addEventListener('pointerleave', onUp);
+  function frame() {
+    ctx.clearRect(0, 0, W, H);
+    // wave
+    ctx.strokeStyle = "#3B82F6"; ctx.lineWidth = 3;
+    ctx.beginPath();
+    const midY = H * 0.45, amp = H * 0.25;
+    for (let i = 0; i <= 200; i++) {
+      const t = i / 200;
+      const x = W * 0.05 + t * W * 0.9;
+      const y = midY + amp * Math.sin(2 * Math.PI * freq * t);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    // slider track
+    ctx.strokeStyle = "#334155"; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(W * 0.1, sliderY); ctx.lineTo(W * 0.9, sliderY); ctx.stroke();
+    // knob
+    ctx.fillStyle = "#FBBF24";
+    ctx.beginPath(); ctx.arc(knobX, sliderY, knobR, 0, Math.PI * 2); ctx.fill();
+    // label
+    ctx.fillStyle = "#F8FAFC"; ctx.font = "13px sans-serif";
+    ctx.fillText("f = " + freq.toFixed(2), W * 0.05, H * 0.12);
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+EXAMPLE C — 3D (slowly rotating cube using THREE.js):
+function sketch(canvas, W, H) {
+  const THREE = window.THREE;
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setSize(W, H, false);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 100);
+  camera.position.set(2.4, 2, 3.2);
+  camera.lookAt(0, 0, 0);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+  const key = new THREE.DirectionalLight(0xffffff, 0.9);
+  key.position.set(3, 4, 5); scene.add(key);
+  const geo = new THREE.BoxGeometry(1.6, 1.6, 1.6);
+  const mat = new THREE.MeshStandardMaterial({ color: 0x3B82F6, roughness: 0.45, metalness: 0.15 });
+  const cube = new THREE.Mesh(geo, mat);
+  scene.add(cube);
+  scene.add(new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({ color: 0xE2E8F0 })
+  ));
+  function frame() {
+    cube.rotation.x += 0.006;
+    cube.rotation.y += 0.009;
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+Return ONLY the chosen function (either `draw` or `sketch`). No surrounding text, no fences.''';
 
   static const String qpJson = '''SYSTEM PROMPT:
 %system_prompt%

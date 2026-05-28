@@ -120,6 +120,61 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     );
   }
 
+  /// Long-press handler on a lesson node — asks the user to confirm, then
+  /// regenerates JUST that one lesson (preserving its slot and id). Diagrams
+  /// are re-rendered too when the user opts in. The previous lesson is kept
+  /// if every model/key fails.
+  Future<void> _promptRegenerateLesson(int modIdx, int secIdx, int unitIdx, int lessonIdx, Lesson lesson) async {
+    final wantsGraphics = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text('Regenerate lesson?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: Text(
+          'The AI will replace "${lesson.title}" with a fresh take using the source PDF. The lesson\'s slot in the unit is kept.',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Text only', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('With diagrams', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    if (wantsGraphics == null) return;
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: AppTheme.surface,
+        content: Text('Regenerating "${lesson.title}"…', style: const TextStyle(color: Colors.white)),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+    GenerationManager.instance.regenerateLesson(
+      book: widget.book,
+      modIdx: modIdx,
+      secIdx: secIdx,
+      unitIdx: unitIdx,
+      lessonIdx: lessonIdx,
+      generateGraphics: wantsGraphics,
+      errorSink: (msg) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppTheme.duoRed.withOpacity(0.85),
+            content: Text(msg, style: const TextStyle(color: Colors.white)),
+          ),
+        );
+      },
+    );
+  }
+
   /// Asks whether to also render diagrams for this unit, then kicks off
   /// generation. Graphics are optional (and slower), so we let the user
   /// decide per unit instead of always generating them.
@@ -249,6 +304,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         },
                         onClearUnit: (unit, unitIdx) {
                           _onClearUnit(unit, mIdx, sIdx, unitIdx);
+                        },
+                        onRegenerateLesson: (unitIdx, lessonIdx, lesson) {
+                          _promptRegenerateLesson(mIdx, sIdx, unitIdx, lessonIdx, lesson);
                         },
                         onPlanManifest: (instructions) {
                           GenerationManager.instance.clearSectionManifestError(activeSec.id);

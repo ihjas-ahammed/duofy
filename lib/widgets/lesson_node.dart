@@ -247,6 +247,9 @@ class LessonNodeWidget extends StatefulWidget {
   final bool isNextToStart;
   final String sectionColorStr;
   final VoidCallback onTap;
+  /// Long-press the node to surface destructive/maintenance actions
+  /// (currently: regenerate this entire lesson). Null hides the affordance.
+  final VoidCallback? onLongPress;
 
   const LessonNodeWidget({
     super.key,
@@ -257,6 +260,7 @@ class LessonNodeWidget extends StatefulWidget {
     required this.isNextToStart,
     required this.sectionColorStr,
     required this.onTap,
+    this.onLongPress,
   });
 
   @override
@@ -340,6 +344,12 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget> with SingleTickerPr
               if (!widget.isLocked) widget.onTap();
             },
             onTapCancel: () => setState(() => _isPressed = false),
+            onLongPress: (widget.onLongPress != null && !widget.isLocked)
+                ? () {
+                    setState(() => _isPressed = false);
+                    widget.onLongPress!();
+                  }
+                : null,
             child: SizedBox(
               width: LessonNodeWidget.nodeSize,
               height: LessonNodeWidget.nodeSize,

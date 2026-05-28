@@ -326,6 +326,34 @@ class _LessonScreenState extends State<LessonScreen> {
     );
   }
 
+  /// Applies a slide edit coming from a child view (e.g. double-tap on an
+  /// option or proof step). Updates the in-memory lesson and persists via
+  /// GenerationManager so edits survive reloads.
+  void _applySlideEdit(Slide updated) {
+    final lessonSlideIdx = _lesson.slides.indexWhere((s) => s.id == updated.id);
+    if (lessonSlideIdx < 0) return;
+    final newSlides = List<Slide>.from(_lesson.slides);
+    newSlides[lessonSlideIdx] = updated;
+    setState(() {
+      _lesson = _lesson.copyWith(slides: newSlides);
+      _slideQueue = List.of(newSlides);
+      if (_currentIndex >= _slideQueue.length) {
+        _currentIndex = _slideQueue.isEmpty ? 0 : _slideQueue.length - 1;
+      }
+    });
+    if (_canRegenerateCanvas) {
+      GenerationManager.instance.saveSlideEdit(
+        book: widget.book!,
+        modIdx: widget.modIdx!,
+        secIdx: widget.secIdx!,
+        unitIdx: widget.unitIdx!,
+        lessonIdx: widget.lessonIdx!,
+        slideIdx: lessonSlideIdx,
+        updated: updated,
+      );
+    }
+  }
+
   Widget _buildSlideContent(Slide slide) {
     switch (slide.type) {
       case 'step_by_step':
@@ -345,6 +373,7 @@ class _LessonScreenState extends State<LessonScreen> {
                     slideIdx: slideIdx,
                   )
               : null,
+          onUpdateSlide: _applySlideEdit,
           onComplete: () {
             HapticFeedback.heavyImpact();
             setState(() {
@@ -361,6 +390,7 @@ class _LessonScreenState extends State<LessonScreen> {
           selectedOptionId: _selectedQuizOption,
           isAnswered: _answered,
           onSelect: (id) => setState(() => _selectedQuizOption = id),
+          onUpdateSlide: _applySlideEdit,
         );
       case 'fill_in_blank':
         return FillInBlankView(

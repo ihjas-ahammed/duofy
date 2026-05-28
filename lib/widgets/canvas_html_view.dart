@@ -6,55 +6,105 @@ import 'platform_webview.dart';
 /// Canvas-art rendering helpers.
 ///
 /// Lesson/slide diagram art is stored as one of two things in `canvasSvg`:
-///   - a JavaScript `draw(ctx, W, H)` function (the modern format), or
-///   - raw `<svg>` markup (legacy art generated before the switch).
+///   - a JavaScript program (modern format) — either a `draw(ctx, W, H)`
+///     function (static 2D), or a `sketch(canvas, W, H)` function
+///     (interactive 2D / 3D via THREE.js), or
+///   - raw `<svg>` markup (legacy art generated before the JS switch).
 ///
 /// [isSvgCanvas] tells the two apart, [buildCanvasArt] renders whichever it
 /// is, and [showCanvasFullScreen] opens the same art blown up to fill the
 /// screen. The JS path runs inside a fixed HTML5 `<canvas>` host built by
-/// [buildCanvasHtml] — only the draw function changes between diagrams, so the
-/// surrounding page is reused verbatim every time.
+/// [buildCanvasHtml] — only the user JS changes between diagrams, so the
+/// surrounding page (THREE.js loader, sizing, error handler) is reused
+/// verbatim every time.
 
-/// True when [content] is legacy raw SVG markup rather than a JS draw function.
+/// True when [content] is legacy raw SVG markup rather than a JS program.
 bool isSvgCanvas(String content) => content.contains('<svg');
 
-/// Wraps an AI-generated `draw(ctx, W, H)` function in a reusable HTML page
-/// that owns the `<canvas>`, scales for devicePixelRatio, clears to a
-/// transparent dark background, and calls `draw()` once (re-running it on
-/// resize). A thrown error inside `draw` is caught so a bad function degrades
-/// to a small label instead of a blank/broken view.
-String buildCanvasHtml(String drawFunction) {
+/// Heuristic: program needs THREE.js when it references `THREE.` or uses
+/// the WebGL context name (some models add a manual fallback). Used to
+/// decide whether to pull in the three.js CDN bundle.
+bool _needsThreeJs(String js) {
+  final s = js.replaceAll(RegExp(r'//.*'), '');
+  return s.contains('THREE.') || s.contains('WebGLRenderer');
+}
+
+/// Wraps the AI-generated JavaScript in a reusable HTML page that owns the
+/// `<canvas>`, scales for devicePixelRatio, clears to a transparent dark
+/// background, loads THREE.js when the JS references it, and dispatches to
+/// whichever entry point the program defined:
+///   - `function sketch(canvas, W, H)` — interactive / animated / 3D.
+///   - `function draw(ctx, W, H)` — static single-frame 2D.
+/// A thrown error inside user code is caught so a bad program degrades to a
+/// small label instead of a blank/broken view.
+String buildCanvasHtml(String userJs) {
+  final needsThree = _needsThreeJs(userJs);
+  final threeTag = needsThree
+      ? '<script src="https://unpkg.com/three@0.150.1/build/three.min.js"></script>'
+      : '';
   return '''
 <!DOCTYPE html>
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
-  html, body { margin: 0; padding: 0; height: 100%; background: transparent; overflow: hidden; }
+  html, body { margin: 0; padding: 0; height: 100%; background: transparent; overflow: hidden; touch-action: none; }
   #c { display: block; width: 100vw; height: 100vh; }
 </style>
+$threeTag
 </head>
 <body>
 <canvas id="c"></canvas>
 <script>
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
-function _render() {
+let __setupRan = false;
+function _sizeCanvas() {
   const dpr = window.devicePixelRatio || 1;
   const W = window.innerWidth, H = window.innerHeight;
   canvas.width = Math.floor(W * dpr);
   canvas.height = Math.floor(H * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, W, H);
-  try {
-    draw(ctx, W, H);
-  } catch (e) {
-    ctx.fillStyle = '#94A3B8';
-    ctx.font = '12px sans-serif';
-    ctx.fillText('Diagram error', 10, 20);
-  }
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  return { W: W, H: H, dpr: dpr };
 }
-$drawFunction
+function _showError(msg) {
+  try {
+    const { W, H } = _sizeCanvas();
+    const c2 = canvas.getContext('2d');
+    c2.setTransform(1, 0, 0, 1, 0, 0);
+    c2.clearRect(0, 0, canvas.width, canvas.height);
+    c2.fillStyle = '#94A3B8';
+    c2.font = '12px sans-serif';
+    c2.fillText('Diagram error: ' + msg, 10, 20);
+  } catch (_) {}
+}
+window.addEventListener('error', function(e) { _showError(e.message || 'unknown'); });
+function _render() {
+  const { W, H, dpr } = _sizeCanvas();
+  if (typeof sketch === 'function') {
+    if (__setupRan) return; // sketch owns its own lifecycle; resize just resizes the canvas.
+    __setupRan = true;
+    try {
+      // 2D path: pre-scale for devicePixelRatio so coordinates are CSS pixels.
+      if (typeof window.THREE === 'undefined' || !/WebGLRenderer|new\\s+THREE\\.WebGL/.test(sketch.toString())) {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      sketch(canvas, W, H);
+    } catch (e) { _showError(e.message || String(e)); }
+    return;
+  }
+  if (typeof draw === 'function') {
+    try {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+      draw(ctx, W, H);
+    } catch (e) { _showError(e.message || String(e)); }
+    return;
+  }
+  _showError('no draw() or sketch() defined');
+}
+$userJs
 window.addEventListener('resize', _render);
 _render();
 </script>
@@ -63,8 +113,8 @@ _render();
 ''';
 }
 
-/// Renders a JS `draw(ctx, W, H)` function inside a transparent WebView canvas.
-/// Backed by [PlatformWebView] so the same draw function runs on every
+/// Renders a JS program (draw() or sketch()) inside a transparent WebView
+/// canvas. Backed by [PlatformWebView] so the same program runs on every
 /// platform — webview_flutter on mobile/desktop-with-native-support, and
 /// webview_cef on Linux.
 class CanvasHtmlView extends StatelessWidget {
@@ -79,7 +129,7 @@ class CanvasHtmlView extends StatelessWidget {
 }
 
 /// Renders [content] as the right kind of canvas art: a scalable SVG for
-/// legacy markup, or a live HTML5 canvas for a JS draw function.
+/// legacy markup, or a live HTML5 canvas for a JS program.
 /// [svgPlaceholder] is used only on the SVG path (e.g. a tap-to-generate
 /// fallback when the markup fails to parse).
 Widget buildCanvasArt(

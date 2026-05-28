@@ -22,6 +22,11 @@ class LessonPath extends StatefulWidget {
   final Map<String, UnitGenTask> loadingUnitStatuses;
   final Function(Unit, int) onGenerateUnit;
   final Function(Unit, int) onClearUnit;
+  /// Fired when the user long-presses a lesson node to regenerate the entire
+  /// lesson. Receives the unit index inside the section, the lesson index
+  /// inside the unit, and the lesson itself for confirmation copy. Null
+  /// disables the affordance.
+  final void Function(int unitIdx, int lessonIdx, Lesson lesson)? onRegenerateLesson;
   final List<String> completedLessons;
   final VoidCallback onLessonFinished;
   /// Status of the lazy unit-manifest call for this section (new flow).
@@ -44,6 +49,7 @@ class LessonPath extends StatefulWidget {
     required this.loadingUnitStatuses,
     required this.onGenerateUnit,
     required this.onClearUnit,
+    this.onRegenerateLesson,
     required this.completedLessons,
     required this.onLessonFinished,
     this.sectionManifestStatus,
@@ -179,13 +185,84 @@ class _LessonPathState extends State<LessonPath> {
               final double width = constraints.maxWidth;
               final double scaleX = width / _pathWidth;
 
+              // Build lesson widgets and header widgets separately so we can
+              // stack lessons FIRST and headers AFTER them — Stack draws later
+              // children on top, so this guarantees a unit header overlays any
+              // streamed-in lesson node that the generation-state header has
+              // grown over (the bug the layout reservation can't always
+              // prevent when the header runs taller than expected).
+              final lessonWidgets = <Widget>[];
+              final headerWidgets = <Widget>[];
+              for (final el in elements) {
+                if (el.kind == _ElementKind.header) {
+                  final unit = el.unit!;
+                  final loading = widget.loadingUnitStatuses[unit.id];
+                  final isGenerated = unit.isGenerated && unit.lessons.isNotEmpty;
+                  final unitPdfPath = unit.pdfPath ?? widget.section.pdfPath;
+                  headerWidgets.add(Positioned(
+                    left: 16,
+                    right: 16,
+                    top: el.y - 20,
+                    child: UnitHeader(
+                      unit: unit,
+                      isGenerated: isGenerated,
+                      generationTask: loading,
+                      referencePdfPath: unitPdfPath,
+                      onGenerate: () => widget.onGenerateUnit(unit, el.unitIdx!),
+                      onClear: () => widget.onClearUnit(unit, el.unitIdx!),
+                    ),
+                  ));
+                  continue;
+                }
+                final lesson = el.lesson!;
+                final isCompleted = widget.completedLessons.contains(lesson.id);
+                final isUnlocked = unlocked.contains(lesson.id);
+                final isActive = isUnlocked && !isCompleted;
+                final isLocked = !isCompleted && !isUnlocked;
+                const nodeSize = 80.0;
+                lessonWidgets.add(Positioned(
+                  left: (el.x! * scaleX) - (nodeSize / 2),
+                  top: el.y - (nodeSize / 2),
+                  child: SizedBox(
+                    width: nodeSize,
+                    child: LessonNodeWidget(
+                      lesson: lesson,
+                      isCompleted: isCompleted,
+                      isLocked: isLocked,
+                      isActive: isActive,
+                      isNextToStart: false,
+                      sectionColorStr: widget.section.color,
+                      onLongPress: widget.onRegenerateLesson == null
+                          ? null
+                          : () => widget.onRegenerateLesson!(el.unitIdx!, el.lessonIdx!, lesson),
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => LessonScreen(
+                              lesson: lesson,
+                              book: widget.book,
+                              modIdx: widget.modIdx,
+                              secIdx: widget.secIdx,
+                              unitIdx: el.unitIdx!,
+                              lessonIdx: el.lessonIdx!,
+                            ),
+                          ),
+                        );
+                        widget.onLessonFinished();
+                      },
+                    ),
+                  ),
+                ));
+              }
+
               return SizedBox(
                 width: width,
                 height: containerHeight,
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    // SVG-style curved connectors
+                    // SVG-style curved connectors (always behind the nodes)
                     Positioned.fill(
                       child: IgnorePointer(
                         child: CustomPaint(
@@ -199,66 +276,8 @@ class _LessonPathState extends State<LessonPath> {
                         ),
                       ),
                     ),
-                    ...elements.map((el) {
-                      if (el.kind == _ElementKind.header) {
-                        final unit = el.unit!;
-                        final loading = widget.loadingUnitStatuses[unit.id];
-                        final isGenerated = unit.isGenerated && unit.lessons.isNotEmpty;
-                        // Top-anchored at el.y; the slot below reserves
-                        // _headerHeight{Generated,NeedsGen} of vertical space.
-                        return Positioned(
-                          left: 16,
-                          right: 16,
-                          top: el.y - 20,
-                          child: UnitHeader(
-                            unit: unit,
-                            isGenerated: isGenerated,
-                            generationTask: loading,
-                            onGenerate: () => widget.onGenerateUnit(unit, el.unitIdx!),
-                            onClear: () => widget.onClearUnit(unit, el.unitIdx!),
-                          ),
-                        );
-                      }
-                      // lesson
-                      final lesson = el.lesson!;
-                      final isCompleted = widget.completedLessons.contains(lesson.id);
-                      final isUnlocked = unlocked.contains(lesson.id);
-                      final isActive = isUnlocked && !isCompleted;
-                      final isLocked = !isCompleted && !isUnlocked;
-                      const nodeSize = 80.0;
-                      // Center the node around (el.x * scaleX, el.y).
-                      return Positioned(
-                        left: (el.x! * scaleX) - (nodeSize / 2),
-                        top: el.y - (nodeSize / 2),
-                        child: SizedBox(
-                          width: nodeSize,
-                          child: LessonNodeWidget(
-                            lesson: lesson,
-                            isCompleted: isCompleted,
-                            isLocked: isLocked,
-                            isActive: isActive,
-                            isNextToStart: false,
-                            sectionColorStr: widget.section.color,
-                            onTap: () async {
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => LessonScreen(
-                                    lesson: lesson,
-                                    book: widget.book,
-                                    modIdx: widget.modIdx,
-                                    secIdx: widget.secIdx,
-                                    unitIdx: el.unitIdx!,
-                                    lessonIdx: el.lessonIdx!,
-                                  ),
-                                ),
-                              );
-                              widget.onLessonFinished();
-                            },
-                          ),
-                        ),
-                      );
-                    }),
+                    ...lessonWidgets,
+                    ...headerWidgets,
                   ],
                 ),
               );

@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../services/generation_manager.dart';
@@ -15,6 +17,12 @@ class UnitHeader extends StatelessWidget {
   final UnitGenTask? generationTask;
   final VoidCallback onGenerate;
   final VoidCallback onClear;
+  /// Path on disk to the PDF chunk that backs this unit. In the old flow it
+  /// lives on the unit (`unit.pdfPath`); in the new flow the section owns
+  /// the chunk for the whole section. The caller picks whichever it has so
+  /// the "View reference" affordance always opens the right pages. Null when
+  /// the file is missing (e.g. user hasn't restored sources yet).
+  final String? referencePdfPath;
 
   const UnitHeader({
     super.key,
@@ -23,7 +31,27 @@ class UnitHeader extends StatelessWidget {
     required this.generationTask,
     required this.onGenerate,
     required this.onClear,
+    this.referencePdfPath,
   });
+
+  bool get _canViewReference {
+    final p = referencePdfPath;
+    if (p == null || p.isEmpty) return false;
+    return File(p).existsSync();
+  }
+
+  void _openReference(BuildContext context) {
+    final p = referencePdfPath;
+    if (p == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: Text(unit.title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold))),
+          body: SfPdfViewer.file(File(p)),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,17 +75,52 @@ class UnitHeader extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                unit.title.toUpperCase(),
-                style: const TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 14,
-                  color: Colors.white,
-                  letterSpacing: -0.2,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      unit.title.toUpperCase(),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 14,
+                        color: Colors.white,
+                        letterSpacing: -0.2,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (_canViewReference)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 6),
+                      child: InkWell(
+                        onTap: () => _openReference(context),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.duoBlue.withOpacity(0.18),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppTheme.duoBlue.withOpacity(0.45)),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(LucideIcons.fileText, size: 11, color: AppTheme.duoBlue),
+                              SizedBox(width: 4),
+                              Text(
+                                'PDF',
+                                style: TextStyle(color: AppTheme.duoBlue, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.6),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 6),
               Text(
