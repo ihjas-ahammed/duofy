@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
 import '../data/mock_books.dart';
+import 'fb/fb_auth.dart';
+import 'fb/fb_firestore.dart';
 
 /// Local-first storage.
 ///
@@ -20,9 +20,9 @@ import '../data/mock_books.dart';
 /// [cloudSyncPrefKey] setting and OFF by default. When disabled, no Firestore
 /// reads or writes occur at all — the app works fully offline.
 class DatabaseService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FbFirestore _db = FbFirestore.instance;
 
-  String get uid => FirebaseAuth.instance.currentUser?.uid ?? 'guest';
+  String get uid => FbAuth.instance.currentUser?.uid ?? 'guest';
 
   // ---------------------------------------------------------------------------
   // Cloud sync toggle (local-first: OFF unless the user opts in from Settings)
@@ -41,13 +41,12 @@ class DatabaseService {
     await prefs.setBool(cloudSyncPrefKey, enabled);
   }
 
-  CollectionReference<Map<String, dynamic>> get _userBooks =>
+  FbCollectionRef get _userBooks =>
       _db.collection('users').doc(uid).collection('books');
 
-  CollectionReference<Map<String, dynamic>> get _globalBooks =>
-      _db.collection('global_books');
+  FbCollectionRef get _globalBooks => _db.collection('global_books');
 
-  DocumentReference<Map<String, dynamic>> get _userSettingsDoc =>
+  FbDocRef get _userSettingsDoc =>
       _db.collection('users').doc(uid).collection('meta').doc('settings');
 
   // ---------------------------------------------------------------------------
@@ -246,7 +245,9 @@ class DatabaseService {
       final snapshot = await _userBooks.get().timeout(const Duration(seconds: 4));
       final Map<String, Book> remote = {};
       for (final doc in snapshot.docs) {
-        final b = Book.fromJson(Map<String, dynamic>.from(doc.data()));
+        final data = doc.data();
+        if (data == null) continue;
+        final b = Book.fromJson(Map<String, dynamic>.from(data));
         remote[b.id] = b;
       }
 
@@ -372,7 +373,8 @@ class DatabaseService {
     try {
       final snapshot = await _globalBooks.get().timeout(const Duration(seconds: 4));
       final freshGlobals = snapshot.docs
-          .map((d) => Book.fromJson(Map<String, dynamic>.from(d.data())))
+          .where((d) => d.data() != null)
+          .map((d) => Book.fromJson(Map<String, dynamic>.from(d.data()!)))
           .toList();
       await prefs.setString(_globalCacheKey, jsonEncode(freshGlobals.map((b) => b.toJson()).toList()));
       return freshGlobals;
@@ -386,7 +388,7 @@ class DatabaseService {
   /// is disabled, so the caller can prompt the user to enable it.
   Future<bool> publishToGlobal(Book book) async {
     if (!await isCloudEnabled()) return false;
-    final user = FirebaseAuth.instance.currentUser;
+    final user = FbAuth.instance.currentUser;
     final publishedBook = book.copyWith(
       authorId: user?.uid,
       authorName: user?.displayName ?? 'Anonymous User',

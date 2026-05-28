@@ -29,16 +29,24 @@ class DefaultFirebaseOptions {
       case TargetPlatform.windows:
         return windows;
       case TargetPlatform.linux:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for linux - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        // Native firebase_core does not support Linux, so this getter is
+        // never called there — FbCore initializes firedart directly using
+        // [linuxApiKey] and [linuxProjectId] below. Returning the web options
+        // keeps the type signature non-nullable in case a caller bypasses the
+        // platform check.
+        return web;
       default:
         throw UnsupportedError(
           'DefaultFirebaseOptions are not supported for this platform.',
         );
     }
   }
+
+  /// Linux desktop uses firedart instead of the native Firebase SDK. firedart
+  /// only needs the project's web API key (used against Identity Toolkit) and
+  /// the project id (used as the Firestore database parent).
+  static const String linuxApiKey = 'AIzaSyC6BuQvYUAb5kFd5W2tazuD0kAtTSuYMfs';
+  static const String linuxProjectId = 'duofy-database';
 
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyC6BuQvYUAb5kFd5W2tazuD0kAtTSuYMfs',

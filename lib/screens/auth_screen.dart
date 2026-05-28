@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import '../services/fb/fb_auth.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 
@@ -33,12 +33,12 @@ class _AuthScreenState extends State<AuthScreen> {
 
     try {
       if (_isSignUp) {
-        UserCredential cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(email: email, password: password);
-        await cred.user?.updateDisplayName(username);
+        final user = await FbAuth.instance.createUserWithEmailAndPassword(email: email, password: password);
+        await user.updateDisplayName(username);
       } else {
-        await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
+        await FbAuth.instance.signInWithEmailAndPassword(email: email, password: password);
       }
-    } on FirebaseAuthException catch (e) {
+    } on FbAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? 'Authentication error')));
     } finally {
       if (mounted) setState(() => _isLoading = false);

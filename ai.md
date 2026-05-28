@@ -1,15 +1,20 @@
 Make the following changes:
 
-    - Update lesson node, make it look 3D
-- Fix normal lesson screen:
-    Remove the story line from half the window and also remove the storymode entirely even from lesson generation, 
 
-- Fix fill in the blank:
-    - Remove the line break, give it a min width with auto expand when typed
-- Fix latex not appearing inline like everytime an equation is created it shows in a new line and this effects the flow of program
-    
-Make sure there wont be any screensize error, our ideal screen is 720x1520 with 271 dpi
-When adding a new ui, create very compact design based on the theme of duolingo
+Intrdouce intractive canvas art:
+
+    Make it possible the lesson genetator can create intractive canvas art just like graphical, also enable 3D support with THREE.js:
+        Give advanced example prohrams and a good template html so even the lite model can make good graphics
+
+        also optimize the prompt so that they will create for default aspect ratio of the window rather tan full screen
+
+Fix old generation errors:
+    Include all latex guide along with prompt in order to reduce error in latex generation
+
+Extra debug:
+    Add a view reference button near to unit header (also fix that the lesson node was rendered on top of it during generation) to open the splitted pdf for that specific lesson
+    Also make it possible I can edit each options and steps (in proofs) by double tap
+    Add option to regenerate a whole lesson by long clicking on the node
 
 Update prompt accordingly as I add new features and slide types
 

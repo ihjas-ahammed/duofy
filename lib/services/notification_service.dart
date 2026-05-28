@@ -11,7 +11,16 @@ class NotificationService {
     // Requires an app icon at android/app/src/main/res/mipmap/ic_launcher.png
     const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const DarwinInitializationSettings iosSettings = DarwinInitializationSettings();
-    const InitializationSettings initSettings = InitializationSettings(android: androidSettings, iOS: iosSettings);
+    // flutter_local_notifications requires explicit Linux settings even when
+    // we don't ship notifications there. defaultActionName is what the action
+    // button shows in the notification center; defaultIcon is optional.
+    const LinuxInitializationSettings linuxSettings =
+        LinuxInitializationSettings(defaultActionName: 'Open');
+    const InitializationSettings initSettings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
+      linux: linuxSettings,
+    );
 
     await _plugin.initialize(
       settings: initSettings,

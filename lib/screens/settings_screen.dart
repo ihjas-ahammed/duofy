@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
-import 'package:firebase_auth/firebase_auth.dart';
+import '../services/fb/fb_auth.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
@@ -23,8 +23,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // Each slot is now an ordered list — the first model is tried first, the
   // next is the fallback, and so on. Empty list means "use the built-in
   // default" but the UI keeps at least one entry to avoid that state.
-  List<String> _modelPrimaryText = ['gemma4'];
-  List<String> _modelPrimaryGraphics = ['gemini-3.5-flash'];
+  List<String> _modelPrimaryText = ['gemini-flash-lite-latest'];
+  List<String> _modelPrimaryGraphics = ['gemini-flash-latest'];
   List<String> _modelLite = ['gemini-flash-lite-latest'];
   /// How many lesson requests to fire in parallel during generation.
   /// 'auto' lets the app pick from the device's capacity; otherwise a fixed
@@ -37,7 +37,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final GlobalKey<StringListManagerState> _keysManagerKey = GlobalKey<StringListManagerState>();
   final DatabaseService _db = DatabaseService();
 
-  final user = FirebaseAuth.instance.currentUser;
+  final user = FbAuth.instance.currentUser;
 
   @override
   void initState() {
@@ -642,7 +642,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 text: 'Sign Out',
                 onPressed: () async {
                   Navigator.pop(context);
-                  await FirebaseAuth.instance.signOut();
+                  await FbAuth.instance.signOut();
                 },
                 color: AppTheme.duoRed,
                 shadowColor: AppTheme.duoRedDark,

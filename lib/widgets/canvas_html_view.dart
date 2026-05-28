@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'platform_webview.dart';
 
 /// Canvas-art rendering helpers.
 ///
@@ -64,41 +64,17 @@ _render();
 }
 
 /// Renders a JS `draw(ctx, W, H)` function inside a transparent WebView canvas.
-/// Rebuilds its controller when the function changes (e.g. after regenerate).
-class CanvasHtmlView extends StatefulWidget {
+/// Backed by [PlatformWebView] so the same draw function runs on every
+/// platform — webview_flutter on mobile/desktop-with-native-support, and
+/// webview_cef on Linux.
+class CanvasHtmlView extends StatelessWidget {
   final String drawFunction;
 
   const CanvasHtmlView({super.key, required this.drawFunction});
 
   @override
-  State<CanvasHtmlView> createState() => _CanvasHtmlViewState();
-}
-
-class _CanvasHtmlViewState extends State<CanvasHtmlView> {
-  late WebViewController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  @override
-  void didUpdateWidget(CanvasHtmlView oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.drawFunction != widget.drawFunction) _load();
-  }
-
-  void _load() {
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0x00000000))
-      ..loadHtmlString(buildCanvasHtml(widget.drawFunction));
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return WebViewWidget(controller: _controller);
+    return PlatformWebView(html: buildCanvasHtml(drawFunction));
   }
 }
 

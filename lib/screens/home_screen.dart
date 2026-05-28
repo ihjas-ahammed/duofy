@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../services/fb/fb_auth.dart';
 import '../models/app_models.dart';
 import '../services/database_service.dart';
 import '../services/progress_service.dart';
@@ -288,7 +288,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                  itemCount: globalBooks.length,
                                  itemBuilder: (context, index) {
                                    final gBook = globalBooks[index];
-                                   final user = FirebaseAuth.instance.currentUser;
+                                   final user = FbAuth.instance.currentUser;
                                    final bool isSuperAdmin = user?.email == 'ihjas.one@gmail.com';
 
                                    return CommunityBookCard(

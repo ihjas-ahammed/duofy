@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'firebase_options.dart';
 import 'theme/app_theme.dart';
+import 'services/fb/fb_core.dart';
 import 'services/global_state.dart';
 import 'services/notification_service.dart';
 import 'screens/auth_gate.dart';
@@ -12,9 +11,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await FbCore.initializeApp();
   
   // Initialize Background Notifications System
   await NotificationService.init();

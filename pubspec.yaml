@@ -57,6 +57,13 @@ dependencies:
   pdf: ^3.12.0
   flutter_svg: ^2.0.10+1
 
+  # Linux desktop fallbacks (selected at runtime via Platform.isLinux):
+  # firedart is a pure-Dart Firebase Auth+Firestore client used in place of
+  # firebase_auth/cloud_firestore (which don't support Linux), and webview_cef
+  # provides an embedded WebView since webview_flutter doesn't support Linux.
+  firedart: ^0.9.8
+  webview_cef: ^0.2.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -68,6 +75,20 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.13.1
+
+# lucide_icons 0.257.0 (the only published version) extends IconData, which
+# Flutter 3.44 turned into a `final class`. We ship a locally-patched copy
+# under packages/lucide_icons/ that builds IconData directly so every existing
+# `LucideIcons.x` call site keeps working unchanged.
+dependency_overrides:
+  lucide_icons:
+    path: packages/lucide_icons
+  # webview_cef 0.2.2 (latest published) predates Flutter 3.x's
+  # TextInputClient.onFocusReceived requirement. Our local copy adds the
+  # missing override; everything else (native code, prebuilt CEF download) is
+  # identical to the upstream package.
+  webview_cef:
+    path: packages/webview_cef
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

@@ -29,6 +29,55 @@ $trimmed
   static final String _iconRule =
       'Pick the most thematically appropriate `icon` for each lesson from this exact list (use the kebab-case form): $_iconChoiceList. Examples: a lesson on integration → "sigma" or "function"; on Newton\'s laws → "atom" or "rocket"; on cell biology → "dna" or "microscope"; on World War II → "history" or "swords"; on French vocabulary → "languages". Only use "book-open" when no other icon clearly fits.';
 
+  /// Comprehensive LaTeX/Markdown-math reference inlined into every lesson
+  /// JSON prompt. The Gemma / lite text models often emit malformed math —
+  /// dropping backslashes, missing the delimiters, or mixing display and
+  /// inline mode — so this block enumerates the exact rules and the most
+  /// common failure modes verbatim. Keep changes here minimal; small wording
+  /// edits change generation outcomes noticeably.
+  static const String latexGuide = '''
+LATEX / MARKDOWN-MATH GUIDE (READ CAREFULLY — most generation errors come from violating these rules):
+
+1. JSON ESCAPING — every `\\` in your output MUST be written as `\\\\` because the surrounding container is JSON. So you write `\\\\frac{1}{2}`, `\\\\int_0^1`, `\\\\sqrt{x}`, `\\\\alpha`, NOT `\\frac{1}{2}`. Single-backslash LaTeX will not render.
+
+2. INLINE vs DISPLAY MATH
+   - Inline math (flows inside a sentence): wrap in single `\$ … \$`. Example: `The area is \$\\\\pi r^2\$.`
+   - Display math (own line, centered, larger): wrap in double `\$\$ … \$\$`. Example: `\$\$\\\\int_a^b f(x)\\\\,dx = F(b) - F(a)\$\$`.
+   - NEVER put a single short inline equation on its own line — keep it inline with surrounding prose.
+   - NEVER mix delimiters: don't write `\$\$ x \$` or `\$ x \$\$`.
+   - NEVER nest math: `\$ a + \$ b \$ + c \$` is INVALID. Close the first `\$` before opening another.
+
+3. COMMON COMMANDS (always double-escaped):
+   - Fractions: `\\\\frac{a}{b}` — both numerator and denominator in braces.
+   - Roots: `\\\\sqrt{x}`, `\\\\sqrt[n]{x}`.
+   - Powers / subscripts: `x^2`, `x^{10}`, `a_n`, `a_{ij}`. Multi-char exponents / indices MUST be braced.
+   - Greek: `\\\\alpha \\\\beta \\\\gamma \\\\theta \\\\pi \\\\Sigma \\\\Omega`.
+   - Operators: `\\\\int`, `\\\\sum`, `\\\\prod`, `\\\\lim_{x \\\\to 0}`, `\\\\sin`, `\\\\cos`, `\\\\ln`, `\\\\log`.
+   - Vectors / accents: `\\\\vec{v}`, `\\\\hat{n}`, `\\\\bar{x}`, `\\\\dot{x}`.
+   - Sets / logic: `\\\\in`, `\\\\subset`, `\\\\cup`, `\\\\cap`, `\\\\forall`, `\\\\exists`, `\\\\neg`, `\\\\rightarrow`, `\\\\leftrightarrow`.
+   - Comparisons: `\\\\le`, `\\\\ge`, `\\\\ne`, `\\\\approx`, `\\\\equiv`.
+   - Spacing inside math: `\\\\,` (thin), `\\\\;` (med), `\\\\quad` (em). Do NOT use literal spaces to align.
+
+4. MULTI-LINE & ALIGNED EQUATIONS — wrap in `\$\$ … \$\$` and use `\\\\begin{aligned} … \\\\end{aligned}` with `&` for the alignment column and `\\\\\\\\` for line breaks. Example:
+   `\$\$\\\\begin{aligned} x &= a + b \\\\\\\\ &= c \\\\end{aligned}\$\$`
+   (Note: `\\\\\\\\` is FOUR backslashes — two for LaTeX line break, doubled again for JSON.)
+
+5. MATRICES — `\$\$\\\\begin{pmatrix} a & b \\\\\\\\ c & d \\\\end{pmatrix}\$\$`. Use `bmatrix` for square brackets, `vmatrix` for determinants.
+
+6. CHEMISTRY / UNITS — write units in plain text outside math: `5\\\\,\\\\text{m/s}` inside math, or just `5 m/s` outside it. For chemistry, prefer `\\\\text{H}_2\\\\text{O}` inside math or plain `H₂O` outside.
+
+7. SAFE PUNCTUATION inside math: never use a Markdown asterisk `*` — use `\\\\cdot` or `\\\\times` for multiplication. Never use `_` as anything other than a subscript inside math (and brace multi-char subscripts).
+
+8. PROSE AROUND MATH — write a sentence and slot the math inline; do not leave math floating without context. Example: `By the Pythagorean theorem, \$a^2 + b^2 = c^2\$, so the hypotenuse is \$c = \\\\sqrt{a^2 + b^2}\$.`
+
+9. NEVER emit:
+   - Raw `\\frac` (single backslash) — JSON will strip it.
+   - `\\(` … `\\)` or `\\[` … `\\]` — use `\$` / `\$\$` only.
+   - HTML inside math (`<sup>`, `<sub>`) — use `^` / `_`.
+   - Unicode math glyphs like `½`, `√`, `∫` — always render them through LaTeX commands.
+
+10. SHORT NUMERIC RESULTS — when the answer is a plain number (e.g. for "numerical" slides), the `numericAnswer` field is a JSON number, NOT a LaTeX string. Don't wrap `42` as `"\\\\\$42\\\\\$"`.''';
+
   /// Shared offset-correction block reused by both skeleton-stage prompts so
   /// the model converts the TOC's printed page numbers into absolute PDF page
   /// numbers identically in each call.
@@ -163,6 +212,8 @@ You previously created this optimal learning plan for the unit "%unit_title%":
 
 Based strictly on this plan and the attached content chunk, generate the full JSON content.
 
+$latexGuide
+
 CRITICAL SCHEMA & MICRO-LEARNING RULES:
 1. "theory" slides: `content` MUST be a few sentences explaining a concept DIRECTLY. Use Markdown. NEVER use storytelling, narrative framings, characters, or imagined scenarios — present facts and definitions plainly.
 2. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
@@ -170,9 +221,9 @@ CRITICAL SCHEMA & MICRO-LEARNING RULES:
 4. "one_word" slides: `content` is a question whose answer is a SINGLE word or very short term — do NOT put a `___` blank in it. `blankAnswer` is that exact word/term; the learner types it freely, so do NOT provide `options` or `blankDistractors`. Only use questions that have one unambiguous answer.
 5. "numerical" slides: `content` is a problem whose answer is a NUMBER the learner computes and types. `numericAnswer` is that answer as a plain number (no units, no commas, no thousands separators). `numericTolerance` is the allowed absolute error (use 0.01 for precise answers, or a larger value scaled to the magnitude). Do NOT provide `options`. State any required units inside `content`, never in the answer.
 6. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
-7. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}). Markdown math is wrapped in \$ for inline (must flow inside a sentence) or \$\$ for display blocks. Do NOT put a single short inline equation on its own line — keep it inline with surrounding text.
+7. LaTeX formatting must follow the LATEX GUIDE above (double-escaped, correct delimiters, no inline-on-its-own-line).
 8. $_iconRule
-9. Each lesson MUST include a `canvasPrompt` field: a 1–2 sentence natural-language description of the single most useful diagram for this lesson (e.g. "Free-body diagram of a block on an inclined plane with friction and normal force vectors labeled"). The diagram should illustrate the lesson\'s core concept and be drawable as a simple 2D diagram. Keep it concrete and visual.
+9. Each lesson MUST include a `canvasPrompt` field: a 1–2 sentence natural-language description of the single most useful diagram for this lesson. Prefer concrete visual structures (free-body diagram, vector triangle, graph of a function, circuit, geometry construction). When the topic genuinely benefits from interactivity or three dimensions (animated process, 3D shape, draggable parameter), say so explicitly in the prompt — e.g. "Interactive: drag a slider for ω to see the sine wave change frequency", "3D: rotatable cube showing diagonal d = a√3". Otherwise keep it static.
 10. For "proof" and "step_by_step" slides ONLY: include a `canvasPrompt` on the slide itself if and only if the proof or worked example genuinely needs a figure to follow (geometry, circuits, triangles, graphs, free-body diagrams, etc.). If the proof is purely algebraic and no figure adds value, omit `canvasPrompt` on the slide.
 11. Each lesson MUST specify a `formatId` corresponding to the lesson format type it follows (e.g., "theory", "example", or "proof" based on the available formats).
 
@@ -206,6 +257,8 @@ UNIT SCOPE (the attached PDF is shared by several units — stay strictly inside
 ALREADY-COVERED CONTENT (from previously generated units in this section — do NOT re-teach or duplicate any of this; build on it instead):
 %previous_units_content%
 
+$latexGuide
+
 CRITICAL SCHEMA & MICRO-LEARNING RULES:
 1. "theory" slides: `content` MUST be a few sentences explaining a concept DIRECTLY. Use Markdown. NEVER use storytelling, narrative framings, characters, or imagined scenarios — present facts and definitions plainly.
 2. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
@@ -213,9 +266,9 @@ CRITICAL SCHEMA & MICRO-LEARNING RULES:
 4. "one_word" slides: `content` is a question whose answer is a SINGLE word or very short term — no `___` blank. `blankAnswer` is that exact word/term; the learner types it freely, so do NOT provide `options` or `blankDistractors`. Only use questions with one unambiguous answer.
 5. "numerical" slides: `content` is a problem whose answer is a NUMBER the learner computes and types. `numericAnswer` is that answer as a plain number (no units, no commas). `numericTolerance` is the allowed absolute error (0.01 for precise answers, larger when scaled to the magnitude). Do NOT provide `options`. State any units inside `content`.
 6. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
-7. LaTeX formatting must be double-escaped (e.g., \\\\frac{1}{2}). Markdown math is wrapped in \$ for inline (must flow inside a sentence) or \$\$ for display blocks. Do NOT put a single short inline equation on its own line — keep it inline with surrounding text.
+7. LaTeX formatting must follow the LATEX GUIDE above (double-escaped, correct delimiters, no inline-on-its-own-line).
 8. $_iconRule
-9. Include a `canvasPrompt` field on the lesson: a 1–2 sentence natural-language description of the single most useful diagram for this lesson, illustrating its core concept and drawable as a simple 2D diagram.
+9. Include a `canvasPrompt` field on the lesson: a 1–2 sentence natural-language description of the single most useful diagram. Prefer concrete visual structures (free-body diagram, vector triangle, graph, circuit, geometry). When the topic genuinely benefits from interactivity or three dimensions, explicitly say so — e.g. "Interactive: drag a charge to see the field lines update", "3D: rotatable molecule of methane". Otherwise keep the diagram static.
 10. For "proof" and "step_by_step" slides ONLY: include a `canvasPrompt` on the slide itself if and only if the proof / worked example genuinely needs a figure (geometry, circuits, triangles, graphs, free-body diagrams). Omit on purely algebraic slides.
 11. Specify the `formatId` corresponding to the lesson format type this lesson follows (e.g., "theory", "example", or "proof" based on the available formats).
 
@@ -248,6 +301,8 @@ The slide you must regenerate has type "%slide_type%". Here is its current conte
 %regen_note%
 Produce a single, improved slide of the SAME type ("%slide_type%") covering the same pedagogical point, using the attached source content for accuracy. Keep it self-contained — do not reference "the previous slide".
 
+$latexGuide
+
 CRITICAL SCHEMA & MICRO-LEARNING RULES:
 1. "theory" slides: `content` MUST be a few sentences explaining a concept DIRECTLY. Use Markdown. NEVER use storytelling, narrative framings, characters, or imagined scenarios.
 2. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
@@ -255,7 +310,7 @@ CRITICAL SCHEMA & MICRO-LEARNING RULES:
 4. "one_word" slides: `content` is a question with a SINGLE-word answer (no `___`). `blankAnswer` is that exact word; no `options` or `blankDistractors`.
 5. "numerical" slides: `content` is a problem with a numeric answer. `numericAnswer` is that plain number (no units); `numericTolerance` is the allowed absolute error (0.01 default). No `options`.
 6. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array of stages; a step can be static (`stepText` only) or a question (`prompt` and `options`). Include a `canvasPrompt` only if a figure is genuinely needed.
-7. LaTeX must be double-escaped (e.g., \\\\frac{1}{2}). Inline math in \$…\$, display math in \$\$…\$\$.
+7. LaTeX must follow the LATEX GUIDE above (double-escaped, correct delimiters, no inline-on-its-own-line).
 
 RETURN ONLY VALID JSON FOR THIS ONE SLIDE (no wrapping array, no other keys), e.g.:
 {
