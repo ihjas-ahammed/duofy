@@ -959,7 +959,7 @@ class AiService {
   /// [contextText] is a short snippet of the surrounding lesson content so
   /// the model can keep the diagram thematically consistent (e.g. variable
   /// names, units). Pass an empty string when not relevant.
-  Future<String?> generateCanvasArt(String canvasPrompt, {String contextText = ''}) async {
+  Future<String?> generateCanvasArt(String canvasPrompt, {String contextText = '', String? errorContext}) async {
     if (canvasPrompt.trim().isEmpty) return null;
 
     final keys = await _getKeys();
@@ -967,9 +967,13 @@ class AiService {
     // Cap context to keep prompts small — the SVG diagram doesn\'t need the
     // entire lesson, only a few sentences for tone matching.
     final trimmedContext = contextText.length > 800 ? contextText.substring(0, 800) : contextText;
-    final hydrated = PromptService.canvasArt
+    String hydrated = PromptService.canvasArt
         .replaceAll('%canvas_prompt%', canvasPrompt.trim())
         .replaceAll('%lesson_context%', trimmedContext);
+
+    if (errorContext != null && errorContext.isNotEmpty) {
+      hydrated += '\n\nPREVIOUS ATTEMPT FAILED WITH JAVASCRIPT ERROR:\n$errorContext\nFix the code so it doesn\'t throw this error.';
+    }
 
     Object? lastErr;
     for (final modelName in modelsToTry) {

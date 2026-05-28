@@ -113,7 +113,7 @@ class _FillInBlankViewState extends State<FillInBlankView> {
 
     if (hasInlineBlank) {
       String displayWord = widget.value.isEmpty ? r'\_\_\_\_\_' : widget.value;
-      String updatedContent = widget.slide.content.replaceAll('___', '**$displayWord**');
+      String updatedContent = widget.slide.content.replaceFirst('___', '**$displayWord**');
 
       return SingleChildScrollView(
         padding: const EdgeInsets.all(24),

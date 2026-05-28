@@ -18,14 +18,14 @@ import 'canvas_html_view.dart';
 ///   space is reserved.
 /// - SVG render failure → falls back to the same "tap to generate" prompt
 ///   card so a malformed model response never breaks the lesson layout.
-class CanvasArtView extends StatelessWidget {
+class CanvasArtView extends StatefulWidget {
   final String? svg;
   final bool hasPrompt;
   /// The natural-language diagram description. Shown in the "tap to generate"
   /// state so the user knows what the diagram would depict.
   final String? prompt;
   final bool isLoading;
-  final VoidCallback? onRegenerate;
+  final void Function(String? errorContext)? onRegenerate;
 
   const CanvasArtView({
     super.key,
@@ -37,20 +37,38 @@ class CanvasArtView extends StatelessWidget {
   });
 
   @override
+  State<CanvasArtView> createState() => _CanvasArtViewState();
+}
+
+class _CanvasArtViewState extends State<CanvasArtView> {
+  bool _hasAutoRetried = false;
+
+  void _handleJsError(String message) {
+    if (!_hasAutoRetried && widget.onRegenerate != null && !widget.isLoading) {
+      _hasAutoRetried = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && widget.onRegenerate != null) {
+          widget.onRegenerate!(message);
+        }
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     // No prompt → no slot at all. We don\'t want an empty rectangle for
     // lessons the text AI decided didn\'t need a diagram.
-    if (!hasPrompt && (svg == null || svg!.trim().isEmpty)) {
+    if (!widget.hasPrompt && (widget.svg == null || widget.svg!.trim().isEmpty)) {
       return const SizedBox.shrink();
     }
 
-    final hasArt = svg != null && svg!.trim().isNotEmpty;
+    final hasArt = widget.svg != null && widget.svg!.trim().isNotEmpty;
 
     // No art and not actively generating → the diagram either failed or was
     // never generated. Instead of a blank placeholder box, show the prompt
     // text with a "tap to generate" affordance.
-    if (!hasArt && !isLoading) {
-      return _TapToGenerateCard(prompt: prompt, onTap: onRegenerate);
+    if (!hasArt && !widget.isLoading) {
+      return _TapToGenerateCard(prompt: widget.prompt, onTap: widget.onRegenerate == null ? null : () => widget.onRegenerate!(null));
     }
 
     // Full-width hero sized by aspect ratio (not a fixed screen fraction) so
@@ -75,8 +93,9 @@ class CanvasArtView extends StatelessWidget {
                 // the model produced. Malformed SVG falls back to the
                 // tap-to-generate card instead of a red error widget.
                 ? buildCanvasArt(
-                    svg!,
-                    svgPlaceholder: (_) => _TapToGenerateCard(prompt: prompt, onTap: onRegenerate, embedded: true),
+                    widget.svg!,
+                    svgPlaceholder: (_) => _TapToGenerateCard(prompt: widget.prompt, onTap: widget.onRegenerate == null ? null : () => widget.onRegenerate!(null), embedded: true),
+                    onJsError: _handleJsError,
                   )
                 : const _CanvasPlaceholder(label: 'Generating diagram…', spinning: true),
           ),
@@ -90,7 +109,7 @@ class CanvasArtView extends StatelessWidget {
                   shape: const CircleBorder(),
                   child: InkWell(
                     customBorder: const CircleBorder(),
-                    onTap: () => showCanvasFullScreen(context, svg!),
+                    onTap: () => showCanvasFullScreen(context, widget.svg!),
                     child: const Padding(
                       padding: EdgeInsets.all(6.0),
                       child: Icon(LucideIcons.maximize2, size: 14, color: Colors.white70),
@@ -98,7 +117,7 @@ class CanvasArtView extends StatelessWidget {
                   ),
                 ),
               ),
-            if (onRegenerate != null && hasArt)
+            if (widget.onRegenerate != null && hasArt)
               Positioned(
                 top: 6,
                 right: 6,
@@ -107,10 +126,10 @@ class CanvasArtView extends StatelessWidget {
                   shape: const CircleBorder(),
                   child: InkWell(
                     customBorder: const CircleBorder(),
-                    onTap: isLoading ? null : onRegenerate,
+                    onTap: widget.isLoading ? null : () => widget.onRegenerate!(null),
                     child: Padding(
                       padding: const EdgeInsets.all(6.0),
-                      child: isLoading
+                      child: widget.isLoading
                           ? const SizedBox(
                               width: 14,
                               height: 14,

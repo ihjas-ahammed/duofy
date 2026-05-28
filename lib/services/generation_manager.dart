@@ -7,6 +7,7 @@ import 'pdf_service.dart';
 import 'database_service.dart';
 import 'ai_service.dart';
 import 'notification_service.dart';
+import 'progress_service.dart';
 
 enum BookGenState { extracting, review, chunking, saving, error }
 
@@ -483,6 +484,7 @@ class GenerationManager extends ChangeNotifier {
     required int secIdx,
     required int unitIdx,
     required int lessonIdx,
+    String? errorContext,
   }) async {
     final lesson = book.modules[modIdx].sections[secIdx].units[unitIdx].lessons[lessonIdx];
     if ((lesson.canvasPrompt?.trim().isEmpty ?? true) || activeCanvasRegens.contains(lesson.id)) return;
@@ -492,6 +494,7 @@ class GenerationManager extends ChangeNotifier {
       final svg = await _aiService.generateCanvasArt(
         lesson.canvasPrompt!,
         contextText: lesson.slides.isNotEmpty ? lesson.slides.first.content : '',
+        errorContext: errorContext,
       );
       if (svg == null) return; // best-effort: keep old SVG if call failed
       final base = (await _dbService.getBookFromCache(book.id)) ?? book;
@@ -521,13 +524,14 @@ class GenerationManager extends ChangeNotifier {
     required int unitIdx,
     required int lessonIdx,
     required int slideIdx,
+    String? errorContext,
   }) async {
     final slide = book.modules[modIdx].sections[secIdx].units[unitIdx].lessons[lessonIdx].slides[slideIdx];
     if ((slide.canvasPrompt?.trim().isEmpty ?? true) || activeCanvasRegens.contains(slide.id)) return;
     activeCanvasRegens.add(slide.id);
     notifyListeners();
     try {
-      final svg = await _aiService.generateCanvasArt(slide.canvasPrompt!, contextText: slide.content);
+      final svg = await _aiService.generateCanvasArt(slide.canvasPrompt!, contextText: slide.content, errorContext: errorContext);
       if (svg == null) return;
       final base = (await _dbService.getBookFromCache(book.id)) ?? book;
       final mods = List<Module>.from(base.modules);
@@ -633,6 +637,7 @@ class GenerationManager extends ChangeNotifier {
       secs[secIdx] = secs[secIdx].copyWith(units: uns);
       mods[modIdx] = mods[modIdx].copyWith(sections: secs);
       final newBook = base.copyWith(modules: mods);
+      await ProgressService.clearLessonProgress(lesson.id);
       await _dbService.saveGeneratedBook(newBook);
       _bookUpdateController.add(newBook);
     } catch (e) {

@@ -46,4 +46,30 @@ class ProgressService {
     }
     return total == 0 ? 0.0 : (done / total);
   }
+
+  static Future<void> clearLessonProgress(String lessonId) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> completed = prefs.getStringList(_completedKey) ?? [];
+    if (completed.contains(lessonId)) {
+      completed.remove(lessonId);
+      await prefs.setStringList(_completedKey, completed);
+      
+      int currentXp = prefs.getInt(_xpKey) ?? 0;
+      int newXp = currentXp - 20;
+      if (newXp < 0) newXp = 0;
+      await prefs.setInt(_xpKey, newXp);
+    }
+  }
+
+  static Future<void> clearBookProgress(Book book) async {
+    for (var m in book.modules) {
+      for (var s in m.sections) {
+        for (var u in s.units) {
+          for (var l in u.lessons) {
+            await clearLessonProgress(l.id);
+          }
+        }
+      }
+    }
+  }
 }

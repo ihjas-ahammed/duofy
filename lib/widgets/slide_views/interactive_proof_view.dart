@@ -12,7 +12,7 @@ class InteractiveProofView extends StatefulWidget {
   /// Triggered when the user taps the regenerate button on the slide\'s
   /// canvas. Null disables the regenerate affordance — used when the
   /// caller doesn\'t know the slide\'s position in the book.
-  final VoidCallback? onRegenerateCanvas;
+  final void Function(String? errorContext)? onRegenerateCanvas;
   /// Set true while a regenerate call for this slide is in flight so the
   /// canvas swaps to its spinner state.
   final bool canvasIsLoading;

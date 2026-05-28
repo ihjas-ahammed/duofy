@@ -69,8 +69,8 @@ class _LessonPathState extends State<LessonPath> {
   // a tall "Generate Unit" button (~155px); once generated it collapses to a
   // shorter glass panel (~120px). Reserve enough space below it so the first
   // lesson node never collides with the title.
-  static const double _headerHeightGenerated = 180;
-  static const double _headerHeightNeedsGen = 200;
+  static const double _headerHeightGenerated = 190;
+  static const double _headerHeightNeedsGen = 250;
   static const double _nodeSpacing = 155;
   static const double _interUnitGap = 70;
   // Tighter gap used between consecutive units that have no lesson nodes yet

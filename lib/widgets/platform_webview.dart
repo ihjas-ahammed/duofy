@@ -15,8 +15,9 @@ import 'package:webview_cef/webview_cef.dart' as wc;
 /// data-URL encoding, and the resize lifecycle.
 class PlatformWebView extends StatefulWidget {
   final String html;
+  final ValueChanged<String>? onJsError;
 
-  const PlatformWebView({super.key, required this.html});
+  const PlatformWebView({super.key, required this.html, this.onJsError});
 
   @override
   State<PlatformWebView> createState() => _PlatformWebViewState();
@@ -50,6 +51,12 @@ class _PlatformWebViewState extends State<PlatformWebView> {
       _wfController = wf.WebViewController()
         ..setJavaScriptMode(wf.JavaScriptMode.unrestricted)
         ..setBackgroundColor(const Color(0x00000000))
+        ..addJavaScriptChannel(
+          'DuoErrorChannel',
+          onMessageReceived: (wf.JavaScriptMessage message) {
+            widget.onJsError?.call(message.message);
+          },
+        )
         ..loadHtmlString(widget.html);
     }
   }
@@ -67,11 +74,27 @@ class _PlatformWebViewState extends State<PlatformWebView> {
         c.dispose();
         return;
       }
+      c.setJavaScriptChannels({
+        wc.JavascriptChannel(
+          name: 'DuoErrorChannel',
+          onMessageReceived: (wc.JavascriptMessage message) {
+            if (mounted) widget.onJsError?.call(message.message);
+          },
+        ),
+      });
       setState(() {
         _wcController = c;
         _wcReady = true;
       });
     } else {
+      _wcController!.setJavaScriptChannels({
+        wc.JavascriptChannel(
+          name: 'DuoErrorChannel',
+          onMessageReceived: (wc.JavascriptMessage message) {
+            if (mounted) widget.onJsError?.call(message.message);
+          },
+        ),
+      });
       await _wcController!.loadUrl(dataUrl);
     }
   }

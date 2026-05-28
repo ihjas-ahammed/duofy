@@ -100,6 +100,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
+              for (var l in unit.lessons) {
+                await ProgressService.clearLessonProgress(l.id);
+              }
               final List<Unit> updatedUnits = List.from(widget.book.modules[modIdx].sections[secIdx].units);
               updatedUnits[unitIdx] = unit.copyWith(isGenerated: false, lessons: []);
 

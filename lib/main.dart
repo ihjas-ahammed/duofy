@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'theme/app_theme.dart';
 import 'services/fb/fb_core.dart';
@@ -37,6 +38,10 @@ void main() async {
   runApp(const DuoFyApp());
 }
 
+class PopIntent extends Intent {
+  const PopIntent();
+}
+
 class DuoFyApp extends StatelessWidget {
   const DuoFyApp({super.key});
 
@@ -48,6 +53,26 @@ class DuoFyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       home: const AuthGate(),
+      builder: (context, child) {
+        return Shortcuts(
+          shortcuts: <LogicalKeySet, Intent>{
+            LogicalKeySet(LogicalKeyboardKey.escape): const PopIntent(),
+          },
+          child: Actions(
+            actions: <Type, Action<Intent>>{
+              PopIntent: CallbackAction<PopIntent>(
+                onInvoke: (PopIntent intent) {
+                  if (navigatorKey.currentState?.canPop() ?? false) {
+                    navigatorKey.currentState?.maybePop();
+                  }
+                  return null;
+                },
+              ),
+            },
+            child: child!,
+          ),
+        );
+      },
     );
   }
 }

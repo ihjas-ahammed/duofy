@@ -253,12 +253,13 @@ class _LessonScreenState extends State<LessonScreen> {
       prompt: _lesson.canvasPrompt,
       isLoading: GenerationManager.instance.activeCanvasRegens.contains(_lesson.id),
       onRegenerate: _canRegenerateCanvas
-          ? () => GenerationManager.instance.regenerateLessonCanvas(
+          ? (err) => GenerationManager.instance.regenerateLessonCanvas(
                 book: widget.book!,
                 modIdx: widget.modIdx!,
                 secIdx: widget.secIdx!,
                 unitIdx: widget.unitIdx!,
                 lessonIdx: widget.lessonIdx!,
+                errorContext: err,
               )
           : null,
     );
@@ -364,13 +365,14 @@ class _LessonScreenState extends State<LessonScreen> {
           lessonCanvas: _buildLessonCanvas(),
           canvasIsLoading: GenerationManager.instance.activeCanvasRegens.contains(slide.id),
           onRegenerateCanvas: (_canRegenerateCanvas && slideIdx >= 0)
-              ? () => GenerationManager.instance.regenerateSlideCanvas(
+              ? (err) => GenerationManager.instance.regenerateSlideCanvas(
                     book: widget.book!,
                     modIdx: widget.modIdx!,
                     secIdx: widget.secIdx!,
                     unitIdx: widget.unitIdx!,
                     lessonIdx: widget.lessonIdx!,
                     slideIdx: slideIdx,
+                    errorContext: err,
                   )
               : null,
           onUpdateSlide: _applySlideEdit,

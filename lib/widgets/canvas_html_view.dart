@@ -77,6 +77,9 @@ function _showError(msg) {
     c2.fillStyle = '#94A3B8';
     c2.font = '12px sans-serif';
     c2.fillText('Diagram error: ' + msg, 10, 20);
+    if (window.DuoErrorChannel) {
+      window.DuoErrorChannel.postMessage(msg);
+    }
   } catch (_) {}
 }
 window.addEventListener('error', function(e) { _showError(e.message || 'unknown'); });
@@ -105,8 +108,27 @@ function _render() {
   _showError('no draw() or sketch() defined');
 }
 $userJs
-window.addEventListener('resize', _render);
-_render();
+let __lastW = 0, __lastH = 0, __stableFrames = 0;
+function _waitForLayout() {
+  if (__setupRan) return;
+  const W = window.innerWidth, H = window.innerHeight;
+  if (W > 10 && H > 10) {
+    if (W === __lastW && H === __lastH) {
+      __stableFrames++;
+      if (__stableFrames > 2) {
+        _render();
+        window.addEventListener('resize', _render);
+        return;
+      }
+    } else {
+      __lastW = W;
+      __lastH = H;
+      __stableFrames = 0;
+    }
+  }
+  requestAnimationFrame(_waitForLayout);
+}
+_waitForLayout();
 </script>
 </body>
 </html>
@@ -119,12 +141,16 @@ _render();
 /// webview_cef on Linux.
 class CanvasHtmlView extends StatelessWidget {
   final String drawFunction;
+  final ValueChanged<String>? onJsError;
 
-  const CanvasHtmlView({super.key, required this.drawFunction});
+  const CanvasHtmlView({super.key, required this.drawFunction, this.onJsError});
 
   @override
   Widget build(BuildContext context) {
-    return PlatformWebView(html: buildCanvasHtml(drawFunction));
+    return PlatformWebView(
+      html: buildCanvasHtml(drawFunction),
+      onJsError: onJsError,
+    );
   }
 }
 
@@ -136,6 +162,7 @@ Widget buildCanvasArt(
   String content, {
   BoxFit fit = BoxFit.contain,
   WidgetBuilder? svgPlaceholder,
+  ValueChanged<String>? onJsError,
 }) {
   if (isSvgCanvas(content)) {
     return SvgPicture.string(
@@ -144,7 +171,7 @@ Widget buildCanvasArt(
       placeholderBuilder: svgPlaceholder,
     );
   }
-  return CanvasHtmlView(drawFunction: content);
+  return CanvasHtmlView(drawFunction: content, onJsError: onJsError);
 }
 
 /// Opens [content] in a full-screen viewer. SVG art is wrapped in an
