@@ -60,6 +60,62 @@ class PdfService {
     }
   }
 
+  /// Merges multiple PDF/Image files into a single temporary PDF file.
+  Future<File> mergeFiles(List<File> files) async {
+    final out = sync_pdf.PdfDocument();
+    try {
+      for (final file in files) {
+        final ext = file.path.split('.').last.toLowerCase();
+        if (ext == 'pdf') {
+          sync_pdf.PdfDocument? doc;
+          try {
+            doc = sync_pdf.PdfDocument(inputBytes: await file.readAsBytes());
+            for (int i = 0; i < doc.pages.count; i++) {
+              final loaded = doc.pages[i];
+              out.pageSettings.size = loaded.size;
+              out.pageSettings.margins.all = 0;
+              final newPage = out.pages.add();
+              newPage.graphics.drawPdfTemplate(loaded.createTemplate(), const Offset(0, 0));
+            }
+          } catch (e) {
+            print('Error merging PDF ${file.path}: $e');
+          } finally {
+            doc?.dispose();
+          }
+        } else {
+          // Image file
+          try {
+            final imageBytes = await file.readAsBytes();
+            final sync_pdf.PdfImage image = sync_pdf.PdfBitmap(imageBytes);
+            out.pageSettings.size = sync_pdf.PdfPageSize.a4;
+            out.pageSettings.margins.all = 0;
+            final newPage = out.pages.add();
+            newPage.graphics.drawImage(image, Rect.fromLTWH(0, 0, newPage.size.width, newPage.size.height));
+          } catch (e) {
+            print('Error merging image ${file.path}: $e');
+          }
+        }
+      }
+      final tmpDir = await getTemporaryDirectory();
+      final name = 'merged_${DateTime.now().millisecondsSinceEpoch}.pdf';
+      final file = File('${tmpDir.path}/$name');
+      final bytes = await out.save();
+      await file.writeAsBytes(bytes);
+      return file;
+    } finally {
+      out.dispose();
+    }
+  }
+
+  /// Helper to get the total page count of a PDF document.
+  Future<int> getPageCount(File pdfFile) async {
+    final bytes = await pdfFile.readAsBytes();
+    final doc = sync_pdf.PdfDocument(inputBytes: bytes);
+    final count = doc.pages.count;
+    doc.dispose();
+    return count;
+  }
+
   /// Splits the source file(s) into per-section or per-unit PDF chunks.
   ///
   /// - **New-flow books** (any section with `startPage`/`endPage` set):

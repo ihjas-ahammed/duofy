@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../services/generation_manager.dart';
@@ -90,18 +91,26 @@ class _LessonAccordionState extends State<LessonAccordion> {
       );
       if (preview != true) return;
     }
-    await Navigator.push(context, MaterialPageRoute(
-      builder: (_) => LessonScreen(
-        lesson: lesson,
-        book: widget.book,
-        modIdx: modIdx,
-        secIdx: secIdx,
-        unitIdx: unitIdx,
-        lessonIdx: lessonIdx,
-      ),
-    ));
-    widget.onLessonFinished();
-    _findActiveUnit();
+    // Save resume point
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('last_lesson_id_${widget.book.id}', lesson.id);
+    await prefs.setInt('last_mod_idx_${widget.book.id}', modIdx);
+    await prefs.setInt('last_sec_idx_${widget.book.id}', secIdx);
+
+    if (context.mounted) {
+      await Navigator.push(context, MaterialPageRoute(
+        builder: (_) => LessonScreen(
+          lesson: lesson,
+          book: widget.book,
+          modIdx: modIdx,
+          secIdx: secIdx,
+          unitIdx: unitIdx,
+          lessonIdx: lessonIdx,
+        ),
+      ));
+      widget.onLessonFinished();
+      _findActiveUnit();
+    }
   }
 
   Widget _buildLessonTile(

@@ -8,6 +8,7 @@ import '../widgets/file_selection_list.dart';
 import 'index_picker_screen.dart';
 import 'auto_index_screen.dart';
 import '../services/generation_manager.dart';
+import '../services/pdf_service.dart';
 
 enum GenerationMode { book, handout, course }
 enum IndexMode { auto, manual }
@@ -29,19 +30,15 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
-      allowMultiple: !forSyllabus,
+      allowMultiple: true,
     );
 
     if (result != null) {
       setState(() {
         final newFiles = result.paths.where((p) => p != null).map((p) => File(p!)).toList();
         if (forSyllabus) {
-          _syllabusFiles.clear();
           _syllabusFiles.addAll(newFiles);
         } else {
-          if (_mode == GenerationMode.book || _mode == GenerationMode.handout) {
-            _selectedFiles.clear(); // only 1 allowed for book/handout
-          }
           _selectedFiles.addAll(newFiles);
         }
       });
@@ -58,45 +55,86 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
       return;
     }
 
-    final isSinglePdf = _selectedFiles.length == 1 && _selectedFiles.first.path.toLowerCase().endsWith('.pdf');
-
-    if (_mode == GenerationMode.handout) {
-      _showHandoutPrompt();
-      return;
-    }
-
-    if (!isSinglePdf && _mode == GenerationMode.book) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Book generation needs a single PDF.'),
-      ));
-      return;
-    }
-
-    final pdf = _selectedFiles.first;
-    final filename = pdf.path.split(RegExp(r'[\\/]')).last;
-
-    if (_indexMode == IndexMode.manual) {
-      Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => IndexPickerScreen(
-          sourcePdf: pdf,
-          filename: filename,
-          syllabusFiles: _mode == GenerationMode.course ? _syllabusFiles : [],
-          isCourse: _mode == GenerationMode.course,
+    // Show loading spinner
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: Card(
+          color: AppTheme.surface,
+          child: Padding(
+            padding: EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: AppTheme.duoGreen),
+                SizedBox(height: 16),
+                Text('Preparing & Merging Files...', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
         ),
-      ));
-    } else {
-      Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => AutoIndexScreen(
-          sourcePdf: pdf,
-          filename: filename,
-          syllabusFiles: _mode == GenerationMode.course ? _syllabusFiles : [],
-          isCourse: _mode == GenerationMode.course,
-        ),
-      ));
-    }
+      ),
+    );
+
+    Future.microtask(() async {
+      try {
+        final pdfService = PdfService();
+        File finalSourcePdf;
+        if (_selectedFiles.length == 1 && _selectedFiles.first.path.toLowerCase().endsWith('.pdf')) {
+          finalSourcePdf = _selectedFiles.first;
+        } else {
+          finalSourcePdf = await pdfService.mergeFiles(_selectedFiles);
+        }
+
+        List<File> finalSyllabusFiles = [];
+        if (_mode == GenerationMode.course && _syllabusFiles.isNotEmpty) {
+          if (_syllabusFiles.length == 1 && _syllabusFiles.first.path.toLowerCase().endsWith('.pdf')) {
+            finalSyllabusFiles = [_syllabusFiles.first];
+          } else {
+            finalSyllabusFiles = [await pdfService.mergeFiles(_syllabusFiles)];
+          }
+        }
+
+        if (!mounted) return;
+        Navigator.of(context).pop(); // dismiss loading dialog
+
+        final filename = finalSourcePdf.path.split(RegExp(r'[\\/]')).last;
+
+        if (_mode == GenerationMode.handout) {
+          _showHandoutPrompt(finalSourcePdf, filename);
+          return;
+        }
+
+        if (_indexMode == IndexMode.manual) {
+          Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => IndexPickerScreen(
+              sourcePdf: finalSourcePdf,
+              filename: filename,
+              syllabusFiles: finalSyllabusFiles,
+              isCourse: _mode == GenerationMode.course,
+            ),
+          ));
+        } else {
+          Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => AutoIndexScreen(
+              sourcePdf: finalSourcePdf,
+              filename: filename,
+              syllabusFiles: finalSyllabusFiles,
+              isCourse: _mode == GenerationMode.course,
+            ),
+          ));
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.of(context).pop(); // dismiss loading dialog
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error preparing files: $e')));
+        }
+      }
+    });
   }
 
-  void _showHandoutPrompt() {
+  void _showHandoutPrompt(File finalSourcePdf, String filename) {
     final TextEditingController instructionsCtrl = TextEditingController();
     showDialog(
       context: context,
@@ -122,13 +160,13 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.duoGreen),
             onPressed: () {
               Navigator.of(ctx).pop();
-              final filename = _selectedFiles.first.path.split(RegExp(r'[\\/]')).last;
               GenerationManager.instance.startBookGeneration(
-                _selectedFiles,
+                [finalSourcePdf],
                 filename,
-                indexFiles: [],
+                indexFiles: [finalSourcePdf],
                 chapter1AbsolutePage: 1,
                 customInstructions: instructionsCtrl.text.trim().isEmpty ? null : instructionsCtrl.text.trim(),
+                isHandout: true,
               );
               Navigator.of(context).pop();
             },

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../services/generation_manager.dart';
@@ -39,6 +40,30 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     super.initState();
     _loadProgress();
     _checkMissingFiles();
+    _loadLastResumed();
+  }
+
+  Future<void> _loadLastResumed() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final modIdx = prefs.getInt('last_mod_idx_${widget.book.id}');
+      final secIdx = prefs.getInt('last_sec_idx_${widget.book.id}');
+      if (modIdx != null && secIdx != null) {
+        if (modIdx >= 0 && modIdx < widget.book.modules.length) {
+          final module = widget.book.modules[modIdx];
+          if (secIdx >= 0 && secIdx < module.sections.length) {
+            if (mounted) {
+              setState(() {
+                _activeModuleIdx = modIdx;
+                _activeSectionIdx = secIdx;
+              });
+            }
+          }
+        }
+      }
+    } catch (e) {
+      print('Error loading last resumed position: $e');
+    }
   }
 
   @override

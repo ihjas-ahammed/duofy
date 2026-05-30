@@ -122,6 +122,92 @@ Return ONLY valid JSON matching this exact structure:
   ]
 }''';
 
+  /// Handout course skeleton generator (one-shot).
+  static const String handoutSkeleton = '''You are an expert curriculum designer. The attached file contains a handout / document named "%filename%".
+This handout has a total of %total_pages% pages.
+%custom_instructions%
+
+TASK: Create a structured study course based on the content of this handout. 
+Analyze the document and break it down into logical study modules (typically 1-3 modules) and sub-topics/sections (typically 2-4 per module).
+
+Rules:
+1. Cover all key concepts present in the handout.
+2. Assign page ranges (startPage and endPage) for each section. These MUST correspond to the absolute PDF pages of the handout (1-based, within [1, %total_pages%]).
+3. Keep ranges contiguous.
+
+For each section provide "title", "description", a "color" (one of: duo-blue, duo-green, duo-violet, duo-orange, duo-red), and absolute "startPage"/"endPage".
+
+Return ONLY valid JSON matching this exact structure:
+{
+  "title": "Handout Course Title",
+  "icon": "BookOpen",
+  "description": "Short overview of the handout",
+  "systemPrompt": "You are an expert tutor...",
+  "modules": [
+    {
+      "id": "m1",
+      "title": "Module Title",
+      "description": "...",
+      "sections": [
+        { "id": "m1-s1", "title": "Section Title", "description": "...", "color": "duo-blue", "startPage": 1, "endPage": 2 }
+      ]
+    }
+  ]
+}''';
+
+  /// Stage 1 of the syllabus-based course flow: enumerate chapters based on the syllabus.
+  static const String syllabusChapterList = '''You are an expert curriculum designer. We are designing a structured study course based on the attached SYLLABUS.
+The reference textbook named "%filename%" has its table of contents / index pages attached.
+
+TASK: Generate the top-level modules/chapters for this course. 
+These modules/chapters MUST align with the syllabus. 
+For each module/chapter, identify the corresponding content in the textbook's table of contents and assign the starting and ending page range in the reference textbook.
+
+%custom_instructions%
+$_offsetBlock
+
+For each chapter provide:
+- "title": the chapter heading (e.g. "Chapter 1: Title" or matching the syllabus module title).
+- "description": a one-line summary.
+- "startPage": the ABSOLUTE PDF page in the reference textbook where the chapter's content begins.
+- "endPage": the ABSOLUTE PDF page where it ends (typically before the next chapter starts).
+
+Also generate, for the whole course:
+- a professional `title` (matching the syllabus),
+- an `icon` reflecting the subject matter,
+- a `description`,
+- a `systemPrompt` for a tutor AI that STRICTLY instructs it to use double-escaped backslashes for all LaTeX (e.g. \\\\frac instead of \\frac).
+
+Return ONLY valid JSON matching this exact structure:
+{
+  "title": "Course Title from Syllabus",
+  "icon": "GraduationCap",
+  "description": "Short overview of the syllabus-based course",
+  "systemPrompt": "You are an expert tutor...",
+  "chapters": [
+    { "id": "m1", "title": "Module/Chapter Title", "description": "...", "startPage": 12, "endPage": 34 }
+  ]
+}''';
+
+  /// Stage 2 of the syllabus-based course flow: detail sections for a chapter based on the syllabus.
+  static const String syllabusSectionList = '''You are an expert curriculum designer. We are detailing sections for the chapter "%chapter_title%" (pages %chapter_start% to %chapter_end% in reference textbook "%filename%") based on the attached SYLLABUS.
+
+TASK: Identify the subtopics/sections from the SYLLABUS that belong to this chapter. 
+Assign absolute page ranges in the reference textbook for each subtopic/section.
+The page ranges must be contiguous, in order, and stay strictly within the chapter's range [%chapter_start%, %chapter_end%].
+
+%custom_instructions%
+$_offsetBlock
+
+For each section provide "title", "description", a "color" (one of: duo-blue, duo-green, duo-violet, duo-orange, duo-red), and absolute "startPage"/"endPage" within the reference textbook.
+
+Return ONLY valid JSON matching this exact structure (no "units" array):
+{
+  "sections": [
+    { "id": "s1", "title": "Section Title", "description": "...", "color": "duo-blue", "startPage": 12, "endPage": 18 }
+  ]
+}''';
+
   /// Stage 2 of the batched TOC flow: detail the sections of ONE chapter.
   ///
   /// Called once per chapter returned by [chapterList], with that chapter's

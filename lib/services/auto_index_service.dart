@@ -18,9 +18,10 @@ class AutoIndexService {
     File sourcePdf,
     void Function(String status, double progress) onProgress,
   ) async {
-    const int maxPagesToScan = 100;
+    final pageCount = await _pdfService.getPageCount(sourcePdf);
+    final int maxPagesToScan = pageCount.clamp(0, 100);
     const int chunkSize = 10;
-    final int chunks = maxPagesToScan ~/ chunkSize;
+    final int chunks = (maxPagesToScan / chunkSize).ceil();
 
     List<int> foundIndexPages = [];
     int? foundChapter1Page;
@@ -32,11 +33,13 @@ class AutoIndexService {
 
       int startPage = i * chunkSize + 1;
       int endPage = (i + 1) * chunkSize;
+      if (endPage > pageCount) endPage = pageCount;
+      if (startPage > pageCount) break;
       
       onProgress('Scanning pages $startPage to $endPage...', (i + 1) / chunks);
 
       try {
-        final chunkPages = List.generate(chunkSize, (index) => startPage + index);
+        final chunkPages = List.generate(endPage - startPage + 1, (index) => startPage + index);
         final chunkPdf = await _pdfService.extractPages(sourcePdf, chunkPages);
         
         final jsonMap = await _aiService.scanIndexChunk(chunkPdf, startPage, endPage);
@@ -44,11 +47,14 @@ class AutoIndexService {
         if (jsonMap != null) {
           if (jsonMap['indexPages'] != null && jsonMap['indexPages'] is List) {
             for (var p in jsonMap['indexPages']) {
-              if (p is int) foundIndexPages.add(p);
+              if (p is int && p >= 1 && p <= pageCount) foundIndexPages.add(p);
             }
           }
           if (jsonMap['chapter1StartPage'] != null && jsonMap['chapter1StartPage'] is int) {
-            foundChapter1Page = jsonMap['chapter1StartPage'];
+            final val = jsonMap['chapter1StartPage'];
+            if (val >= 1 && val <= pageCount) {
+              foundChapter1Page = val;
+            }
           }
         }
         

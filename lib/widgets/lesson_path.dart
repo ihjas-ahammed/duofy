@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
 import '../screens/lesson_screen.dart';
 import '../services/generation_manager.dart';
@@ -62,6 +63,36 @@ class LessonPath extends StatefulWidget {
 }
 
 class _LessonPathState extends State<LessonPath> {
+  final ScrollController _scrollController = ScrollController();
+  String? _lastLessonId;
+  bool _didScrollToLast = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLastLesson();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadLastLesson() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final id = prefs.getString('last_lesson_id_${widget.book.id}');
+      if (id != null && mounted) {
+        setState(() {
+          _lastLessonId = id;
+        });
+      }
+    } catch (e) {
+      print('Error loading last lesson ID: $e');
+    }
+  }
+
   static const double _pathWidth = 400;
   static const double _centerX = 200;
   static const double _zigOffset = 65;
@@ -130,6 +161,7 @@ class _LessonPathState extends State<LessonPath> {
 
     // First pass: layout (compute y positions and points)
     double y = _topPad;
+    double? targetY;
     int globalIdx = 0;
 
     final List<_PathPoint> points = [];
@@ -165,6 +197,10 @@ class _LessonPathState extends State<LessonPath> {
           points.add(_PathPoint(x: x, y: y, id: lesson.id));
           elements.add(_Element.lesson(unit: unit, unitIdx: uIdx, lesson: lesson, lessonIdx: lIdx, x: x, y: y));
 
+          if (lesson.id == _lastLessonId) {
+            targetY = y;
+          }
+
           y += _nodeSpacing;
           globalIdx++;
         }
@@ -174,7 +210,26 @@ class _LessonPathState extends State<LessonPath> {
 
     final double containerHeight = y + _bottomPad;
 
+    if (targetY != null && !_didScrollToLast) {
+      _didScrollToLast = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          final viewportHeight = _scrollController.position.viewportDimension;
+          final scrollPosition = (targetY! - (viewportHeight / 2)).clamp(
+            0.0,
+            _scrollController.position.maxScrollExtent,
+          );
+          _scrollController.animateTo(
+            scrollPosition,
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeInOut,
+          );
+        }
+      });
+    }
+
     return SingleChildScrollView(
+      controller: _scrollController,
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.only(top: 8, bottom: 120),
       child: Center(
@@ -236,20 +291,27 @@ class _LessonPathState extends State<LessonPath> {
                           ? null
                           : () => widget.onRegenerateLesson!(el.unitIdx!, el.lessonIdx!, lesson),
                       onTap: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => LessonScreen(
-                              lesson: lesson,
-                              book: widget.book,
-                              modIdx: widget.modIdx,
-                              secIdx: widget.secIdx,
-                              unitIdx: el.unitIdx!,
-                              lessonIdx: el.lessonIdx!,
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.setString('last_lesson_id_${widget.book.id}', lesson.id);
+                        await prefs.setInt('last_mod_idx_${widget.book.id}', widget.modIdx);
+                        await prefs.setInt('last_sec_idx_${widget.book.id}', widget.secIdx);
+
+                        if (context.mounted) {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => LessonScreen(
+                                lesson: lesson,
+                                book: widget.book,
+                                modIdx: widget.modIdx,
+                                secIdx: widget.secIdx,
+                                unitIdx: el.unitIdx!,
+                                lessonIdx: el.lessonIdx!,
+                              ),
                             ),
-                          ),
-                        );
-                        widget.onLessonFinished();
+                          );
+                          widget.onLessonFinished();
+                        }
                       },
                     ),
                   ),
@@ -460,7 +522,7 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
     final isRunning = task != null && !isError;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 120),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),

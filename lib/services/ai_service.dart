@@ -390,6 +390,7 @@ Important Rules:
     required int chapter1AbsolutePage,
     String? customInstructions,
     List<File> syllabusFiles = const [],
+    bool isHandout = false,
     void Function(String status, double? progress)? onProgress,
   }) async {
     final keys = await _getKeys();
@@ -398,9 +399,60 @@ Important Rules:
     final fileParts = await _buildFileParts(indexFiles);
     final syllabusParts = await _buildFileParts(syllabusFiles, extractText: true);
 
+    if (isHandout) {
+      onProgress?.call('Analyzing handout content…', null);
+      int totalPages = 1;
+      try {
+        if (indexFiles.isNotEmpty) {
+          totalPages = await PdfService().getPageCount(indexFiles.first);
+        }
+      } catch (e) {
+        print('Error getting page count: $e');
+      }
+
+      final handoutPrompt = PromptService.handoutSkeleton
+          .replaceAll('%filename%', filename)
+          .replaceAll('%total_pages%', '$totalPages')
+          .replaceAll('%custom_instructions%', instructionsBlock);
+
+      Map<String, dynamic>? handoutMeta;
+      Exception? lastException;
+      for (final modelName in modelsToTry) {
+        for (final apiKey in keys) {
+          try {
+            final model = GenerativeModel(
+              model: modelName,
+              apiKey: apiKey,
+              generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+            );
+            final response = await _retryTransient(
+              () => model.generateContent([Content.multi([TextPart(handoutPrompt), ...fileParts])])
+                  .timeout(const Duration(minutes: 4)),
+              onRetry: (a, e) => print('[AiService] Handout skeleton transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+            );
+            if (response.text != null) {
+              handoutMeta = _cleanAndDecodeJson(response.text!);
+              break;
+            }
+          } on TimeoutException {
+            lastException = Exception('Handout analysis timed out ($modelName).');
+          } catch (e) {
+            lastException = Exception('Handout analysis failed ($modelName): ${_cleanErrMsg(e)}');
+          }
+        }
+        if (handoutMeta != null) break;
+      }
+      if (handoutMeta == null) throw lastException ?? Exception('Failed to analyze handout. All models/keys exhausted.');
+
+      onProgress?.call('Finalizing handout structure…', 1.0);
+      return Book.fromJson(handoutMeta).copyWith(customInstructions: customInstructions);
+    }
+
     // ---- Stage 1: chapter list (one focused call → indeterminate) ----------
     onProgress?.call('Mapping chapters…', null);
-    final chapterPrompt = PromptService.chapterList
+    final bool isCourse = syllabusFiles.isNotEmpty;
+    final promptTemplate = isCourse ? PromptService.syllabusChapterList : PromptService.chapterList;
+    final chapterPrompt = promptTemplate
         .replaceAll('%filename%', filename)
         .replaceAll('%chapter1_abs_page%', '$chapter1AbsolutePage')
         .replaceAll('%custom_instructions%', instructionsBlock);
@@ -491,6 +543,8 @@ Important Rules:
             fileParts: fileParts,
             models: modelsToTry,
             keys: keys,
+            isCourse: isCourse,
+            syllabusParts: syllabusParts,
           );
         } catch (e) {
           print('[AiService] Sections for chapter ${ch['id']} failed: ${_cleanErrMsg(e)}');
@@ -551,8 +605,11 @@ Important Rules:
     required List<Part> fileParts,
     required List<String> models,
     required List<String> keys,
+    bool isCourse = false,
+    List<Part> syllabusParts = const [],
   }) async {
-    final prompt = PromptService.sectionList
+    final promptTemplate = isCourse ? PromptService.syllabusSectionList : PromptService.sectionList;
+    final prompt = promptTemplate
         .replaceAll('%filename%', filename)
         .replaceAll('%chapter1_abs_page%', '$chapter1AbsolutePage')
         .replaceAll('%custom_instructions%', instructionsBlock)
@@ -560,7 +617,7 @@ Important Rules:
         .replaceAll('%chapter_start%', (chapter['startPage'])?.toString() ?? '?')
         .replaceAll('%chapter_end%', (chapter['endPage'])?.toString() ?? '?');
 
-    final parts = <Part>[TextPart(prompt), ...fileParts];
+    final parts = <Part>[TextPart(prompt), ...syllabusParts, ...fileParts];
     Object? lastErr;
     for (final modelName in models) {
       for (final apiKey in keys) {

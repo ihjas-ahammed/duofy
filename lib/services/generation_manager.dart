@@ -107,6 +107,7 @@ class GenerationManager extends ChangeNotifier {
     required int chapter1AbsolutePage,
     String? customInstructions,
     List<File> syllabusFiles = const [],
+    bool isHandout = false,
   }) async {
     sourceFiles = sourceFiles.toList();
     final taskId = DateTime.now().millisecondsSinceEpoch.toString();
@@ -140,6 +141,7 @@ class GenerationManager extends ChangeNotifier {
         chapter1AbsolutePage: chapter1AbsolutePage,
         customInstructions: customInstructions,
         syllabusFiles: syllabusFiles,
+        isHandout: isHandout,
         onProgress: (status, progress) {
           task.statusMessage = status;
           task.progress = progress;
@@ -151,13 +153,19 @@ class GenerationManager extends ChangeNotifier {
       await _recordRunTime('meta_gen_history', stopwatch.elapsedMilliseconds);
 
       if (skeletonBook != null) {
-        task.skeletonBook = skeletonBook;
-        task.state = BookGenState.review;
-        task.statusMessage = 'Action Required: Review Splits';
-        notifyListeners();
-        
-        await NotificationService.cancel(notifId);
-        await NotificationService.showActionable(notifId, "Course Skeleton Ready", "Tap to review page splits.", "review_split|$taskId");
+        if (isHandout) {
+          // Handouts skip the manual split review phase entirely!
+          // We call startBackgroundSplitAndSave directly.
+          await startBackgroundSplitAndSave(taskId, sourceFiles, skeletonBook);
+        } else {
+          task.skeletonBook = skeletonBook;
+          task.state = BookGenState.review;
+          task.statusMessage = 'Action Required: Review Splits';
+          notifyListeners();
+
+          await NotificationService.cancel(notifId);
+          await NotificationService.showActionable(notifId, "Course Skeleton Ready", "Tap to review page splits.", "review_split|$taskId");
+        }
       }
     } catch (e) {
       task.state = BookGenState.error;
@@ -241,7 +249,12 @@ class GenerationManager extends ChangeNotifier {
     await NotificationService.showProgress(notifId, "Restoring Files", "Re-splitting source natively...", indeterminate: true);
 
     try {
-      final completeBook = await _pdfService.splitBookPdf(sourceFiles, book, (status, progress) {
+      List<File> finalSourceFiles = sourceFiles;
+      if (sourceFiles.length > 1 || (sourceFiles.isNotEmpty && !sourceFiles.first.path.toLowerCase().endsWith('.pdf'))) {
+        finalSourceFiles = [await _pdfService.mergeFiles(sourceFiles)];
+      }
+
+      final completeBook = await _pdfService.splitBookPdf(finalSourceFiles, book, (status, progress) {
         task.statusMessage = status;
         task.progress = progress;
         notifyListeners();
