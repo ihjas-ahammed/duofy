@@ -1,4 +1,4 @@
-﻿#include "webview_cef_plugin.h"
+#include "webview_cef_plugin.h"
 #include "webview_cef_keyevent.h"
 // This must be included before many other Windows headers.
 #include <windows.h>
@@ -88,15 +88,35 @@ namespace webview_cef {
 			case Webview_Value_Type_String:
 				return flutter::EncodableValue(webview_value_get_string(args));
 			case Webview_Value_Type_Uint8_List:
-				return flutter::EncodableValue(webview_value_get_uint8_list(args));
+			{
+				size_t len = webview_value_get_len(args);
+				const uint8_t* val = webview_value_get_uint8_list(args);
+				return flutter::EncodableValue(std::vector<uint8_t>(val, val + len));
+			}
 			case Webview_Value_Type_Int32_List:
-				return flutter::EncodableValue(webview_value_get_int32_list(args));
+			{
+				size_t len = webview_value_get_len(args);
+				const int32_t* val = webview_value_get_int32_list(args);
+				return flutter::EncodableValue(std::vector<int32_t>(val, val + len));
+			}
 			case Webview_Value_Type_Int64_List:
-				return flutter::EncodableValue(webview_value_get_int64_list(args));
+			{
+				size_t len = webview_value_get_len(args);
+				const int64_t* val = webview_value_get_int64_list(args);
+				return flutter::EncodableValue(std::vector<int64_t>(val, val + len));
+			}
 			case Webview_Value_Type_Float_List:
-				return flutter::EncodableValue(webview_value_get_float_list(args));
+			{
+				size_t len = webview_value_get_len(args);
+				const float* val = webview_value_get_float_list(args);
+				return flutter::EncodableValue(std::vector<float>(val, val + len));
+			}
 			case Webview_Value_Type_Double_List:
-				return flutter::EncodableValue(webview_value_get_double_list(args));
+			{
+				size_t len = webview_value_get_len(args);
+				const double* val = webview_value_get_double_list(args);
+				return flutter::EncodableValue(std::vector<double>(val, val + len));
+			}
 			case Webview_Value_Type_List:
 			{
 				flutter::EncodableList ret;
@@ -116,7 +136,7 @@ namespace webview_cef {
 				return ret;
 			}
 			default:
-				return flutter::EncodableValue(nullptr);
+				return flutter::EncodableValue();
 		}
 	}
 
