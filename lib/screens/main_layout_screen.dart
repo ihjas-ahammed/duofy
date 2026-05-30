@@ -96,6 +96,54 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
       NotesScreen(book: _currentBook),
     ];
 
+    final isDesktop = MediaQuery.of(context).size.width >= 900;
+
+    if (isDesktop) {
+      return Scaffold(
+        body: Row(
+          children: [
+            // Desktop Left Sidebar (SideNav equivalent)
+            _buildDesktopSidebar(),
+            Container(width: 1, color: Colors.white.withOpacity(0.08)),
+            // Desktop Main Content
+            Expanded(
+              child: Center(
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 1000),
+                  child: Scaffold(
+                    appBar: AppBar(
+                      automaticallyImplyLeading: false,
+                      backgroundColor: Colors.transparent,
+                      elevation: 0,
+                      centerTitle: true,
+                      title: Text(
+                        _currentIndex == 0
+                            ? 'Learning Path'
+                            : _currentIndex == 1
+                                ? 'Practice Arena'
+                                : 'Course Notes',
+                        style: const TextStyle(
+                          fontFamily: 'Nunito',
+                          fontWeight: FontWeight.w900,
+                          fontSize: 22,
+                          letterSpacing: 1.0,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    body: IndexedStack(
+                      index: _currentIndex,
+                      children: pages,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       extendBody: true, 
       appBar: _currentIndex == 0 ? null : AppBar(
@@ -157,6 +205,153 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopSidebar() {
+    return Container(
+      width: 280,
+      color: Colors.black.withOpacity(0.4),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Branding Header
+          Row(
+            children: [
+              const Icon(LucideIcons.map, size: 30, color: AppTheme.duoBlue),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'DuoFY',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        fontSize: 20,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    Text(
+                      _currentBook.title,
+                      style: const TextStyle(
+                        fontFamily: 'Nunito',
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white54,
+                        fontSize: 12,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      maxLines: 1,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 40),
+          
+          // Navigation Links
+          _buildSidebarNavItem(0, LucideIcons.map, 'Path'),
+          const SizedBox(height: 8),
+          _buildSidebarNavItem(1, LucideIcons.dumbbell, 'Practice'),
+          const SizedBox(height: 8),
+          _buildSidebarNavItem(2, LucideIcons.fileText, 'Notes'),
+          
+          const Spacer(),
+          
+          // Settings and Actions
+          _buildSidebarActionButton(
+            icon: LucideIcons.settings,
+            label: 'Course Settings',
+            onTap: _openCourseSettings,
+          ),
+          const SizedBox(height: 8),
+          _buildSidebarActionButton(
+            icon: LucideIcons.uploadCloud,
+            label: 'Publish Course',
+            iconColor: AppTheme.duoBlue,
+            onTap: _publishBook,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebarNavItem(int index, IconData icon, String label) {
+    final isActive = _currentIndex == index;
+    return InkWell(
+      onTap: () => setState(() => _currentIndex = index),
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: isActive ? AppTheme.duoBlue.withOpacity(0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isActive ? AppTheme.duoBlue : Colors.white60,
+              size: 24,
+            ),
+            const SizedBox(width: 16),
+            Text(
+              label.toUpperCase(),
+              style: TextStyle(
+                fontFamily: 'Nunito',
+                fontWeight: FontWeight.w900,
+                fontSize: 14,
+                letterSpacing: 0.8,
+                color: isActive ? AppTheme.duoBlue : Colors.white70,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSidebarActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    Color iconColor = Colors.white70,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: iconColor,
+              size: 24,
+            ),
+            const SizedBox(width: 16),
+            Text(
+              label,
+              style: const TextStyle(
+                fontFamily: 'Nunito',
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: Colors.white70,
+              ),
+            ),
+          ],
         ),
       ),
     );
