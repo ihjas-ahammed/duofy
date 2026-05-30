@@ -425,10 +425,19 @@ CONCEPT TO ILLUSTRATE:
 LESSON CONTEXT (for tone and reference only — do NOT add unrelated decoration):
 %lesson_context%
 
-RENDERING SURFACE:
+RENDERING SURFACE & OPTIMIZATION FOR SMALL VIEWPORTS:
 - Your drawing is shown inside a fixed card with aspect ratio ~3:2 (landscape; roughly 1.5× wider than tall). Design FOR THAT FRAME — do NOT design for a full-screen / portrait window.
 - The host already creates the canvas, scales it for devicePixelRatio, and clears to a dark transparent background BEFORE calling your function. Never resize the canvas yourself, never set a fixed size in CSS, never create a second canvas.
-- `W` and `H` are the canvas CSS-pixel width and height of THAT 3:2 card. Compute every coordinate relative to `W`/`H` so the drawing fills the card; leave only ~6% padding inside.
+- `W` and `H` are the canvas CSS-pixel width and height of THAT 3:2 card. Compute every coordinate relative to `W`/`H` so the drawing dynamically scales and fills the frame.
+- **Design for Small Mobile Preview by Default**: On mobile screens, the preview card size is very small (W is ~300px to ~450px CSS pixels). Design everything to be highly legible and touch-friendly at this small scale:
+  - **Thick Lines**: Do NOT use thin 1px/2px strokes. Use `ctx.lineWidth = 3` to `5` for primary paths, vectors, graphs, and borders.
+  - **Large Text**: Use readable font sizes like `ctx.font = "14px sans-serif"` or `ctx.font = "15px sans-serif"` (or scale font size dynamically with `H * 0.07`). Keep labels short and sparse.
+  - **Touch Hitboxes**: If the canvas is interactive (pointer events), interactive knobs/handles must have a visual radius of at least `12px` to `16px` and a touch hit-detection radius of at least `18px` to `25px` so they are easily draggable with a finger on a mobile screen.
+  - **Simplified Preview**: Keep the default preview clean, bold, and uncluttered.
+- **Full Screen Prompt (For High-Detail/Complex Diagrams)**: If the diagram requires high detail, complex geometric coordinate mappings, or multi-parameter drag-and-drop interactions that are hard to navigate on a small card:
+  - Draw a beautiful, simplified layout in the small view.
+  - **ADD TO OUTPUT**: Draw a clear visual indicator/label on the canvas (e.g., in a corner or centered along the bottom, e.g., at `H * 0.9` or `H * 0.15` using `ctx.textAlign = "right"` or `"center"`) prompting the user to view in full screen. For example:
+    `ctx.fillStyle = "#94A3B8"; ctx.font = "12px sans-serif"; ctx.fillText("Tap ⛶ for Full Screen", W * 0.95, H * 0.15);` (adjust position and alignment to fit beautifully).
 
 PICK THE RIGHT ENTRY POINT — define EXACTLY ONE of the following (no others). The host detects which is present.
 
@@ -446,21 +455,22 @@ PICK THE RIGHT ENTRY POINT — define EXACTLY ONE of the following (no others). 
 
 STYLE RULES (apply to A, B, C):
 1. Dark, already-cleared background. Light-on-dark colors: primary strokes `#E2E8F0`, accents `#3B82F6` (blue), `#58CC02` (green), `#FBBF24` (amber), `#F472B6` (pink). Label text `#F8FAFC`. Never assume a white page.
-2. Text is SECONDARY. Do NOT draw a title, heading, caption, or sentences. Add at most a few SHORT labels (axis names, a key variable, a single value) only where the diagram is unreadable without them. `ctx.font = "13px sans-serif"`. Carry meaning with the drawing itself, not words.
+2. Text is SECONDARY. Do NOT draw a title, heading, caption, or sentences. Add at most a few SHORT labels (axis names, a key variable, a single value) only where the diagram is unreadable without them. Use `ctx.font = "14px sans-serif"` or larger. Carry meaning with the drawing itself, not words.
 3. No external images, no `fetch`, no `XMLHttpRequest`, no DOM mutation outside the canvas, no popups, no `alert`, no `setInterval` (use `requestAnimationFrame`).
 4. Output ONLY the JavaScript — no HTML, no `<script>` tags, no Markdown fences, no prose, no `import` statements.
 5. Keep the program SMALL (≲ 120 lines). Prefer clear math over fancy shaders. Pure functions, no globals besides the one entry-point function.
+6. If higher detail or complex interactions are needed, draw a prompt directly on the canvas asking the user to view in full screen (e.g. "Tap ⛶ for Full Screen").
 
 EXAMPLE A — STATIC 2D (y = x²):
 function draw(ctx, W, H) {
   const pad = W * 0.08;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 3;
   ctx.strokeStyle = "#E2E8F0";
   ctx.beginPath();
   ctx.moveTo(pad, H - pad); ctx.lineTo(W - pad, H - pad);
   ctx.moveTo(pad, H - pad); ctx.lineTo(pad, pad);
   ctx.stroke();
-  ctx.strokeStyle = "#3B82F6"; ctx.lineWidth = 3;
+  ctx.strokeStyle = "#3B82F6"; ctx.lineWidth = 4;
   ctx.beginPath();
   for (let i = 0; i <= 100; i++) {
     const t = i / 100;
@@ -469,7 +479,7 @@ function draw(ctx, W, H) {
     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.stroke();
-  ctx.fillStyle = "#F8FAFC"; ctx.font = "13px sans-serif";
+  ctx.fillStyle = "#F8FAFC"; ctx.font = "14px sans-serif";
   ctx.fillText("y = x^2", W * 0.58, H * 0.32);
 }
 
@@ -478,12 +488,12 @@ function sketch(canvas, W, H) {
   const ctx = canvas.getContext('2d');
   let freq = 2;             // cycles across the canvas
   let dragging = false;
-  const sliderY = H * 0.88, knobR = 10;
+  const sliderY = H * 0.88, knobR = 14, hitR = 25;
   let knobX = W * 0.5;
   function onDown(e) {
     const r = canvas.getBoundingClientRect();
     const x = e.clientX - r.left, y = e.clientY - r.top;
-    if (Math.hypot(x - knobX, y - sliderY) < knobR * 2) dragging = true;
+    if (Math.hypot(x - knobX, y - sliderY) < hitR) dragging = true;
   }
   function onMove(e) {
     if (!dragging) return;
@@ -499,9 +509,9 @@ function sketch(canvas, W, H) {
   function frame() {
     ctx.clearRect(0, 0, W, H);
     // wave
-    ctx.strokeStyle = "#3B82F6"; ctx.lineWidth = 3;
+    ctx.strokeStyle = "#3B82F6"; ctx.lineWidth = 4;
     ctx.beginPath();
-    const midY = H * 0.45, amp = H * 0.25;
+    const midY = H * 0.42, amp = H * 0.22;
     for (let i = 0; i <= 200; i++) {
       const t = i / 200;
       const x = W * 0.05 + t * W * 0.9;
@@ -510,14 +520,19 @@ function sketch(canvas, W, H) {
     }
     ctx.stroke();
     // slider track
-    ctx.strokeStyle = "#334155"; ctx.lineWidth = 4;
+    ctx.strokeStyle = "#334155"; ctx.lineWidth = 6;
     ctx.beginPath(); ctx.moveTo(W * 0.1, sliderY); ctx.lineTo(W * 0.9, sliderY); ctx.stroke();
     // knob
     ctx.fillStyle = "#FBBF24";
     ctx.beginPath(); ctx.arc(knobX, sliderY, knobR, 0, Math.PI * 2); ctx.fill();
     // label
-    ctx.fillStyle = "#F8FAFC"; ctx.font = "13px sans-serif";
-    ctx.fillText("f = " + freq.toFixed(2), W * 0.05, H * 0.12);
+    ctx.fillStyle = "#F8FAFC"; ctx.font = "14px sans-serif";
+    ctx.fillText("f = " + freq.toFixed(2), W * 0.05, H * 0.15);
+    // Tap to expand callout for full screen interaction
+    ctx.fillStyle = "#94A3B8"; ctx.font = "12px sans-serif";
+    ctx.textAlign = "right";
+    ctx.fillText("Tap ⛶ for Full Screen", W * 0.95, H * 0.15);
+    ctx.textAlign = "left";
     requestAnimationFrame(frame);
   }
   frame();
