@@ -23,7 +23,7 @@ class PlatformWebView extends StatefulWidget {
   State<PlatformWebView> createState() => _PlatformWebViewState();
 }
 
-bool get _useCef => !kIsWeb && Platform.isLinux;
+bool get _useCef => !kIsWeb && (Platform.isLinux || Platform.isWindows);
 
 class _PlatformWebViewState extends State<PlatformWebView> {
   // webview_flutter path

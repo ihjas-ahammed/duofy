@@ -11,7 +11,7 @@ import '../../firebase_options.dart';
 /// Linux we route auth + Firestore through firedart (pure Dart). Everywhere
 /// else we use the native FlutterFire stack. This flag is the single source
 /// of truth — the [FbAuth] and [FbFirestore] facades branch on it too.
-bool get useFiredart => !kIsWeb && Platform.isLinux;
+bool get useFiredart => !kIsWeb && (Platform.isLinux || Platform.isWindows);
 
 class FbCore {
   static bool _initialized = false;
