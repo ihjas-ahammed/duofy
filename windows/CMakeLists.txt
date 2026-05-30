@@ -10,6 +10,10 @@ set(BINARY_NAME "duofy")
 # versions of CMake.
 cmake_policy(VERSION 3.14...3.25)
 
+# Ensure third-party dependencies (like Firebase C++ SDK) with older CMake minimums
+# are configured using at least CMake 3.5 compatibility.
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+
 # Define build configuration option.
 get_property(IS_MULTICONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 if(IS_MULTICONFIG)
