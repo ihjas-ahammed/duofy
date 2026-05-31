@@ -1026,7 +1026,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   List<String> _keys = [];
   List<String> _models = [];
-  String _modelPrimaryText = 'gemma4';
+  String _modelPrimaryText = 'gemini-flash-lite-latest';
   String _modelPrimaryGraphics = 'gemini-3.5-flash';
   String _modelLite = 'gemini-flash-lite-latest';
   bool _isFetchingModels = false;

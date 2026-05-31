@@ -328,20 +328,78 @@ class _LessonScreenState extends State<LessonScreen> {
     );
   }
 
+  Future<void> _promptDeleteSlide(Slide slide) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text('Delete this slide?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: const Text(
+          'Are you sure you want to permanently delete this slide from this lesson? This cannot be undone.',
+          style: TextStyle(color: Colors.white70, fontSize: 13),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final slideIdx = _lesson.slides.indexWhere((s) => identical(s, slide));
+    if (slideIdx < 0) return;
+
+    final newSlides = List<Slide>.from(_lesson.slides)..removeAt(slideIdx);
+
+    setState(() {
+      _lesson = _lesson.copyWith(slides: newSlides);
+      _slideQueue.removeWhere((s) => s.id == slide.id);
+      
+      if (_slideQueue.isEmpty) {
+        Navigator.pop(context);
+        return;
+      }
+      
+      if (_currentIndex >= _slideQueue.length) {
+        _currentIndex = _slideQueue.length - 1;
+      }
+      
+      _answered = false;
+      _isCorrect = false;
+      _selectedQuizOption = null;
+      _blankInput = '';
+      _numericInput = '';
+      _wordInput = '';
+    });
+
+    if (_canRegenerateCanvas) {
+      await GenerationManager.instance.deleteSlide(
+        book: widget.book!,
+        modIdx: widget.modIdx!,
+        secIdx: widget.secIdx!,
+        unitIdx: widget.unitIdx!,
+        lessonIdx: widget.lessonIdx!,
+        slideIdx: slideIdx,
+      );
+    }
+  }
+
   /// Applies a slide edit coming from a child view (e.g. double-tap on an
   /// option or proof step). Updates the in-memory lesson and persists via
   /// GenerationManager so edits survive reloads.
   void _applySlideEdit(Slide updated) {
-    final lessonSlideIdx = _lesson.slides.indexWhere((s) => s.id == updated.id);
+    final currentSlide = _slideQueue[_currentIndex];
+    final lessonSlideIdx = _lesson.slides.indexWhere((s) => identical(s, currentSlide));
     if (lessonSlideIdx < 0) return;
     final newSlides = List<Slide>.from(_lesson.slides);
     newSlides[lessonSlideIdx] = updated;
     setState(() {
       _lesson = _lesson.copyWith(slides: newSlides);
-      _slideQueue = List.of(newSlides);
-      if (_currentIndex >= _slideQueue.length) {
-        _currentIndex = _slideQueue.isEmpty ? 0 : _slideQueue.length - 1;
-      }
+      _slideQueue[_currentIndex] = updated;
     });
     if (_canRegenerateCanvas) {
       GenerationManager.instance.saveSlideEdit(
@@ -360,7 +418,7 @@ class _LessonScreenState extends State<LessonScreen> {
     switch (slide.type) {
       case 'step_by_step':
       case 'proof':
-        final slideIdx = _slideQueue.indexOf(slide);
+        final slideIdx = _lesson.slides.indexWhere((s) => identical(s, slide));
         return InteractiveProofView(
           slide: slide,
           lessonCanvas: _buildLessonCanvas(),
@@ -574,6 +632,15 @@ class _LessonScreenState extends State<LessonScreen> {
                             );
                           },
                         ),
+                      if (_canRegenerateCanvas)
+                        GestureDetector(
+                          onTap: () => _promptDeleteSlide(slide),
+                          child: const SizedBox(
+                            width: 40,
+                            height: 48,
+                            child: Icon(LucideIcons.trash2, color: AppTheme.duoRed, size: 22),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -625,10 +692,11 @@ class _LessonScreenState extends State<LessonScreen> {
                   color: AppTheme.duoGreen,
                   shadowColor: AppTheme.duoGreenDark,
                   onPressed: () {
+                    final updatedSlide = slide.copyWith(content: _editController.text);
                     setState(() {
-                      slide.content = _editController.text;
                       _isEditingMode = false;
                     });
+                    _applySlideEdit(updatedSlide);
                   },
                 ),
               )

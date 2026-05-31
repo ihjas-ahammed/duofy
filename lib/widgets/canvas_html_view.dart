@@ -210,7 +210,12 @@ class _CanvasFullScreenScreen extends StatelessWidget {
                           child: SvgPicture.string(content, fit: BoxFit.contain),
                         ),
                       )
-                    : CanvasHtmlView(drawFunction: content),
+                    : Center(
+                        child: AspectRatio(
+                          aspectRatio: 3 / 2,
+                          child: CanvasHtmlView(drawFunction: content),
+                        ),
+                      ),
               ),
             ),
             Positioned(

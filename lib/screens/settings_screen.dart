@@ -80,7 +80,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // gemini-1.5-flash and silently poisoned the ladder).
     List<String> models = prefs.getStringList('gemini_models_list') ?? [];
 
-    List<String> primaryText = await _loadModelList(prefs, 'model_primary_text_list', 'model_primary_text', 'gemma4');
+    List<String> primaryText = await _loadModelList(prefs, 'model_primary_text_list', 'model_primary_text', 'gemini-flash-lite-latest');
     List<String> primaryGraphics = await _loadModelList(prefs, 'model_primary_graphics_list', 'model_primary_graphics', 'gemini-3.5-flash');
     List<String> lite = await _loadModelList(prefs, 'model_lite_list', 'model_lite', 'gemini-flash-lite-latest');
 

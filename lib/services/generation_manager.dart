@@ -603,6 +603,34 @@ class GenerationManager extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> deleteSlide({
+    required Book book,
+    required int modIdx,
+    required int secIdx,
+    required int unitIdx,
+    required int lessonIdx,
+    required int slideIdx,
+  }) async {
+    final base = (await _dbService.getBookFromCache(book.id)) ?? book;
+    final mods = List<Module>.from(base.modules);
+    final secs = List<Section>.from(mods[modIdx].sections);
+    final uns = List<Unit>.from(secs[secIdx].units);
+    final lessons = List<Lesson>.from(uns[unitIdx].lessons);
+    final slides = List<Slide>.from(lessons[lessonIdx].slides);
+    
+    slides.removeAt(slideIdx);
+    
+    lessons[lessonIdx] = lessons[lessonIdx].copyWith(slides: slides);
+    uns[unitIdx] = uns[unitIdx].copyWith(lessons: lessons);
+    secs[secIdx] = secs[secIdx].copyWith(units: uns);
+    mods[modIdx] = mods[modIdx].copyWith(sections: secs);
+    final newBook = base.copyWith(modules: mods);
+    
+    await _dbService.saveGeneratedBook(newBook);
+    _bookUpdateController.add(newBook);
+    notifyListeners();
+  }
+
   /// Regenerates an entire lesson via the AI, preserving its id and slot.
   /// Best-effort: if generation fails the old lesson is kept and an error is
   /// reported via [errorSink]. Used by the long-press affordance on lesson

@@ -76,7 +76,8 @@ LATEX / MARKDOWN-MATH GUIDE (READ CAREFULLY — most generation errors come from
    - HTML inside math (`<sup>`, `<sub>`) — use `^` / `_`.
    - Unicode math glyphs like `½`, `√`, `∫` — always render them through LaTeX commands.
 
-10. SHORT NUMERIC RESULTS — when the answer is a plain number (e.g. for "numerical" slides), the `numericAnswer` field is a JSON number, NOT a LaTeX string. Don't wrap `42` as `"\\\\\$42\\\\\$"`.''';
+10. SHORT NUMERIC RESULTS — when the answer is a plain number (e.g. for "numerical" slides), the `numericAnswer` field is a JSON number, NOT a LaTeX string. Don't wrap `42` as `"\\\\\$42\\\\\$"`.
+11. NO LATEX FOR FILL IN BLANK & ONE WORD SIDES — never use LaTeX math delimiters (\$ or \$\$) in the question `content`, `blankAnswer`, or `blankDistractors` of "fill_in_blank" and "one_word" (type your answer) slides. Keep the question, the answer, and all distractors in plain text (using simple unicode characters like ², ³, or x if math symbols are needed) so they are easy for the user to drag or type directly without LaTeX delimiters.''';
 
   /// Shared offset-correction block reused by both skeleton-stage prompts so
   /// the model converts the TOC's printed page numbers into absolute PDF page
@@ -380,7 +381,7 @@ RETURN ONLY VALID JSON FOR THIS ONE LESSON (no wrapping array, no other keys):
 %custom_instructions%
 TASK:
 You are regenerating ONE slide inside the lesson "%lesson_title%" (part of the unit "%unit_title%").
-The slide you must regenerate has type "%slide_type%". Here is its current content, which the user wants replaced:
+The slide you must regenerate has type "%slide_type%". Here is its current complete JSON data, which the user wants replaced:
 -------- CURRENT SLIDE --------
 %slide_content%
 -------------------------------
@@ -398,13 +399,13 @@ CRITICAL SCHEMA & MICRO-LEARNING RULES:
 6. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array of stages; a step can be static (`stepText` only) or a question (`prompt` and `options`). Include a `canvasPrompt` only if a figure is genuinely needed.
 7. LaTeX must follow the LATEX GUIDE above (double-escaped, correct delimiters, no inline-on-its-own-line).
 
-RETURN ONLY VALID JSON FOR THIS ONE SLIDE (no wrapping array, no other keys), e.g.:
-{
-  "id": "%slide_id%",
-  "type": "%slide_type%",
-  "title": "Slide title",
-  "content": "..."
-}''';
+RETURN ONLY VALID JSON FOR THIS ONE SLIDE (no wrapping array, no other keys). Make sure to include all fields required for the slide type matching the schema of the current slide:
+- "theory": {"id": "%slide_id%", "type": "theory", "title": "Title", "content": "..."}
+- "quiz": {"id": "%slide_id%", "type": "quiz", "title": "Title", "content": "...", "options": [{"id": "opt1", "text": "Option A", "isCorrect": true, "explanation": "..."}, ...]}
+- "fill_in_blank": {"id": "%slide_id%", "type": "fill_in_blank", "title": "Title", "content": "... ___ ...", "blankAnswer": "word", "blankDistractors": ["wrong1", "wrong2", "wrong3"]}
+- "one_word": {"id": "%slide_id%", "type": "one_word", "title": "Title", "content": "...", "blankAnswer": "word"}
+- "numerical": {"id": "%slide_id%", "type": "numerical", "title": "Title", "content": "...", "numericAnswer": 12.3, "numericTolerance": 0.01}
+- "proof" / "step_by_step": {"id": "%slide_id%", "type": "proof", "title": "Title", "content": "...", "interactiveSteps": [{"prompt": "...", "options": [...]}, {"stepText": "..."}]}''';
 
   /// Stage-2 prompt: feeds a single `canvasPrompt` (produced by the text
   /// model) into the graphics model and asks it for a JavaScript program

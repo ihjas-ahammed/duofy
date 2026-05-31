@@ -1095,7 +1095,7 @@ Important Rules:
         .replaceAll('%lesson_title%', lesson.title)
         .replaceAll('%unit_title%', lesson.title)
         .replaceAll('%slide_type%', slide.type)
-        .replaceAll('%slide_content%', slide.content)
+        .replaceAll('%slide_content%', jsonEncode(slide.toJson()))
         .replaceAll('%slide_id%', slide.id)
         .replaceAll('%regen_note%', noteLine);
 

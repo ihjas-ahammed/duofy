@@ -66,11 +66,28 @@ class _LessonPathState extends State<LessonPath> {
   final ScrollController _scrollController = ScrollController();
   String? _lastLessonId;
   bool _didScrollToLast = false;
+  List<_Element> _elements = [];
 
   @override
   void initState() {
     super.initState();
     _loadLastLesson();
+  }
+
+  @override
+  void didUpdateWidget(LessonPath oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.completedLessons.length < widget.completedLessons.length) {
+      final newlyCompleted = widget.completedLessons.firstWhere(
+        (id) => !oldWidget.completedLessons.contains(id),
+        orElse: () => '',
+      );
+      if (newlyCompleted.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToNextElement(newlyCompleted);
+        });
+      }
+    }
   }
 
   @override
@@ -90,6 +107,45 @@ class _LessonPathState extends State<LessonPath> {
       }
     } catch (e) {
       print('Error loading last lesson ID: $e');
+    }
+  }
+
+  void _scrollToNextElement(String completedId) {
+    final currentIdx = _elements.indexWhere(
+      (el) => el.kind == _ElementKind.lesson && el.lesson?.id == completedId,
+    );
+    if (currentIdx == -1) return;
+
+    _Element? targetElement;
+    for (int i = currentIdx + 1; i < _elements.length; i++) {
+      final el = _elements[i];
+      if (el.kind == _ElementKind.lesson) {
+        targetElement = el;
+        break;
+      } else if (el.kind == _ElementKind.header) {
+        final unit = el.unit!;
+        final isGenerated = unit.isGenerated && unit.lessons.isNotEmpty;
+        if (!isGenerated) {
+          targetElement = el;
+          break;
+        }
+      }
+    }
+
+    if (targetElement != null) {
+      final targetY = targetElement.y;
+      if (_scrollController.hasClients) {
+        final viewportHeight = _scrollController.position.viewportDimension;
+        final scrollPosition = (targetY - (viewportHeight / 2)).clamp(
+          0.0,
+          _scrollController.position.maxScrollExtent,
+        );
+        _scrollController.animateTo(
+          scrollPosition,
+          duration: const Duration(milliseconds: 1000),
+          curve: Curves.easeInOutCubic,
+        );
+      }
     }
   }
 
@@ -207,6 +263,8 @@ class _LessonPathState extends State<LessonPath> {
       }
       prevUnitHadNodes = hasLessons;
     }
+
+    _elements = elements;
 
     final double containerHeight = y + _bottomPad;
 
