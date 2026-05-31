@@ -4,6 +4,7 @@ import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../services/generation_manager.dart';
 import '../widgets/qp_card.dart';
+import '../widgets/responsive_center.dart';
 import 'generate_qp_screen.dart';
 import 'qp_detail_screen.dart';
 
@@ -25,7 +26,8 @@ class ExamScreen extends StatelessWidget {
         final qps = book.questionPapers;
 
         return Scaffold(
-          body: CustomScrollView(
+          body: ResponsiveCenter(
+            child: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
               SliverAppBar(
@@ -116,6 +118,7 @@ class ExamScreen extends StatelessWidget {
 
               const SliverToBoxAdapter(child: SizedBox(height: 120)), // Nav bar padding
             ],
+          ),
           ),
           floatingActionButton: Padding(
             padding: const EdgeInsets.only(bottom: 80),

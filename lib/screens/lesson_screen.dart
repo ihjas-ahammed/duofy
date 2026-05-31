@@ -11,6 +11,7 @@ import '../services/progress_service.dart';
 import '../widgets/canvas_art_view.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/math_markdown.dart';
+import '../widgets/responsive_center.dart';
 import '../widgets/slide_views/quiz_view.dart';
 import '../widgets/slide_views/fill_in_blank_view.dart';
 import '../widgets/slide_views/numerical_view.dart';
@@ -507,7 +508,9 @@ class _LessonScreenState extends State<LessonScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F19),
-      body: SafeArea(
+      body: ResponsiveCenter(
+        maxWidth: ResponsiveMaxWidth.reading,
+        child: SafeArea(
         child: Column(
           children: [
             // Header Bar exactly as LessonView.tsx
@@ -690,6 +693,7 @@ class _LessonScreenState extends State<LessonScreen> {
                 ),
               )
           ],
+        ),
         ),
       ),
     );

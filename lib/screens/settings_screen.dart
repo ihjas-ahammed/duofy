@@ -8,6 +8,7 @@ import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/string_list_manager.dart';
+import '../widgets/responsive_center.dart';
 import 'pdf_browser_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -525,7 +526,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings', style: TextStyle(fontWeight: FontWeight.w900))),
-      body: SingleChildScrollView(
+      body: ResponsiveCenter(
+        maxWidth: ResponsiveMaxWidth.form,
+        child: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -651,6 +654,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 32),
           ],
+        ),
         ),
       ),
     );

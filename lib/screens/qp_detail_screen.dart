@@ -3,6 +3,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../widgets/math_markdown.dart';
+import '../widgets/responsive_center.dart';
 
 class QpDetailScreen extends StatelessWidget {
   final QuestionPaper qp;
@@ -78,7 +79,8 @@ class QpDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: CustomScrollView(
+      body: ResponsiveCenter(
+        child: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
           SliverAppBar(
@@ -122,6 +124,7 @@ class QpDetailScreen extends StatelessWidget {
               ),
             ),
         ],
+      ),
       ),
     );
   }

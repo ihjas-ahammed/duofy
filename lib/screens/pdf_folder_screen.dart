@@ -5,6 +5,7 @@ import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
+import '../widgets/responsive_center.dart';
 
 class PdfFileMeta {
   final File file;
@@ -148,7 +149,8 @@ class _PdfFolderScreenState extends State<PdfFolderScreen> {
       appBar: AppBar(
         title: Text(widget.linkedBook?.title ?? 'Folder Contents', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
       ),
-      body: _isLoading
+      body: ResponsiveCenter(
+        child: _isLoading
           ? const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue))
           : _files.isEmpty
               ? const Center(child: Text('This folder is empty.', style: TextStyle(color: Colors.white54)))
@@ -191,6 +193,7 @@ class _PdfFolderScreenState extends State<PdfFolderScreen> {
                     );
                   },
                 ),
+      ),
     );
   }
 }

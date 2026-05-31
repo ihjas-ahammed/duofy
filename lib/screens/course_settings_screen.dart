@@ -4,6 +4,7 @@ import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../services/database_service.dart';
 import '../widgets/duo_button.dart';
+import '../widgets/responsive_center.dart';
 
 /// Lets the user manage the list of named [LessonFormat]s a book ships with
 /// (e.g. "Theory", "Worked Example", "Proof Walkthrough"). Each format is a
@@ -111,7 +112,9 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: ResponsiveCenter(
+        maxWidth: ResponsiveMaxWidth.form,
+        child: Column(
         children: [
           const Padding(
             padding: EdgeInsets.fromLTRB(24, 16, 24, 16),
@@ -207,6 +210,7 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -359,7 +363,9 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
       appBar: AppBar(
         title: const Text('Edit Format', style: TextStyle(fontWeight: FontWeight.w900)),
       ),
-      body: Column(
+      body: ResponsiveCenter(
+        maxWidth: ResponsiveMaxWidth.form,
+        child: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
@@ -486,6 +492,7 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

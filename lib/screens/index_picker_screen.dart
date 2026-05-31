@@ -7,6 +7,7 @@ import '../services/generation_manager.dart';
 import '../services/pdf_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
+import '../widgets/responsive_center.dart';
 import 'course_questionnaire_screen.dart';
 
 /// Step 1 of the new book-generation flow.
@@ -124,7 +125,8 @@ class _IndexPickerScreenState extends State<IndexPickerScreen> {
       appBar: AppBar(
         title: const Text('Pick Index Pages', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
       ),
-      body: SafeArea(
+      body: ResponsiveCenter(
+        child: SafeArea(
         child: Column(
           children: [
             Expanded(
@@ -311,6 +313,7 @@ class _IndexPickerScreenState extends State<IndexPickerScreen> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

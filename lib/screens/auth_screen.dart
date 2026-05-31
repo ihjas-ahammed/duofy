@@ -3,6 +3,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../services/fb/fb_auth.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
+import '../widgets/responsive_center.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -48,9 +49,11 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+      body: ResponsiveCenter(
+        maxWidth: ResponsiveMaxWidth.auth,
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -127,6 +130,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
               )
             ],
+          ),
           ),
         ),
       ),

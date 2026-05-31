@@ -10,6 +10,7 @@ import '../theme/app_theme.dart';
 import '../widgets/compact_book_card.dart';
 import '../widgets/community_book_card.dart';
 import '../widgets/generating_book_card.dart';
+import '../widgets/responsive_center.dart';
 import 'main_layout_screen.dart';
 import 'settings_screen.dart';
 import 'generate_book_screen.dart';
@@ -164,7 +165,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
         return Scaffold(
           backgroundColor: AppTheme.background,
-          body: isLoading
+          body: ResponsiveCenter(
+            child: isLoading
             ? const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue))
             : RefreshIndicator(
                 color: AppTheme.duoBlue,
@@ -311,6 +313,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
+          ),
           floatingActionButton: FloatingActionButton(
             backgroundColor: AppTheme.duoGreen,
             child: const Icon(LucideIcons.plus, color: Colors.white, size: 32),

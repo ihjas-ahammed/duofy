@@ -4,6 +4,7 @@ import '../theme/app_theme.dart';
 import '../services/pdf_service.dart';
 import '../services/generation_manager.dart';
 import '../services/ai_service.dart';
+import '../widgets/responsive_center.dart';
 
 class CourseQuestionnaireScreen extends StatefulWidget {
   final File sourcePdf;
@@ -136,7 +137,9 @@ class _CourseQuestionnaireScreenState extends State<CourseQuestionnaireScreen> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(title: const Text('Course Setup', style: TextStyle(fontWeight: FontWeight.bold))),
-      body: SingleChildScrollView(
+      body: ResponsiveCenter(
+        maxWidth: ResponsiveMaxWidth.form,
+        child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -181,6 +184,7 @@ class _CourseQuestionnaireScreenState extends State<CourseQuestionnaireScreen> {
               child: const Text('Start Generation', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ],
+        ),
         ),
       ),
     );

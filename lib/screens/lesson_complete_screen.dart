@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
+import '../widgets/responsive_center.dart';
 
 class LessonCompleteScreen extends StatefulWidget {
   final int xpEarned;
@@ -64,7 +65,9 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
+      body: ResponsiveCenter(
+        maxWidth: ResponsiveMaxWidth.form,
+        child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
@@ -165,6 +168,7 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
               )
             ],
           ),
+        ),
         ),
       ),
     );

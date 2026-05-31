@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../services/auto_index_service.dart';
+import '../widgets/responsive_center.dart';
 import 'index_picker_screen.dart';
 
 class AutoIndexScreen extends StatefulWidget {
@@ -82,7 +83,9 @@ class _AutoIndexScreenState extends State<AutoIndexScreen> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(title: const Text('Analyzing Structure...')),
-      body: Center(
+      body: ResponsiveCenter(
+        maxWidth: ResponsiveMaxWidth.form,
+        child: Center(
         child: Padding(
           padding: const EdgeInsets.all(32.0),
           child: Column(
@@ -109,6 +112,7 @@ class _AutoIndexScreenState extends State<AutoIndexScreen> {
               ],
             ],
           ),
+        ),
         ),
       ),
     );

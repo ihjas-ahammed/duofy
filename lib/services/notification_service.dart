@@ -16,10 +16,20 @@ class NotificationService {
     // button shows in the notification center; defaultIcon is optional.
     const LinuxInitializationSettings linuxSettings =
         LinuxInitializationSettings(defaultActionName: 'Open');
+    // flutter_local_notifications also requires explicit Windows settings.
+    // The guid must be stable across launches (it identifies the app to the
+    // Windows notification system); appUserModelId should match the app's AUMID.
+    const WindowsInitializationSettings windowsSettings =
+        WindowsInitializationSettings(
+      appName: 'duofy',
+      appUserModelId: 'com.duofy.app',
+      guid: 'cd9ef36f-e3fa-4f0c-a409-d39c262ed9d9',
+    );
     const InitializationSettings initSettings = InitializationSettings(
       android: androidSettings,
       iOS: iosSettings,
       linux: linuxSettings,
+      windows: windowsSettings,
     );
 
     await _plugin.initialize(

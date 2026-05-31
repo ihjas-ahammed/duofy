@@ -6,6 +6,7 @@ import '../services/generation_manager.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/file_selection_list.dart';
+import '../widgets/responsive_center.dart';
 
 class GenerateQpScreen extends StatefulWidget {
   final Book book;
@@ -63,7 +64,9 @@ class _GenerateQpScreenState extends State<GenerateQpScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Add Past Paper', style: TextStyle(fontWeight: FontWeight.w900))),
-      body: SafeArea(
+      body: ResponsiveCenter(
+        maxWidth: ResponsiveMaxWidth.form,
+        child: SafeArea(
         child: Column(
           children: [
             Expanded(
@@ -114,6 +117,7 @@ class _GenerateQpScreenState extends State<GenerateQpScreen> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

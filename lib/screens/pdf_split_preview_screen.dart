@@ -6,6 +6,7 @@ import '../models/app_models.dart';
 import '../services/generation_manager.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
+import '../widgets/responsive_center.dart';
 
 /// A single editable page-range row. Wraps either a Unit (legacy flow) or a
 /// Section (new TOC-only flow); only the indices needed to write the value
@@ -122,7 +123,8 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Review Page Splits', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18))),
-      body: Column(
+      body: ResponsiveCenter(
+        child: Column(
         children: [
           Expanded(
             flex: 2,
@@ -293,6 +295,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
             ),
           )
         ],
+      ),
       ),
     );
   }

@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../services/database_service.dart';
+import '../widgets/responsive_center.dart';
 import 'pdf_folder_screen.dart';
 
 class PdfFolderMeta {
@@ -140,7 +141,8 @@ class _PdfBrowserScreenState extends State<PdfBrowserScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('File Manager', style: TextStyle(fontWeight: FontWeight.w900))),
-      body: _isLoading
+      body: ResponsiveCenter(
+        child: _isLoading
           ? const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue))
           : _folders.isEmpty
               ? const Center(child: Text('No downloaded course folders found.', style: TextStyle(color: Colors.white54)))
@@ -204,6 +206,7 @@ class _PdfBrowserScreenState extends State<PdfBrowserScreen> {
                     );
                   },
                 ),
+      ),
     );
   }
 }

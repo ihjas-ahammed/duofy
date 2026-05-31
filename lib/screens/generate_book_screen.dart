@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/file_selection_list.dart';
+import '../widgets/responsive_center.dart';
 import 'index_picker_screen.dart';
 import 'auto_index_screen.dart';
 import '../services/generation_manager.dart';
@@ -261,7 +262,9 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('New Material', style: TextStyle(fontWeight: FontWeight.w900))),
-      body: SafeArea(
+      body: ResponsiveCenter(
+        maxWidth: ResponsiveMaxWidth.form,
+        child: SafeArea(
         child: Column(
           children: [
             Expanded(
@@ -311,6 +314,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

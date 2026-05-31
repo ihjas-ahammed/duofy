@@ -6,6 +6,7 @@ import '../theme/app_theme.dart';
 import '../services/global_state.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/math_markdown.dart';
+import '../widgets/responsive_center.dart';
 import '../widgets/slide_views/quiz_view.dart';
 import '../widgets/slide_views/fill_in_blank_view.dart';
 import '../widgets/slide_views/numerical_view.dart';
@@ -302,7 +303,9 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
           borderRadius: BorderRadius.circular(6),
         ),
       ),
-      body: SafeArea(
+      body: ResponsiveCenter(
+        maxWidth: ResponsiveMaxWidth.reading,
+        child: SafeArea(
         child: Column(
           children: [
             Padding(
@@ -376,6 +379,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
                 ),
               )
           ],
+        ),
         ),
       ),
     );
