@@ -1,3 +1,5 @@
+import 'dart:convert';
+import '../models/app_models.dart';
 import '../widgets/lesson_node.dart' show lessonIconChoices;
 
 /// AI prompt templates. The structural skeleton of each prompt is fixed, but
@@ -597,4 +599,95 @@ RULES:
     }
   ]
 }''';
+
+  static String getPyqExtractionPrompt({
+    required String sectionTitle,
+    required String sectionDesc,
+    required List<String> unitTitles,
+    required List<Slide> existingQuestions,
+    required List<Map<String, String>> otherSections,
+  }) {
+    final existingBlocks = existingQuestions.isEmpty
+        ? "None"
+        : existingQuestions.map((q) => "- [ID: ${q.id}] Title: ${q.title}\n  Content/Question: ${q.content}").join("\n");
+
+    final otherSectionsBlocks = otherSections.isEmpty
+        ? "None"
+        : otherSections.map((s) => "- ID: ${s['id']}, Title: ${s['title']}").join("\n");
+
+    return '''You are an expert tutor.
+Analyze the attached exam paper (PDF/images) and extract questions that align with the following course section.
+
+SECTION DETAILS:
+- Title: $sectionTitle
+- Description: $sectionDesc
+- Subtopics/Units: ${unitTitles.join(', ')}
+
+ALREADY EXTRACTED QUESTIONS (Do NOT extract duplicates of these! Avoid similar questions to support continuous addition):
+$existingBlocks
+
+OTHER SECTIONS IN THE COURSE (If an extracted question also fits any of these, specify their IDs in the "otherSupportedSectionIds" list):
+$otherSectionsBlocks
+
+TYPES OF QUESTIONS TO EXTRACT:
+1. "one_word": Short recall questions that have a one-word or short-phrase answer. You can group multiple related short questions together into a single slide by putting them in the "interactiveSteps" list (where "prompt" is the sub-question and "stepText" is the correct answer).
+2. "proof" / Big Question: Detailed, multi-step questions, mathematical proofs, derivations, or long-form calculations. Provide the solution as an interactive step-by-step proof walkthrough in "interactiveSteps". The very first step in "interactiveSteps" MUST be a static step with NO options (leave "options" empty or null). Its "prompt" or "stepText" should simply restate the question and objective to start the proof (e.g. "We want to prove/derive: [Objective]"), so the user has to click "Next Step" to begin solving instead of seeing the first solution step immediately. Subsequent steps should have a "prompt" explaining the step to perform, and a correct option from "options" (with "isCorrect": true) representing the next correct derivation/result, plus a few distractor incorrect options.
+
+RULES:
+1. LaTeX formatting: every backslash \\ in math MUST be written as \\\\ because the response must be valid JSON. Wrap inline math in \$...\$ and display math in \$\$...\$\$.
+2. For "one_word" types, do not use LaTeX math delimiters in the answer/blank fields.
+3. Be highly selective: only extract questions that are directly related to the section details. If none match, return an empty list.
+4. Enforce that all "proof" / Big Question types have the static question-restatement first step described above.
+
+Return ONLY a JSON object matching this schema:
+{
+  "questions": [
+    {
+      "id": "unique_id_string",
+      "type": "one_word" | "proof",
+      "title": "Question Title",
+      "content": "Full question text / statement.",
+      "blankAnswer": "The answer (for a single one-word question). For multiple subquestions, put a comma-separated list of answers.",
+      "interactiveSteps": [
+        {
+          "prompt": "For one-word subquestions: the specific question text. For proofs: instruction/derivation prompt.",
+          "stepText": "For one-word subquestions: the correct answer. For proofs: the text of the step revealed after matching.",
+          "options": [ // Only for "proof" type steps where you want multiple-choice choices
+            {
+              "id": "opt_id",
+              "text": "Option text",
+              "isCorrect": true,
+              "explanation": "Why this option is correct/incorrect"
+            }
+          ]
+        }
+      ],
+      "otherSupportedSectionIds": ["sec_id_1", "sec_id_2"]
+    }
+  ]
+}''';
+  }
+
+  static String getPyqGradingPrompt({
+    required List<Map<String, dynamic>> answersToGrade,
+  }) {
+    final listStr = jsonEncode(answersToGrade);
+    return '''You are an expert grading assistant.
+Below is a JSON list of student answers to short/one-word questions, along with the question text and the correct reference answer.
+Evaluate each student answer for correctness. Allow for minor spelling variations, abbreviations, case-insensitivity, or synonyms if they are semantically correct.
+
+STUDENT ANSWERS TO GRADE:
+$listStr
+
+Return ONLY a JSON object matching this schema:
+{
+  "results": [
+    {
+      "index": 0, // matches the index in the input list
+      "isCorrect": true, // or false
+      "explanation": "Brief 1-sentence explanation of why it is correct or incorrect (e.g. spelling variation accepted, or incorrect concept)."
+    }
+  ]
+}''';
+  }
 }

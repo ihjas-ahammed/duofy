@@ -1391,4 +1391,92 @@ Important Rules:
     }
     throw lastException ?? Exception('Failed to generate Question Paper.');
   }
+
+  Future<List<Slide>> extractPyqQuestionsForSection({
+    required List<File> files,
+    required Section section,
+    required List<Slide> existingQuestions,
+    required List<Map<String, String>> otherSections,
+  }) async {
+    final keys = await _getKeys();
+    final modelsToTry = await _getLiteModels();
+    
+    final prompt = PromptService.getPyqExtractionPrompt(
+      sectionTitle: section.title,
+      sectionDesc: section.description,
+      unitTitles: section.units.map((u) => u.title).toList(),
+      existingQuestions: existingQuestions,
+      otherSections: otherSections,
+    );
+
+    List<Part> parts = [TextPart(prompt)];
+    parts.addAll(await _buildFileParts(files));
+
+    Exception? lastException;
+    for (var modelName in modelsToTry) {
+      for (var apiKey in keys) {
+        try {
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: apiKey,
+            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+          );
+
+          final response = await _retryTransient(
+            () => model.generateContent([Content.multi(parts)])
+                .timeout(const Duration(minutes: 5)),
+            onRetry: (a, e) => print('[AiService] PYQ extract transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+          );
+
+          if (response.text != null) {
+            final jsonMap = _cleanAndDecodeJson(response.text!);
+            final questionsList = jsonMap['questions'] as List?;
+            if (questionsList == null) return [];
+            return questionsList.map((q) => Slide.fromJson(Map<String, dynamic>.from(q))).toList();
+          }
+        } catch (e) {
+          lastException = Exception('PYQ extraction failed ($modelName): ${_cleanErrMsg(e)}');
+        }
+      }
+    }
+    throw lastException ?? Exception('Failed to extract PYQ questions.');
+  }
+
+  Future<List<Map<String, dynamic>>> gradePyqAnswers({
+    required List<Map<String, dynamic>> answersToGrade,
+  }) async {
+    final keys = await _getKeys();
+    final modelsToTry = await _getLiteModels();
+    
+    final prompt = PromptService.getPyqGradingPrompt(answersToGrade: answersToGrade);
+
+    Exception? lastException;
+    for (var modelName in modelsToTry) {
+      for (var apiKey in keys) {
+        try {
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: apiKey,
+            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+          );
+
+          final response = await _retryTransient(
+            () => model.generateContent([Content.text(prompt)])
+                .timeout(const Duration(minutes: 3)),
+            onRetry: (a, e) => print('[AiService] PYQ grading transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+          );
+
+          if (response.text != null) {
+            final jsonMap = _cleanAndDecodeJson(response.text!);
+            final results = jsonMap['results'] as List?;
+            if (results == null) return [];
+            return results.map((r) => Map<String, dynamic>.from(r)).toList();
+          }
+        } catch (e) {
+          lastException = Exception('PYQ grading failed ($modelName): ${_cleanErrMsg(e)}');
+        }
+      }
+    }
+    throw lastException ?? Exception('Failed to grade PYQ answers.');
+  }
 }

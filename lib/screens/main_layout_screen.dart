@@ -9,6 +9,7 @@ import '../services/generation_manager.dart';
 import 'book_dashboard_screen.dart';
 import 'practice_screen.dart';
 import 'notes_screen.dart';
+import 'pyq_tab_screen.dart';
 import 'course_settings_screen.dart';
 
 class MainLayoutScreen extends StatefulWidget {
@@ -93,6 +94,17 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     final List<Widget> pages = [
       BookDashboardScreen(book: _currentBook, onBookUpdated: _onBookUpdated),
       PracticeScreen(book: _currentBook),
+      PyqTabScreen(
+        book: _currentBook,
+        onBookUpdated: () async {
+          final freshest = await DatabaseService().getBookFromCache(_currentBook.id);
+          if (freshest != null && mounted) {
+            setState(() {
+              _currentBook = freshest;
+            });
+          }
+        },
+      ),
       NotesScreen(book: _currentBook),
     ];
 
@@ -121,7 +133,9 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                             ? 'Learning Path'
                             : _currentIndex == 1
                                 ? 'Practice Arena'
-                                : 'Course Notes',
+                                : _currentIndex == 2
+                                    ? 'PYQ Analyzer'
+                                    : 'Course Notes',
                         style: const TextStyle(
                           fontFamily: 'Nunito',
                           fontWeight: FontWeight.w900,
@@ -200,7 +214,8 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                 children: [
                   _buildNavItem(0, LucideIcons.map),
                   _buildNavItem(1, LucideIcons.dumbbell),
-                  _buildNavItem(2, LucideIcons.fileText),
+                  _buildNavItem(2, LucideIcons.fileQuestion),
+                  _buildNavItem(3, LucideIcons.fileText),
                 ],
               ),
             ),
@@ -261,7 +276,9 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
           const SizedBox(height: 8),
           _buildSidebarNavItem(1, LucideIcons.dumbbell, 'Practice'),
           const SizedBox(height: 8),
-          _buildSidebarNavItem(2, LucideIcons.fileText, 'Notes'),
+          _buildSidebarNavItem(2, LucideIcons.fileQuestion, 'PYQ'),
+          const SizedBox(height: 8),
+          _buildSidebarNavItem(3, LucideIcons.fileText, 'Notes'),
           
           const Spacer(),
           

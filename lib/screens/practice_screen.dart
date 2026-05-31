@@ -111,6 +111,30 @@ class _PracticeScreenState extends State<PracticeScreen> {
     return [for (int i = _startIdx; i <= _endIdx; i++) ..._units[i].slides];
   }
 
+  List<Slide> get _pyqQuestionsInRange {
+    if (_units.isEmpty) {
+      return [
+        for (final m in widget.book.modules)
+          for (final s in m.sections) ...s.pyqQuestions
+      ];
+    }
+    final selectedUnitIds = _selectedUnitIds.toSet();
+    final List<Slide> out = [];
+    final Set<String> seen = {};
+    for (final m in widget.book.modules) {
+      for (final s in m.sections) {
+        if (s.units.any((u) => selectedUnitIds.contains(u.id))) {
+          for (final q in s.pyqQuestions) {
+            if (seen.add(q.content.trim().toLowerCase())) {
+              out.add(q);
+            }
+          }
+        }
+      }
+    }
+    return out;
+  }
+
   int _countFor(String type) {
     int n = 0;
     for (final s in _slidesInRange) {
@@ -128,6 +152,128 @@ class _PracticeScreenState extends State<PracticeScreen> {
           practiceType: mode.type,
           unitIds: _units.isEmpty ? null : _selectedUnitIds,
         ),
+      ),
+    );
+  }
+
+  void _configureAndStartPyq() {
+    final pyqs = _pyqQuestionsInRange;
+    final oneWordAvailable = pyqs.where((q) => q.type == 'one_word').length;
+    final proofAvailable = pyqs.where((q) => q.type == 'proof').length;
+
+    int oneWordCount = oneWordAvailable > 5 ? 5 : oneWordAvailable;
+    int proofCount = proofAvailable > 2 ? 2 : proofAvailable;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            backgroundColor: AppTheme.surface,
+            title: const Text(
+              'Configure PYQ Session',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Select how many questions of each type to include in this practice session.',
+                  style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.4),
+                ),
+                const SizedBox(height: 24),
+                
+                // One word questions configuration
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('One Word Questions', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        Text('Available: $oneWordAvailable', style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(LucideIcons.minusCircle, color: Colors.white54),
+                          onPressed: oneWordCount > 0 ? () => setDialogState(() => oneWordCount--) : null,
+                        ),
+                        Text(
+                          '$oneWordCount',
+                          style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 18),
+                        ),
+                        IconButton(
+                          icon: const Icon(LucideIcons.plusCircle, color: Colors.white54),
+                          onPressed: oneWordCount < oneWordAvailable ? () => setDialogState(() => oneWordCount++) : null,
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Proof / Big questions configuration
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Proofs & Big Questions', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        Text('Available: $proofAvailable', style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(LucideIcons.minusCircle, color: Colors.white54),
+                          onPressed: proofCount > 0 ? () => setDialogState(() => proofCount--) : null,
+                        ),
+                        Text(
+                          '$proofCount',
+                          style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 18),
+                        ),
+                        IconButton(
+                          icon: const Icon(LucideIcons.plusCircle, color: Colors.white54),
+                          onPressed: proofCount < proofAvailable ? () => setDialogState(() => proofCount++) : null,
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+              ),
+              TextButton(
+                onPressed: (oneWordCount == 0 && proofCount == 0)
+                    ? null
+                    : () {
+                        Navigator.pop(ctx);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PracticeSessionScreen(
+                              book: widget.book,
+                              practiceType: 'pyq',
+                              unitIds: _units.isEmpty ? null : _selectedUnitIds,
+                              pyqOneWordCount: oneWordCount,
+                              pyqProofCount: proofCount,
+                            ),
+                          ),
+                        );
+                      },
+                child: const Text('Start Practice', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -294,20 +440,34 @@ class _PracticeScreenState extends State<PracticeScreen> {
       builder: (context, constraints) {
         const spacing = 12.0;
         final cardWidth = (constraints.maxWidth - spacing) / 2;
-        return Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
-          children: _modes.map((m) {
-            final count = _countFor(m.type);
-            return SizedBox(
-              width: cardWidth,
-              child: _ModeCard(
-                mode: m,
-                count: count,
-                onTap: count == 0 ? null : () => _startPractice(m),
-              ),
-            );
-          }).toList(),
+        final pyqCount = _pyqQuestionsInRange.length;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // PYQ Card spanning full width
+            _ModeCard(
+              mode: const _PracticeMode('pyq', 'PYQ Practice', 'Solve Previous Year Questions', LucideIcons.fileSearch, AppTheme.duoBlue),
+              count: pyqCount,
+              onTap: pyqCount == 0 ? null : _configureAndStartPyq,
+            ),
+            const SizedBox(height: spacing),
+            Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: _modes.map((m) {
+                final count = _countFor(m.type);
+                return SizedBox(
+                  width: cardWidth,
+                  child: _ModeCard(
+                    mode: m,
+                    count: count,
+                    onTap: count == 0 ? null : () => _startPractice(m),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
         );
       },
     );

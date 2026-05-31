@@ -218,52 +218,68 @@ class _MathBuilder extends MarkdownElementBuilder {
     final mathStyle = isDisplay ? MathStyle.display : MathStyle.text;
     final effectiveStyle = textStyle ?? parentStyle ?? preferredStyle;
 
-    final math = Math.tex(
+    // Only *block* display math gets the horizontal scroll view (it sits on
+    // its own line, so being a non-text widget is fine, and scrolling lets
+    // wide equations be read in full).
+    if (isDisplay && !isInline) {
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        clipBehavior: Clip.antiAlias,
+        child: _buildMath(text, effectiveStyle, mathStyle),
+      );
+    }
+
+    // Inline math flows as a WidgetSpan inside a Text so flutter_markdown can
+    // merge it into the paragraph's single RichText and wrap the surrounding
+    // text. The equation itself is one atomic box that flutter_math_fork won't
+    // wrap, so a long one would overflow the line. Wrapping it in a horizontal
+    // SingleChildScrollView fixes that: the scroll view shrink-wraps to the
+    // equation's natural width but is clamped to the line width by the
+    // placeholder constraints (RenderParagraph lays out WidgetSpan children
+    // with loose constraints, and the viewport sizes to
+    // `constraints.constrain(child.size)`). So short math stays inline
+    // untouched, while an over-long equation caps at the line width and
+    // scrolls horizontally instead of overflowing.
+    return Text.rich(
+      WidgetSpan(
+        alignment: PlaceholderAlignment.middle,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          clipBehavior: Clip.antiAlias,
+          child: _buildMath(text, effectiveStyle, mathStyle),
+        ),
+      ),
+      style: effectiveStyle,
+    );
+  }
+
+  /// Builds a single equation widget with the two-stage auto-fix fallback.
+  Widget _buildMath(String text, TextStyle? style, MathStyle mathStyle) {
+    return Math.tex(
       text,
-      textStyle: effectiveStyle,
+      textStyle: style,
       mathStyle: mathStyle,
       onErrorFallback: (_) {
         // First failure — run the fix pipeline and retry once.
         final fixed = _fixLatex(text);
         return Math.tex(
           fixed,
-          textStyle: effectiveStyle,
+          textStyle: style,
           mathStyle: mathStyle,
           onErrorFallback: (_) {
             // Still broken — render readable plain text.
             return Text(
               _latexToPlainText(text),
-              style: effectiveStyle?.copyWith(
+              style: style?.copyWith(
                 fontStyle: FontStyle.italic,
-                color: effectiveStyle.color?.withOpacity(0.85),
+                color: style.color?.withOpacity(0.85),
               ),
             );
           },
         );
       },
-    );
-
-    // Only *block* display math gets the horizontal scroll view (it sits on
-    // its own line, so being a non-text widget is fine). Inline math — both
-    // `$…$` and inline `$$…$$` — flows as a WidgetSpan inside a Text widget so
-    // flutter_markdown can merge it into the paragraph's single RichText and
-    // wrap the surrounding text at word boundaries.
-    if (isDisplay && !isInline) {
-      return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        clipBehavior: Clip.antiAlias,
-        child: math,
-      );
-    }
-
-    return Text.rich(
-      WidgetSpan(
-        alignment: PlaceholderAlignment.baseline,
-        baseline: TextBaseline.alphabetic,
-        child: math,
-      ),
-      style: effectiveStyle,
     );
   }
 }

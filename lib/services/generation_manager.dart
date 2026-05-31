@@ -67,6 +67,7 @@ class GenerationManager extends ChangeNotifier {
   final List<GenerationTask> activeTasks = [];
   final Map<String, UnitGenTask> activeUnitGenerations = {}; 
   final Map<String, QpGenTask> activeQpTasks = {}; 
+  final Map<String, QpGenTask> activePyqTasks = {}; 
   
   final PdfService _pdfService = PdfService();
   final DatabaseService _dbService = DatabaseService();
@@ -799,6 +800,141 @@ class GenerationManager extends ChangeNotifier {
       activeQpTasks.remove(bookId);
       notifyListeners();
     }
+  }
+
+  void clearPyqError(String bookId) {
+    if (activePyqTasks[bookId]?.isError == true) {
+      activePyqTasks.remove(bookId);
+      notifyListeners();
+    }
+  }
+
+  Future<void> startPyqAnalysis(String bookId, List<File> files, Book currentBook) async {
+    if (activePyqTasks.containsKey(bookId)) return;
+
+    final notifId = bookId.hashCode + 2; // Unique ID avoiding collision
+    activePyqTasks[bookId] = QpGenTask(status: 'Analyzing PYQ Paper...');
+    notifyListeners();
+
+    await NotificationService.showProgress(notifId, "Analyzing PYQ", "Extracting and splitting questions...", indeterminate: true);
+
+    try {
+      // Re-read the freshest book so we don't clobber other concurrent edits.
+      Book freshestBook = (await _dbService.getBookFromCache(currentBook.id)) ?? currentBook;
+
+      // Find all sections with lessons generated
+      List<Section> activeSections = [];
+      for (final m in freshestBook.modules) {
+        for (final s in m.sections) {
+          final hasLessons = s.units.any((u) => u.isGenerated && u.lessons.isNotEmpty);
+          if (hasLessons) {
+            activeSections.add(s);
+          }
+        }
+      }
+
+      if (activeSections.isEmpty) {
+        throw Exception("No sections have generated lessons yet. Please generate lessons first.");
+      }
+
+      // We will build a map of Section ID -> list of new slides to add
+      final Map<String, List<Slide>> newSlidesForSections = {};
+      for (final s in activeSections) {
+        newSlidesForSections[s.id] = [];
+      }
+
+      // Compile other sections metadata
+      final List<Map<String, String>> otherSectionsMeta = freshestBook.modules
+          .expand((m) => m.sections)
+          .map((s) => {'id': s.id, 'title': s.title})
+          .toList();
+
+      for (int i = 0; i < activeSections.length; i++) {
+        final sec = activeSections[i];
+        activePyqTasks[bookId]?.status = 'Extracting questions for: ${sec.title} (${i+1}/${activeSections.length})...';
+        notifyListeners();
+
+        // Get already generated questions for this section (both existing in book, and newly extracted in this session)
+        final existingInSec = List<Slide>.from(sec.pyqQuestions);
+        final newlyExtractedInSec = newSlidesForSections[sec.id] ?? [];
+        final totalExisting = [...existingInSec, ...newlyExtractedInSec];
+
+        final extracted = await _aiService.extractPyqQuestionsForSection(
+          files: files,
+          section: sec,
+          existingQuestions: totalExisting,
+          otherSections: otherSectionsMeta.where((s) => s['id'] != sec.id).toList(),
+        );
+
+        for (final q in extracted) {
+          if (!isDuplicate(q, totalExisting)) {
+            newSlidesForSections[sec.id]!.add(q);
+          }
+
+          // Fallback / multi-section mapping support
+          final otherIds = q.toJson()['otherSupportedSectionIds'] as List?;
+          if (otherIds != null) {
+            for (final otherIdRaw in otherIds) {
+              final otherId = otherIdRaw.toString();
+              // Check if this other section exists and has lessons generated
+              final hasSection = freshestBook.modules.expand((m) => m.sections).any((s) => s.id == otherId);
+              if (hasSection) {
+                final otherSec = freshestBook.modules.expand((m) => m.sections).firstWhere((s) => s.id == otherId);
+                final otherHasLessons = otherSec.units.any((u) => u.isGenerated && u.lessons.isNotEmpty);
+                if (otherHasLessons) {
+                  newSlidesForSections.putIfAbsent(otherId, () => []);
+                  final existingInOther = List<Slide>.from(otherSec.pyqQuestions);
+                  final newlyExtractedInOther = newSlidesForSections[otherId]!;
+                  final totalExistingOther = [...existingInOther, ...newlyExtractedInOther];
+                  if (!isDuplicate(q, totalExistingOther)) {
+                    newSlidesForSections[otherId]!.add(q);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Now, update freshestBook with all new slides
+      final updatedModules = freshestBook.modules.map((m) {
+        final updatedSecs = m.sections.map((s) {
+          final newSlides = newSlidesForSections[s.id];
+          if (newSlides != null && newSlides.isNotEmpty) {
+            return s.copyWith(pyqQuestions: [...s.pyqQuestions, ...newSlides]);
+          }
+          return s;
+        }).toList();
+        return m.copyWith(sections: updatedSecs);
+      }).toList();
+
+      final finalBook = freshestBook.copyWith(modules: updatedModules);
+      await _dbService.saveGeneratedBook(finalBook);
+      _bookUpdateController.add(finalBook);
+
+      activePyqTasks.remove(bookId);
+      notifyListeners();
+
+      await NotificationService.cancel(notifId);
+      await NotificationService.showActionable(notifId, "PYQ Analysis Ready", "Exam questions extracted and split over modules!", "open_home|");
+
+    } catch (e) {
+      activePyqTasks[bookId]?.status = 'Error: $e';
+      activePyqTasks[bookId]?.isError = true;
+      notifyListeners();
+
+      await NotificationService.cancel(notifId);
+      await NotificationService.showActionable(notifId, "PYQ Analysis Failed", "Failed to extract exam questions.", "error");
+    }
+  }
+
+  bool isDuplicate(Slide newQ, List<Slide> existing) {
+    final normNew = newQ.content.trim().toLowerCase();
+    for (final q in existing) {
+      if (q.id == newQ.id) return true;
+      if (q.content.trim().toLowerCase() == normNew) return true;
+    }
+    return false;
   }
 
   void dismissTask(String id) {

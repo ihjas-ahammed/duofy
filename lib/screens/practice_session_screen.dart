@@ -12,6 +12,9 @@ import '../widgets/slide_views/fill_in_blank_view.dart';
 import '../widgets/slide_views/numerical_view.dart';
 import '../widgets/slide_views/one_word_view.dart';
 import '../widgets/slide_views/interactive_proof_view.dart';
+import '../widgets/slide_views/pyq_one_word_view.dart';
+import '../services/ai_service.dart';
+import 'pyq_complete_screen.dart';
 import 'lesson_complete_screen.dart';
 
 class PracticeSessionScreen extends StatefulWidget {
@@ -21,12 +24,16 @@ class PracticeSessionScreen extends StatefulWidget {
   /// lessons belonging to these unit ids (set on the Practice screen via the
   /// unit-range selector). Null/empty keeps the original whole-book behaviour.
   final List<String>? unitIds;
+  final int? pyqOneWordCount;
+  final int? pyqProofCount;
 
   const PracticeSessionScreen({
     super.key,
     required this.book,
     required this.practiceType,
     this.unitIds,
+    this.pyqOneWordCount,
+    this.pyqProofCount,
   });
 
   @override
@@ -48,6 +55,10 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
   String _blankInput = '';
   String _numericInput = '';
   String _wordInput = '';
+  
+  // PYQ practice tracking
+  final List<Map<String, dynamic>> _pyqSessionAnswers = [];
+  Map<int, String> _pyqOneWordInputs = {};
 
   @override
   void initState() {
@@ -57,8 +68,44 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
   }
 
   void _extractInteractiveSlides() {
-    List<Slide> pool = [];
     final unitFilter = widget.unitIds;
+    
+    if (widget.practiceType == 'pyq') {
+      List<Slide> pyqs = [];
+      final wanted = unitFilter?.toSet();
+      for (var module in widget.book.modules) {
+        for (var section in module.sections) {
+          final isSelected = wanted == null || section.units.any((u) => wanted.contains(u.id));
+          if (isSelected) {
+            pyqs.addAll(section.pyqQuestions);
+          }
+        }
+      }
+
+      // Filter duplicates by content
+      final List<Slide> uniquePyqs = [];
+      final Set<String> seen = {};
+      for (final q in pyqs) {
+        if (seen.add(q.content.trim().toLowerCase())) {
+          uniquePyqs.add(q);
+        }
+      }
+
+      final oneWordPool = uniquePyqs.where((q) => q.type == 'one_word').toList()..shuffle();
+      final proofPool = uniquePyqs.where((q) => q.type == 'proof').toList()..shuffle();
+
+      final int oneWordCount = widget.pyqOneWordCount ?? 5;
+      final int proofCount = widget.pyqProofCount ?? 2;
+
+      final selectedOneWord = oneWordPool.sublist(0, oneWordCount.clamp(0, oneWordPool.length));
+      final selectedProof = proofPool.sublist(0, proofCount.clamp(0, proofPool.length));
+
+      _queue = [...selectedOneWord, ...selectedProof]..shuffle();
+      _totalQuestions = _queue.length;
+      return;
+    }
+
+    List<Slide> pool = [];
     final bool hasFilter = unitFilter != null && unitFilter.isNotEmpty;
 
     if (hasFilter) {
@@ -121,9 +168,98 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
 
   Future<void> _finishPractice() async {
     int timeSpent = DateTime.now().difference(_startTime).inSeconds;
-    int accuracy = _totalQuestions > 0 ? (((_totalQuestions) / (_totalQuestions + _mistakesMade)) * 100).round() : 100;
     int xpEarned = 10; 
 
+    if (widget.practiceType == 'pyq') {
+      // Show loading spinner
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => const Center(
+          child: CircularProgressIndicator(color: AppTheme.duoBlue),
+        ),
+      );
+
+      final List<Map<String, dynamic>> answersToGrade = [];
+      int idx = 0;
+      for (final record in _pyqSessionAnswers) {
+        final slide = record['slide'] as Slide;
+        final answersMap = record['userAnswers'] as Map<int, String>;
+        final steps = slide.interactiveSteps ?? [];
+        
+        if (steps.isEmpty) {
+          answersToGrade.add({
+            'index': idx++,
+            'question': slide.content,
+            'correctAnswer': slide.blankAnswer ?? '',
+            'userAnswer': answersMap[0] ?? '',
+          });
+        } else {
+          for (int i = 0; i < steps.length; i++) {
+            answersToGrade.add({
+              'index': idx++,
+              'question': steps[i].prompt ?? slide.content,
+              'correctAnswer': steps[i].stepText ?? '',
+              'userAnswer': answersMap[i] ?? '',
+            });
+          }
+        }
+      }
+
+      List<Map<String, dynamic>> gradedResults = [];
+      try {
+        if (answersToGrade.isNotEmpty) {
+          final results = await AiService().gradePyqAnswers(answersToGrade: answersToGrade);
+          for (final r in results) {
+            final int index = r['index'] is int ? r['index'] : int.parse(r['index'].toString());
+            final matchingInput = answersToGrade.firstWhere((element) => element['index'] == index);
+            gradedResults.add({
+              'question': matchingInput['question'],
+              'correctAnswer': matchingInput['correctAnswer'],
+              'userAnswer': matchingInput['userAnswer'],
+              'isCorrect': r['isCorrect'],
+              'explanation': r['explanation'],
+            });
+          }
+        }
+      } catch (e) {
+        print("Error grading answers: $e");
+        // Fallback exact match
+        for (final input in answersToGrade) {
+          final userAns = input['userAnswer'].toString().trim().toLowerCase();
+          final correctAns = input['correctAnswer'].toString().trim().toLowerCase();
+          final isCorrect = userAns == correctAns;
+          gradedResults.add({
+            'question': input['question'],
+            'correctAnswer': input['correctAnswer'],
+            'userAnswer': input['userAnswer'],
+            'isCorrect': isCorrect,
+            'explanation': isCorrect ? 'Exact match' : 'Incorrect answer.',
+          });
+        }
+      }
+
+      // Hide loading spinner
+      if (mounted) {
+        Navigator.pop(context);
+      }
+
+      await GlobalState.addXp(xpEarned);
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context, 
+          MaterialPageRoute(builder: (_) => PyqCompleteScreen(
+            gradedResults: gradedResults,
+            timeSpentSeconds: timeSpent,
+            xpEarned: xpEarned,
+          ))
+        );
+      }
+      return;
+    }
+
+    int accuracy = _totalQuestions > 0 ? (((_totalQuestions) / (_totalQuestions + _mistakesMade)) * 100).round() : 100;
     await GlobalState.addXp(xpEarned);
 
     if (mounted) {
@@ -136,6 +272,31 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
           isPractice: true, 
         ))
       );
+    }
+  }
+
+  void _processNextPyqOneWord() {
+    final slide = _queue.first;
+    _pyqSessionAnswers.add({
+      'slide': slide,
+      'userAnswers': Map<int, String>.from(_pyqOneWordInputs),
+    });
+
+    _completedQuestions++;
+    _queue.removeAt(0);
+
+    if (_queue.isEmpty) {
+      _finishPractice();
+    } else {
+      setState(() {
+        _answered = false;
+        _isCorrect = false;
+        _selectedQuizOption = null;
+        _blankInput = '';
+        _numericInput = '';
+        _wordInput = '';
+        _pyqOneWordInputs = {};
+      });
     }
   }
 
@@ -214,7 +375,11 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
 
   bool get _isCustomBottomBar {
     if (_queue.isEmpty) return false;
-    final type = _queue.first.type;
+    final slide = _queue.first;
+    final type = slide.type;
+    if (widget.practiceType == 'pyq' && type == 'one_word') {
+      return true; // Render a custom bottom bar for PYQ one-word slides
+    }
     return type == 'proof' || type == 'step_by_step';
   }
 
@@ -254,6 +419,13 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
         onChanged: (val) => setState(() => _numericInput = val),
       );
     } else if (slide.type == 'one_word') {
+      if (widget.practiceType == 'pyq') {
+        return PyqOneWordView(
+          slide: slide,
+          values: _pyqOneWordInputs,
+          onChanged: (idx, val) => setState(() => _pyqOneWordInputs[idx] = val),
+        );
+      }
       return OneWordView(
         slide: slide,
         value: _wordInput,
@@ -377,7 +549,19 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
                           ),
                   ],
                 ),
-              )
+              ),
+
+            // PYQ One Word Action Bar
+            if (widget.practiceType == 'pyq' && slide.type == 'one_word')
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                child: DuoButton(
+                  text: 'Continue',
+                  color: AppTheme.duoBlue,
+                  shadowColor: AppTheme.duoBlueDark,
+                  onPressed: _processNextPyqOneWord,
+                ),
+              ),
           ],
         ),
         ),

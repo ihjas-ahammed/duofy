@@ -462,6 +462,7 @@ class Section {
   /// section can be planned with a tweaked focus. Persisted so a manifest
   /// retry reuses the same guidance.
   final String? customInstructions;
+  final List<Slide> pyqQuestions;
 
   Section({
     required this.id,
@@ -475,6 +476,7 @@ class Section {
     this.unitsGenerated = false,
     this.unitFormatsConfirmed = false,
     this.customInstructions,
+    this.pyqQuestions = const [],
   });
 
   factory Section.fromJson(Map<String, dynamic> json) {
@@ -490,6 +492,7 @@ class Section {
       unitsGenerated: _bool(json['unitsGenerated'], false),
       unitFormatsConfirmed: _bool(json['unitFormatsConfirmed'], false),
       customInstructions: _strOpt(json['customInstructions']),
+      pyqQuestions: (json['pyqQuestions'] as List?)?.map((s) => Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
     );
   }
 
@@ -505,6 +508,7 @@ class Section {
     if (unitsGenerated) 'unitsGenerated': unitsGenerated,
     if (unitFormatsConfirmed) 'unitFormatsConfirmed': unitFormatsConfirmed,
     if (customInstructions != null) 'customInstructions': customInstructions,
+    'pyqQuestions': pyqQuestions.map((s) => s.toJson()).toList(),
   };
 
   /// True for skeletons that carry their own page-range and PDF chunk and
@@ -533,6 +537,7 @@ class Section {
     bool? unitsGenerated,
     bool? unitFormatsConfirmed,
     String? customInstructions,
+    List<Slide>? pyqQuestions,
   }) {
     return Section(
       id: id ?? this.id,
@@ -546,6 +551,7 @@ class Section {
       unitsGenerated: unitsGenerated ?? this.unitsGenerated,
       unitFormatsConfirmed: unitFormatsConfirmed ?? this.unitFormatsConfirmed,
       customInstructions: customInstructions ?? this.customInstructions,
+      pyqQuestions: pyqQuestions ?? this.pyqQuestions,
     );
   }
 }
