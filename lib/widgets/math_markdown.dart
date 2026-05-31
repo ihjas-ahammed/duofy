@@ -183,6 +183,14 @@ class _PermissiveLatexInlineSyntax extends md.InlineSyntax {
     final equation = raw.substring(delimLen, raw.length - delimLen);
     final element = md.Element.text('latex', equation);
     element.attributes['MathStyle'] = display ? 'display' : 'text';
+    // Mark math that came from the *inline* syntax so the builder keeps it in
+    // the flowing RichText (a WidgetSpan) instead of a SingleChildScrollView.
+    // The scroll view is a non-text widget; placing it mid-paragraph splits
+    // flutter_markdown's Wrap, turning the surrounding plain text into
+    // atomic, non-breakable blocks that wrap as a whole — the spurious "soft
+    // break" seen when two math entries are far apart. Block-level `$$…$$`
+    // (handled by LatexBlockSyntax) is left unmarked so it still scrolls.
+    element.attributes['inline'] = 'true';
     parser.addNode(element);
     return true;
   }
@@ -206,6 +214,7 @@ class _MathBuilder extends MarkdownElementBuilder {
     if (text.isEmpty) return const SizedBox.shrink();
 
     final isDisplay = element.attributes['MathStyle'] == 'display';
+    final isInline = element.attributes['inline'] == 'true';
     final mathStyle = isDisplay ? MathStyle.display : MathStyle.text;
     final effectiveStyle = textStyle ?? parentStyle ?? preferredStyle;
 
@@ -234,7 +243,12 @@ class _MathBuilder extends MarkdownElementBuilder {
       },
     );
 
-    if (isDisplay) {
+    // Only *block* display math gets the horizontal scroll view (it sits on
+    // its own line, so being a non-text widget is fine). Inline math — both
+    // `$…$` and inline `$$…$$` — flows as a WidgetSpan inside a Text widget so
+    // flutter_markdown can merge it into the paragraph's single RichText and
+    // wrap the surrounding text at word boundaries.
+    if (isDisplay && !isInline) {
       return SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
