@@ -5,13 +5,20 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart' as wf;
 import 'package:webview_cef/webview_cef.dart' as wc;
+import 'package:webview_windows/webview_windows.dart' as ww;
 
-/// `webview_flutter` doesn't support Linux. On Linux we render the same inline
-/// HTML through `webview_cef` (Chromium Embedded Framework). The CEF backend
-/// has no loadHtmlString method, so we pack the HTML into a `data:` URL.
+/// `webview_flutter` doesn't support Linux or Windows, so each desktop OS gets
+/// its own backend:
+///   - Linux  -> `webview_cef` (Chromium Embedded Framework). CEF has no
+///     loadHtmlString, so we pack the HTML into a `data:` URL.
+///   - Windows -> `webview_windows` (WebView2). It loads HTML strings directly
+///     and is the only backend that compiles cleanly for us on Windows —
+///     `webview_cef`'s Windows native code is excluded from the build (see the
+///     plugin platforms block in packages/webview_cef/pubspec.yaml).
+///   - Everything else (Android/iOS/macOS/web) -> `webview_flutter`.
 ///
-/// Both backends drop in wherever the app previously embedded a WebView.
-/// Callers pass the raw HTML string and the widget owns the controller, the
+/// All backends drop in wherever the app previously embedded a WebView.
+/// Callers pass the raw HTML string and the widget owns the controller, any
 /// data-URL encoding, and the resize lifecycle.
 class PlatformWebView extends StatefulWidget {
   final String html;
@@ -23,14 +30,19 @@ class PlatformWebView extends StatefulWidget {
   State<PlatformWebView> createState() => _PlatformWebViewState();
 }
 
-bool get _useCef => !kIsWeb && (Platform.isLinux || Platform.isWindows);
+bool get _useCef => !kIsWeb && Platform.isLinux;
+bool get _useWindows => !kIsWeb && Platform.isWindows;
 
 class _PlatformWebViewState extends State<PlatformWebView> {
   // webview_flutter path
   wf.WebViewController? _wfController;
-  // webview_cef path
+  // webview_cef path (Linux)
   wc.WebViewController? _wcController;
   bool _wcReady = false;
+  // webview_windows path (Windows)
+  ww.WebviewController? _winController;
+  bool _winReady = false;
+  StreamSubscription<dynamic>? _winMsgSub;
 
   @override
   void initState() {
@@ -45,7 +57,9 @@ class _PlatformWebViewState extends State<PlatformWebView> {
   }
 
   void _load() {
-    if (_useCef) {
+    if (_useWindows) {
+      _loadWindows();
+    } else if (_useCef) {
       _loadCef();
     } else {
       _wfController = wf.WebViewController()
@@ -58,6 +72,39 @@ class _PlatformWebViewState extends State<PlatformWebView> {
           },
         )
         ..loadHtmlString(widget.html);
+    }
+  }
+
+  Future<void> _loadWindows() async {
+    if (_winController == null) {
+      final c = ww.WebviewController();
+      await c.initialize();
+      if (!mounted) {
+        c.dispose();
+        return;
+      }
+      await c.setBackgroundColor(const Color(0x00000000));
+      await c.setPopupWindowPolicy(ww.WebviewPopupWindowPolicy.deny);
+      // Bridge the page's `window.DuoErrorChannel.postMessage(...)` calls onto
+      // WebView2's native message pipe so onJsError fires the same way it does
+      // on the webview_flutter/webview_cef backends.
+      await c.addScriptToExecuteOnDocumentCreated(
+        'window.DuoErrorChannel = { postMessage: function (m) { window.chrome.webview.postMessage(String(m)); } };',
+      );
+      _winMsgSub = c.webMessage.listen((msg) {
+        if (mounted) widget.onJsError?.call(msg.toString());
+      });
+      await c.loadStringContent(widget.html);
+      if (!mounted) {
+        c.dispose();
+        return;
+      }
+      setState(() {
+        _winController = c;
+        _winReady = true;
+      });
+    } else {
+      await _winController!.loadStringContent(widget.html);
     }
   }
 
@@ -101,30 +148,41 @@ class _PlatformWebViewState extends State<PlatformWebView> {
 
   @override
   void dispose() {
+    _winMsgSub?.cancel();
+    _winController?.dispose();
     _wcController?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_useWindows) {
+      if (!_winReady || _winController == null) {
+        return _loadingPlaceholder();
+      }
+      return ww.Webview(_winController!);
+    }
     if (_useCef) {
       if (!_wcReady || _wcController == null) {
-        return const ColoredBox(
-          color: Color(0x00000000),
-          child: Center(
-              child: SizedBox(
-                  width: 24, height: 24, child: CircularProgressIndicator())),
-        );
+        return _loadingPlaceholder();
       }
       return _wcController!.webviewWidget;
     }
     return wf.WebViewWidget(controller: _wfController!);
   }
+
+  Widget _loadingPlaceholder() => const ColoredBox(
+        color: Color(0x00000000),
+        child: Center(
+            child: SizedBox(
+                width: 24, height: 24, child: CircularProgressIndicator())),
+      );
 }
 
-/// One-shot global init for [wc.WebviewManager]. Calling [ensureInitialized]
-/// is idempotent — the first call awaits CEF's startup handshake and
-/// subsequent calls are cheap.
+/// One-shot global init for [wc.WebviewManager] (Linux only). Calling
+/// [ensureInitialized] is idempotent — the first call awaits CEF's startup
+/// handshake and subsequent calls are cheap. On non-Linux platforms it is a
+/// no-op.
 class PlatformWebViewBootstrap {
   static Future<void>? _initFuture;
 

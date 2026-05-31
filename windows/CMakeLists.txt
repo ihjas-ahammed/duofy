@@ -14,6 +14,13 @@ cmake_policy(VERSION 3.14...3.25)
 # are configured using at least CMake 3.5 compatibility.
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 
+# Some plugins (e.g. pdfx) fetch native sources via DownloadProject, which spawns
+# a *separate* CMake process at configure time. That child does not inherit the
+# variable above, so its `cmake_minimum_required(VERSION <3.5)` fatally errors on
+# CMake 4.x. Export the minimum to the environment so child CMake invocations
+# accept the old policy version too.
+set(ENV{CMAKE_POLICY_VERSION_MINIMUM} 3.5)
+
 # Define build configuration option.
 get_property(IS_MULTICONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 if(IS_MULTICONFIG)

@@ -18,12 +18,16 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^2.0.0
 
+# NOTE: The `windows:` platform was intentionally removed. webview_flutter has
+# no Windows backend, so this app uses webview_windows (WebView2) on Windows
+# instead. Declaring `windows` here pulls webview_cef's Windows CEF native code
+# into the build, which fails to compile for us. Dropping it excludes the plugin
+# from `flutter pub get`'s generated_plugins.cmake on Windows while keeping the
+# Linux/macOS backends intact. The Dart API still imports fine on every platform.
 flutter:
   plugin:
     platforms:
       macos:
         pluginClass: WebviewCefPlugin
-      windows:
-        pluginClass: WebviewCefPluginCApi
       linux:
         pluginClass: WebviewCefPlugin

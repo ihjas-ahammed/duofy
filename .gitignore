@@ -44,5 +44,6 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# CEF (Chromium Embedded Framework) binaries — large downloaded artifacts
-packages/webview_cef/third/
+# CEF (Chromium Embedded Framework) SDK — large artifacts the webview_cef build
+# downloads into per-platform `third/` dirs (windows/third, macos/third, …).
+packages/webview_cef/**/third/

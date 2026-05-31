@@ -64,6 +64,13 @@ dependencies:
   firedart: ^0.9.8
   webview_cef: ^0.2.2
 
+  # Windows desktop WebView (selected at runtime via Platform.isWindows):
+  # webview_flutter has no Windows backend and webview_cef's Windows build is
+  # broken for us, so on Windows we use the WebView2-based webview_windows.
+  # webview_cef is hidden from the Windows build at the plugin level — see the
+  # `flutter.plugin.platforms` block in packages/webview_cef/pubspec.yaml.
+  webview_windows: ^0.4.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
