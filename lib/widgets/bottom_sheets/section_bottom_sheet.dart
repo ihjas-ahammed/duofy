@@ -8,7 +8,7 @@ import '../mini_progress_bar.dart';
 /// Bottom-sheet section selector that mirrors the React SectionSelector:
 /// rounded-t-3xl glass sheet with drag handle, big cards per section,
 /// border-b-4 in the section's color when active, and a MiniProgressBar.
-class SectionBottomSheet extends StatelessWidget {
+class SectionBottomSheet extends StatefulWidget {
   final Book book;
   final int activeModuleIdx;
   final int activeSectionIdx;
@@ -25,10 +25,60 @@ class SectionBottomSheet extends StatelessWidget {
   });
 
   @override
+  State<SectionBottomSheet> createState() => _SectionBottomSheetState();
+}
+
+class _SectionBottomSheetState extends State<SectionBottomSheet> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToActiveSection();
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToActiveSection() {
+    if (!mounted) return;
+    final sections = (widget.book.modules.isNotEmpty && widget.activeModuleIdx < widget.book.modules.length)
+        ? widget.book.modules[widget.activeModuleIdx].sections
+        : <Section>[];
+    if (sections.isEmpty) return;
+
+    final index = widget.activeSectionIdx;
+    if (index > 0 && _scrollController.hasClients) {
+      double targetOffset = 48.0; // Height offset before the first card (title + top padding)
+      for (int i = 0; i < index; i++) {
+        final sec = sections[i];
+        // Approximate heights: card padding + contents + spacing
+        final cardHeight = sec.description.isNotEmpty ? 138.0 : 110.0;
+        targetOffset += cardHeight;
+      }
+
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      final double clampedOffset = targetOffset.clamp(0.0, maxScroll);
+
+      _scrollController.animateTo(
+        clampedOffset,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
-    final sections = (book.modules.isNotEmpty && activeModuleIdx < book.modules.length)
-        ? book.modules[activeModuleIdx].sections
+    final sections = (widget.book.modules.isNotEmpty && widget.activeModuleIdx < widget.book.modules.length)
+        ? widget.book.modules[widget.activeModuleIdx].sections
         : <Section>[];
 
     return Padding(
@@ -67,6 +117,7 @@ class SectionBottomSheet extends StatelessWidget {
                 ),
                 Flexible(
                   child: SingleChildScrollView(
+                    controller: _scrollController,
                     physics: const BouncingScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
                     child: Column(
@@ -87,10 +138,10 @@ class SectionBottomSheet extends StatelessWidget {
                         for (int i = 0; i < sections.length; i++) ...[
                           _SectionCard(
                             section: sections[i],
-                            isActive: i == activeSectionIdx,
-                            progress: calculateSectionProgress(sections[i], completedLessons),
+                            isActive: i == widget.activeSectionIdx,
+                            progress: calculateSectionProgress(sections[i], widget.completedLessons),
                             onTap: () {
-                              onSelect(activeModuleIdx, i);
+                              widget.onSelect(widget.activeModuleIdx, i);
                               Navigator.of(context).maybePop();
                             },
                           ),

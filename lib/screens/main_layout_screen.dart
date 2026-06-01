@@ -8,7 +8,7 @@ import '../services/database_service.dart';
 import '../services/generation_manager.dart';
 import 'book_dashboard_screen.dart';
 import 'practice_screen.dart';
-import 'notes_screen.dart';
+import 'summary_screen.dart';
 import 'pyq_tab_screen.dart';
 import 'course_settings_screen.dart';
 
@@ -105,7 +105,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
           }
         },
       ),
-      NotesScreen(book: _currentBook),
+      SummaryScreen(book: _currentBook),
     ];
 
     final isDesktop = MediaQuery.of(context).size.width >= 900;
@@ -135,7 +135,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                                 ? 'Practice Arena'
                                 : _currentIndex == 2
                                     ? 'PYQ Analyzer'
-                                    : 'Course Notes',
+                                    : 'Course Summary',
                         style: const TextStyle(
                           fontFamily: 'Nunito',
                           fontWeight: FontWeight.w900,
@@ -215,7 +215,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                   _buildNavItem(0, LucideIcons.map),
                   _buildNavItem(1, LucideIcons.dumbbell),
                   _buildNavItem(2, LucideIcons.fileQuestion),
-                  _buildNavItem(3, LucideIcons.fileText),
+                  _buildNavItem(3, LucideIcons.clipboardList),
                 ],
               ),
             ),
@@ -278,7 +278,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
           const SizedBox(height: 8),
           _buildSidebarNavItem(2, LucideIcons.fileQuestion, 'PYQ'),
           const SizedBox(height: 8),
-          _buildSidebarNavItem(3, LucideIcons.fileText, 'Notes'),
+          _buildSidebarNavItem(3, LucideIcons.clipboardList, 'Summary'),
           
           const Spacer(),
           
