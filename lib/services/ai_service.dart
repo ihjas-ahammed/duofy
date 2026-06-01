@@ -1261,12 +1261,7 @@ Important Rules:
     return lesson.copyWith(canvasSvg: lessonArt, slides: updatedSlides);
   }
 
-class UnitManifestResult {
-  final List<Unit> units;
-  final List<LessonFormat> newFormats;
 
-  UnitManifestResult({required this.units, required this.newFormats});
-}
 
   /// path continues to work unchanged. [customInstructions] is the planner
   /// guidance captured on the "Plan units" panel (pre-filled from the book's
@@ -1502,4 +1497,11 @@ class UnitManifestResult {
     }
     throw lastException ?? Exception('Failed to grade PYQ answers.');
   }
+}
+
+class UnitManifestResult {
+  final List<Unit> units;
+  final List<LessonFormat> newFormats;
+
+  UnitManifestResult({required this.units, required this.newFormats});
 }

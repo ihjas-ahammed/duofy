@@ -13,6 +13,7 @@ class ModuleSelectorSheet extends StatelessWidget {
   final int activeModuleIdx;
   final List<String> completedLessons;
   final ValueChanged<int> onSelect;
+  final ValueChanged<int>? onModuleLongPress;
 
   const ModuleSelectorSheet({
     super.key,
@@ -20,6 +21,7 @@ class ModuleSelectorSheet extends StatelessWidget {
     required this.activeModuleIdx,
     required this.completedLessons,
     required this.onSelect,
+    this.onModuleLongPress,
   });
 
   static Future<void> show({
@@ -28,6 +30,7 @@ class ModuleSelectorSheet extends StatelessWidget {
     required int activeModuleIdx,
     required List<String> completedLessons,
     required ValueChanged<int> onSelect,
+    ValueChanged<int>? onModuleLongPress,
   }) {
     return showGeneralDialog(
       context: context,
@@ -40,6 +43,7 @@ class ModuleSelectorSheet extends StatelessWidget {
         activeModuleIdx: activeModuleIdx,
         completedLessons: completedLessons,
         onSelect: onSelect,
+        onModuleLongPress: onModuleLongPress,
       ),
       transitionBuilder: (ctx, anim, _, child) {
         final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
@@ -130,6 +134,12 @@ class ModuleSelectorSheet extends StatelessWidget {
                                   onSelect(index);
                                   Navigator.of(context).maybePop();
                                 },
+                                onLongPress: onModuleLongPress == null
+                                    ? null
+                                    : () {
+                                        Navigator.of(context).maybePop();
+                                        onModuleLongPress!(index);
+                                      },
                               );
                             },
                           ),
@@ -153,12 +163,14 @@ class _ModuleRow extends StatelessWidget {
   final bool isActive;
   final int progress;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   const _ModuleRow({
     required this.module,
     required this.isActive,
     required this.progress,
     required this.onTap,
+    this.onLongPress,
   });
 
   @override
@@ -167,6 +179,7 @@ class _ModuleRow extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(12),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),

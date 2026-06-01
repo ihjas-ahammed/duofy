@@ -30,7 +30,7 @@ class MissingFilesBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppTheme.duoOrange.withOpacity(0.15),

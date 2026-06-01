@@ -14,6 +14,7 @@ class SectionBottomSheet extends StatefulWidget {
   final int activeSectionIdx;
   final List<String> completedLessons;
   final Function(int moduleIdx, int sectionIdx) onSelect;
+  final Function(int moduleIdx, int sectionIdx)? onSectionLongPress;
 
   const SectionBottomSheet({
     super.key,
@@ -22,6 +23,7 @@ class SectionBottomSheet extends StatefulWidget {
     required this.activeSectionIdx,
     required this.completedLessons,
     required this.onSelect,
+    this.onSectionLongPress,
   });
 
   @override
@@ -144,6 +146,12 @@ class _SectionBottomSheetState extends State<SectionBottomSheet> {
                               widget.onSelect(widget.activeModuleIdx, i);
                               Navigator.of(context).maybePop();
                             },
+                            onLongPress: widget.onSectionLongPress == null
+                                ? null
+                                : () {
+                                    Navigator.of(context).maybePop();
+                                    widget.onSectionLongPress!(widget.activeModuleIdx, i);
+                                  },
                           ),
                           if (i != sections.length - 1) const SizedBox(height: 16),
                         ],
@@ -195,12 +203,14 @@ class _SectionCard extends StatelessWidget {
   final bool isActive;
   final int progress;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   const _SectionCard({
     required this.section,
     required this.isActive,
     required this.progress,
     required this.onTap,
+    this.onLongPress,
   });
 
   @override
@@ -211,6 +221,7 @@ class _SectionCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(20),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),

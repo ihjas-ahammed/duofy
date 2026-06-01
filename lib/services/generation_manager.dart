@@ -76,6 +76,10 @@ class GenerationManager extends ChangeNotifier {
   final StreamController<Book> _bookUpdateController = StreamController<Book>.broadcast();
   Stream<Book> get bookUpdates => _bookUpdateController.stream;
 
+  void triggerBookUpdate(Book book) {
+    _bookUpdateController.add(book);
+  }
+
   VoidCallback? onBookGenerated;
 
   Future<void> _recordRunTime(String key, int durationMs) async {

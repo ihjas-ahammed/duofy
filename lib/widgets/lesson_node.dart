@@ -303,22 +303,17 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget> with SingleTickerPr
 
   Widget build(BuildContext context) {
     final sectionColor = SectionColors.base(widget.sectionColorStr);
-    final sectionDark = SectionColors.dark(widget.sectionColorStr);
 
     Color bgColor;
-    Color borderColor;
     Color iconColor;
     if (widget.isLocked) {
       bgColor = const Color(0xFF334155);
-      borderColor = const Color(0xFF1E293B);
       iconColor = const Color(0xFF64748B);
     } else if (widget.isCompleted) {
       bgColor = const Color(0xFFFBBF24);
-      borderColor = const Color(0xFFD97706);
       iconColor = Colors.white;
     } else {
       bgColor = sectionColor;
-      borderColor = sectionDark;
       iconColor = Colors.white;
     }
 

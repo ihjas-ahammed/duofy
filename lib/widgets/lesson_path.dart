@@ -6,6 +6,7 @@ import '../services/generation_manager.dart';
 import '../utils/progress_utils.dart';
 import 'lesson_node.dart';
 import 'unit_header.dart';
+import 'missing_files_banner.dart';
 
 /// LessonPath mirrors the React component:
 /// - max width 400 px, centered
@@ -28,6 +29,7 @@ class LessonPath extends StatefulWidget {
   /// inside the unit, and the lesson itself for confirmation copy. Null
   /// disables the affordance.
   final void Function(int unitIdx, int lessonIdx, Lesson lesson)? onRegenerateLesson;
+  final void Function(int unitIdx, Unit unit)? onUnitLongPress;
   final List<String> completedLessons;
   final VoidCallback onLessonFinished;
   /// Status of the lazy unit-manifest call for this section (new flow).
@@ -40,6 +42,7 @@ class LessonPath extends StatefulWidget {
   /// Commits the user\'s per-unit format selections and flips
   /// [Section.unitFormatsConfirmed] true so lessons become reachable.
   final void Function(List<Unit> confirmedUnits)? onConfirmFormats;
+  final bool hasMissingFiles;
 
   const LessonPath({
     super.key,
@@ -51,11 +54,13 @@ class LessonPath extends StatefulWidget {
     required this.onGenerateUnit,
     required this.onClearUnit,
     this.onRegenerateLesson,
+    this.onUnitLongPress,
     required this.completedLessons,
     required this.onLessonFinished,
     this.sectionManifestStatus,
     this.onPlanManifest,
     this.onConfirmFormats,
+    required this.hasMissingFiles,
   });
 
   @override
@@ -136,10 +141,13 @@ class _LessonPathState extends State<LessonPath> {
       final targetY = targetElement.y;
       if (_scrollController.hasClients) {
         final viewportHeight = _scrollController.position.viewportDimension;
-        final scrollPosition = (targetY - (viewportHeight / 2)).clamp(
+        double scrollPosition = (targetY - (viewportHeight / 2)).clamp(
           0.0,
           _scrollController.position.maxScrollExtent,
         );
+        if (scrollPosition < 150) {
+          scrollPosition = 0.0;
+        }
         _scrollController.animateTo(
           scrollPosition,
           duration: const Duration(milliseconds: 1000),
@@ -273,10 +281,13 @@ class _LessonPathState extends State<LessonPath> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
           final viewportHeight = _scrollController.position.viewportDimension;
-          final scrollPosition = (targetY! - (viewportHeight / 2)).clamp(
+          double scrollPosition = (targetY! - (viewportHeight / 2)).clamp(
             0.0,
             _scrollController.position.maxScrollExtent,
           );
+          if (scrollPosition < 150) {
+            scrollPosition = 0.0;
+          }
           _scrollController.animateTo(
             scrollPosition,
             duration: const Duration(milliseconds: 600),
@@ -289,119 +300,131 @@ class _LessonPathState extends State<LessonPath> {
     return SingleChildScrollView(
       controller: _scrollController,
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.only(top: 8, bottom: 120),
+      padding: const EdgeInsets.only(top: 28, bottom: 120),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: _pathWidth),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final double width = constraints.maxWidth;
-              final double scaleX = width / _pathWidth;
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.hasMissingFiles)
+                MissingFilesBanner(book: widget.book),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final double width = constraints.maxWidth;
+                  final double scaleX = width / _pathWidth;
 
-              // Build lesson widgets and header widgets separately so we can
-              // stack lessons FIRST and headers AFTER them — Stack draws later
-              // children on top, so this guarantees a unit header overlays any
-              // streamed-in lesson node that the generation-state header has
-              // grown over (the bug the layout reservation can't always
-              // prevent when the header runs taller than expected).
-              final lessonWidgets = <Widget>[];
-              final headerWidgets = <Widget>[];
-              for (final el in elements) {
-                if (el.kind == _ElementKind.header) {
-                  final unit = el.unit!;
-                  final loading = widget.loadingUnitStatuses[unit.id];
-                  final isGenerated = unit.isGenerated && unit.lessons.isNotEmpty;
-                  final unitPdfPath = unit.pdfPath ?? widget.section.pdfPath;
-                  headerWidgets.add(Positioned(
-                    left: 16,
-                    right: 16,
-                    top: el.y - 20,
-                    child: UnitHeader(
-                      unit: unit,
-                      isGenerated: isGenerated,
-                      generationTask: loading,
-                      referencePdfPath: unitPdfPath,
-                      onGenerate: () => widget.onGenerateUnit(unit, el.unitIdx!),
-                      onClear: () => widget.onClearUnit(unit, el.unitIdx!),
-                    ),
-                  ));
-                  continue;
-                }
-                final lesson = el.lesson!;
-                final isCompleted = widget.completedLessons.contains(lesson.id);
-                final isUnlocked = unlocked.contains(lesson.id);
-                final isActive = isUnlocked && !isCompleted;
-                final isLocked = !isCompleted && !isUnlocked;
-                const nodeSize = 80.0;
-                lessonWidgets.add(Positioned(
-                  left: (el.x! * scaleX) - (nodeSize / 2),
-                  top: el.y - (nodeSize / 2),
-                  child: SizedBox(
-                    width: nodeSize,
-                    child: LessonNodeWidget(
-                      lesson: lesson,
-                      isCompleted: isCompleted,
-                      isLocked: isLocked,
-                      isActive: isActive,
-                      isNextToStart: false,
-                      sectionColorStr: widget.section.color,
-                      onLongPress: widget.onRegenerateLesson == null
-                          ? null
-                          : () => widget.onRegenerateLesson!(el.unitIdx!, el.lessonIdx!, lesson),
-                      onTap: () async {
-                        final prefs = await SharedPreferences.getInstance();
-                        await prefs.setString('last_lesson_id_${widget.book.id}', lesson.id);
-                        await prefs.setInt('last_mod_idx_${widget.book.id}', widget.modIdx);
-                        await prefs.setInt('last_sec_idx_${widget.book.id}', widget.secIdx);
-
-                        if (context.mounted) {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => LessonScreen(
-                                lesson: lesson,
-                                book: widget.book,
-                                modIdx: widget.modIdx,
-                                secIdx: widget.secIdx,
-                                unitIdx: el.unitIdx!,
-                                lessonIdx: el.lessonIdx!,
-                              ),
-                            ),
-                          );
-                          widget.onLessonFinished();
-                        }
-                      },
-                    ),
-                  ),
-                ));
-              }
-
-              return SizedBox(
-                width: width,
-                height: containerHeight,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    // SVG-style curved connectors (always behind the nodes)
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: CustomPaint(
-                          painter: _PathConnectorPainter(
-                            points: points,
-                            completed: widget.completedLessons,
-                            unlocked: unlocked,
-                            sectionColor: color,
-                            scaleX: scaleX,
+                  // Build lesson widgets and header widgets separately so we can
+                  // stack lessons FIRST and headers AFTER them — Stack draws later
+                  // children on top, so this guarantees a unit header overlays any
+                  // streamed-in lesson node that the generation-state header has
+                  // grown over (the bug the layout reservation can't always
+                  // prevent when the header runs taller than expected).
+                  final lessonWidgets = <Widget>[];
+                  final headerWidgets = <Widget>[];
+                  for (final el in elements) {
+                    if (el.kind == _ElementKind.header) {
+                      final unit = el.unit!;
+                      final loading = widget.loadingUnitStatuses[unit.id];
+                      final isGenerated = unit.isGenerated && unit.lessons.isNotEmpty;
+                      final unitPdfPath = unit.pdfPath ?? widget.section.pdfPath;
+                      headerWidgets.add(Positioned(
+                        left: 16,
+                        right: 16,
+                        top: el.y - 20,
+                        child: GestureDetector(
+                          onLongPress: widget.onUnitLongPress == null
+                              ? null
+                              : () => widget.onUnitLongPress!(el.unitIdx!, unit),
+                          child: UnitHeader(
+                            unit: unit,
+                            isGenerated: isGenerated,
+                            generationTask: loading,
+                            referencePdfPath: unitPdfPath,
+                            onGenerate: () => widget.onGenerateUnit(unit, el.unitIdx!),
+                            onClear: () => widget.onClearUnit(unit, el.unitIdx!),
                           ),
                         ),
+                      ));
+                      continue;
+                    }
+                    final lesson = el.lesson!;
+                    final isCompleted = widget.completedLessons.contains(lesson.id);
+                    final isUnlocked = unlocked.contains(lesson.id);
+                    final isActive = isUnlocked && !isCompleted;
+                    final isLocked = !isCompleted && !isUnlocked;
+                    const nodeSize = 80.0;
+                    lessonWidgets.add(Positioned(
+                      left: (el.x! * scaleX) - (nodeSize / 2),
+                      top: el.y - (nodeSize / 2),
+                      child: SizedBox(
+                        width: nodeSize,
+                        child: LessonNodeWidget(
+                          lesson: lesson,
+                          isCompleted: isCompleted,
+                          isLocked: isLocked,
+                          isActive: isActive,
+                          isNextToStart: false,
+                          sectionColorStr: widget.section.color,
+                          onLongPress: widget.onRegenerateLesson == null
+                              ? null
+                              : () => widget.onRegenerateLesson!(el.unitIdx!, el.lessonIdx!, lesson),
+                          onTap: () async {
+                            final prefs = await SharedPreferences.getInstance();
+                            await prefs.setString('last_lesson_id_${widget.book.id}', lesson.id);
+                            await prefs.setInt('last_mod_idx_${widget.book.id}', widget.modIdx);
+                            await prefs.setInt('last_sec_idx_${widget.book.id}', widget.secIdx);
+
+                            if (context.mounted) {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => LessonScreen(
+                                    lesson: lesson,
+                                    book: widget.book,
+                                    modIdx: widget.modIdx,
+                                    secIdx: widget.secIdx,
+                                    unitIdx: el.unitIdx!,
+                                    lessonIdx: el.lessonIdx!,
+                                  ),
+                                ),
+                              );
+                              widget.onLessonFinished();
+                            }
+                          },
+                        ),
                       ),
+                    ));
+                  }
+
+                  return SizedBox(
+                    width: width,
+                    height: containerHeight,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        // SVG-style curved connectors (always behind the nodes)
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            child: CustomPaint(
+                              painter: _PathConnectorPainter(
+                                points: points,
+                                completed: widget.completedLessons,
+                                unlocked: unlocked,
+                                sectionColor: color,
+                                scaleX: scaleX,
+                              ),
+                            ),
+                          ),
+                        ),
+                        ...lessonWidgets,
+                        ...headerWidgets,
+                      ],
                     ),
-                    ...lessonWidgets,
-                    ...headerWidgets,
-                  ],
-                ),
-              );
-            },
+                  );
+                },
+              ),
+            ],
           ),
         ),
       ),

@@ -9,10 +9,10 @@ import '../services/generation_manager.dart';
 import '../services/progress_service.dart';
 import '../services/database_service.dart';
 import '../utils/progress_utils.dart';
-import '../widgets/missing_files_banner.dart';
 import '../widgets/bottom_sheets/section_bottom_sheet.dart';
 import '../widgets/selectors/module_selector.dart';
 import '../widgets/lesson_path.dart';
+import '../services/global_state.dart';
 
 class BookDashboardScreen extends StatefulWidget {
   final Book book;
@@ -249,6 +249,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
           _activeSectionIdx = 0;
         });
       },
+      onModuleLongPress: (idx) {
+        _showModuleLongPressMenu(idx);
+      },
     );
   }
 
@@ -269,6 +272,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
               _activeModuleIdx = modIdx;
               _activeSectionIdx = secIdx;
             });
+          },
+          onSectionLongPress: (modIdx, secIdx) {
+            _showSectionLongPressMenu(modIdx, secIdx);
           },
         ),
       ),
@@ -303,7 +309,6 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
             child: Column(
               children: [
                 SizedBox(height: MediaQuery.of(context).padding.top + 72),
-                if (_hasMissingFiles) MissingFilesBanner(book: widget.book),
                 Expanded(
                   child: AnimatedBuilder(
                     animation: GenerationManager.instance,
@@ -313,7 +318,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                           child: Text('No sections available.', style: TextStyle(color: Colors.white54)),
                         );
                       }
-                      // New-flow sections carry their own PDF chunk but don\'t
+                      // New-flow sections carry their own PDF chunk but don't
                       // have units yet. Planning is now user-triggered from the
                       // manifest panel (so they can tweak the planner
                       // instructions first) rather than auto-firing here.
@@ -326,6 +331,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         loadingUnitStatuses: GenerationManager.instance.activeUnitGenerations,
                         sectionManifestStatus: manifestTask,
                         completedLessons: _completedLessons,
+                        hasMissingFiles: _hasMissingFiles,
                         onLessonFinished: _loadProgress,
                         onGenerateUnit: (unit, unitIdx) {
                           _promptAndGenerateUnit(unit, mIdx, sIdx, unitIdx);
@@ -334,7 +340,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                           _onClearUnit(unit, mIdx, sIdx, unitIdx);
                         },
                         onRegenerateLesson: (unitIdx, lessonIdx, lesson) {
-                          _promptRegenerateLesson(mIdx, sIdx, unitIdx, lessonIdx, lesson);
+                          _showLessonLongPressMenu(mIdx, sIdx, unitIdx, lessonIdx, lesson);
+                        },
+                        onUnitLongPress: (unitIdx, unit) {
+                          _showUnitLongPressMenu(mIdx, sIdx, unitIdx, unit);
                         },
                         onPlanManifest: (instructions, saveGlobally) {
                           GenerationManager.instance.clearSectionManifestError(activeSec.id);
@@ -469,10 +478,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                               const SizedBox(width: 8),
 
                               // XP chip
-                              FutureBuilder<int>(
-                                future: ProgressService.getXp(),
-                                builder: (context, snapshot) {
-                                  final xp = snapshot.data ?? 0;
+                              ValueListenableBuilder<int>(
+                                valueListenable: GlobalState.xpNotifier,
+                                builder: (context, xp, _) {
                                   return Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                     decoration: BoxDecoration(
@@ -511,6 +519,376 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       ),
     );
   }
+
+  void _showLessonLongPressMenu(int modIdx, int secIdx, int unitIdx, int lessonIdx, Lesson lesson) {
+    final isCompleted = _completedLessons.contains(lesson.id);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return _buildLongPressMenu(
+          title: lesson.title,
+          subtitle: 'Lesson Menu',
+          icon: LucideIcons.bookOpen,
+          color: AppTheme.duoBlue,
+          items: [
+            if (!isCompleted)
+              _MenuActionItem(
+                icon: LucideIcons.checkCircle,
+                title: 'Mark as Finished',
+                subtitle: 'Unlock progress (+20 XP)',
+                iconColor: AppTheme.duoGreen,
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await ProgressService.markLessonCompleted(lesson.id);
+                  await _loadProgress();
+                },
+              ),
+            if (isCompleted)
+              _MenuActionItem(
+                icon: LucideIcons.xCircle,
+                title: 'Clear Progress',
+                subtitle: 'Lock and clear status (-20 XP)',
+                iconColor: AppTheme.duoRed,
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await ProgressService.clearLessonProgress(lesson.id);
+                  await _loadProgress();
+                },
+              ),
+            _MenuActionItem(
+              icon: LucideIcons.refreshCw,
+              title: 'Regenerate Lesson',
+              subtitle: 'Re-generate lesson from PDF chunk',
+              iconColor: AppTheme.duoOrange,
+              onTap: () {
+                Navigator.pop(ctx);
+                _promptRegenerateLesson(modIdx, secIdx, unitIdx, lessonIdx, lesson);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showUnitLongPressMenu(int modIdx, int secIdx, int unitIdx, Unit unit) {
+    int totalLessons = unit.lessons.length;
+    int completedCount = unit.lessons.where((l) => _completedLessons.contains(l.id)).length;
+    int incompleteCount = totalLessons - completedCount;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return _buildLongPressMenu(
+          title: unit.title,
+          subtitle: 'Unit Menu',
+          icon: LucideIcons.bookmark,
+          color: AppTheme.duoViolet,
+          items: [
+            if (incompleteCount > 0)
+              _MenuActionItem(
+                icon: LucideIcons.checkCircle,
+                title: 'Mark Unit as Finished',
+                subtitle: 'Mark all $incompleteCount remaining lesson(s) (+${incompleteCount * 20} XP)',
+                iconColor: AppTheme.duoGreen,
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await ProgressService.markUnitCompleted(unit);
+                  await _loadProgress();
+                },
+              ),
+            if (completedCount > 0)
+              _MenuActionItem(
+                icon: LucideIcons.xCircle,
+                title: 'Clear Unit Progress',
+                subtitle: 'Lock and clear $completedCount completed lesson(s) (-${completedCount * 20} XP)',
+                iconColor: AppTheme.duoRed,
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await ProgressService.clearUnitProgress(unit);
+                  await _loadProgress();
+                },
+              ),
+            if (unit.isGenerated && unit.lessons.isNotEmpty)
+              _MenuActionItem(
+                icon: LucideIcons.refreshCcw,
+                title: 'Delete Unit',
+                subtitle: 'Clear AI lessons to allow regenerating',
+                iconColor: AppTheme.duoOrange,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _onClearUnit(unit, modIdx, secIdx, unitIdx);
+                },
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showSectionLongPressMenu(int modIdx, int secIdx) {
+    final section = widget.book.modules[modIdx].sections[secIdx];
+    int totalLessons = 0;
+    int completedCount = 0;
+    for (var u in section.units) {
+      for (var l in u.lessons) {
+        totalLessons++;
+        if (_completedLessons.contains(l.id)) {
+          completedCount++;
+        }
+      }
+    }
+    int incompleteCount = totalLessons - completedCount;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return _buildLongPressMenu(
+          title: section.title,
+          subtitle: 'Section Menu',
+          icon: LucideIcons.layers,
+          color: SectionColors.base(section.color),
+          items: [
+            if (incompleteCount > 0)
+              _MenuActionItem(
+                icon: LucideIcons.checkCircle,
+                title: 'Mark Section as Finished',
+                subtitle: 'Mark all $incompleteCount remaining lesson(s) (+${incompleteCount * 20} XP)',
+                iconColor: AppTheme.duoGreen,
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await ProgressService.markSectionCompleted(section);
+                  await _loadProgress();
+                },
+              ),
+            if (completedCount > 0)
+              _MenuActionItem(
+                icon: LucideIcons.xCircle,
+                title: 'Clear Section Progress',
+                subtitle: 'Lock and clear $completedCount completed lesson(s) (-${completedCount * 20} XP)',
+                iconColor: AppTheme.duoRed,
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await ProgressService.clearSectionProgress(section);
+                  await _loadProgress();
+                },
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showModuleLongPressMenu(int modIdx) {
+    final module = widget.book.modules[modIdx];
+    int totalLessons = 0;
+    int completedCount = 0;
+    for (var s in module.sections) {
+      for (var u in s.units) {
+        for (var l in u.lessons) {
+          totalLessons++;
+          if (_completedLessons.contains(l.id)) {
+            completedCount++;
+          }
+        }
+      }
+    }
+    int incompleteCount = totalLessons - completedCount;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return _buildLongPressMenu(
+          title: module.title,
+          subtitle: 'Module Menu',
+          icon: LucideIcons.package,
+          color: AppTheme.duoBlue,
+          items: [
+            if (incompleteCount > 0)
+              _MenuActionItem(
+                icon: LucideIcons.checkCircle,
+                title: 'Mark Module as Finished',
+                subtitle: 'Mark all $incompleteCount remaining lesson(s) (+${incompleteCount * 20} XP)',
+                iconColor: AppTheme.duoGreen,
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await ProgressService.markModuleCompleted(module);
+                  await _loadProgress();
+                },
+              ),
+            if (completedCount > 0)
+              _MenuActionItem(
+                icon: LucideIcons.xCircle,
+                title: 'Clear Module Progress',
+                subtitle: 'Lock and clear $completedCount completed lesson(s) (-${completedCount * 20} XP)',
+                iconColor: AppTheme.duoRed,
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await ProgressService.clearModuleProgress(module);
+                  await _loadProgress();
+                },
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildLongPressMenu({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required List<_MenuActionItem> items,
+  }) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.7),
+            border: Border.all(color: Colors.white.withOpacity(0.08)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: color.withOpacity(0.4)),
+                    ),
+                    child: Icon(icon, color: color, size: 24),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          subtitle.toUpperCase(),
+                          style: TextStyle(
+                            color: color,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              ...items.map((item) {
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: item.onTap,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.04),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white12),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(item.icon, color: item.iconColor, size: 22),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.title,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    item.subtitle,
+                                    style: const TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(LucideIcons.chevronRight, size: 16, color: Colors.white24),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'CANCEL',
+                  style: TextStyle(
+                    color: Color(0xFF94A3B8),
+                    fontWeight: FontWeight.w900,
+                    fontSize: 13,
+                    letterSpacing: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MenuActionItem {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color iconColor;
+  final VoidCallback onTap;
+
+  _MenuActionItem({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.iconColor,
+    required this.onTap,
+  });
 }
 
 class _IconHeaderButton extends StatelessWidget {

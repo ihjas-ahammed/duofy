@@ -55,6 +55,7 @@ class UnitHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint("UNIT TITLE: '${unit.title}', DESC: '${unit.description}', IS_GENERATED: $isGenerated");
     final bool isError = generationTask?.isError ?? false;
     final String? status = generationTask?.status;
 
