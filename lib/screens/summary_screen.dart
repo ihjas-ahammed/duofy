@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
-import '../widgets/math_markdown.dart';
+import 'module_summary_detail_screen.dart';
 
 class SummaryScreen extends StatelessWidget {
   final Book book;
@@ -211,186 +211,59 @@ class SummaryScreen extends StatelessWidget {
   }
 
   Widget _buildModuleSummaryCard(BuildContext context, Module module) {
-    // Gather all theory slides for this module to show under "Key Notes"
-    List<Slide> moduleTheorySlides = [];
-    for (var section in module.sections) {
-      for (var unit in section.units) {
-        for (var lesson in unit.lessons) {
-          for (var slide in lesson.slides) {
-            if (slide.type == 'theory') {
-              moduleTheorySlides.add(slide);
-            }
-          }
-        }
-      }
-    }
-
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: AppTheme.glassDecoration,
       clipBehavior: Clip.antiAlias,
-      child: Theme(
-        data: Theme.of(context).copyWith(
-          dividerColor: Colors.transparent,
-          splashColor: Colors.transparent,
-        ),
-        child: ExpansionTile(
-          collapsedIconColor: Colors.white70,
-          iconColor: AppTheme.duoBlue,
-          title: Text(
-            module.title,
-            style: const TextStyle(
-              fontWeight: FontWeight.w900,
-              fontSize: 16,
-              color: Colors.white,
-            ),
-          ),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              module.description,
-              style: const TextStyle(
-                fontSize: 13,
-                color: Colors.white54,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ModuleSummaryDetailScreen(module: module),
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          childrenPadding: const EdgeInsets.all(16),
-          children: [
-            Container(
-              height: 1,
-              color: Colors.white.withOpacity(0.08),
-              margin: const EdgeInsets.only(bottom: 16),
-            ),
-            
-            // Sub-sections outline
-            if (module.sections.isNotEmpty) ...[
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'COURSE OUTLINE',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 11,
-                    letterSpacing: 0.8,
-                    color: AppTheme.duoBlue,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              ...module.sections.map((sec) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8, left: 4),
-                  child: Row(
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Padding(
-                        padding: EdgeInsets.only(top: 4),
-                        child: Icon(LucideIcons.arrowRight, size: 12, color: Colors.white30),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              sec.title,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: Colors.white70,
-                              ),
-                            ),
-                            if (sec.description.isNotEmpty)
-                              Text(
-                                sec.description,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white54,
-                                ),
-                              ),
-                          ],
+                      Text(
+                        module.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                          color: Colors.white,
                         ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        module.description,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.white54,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
-                );
-              }),
-              const SizedBox(height: 20),
-            ],
-
-            // Module theory notes
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'CORE CONCEPTS SUMMARY',
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 11,
-                  letterSpacing: 0.8,
-                  color: AppTheme.duoViolet,
                 ),
-              ),
+                const SizedBox(width: 12),
+                const Icon(
+                  LucideIcons.chevronRight,
+                  color: Colors.white70,
+                  size: 20,
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            moduleTheorySlides.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Text(
-                      'No key concept notes generated for this module yet.',
-                      style: TextStyle(color: Colors.white38, fontSize: 13, fontStyle: FontStyle.italic),
-                    ),
-                  )
-                : ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: moduleTheorySlides.length,
-                    itemBuilder: (context, idx) {
-                      final slide = moduleTheorySlides[idx];
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.02),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white.withOpacity(0.04)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(LucideIcons.sparkles, color: AppTheme.duoViolet, size: 14),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    slide.title,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                      color: AppTheme.duoViolet,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            MathMarkdown(
-                              data: slide.content,
-                              textStyle: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.white,
-                                height: 1.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-          ],
+          ),
         ),
       ),
     );

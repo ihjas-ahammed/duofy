@@ -459,13 +459,15 @@ class GenerationManager extends ChangeNotifier {
     await NotificationService.showProgress(notifId, 'Planning section', 'Generating unit list...', indeterminate: true);
 
     try {
-      final units = await _aiService.generateUnitManifest(
+      final manifestResult = await _aiService.generateUnitManifest(
         section,
         book,
         customInstructions: effectiveInstructions,
       );
+      final units = manifestResult.units;
+      final newFormats = manifestResult.newFormats;
 
-      // Re-read freshest book so concurrent edits don\'t clobber.
+      // Re-read freshest book so concurrent edits don't clobber.
       final baseBook = (await _dbService.getBookFromCache(book.id)) ?? book;
       final modules = List<Module>.from(baseBook.modules);
       final sections = List<Section>.from(modules[modIdx].sections);
@@ -475,8 +477,20 @@ class GenerationManager extends ChangeNotifier {
         customInstructions: effectiveInstructions,
       );
       modules[modIdx] = modules[modIdx].copyWith(sections: sections);
+
+      // Append recommended lesson formats that are unique (name or ID doesn't already exist)
+      final List<LessonFormat> updatedFormats = List.from(baseBook.lessonFormats);
+      for (final nf in newFormats) {
+        final alreadyExists = updatedFormats.any((lf) =>
+            lf.id == nf.id || lf.name.toLowerCase() == nf.name.toLowerCase());
+        if (!alreadyExists) {
+          updatedFormats.add(nf);
+        }
+      }
+
       final newBook = baseBook.copyWith(
         modules: modules,
+        lessonFormats: updatedFormats,
         customInstructions: saveGlobally ? effectiveInstructions : baseBook.customInstructions,
       );
 
@@ -752,7 +766,7 @@ class GenerationManager extends ChangeNotifier {
     }
   }
 
-  Future<void> startQpGeneration(String bookId, List<File> files, String qpTitle, Book currentBook) async {
+  Future<void> startQpGeneration(String bookId, List<File> files, String qpTitle, Book currentBook, {String? customInstructions}) async {
     if (activeQpTasks.containsKey(bookId)) return;
 
     final notifId = bookId.hashCode + 1; // Unique ID avoiding collision
@@ -762,7 +776,7 @@ class GenerationManager extends ChangeNotifier {
     await NotificationService.showProgress(notifId, "Analyzing Exam", "Extracting and solving questions natively...", indeterminate: true);
 
     try {
-        final qp = await _aiService.generateQuestionPaper(files, qpTitle, currentBook.systemPrompt);
+        final qp = await _aiService.generateQuestionPaper(files, qpTitle, currentBook.systemPrompt, customInstructions: customInstructions);
 
         // Re-read the freshest book so we don't clobber other concurrent edits.
         final baseBook = (await _dbService.getBookFromCache(currentBook.id)) ?? currentBook;
@@ -809,7 +823,7 @@ class GenerationManager extends ChangeNotifier {
     }
   }
 
-  Future<void> startPyqAnalysis(String bookId, List<File> files, Book currentBook) async {
+  Future<void> startPyqAnalysis(String bookId, List<File> files, Book currentBook, {String? customInstructions}) async {
     if (activePyqTasks.containsKey(bookId)) return;
 
     final notifId = bookId.hashCode + 2; // Unique ID avoiding collision
@@ -864,6 +878,7 @@ class GenerationManager extends ChangeNotifier {
           section: sec,
           existingQuestions: totalExisting,
           otherSections: otherSectionsMeta.where((s) => s['id'] != sec.id).toList(),
+          customInstructions: customInstructions,
         );
 
         for (final q in extracted) {

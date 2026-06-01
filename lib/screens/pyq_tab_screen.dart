@@ -27,8 +27,14 @@ class PyqTabScreen extends StatefulWidget {
 
 class _PyqTabScreenState extends State<PyqTabScreen> {
   final List<File> _selectedFiles = [];
-  bool _isExpandedSection = false;
   String? _selectedSectionId;
+  final TextEditingController _customPromptCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _customPromptCtrl.dispose();
+    super.dispose();
+  }
 
   Future<void> _pickFiles() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -83,7 +89,14 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
       return;
     }
 
-    GenerationManager.instance.startPyqAnalysis(widget.book.id, _selectedFiles, widget.book);
+    final customInstructions = _customPromptCtrl.text.trim();
+
+    GenerationManager.instance.startPyqAnalysis(
+      widget.book.id, 
+      _selectedFiles, 
+      widget.book,
+      customInstructions: customInstructions.isNotEmpty ? customInstructions : null,
+    );
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Processing Exam in Background! You can continue browsing.'))
@@ -91,6 +104,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
 
     setState(() {
       _selectedFiles.clear();
+      _customPromptCtrl.clear();
     });
   }
 
@@ -311,6 +325,24 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                           files: _selectedFiles,
                           onAddMore: _pickFiles,
                           onRemove: (idx) => setState(() => _selectedFiles.removeAt(idx)),
+                        ),
+                        const SizedBox(height: 24),
+                        const Text('Custom Prompt / Generation Instructions', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white, fontSize: 14)),
+                        const SizedBox(height: 8),
+                        Container(
+                          decoration: AppTheme.glassDecoration,
+                          child: TextField(
+                            controller: _customPromptCtrl,
+                            maxLines: 4,
+                            minLines: 2,
+                            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                            decoration: InputDecoration(
+                              hintText: "e.g. Focus on multiple choice questions, explain formula derivations.",
+                              hintStyle: const TextStyle(color: Colors.white38, fontSize: 13, fontWeight: FontWeight.normal),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                              contentPadding: const EdgeInsets.all(16),
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 24),
                         DuoButton(

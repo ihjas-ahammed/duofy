@@ -1261,10 +1261,17 @@ Important Rules:
     return lesson.copyWith(canvasSvg: lessonArt, slides: updatedSlides);
   }
 
+class UnitManifestResult {
+  final List<Unit> units;
+  final List<LessonFormat> newFormats;
+
+  UnitManifestResult({required this.units, required this.newFormats});
+}
+
   /// path continues to work unchanged. [customInstructions] is the planner
   /// guidance captured on the "Plan units" panel (pre-filled from the book's
   /// instructions but editable per-section); injected into the prompt.
-  Future<List<Unit>> generateUnitManifest(
+  Future<UnitManifestResult> generateUnitManifest(
     Section section,
     Book bookContext, {
     String? customInstructions,
@@ -1337,7 +1344,20 @@ Important Rules:
             ));
           }
           if (units.isEmpty) throw Exception('Unit manifest had no usable entries.');
-          return units;
+
+          final newFormats = <LessonFormat>[];
+          final formatsData = jsonMap['newLessonFormats'] as List?;
+          if (formatsData != null) {
+            for (final f in formatsData) {
+              if (f is Map) {
+                try {
+                  newFormats.add(LessonFormat.fromJson(Map<String, dynamic>.from(f)));
+                } catch (_) {}
+              }
+            }
+          }
+
+          return UnitManifestResult(units: units, newFormats: newFormats);
         } on TimeoutException {
           lastException = Exception('Unit manifest request timed out ($modelName).');
         } catch (e) {
@@ -1348,12 +1368,13 @@ Important Rules:
     throw lastException ?? Exception('Failed to generate unit manifest. All models/keys exhausted.');
   }
 
-  Future<QuestionPaper> generateQuestionPaper(List<File> files, String qpTitle, String? systemPrompt) async {
+  Future<QuestionPaper> generateQuestionPaper(List<File> files, String qpTitle, String? systemPrompt, {String? customInstructions}) async {
     final keys = await _getKeys();
     final modelsToTry = await _getPrimaryTextModels();
 
     final hydratedPrompt = PromptService.qpJson
-        .replaceAll('%system_prompt%', systemPrompt ?? "You are an expert tutor.");
+        .replaceAll('%system_prompt%', systemPrompt ?? "You are an expert tutor.")
+        .replaceAll('%custom_instructions%', PromptService.instructionsBlock(customInstructions));
 
     List<Part> parts = [TextPart(hydratedPrompt)];
     parts.addAll(await _buildFileParts(files));
@@ -1397,6 +1418,7 @@ Important Rules:
     required Section section,
     required List<Slide> existingQuestions,
     required List<Map<String, String>> otherSections,
+    String? customInstructions,
   }) async {
     final keys = await _getKeys();
     final modelsToTry = await _getLiteModels();
@@ -1407,6 +1429,7 @@ Important Rules:
       unitTitles: section.units.map((u) => u.title).toList(),
       existingQuestions: existingQuestions,
       otherSections: otherSections,
+      customInstructions: customInstructions,
     );
 
     List<Part> parts = [TextPart(prompt)];

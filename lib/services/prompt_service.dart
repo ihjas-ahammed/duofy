@@ -254,11 +254,13 @@ Section title: "%section_title%"
 Section description: "%section_description%"
 %custom_instructions%
 TASK:
-Break this section into a small number of pedagogical units (typically 2-5). Each unit groups a few closely related lessons. Do NOT generate lesson slides here — just the unit metadata.
+1. Break this section into a small number of pedagogical units (typically 2-5). Each unit groups a few closely related lessons. Do NOT generate lesson slides here — just the unit metadata.
+2. Analyze the unique pedagogical needs of the PDF content. If the existing lesson formats (%format_catalog%) are not optimal or sufficient for teaching this content, CREATE 1-3 new custom lesson formats tailored specifically to the material (e.g., an "Experimental Analysis" format for lab data, or "Derivation Focus" for math/physics). Each new format should define a name, description, and list of slide templates (type, condition, description).
 
 CRITICAL RULES:
 1. Cover the entire content of the attached PDF. Do not skip topics.
 2. Each unit should be roughly self-contained and digestible in one short study session.
+3. For custom formats, the slide `type` must be one of: "theory", "quiz", "fill_in_blank", "one_word", "numerical", "proof", "step_by_step".
 
 Return ONLY valid JSON matching this exact structure:
 {
@@ -267,6 +269,20 @@ Return ONLY valid JSON matching this exact structure:
       "id": "u1",
       "title": "Unit Title",
       "description": "Short summary of what this unit covers"
+    }
+  ],
+  "newLessonFormats": [
+    {
+      "id": "custom-format-id",
+      "name": "Custom Format Name",
+      "description": "Pedagogical description of when to use this format.",
+      "slides": [
+        {
+          "type": "theory",
+          "condition": "Always",
+          "description": "What this slide should cover."
+        }
+      ]
     }
   ]
 }''';
@@ -574,6 +590,7 @@ Return ONLY the chosen function (either `draw` or `sketch`). No surrounding text
 
   static const String qpJson = '''SYSTEM PROMPT:
 %system_prompt%
+%custom_instructions%
 
 TASK:
 Analyze the attached Question Paper (PDF or Images).
@@ -606,6 +623,7 @@ RULES:
     required List<String> unitTitles,
     required List<Slide> existingQuestions,
     required List<Map<String, String>> otherSections,
+    String? customInstructions,
   }) {
     final existingBlocks = existingQuestions.isEmpty
         ? "None"
@@ -615,6 +633,8 @@ RULES:
         ? "None"
         : otherSections.map((s) => "- ID: ${s['id']}, Title: ${s['title']}").join("\n");
 
+    final instBlock = instructionsBlock(customInstructions);
+
     return '''You are an expert tutor.
 Analyze the attached exam paper (PDF/images) and extract questions that align with the following course section.
 
@@ -622,6 +642,8 @@ SECTION DETAILS:
 - Title: $sectionTitle
 - Description: $sectionDesc
 - Subtopics/Units: ${unitTitles.join(', ')}
+
+$instBlock
 
 ALREADY EXTRACTED QUESTIONS (Do NOT extract duplicates of these! Avoid similar questions to support continuous addition):
 $existingBlocks
