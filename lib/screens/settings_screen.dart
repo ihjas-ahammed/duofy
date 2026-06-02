@@ -31,6 +31,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// 'auto' lets the app pick from the device's capacity; otherwise a fixed
   /// count string ('1'..'4'). Read by AiService via the `gen_concurrency` pref.
   String _genConcurrency = 'auto';
+  TimeOfDay _scheduleStart = const TimeOfDay(hour: 21, minute: 0);
+  TimeOfDay _scheduleEnd = const TimeOfDay(hour: 9, minute: 0);
   /// Local-first: cloud backup/sync is opt-in. Mirrors
   /// [DatabaseService.cloudSyncPrefKey].
   bool _cloudSync = false;
@@ -122,6 +124,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _modelPrimaryGraphics = primaryGraphics;
     _modelLite = lite;
     _genConcurrency = prefs.getString('gen_concurrency') ?? 'auto';
+    final startHour = prefs.getInt('schedule_start_hour') ?? 21;
+    final startMinute = prefs.getInt('schedule_start_minute') ?? 0;
+    final endHour = prefs.getInt('schedule_end_hour') ?? 9;
+    final endMinute = prefs.getInt('schedule_end_minute') ?? 0;
+    _scheduleStart = TimeOfDay(hour: startHour, minute: startMinute);
+    _scheduleEnd = TimeOfDay(hour: endHour, minute: endMinute);
 
     setState(() {
       _isLoading = false;
@@ -139,6 +147,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final pGraphicsSaved = await prefs.setStringList('model_primary_graphics_list', _modelPrimaryGraphics);
     final liteSaved = await prefs.setStringList('model_lite_list', _modelLite);
     await prefs.setString('gen_concurrency', _genConcurrency);
+    await prefs.setInt('schedule_start_hour', _scheduleStart.hour);
+    await prefs.setInt('schedule_start_minute', _scheduleStart.minute);
+    await prefs.setInt('schedule_end_hour', _scheduleEnd.hour);
+    await prefs.setInt('schedule_end_minute', _scheduleEnd.minute);
     await _db.setCloudEnabled(_cloudSync);
 
     // Mirror the head of each list back into the legacy scalar key so other
@@ -516,6 +528,95 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  String _formatTimeOfDay(TimeOfDay time) {
+    final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+    final period = time.period == DayPeriod.am ? 'AM' : 'PM';
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute $period';
+  }
+
+  Widget _buildScheduleCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(LucideIcons.calendarRange, color: AppTheme.duoBlue, size: 28),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Text('Auto-schedule hours',
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Start Time', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 6),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final time = await showTimePicker(
+                        context: context,
+                        initialTime: _scheduleStart,
+                      );
+                      if (time != null) setState(() => _scheduleStart = time);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black38,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: const BorderSide(color: Colors.white10),
+                      ),
+                    ),
+                    child: Text(_formatTimeOfDay(_scheduleStart)),
+                  ),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('End Time', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 6),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final time = await showTimePicker(
+                        context: context,
+                        initialTime: _scheduleEnd,
+                      );
+                      if (time != null) setState(() => _scheduleEnd = time);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black38,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: const BorderSide(color: Colors.white10),
+                      ),
+                    ),
+                    child: Text(_formatTimeOfDay(_scheduleEnd)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -629,6 +730,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const Text('How many lessons to generate at once. Higher is faster but uses more bandwidth and may hit rate limits.', style: TextStyle(color: Colors.white54, fontSize: 12)),
             const SizedBox(height: 16),
             _buildConcurrencyCard(),
+            const SizedBox(height: 16),
+            _buildScheduleCard(),
 
             const SizedBox(height: 48),
             DuoButton(

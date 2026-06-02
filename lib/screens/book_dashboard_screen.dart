@@ -207,33 +207,74 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
   /// generation. Graphics are optional (and slower), so we let the user
   /// decide per unit instead of always generating them.
   Future<void> _promptAndGenerateUnit(Unit unit, int modIdx, int secIdx, int unitIdx) async {
-    final wantsGraphics = await showDialog<bool>(
+    final Map<String, dynamic>? result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppTheme.surface,
-        title: const Text('Generate diagrams?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text('Generate Lesson', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         content: const Text(
-          'Diagrams make lessons more visual but take extra time to render. '
-          'You can always add them later from inside a lesson.',
+          'Choose when and how to generate lessons for this unit.',
           style: TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Text only', style: TextStyle(color: Colors.white54)),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('With diagrams', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
+          PopupMenuButton<Map<String, dynamic>>(
+            onSelected: (val) => Navigator.pop(ctx, val),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.duoGreen),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Text('Generate Now', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: {'scheduled': false, 'graphics': false},
+                child: Text('Text only'),
+              ),
+              const PopupMenuItem(
+                value: {'scheduled': false, 'graphics': true},
+                child: Text('With diagrams'),
+              ),
+            ],
+          ),
+          PopupMenuButton<Map<String, dynamic>>(
+            onSelected: (val) => Navigator.pop(ctx, val),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.duoViolet),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Text('Schedule', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: {'scheduled': true, 'graphics': false},
+                child: Text('Text only'),
+              ),
+              const PopupMenuItem(
+                value: {'scheduled': true, 'graphics': true},
+                child: Text('With diagrams'),
+              ),
+            ],
           ),
         ],
       ),
     );
-    // Dialog dismissed (tapped outside) → don\'t start anything.
-    if (wantsGraphics == null) return;
+    if (result == null) return;
+    final bool graphics = result['graphics'] as bool;
+    final bool scheduled = result['scheduled'] as bool;
+    
     GenerationManager.instance.startUnitGeneration(
       unit, widget.book, modIdx, secIdx, unitIdx,
-      generateGraphics: wantsGraphics,
+      generateGraphics: graphics,
+      isScheduled: scheduled,
+    );
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: AppTheme.surface,
+        content: Text(scheduled ? 'Lesson generation scheduled!' : 'Lesson generation queued!'),
+      ),
     );
   }
 
@@ -653,6 +694,26 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
           icon: LucideIcons.layers,
           color: SectionColors.base(section.color),
           items: [
+            _MenuActionItem(
+              icon: LucideIcons.play,
+              title: 'Generate Contents',
+              subtitle: 'Plan manifest and generate all lessons now',
+              iconColor: AppTheme.duoGreen,
+              onTap: () {
+                Navigator.pop(ctx);
+                _promptGenerateOrScheduleSection(modIdx, secIdx, isScheduled: false);
+              },
+            ),
+            _MenuActionItem(
+              icon: LucideIcons.calendar,
+              title: 'Schedule Generation',
+              subtitle: 'Queue for auto schedule hours',
+              iconColor: AppTheme.duoViolet,
+              onTap: () {
+                Navigator.pop(ctx);
+                _promptGenerateOrScheduleSection(modIdx, secIdx, isScheduled: true);
+              },
+            ),
             if (incompleteCount > 0)
               _MenuActionItem(
                 icon: LucideIcons.checkCircle,
@@ -683,6 +744,47 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     );
   }
 
+  Future<void> _promptGenerateOrScheduleSection(int modIdx, int secIdx, {required bool isScheduled}) async {
+    final wantsGraphics = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: Text(isScheduled ? 'Schedule Section Generation' : 'Generate Section Contents', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: const Text(
+          'Choose what kind of content to generate. This will automatically plan the section units and generate them sequentially.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Text only', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('With diagrams', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    if (wantsGraphics == null) return;
+    
+    GenerationManager.instance.startSectionGeneration(
+      widget.book,
+      modIdx,
+      secIdx,
+      generateGraphics: wantsGraphics,
+      isScheduled: isScheduled,
+    );
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: AppTheme.surface,
+        content: Text(isScheduled ? 'Section generation scheduled!' : 'Section generation queued!'),
+      ),
+    );
+  }
+
   void _showModuleLongPressMenu(int modIdx) {
     final module = widget.book.modules[modIdx];
     int totalLessons = 0;
@@ -709,6 +811,26 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
           icon: LucideIcons.package,
           color: AppTheme.duoBlue,
           items: [
+            _MenuActionItem(
+              icon: LucideIcons.play,
+              title: 'Generate Module Contents',
+              subtitle: 'Plan & generate all sections in this module now',
+              iconColor: AppTheme.duoGreen,
+              onTap: () {
+                Navigator.pop(ctx);
+                _promptGenerateOrScheduleModule(modIdx, isScheduled: false);
+              },
+            ),
+            _MenuActionItem(
+              icon: LucideIcons.calendar,
+              title: 'Schedule Module Generation',
+              subtitle: 'Queue for auto schedule hours',
+              iconColor: AppTheme.duoViolet,
+              onTap: () {
+                Navigator.pop(ctx);
+                _promptGenerateOrScheduleModule(modIdx, isScheduled: true);
+              },
+            ),
             if (incompleteCount > 0)
               _MenuActionItem(
                 icon: LucideIcons.checkCircle,
@@ -736,6 +858,46 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
           ],
         );
       },
+    );
+  }
+
+  Future<void> _promptGenerateOrScheduleModule(int modIdx, {required bool isScheduled}) async {
+    final wantsGraphics = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: Text(isScheduled ? 'Schedule Module Generation' : 'Generate Module Contents', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: const Text(
+          'Choose what kind of content to generate for all sections in this module.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Text only', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('With diagrams', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    if (wantsGraphics == null) return;
+    
+    GenerationManager.instance.startModuleGeneration(
+      widget.book,
+      modIdx,
+      generateGraphics: wantsGraphics,
+      isScheduled: isScheduled,
+    );
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: AppTheme.surface,
+        content: Text(isScheduled ? 'Module generation scheduled!' : 'Module generation queued!'),
+      ),
     );
   }
 

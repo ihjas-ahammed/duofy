@@ -7,6 +7,7 @@ class CompactBookCard extends StatelessWidget {
   final Book book;
   final double progress;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
   final VoidCallback? onDelete;
 
   const CompactBookCard({
@@ -14,6 +15,7 @@ class CompactBookCard extends StatelessWidget {
     required this.book,
     required this.progress,
     required this.onTap,
+    this.onLongPress,
     this.onDelete,
   });
 
@@ -21,6 +23,7 @@ class CompactBookCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Container(
         width: 160,
         margin: const EdgeInsets.only(right: 16),

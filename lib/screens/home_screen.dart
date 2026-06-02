@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'ai_queue_screen.dart';
 import '../services/fb/fb_auth.dart';
 import '../models/app_models.dart';
 import '../services/database_service.dart';
@@ -187,6 +189,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       actions:[
                         IconButton(
+                          icon: const Icon(LucideIcons.cpu, size: 28),
+                          onPressed: () {
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => const AiQueueScreen()));
+                          },
+                        ),
+                        IconButton(
                           padding: const EdgeInsets.only(right: 16),
                           icon: const Icon(LucideIcons.userCircle, size: 28),
                           onPressed: () {
@@ -252,15 +260,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                  itemCount: books.length,
                                  itemBuilder: (context, index) {
                                    final book = books[index];
-                                   return CompactBookCard(
-                                     book: book,
-                                     progress: progressMap[book.id] ?? 0.0,
-                                     onTap: () {
-                                       Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
-                                         .then((_) => _loadAllData(force: false));
-                                     },
-                                     onDelete: () => _deleteLocalBook(book),
-                                   );
+                                     return CompactBookCard(
+                                       book: book,
+                                       progress: progressMap[book.id] ?? 0.0,
+                                       onTap: () {
+                                         Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
+                                           .then((_) => _loadAllData(force: false));
+                                       },
+                                       onLongPress: () => _showBookLongPressMenu(book),
+                                       onDelete: () => _deleteLocalBook(book),
+                                     );
                                  },
                                ),
                              ),
@@ -323,7 +332,217 @@ class _HomeScreenState extends State<HomeScreen> {
             ).then((_) => _loadAllData(force: false)),
           ),
         );
-      }
+      },
+    );
+  }
+
+  void _showBookLongPressMenu(Book book) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.7),
+                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.duoBlue.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppTheme.duoBlue.withOpacity(0.4)),
+                        ),
+                        child: const Icon(LucideIcons.bookOpen, color: AppTheme.duoBlue, size: 24),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'COURSE MENU',
+                              style: TextStyle(
+                                color: AppTheme.duoBlue,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              book.title,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  _buildMenuItem(
+                    icon: LucideIcons.play,
+                    title: 'Generate Contents',
+                    subtitle: 'Generate all lessons and graphics now',
+                    iconColor: AppTheme.duoGreen,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _promptGenerateOrScheduleBook(book, isScheduled: false);
+                    },
+                  ),
+                  _buildMenuItem(
+                    icon: LucideIcons.calendar,
+                    title: 'Schedule Generation',
+                    subtitle: 'Queue for auto schedule hours',
+                    iconColor: AppTheme.duoViolet,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _promptGenerateOrScheduleBook(book, isScheduled: true);
+                    },
+                  ),
+                  _buildMenuItem(
+                    icon: LucideIcons.trash2,
+                    title: 'Delete Course',
+                    subtitle: 'Remove from your library',
+                    iconColor: AppTheme.duoRed,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _deleteLocalBook(book);
+                    },
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text(
+                      'CANCEL',
+                      style: TextStyle(
+                        color: Color(0xFF94A3B8),
+                        fontWeight: FontWeight.w900,
+                        fontSize: 13,
+                        letterSpacing: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _promptGenerateOrScheduleBook(Book book, {required bool isScheduled}) async {
+    final wantsGraphics = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: Text(isScheduled ? 'Schedule Course Generation' : 'Generate Course Contents', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: const Text(
+          'Choose what kind of content to generate for all modules and sections in this course.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Text only', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('With diagrams', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    if (wantsGraphics == null) return;
+    
+    GenerationManager.instance.startBookContentGeneration(
+      book,
+      generateGraphics: wantsGraphics,
+      isScheduled: isScheduled,
+    );
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: AppTheme.surface,
+        content: Text(isScheduled ? 'Course generation scheduled!' : 'Course generation queued!'),
+      ),
+    );
+  }
+
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color iconColor,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.04),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: iconColor, size: 22),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(LucideIcons.chevronRight, size: 16, color: Colors.white24),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

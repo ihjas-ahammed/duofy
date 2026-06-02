@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:async';
 import 'pdf_service.dart';
 import 'ai_service.dart';
+import 'generation_manager.dart';
 
 class AutoIndexResult {
   final List<int> indexPages;
@@ -42,7 +43,7 @@ class AutoIndexService {
         final chunkPages = List.generate(endPage - startPage + 1, (index) => startPage + index);
         final chunkPdf = await _pdfService.extractPages(sourcePdf, chunkPages);
         
-        final jsonMap = await _aiService.scanIndexChunk(chunkPdf, startPage, endPage);
+        final jsonMap = await GenerationManager.instance.startIndexScanTask(chunkPdf, startPage, endPage);
 
         if (jsonMap != null) {
           if (jsonMap['indexPages'] != null && jsonMap['indexPages'] is List) {

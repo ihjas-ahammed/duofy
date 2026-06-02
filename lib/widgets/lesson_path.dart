@@ -300,7 +300,7 @@ class _LessonPathState extends State<LessonPath> {
     return SingleChildScrollView(
       controller: _scrollController,
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.only(top: 28, bottom: 120),
+      padding: const EdgeInsets.only(top: 0, bottom: 120),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: _pathWidth),
@@ -309,6 +309,7 @@ class _LessonPathState extends State<LessonPath> {
             children: [
               if (widget.hasMissingFiles)
                 MissingFilesBanner(book: widget.book),
+                SizedBox(height: 20),
               LayoutBuilder(
                 builder: (context, constraints) {
                   final double width = constraints.maxWidth;

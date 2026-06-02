@@ -9,7 +9,10 @@ import 'prompt_service.dart';
 import 'pdf_service.dart';
 
 class AiService {
-  Future<List<String>> _getKeys() async {
+  Future<List<String>> _getKeys({String? forcedApiKey}) async {
+    if (forcedApiKey != null && forcedApiKey.trim().isNotEmpty) {
+      return [forcedApiKey.trim()];
+    }
     final prefs = await SharedPreferences.getInstance();
     List<String> keys = prefs.getStringList('gemini_api_keys_list') ?? [];
     if (keys.isEmpty) {
@@ -268,8 +271,9 @@ class AiService {
   Future<List<String>?> generateCourseQuestions({
     required File sourcePdf,
     required int chapter1StartPage,
+    String? forcedApiKey,
   }) async {
-    final keys = await _getKeys();
+    final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getLiteModels();
     
     // Read preface: pages 1 to chapter1StartPage - 1
@@ -323,8 +327,8 @@ Return JSON format:
     return null;
   }
 
-  Future<Map<String, dynamic>?> scanIndexChunk(File chunkPdf, int startPage, int endPage) async {
-    final keys = await _getKeys();
+  Future<Map<String, dynamic>?> scanIndexChunk(File chunkPdf, int startPage, int endPage, {String? forcedApiKey}) async {
+    final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getLiteModels();
     final pdfBytes = await chunkPdf.readAsBytes();
 
@@ -392,8 +396,9 @@ Important Rules:
     List<File> syllabusFiles = const [],
     bool isHandout = false,
     void Function(String status, double? progress)? onProgress,
+    String? forcedApiKey,
   }) async {
-    final keys = await _getKeys();
+    final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getLiteModels();
     final instructionsBlock = PromptService.instructionsBlock(customInstructions);
     final fileParts = await _buildFileParts(indexFiles);
@@ -689,8 +694,9 @@ Important Rules:
     List<Unit> previousGeneratedUnits = const [],
     bool generateGraphics = true,
     void Function(List<Lesson> lessonsSoFar)? onLessonGenerated,
+    String? forcedApiKey,
   }) async {
-    final keys = await _getKeys();
+    final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final textModelsToTry = await _getPrimaryTextModels();
     final liteModelsToTry = await _getLiteModels();
 
@@ -848,7 +854,7 @@ Important Rules:
       if (generateGraphics) {
         if (lesson != null && needsArt(lesson)) {
           try {
-            slots[i] = await _attachArtToLesson(lesson);
+            slots[i] = await _attachArtToLesson(lesson, forcedApiKey: forcedApiKey);
             onLessonGenerated?.call(collected());
           } catch (e) {
             print('[AiService] Art for lesson ${i + 1} failed: ${_cleanErrMsg(e)}');
@@ -1004,8 +1010,9 @@ Important Rules:
     Unit? previousUnit,
     Unit? nextUnit,
     bool generateGraphics = true,
+    String? forcedApiKey,
   }) async {
-    final keys = await _getKeys();
+    final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final textModels = await _getPrimaryTextModels();
 
     final String? chunkPath = unit.pdfPath ?? sectionPdfPath;
@@ -1064,7 +1071,7 @@ Important Rules:
 
     if (generateGraphics) {
       try {
-        fresh = await _attachArtToLesson(fresh);
+        fresh = await _attachArtToLesson(fresh, forcedApiKey: forcedApiKey);
       } catch (e) {
         print('[AiService] Lesson regen art failed: ${_cleanErrMsg(e)}');
       }
@@ -1082,8 +1089,9 @@ Important Rules:
     required Book bookContext,
     String? chunkPath,
     String? note,
+    String? forcedApiKey,
   }) async {
-    final keys = await _getKeys();
+    final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final textModels = await _getPrimaryTextModels();
 
     final noteLine = (note?.trim().isNotEmpty ?? false)
@@ -1153,10 +1161,10 @@ Important Rules:
   /// [contextText] is a short snippet of the surrounding lesson content so
   /// the model can keep the diagram thematically consistent (e.g. variable
   /// names, units). Pass an empty string when not relevant.
-  Future<String?> generateCanvasArt(String canvasPrompt, {String contextText = '', String? errorContext}) async {
+  Future<String?> generateCanvasArt(String canvasPrompt, {String contextText = '', String? errorContext, String? forcedApiKey}) async {
     if (canvasPrompt.trim().isEmpty) return null;
 
-    final keys = await _getKeys();
+    final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getPrimaryGraphicsModels();
     // Cap context to keep prompts small — the SVG diagram doesn\'t need the
     // entire lesson, only a few sentences for tone matching.
@@ -1238,13 +1246,13 @@ Important Rules:
   /// is missing (a non-null `canvasSvg` is left as-is). Failures are tolerated
   /// — a lesson simply renders without that diagram. Called per-lesson right
   /// after the lesson's text is generated, so visuals appear incrementally.
-  Future<Lesson> _attachArtToLesson(Lesson lesson) async {
+  Future<Lesson> _attachArtToLesson(Lesson lesson, {String? forcedApiKey}) async {
     // 1. Lesson-level diagram. Use the first slide's content as context so the
     //    art stays thematically consistent with the lesson.
     String? lessonArt = lesson.canvasSvg;
     if (lessonArt == null && (lesson.canvasPrompt?.trim().isNotEmpty ?? false)) {
       final ctx = lesson.slides.isNotEmpty ? lesson.slides.first.content : '';
-      lessonArt = await generateCanvasArt(lesson.canvasPrompt!, contextText: ctx);
+      lessonArt = await generateCanvasArt(lesson.canvasPrompt!, contextText: ctx, forcedApiKey: forcedApiKey);
     }
 
     // 2. Per-slide diagrams for proof / step_by_step slides only.
@@ -1253,7 +1261,7 @@ Important Rules:
       final isProofLike = slide.type == 'proof' || slide.type == 'step_by_step';
       String? slideArt = slide.canvasSvg;
       if (isProofLike && slideArt == null && (slide.canvasPrompt?.trim().isNotEmpty ?? false)) {
-        slideArt = await generateCanvasArt(slide.canvasPrompt!, contextText: slide.content);
+        slideArt = await generateCanvasArt(slide.canvasPrompt!, contextText: slide.content, forcedApiKey: forcedApiKey);
       }
       updatedSlides.add(slide.copyWith(canvasSvg: slideArt));
     }
@@ -1270,6 +1278,7 @@ Important Rules:
     Section section,
     Book bookContext, {
     String? customInstructions,
+    String? forcedApiKey,
   }) async {
     if (section.pdfPath == null) {
       throw Exception('Section has no PDF chunk — cannot generate unit manifest.');
@@ -1279,7 +1288,7 @@ Important Rules:
       throw Exception("Local file missing. Tap 'Restore' on the warning banner to re-link source files.");
     }
 
-    final keys = await _getKeys();
+    final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getLiteModels();
 
     // Build the catalog the AI picks `formatId` from. Each entry is one
@@ -1363,8 +1372,8 @@ Important Rules:
     throw lastException ?? Exception('Failed to generate unit manifest. All models/keys exhausted.');
   }
 
-  Future<QuestionPaper> generateQuestionPaper(List<File> files, String qpTitle, String? systemPrompt, {String? customInstructions}) async {
-    final keys = await _getKeys();
+  Future<QuestionPaper> generateQuestionPaper(List<File> files, String qpTitle, String? systemPrompt, {String? customInstructions, String? forcedApiKey}) async {
+    final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getPrimaryTextModels();
 
     final hydratedPrompt = PromptService.qpJson
@@ -1414,8 +1423,9 @@ Important Rules:
     required List<Slide> existingQuestions,
     required List<Map<String, String>> otherSections,
     String? customInstructions,
+    String? forcedApiKey,
   }) async {
-    final keys = await _getKeys();
+    final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getLiteModels();
     
     final prompt = PromptService.getPyqExtractionPrompt(
@@ -1462,8 +1472,9 @@ Important Rules:
 
   Future<List<Map<String, dynamic>>> gradePyqAnswers({
     required List<Map<String, dynamic>> answersToGrade,
+    String? forcedApiKey,
   }) async {
-    final keys = await _getKeys();
+    final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getLiteModels();
     
     final prompt = PromptService.getPyqGradingPrompt(answersToGrade: answersToGrade);

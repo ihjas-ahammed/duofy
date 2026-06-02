@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
+import '../models/ai_task.dart';
 import 'pdf_service.dart';
 import 'database_service.dart';
 import 'ai_service.dart';
@@ -21,8 +23,6 @@ class GenerationTask {
   String? errorMessage;
   Duration estimatedDuration;
   DateTime startTime;
-  /// Real progress in [0,1], or null when the current phase is indeterminate
-  /// (e.g. the single chapter-mapping AI call). Drives [RealProgressBar].
   double? progress;
 
   GenerationTask({
@@ -41,8 +41,6 @@ class UnitGenTask {
   Duration estimatedDuration;
   DateTime startTime;
   bool isError;
-  /// Real progress in [0,1], or null while indeterminate (planning phase /
-  /// section-manifest call). Drives [RealProgressBar].
   double? progress;
 
   UnitGenTask({
@@ -62,12 +60,21 @@ class QpGenTask {
 
 class GenerationManager extends ChangeNotifier {
   static final GenerationManager instance = GenerationManager._internal();
-  GenerationManager._internal();
+  
+  GenerationManager._internal() {
+    _loadQueueFromPrefs();
+    _startQueueTimer();
+  }
 
   final List<GenerationTask> activeTasks = [];
   final Map<String, UnitGenTask> activeUnitGenerations = {}; 
   final Map<String, QpGenTask> activeQpTasks = {}; 
   final Map<String, QpGenTask> activePyqTasks = {}; 
+
+  // New queue system variables
+  final List<AiTask> queue = [];
+  Timer? _queueTimer;
+  bool _isProcessing = false;
   
   final PdfService _pdfService = PdfService();
   final DatabaseService _dbService = DatabaseService();
@@ -98,13 +105,993 @@ class GenerationManager extends ChangeNotifier {
     return sum ~/ history.length;
   }
 
-  /// Starts the new TOC-only book generation flow.
-  ///
-  /// [sourceFiles] is the full original PDF/images (kept for the later
-  /// chunking step). [indexFiles] is the trimmed index/TOC PDF the AI sees
-  /// during skeleton generation. [chapter1AbsolutePage] is the absolute PDF
-  /// page number where Chapter 1 starts in [sourceFiles], used for offset
-  /// correction in the prompt.
+  // ---------------------------------------------------------------------------
+  // Persisted Queue Management
+  // ---------------------------------------------------------------------------
+  Future<void> _saveQueueToPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonList = queue.map((t) => t.toJson()).toList();
+      await prefs.setString('ai_generation_queue', jsonEncode(jsonList));
+    } catch (e) {
+      print('[GenerationManager] Error saving queue: $e');
+    }
+  }
+
+  Future<void> _loadQueueFromPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = prefs.getString('ai_generation_queue');
+      if (jsonStr != null && jsonStr.isNotEmpty) {
+        final List decoded = jsonDecode(jsonStr);
+        queue.clear();
+        queue.addAll(decoded.map((e) => AiTask.fromJson(Map<String, dynamic>.from(e))));
+        
+        // Convert running to queued if interrupted
+        for (final t in queue) {
+          if (t.status == 'running') {
+            t.status = 'queued';
+            t.statusMessage = 'Queued (interrupted)';
+          }
+        }
+        
+        _syncActiveMapsWithQueue();
+        notifyListeners();
+        _processQueue();
+      }
+    } catch (e) {
+      print('[GenerationManager] Error loading queue: $e');
+    }
+  }
+
+  void _syncActiveMapsWithQueue() {
+    activeUnitGenerations.clear();
+    activeSectionManifests.clear();
+    activeQpTasks.clear();
+    activePyqTasks.clear();
+    
+    for (final task in queue) {
+      if (task.status == 'queued' || task.status == 'running') {
+        final isError = task.status == 'failed';
+        final statusMsg = task.status == 'running' ? task.statusMessage : 'Queued';
+        
+        if (task.type == 'unit') {
+          if (task.unitId != null) {
+            activeUnitGenerations[task.unitId!] = UnitGenTask(
+              status: statusMsg,
+              estimatedDuration: const Duration(seconds: 90),
+              startTime: task.startTime ?? DateTime.now(),
+              isError: isError,
+              progress: task.progress,
+            );
+          }
+        } else if (task.type == 'manifest') {
+          if (task.sectionId != null) {
+            activeSectionManifests[task.sectionId!] = UnitGenTask(
+              status: statusMsg,
+              estimatedDuration: const Duration(seconds: 30),
+              startTime: task.startTime ?? DateTime.now(),
+              isError: isError,
+              progress: task.progress,
+            );
+          }
+        } else if (task.type == 'section') {
+          if (task.sectionId != null) {
+            activeSectionManifests[task.sectionId!] = UnitGenTask(
+              status: task.statusMessage,
+              estimatedDuration: const Duration(seconds: 90),
+              startTime: task.startTime ?? DateTime.now(),
+              isError: isError,
+              progress: task.progress,
+            );
+          }
+        } else if (task.type == 'qp') {
+          activeQpTasks[task.bookId] = QpGenTask(
+            status: statusMsg,
+            isError: isError,
+          );
+        } else if (task.type == 'pyq') {
+          activePyqTasks[task.bookId] = QpGenTask(
+            status: statusMsg,
+            isError: isError,
+          );
+        }
+      }
+    }
+  }
+
+  void _startQueueTimer() {
+    _queueTimer?.cancel();
+    _queueTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
+      _processQueue();
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Concurrency Queue Loop
+  // ---------------------------------------------------------------------------
+  Future<void> _processQueue() async {
+    if (_isProcessing) return;
+    _isProcessing = true;
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Load concurrency limit
+      final setting = prefs.getString('gen_concurrency') ?? 'auto';
+      int limit = 2;
+      if (setting != 'auto') {
+        final parsed = int.tryParse(setting);
+        if (parsed != null) limit = parsed;
+      } else {
+        limit = await _resolveConcurrency();
+      }
+      
+      // Load schedule hours
+      final startHour = prefs.getInt('schedule_start_hour') ?? 21;
+      final startMinute = prefs.getInt('schedule_start_minute') ?? 0;
+      final endHour = prefs.getInt('schedule_end_hour') ?? 9;
+      final endMinute = prefs.getInt('schedule_end_minute') ?? 0;
+      
+      final now = DateTime.now();
+      final nowMin = now.hour * 60 + now.minute;
+      final startMin = startHour * 60 + startMinute;
+      final endMin = endHour * 60 + endMinute;
+      
+      bool isWithinHours = false;
+      if (startMin <= endMin) {
+        isWithinHours = nowMin >= startMin && nowMin < endMin;
+      } else {
+        isWithinHours = nowMin >= startMin || nowMin < endMin;
+      }
+      
+      final runningTasks = queue.where((t) => t.status == 'running').toList();
+      final queuedTasks = queue.where((t) => t.status == 'queued').toList();
+      
+      if (queuedTasks.isEmpty) {
+        _isProcessing = false;
+        return;
+      }
+      
+      int availableSlots = limit - runningTasks.length;
+      if (availableSlots <= 0) {
+        _isProcessing = false;
+        return;
+      }
+      
+      // Select next tasks to run
+      final nextTasks = _getNextTasksToRun(queuedTasks, isWithinHours, availableSlots);
+      
+      // Fetch available keys
+      List<String> keys = prefs.getStringList('gemini_api_keys_list') ?? [];
+      if (keys.isEmpty) {
+        final keysString = prefs.getString('gemini_api_keys') ?? '';
+        keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      }
+      
+      if (keys.isEmpty) {
+        for (final t in nextTasks) {
+          t.status = 'failed';
+          t.statusMessage = 'Failed';
+          t.errorMessage = 'No API Keys configured. Please add keys in Settings.';
+          t.endTime = DateTime.now();
+          t.completer.completeError(Exception('No API Keys configured.'));
+        }
+        _syncActiveMapsWithQueue();
+        notifyListeners();
+        _saveQueueToPrefs();
+        _isProcessing = false;
+        return;
+      }
+      
+      for (final task in nextTasks) {
+        final assignedKey = _selectApiKeyForTask(task, keys, runningTasks);
+        task.params['assignedApiKey'] = assignedKey;
+        
+        // Execute task asynchronously
+        _executeTask(task);
+        
+        runningTasks.add(task);
+      }
+      
+      _syncActiveMapsWithQueue();
+      notifyListeners();
+      _saveQueueToPrefs();
+    } catch (e) {
+      print('[GenerationManager] Error processing queue: $e');
+    } finally {
+      _isProcessing = false;
+    }
+  }
+
+  List<AiTask> _getNextTasksToRun(List<AiTask> queuedTasks, bool isWithinHours, int availableSlots) {
+    final List<AiTask> toRun = [];
+    
+    // First, high-priority non-scheduled tasks
+    final nonScheduled = queuedTasks.where((t) => !t.isScheduled).toList();
+    toRun.addAll(nonScheduled.take(availableSlots));
+    
+    // Then, scheduled tasks if within schedule hours
+    if (isWithinHours && toRun.length < availableSlots) {
+      final scheduled = queuedTasks.where((t) => t.isScheduled).toList();
+      toRun.addAll(scheduled.take(availableSlots - toRun.length));
+    }
+    
+    return toRun;
+  }
+
+  String _selectApiKeyForTask(AiTask task, List<String> allKeys, List<AiTask> runningTasks) {
+    if (allKeys.isEmpty) throw Exception("No API keys available");
+    if (allKeys.length == 1) return allKeys.first;
+    
+    final inUseKeys = runningTasks
+        .map((t) => t.params['assignedApiKey'] as String?)
+        .whereType<String>()
+        .toSet();
+    
+    for (final key in allKeys) {
+      if (!inUseKeys.contains(key)) {
+        return key;
+      }
+    }
+    
+    return allKeys[runningTasks.length % allKeys.length];
+  }
+
+  Future<void> _executeTask(AiTask task) async {
+    final apiKey = task.params['assignedApiKey'] as String;
+    task.status = 'running';
+    task.startTime = DateTime.now();
+    task.progress = 0.0;
+    task.statusMessage = 'Starting AI execution...';
+    notifyListeners();
+    _saveQueueToPrefs();
+    
+    try {
+      switch (task.type) {
+        case 'book_skeleton':
+          await _runBookSkeletonForTask(task, apiKey);
+          break;
+        case 'index_scan':
+          await _runIndexScanForTask(task, apiKey);
+          break;
+        case 'unit':
+          final bookId = task.bookId;
+          final modIdx = task.params['modIdx'] as int;
+          final secIdx = task.params['secIdx'] as int;
+          final unitIdx = task.params['unitIdx'] as int;
+          final book = await _dbService.getBookFromCache(bookId);
+          if (book == null) throw Exception("Course not found");
+          final unit = book.modules[modIdx].sections[secIdx].units[unitIdx];
+          await _runUnitGenerationForTask(task, unit, book, modIdx, secIdx, unitIdx, apiKey);
+          break;
+        case 'manifest':
+          final bookId = task.bookId;
+          final modIdx = task.params['modIdx'] as int;
+          final secIdx = task.params['secIdx'] as int;
+          final instructions = task.params['instructions'] as String?;
+          final saveGlobally = task.params['saveGlobally'] as bool? ?? false;
+          final book = await _dbService.getBookFromCache(bookId);
+          if (book == null) throw Exception("Course not found");
+          await _runManifestGenerationForTask(task, book, modIdx, secIdx, instructions, saveGlobally, apiKey);
+          break;
+        case 'section':
+          await _runSectionGenerationForTask(task, task.bookId, task.params['modIdx'] as int, task.params['secIdx'] as int, apiKey);
+          break;
+        case 'module':
+          await _runModuleGenerationForTask(task, task.bookId, task.params['modIdx'] as int, apiKey);
+          break;
+        case 'book_content':
+          await _runBookContentGenerationForTask(task, task.bookId, apiKey);
+          break;
+        case 'qp':
+          final title = task.params['title'] as String;
+          final filePaths = List<String>.from(task.params['filePaths']);
+          final files = filePaths.map((p) => File(p)).toList();
+          final instructions = task.params['instructions'] as String?;
+          final book = await _dbService.getBookFromCache(task.bookId);
+          if (book == null) throw Exception("Course not found");
+          await _runQpGenerationForTask(task, files, title, book, instructions, apiKey);
+          break;
+        case 'pyq':
+          final filePaths = List<String>.from(task.params['filePaths']);
+          final files = filePaths.map((p) => File(p)).toList();
+          final instructions = task.params['instructions'] as String?;
+          final book = await _dbService.getBookFromCache(task.bookId);
+          if (book == null) throw Exception("Course not found");
+          await _runPyqGenerationForTask(task, files, book, instructions, apiKey);
+          break;
+        case 'lesson_regen':
+          final modIdx = task.params['modIdx'] as int;
+          final secIdx = task.params['secIdx'] as int;
+          final unitIdx = task.params['unitIdx'] as int;
+          final lessonIdx = task.params['lessonIdx'] as int;
+          final book = await _dbService.getBookFromCache(task.bookId);
+          if (book == null) throw Exception("Course not found");
+          final lesson = book.modules[modIdx].sections[secIdx].units[unitIdx].lessons[lessonIdx];
+          await _runLessonRegenForTask(task, book, modIdx, secIdx, unitIdx, lessonIdx, lesson, apiKey);
+          break;
+        case 'slide_regen':
+          await _runSlideRegenForTask(task, apiKey);
+          break;
+        case 'canvas_regen':
+          await _runCanvasRegenForTask(task, apiKey);
+          break;
+        default:
+          throw Exception("Unknown task type: ${task.type}");
+      }
+      
+      task.status = 'completed';
+      task.progress = 1.0;
+      task.statusMessage = 'Completed';
+      task.endTime = DateTime.now();
+    } catch (e) {
+      task.status = 'failed';
+      task.statusMessage = 'Failed';
+      task.errorMessage = e.toString();
+      task.endTime = DateTime.now();
+      task.completer.completeError(e);
+    } finally {
+      _syncActiveMapsWithQueue();
+      notifyListeners();
+      _saveQueueToPrefs();
+      _processQueue();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Task Queue Enqueue Wrappers (Returning Completer Futures)
+  // ---------------------------------------------------------------------------
+  void _enqueueTaskObject(AiTask task) {
+    queue.add(task);
+    _syncActiveMapsWithQueue();
+    notifyListeners();
+    _saveQueueToPrefs();
+    _processQueue();
+  }
+
+  void _enqueue({
+    required String title,
+    required String type,
+    required String bookId,
+    String? moduleId,
+    String? sectionId,
+    String? unitId,
+    required bool generateGraphics,
+    required bool isScheduled,
+    required Map<String, dynamic> params,
+  }) {
+    final taskId = '${type}_${DateTime.now().millisecondsSinceEpoch}_${unitId ?? sectionId ?? moduleId ?? bookId}';
+    final task = AiTask(
+      id: taskId,
+      title: title,
+      bookId: bookId,
+      moduleId: moduleId,
+      sectionId: sectionId,
+      unitId: unitId,
+      type: type,
+      generateGraphics: generateGraphics,
+      isScheduled: isScheduled,
+      params: params,
+    );
+    _enqueueTaskObject(task);
+  }
+
+  Future<Book?> startBookSkeletonGenerationTask(
+    List<File> indexFiles,
+    String filename, {
+    required int chapter1AbsolutePage,
+    String? customInstructions,
+    List<File> syllabusFiles = const [],
+    bool isHandout = false,
+  }) async {
+    final task = AiTask(
+      id: 'skeleton_${DateTime.now().millisecondsSinceEpoch}',
+      title: 'Course Structure: $filename',
+      bookId: 'new_book',
+      type: 'book_skeleton',
+      generateGraphics: false,
+      isScheduled: false,
+      params: {
+        'indexFilesPaths': indexFiles.map((f) => f.path).toList(),
+        'syllabusFilesPaths': syllabusFiles.map((f) => f.path).toList(),
+        'filename': filename,
+        'chapter1AbsolutePage': chapter1AbsolutePage,
+        'customInstructions': customInstructions,
+        'isHandout': isHandout,
+      },
+    );
+    _enqueueTaskObject(task);
+    final result = await task.completer.future;
+    return result as Book?;
+  }
+
+  Future<Map<String, dynamic>?> startIndexScanTask(File chunkPdf, int startPage, int endPage) async {
+    final task = AiTask(
+      id: 'index_scan_${DateTime.now().millisecondsSinceEpoch}_$startPage',
+      title: 'Scan Index pages $startPage-$endPage',
+      bookId: 'new_book',
+      type: 'index_scan',
+      generateGraphics: false,
+      isScheduled: false,
+      params: {
+        'pdfPath': chunkPdf.path,
+        'startPage': startPage,
+        'endPage': endPage,
+      },
+    );
+    _enqueueTaskObject(task);
+    final result = await task.completer.future;
+    return result as Map<String, dynamic>?;
+  }
+
+  Future<String?> generateCanvasArtTask(String canvasPrompt, {String contextText = '', String? errorContext}) async {
+    final task = AiTask(
+      id: 'canvas_${DateTime.now().millisecondsSinceEpoch}_${canvasPrompt.hashCode}',
+      title: 'Generate Graphic: ${canvasPrompt.length > 20 ? canvasPrompt.substring(0, 20) + "..." : canvasPrompt}',
+      bookId: 'canvas',
+      type: 'canvas_regen',
+      generateGraphics: true,
+      isScheduled: false,
+      params: {
+        'canvasPrompt': canvasPrompt,
+        'contextText': contextText,
+        'errorContext': errorContext,
+      },
+    );
+    _enqueueTaskObject(task);
+    final result = await task.completer.future;
+    return result as String?;
+  }
+
+  Future<Slide?> regenerateSlideTask({
+    required Slide slide,
+    required Lesson lesson,
+    required Book bookContext,
+    String? chunkPath,
+    String? note,
+  }) async {
+    final task = AiTask(
+      id: 'slide_${DateTime.now().millisecondsSinceEpoch}_${slide.id}',
+      title: 'Regenerate Slide text',
+      bookId: bookContext.id,
+      type: 'slide_regen',
+      generateGraphics: false,
+      isScheduled: false,
+      params: {
+        'slide': slide.toJson(),
+        'lesson': lesson.toJson(),
+        'bookContext': bookContext.toJson(),
+        'chunkPath': chunkPath,
+        'note': note,
+      },
+    );
+    _enqueueTaskObject(task);
+    final result = await task.completer.future;
+    return result as Slide?;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Runners for queued tasks
+  // ---------------------------------------------------------------------------
+  Future<void> _runBookSkeletonForTask(AiTask task, String apiKey) async {
+    final indexFilesPaths = List<String>.from(task.params['indexFilesPaths']);
+    final syllabusFilesPaths = List<String>.from(task.params['syllabusFilesPaths'] ?? []);
+    final filename = task.params['filename'] as String;
+    final chapter1AbsolutePage = task.params['chapter1AbsolutePage'] as int;
+    final customInstructions = task.params['customInstructions'] as String?;
+    final isHandout = task.params['isHandout'] as bool? ?? false;
+    
+    final indexFiles = indexFilesPaths.map((p) => File(p)).toList();
+    final syllabusFiles = syllabusFilesPaths.map((p) => File(p)).toList();
+    
+    final result = await _aiService.generateBookSkeleton(
+      indexFiles,
+      filename,
+      chapter1AbsolutePage: chapter1AbsolutePage,
+      customInstructions: customInstructions,
+      syllabusFiles: syllabusFiles,
+      isHandout: isHandout,
+      onProgress: (status, progress) {
+        task.statusMessage = status;
+        task.progress = progress;
+        notifyListeners();
+      },
+      forcedApiKey: apiKey,
+    );
+    task.completer.complete(result);
+  }
+
+  Future<void> _runIndexScanForTask(AiTask task, String apiKey) async {
+    final pdfPath = task.params['pdfPath'] as String;
+    final startPage = task.params['startPage'] as int;
+    final endPage = task.params['endPage'] as int;
+    
+    final result = await _aiService.scanIndexChunk(File(pdfPath), startPage, endPage, forcedApiKey: apiKey);
+    task.completer.complete(result);
+  }
+
+  Future<void> _runCanvasRegenForTask(AiTask task, String apiKey) async {
+    final canvasPrompt = task.params['canvasPrompt'] as String;
+    final contextText = task.params['contextText'] as String? ?? '';
+    final errorContext = task.params['errorContext'] as String?;
+    
+    final result = await _aiService.generateCanvasArt(canvasPrompt, contextText: contextText, errorContext: errorContext, forcedApiKey: apiKey);
+    task.completer.complete(result);
+  }
+
+  Future<void> _runSlideRegenForTask(AiTask task, String apiKey) async {
+    final slideJson = task.params['slide'] as Map<String, dynamic>;
+    final lessonJson = task.params['lesson'] as Map<String, dynamic>;
+    final bookContextJson = task.params['bookContext'] as Map<String, dynamic>;
+    final chunkPath = task.params['chunkPath'] as String?;
+    final note = task.params['note'] as String?;
+    
+    final result = await _aiService.regenerateSlide(
+      slide: Slide.fromJson(slideJson),
+      lesson: Lesson.fromJson(lessonJson),
+      bookContext: Book.fromJson(bookContextJson),
+      chunkPath: chunkPath,
+      note: note,
+      forcedApiKey: apiKey,
+    );
+    task.completer.complete(result);
+  }
+
+  Future<void> _runUnitGenerationForTask(
+    AiTask task,
+    Unit unit,
+    Book book,
+    int modIdx,
+    int secIdx,
+    int unitIdx,
+    String apiKey,
+  ) async {
+    final avgUnitMs = await _getAverageRunTime('unit_gen_history', 90000);
+    final notifId = unit.id.hashCode;
+    
+    await NotificationService.showProgress(notifId, "Generating Lesson", "AI is crafting content...", indeterminate: true);
+    
+    Book applyUnit(Book base, Unit u) {
+      final List<Unit> uns = List.from(base.modules[modIdx].sections[secIdx].units);
+      uns[unitIdx] = u;
+      final List<Section> secs = List.from(base.modules[modIdx].sections);
+      secs[secIdx] = secs[secIdx].copyWith(units: uns);
+      final List<Module> mods = List.from(base.modules);
+      mods[modIdx] = mods[modIdx].copyWith(sections: secs);
+      return base.copyWith(modules: mods);
+    }
+    
+    try {
+      final stopwatch = Stopwatch()..start();
+      final String? sectionPdfPath = book.modules[modIdx].sections[secIdx].pdfPath;
+      
+      final Book ctxBook = (await _dbService.getBookFromCache(book.id)) ?? book;
+      final List<Unit> sectionUnits = ctxBook.modules[modIdx].sections[secIdx].units;
+      final Unit? previousUnit = unitIdx > 0 ? sectionUnits[unitIdx - 1] : null;
+      final Unit? nextUnit = unitIdx < sectionUnits.length - 1 ? sectionUnits[unitIdx + 1] : null;
+      
+      final List<Unit> previousGeneratedUnits = [];
+      for (int i = unitIdx - 1; i >= 0 && previousGeneratedUnits.length < 2; i--) {
+        final u = sectionUnits[i];
+        if (u.isGenerated && u.lessons.isNotEmpty) previousGeneratedUnits.insert(0, u);
+      }
+      
+      Future<void> saveChain = Future.value();
+      void onLessonGenerated(List<Lesson> lessonsSoFar) {
+        final snapshot = List<Lesson>.from(lessonsSoFar);
+        if (snapshot.isEmpty) return;
+        saveChain = saveChain.then((_) async {
+          final base = (await _dbService.getBookFromCache(book.id)) ?? book;
+          final partial = applyUnit(base, unit.copyWith(isGenerated: false, lessons: snapshot));
+          await _dbService.saveGeneratedBook(partial);
+          _bookUpdateController.add(partial);
+        }).catchError((e) {
+          print('[GenerationManager] Streaming save failed for ${unit.id}: $e');
+        });
+      }
+      
+      final updatedUnit = await _aiService.generateUnitContent(
+        unit,
+        ctxBook,
+        (status, [progress]) {
+          task.statusMessage = status;
+          task.progress = progress;
+          notifyListeners();
+        },
+        sectionPdfPath: sectionPdfPath,
+        previousUnit: previousUnit,
+        nextUnit: nextUnit,
+        previousGeneratedUnits: previousGeneratedUnits,
+        generateGraphics: task.generateGraphics,
+        onLessonGenerated: onLessonGenerated,
+        forcedApiKey: apiKey,
+      );
+      stopwatch.stop();
+      await _recordRunTime('unit_gen_history', stopwatch.elapsedMilliseconds);
+      
+      await saveChain;
+      
+      Book baseBook = (await _dbService.getBookFromCache(book.id)) ?? book;
+      final finalBook = applyUnit(baseBook, updatedUnit);
+      await _dbService.saveGeneratedBook(finalBook);
+      _bookUpdateController.add(finalBook);
+      
+      await NotificationService.cancel(notifId);
+      await NotificationService.showActionable(notifId, "Lesson Ready!", "Tap to start learning.", "open_home|");
+      task.completer.complete(updatedUnit);
+    } catch (e) {
+      await NotificationService.cancel(notifId);
+      await NotificationService.showActionable(notifId, "Generation Failed", "Failed to generate lesson.", "error");
+      rethrow;
+    }
+  }
+
+  Future<void> _runManifestGenerationForTask(
+    AiTask task,
+    Book book,
+    int modIdx,
+    int secIdx,
+    String? instructions,
+    bool saveGlobally,
+    String apiKey,
+  ) async {
+    final section = book.modules[modIdx].sections[secIdx];
+    final String? effectiveInstructions =
+        (instructions?.trim().isNotEmpty ?? false)
+            ? instructions!.trim()
+            : (section.customInstructions ?? book.customInstructions);
+
+    final notifId = section.id.hashCode;
+    await NotificationService.showProgress(notifId, 'Planning section', 'Generating unit list...', indeterminate: true);
+
+    try {
+      final manifestResult = await _aiService.generateUnitManifest(
+        section,
+        book,
+        customInstructions: effectiveInstructions,
+        forcedApiKey: apiKey,
+      );
+      final units = manifestResult.units;
+      final newFormats = manifestResult.newFormats;
+
+      final baseBook = (await _dbService.getBookFromCache(book.id)) ?? book;
+      final modules = List<Module>.from(baseBook.modules);
+      final sections = List<Section>.from(modules[modIdx].sections);
+      sections[secIdx] = sections[secIdx].copyWith(
+        units: units,
+        unitsGenerated: true,
+        customInstructions: effectiveInstructions,
+      );
+      modules[modIdx] = modules[modIdx].copyWith(sections: sections);
+
+      final List<LessonFormat> updatedFormats = List.from(baseBook.lessonFormats);
+      for (final nf in newFormats) {
+        final alreadyExists = updatedFormats.any((lf) =>
+            lf.id == nf.id || lf.name.toLowerCase() == nf.name.toLowerCase());
+        if (!alreadyExists) {
+          updatedFormats.add(nf);
+        }
+      }
+
+      final newBook = baseBook.copyWith(
+        modules: modules,
+        lessonFormats: updatedFormats,
+        customInstructions: saveGlobally ? effectiveInstructions : baseBook.customInstructions,
+      );
+
+      await _dbService.saveGeneratedBook(newBook);
+      _bookUpdateController.add(newBook);
+      await NotificationService.cancel(notifId);
+      task.completer.complete(manifestResult);
+    } catch (e) {
+      await NotificationService.cancel(notifId);
+      await NotificationService.showActionable(notifId, 'Section Planning Failed', 'Could not generate units.', 'error');
+      rethrow;
+    }
+  }
+
+  Future<void> _runSectionGenerationForTask(
+    AiTask task,
+    String bookId,
+    int modIdx,
+    int secIdx,
+    String apiKey,
+  ) async {
+    Book? book = await _dbService.getBookFromCache(bookId);
+    if (book == null) throw Exception("Course not found");
+    
+    Section section = book.modules[modIdx].sections[secIdx];
+    
+    if (section.needsUnitManifest) {
+      task.statusMessage = 'Planning section units...';
+      task.progress = 0.1;
+      notifyListeners();
+      
+      await _runManifestGenerationForTask(task, book, modIdx, secIdx, null, false, apiKey);
+      
+      book = await _dbService.getBookFromCache(bookId);
+      if (book == null) throw Exception("Course not found after planning");
+      section = book.modules[modIdx].sections[secIdx];
+      
+      if (!section.unitFormatsConfirmed && section.units.isNotEmpty) {
+        final modules = List<Module>.from(book.modules);
+        final secs = List<Section>.from(modules[modIdx].sections);
+        secs[secIdx] = secs[secIdx].copyWith(
+          unitFormatsConfirmed: true,
+        );
+        modules[modIdx] = modules[modIdx].copyWith(sections: secs);
+        book = book.copyWith(modules: modules);
+        await _dbService.saveGeneratedBook(book);
+        _bookUpdateController.add(book);
+      }
+    }
+    
+    final unitsToGen = section.units.asMap().entries.where((entry) => !entry.value.isGenerated).toList();
+    if (unitsToGen.isEmpty) {
+      task.statusMessage = 'All units already generated';
+      task.progress = 1.0;
+      notifyListeners();
+      return;
+    }
+    
+    for (int i = 0; i < unitsToGen.length; i++) {
+      final entry = unitsToGen[i];
+      final unitIdx = entry.key;
+      final unit = entry.value;
+      
+      await startUnitGeneration(
+        unit,
+        book!,
+        modIdx,
+        secIdx,
+        unitIdx,
+        generateGraphics: task.generateGraphics,
+        isScheduled: task.isScheduled,
+      );
+    }
+    task.statusMessage = 'Enqueued ${unitsToGen.length} units';
+    task.progress = 1.0;
+    notifyListeners();
+  }
+
+  Future<void> _runModuleGenerationForTask(AiTask task, String bookId, int modIdx, String apiKey) async {
+    final book = await _dbService.getBookFromCache(bookId);
+    if (book == null) throw Exception("Course not found");
+    final module = book.modules[modIdx];
+    
+    for (int i = 0; i < module.sections.length; i++) {
+      await startSectionGeneration(
+        book,
+        modIdx,
+        i,
+        generateGraphics: task.generateGraphics,
+        isScheduled: task.isScheduled,
+      );
+    }
+    task.statusMessage = 'Enqueued ${module.sections.length} sections';
+    task.progress = 1.0;
+    notifyListeners();
+  }
+
+  Future<void> _runBookContentGenerationForTask(AiTask task, String bookId, String apiKey) async {
+    final book = await _dbService.getBookFromCache(bookId);
+    if (book == null) throw Exception("Course not found");
+    
+    for (int i = 0; i < book.modules.length; i++) {
+      await startModuleGeneration(
+        book,
+        i,
+        generateGraphics: task.generateGraphics,
+        isScheduled: task.isScheduled,
+      );
+    }
+    task.statusMessage = 'Enqueued ${book.modules.length} modules';
+    task.progress = 1.0;
+    notifyListeners();
+  }
+
+  Future<void> _runQpGenerationForTask(
+    AiTask task,
+    List<File> files,
+    String qpTitle,
+    Book book,
+    String? customInstructions,
+    String apiKey,
+  ) async {
+    final notifId = book.id.hashCode + 1;
+    await NotificationService.showProgress(notifId, "Analyzing Exam", "Extracting and solving questions natively...", indeterminate: true);
+    
+    try {
+      final qp = await _aiService.generateQuestionPaper(
+        files,
+        qpTitle,
+        book.systemPrompt,
+        customInstructions: customInstructions,
+        forcedApiKey: apiKey,
+      );
+      
+      final baseBook = (await _dbService.getBookFromCache(book.id)) ?? book;
+      final updatedBook = baseBook.copyWith(
+        questionPapers: [...baseBook.questionPapers, qp],
+      );
+      
+      await _dbService.saveGeneratedBook(updatedBook);
+      _bookUpdateController.add(updatedBook);
+      await NotificationService.cancel(notifId);
+      await NotificationService.showActionable(notifId, "Exam Ready", "Past paper solved interactively!", "open_home|");
+      task.completer.complete(qp);
+    } catch (e) {
+      await NotificationService.cancel(notifId);
+      await NotificationService.showActionable(notifId, "Analysis Failed", "Failed to solve past paper.", "error");
+      rethrow;
+    }
+  }
+
+  Future<void> _runPyqGenerationForTask(
+    AiTask task,
+    List<File> files,
+    Book book,
+    String? customInstructions,
+    String apiKey,
+  ) async {
+    final notifId = book.id.hashCode + 2;
+    await NotificationService.showProgress(notifId, "Analyzing PYQ", "Extracting and splitting questions...", indeterminate: true);
+    
+    try {
+      Book freshestBook = (await _dbService.getBookFromCache(book.id)) ?? book;
+      List<Section> activeSections = [];
+      for (final m in freshestBook.modules) {
+        for (final s in m.sections) {
+          final hasLessons = s.units.any((u) => u.isGenerated && u.lessons.isNotEmpty);
+          if (hasLessons) {
+            activeSections.add(s);
+          }
+        }
+      }
+      if (activeSections.isEmpty) {
+        throw Exception("No sections have generated lessons yet. Please generate lessons first.");
+      }
+      
+      final Map<String, List<Slide>> newSlidesForSections = {};
+      for (final s in activeSections) {
+        newSlidesForSections[s.id] = [];
+      }
+      
+      final List<Map<String, String>> otherSectionsMeta = freshestBook.modules
+          .expand((m) => m.sections)
+          .map((s) => {'id': s.id, 'title': s.title})
+          .toList();
+          
+      for (int i = 0; i < activeSections.length; i++) {
+        final sec = activeSections[i];
+        task.statusMessage = 'Extracting questions for: ${sec.title} (${i+1}/${activeSections.length})...';
+        task.progress = i / activeSections.length;
+        notifyListeners();
+        
+        final existingInSec = List<Slide>.from(sec.pyqQuestions);
+        final newlyExtractedInSec = newSlidesForSections[sec.id] ?? [];
+        final totalExisting = [...existingInSec, ...newlyExtractedInSec];
+        
+        final extracted = await _aiService.extractPyqQuestionsForSection(
+          files: files,
+          section: sec,
+          existingQuestions: totalExisting,
+          otherSections: otherSectionsMeta.where((s) => s['id'] != sec.id).toList(),
+          customInstructions: customInstructions,
+          forcedApiKey: apiKey,
+        );
+        
+        for (final q in extracted) {
+          if (!isDuplicate(q, totalExisting)) {
+            newSlidesForSections[sec.id]!.add(q);
+          }
+          final otherIds = q.toJson()['otherSupportedSectionIds'] as List?;
+          if (otherIds != null) {
+            for (final otherIdRaw in otherIds) {
+              final otherId = otherIdRaw.toString();
+              final hasSection = freshestBook.modules.expand((m) => m.sections).any((s) => s.id == otherId);
+              if (hasSection) {
+                final otherSec = freshestBook.modules.expand((m) => m.sections).firstWhere((s) => s.id == otherId);
+                final otherHasLessons = otherSec.units.any((u) => u.isGenerated && u.lessons.isNotEmpty);
+                if (otherHasLessons) {
+                  newSlidesForSections.putIfAbsent(otherId, () => []);
+                  final existingInOther = List<Slide>.from(otherSec.pyqQuestions);
+                  final newlyExtractedInOther = newSlidesForSections[otherId]!;
+                  final totalExistingOther = [...existingInOther, ...newlyExtractedInOther];
+                  if (!isDuplicate(q, totalExistingOther)) {
+                    newSlidesForSections[otherId]!.add(q);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      final updatedModules = freshestBook.modules.map((m) {
+        final updatedSecs = m.sections.map((s) {
+          final newSlides = newSlidesForSections[s.id];
+          if (newSlides != null && newSlides.isNotEmpty) {
+            return s.copyWith(pyqQuestions: [...s.pyqQuestions, ...newSlides]);
+          }
+          return s;
+        }).toList();
+        return m.copyWith(sections: updatedSecs);
+      }).toList();
+      
+      final finalBook = freshestBook.copyWith(modules: updatedModules);
+      await _dbService.saveGeneratedBook(finalBook);
+      _bookUpdateController.add(finalBook);
+      await NotificationService.cancel(notifId);
+      task.completer.complete(null);
+    } catch (e) {
+      await NotificationService.cancel(notifId);
+      await NotificationService.showActionable(notifId, "PYQ Analysis Failed", "Failed to extract exam questions.", "error");
+      rethrow;
+    }
+  }
+
+  Future<void> _runLessonRegenForTask(
+    AiTask task,
+    Book book,
+    int modIdx,
+    int secIdx,
+    int unitIdx,
+    int lessonIdx,
+    Lesson lesson,
+    String apiKey,
+  ) async {
+    final notifId = ('regen_${lesson.id}').hashCode;
+    await NotificationService.showProgress(notifId, 'Regenerating lesson', lesson.title, indeterminate: true);
+    
+    try {
+      final ctxBook = (await _dbService.getBookFromCache(book.id)) ?? book;
+      final sectionUnits = ctxBook.modules[modIdx].sections[secIdx].units;
+      final unit = sectionUnits[unitIdx];
+      final Unit? previousUnit = unitIdx > 0 ? sectionUnits[unitIdx - 1] : null;
+      final Unit? nextUnit = unitIdx < sectionUnits.length - 1 ? sectionUnits[unitIdx + 1] : null;
+      final String? sectionPdfPath = ctxBook.modules[modIdx].sections[secIdx].pdfPath;
+      
+      final fresh = await _aiService.regenerateLesson(
+        lesson: lesson,
+        unit: unit,
+        bookContext: ctxBook,
+        sectionPdfPath: sectionPdfPath,
+        previousUnit: previousUnit,
+        nextUnit: nextUnit,
+        generateGraphics: task.generateGraphics,
+        forcedApiKey: apiKey,
+      );
+      if (fresh == null) {
+        throw Exception('Lesson regeneration failed. The previous lesson is kept.');
+      }
+      
+      final base = (await _dbService.getBookFromCache(book.id)) ?? book;
+      final mods = List<Module>.from(base.modules);
+      final secs = List<Section>.from(mods[modIdx].sections);
+      final uns = List<Unit>.from(secs[secIdx].units);
+      final lessons = List<Lesson>.from(uns[unitIdx].lessons);
+      lessons[lessonIdx] = fresh;
+      uns[unitIdx] = uns[unitIdx].copyWith(lessons: lessons);
+      secs[secIdx] = secs[secIdx].copyWith(units: uns);
+      mods[modIdx] = mods[modIdx].copyWith(sections: secs);
+      final newBook = base.copyWith(modules: mods);
+      
+      await ProgressService.clearLessonProgress(lesson.id);
+      await _dbService.saveGeneratedBook(newBook);
+      _bookUpdateController.add(newBook);
+      await NotificationService.cancel(notifId);
+      task.completer.complete(fresh);
+    } catch (e) {
+      await NotificationService.cancel(notifId);
+      rethrow;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Interface Methods called by Screens / Callers
+  // ---------------------------------------------------------------------------
   Future<void> startBookGeneration(
     List<File> sourceFiles,
     String filename, {
@@ -140,27 +1127,22 @@ class GenerationManager extends ChangeNotifier {
 
     try {
       final stopwatch = Stopwatch()..start();
-      final skeletonBook = await _aiService.generateBookSkeleton(
+      
+      // Route skeleton generation through queue!
+      final skeletonBook = await startBookSkeletonGenerationTask(
         indexFiles,
         filename,
         chapter1AbsolutePage: chapter1AbsolutePage,
         customInstructions: customInstructions,
         syllabusFiles: syllabusFiles,
         isHandout: isHandout,
-        onProgress: (status, progress) {
-          task.statusMessage = status;
-          task.progress = progress;
-          notifyListeners();
-        },
       );
+      
       stopwatch.stop();
-
       await _recordRunTime('meta_gen_history', stopwatch.elapsedMilliseconds);
 
       if (skeletonBook != null) {
         if (isHandout) {
-          // Handouts skip the manual split review phase entirely!
-          // We call startBackgroundSplitAndSave directly.
           await startBackgroundSplitAndSave(taskId, sourceFiles, skeletonBook);
         } else {
           task.skeletonBook = skeletonBook;
@@ -191,8 +1173,8 @@ class GenerationManager extends ChangeNotifier {
     final task = activeTasks[taskIndex];
     task.state = BookGenState.chunking;
     task.statusMessage = 'Native Vector Splitting...';
-    task.progress = null; // indeterminate until the first chunk reports
-    task.estimatedDuration = const Duration(seconds: 15); // Native is much faster
+    task.progress = null;
+    task.estimatedDuration = const Duration(seconds: 15);
     task.startTime = DateTime.now();
     notifyListeners();
 
@@ -234,7 +1216,7 @@ class GenerationManager extends ChangeNotifier {
 
   Future<void> restoreBookFiles(Book book, List<File> sourceFiles) async {
     final taskId = "restore_${book.id}";
-    if (activeTasks.any((t) => t.id == taskId)) return; // Prevent duplicate
+    if (activeTasks.any((t) => t.id == taskId)) return;
 
     final notifId = taskId.hashCode;
 
@@ -297,225 +1279,135 @@ class GenerationManager extends ChangeNotifier {
     int secIdx,
     int unitIdx, {
     bool generateGraphics = true,
+    bool isScheduled = false,
   }) async {
-    if (activeUnitGenerations.containsKey(unit.id)) return;
-
-    final avgUnitMs = await _getAverageRunTime('unit_gen_history', 90000);
-    final notifId = unit.id.hashCode;
-
-    activeUnitGenerations[unit.id] = UnitGenTask(
-      status: 'Initializing AI...',
-      estimatedDuration: Duration(milliseconds: avgUnitMs),
-      startTime: DateTime.now()
+    if (queue.any((t) => t.unitId == unit.id && (t.status == 'queued' || t.status == 'running'))) {
+      return;
+    }
+    
+    _enqueue(
+      title: 'Unit: ${unit.title}',
+      type: 'unit',
+      bookId: book.id,
+      moduleId: book.modules[modIdx].id,
+      sectionId: book.modules[modIdx].sections[secIdx].id,
+      unitId: unit.id,
+      generateGraphics: generateGraphics,
+      isScheduled: isScheduled,
+      params: {
+        'modIdx': modIdx,
+        'secIdx': secIdx,
+        'unitIdx': unitIdx,
+      },
     );
-    notifyListeners();
-
-    await NotificationService.showProgress(notifId, "Generating Lesson", "AI is crafting content...", indeterminate: true);
-
-    // Merge helper: drop unit [u] into a fresh copy of [base] at our indices.
-    Book applyUnit(Book base, Unit u) {
-      final List<Unit> uns = List.from(base.modules[modIdx].sections[secIdx].units);
-      uns[unitIdx] = u;
-      final List<Section> secs = List.from(base.modules[modIdx].sections);
-      secs[secIdx] = secs[secIdx].copyWith(units: uns);
-      final List<Module> mods = List.from(base.modules);
-      mods[modIdx] = mods[modIdx].copyWith(sections: secs);
-      return base.copyWith(modules: mods);
-    }
-
-    try {
-      final stopwatch = Stopwatch()..start();
-      // New-flow units share the section\'s PDF chunk. Pass it through so the
-      // AI call can still hit a real on-disk file.
-      final String? sectionPdfPath = book.modules[modIdx].sections[secIdx].pdfPath;
-
-      // Gather neighbour context off the freshest book so the AI stays inside
-      // this unit's slice of the shared chunk, and so it knows which earlier
-      // units were already covered (to avoid re-teaching them).
-      final Book ctxBook = (await _dbService.getBookFromCache(book.id)) ?? book;
-      final List<Unit> sectionUnits = ctxBook.modules[modIdx].sections[secIdx].units;
-      final Unit? previousUnit = unitIdx > 0 ? sectionUnits[unitIdx - 1] : null;
-      final Unit? nextUnit =
-          unitIdx < sectionUnits.length - 1 ? sectionUnits[unitIdx + 1] : null;
-      final List<Unit> previousGeneratedUnits = [];
-      for (int i = unitIdx - 1; i >= 0 && previousGeneratedUnits.length < 2; i--) {
-        final u = sectionUnits[i];
-        if (u.isGenerated && u.lessons.isNotEmpty) previousGeneratedUnits.insert(0, u);
-      }
-
-      // Serialize streaming saves so concurrent per-lesson callbacks don't
-      // race on the shared book cache. Each save writes the full set of
-      // lessons collected so far, so the book converges regardless of order.
-      Future<void> saveChain = Future.value();
-      void onLessonGenerated(List<Lesson> lessonsSoFar) {
-        final snapshot = List<Lesson>.from(lessonsSoFar);
-        if (snapshot.isEmpty) return;
-        saveChain = saveChain.then((_) async {
-          final base = (await _dbService.getBookFromCache(book.id)) ?? book;
-          // Keep isGenerated false while streaming so the unit header still
-          // shows a progress state; lessons already render as they land.
-          final partial = applyUnit(base, unit.copyWith(isGenerated: false, lessons: snapshot));
-          await _dbService.saveGeneratedBook(partial);
-          _bookUpdateController.add(partial);
-        }).catchError((e) {
-          print('[GenerationManager] Streaming save failed for ${unit.id}: $e');
-        });
-      }
-
-      // Diagrams (when enabled) are now rendered per-lesson inside
-      // generateUnitContent, right after each lesson's text — so each streamed
-      // lesson already carries its art and pops in incrementally via the same
-      // [onLessonGenerated] save chain. Progress is a single 0→1 across the
-      // whole run (text + art); the planning phase stays indeterminate (null).
-      final updatedUnit = await _aiService.generateUnitContent(
-        unit,
-        ctxBook,
-        (status, [progress]) {
-          final t = activeUnitGenerations[unit.id];
-          if (t == null) return;
-          t.status = status;
-          t.progress = progress;
-          notifyListeners();
-        },
-        sectionPdfPath: sectionPdfPath,
-        previousUnit: previousUnit,
-        nextUnit: nextUnit,
-        previousGeneratedUnits: previousGeneratedUnits,
-        generateGraphics: generateGraphics,
-        onLessonGenerated: onLessonGenerated,
-      );
-      stopwatch.stop();
-      await _recordRunTime('unit_gen_history', stopwatch.elapsedMilliseconds);
-
-      // Let any in-flight streaming saves settle before the final write.
-      await saveChain;
-
-      // Persist the finished unit (lessons already carry their diagrams).
-      Book baseBook = (await _dbService.getBookFromCache(book.id)) ?? book;
-      final finalBook = applyUnit(baseBook, updatedUnit);
-      await _dbService.saveGeneratedBook(finalBook);
-      _bookUpdateController.add(finalBook);
-
-      activeUnitGenerations.remove(unit.id);
-      notifyListeners();
-
-      await NotificationService.cancel(notifId);
-      await NotificationService.showActionable(notifId, "Lesson Ready!", "Tap to start learning.", "open_home|");
-    } catch (e) {
-      activeUnitGenerations[unit.id]?.isError = true;
-      activeUnitGenerations[unit.id]?.status = 'Error: $e';
-      notifyListeners();
-
-      await NotificationService.cancel(notifId);
-      await NotificationService.showActionable(notifId, "Generation Failed", "Failed to generate lesson.", "error");
-    }
   }
 
-  /// Tracks in-flight unit-manifest generations. Keyed by section id so the
-  /// UI can show a loading state on the right section card.
   final Map<String, UnitGenTask> activeSectionManifests = {};
-
-  /// Set of "art target" ids currently regenerating their canvas SVG. The
-  /// id is the lesson id (for the lesson-top diagram) or the slide id (for
-  /// the proof diagram). The UI checks this set to disable the regenerate
-  /// button while a call is in flight.
+  final Map<String, UnitGenTask> activeSectionGenerations = {};
   final Set<String> activeCanvasRegens = {};
-
-  /// Set of slide ids whose textual content is currently being regenerated
-  /// by [regenerateSlide]. The lesson screen watches this to show a spinner
-  /// and disable the regenerate control while a call is in flight.
   final Set<String> activeSlideRegens = {};
-
-  /// Set of lesson ids whose whole content is currently being regenerated by
-  /// [regenerateLesson] (long-press on a lesson node). The lesson path uses
-  /// this to disable the affordance while a call is in flight.
   final Set<String> activeLessonRegens = {};
 
-  /// Lazily generates the unit list for a section in a new-flow book.
-  /// Idempotent: if the section already has units or a manifest is already
-  /// in flight, this is a no-op. Persists the populated section back to the
-  /// DB and emits a book update on success.
   Future<void> startSectionUnitManifest(
     Book book,
     int modIdx,
     int secIdx, {
     String? instructions,
     bool saveGlobally = false,
+    bool isScheduled = false,
   }) async {
     final section = book.modules[modIdx].sections[secIdx];
-    if (!section.needsUnitManifest) return;
-    if (activeSectionManifests.containsKey(section.id)) return;
-
-    // Effective planner guidance: what the user typed on the panel, else any
-    // previously-saved section instructions, else the book-wide instructions.
-    final String? effectiveInstructions =
-        (instructions?.trim().isNotEmpty ?? false)
-            ? instructions!.trim()
-            : (section.customInstructions ?? book.customInstructions);
-
-    final notifId = section.id.hashCode;
-    activeSectionManifests[section.id] = UnitGenTask(
-      status: 'Planning units for "${section.title}"...',
-      estimatedDuration: const Duration(seconds: 30),
-      startTime: DateTime.now(),
-    );
-    notifyListeners();
-    await NotificationService.showProgress(notifId, 'Planning section', 'Generating unit list...', indeterminate: true);
-
-    try {
-      final manifestResult = await _aiService.generateUnitManifest(
-        section,
-        book,
-        customInstructions: effectiveInstructions,
-      );
-      final units = manifestResult.units;
-      final newFormats = manifestResult.newFormats;
-
-      // Re-read freshest book so concurrent edits don't clobber.
-      final baseBook = (await _dbService.getBookFromCache(book.id)) ?? book;
-      final modules = List<Module>.from(baseBook.modules);
-      final sections = List<Section>.from(modules[modIdx].sections);
-      sections[secIdx] = sections[secIdx].copyWith(
-        units: units,
-        unitsGenerated: true,
-        customInstructions: effectiveInstructions,
-      );
-      modules[modIdx] = modules[modIdx].copyWith(sections: sections);
-
-      // Append recommended lesson formats that are unique (name or ID doesn't already exist)
-      final List<LessonFormat> updatedFormats = List.from(baseBook.lessonFormats);
-      for (final nf in newFormats) {
-        final alreadyExists = updatedFormats.any((lf) =>
-            lf.id == nf.id || lf.name.toLowerCase() == nf.name.toLowerCase());
-        if (!alreadyExists) {
-          updatedFormats.add(nf);
-        }
-      }
-
-      final newBook = baseBook.copyWith(
-        modules: modules,
-        lessonFormats: updatedFormats,
-        customInstructions: saveGlobally ? effectiveInstructions : baseBook.customInstructions,
-      );
-
-      await _dbService.saveGeneratedBook(newBook);
-      activeSectionManifests.remove(section.id);
-      notifyListeners();
-      _bookUpdateController.add(newBook);
-
-      await NotificationService.cancel(notifId);
-    } catch (e) {
-      activeSectionManifests[section.id]?.isError = true;
-      activeSectionManifests[section.id]?.status = 'Error: ${e.toString()}';
-      notifyListeners();
-      await NotificationService.cancel(notifId);
-      await NotificationService.showActionable(notifId, 'Section Planning Failed', 'Could not generate units.', 'error');
+    if (queue.any((t) => t.sectionId == section.id && t.type == 'manifest' && (t.status == 'queued' || t.status == 'running'))) {
+      return;
     }
+    
+    _enqueue(
+      title: 'Plan Manifest: ${section.title}',
+      type: 'manifest',
+      bookId: book.id,
+      moduleId: book.modules[modIdx].id,
+      sectionId: section.id,
+      generateGraphics: true,
+      isScheduled: isScheduled,
+      params: {
+        'modIdx': modIdx,
+        'secIdx': secIdx,
+        'instructions': instructions,
+        'saveGlobally': saveGlobally,
+      },
+    );
   }
 
-  /// Regenerates the diagram for a single lesson (top-of-lesson art).
-  /// No-op if the lesson has no `canvasPrompt` set. Persists the new SVG
-  /// to the book and broadcasts the update.
+  Future<void> startSectionGeneration(
+    Book book,
+    int modIdx,
+    int secIdx, {
+    bool generateGraphics = true,
+    bool isScheduled = false,
+  }) async {
+    final section = book.modules[modIdx].sections[secIdx];
+    if (queue.any((t) => t.sectionId == section.id && t.type == 'section' && (t.status == 'queued' || t.status == 'running'))) {
+      return;
+    }
+    
+    _enqueue(
+      title: 'Section Contents: ${section.title}',
+      type: 'section',
+      bookId: book.id,
+      moduleId: book.modules[modIdx].id,
+      sectionId: section.id,
+      generateGraphics: generateGraphics,
+      isScheduled: isScheduled,
+      params: {
+        'modIdx': modIdx,
+        'secIdx': secIdx,
+      },
+    );
+  }
+
+  Future<void> startModuleGeneration(
+    Book book,
+    int modIdx, {
+    bool generateGraphics = true,
+    bool isScheduled = false,
+  }) async {
+    final module = book.modules[modIdx];
+    if (queue.any((t) => t.moduleId == module.id && t.type == 'module' && (t.status == 'queued' || t.status == 'running'))) {
+      return;
+    }
+    
+    _enqueue(
+      title: 'Module Contents: ${module.title}',
+      type: 'module',
+      bookId: book.id,
+      moduleId: module.id,
+      generateGraphics: generateGraphics,
+      isScheduled: isScheduled,
+      params: {
+        'modIdx': modIdx,
+      },
+    );
+  }
+
+  Future<void> startBookContentGeneration(
+    Book book, {
+    bool generateGraphics = true,
+    bool isScheduled = false,
+  }) async {
+    if (queue.any((t) => t.bookId == book.id && t.type == 'book_content' && (t.status == 'queued' || t.status == 'running'))) {
+      return;
+    }
+    
+    _enqueue(
+      title: 'Course Contents: ${book.title}',
+      type: 'book_content',
+      bookId: book.id,
+      generateGraphics: generateGraphics,
+      isScheduled: isScheduled,
+      params: {},
+    );
+  }
+
   Future<void> regenerateLessonCanvas({
     required Book book,
     required int modIdx,
@@ -529,12 +1421,12 @@ class GenerationManager extends ChangeNotifier {
     activeCanvasRegens.add(lesson.id);
     notifyListeners();
     try {
-      final svg = await _aiService.generateCanvasArt(
+      final svg = await generateCanvasArtTask(
         lesson.canvasPrompt!,
         contextText: lesson.slides.isNotEmpty ? lesson.slides.first.content : '',
         errorContext: errorContext,
       );
-      if (svg == null) return; // best-effort: keep old SVG if call failed
+      if (svg == null) return;
       final base = (await _dbService.getBookFromCache(book.id)) ?? book;
       final mods = List<Module>.from(base.modules);
       final secs = List<Section>.from(mods[modIdx].sections);
@@ -553,8 +1445,6 @@ class GenerationManager extends ChangeNotifier {
     }
   }
 
-  /// Regenerates the diagram for a single proof / step_by_step slide. Same
-  /// best-effort semantics as [regenerateLessonCanvas].
   Future<void> regenerateSlideCanvas({
     required Book book,
     required int modIdx,
@@ -569,7 +1459,11 @@ class GenerationManager extends ChangeNotifier {
     activeCanvasRegens.add(slide.id);
     notifyListeners();
     try {
-      final svg = await _aiService.generateCanvasArt(slide.canvasPrompt!, contextText: slide.content, errorContext: errorContext);
+      final svg = await generateCanvasArtTask(
+        slide.canvasPrompt!,
+        contextText: slide.content,
+        errorContext: errorContext,
+      );
       if (svg == null) return;
       final base = (await _dbService.getBookFromCache(book.id)) ?? book;
       final mods = List<Module>.from(base.modules);
@@ -591,11 +1485,6 @@ class GenerationManager extends ChangeNotifier {
     }
   }
 
-  /// Persists a manually-edited slide back into the book. Used by the
-  /// double-tap-to-edit affordances on quiz options and proof steps so user
-  /// tweaks survive reloads (instead of living only in the lesson screen's
-  /// local state). The slide id stays unchanged — only its content/options/
-  /// interactive steps change.
   Future<void> saveSlideEdit({
     required Book book,
     required int modIdx,
@@ -650,10 +1539,6 @@ class GenerationManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Regenerates an entire lesson via the AI, preserving its id and slot.
-  /// Best-effort: if generation fails the old lesson is kept and an error is
-  /// reported via [errorSink]. Used by the long-press affordance on lesson
-  /// nodes in the lesson path.
   Future<void> regenerateLesson({
     required Book book,
     required int modIdx,
@@ -662,62 +1547,32 @@ class GenerationManager extends ChangeNotifier {
     required int lessonIdx,
     bool generateGraphics = true,
     void Function(String message)? errorSink,
+    bool isScheduled = false,
   }) async {
     final lesson = book.modules[modIdx].sections[secIdx].units[unitIdx].lessons[lessonIdx];
-    if (activeLessonRegens.contains(lesson.id)) return;
-    activeLessonRegens.add(lesson.id);
-    notifyListeners();
-
-    final notifId = ('regen_${lesson.id}').hashCode;
-    await NotificationService.showProgress(notifId, 'Regenerating lesson', lesson.title, indeterminate: true);
-
-    try {
-      final ctxBook = (await _dbService.getBookFromCache(book.id)) ?? book;
-      final sectionUnits = ctxBook.modules[modIdx].sections[secIdx].units;
-      final unit = sectionUnits[unitIdx];
-      final Unit? previousUnit = unitIdx > 0 ? sectionUnits[unitIdx - 1] : null;
-      final Unit? nextUnit =
-          unitIdx < sectionUnits.length - 1 ? sectionUnits[unitIdx + 1] : null;
-      final String? sectionPdfPath = ctxBook.modules[modIdx].sections[secIdx].pdfPath;
-
-      final fresh = await _aiService.regenerateLesson(
-        lesson: lesson,
-        unit: unit,
-        bookContext: ctxBook,
-        sectionPdfPath: sectionPdfPath,
-        previousUnit: previousUnit,
-        nextUnit: nextUnit,
-        generateGraphics: generateGraphics,
-      );
-      if (fresh == null) {
-        errorSink?.call('Lesson regeneration failed. The previous lesson is kept.');
-        return;
-      }
-      final base = (await _dbService.getBookFromCache(book.id)) ?? book;
-      final mods = List<Module>.from(base.modules);
-      final secs = List<Section>.from(mods[modIdx].sections);
-      final uns = List<Unit>.from(secs[secIdx].units);
-      final lessons = List<Lesson>.from(uns[unitIdx].lessons);
-      lessons[lessonIdx] = fresh;
-      uns[unitIdx] = uns[unitIdx].copyWith(lessons: lessons);
-      secs[secIdx] = secs[secIdx].copyWith(units: uns);
-      mods[modIdx] = mods[modIdx].copyWith(sections: secs);
-      final newBook = base.copyWith(modules: mods);
-      await ProgressService.clearLessonProgress(lesson.id);
-      await _dbService.saveGeneratedBook(newBook);
-      _bookUpdateController.add(newBook);
-    } catch (e) {
-      errorSink?.call('Lesson regeneration failed: $e');
-    } finally {
-      activeLessonRegens.remove(lesson.id);
-      notifyListeners();
-      await NotificationService.cancel(notifId);
+    if (queue.any((t) => t.params['lessonId'] == lesson.id && (t.status == 'queued' || t.status == 'running'))) {
+      return;
     }
+    
+    _enqueue(
+      title: 'Regen Lesson: ${lesson.title}',
+      type: 'lesson_regen',
+      bookId: book.id,
+      moduleId: book.modules[modIdx].id,
+      sectionId: book.modules[modIdx].sections[secIdx].id,
+      unitId: book.modules[modIdx].sections[secIdx].units[unitIdx].id,
+      generateGraphics: generateGraphics,
+      isScheduled: isScheduled,
+      params: {
+        'modIdx': modIdx,
+        'secIdx': secIdx,
+        'unitIdx': unitIdx,
+        'lessonIdx': lessonIdx,
+        'lessonId': lesson.id,
+      },
+    );
   }
 
-  /// Regenerates the textual content of a single slide via the AI, optionally
-  /// steered by [note]. Best-effort: if the call fails the old slide is kept.
-  /// Persists the new slide into the book and broadcasts the update.
   Future<void> regenerateSlide({
     required Book book,
     required int modIdx,
@@ -735,14 +1590,14 @@ class GenerationManager extends ChangeNotifier {
     try {
       final String? chunkPath = book.modules[modIdx].sections[secIdx].units[unitIdx].pdfPath ??
           book.modules[modIdx].sections[secIdx].pdfPath;
-      final fresh = await _aiService.regenerateSlide(
+      final fresh = await regenerateSlideTask(
         slide: slide,
         lesson: lesson,
         bookContext: book,
         chunkPath: chunkPath,
         note: note,
       );
-      if (fresh == null) return; // keep old slide if the call failed
+      if (fresh == null) return;
       final base = (await _dbService.getBookFromCache(book.id)) ?? book;
       final mods = List<Module>.from(base.modules);
       final secs = List<Section>.from(mods[modIdx].sections);
@@ -764,187 +1619,77 @@ class GenerationManager extends ChangeNotifier {
   }
 
   void clearSectionManifestError(String sectionId) {
-    if (activeSectionManifests[sectionId]?.isError == true) {
-      activeSectionManifests.remove(sectionId);
-      notifyListeners();
-    }
+    activeSectionManifests.remove(sectionId);
+    notifyListeners();
   }
 
-  Future<void> startQpGeneration(String bookId, List<File> files, String qpTitle, Book currentBook, {String? customInstructions}) async {
-    if (activeQpTasks.containsKey(bookId)) return;
-
-    final notifId = bookId.hashCode + 1; // Unique ID avoiding collision
-    activeQpTasks[bookId] = QpGenTask(status: 'Analyzing Exam Paper...');
-    notifyListeners();
-    
-    await NotificationService.showProgress(notifId, "Analyzing Exam", "Extracting and solving questions natively...", indeterminate: true);
-
-    try {
-        final qp = await _aiService.generateQuestionPaper(files, qpTitle, currentBook.systemPrompt, customInstructions: customInstructions);
-
-        // Re-read the freshest book so we don't clobber other concurrent edits.
-        final baseBook = (await _dbService.getBookFromCache(currentBook.id)) ?? currentBook;
-        final updatedBook = baseBook.copyWith(
-            questionPapers: [...baseBook.questionPapers, qp]
-        );
-
-        await _dbService.saveGeneratedBook(updatedBook);
-        _bookUpdateController.add(updatedBook);
-        
-        activeQpTasks.remove(bookId);
-        notifyListeners();
-
-        await NotificationService.cancel(notifId);
-        await NotificationService.showActionable(notifId, "Exam Ready", "Past paper solved interactively!", "open_home|");
-    } catch(e) {
-        activeQpTasks[bookId]?.status = 'Error: $e';
-        activeQpTasks[bookId]?.isError = true;
-        notifyListeners();
-
-        await NotificationService.cancel(notifId);
-        await NotificationService.showActionable(notifId, "Analysis Failed", "Failed to solve past paper.", "error");
+  Future<void> startQpGeneration(
+    String bookId,
+    List<File> files,
+    String qpTitle,
+    Book currentBook, {
+    String? customInstructions,
+    bool isScheduled = false,
+  }) async {
+    if (queue.any((t) => t.bookId == bookId && t.type == 'qp' && (t.status == 'queued' || t.status == 'running'))) {
+      return;
     }
+    
+    final filePaths = files.map((f) => f.path).toList();
+    
+    _enqueue(
+      title: 'Exam: $qpTitle',
+      type: 'qp',
+      bookId: bookId,
+      generateGraphics: true,
+      isScheduled: isScheduled,
+      params: {
+        'title': qpTitle,
+        'filePaths': filePaths,
+        'instructions': customInstructions,
+      },
+    );
   }
 
   void clearUnitError(String unitId) {
-    if (activeUnitGenerations[unitId]?.isError == true) {
-      activeUnitGenerations.remove(unitId);
-      notifyListeners();
-    }
+    activeUnitGenerations.remove(unitId);
+    notifyListeners();
   }
 
   void clearQpError(String bookId) {
-    if (activeQpTasks[bookId]?.isError == true) {
-      activeQpTasks.remove(bookId);
-      notifyListeners();
-    }
+    activeQpTasks.remove(bookId);
+    notifyListeners();
   }
 
   void clearPyqError(String bookId) {
-    if (activePyqTasks[bookId]?.isError == true) {
-      activePyqTasks.remove(bookId);
-      notifyListeners();
-    }
+    activePyqTasks.remove(bookId);
+    notifyListeners();
   }
 
-  Future<void> startPyqAnalysis(String bookId, List<File> files, Book currentBook, {String? customInstructions}) async {
-    if (activePyqTasks.containsKey(bookId)) return;
-
-    final notifId = bookId.hashCode + 2; // Unique ID avoiding collision
-    activePyqTasks[bookId] = QpGenTask(status: 'Analyzing PYQ Paper...');
-    notifyListeners();
-
-    await NotificationService.showProgress(notifId, "Analyzing PYQ", "Extracting and splitting questions...", indeterminate: true);
-
-    try {
-      // Re-read the freshest book so we don't clobber other concurrent edits.
-      Book freshestBook = (await _dbService.getBookFromCache(currentBook.id)) ?? currentBook;
-
-      // Find all sections with lessons generated
-      List<Section> activeSections = [];
-      for (final m in freshestBook.modules) {
-        for (final s in m.sections) {
-          final hasLessons = s.units.any((u) => u.isGenerated && u.lessons.isNotEmpty);
-          if (hasLessons) {
-            activeSections.add(s);
-          }
-        }
-      }
-
-      if (activeSections.isEmpty) {
-        throw Exception("No sections have generated lessons yet. Please generate lessons first.");
-      }
-
-      // We will build a map of Section ID -> list of new slides to add
-      final Map<String, List<Slide>> newSlidesForSections = {};
-      for (final s in activeSections) {
-        newSlidesForSections[s.id] = [];
-      }
-
-      // Compile other sections metadata
-      final List<Map<String, String>> otherSectionsMeta = freshestBook.modules
-          .expand((m) => m.sections)
-          .map((s) => {'id': s.id, 'title': s.title})
-          .toList();
-
-      for (int i = 0; i < activeSections.length; i++) {
-        final sec = activeSections[i];
-        activePyqTasks[bookId]?.status = 'Extracting questions for: ${sec.title} (${i+1}/${activeSections.length})...';
-        notifyListeners();
-
-        // Get already generated questions for this section (both existing in book, and newly extracted in this session)
-        final existingInSec = List<Slide>.from(sec.pyqQuestions);
-        final newlyExtractedInSec = newSlidesForSections[sec.id] ?? [];
-        final totalExisting = [...existingInSec, ...newlyExtractedInSec];
-
-        final extracted = await _aiService.extractPyqQuestionsForSection(
-          files: files,
-          section: sec,
-          existingQuestions: totalExisting,
-          otherSections: otherSectionsMeta.where((s) => s['id'] != sec.id).toList(),
-          customInstructions: customInstructions,
-        );
-
-        for (final q in extracted) {
-          if (!isDuplicate(q, totalExisting)) {
-            newSlidesForSections[sec.id]!.add(q);
-          }
-
-          // Fallback / multi-section mapping support
-          final otherIds = q.toJson()['otherSupportedSectionIds'] as List?;
-          if (otherIds != null) {
-            for (final otherIdRaw in otherIds) {
-              final otherId = otherIdRaw.toString();
-              // Check if this other section exists and has lessons generated
-              final hasSection = freshestBook.modules.expand((m) => m.sections).any((s) => s.id == otherId);
-              if (hasSection) {
-                final otherSec = freshestBook.modules.expand((m) => m.sections).firstWhere((s) => s.id == otherId);
-                final otherHasLessons = otherSec.units.any((u) => u.isGenerated && u.lessons.isNotEmpty);
-                if (otherHasLessons) {
-                  newSlidesForSections.putIfAbsent(otherId, () => []);
-                  final existingInOther = List<Slide>.from(otherSec.pyqQuestions);
-                  final newlyExtractedInOther = newSlidesForSections[otherId]!;
-                  final totalExistingOther = [...existingInOther, ...newlyExtractedInOther];
-                  if (!isDuplicate(q, totalExistingOther)) {
-                    newSlidesForSections[otherId]!.add(q);
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-
-      // Now, update freshestBook with all new slides
-      final updatedModules = freshestBook.modules.map((m) {
-        final updatedSecs = m.sections.map((s) {
-          final newSlides = newSlidesForSections[s.id];
-          if (newSlides != null && newSlides.isNotEmpty) {
-            return s.copyWith(pyqQuestions: [...s.pyqQuestions, ...newSlides]);
-          }
-          return s;
-        }).toList();
-        return m.copyWith(sections: updatedSecs);
-      }).toList();
-
-      final finalBook = freshestBook.copyWith(modules: updatedModules);
-      await _dbService.saveGeneratedBook(finalBook);
-      _bookUpdateController.add(finalBook);
-
-      activePyqTasks.remove(bookId);
-      notifyListeners();
-
-      await NotificationService.cancel(notifId);
-      await NotificationService.showActionable(notifId, "PYQ Analysis Ready", "Exam questions extracted and split over modules!", "open_home|");
-
-    } catch (e) {
-      activePyqTasks[bookId]?.status = 'Error: $e';
-      activePyqTasks[bookId]?.isError = true;
-      notifyListeners();
-
-      await NotificationService.cancel(notifId);
-      await NotificationService.showActionable(notifId, "PYQ Analysis Failed", "Failed to extract exam questions.", "error");
+  Future<void> startPyqAnalysis(
+    String bookId,
+    List<File> files,
+    Book currentBook, {
+    String? customInstructions,
+    bool isScheduled = false,
+  }) async {
+    if (queue.any((t) => t.bookId == bookId && t.type == 'pyq' && (t.status == 'queued' || t.status == 'running'))) {
+      return;
     }
+    
+    final filePaths = files.map((f) => f.path).toList();
+    
+    _enqueue(
+      title: 'PYQ: ${currentBook.title}',
+      type: 'pyq',
+      bookId: bookId,
+      generateGraphics: true,
+      isScheduled: isScheduled,
+      params: {
+        'filePaths': filePaths,
+        'instructions': customInstructions,
+      },
+    );
   }
 
   bool isDuplicate(Slide newQ, List<Slide> existing) {
@@ -960,5 +1705,31 @@ class GenerationManager extends ChangeNotifier {
     activeTasks.removeWhere((t) => t.id == id);
     NotificationService.cancel(id.hashCode);
     notifyListeners();
+  }
+
+  void cancelQueuedTask(String id) {
+    queue.removeWhere((t) => t.id == id);
+    _syncActiveMapsWithQueue();
+    notifyListeners();
+    _saveQueueToPrefs();
+    _processQueue();
+  }
+
+  void clearCompletedTasks() {
+    queue.removeWhere((t) => t.status == 'completed' || t.status == 'failed');
+    _syncActiveMapsWithQueue();
+    notifyListeners();
+    _saveQueueToPrefs();
+  }
+
+  Future<int> _resolveConcurrency() async {
+    try {
+      final cores = Platform.numberOfProcessors;
+      if (cores >= 8) return 4;
+      if (cores >= 4) return 3;
+      return 2;
+    } catch (_) {
+      return 2;
+    }
   }
 }
