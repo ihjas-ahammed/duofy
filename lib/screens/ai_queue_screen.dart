@@ -645,7 +645,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
           return Scaffold(
             backgroundColor: AppTheme.background,
             appBar: AppBar(
-              title: const Text('AI Generation Center', style: TextStyle(fontWeight: FontWeight.w900)),
+              title: const Text('AI Requests', style: TextStyle(fontWeight: FontWeight.w900)),
               actions: [
                 if (running.isNotEmpty || queued.isNotEmpty)
                   IconButton(

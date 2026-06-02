@@ -8,6 +8,7 @@ import '../services/database_service.dart';
 import '../services/generation_manager.dart';
 import '../services/global_state.dart';
 import '../services/progress_service.dart';
+import '../services/bookmark_service.dart';
 import '../widgets/canvas_art_view.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/math_markdown.dart';
@@ -66,7 +67,12 @@ class _LessonScreenState extends State<LessonScreen> {
   String _wordInput = '';
 
   bool _isEditingMode = false;
+  bool _isBookmarked = false;
   final TextEditingController _editController = TextEditingController();
+
+  /// Bookmarking needs the owning course so the lesson can be re-opened from
+  /// the bookmarks window later.
+  bool get _canBookmark => widget.book != null;
 
   bool get _canRegenerateCanvas =>
       widget.book != null &&
@@ -85,6 +91,36 @@ class _LessonScreenState extends State<LessonScreen> {
     // Pull the latest from cache once on open in case background art landed
     // between the dashboard build and this screen mounting.
     _refreshFromCache();
+    // Bookmark state + stamp last-opened time if this lesson is bookmarked.
+    _loadBookmarkState();
+    BookmarkService.markOpened(widget.lesson.id);
+  }
+
+  Future<void> _loadBookmarkState() async {
+    final marked = await BookmarkService.isBookmarked(widget.lesson.id);
+    if (mounted) setState(() => _isBookmarked = marked);
+  }
+
+  Future<void> _toggleBookmark() async {
+    if (!_canBookmark) return;
+    final nowBookmarked = await BookmarkService.toggle(
+      bookId: widget.book!.id,
+      bookTitle: widget.book!.title,
+      lessonId: widget.lesson.id,
+      lessonTitle: widget.lesson.title,
+    );
+    if (!mounted) return;
+    setState(() => _isBookmarked = nowBookmarked);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: AppTheme.surface,
+        duration: const Duration(seconds: 2),
+        content: Text(
+          nowBookmarked ? 'Lesson bookmarked' : 'Bookmark removed',
+          style: const TextStyle(color: Colors.white),
+        ),
+      ),
+    );
   }
 
   @override
@@ -660,6 +696,20 @@ class _LessonScreenState extends State<LessonScreen> {
                         ),
                       ),
                       const SizedBox(width: 8),
+                      if (_canBookmark)
+                        GestureDetector(
+                          onTap: _toggleBookmark,
+                          child: SizedBox(
+                            width: 40,
+                            height: 48,
+                            child: Icon(
+                              _isBookmarked ? LucideIcons.bookmark : LucideIcons.bookmarkPlus,
+                              color: _isBookmarked ? AppTheme.duoOrange : Colors.white54,
+                              size: 22,
+                            ),
+                          ),
+                        ),
+                      if (_canBookmark) const SizedBox(width: 8),
                       if (_canRegenerateCanvas)
                         AnimatedBuilder(
                           animation: GenerationManager.instance,

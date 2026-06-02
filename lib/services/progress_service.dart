@@ -1,10 +1,19 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
 import 'global_state.dart';
+import 'learning_sync.dart';
 
 class ProgressService {
   static const String _completedKey = 'completed_lessons';
   static const String _xpKey = 'user_xp';
+
+  /// Notifies listeners + backs up to the cloud after a completion change.
+  /// Called by every mutation so the UI refreshes and cloud stays in sync.
+  static void _onProgressChanged() {
+    GlobalState.bumpProgress();
+    // Fire-and-forget cloud backup (no-op when cloud sync is disabled).
+    LearningSync.push();
+  }
 
   static Future<List<String>> getCompletedLessons() async {
     final prefs = await SharedPreferences.getInstance();
@@ -32,6 +41,7 @@ class ProgressService {
       int newXp = currentXp + xpGained;
       await prefs.setInt(_xpKey, newXp);
       GlobalState.xpNotifier.value = newXp;
+      _onProgressChanged();
     }
   }
 
@@ -52,6 +62,7 @@ class ProgressService {
       if (newXp < 0) newXp = 0;
       await prefs.setInt(_xpKey, newXp);
       GlobalState.xpNotifier.value = newXp;
+      _onProgressChanged();
     }
   }
 

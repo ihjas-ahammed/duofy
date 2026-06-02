@@ -8,6 +8,8 @@ import '../models/app_models.dart';
 import '../services/database_service.dart';
 import '../services/progress_service.dart';
 import '../services/generation_manager.dart';
+import '../services/learning_sync.dart';
+import 'bookmarks_screen.dart';
 import '../theme/app_theme.dart';
 import '../widgets/compact_book_card.dart';
 import '../widgets/community_book_card.dart';
@@ -172,12 +174,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _syncRemoteData() async {
     try {
+      // Pull + merge cloud learning state (completed lessons, XP, bookmarks)
+      // before recomputing per-book progress so the bars reflect any progress
+      // made on another device.
+      await LearningSync.pullAndMerge();
+
       final fetched = await _db.fetchBooks(
         forceRefresh: true,
         onConflict: (local, remote) => showSyncConflictDialog(context, local, remote),
       );
       final globals = await _db.fetchGlobalBooks(useCacheOnly: false);
-      
+
       Map<String, double> prog = {};
       for (var b in fetched) {
         prog[b.id] = await ProgressService.getBookProgress(b);
@@ -282,6 +289,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               },
                             ),
                           ),
+                        IconButton(
+                          icon: const Icon(LucideIcons.bookmark, size: 26),
+                          tooltip: 'Bookmarks',
+                          onPressed: () {
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => const BookmarksScreen()));
+                          },
+                        ),
                         if (!kIsWeb)
                           IconButton(
                             icon: const Icon(LucideIcons.cpu, size: 28),

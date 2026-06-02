@@ -17,6 +17,41 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 String? startupError;
 bool _isGlobalErrorDialogOpen = false;
 
+/// Heuristic: is this error one of the "annoying but harmless" kind that does
+/// NOT actually threaten to kill the app? These are the ones we log silently
+/// instead of interrupting the user with a full-screen dialog. Anything not
+/// matched here is treated as potentially fatal and surfaced.
+bool _looksNonFatal(Object error) {
+  final s = error.toString().toLowerCase();
+  const benign = [
+    // Transient network / IO — recoverable, the feature that needed it
+    // already shows its own inline error.
+    'socketexception',
+    'timeoutexception',
+    'connection closed',
+    'connection refused',
+    'connection reset',
+    'connection terminated',
+    'network is unreachable',
+    'failed host lookup',
+    'handshakeexception',
+    'clientexception',
+    'httpexception',
+    'http request failed',
+    // Framework layout / paint noise — visual only, never crashes the app.
+    'renderflex',
+    'overflowed',
+    'a renderflex overflowed',
+    'setstate() called after dispose',
+    'was called during build',
+    'mouse_tracker',
+    'failed to load image',
+    'imagecodecexception',
+    'codec',
+  ];
+  return benign.any((fragment) => s.contains(fragment));
+}
+
 void showGlobalErrorAlert(Object error, StackTrace? stack) {
   debugPrint("GLOBAL ERROR OCCURRED: $error\n$stack");
   final context = navigatorKey.currentContext;
@@ -147,14 +182,27 @@ void main() async {
     startupError = (startupError ?? "") + "\nPrefs Init Error: $e\n$stack";
   }
 
-  // Set up global error boundaries
+  // Set up global error boundaries.
+  //
+  // Framework errors caught by [FlutterError.onError] (overflows, paint/layout
+  // glitches, "setState after dispose", etc.) are handled gracefully by Flutter
+  // and don't kill the app — they're just noise. Log them, but never interrupt
+  // the user with a dialog.
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
-    showGlobalErrorAlert(details.exception, details.stack);
+    debugPrint("FLUTTER FRAMEWORK ERROR (non-fatal): ${details.exception}");
   };
 
+  // Errors reaching [PlatformDispatcher.onError] are otherwise-uncaught and are
+  // the ones that would actually terminate the app. Surface those — but still
+  // skip the handful of clearly-recoverable categories (transient network/IO)
+  // that callers already report inline.
   PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
-    showGlobalErrorAlert(error, stack);
+    if (_looksNonFatal(error)) {
+      debugPrint("UNCAUGHT NON-FATAL ERROR (suppressed dialog): $error");
+    } else {
+      showGlobalErrorAlert(error, stack);
+    }
     return true; // Prevent default app crash behavior
   };
 

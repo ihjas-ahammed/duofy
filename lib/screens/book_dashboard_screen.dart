@@ -42,6 +42,16 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     _loadProgress();
     _checkMissingFiles();
     _loadLastResumed();
+    // Refresh completion state whenever progress changes anywhere (a lesson/
+    // unit/section/module marked finished or cleared, or a cloud sync merge),
+    // so the lesson path always reflects the latest status.
+    GlobalState.progressNotifier.addListener(_loadProgress);
+  }
+
+  @override
+  void dispose() {
+    GlobalState.progressNotifier.removeListener(_loadProgress);
+    super.dispose();
   }
 
   Future<void> _loadLastResumed() async {
@@ -1032,7 +1042,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   ),
                 );
               }),
-              const SizedBox(height: 8),
+              const SizedBox(height: 3),
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text(
@@ -1040,7 +1050,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   style: TextStyle(
                     color: Color(0xFF94A3B8),
                     fontWeight: FontWeight.w900,
-                    fontSize: 13,
+                    fontSize: 10,
                     letterSpacing: 1.4,
                   ),
                 ),

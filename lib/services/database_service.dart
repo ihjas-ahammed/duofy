@@ -50,6 +50,58 @@ class DatabaseService {
   FbDocRef get _userSettingsDoc =>
       _db.collection('users').doc(uid).collection('meta').doc('settings');
 
+  /// Per-user learning state (completed lessons, XP, bookmarks). Kept separate
+  /// from books so progress syncs cheaply without rewriting course content.
+  FbDocRef get _userLearningDoc =>
+      _db.collection('users').doc(uid).collection('meta').doc('learning');
+
+  // ---------------------------------------------------------------------------
+  // Learning state (progress + bookmarks) — optional cloud backup, gated by the
+  // same local-first cloud toggle. No-ops for guests / when cloud is off.
+  // ---------------------------------------------------------------------------
+
+  /// Pushes the merged learning state to Firestore (background, non-blocking).
+  /// Safe to call on every change — it short-circuits when cloud is disabled.
+  Future<void> saveLearningState({
+    required List<String> completedLessons,
+    required int xp,
+    required List<Map<String, dynamic>> bookmarks,
+  }) async {
+    if (uid == 'guest') return;
+    if (!await isCloudEnabled()) return;
+    _userLearningDoc.set({
+      'completedLessons': completedLessons,
+      'xp': xp,
+      'bookmarks': bookmarks,
+      'updatedAt': DateTime.now().millisecondsSinceEpoch,
+    }).catchError((e) {
+      print("[DatabaseService] Error saving learning state: $e");
+    });
+  }
+
+  /// Reads the cloud learning state, or null when unavailable (guest, cloud
+  /// off, missing doc, or network error).
+  Future<Map<String, dynamic>?> fetchLearningState() async {
+    if (uid == 'guest') return null;
+    if (!await isCloudEnabled()) return null;
+    try {
+      final snap = await _userLearningDoc.get().timeout(const Duration(seconds: 4));
+      if (!snap.exists) return null;
+      final data = snap.data() ?? {};
+      return {
+        'completedLessons': List<String>.from((data['completedLessons'] as List?) ?? const []),
+        'xp': (data['xp'] is num) ? (data['xp'] as num).toInt() : 0,
+        'bookmarks': ((data['bookmarks'] as List?) ?? const [])
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList(),
+      };
+    } catch (e) {
+      print("[DatabaseService] Error fetching learning state: $e");
+      return null;
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Local file store (per-book JSON files + an in-memory index)
   // ---------------------------------------------------------------------------

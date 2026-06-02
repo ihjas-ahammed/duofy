@@ -5,13 +5,29 @@ import '../theme/app_theme.dart';
 import 'practice_session_screen.dart';
 
 /// One generated unit, flattened out of the module/section tree so the range
-/// selector can treat the whole book as a single ordered list of units.
+/// selector can treat a section's units as a single ordered list.
 class _UnitRef {
   final String id;
   final String unitTitle;
   final String sectionTitle;
   final List<Slide> slides;
   _UnitRef({required this.id, required this.unitTitle, required this.sectionTitle, required this.slides});
+}
+
+/// A section that contains at least one practiceable unit, plus its PYQ pool.
+class _SectionRef {
+  final String id;
+  final String title;
+  final List<Slide> pyqQuestions;
+  final List<_UnitRef> units;
+  _SectionRef({required this.id, required this.title, required this.pyqQuestions, required this.units});
+}
+
+/// A module that contains at least one practiceable section.
+class _ModuleRef {
+  final String title;
+  final List<_SectionRef> sections;
+  _ModuleRef({required this.title, required this.sections});
 }
 
 class _PracticeMode {
@@ -33,8 +49,14 @@ class PracticeScreen extends StatefulWidget {
 }
 
 class _PracticeScreenState extends State<PracticeScreen> {
-  late final List<_UnitRef> _units;
-  // Inclusive range of unit indices selected for practice.
+  // Practiceable modules (each has ≥1 section with ≥1 unit that has slides).
+  late final List<_ModuleRef> _modules;
+  // Currently selected module.
+  int _moduleIdx = 0;
+  // Inclusive range of section indices (within the selected module).
+  int _secStart = 0;
+  int _secEnd = 0;
+  // Inclusive range of unit indices (within the selected section range).
   int _startIdx = 0;
   int _endIdx = 0;
 
@@ -50,28 +72,82 @@ class _PracticeScreenState extends State<PracticeScreen> {
   @override
   void initState() {
     super.initState();
-    _units = _flattenUnits();
-    _endIdx = _units.isEmpty ? 0 : _units.length - 1;
+    _modules = _flattenModules();
+    if (_modules.isNotEmpty) _resetSectionRange();
   }
 
-  List<_UnitRef> _flattenUnits() {
-    final List<_UnitRef> out = [];
+  List<_ModuleRef> _flattenModules() {
+    final List<_ModuleRef> out = [];
     for (final module in widget.book.modules) {
+      final List<_SectionRef> secs = [];
       for (final section in module.sections) {
+        final List<_UnitRef> units = [];
         for (final unit in section.units) {
           // Only units that actually contain lessons can supply practice.
           final hasSlides = unit.lessons.any((l) => l.slides.isNotEmpty);
           if (!hasSlides) continue;
-          out.add(_UnitRef(
+          units.add(_UnitRef(
             id: unit.id,
             unitTitle: unit.title.isNotEmpty ? unit.title : 'Unit',
             sectionTitle: section.title,
             slides: [for (final l in unit.lessons) ...l.slides],
           ));
         }
+        if (units.isEmpty) continue;
+        secs.add(_SectionRef(
+          id: section.id,
+          title: section.title.isNotEmpty ? section.title : 'Section',
+          pyqQuestions: section.pyqQuestions,
+          units: units,
+        ));
       }
+      if (secs.isEmpty) continue;
+      out.add(_ModuleRef(
+        title: module.title.isNotEmpty ? module.title : 'Module',
+        sections: secs,
+      ));
     }
     return out;
+  }
+
+  // --- Scope derivation -----------------------------------------------------
+
+  _ModuleRef? get _activeModule => _modules.isEmpty ? null : _modules[_moduleIdx];
+
+  List<_SectionRef> get _sectionsInModule => _activeModule?.sections ?? const [];
+
+  /// Sections inside the selected section range.
+  List<_SectionRef> get _selectedSections {
+    final secs = _sectionsInModule;
+    if (secs.isEmpty) return const [];
+    final end = _secEnd.clamp(0, secs.length - 1);
+    final start = _secStart.clamp(0, end);
+    return [for (int i = start; i <= end; i++) secs[i]];
+  }
+
+  /// All units within the selected section range (ordered).
+  List<_UnitRef> get _unitsInScope => [for (final s in _selectedSections) ...s.units];
+
+  /// Units inside the selected unit range.
+  List<_UnitRef> get _selectedUnits {
+    final scope = _unitsInScope;
+    if (scope.isEmpty) return const [];
+    final end = _endIdx.clamp(0, scope.length - 1);
+    final start = _startIdx.clamp(0, end);
+    return [for (int i = start; i <= end; i++) scope[i]];
+  }
+
+  /// Resets the section range to the whole module, then the unit range too.
+  void _resetSectionRange() {
+    _secStart = 0;
+    _secEnd = _sectionsInModule.isEmpty ? 0 : _sectionsInModule.length - 1;
+    _resetUnitRange();
+  }
+
+  /// Resets the unit range to span every unit in the current section scope.
+  void _resetUnitRange() {
+    _startIdx = 0;
+    _endIdx = _unitsInScope.isEmpty ? 0 : _unitsInScope.length - 1;
   }
 
   bool _matchesType(String practiceType, String slideType) {
@@ -92,15 +168,12 @@ class _PracticeScreenState extends State<PracticeScreen> {
     return false;
   }
 
-  List<String> get _selectedUnitIds {
-    if (_units.isEmpty) return const [];
-    return [for (int i = _startIdx; i <= _endIdx; i++) _units[i].id];
-  }
+  List<String> get _selectedUnitIds => [for (final u in _selectedUnits) u.id];
 
-  /// Slides within the selected unit range (or the whole book when no units
-  /// were detected, so the legacy fallback still works).
+  /// Slides within the selected scope (or the whole book when no generated
+  /// units were detected, so the legacy fallback still works).
   Iterable<Slide> get _slidesInRange {
-    if (_units.isEmpty) {
+    if (_modules.isEmpty) {
       return [
         for (final m in widget.book.modules)
           for (final s in m.sections)
@@ -108,11 +181,11 @@ class _PracticeScreenState extends State<PracticeScreen> {
               for (final l in u.lessons) ...l.slides
       ];
     }
-    return [for (int i = _startIdx; i <= _endIdx; i++) ..._units[i].slides];
+    return [for (final u in _selectedUnits) ...u.slides];
   }
 
   List<Slide> get _pyqQuestionsInRange {
-    if (_units.isEmpty) {
+    if (_modules.isEmpty) {
       return [
         for (final m in widget.book.modules)
           for (final s in m.sections) ...s.pyqQuestions
@@ -121,13 +194,11 @@ class _PracticeScreenState extends State<PracticeScreen> {
     final selectedUnitIds = _selectedUnitIds.toSet();
     final List<Slide> out = [];
     final Set<String> seen = {};
-    for (final m in widget.book.modules) {
-      for (final s in m.sections) {
-        if (s.units.any((u) => selectedUnitIds.contains(u.id))) {
-          for (final q in s.pyqQuestions) {
-            if (seen.add(q.content.trim().toLowerCase())) {
-              out.add(q);
-            }
+    for (final s in _selectedSections) {
+      if (s.units.any((u) => selectedUnitIds.contains(u.id))) {
+        for (final q in s.pyqQuestions) {
+          if (seen.add(q.content.trim().toLowerCase())) {
+            out.add(q);
           }
         }
       }
@@ -150,7 +221,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
         builder: (_) => PracticeSessionScreen(
           book: widget.book,
           practiceType: mode.type,
-          unitIds: _units.isEmpty ? null : _selectedUnitIds,
+          unitIds: _modules.isEmpty ? null : _selectedUnitIds,
         ),
       ),
     );
@@ -262,7 +333,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                             builder: (_) => PracticeSessionScreen(
                               book: widget.book,
                               practiceType: 'pyq',
-                              unitIds: _units.isEmpty ? null : _selectedUnitIds,
+                              unitIds: _modules.isEmpty ? null : _selectedUnitIds,
                               pyqOneWordCount: oneWordCount,
                               pyqProofCount: proofCount,
                             ),
@@ -297,7 +368,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                 style: TextStyle(color: Colors.white54, fontSize: 14, height: 1.4),
               ),
             ),
-            _buildRangeSelector(),
+            _buildScopeSelector(),
             const SizedBox(height: 8),
             const Padding(
               padding: EdgeInsets.only(left: 4.0, top: 8, bottom: 12.0),
@@ -313,8 +384,8 @@ class _PracticeScreenState extends State<PracticeScreen> {
     );
   }
 
-  Widget _buildRangeSelector() {
-    if (_units.isEmpty) {
+  Widget _buildScopeSelector() {
+    if (_modules.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -337,13 +408,11 @@ class _PracticeScreenState extends State<PracticeScreen> {
       );
     }
 
-    final total = _units.length;
-    final selectedCount = _endIdx - _startIdx + 1;
-    final startUnit = _units[_startIdx];
-    final endUnit = _units[_endIdx];
+    final sections = _sectionsInModule;
+    final unitsInScope = _unitsInScope;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(20),
@@ -356,7 +425,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
             children: [
               const Icon(LucideIcons.slidersHorizontal, color: AppTheme.duoBlue, size: 18),
               const SizedBox(width: 8),
-              const Text('UNIT RANGE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1)),
+              const Text('PRACTICE SCOPE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1)),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -365,73 +434,153 @@ class _PracticeScreenState extends State<PracticeScreen> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  selectedCount == total ? 'All $total units' : '$selectedCount of $total',
+                  '${_selectedUnits.length} unit${_selectedUnits.length == 1 ? '' : 's'}',
                   style: const TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.w900, fontSize: 12),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            selectedCount == 1
-                ? startUnit.unitTitle
-                : '${startUnit.unitTitle}  →  ${endUnit.unitTitle}',
-            style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600, height: 1.3),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          if (total > 1)
-            SliderTheme(
-              data: SliderTheme.of(context).copyWith(
-                activeTrackColor: AppTheme.duoBlue,
-                inactiveTrackColor: Colors.white12,
-                thumbColor: AppTheme.duoBlue,
-                overlayColor: AppTheme.duoBlue.withOpacity(0.2),
-                rangeThumbShape: const RoundRangeSliderThumbShape(enabledThumbRadius: 9),
-                trackHeight: 5,
+
+          // Module picker — only meaningful when there's more than one module.
+          if (_modules.length > 1) ...[
+            const SizedBox(height: 14),
+            const Text('MODULE', style: TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1)),
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: Colors.black38,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white10),
               ),
-              child: RangeSlider(
-                min: 0,
-                max: (total - 1).toDouble(),
-                divisions: total - 1,
-                values: RangeValues(_startIdx.toDouble(), _endIdx.toDouble()),
-                labels: RangeLabels('${_startIdx + 1}', '${_endIdx + 1}'),
-                onChanged: (v) {
-                  setState(() {
-                    _startIdx = v.start.round();
-                    _endIdx = v.end.round();
-                  });
-                },
-              ),
-            )
-          else
-            const SizedBox(height: 8),
-          if (total > 1)
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: (selectedCount == total)
-                    ? null
-                    : () => setState(() {
-                          _startIdx = 0;
-                          _endIdx = total - 1;
-                        }),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-                  minimumSize: const Size(0, 32),
-                ),
-                child: Text(
-                  'Select all',
-                  style: TextStyle(
-                    color: selectedCount == total ? Colors.white24 : AppTheme.duoBlue,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 12,
-                  ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<int>(
+                  isExpanded: true,
+                  value: _moduleIdx,
+                  dropdownColor: AppTheme.surface,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                  items: [
+                    for (int i = 0; i < _modules.length; i++)
+                      DropdownMenuItem(
+                        value: i,
+                        child: Text(_modules[i].title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      ),
+                  ],
+                  onChanged: (v) {
+                    if (v == null) return;
+                    setState(() {
+                      _moduleIdx = v;
+                      _resetSectionRange();
+                    });
+                  },
                 ),
               ),
             ),
+          ],
+
+          // Section range — within the selected module.
+          _buildRangeBlock(
+            label: 'SECTIONS',
+            titles: [for (final s in sections) s.title],
+            start: _secStart,
+            end: _secEnd,
+            onChanged: (s, e) => setState(() {
+              _secStart = s;
+              _secEnd = e;
+              _resetUnitRange();
+            }),
+            onSelectAll: () => setState(() => _resetSectionRange()),
+          ),
+
+          // Unit range — within the selected section range.
+          _buildRangeBlock(
+            label: 'UNITS',
+            titles: [for (final u in unitsInScope) u.unitTitle],
+            start: _startIdx,
+            end: _endIdx,
+            onChanged: (s, e) => setState(() {
+              _startIdx = s;
+              _endIdx = e;
+            }),
+            onSelectAll: () => setState(() => _resetUnitRange()),
+          ),
         ],
       ),
+    );
+  }
+
+  /// A labelled inclusive-range block (title summary + range slider + a
+  /// "Select all" reset). Shared by the section and unit ranges.
+  Widget _buildRangeBlock({
+    required String label,
+    required List<String> titles,
+    required int start,
+    required int end,
+    required void Function(int start, int end) onChanged,
+    required VoidCallback onSelectAll,
+  }) {
+    final total = titles.length;
+    if (total == 0) return const SizedBox.shrink();
+    final s = start.clamp(0, total - 1);
+    final e = end.clamp(s, total - 1);
+    final selectedCount = e - s + 1;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Text(label, style: const TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1)),
+            const Spacer(),
+            Text(
+              selectedCount == total ? 'All $total' : '$selectedCount of $total',
+              style: const TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.w900, fontSize: 11),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          selectedCount == 1 ? titles[s] : '${titles[s]}  →  ${titles[e]}',
+          style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600, height: 1.3),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        if (total > 1)
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor: AppTheme.duoBlue,
+              inactiveTrackColor: Colors.white12,
+              thumbColor: AppTheme.duoBlue,
+              overlayColor: AppTheme.duoBlue.withOpacity(0.2),
+              rangeThumbShape: const RoundRangeSliderThumbShape(enabledThumbRadius: 9),
+              trackHeight: 5,
+            ),
+            child: RangeSlider(
+              min: 0,
+              max: (total - 1).toDouble(),
+              divisions: total - 1,
+              values: RangeValues(s.toDouble(), e.toDouble()),
+              labels: RangeLabels('${s + 1}', '${e + 1}'),
+              onChanged: (v) => onChanged(v.start.round(), v.end.round()),
+            ),
+          ),
+        if (total > 1 && selectedCount != total)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: onSelectAll,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                minimumSize: const Size(0, 28),
+              ),
+              child: const Text(
+                'Select all',
+                style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.w800, fontSize: 12),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
