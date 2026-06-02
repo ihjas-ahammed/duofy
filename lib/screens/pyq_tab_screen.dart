@@ -14,11 +14,15 @@ import '../widgets/math_markdown.dart';
 class PyqTabScreen extends StatefulWidget {
   final Book book;
   final VoidCallback onBookUpdated;
+  /// The module currently open on the Path tab. Extraction and the displayed
+  /// question list are scoped to this module.
+  final ValueNotifier<int>? activeModule;
 
   const PyqTabScreen({
     super.key,
     required this.book,
     required this.onBookUpdated,
+    this.activeModule,
   });
 
   @override
@@ -30,9 +34,20 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
   String? _selectedSectionId;
   final TextEditingController _customPromptCtrl = TextEditingController();
 
+  // Fallback when no shared notifier is supplied (e.g. previews/tests).
+  ValueNotifier<int>? _ownModuleNotifier;
+  ValueNotifier<int> get _moduleNotifier =>
+      widget.activeModule ?? (_ownModuleNotifier ??= ValueNotifier<int>(0));
+
+  int get _moduleIdx {
+    if (widget.book.modules.isEmpty) return 0;
+    return _moduleNotifier.value.clamp(0, widget.book.modules.length - 1);
+  }
+
   @override
   void dispose() {
     _customPromptCtrl.dispose();
+    _ownModuleNotifier?.dispose();
     super.dispose();
   }
 
@@ -61,9 +76,12 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
       return;
     }
 
-    // Check if any sections have lessons generated
-    final hasLessons = widget.book.modules
-        .expand((m) => m.sections)
+    if (widget.book.modules.isEmpty) return;
+    final moduleIdx = _moduleIdx;
+    final currentModule = widget.book.modules[moduleIdx];
+
+    // Only extract for sections in the CURRENT module that have lessons.
+    final hasLessons = currentModule.sections
         .any((s) => s.units.any((u) => u.isGenerated && u.lessons.isNotEmpty));
 
     if (!hasLessons) {
@@ -71,11 +89,11 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: AppTheme.surface,
-          title: const Text('No Lessons Generated', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          content: const Text(
+          title: const Text('No Lessons in This Module', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          content: Text(
             'We can only extract questions for sections that have generated lessons. '
-            'Please generate lessons for at least one section first.',
-            style: TextStyle(color: Colors.white70),
+            'Generate lessons in "${currentModule.title}" first, or switch to a module that has them on the Path tab.',
+            style: const TextStyle(color: Colors.white70),
           ),
           actions: [
             TextButton(
@@ -91,10 +109,11 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
     final customInstructions = _customPromptCtrl.text.trim();
 
     GenerationManager.instance.startPyqAnalysis(
-      widget.book.id, 
-      _selectedFiles, 
+      widget.book.id,
+      _selectedFiles,
       widget.book,
       customInstructions: customInstructions.isNotEmpty ? customInstructions : null,
+      moduleIndex: moduleIdx,
     );
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -247,16 +266,39 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
     }
   }
 
+  /// Tag distinguishing AI-generated questions from those extracted out of an
+  /// uploaded paper. Legacy questions (no source) are treated as extracted,
+  /// since historically the PYQ pool was extraction-only.
+  Widget _buildSourceTag(String? source) {
+    final isGenerated = source == 'generated';
+    final color = isGenerated ? AppTheme.duoOrange : AppTheme.duoGreen;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        isGenerated ? 'GENERATED' : 'EXTRACTED',
+        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w900),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: GenerationManager.instance,
+      animation: Listenable.merge([GenerationManager.instance, _moduleNotifier]),
       builder: (context, _) {
         final pyqTask = GenerationManager.instance.activePyqTasks[widget.book.id];
-        
+
+        final currentModule =
+            widget.book.modules.isEmpty ? null : widget.book.modules[_moduleIdx];
+
+        // Only show questions extracted for the currently open module.
         final List<Section> sectionsWithPyqs = [];
-        for (final m in widget.book.modules) {
-          for (final s in m.sections) {
+        if (currentModule != null) {
+          for (final s in currentModule.sections) {
             if (s.pyqQuestions.isNotEmpty) {
               sectionsWithPyqs.add(s);
             }
@@ -315,8 +357,32 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white),
                         ),
                         const SizedBox(height: 8),
+                        if (currentModule != null)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: AppTheme.duoBlue.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppTheme.duoBlue.withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(LucideIcons.package, size: 14, color: AppTheme.duoBlue),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Extracting into: ${currentModule.title}',
+                                    style: const TextStyle(color: AppTheme.duoBlue, fontSize: 12, fontWeight: FontWeight.w900),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         const Text(
-                          'Select PDF papers or image snapshots. The AI will extract the questions, split them across sections with generated lessons, and solve them interactively. Questions can then be solved in the Practice Arena.',
+                          'Select PDF papers or image snapshots. The AI extracts questions for the current module (chosen on the Path tab), splits them across its sections with generated lessons, and solves them interactively. Questions can then be solved in the Practice Arena.',
                           style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
                         ),
                         const SizedBox(height: 24),
@@ -473,6 +539,8 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                                                     ),
                                                   ),
                                                 ),
+                                                const SizedBox(width: 6),
+                                                _buildSourceTag(slide.source),
                                                 const Spacer(),
                                                 IconButton(
                                                   icon: const Icon(LucideIcons.edit3, size: 16, color: Colors.white60),

@@ -782,6 +782,11 @@ class Slide {
   final String? canvasPrompt;
   final String? canvasSvg;
 
+  /// Provenance of this question, used for PYQ/practice questions:
+  /// `'extracted'` (lifted from an uploaded paper) vs `'generated'`
+  /// (produced by the AI). Null on lessons slides and legacy data.
+  final String? source;
+
   Slide({
     required this.id,
     required this.type,
@@ -797,6 +802,7 @@ class Slide {
     this.numericTolerance,
     this.canvasPrompt,
     this.canvasSvg,
+    this.source,
   });
 
   factory Slide.fromJson(Map<String, dynamic> json) {
@@ -855,6 +861,7 @@ class Slide {
       numericTolerance: _dblOpt(json['numericTolerance']) ?? 0.01,
       canvasPrompt: _strOpt(json['canvasPrompt']),
       canvasSvg: _strOpt(json['canvasSvg']),
+      source: _strOpt(json['source']),
     );
   }
 
@@ -873,6 +880,7 @@ class Slide {
     if (numericTolerance != null) 'numericTolerance': numericTolerance,
     if (canvasPrompt != null) 'canvasPrompt': canvasPrompt,
     if (canvasSvg != null) 'canvasSvg': canvasSvg,
+    if (source != null) 'source': source,
   };
 
   Slide copyWith({
@@ -890,6 +898,7 @@ class Slide {
     double? numericTolerance,
     String? canvasPrompt,
     String? canvasSvg,
+    String? source,
   }) {
     return Slide(
       id: id ?? this.id,
@@ -906,6 +915,7 @@ class Slide {
       numericTolerance: numericTolerance ?? this.numericTolerance,
       canvasPrompt: canvasPrompt ?? this.canvasPrompt,
       canvasSvg: canvasSvg ?? this.canvasSvg,
+      source: source ?? this.source,
     );
   }
 }

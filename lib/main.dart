@@ -165,6 +165,16 @@ void main() async {
     final prefs = await SharedPreferences.getInstance();
     GlobalState.xpNotifier.value = prefs.getInt('user_xp') ?? 0;
 
+    // Restore the guest-mode choice so desktop users who continued as a guest
+    // aren't bounced to the login screen (and away from their guest library)
+    // on every launch. Persist any later change to it.
+    GlobalState.isGuestNotifier.value = prefs.getBool('is_guest_mode') ?? false;
+    GlobalState.isGuestNotifier.addListener(() {
+      SharedPreferences.getInstance().then(
+        (p) => p.setBool('is_guest_mode', GlobalState.isGuestNotifier.value),
+      );
+    });
+
     // One-time cleanup: older builds auto-saved `gemini-1.5-flash` into the
     // generic models list / legacy scalar key whenever settings opened with
     // nothing configured. That model is no longer routable on the Gemini

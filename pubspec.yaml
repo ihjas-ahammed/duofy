@@ -107,6 +107,13 @@ flutter_icons:
   android: true
   ios: true
   adaptive_icon_background: "#ffffff"
+  # Use the app's own brand icon on the Windows desktop build too (instead of
+  # the stock Flutter logo). Regenerate with:
+  #   dart run flutter_launcher_icons
+  windows:
+    generate: true
+    image_path: "assets/images/icon.png"
+    icon_size: 256
   # Optional: can set platform-specific image paths
   # image_path_android: "assets/images/android_icon.png"
   # image_path_ios: "assets/images/ios_icon.png"

@@ -29,6 +29,10 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   late StreamSubscription<Book> _bookUpdateSub;
   bool _isSyncPromptOpen = false;
 
+  /// The module currently open on the Path tab. Shared with the PYQ tab so the
+  /// QP extractor operates on (and shows) only the current module.
+  final ValueNotifier<int> _activeModule = ValueNotifier<int>(0);
+
   @override
   void initState() {
     super.initState();
@@ -54,6 +58,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   @override
   void dispose() {
     _bookUpdateSub.cancel();
+    _activeModule.dispose();
     super.dispose();
   }
 
@@ -247,10 +252,15 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     // nav for now — it's being reworked in a later development stage. The
     // ExamScreen + QP generation code is kept intact for when it returns.
     final List<Widget> pages = [
-      BookDashboardScreen(book: _currentBook, onBookUpdated: _onBookUpdated),
+      BookDashboardScreen(
+        book: _currentBook,
+        onBookUpdated: _onBookUpdated,
+        activeModule: _activeModule,
+      ),
       PracticeScreen(book: _currentBook),
       PyqTabScreen(
         book: _currentBook,
+        activeModule: _activeModule,
         onBookUpdated: () async {
           final freshest = await DatabaseService().getBookFromCache(_currentBook.id);
           if (freshest != null && mounted) {

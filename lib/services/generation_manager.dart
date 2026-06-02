@@ -446,9 +446,10 @@ class GenerationManager extends ChangeNotifier {
             files = filePaths.map((p) => File(p)).toList();
           }
           final instructions = task.params['instructions'] as String?;
+          final moduleIndex = task.params['moduleIndex'] as int?;
           final book = await _dbService.getBookFromCache(task.bookId);
           if (book == null) throw Exception("Course not found");
-          await _runPyqGenerationForTask(task, files, book, instructions, apiKey);
+          await _runPyqGenerationForTask(task, files, book, instructions, apiKey, moduleIndex: moduleIndex);
           break;
         case 'lesson_regen':
           final modIdx = task.params['modIdx'] as int;
@@ -996,15 +997,25 @@ class GenerationManager extends ChangeNotifier {
     List<dynamic> files,
     Book book,
     String? customInstructions,
-    String apiKey,
-  ) async {
+    String apiKey, {
+    int? moduleIndex,
+  }) async {
     final notifId = book.id.hashCode + 2;
     await NotificationService.showProgress(notifId, "Analyzing PYQ", "Extracting and splitting questions...", indeterminate: true);
-    
+
     try {
       Book freshestBook = (await _dbService.getBookFromCache(book.id)) ?? book;
+
+      // Scope extraction to a single module when one is given (the module the
+      // user has open on the Path tab). Questions stay within that module — the
+      // cross-section spread below is also limited to its sections.
+      final List<Module> scopedModules =
+          (moduleIndex != null && moduleIndex >= 0 && moduleIndex < freshestBook.modules.length)
+              ? [freshestBook.modules[moduleIndex]]
+              : freshestBook.modules;
+
       List<Section> activeSections = [];
-      for (final m in freshestBook.modules) {
+      for (final m in scopedModules) {
         for (final s in m.sections) {
           final hasLessons = s.units.any((u) => u.isGenerated && u.lessons.isNotEmpty);
           if (hasLessons) {
@@ -1013,15 +1024,17 @@ class GenerationManager extends ChangeNotifier {
         }
       }
       if (activeSections.isEmpty) {
-        throw Exception("No sections have generated lessons yet. Please generate lessons first.");
+        throw Exception("This module has no sections with generated lessons yet. Please generate lessons first.");
       }
-      
+
       final Map<String, List<Slide>> newSlidesForSections = {};
       for (final s in activeSections) {
         newSlidesForSections[s.id] = [];
       }
-      
-      final List<Map<String, String>> otherSectionsMeta = freshestBook.modules
+
+      // Only offer the in-scope sections as cross-assignment targets so a
+      // question never leaks into another module.
+      final List<Map<String, String>> otherSectionsMeta = scopedModules
           .expand((m) => m.sections)
           .map((s) => {'id': s.id, 'title': s.title})
           .toList();
@@ -1741,6 +1754,7 @@ class GenerationManager extends ChangeNotifier {
     Book currentBook, {
     String? customInstructions,
     bool isScheduled = false,
+    int? moduleIndex,
   }) async {
     if (queue.any((t) => t.bookId == bookId && t.type == 'pyq' && (t.status == 'queued' || t.status == 'running'))) {
       return;
@@ -1765,6 +1779,7 @@ class GenerationManager extends ChangeNotifier {
       params: {
         'filePaths': filePaths,
         'instructions': customInstructions,
+        if (moduleIndex != null) 'moduleIndex': moduleIndex,
       },
     );
   }

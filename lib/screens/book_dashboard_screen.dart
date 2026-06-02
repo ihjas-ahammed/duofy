@@ -18,11 +18,16 @@ import '../services/global_state.dart';
 class BookDashboardScreen extends StatefulWidget {
   final Book book;
   final Function(Book) onBookUpdated;
+  /// Shared with [MainLayoutScreen]/the PYQ tab so the QP extractor follows the
+  /// module the user is viewing here. Kept in sync whenever the active module
+  /// changes.
+  final ValueNotifier<int>? activeModule;
 
   const BookDashboardScreen({
     super.key,
     required this.book,
     required this.onBookUpdated,
+    this.activeModule,
   });
 
   @override
@@ -42,6 +47,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     _loadProgress();
     _checkMissingFiles();
     _loadLastResumed();
+    // Publish the initial module so the PYQ tab is scoped correctly even before
+    // the user switches modules (_loadLastResumed updates it asynchronously).
+    widget.activeModule?.value = _activeModuleIdx;
     // Refresh completion state whenever progress changes anywhere (a lesson/
     // unit/section/module marked finished or cleared, or a cloud sync merge),
     // so the lesson path always reflects the latest status.
@@ -68,6 +76,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                 _activeModuleIdx = modIdx;
                 _activeSectionIdx = secIdx;
               });
+              widget.activeModule?.value = _activeModuleIdx;
             }
           }
         }
@@ -304,6 +313,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
           _activeModuleIdx = idx;
           _activeSectionIdx = 0;
         });
+        widget.activeModule?.value = _activeModuleIdx;
       },
       onModuleLongPress: (idx) {
         _showModuleLongPressMenu(idx);
@@ -328,6 +338,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
               _activeModuleIdx = modIdx;
               _activeSectionIdx = secIdx;
             });
+            widget.activeModule?.value = _activeModuleIdx;
           },
           onSectionLongPress: (modIdx, secIdx) {
             _showSectionLongPressMenu(modIdx, secIdx);
