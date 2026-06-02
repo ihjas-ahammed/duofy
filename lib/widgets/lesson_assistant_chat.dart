@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:path_provider/path_provider.dart';
@@ -9,6 +10,7 @@ import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../services/ai_service.dart';
@@ -73,6 +75,8 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
   // Voice recording pulsing animation
   late AnimationController _pulsingController;
 
+  String _customSystemPrompt = "";
+
   @override
   void initState() {
     super.initState();
@@ -82,6 +86,16 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
     );
     _initTts();
     _addSystemMessage("Connecting to Gemini Live...");
+    _loadCustomPromptAndConnect();
+  }
+
+  Future<void> _loadCustomPromptAndConnect() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _customSystemPrompt = prefs.getString('custom_live_chat_prompt') ?? '';
+    } catch (e) {
+      print("Error loading custom prompt: $e");
+    }
     _connectWebSocket();
   }
 
@@ -90,7 +104,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
     _webSocket?.close();
     _recorder.dispose();
     _audioPlayer.dispose();
-    if (!Platform.isLinux) {
+    if (kIsWeb || !Platform.isLinux) {
       _flutterTts.stop();
     }
     _textController.dispose();
@@ -100,8 +114,8 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
   }
 
   Future<void> _initTts() async {
-    if (Platform.isLinux) {
-      print("TTS is not supported on Linux by flutter_tts.");
+    if (kIsWeb || Platform.isLinux) {
+      print("TTS is not supported on Linux/Web by flutter_tts.");
       return;
     }
     try {
@@ -148,23 +162,28 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
       final setupMsg = {
         "setup": {
           "model": "models/$model",
-          "generationConfig": {
-            "responseModalities": _voiceOutputEnabled ? ["TEXT", "AUDIO"] : ["TEXT"],
-            "speechConfig": {
-              "voiceConfig": {
-                "prebuiltVoiceConfig": {
-                  "voiceName": "Puck" 
+          "generation_config": {
+            "response_modalities": _voiceOutputEnabled ? ["AUDIO"] : ["TEXT"],
+            if (_voiceOutputEnabled) ...{
+              "speech_config": {
+                "voice_config": {
+                  "prebuilt_voice_config": {
+                    "voice_name": "Puck" 
+                  }
                 }
               }
             }
           },
-          "systemInstruction": {
+          if (_voiceOutputEnabled) "output_audio_transcription": {},
+          "system_instruction": {
             "parts": [
               {
                 "text": "You are a helpful learning assistant for the course '${widget.book.title}'. "
                     "The student is currently viewing slide: '${widget.currentSlide.title}' with contents:\n${widget.currentSlide.content}\n\n"
                     "Below are the generated notes for the current section:\n\n${widget.sectionNotes}\n\n"
-                    "Help the student understand the concepts. Answer their questions clearly, concisely, and format math/formulas using standard LaTeX (\$inline\$ and \$\$display\$\$)."
+                    "Help the student understand the concepts. Answer their questions clearly, concisely, and format math/formulas using standard LaTeX (\$inline\$ and \$\$display\$\$). "
+                    "CRITICAL: Keep your response short, direct, and conversational (at most 1-2 sentences by default). Do not write long explanations unless explicitly requested."
+                    "${_customSystemPrompt.trim().isNotEmpty ? '\n\nADDITIONAL INSTRUCTIONS:\n$_customSystemPrompt' : ''}"
               }
             ]
           }
@@ -198,16 +217,79 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
     }
   }
 
-  void _handleWebSocketMessage(dynamic dataStr) {
+  void _handleWebSocketMessage(dynamic data) {
     try {
-      final json = jsonDecode(dataStr);
-      if (json['serverContent'] != null) {
-        final content = json['serverContent'];
-        final modelTurn = content['modelTurn'];
+      print("WebSocket received data type: ${data.runtimeType}");
+      String jsonStr;
+      if (data is String) {
+        jsonStr = data;
+      } else if (data is List<int>) {
+        jsonStr = utf8.decode(data);
+      } else {
+        throw Exception("Unknown websocket data type: ${data.runtimeType}");
+      }
+      print("WebSocket received JSON: $jsonStr");
+      final json = jsonDecode(jsonStr);
+
+      // Check for setup complete
+      final setupComplete = json['setupComplete'] ?? json['setup_complete'];
+      if (setupComplete != null) {
+        print("WebSocket setup complete received: $setupComplete");
+      }
+
+      // 1. Extract transcript text if output_audio_transcription is at the top level
+      final transcriptObj = json['outputTranscription'] ?? 
+                          json['output_transcription'] ?? 
+                          json['outputAudioTranscription'] ?? 
+                          json['output_audio_transcription'];
+      if (transcriptObj != null && transcriptObj['text'] != null) {
+        final text = transcriptObj['text'].toString();
+        setState(() {
+          _currentLiveResponseText += text;
+          if (_messages.isNotEmpty && _messages.last.sender == MessageSender.assistant && _messages.last.isStreaming) {
+            _messages.last.text = _currentLiveResponseText;
+          } else {
+            _messages.add(ChatMessage(
+              sender: MessageSender.assistant,
+              text: _currentLiveResponseText,
+              isStreaming: true,
+            ));
+          }
+        });
+        _scrollToBottom();
+      }
+
+      final serverContent = json['serverContent'] ?? json['server_content'];
+      if (serverContent != null) {
+        final content = serverContent;
+
+        // 2. Extract transcript text if nested inside serverContent
+        final nestedTranscriptObj = content['outputTranscription'] ?? 
+                            content['output_transcription'] ?? 
+                            content['outputAudioTranscription'] ?? 
+                            content['output_audio_transcription'];
+        if (nestedTranscriptObj != null && nestedTranscriptObj['text'] != null) {
+          final text = nestedTranscriptObj['text'].toString();
+          setState(() {
+            _currentLiveResponseText += text;
+            if (_messages.isNotEmpty && _messages.last.sender == MessageSender.assistant && _messages.last.isStreaming) {
+              _messages.last.text = _currentLiveResponseText;
+            } else {
+              _messages.add(ChatMessage(
+                sender: MessageSender.assistant,
+                text: _currentLiveResponseText,
+                isStreaming: true,
+              ));
+            }
+          });
+          _scrollToBottom();
+        }
+
+        final modelTurn = content['modelTurn'] ?? content['model_turn'];
         if (modelTurn != null && modelTurn['parts'] != null) {
           for (var part in modelTurn['parts']) {
             if (part['text'] != null) {
-              final text = part['text'] as String;
+              final text = part['text'].toString();
               setState(() {
                 _currentLiveResponseText += text;
                 if (_messages.isNotEmpty && _messages.last.sender == MessageSender.assistant && _messages.last.isStreaming) {
@@ -222,17 +304,18 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
               });
               _scrollToBottom();
             }
-            if (part['inlineData'] != null) {
-              final inlineData = part['inlineData'];
+            final inlineData = part['inlineData'] ?? part['inline_data'];
+            if (inlineData != null) {
               if (inlineData['data'] != null) {
-                final audioBase64 = inlineData['data'] as String;
+                final audioBase64 = inlineData['data'].toString();
                 final bytes = base64Decode(audioBase64);
                 _currentLiveResponseAudio.addAll(bytes);
               }
             }
           }
         }
-        if (content['turnComplete'] == true) {
+        final turnComplete = content['turnComplete'] ?? content['turn_complete'];
+        if (turnComplete == true) {
           setState(() {
             if (_messages.isNotEmpty && _messages.last.isStreaming) {
               _messages.last.isStreaming = false;
@@ -246,8 +329,9 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
           _currentLiveResponseAudio = [];
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print("WebSocket parse error: $e");
+      print("Stack trace:\n$stackTrace");
     }
   }
 
@@ -257,7 +341,13 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
   }
 
   void _handleWebSocketClosed() {
-    _addSystemMessage("Live connection closed.");
+    final code = _webSocket?.closeCode;
+    final reason = _webSocket?.closeReason;
+    String details = "";
+    if (code != null) details += " (Code: $code";
+    if (reason != null && reason.isNotEmpty) details += ", Reason: $reason";
+    if (details.isNotEmpty) details += ")";
+    _addSystemMessage("Live connection closed$details.");
     _disconnectWebSocket();
   }
 
@@ -339,6 +429,10 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
   }
 
   Future<void> _playRawPcm(List<int> pcmBytes) async {
+    if (kIsWeb) {
+      print("Raw PCM audio playback is not supported on web.");
+      return;
+    }
     try {
       final wavBytes = _addWavHeader(pcmBytes, 24000); // 24kHz output
       final dir = await getTemporaryDirectory();
@@ -351,6 +445,10 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
   }
 
   Future<void> _startRecording() async {
+    if (kIsWeb) {
+      _addSystemMessage("Voice input is not supported on web.");
+      return;
+    }
     try {
       if (await _recorder.hasPermission()) {
         final dir = await getTemporaryDirectory();
@@ -376,6 +474,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
   }
 
   Future<void> _stopRecording() async {
+    if (kIsWeb) return;
     try {
       final path = await _recorder.stop();
       setState(() {
@@ -406,21 +505,21 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
       // Send base64 audio over websocket turn
       final base64Audio = base64Encode(voiceBytes);
       final msg = {
-        "clientContent": {
+        "client_content": {
           "turns": [
             {
               "role": "user",
               "parts": [
                 {
-                  "inlineData": {
-                    "mimeType": "audio/wav",
+                  "inline_data": {
+                    "mime_type": "audio/wav",
                     "data": base64Audio
                   }
                 }
               ]
             }
           ],
-          "turnComplete": true
+          "turn_complete": true
         }
       };
       _webSocket!.add(jsonEncode(msg));
@@ -443,7 +542,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
 
     if (_isLiveMode && _webSocket != null) {
       final msg = {
-        "clientContent": {
+        "client_content": {
           "turns": [
             {
               "role": "user",
@@ -454,7 +553,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
               ]
             }
           ],
-          "turnComplete": true
+          "turn_complete": true
         }
       };
       _webSocket!.add(jsonEncode(msg));
@@ -488,7 +587,9 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
         "You are a helpful learning assistant for the course '${widget.book.title}'. "
         "The student is currently viewing slide: '${widget.currentSlide.title}' with contents:\n${widget.currentSlide.content}\n\n"
         "Below are the generated notes for the current section:\n\n${widget.sectionNotes}\n\n"
-        "Use this context to answer the student's questions. Always format math/formulas using standard LaTeX (\$inline\$ and \$\$display\$\$)."
+        "Use this context to answer the student's questions. Always format math/formulas using standard LaTeX (\$inline\$ and \$\$display\$\$). "
+        "CRITICAL: Keep your response short, direct, and conversational (at most 1-2 sentences by default). Do not write long explanations unless explicitly requested."
+        "${_customSystemPrompt.trim().isNotEmpty ? '\n\nADDITIONAL INSTRUCTIONS:\n$_customSystemPrompt' : ''}"
       ));
 
       // Append recent chat history (last 8 messages)
@@ -534,7 +635,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
       });
       _scrollToBottom();
 
-      if (_voiceOutputEnabled && !Platform.isLinux) {
+      if (_voiceOutputEnabled && (kIsWeb || !Platform.isLinux)) {
         await _flutterTts.speak(reply);
       }
     } catch (e) {
@@ -675,7 +776,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                             _connectWebSocket();
                           }
                           if (!_voiceOutputEnabled) {
-                            if (!Platform.isLinux) {
+                            if (kIsWeb || !Platform.isLinux) {
                               _flutterTts.stop();
                             }
                             _audioPlayer.stop();
@@ -765,6 +866,10 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                                     const SizedBox(height: 8),
                                     GestureDetector(
                                       onTap: () async {
+                                        if (kIsWeb) {
+                                          _addSystemMessage("Voice message playback not supported on web.");
+                                          return;
+                                        }
                                         final dir = await getTemporaryDirectory();
                                         final file = File('${dir.path}/temp_play.wav');
                                         await file.writeAsBytes(msg.audioBytes!);

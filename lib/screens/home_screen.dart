@@ -19,6 +19,8 @@ import 'main_layout_screen.dart';
 import 'settings_screen.dart';
 import 'generate_book_screen.dart';
 import 'pdf_split_preview_screen.dart';
+import '../services/global_state.dart';
+import '../main.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -49,6 +51,73 @@ class _HomeScreenState extends State<HomeScreen> {
       _loadAllData(force: false);
     });
     GenerationManager.instance.onBookGenerated = () => _loadAllData(force: false);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (startupError != null) {
+        showGlobalErrorAlert(startupError!, null);
+        startupError = null;
+      }
+      _checkInterruptedTasks();
+    });
+  }
+
+  void _checkInterruptedTasks() {
+    final manager = GenerationManager.instance;
+    if (manager.hasInterruptedTasks) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppTheme.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(LucideIcons.alertTriangle, color: Colors.orangeAccent, size: 28),
+              SizedBox(width: 10),
+              Text("Resume Generation?", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: const Text(
+            "The app was closed or killed while generating lessons. Would you like to resume your pending lesson generation tasks now?",
+            style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                manager.clearInterruptedTasksFlag();
+                manager.cancelAllTasks();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Pending generation tasks cancelled.")),
+                );
+              },
+              child: const Text("Cancel Tasks", style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                manager.clearInterruptedTasksFlag();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Tasks kept paused in queue. You can resume them from settings.")),
+                );
+              },
+              child: const Text("Keep Paused", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                manager.clearInterruptedTasksFlag();
+                await manager.setPaused(false);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Resuming lesson generation...")),
+                );
+              },
+              child: const Text("Resume", style: TextStyle(color: AppTheme.duoGreen, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   @override
@@ -193,6 +262,26 @@ class _HomeScreenState extends State<HomeScreen> {
                         title: Text('Discover', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 28, color: Colors.white)),
                       ),
                       actions:[
+                        if (kIsWeb && FbAuth.instance.currentUser == null)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: TextButton.icon(
+                              icon: const Icon(LucideIcons.logIn, size: 20, color: Colors.white),
+                              label: const Text(
+                                'LOG IN',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 13,
+                                  letterSpacing: 1.0,
+                                ),
+                              ),
+                              onPressed: () {
+                                GlobalState.isGuestNotifier.value = false;
+                                GlobalState.forceShowAuthScreen.value = true;
+                              },
+                            ),
+                          ),
                         if (!kIsWeb)
                           IconButton(
                             icon: const Icon(LucideIcons.cpu, size: 28),
@@ -284,144 +373,90 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
 
-                    if (kIsWeb) ...[
-                      SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-                        sliver: SliverToBoxAdapter(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text(
-                                'Published Courses',
-                                style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.white),
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+                      sliver: SliverToBoxAdapter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Published Courses',
+                              style: TextStyle(
+                                fontSize: kIsWeb ? 26 : 22,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
                               ),
-                              SizedBox(height: 6),
-                              Text(
+                            ),
+                            if (kIsWeb) ...[
+                              const SizedBox(height: 6),
+                              const Text(
                                 'Explore and study courses published by the community.',
                                 style: TextStyle(color: Colors.white54, fontSize: 13),
                               ),
                             ],
-                          ),
-                        ),
-                      ),
-                      SliverPadding(
-                        padding: const EdgeInsets.all(24),
-                        sliver: globalBooks.isEmpty
-                            ? const SliverToBoxAdapter(
-                                child: Center(
-                                  child: Text('No published courses yet.', style: TextStyle(color: Colors.white54)),
-                                ),
-                              )
-                            : SliverGrid(
-                                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                                  maxCrossAxisExtent: 360,
-                                  mainAxisExtent: 120,
-                                  crossAxisSpacing: 16,
-                                  mainAxisSpacing: 16,
-                                ),
-                                delegate: SliverChildBuilderDelegate(
-                                  (context, index) {
-                                    final gBook = globalBooks[index];
-                                    final user = FbAuth.instance.currentUser;
-                                    final bool isOwner = user != null && gBook.authorId == user.uid;
-                                    final bool isSuperAdmin = user?.email == 'ihjas.one@gmail.com';
-                                    final bool canDelete = isOwner || isSuperAdmin;
-
-                                    return CommunityBookCard(
-                                      book: gBook,
-                                      buttonText: 'OPEN',
-                                      onGetPressed: () {
-                                        Navigator.pushNamed(context, '/${gBook.id}');
-                                      },
-                                      onDeletePressed: canDelete ? () async {
-                                        final confirm = await showDialog<bool>(
-                                          context: context,
-                                          builder: (ctx) => AlertDialog(
-                                            backgroundColor: AppTheme.surface,
-                                            title: const Text('Unpublish Course?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                            content: const Text('Are you sure you want to unpublish this course from Published Courses? This won\'t delete your local copy if you have one.', style: TextStyle(color: Colors.white70)),
-                                            actions: [
-                                              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
-                                              TextButton(
-                                                onPressed: () => Navigator.pop(ctx, true),
-                                                child: const Text('Unpublish', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                        if (confirm == true) {
-                                          await _db.deleteGlobalBook(gBook.id);
-                                          _loadAllData(force: true);
-                                        }
-                                      } : null,
-                                    );
-                                  },
-                                  childCount: globalBooks.length,
-                                ),
-                              ),
-                      ),
-                    ] else ...[
-                      SliverToBoxAdapter(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Padding(
-                              padding: EdgeInsets.fromLTRB(24, 32, 24, 16),
-                              child: Text('Published Courses', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
-                            ),
-                            if (globalBooks.isEmpty)
-                               const Padding(
-                                 padding: EdgeInsets.symmetric(horizontal: 24.0),
-                                 child: Text('No published courses yet.', style: TextStyle(color: Colors.white54)),
-                               )
-                            else
-                               SizedBox(
-                                 height: 120,
-                                 child: ListView.builder(
-                                   scrollDirection: Axis.horizontal,
-                                   physics: const BouncingScrollPhysics(),
-                                   padding: const EdgeInsets.only(left: 8, right: 24),
-                                   itemCount: globalBooks.length,
-                                   itemBuilder: (context, index) {
-                                     final gBook = globalBooks[index];
-                                     final user = FbAuth.instance.currentUser;
-                                     final bool isOwner = user != null && gBook.authorId == user.uid;
-                                     final bool isSuperAdmin = user?.email == 'ihjas.one@gmail.com';
-                                     final bool canDelete = isOwner || isSuperAdmin;
-
-                                     return CommunityBookCard(
-                                       book: gBook,
-                                       buttonText: 'GET',
-                                       onGetPressed: () => _downloadGlobalBook(gBook),
-                                       onDeletePressed: canDelete ? () async {
-                                         final confirm = await showDialog<bool>(
-                                           context: context,
-                                           builder: (ctx) => AlertDialog(
-                                             backgroundColor: AppTheme.surface,
-                                             title: const Text('Unpublish Course?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                             content: const Text('Are you sure you want to unpublish this course from Published Courses? This won\'t delete your local copy if you have one.', style: TextStyle(color: Colors.white70)),
-                                             actions: [
-                                               TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
-                                               TextButton(
-                                                 onPressed: () => Navigator.pop(ctx, true),
-                                                 child: const Text('Unpublish', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
-                                               ),
-                                             ],
-                                           ),
-                                         );
-                                         if (confirm == true) {
-                                           await _db.deleteGlobalBook(gBook.id);
-                                           _loadAllData(force: true);
-                                         }
-                                       } : null,
-                                     );
-                                   },
-                                 ),
-                               ),
                           ],
                         ),
                       ),
-                    ],
+                    ),
+                    if (globalBooks.isEmpty)
+                      const SliverPadding(
+                        padding: EdgeInsets.symmetric(horizontal: 24.0),
+                        sliver: SliverToBoxAdapter(
+                          child: Text(
+                            'No published courses yet.',
+                            style: TextStyle(color: Colors.white54),
+                          ),
+                        ),
+                      )
+                    else
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final gBook = globalBooks[index];
+                              final user = FbAuth.instance.currentUser;
+                              final bool isOwner = user != null && gBook.authorId == user.uid;
+                              final bool isSuperAdmin = user?.email == 'ihjas.one@gmail.com';
+                              final bool canDelete = isOwner || isSuperAdmin;
+
+                              return CommunityBookCard(
+                                book: gBook,
+                                buttonText: kIsWeb ? 'OPEN' : 'GET',
+                                onGetPressed: () {
+                                  if (kIsWeb) {
+                                    Navigator.pushNamed(context, '/${gBook.id}');
+                                  } else {
+                                    _downloadGlobalBook(gBook);
+                                  }
+                                },
+                                onDeletePressed: canDelete ? () async {
+                                  final confirm = await showDialog<bool>(
+                                    context: context,
+                                    builder: (ctx) => AlertDialog(
+                                      backgroundColor: AppTheme.surface,
+                                      title: const Text('Unpublish Course?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                      content: const Text('Are you sure you want to unpublish this course from Published Courses? This won\'t delete your local copy if you have one.', style: TextStyle(color: Colors.white70)),
+                                      actions: [
+                                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(ctx, true),
+                                          child: const Text('Unpublish', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  if (confirm == true) {
+                                    await _db.deleteGlobalBook(gBook.id);
+                                    _loadAllData(force: true);
+                                  }
+                                } : null,
+                              );
+                            },
+                            childCount: globalBooks.length,
+                          ),
+                        ),
+                      ),
 
                     const SliverToBoxAdapter(child: SizedBox(height: 100)),
                   ],

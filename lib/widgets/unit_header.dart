@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
@@ -35,12 +36,14 @@ class UnitHeader extends StatelessWidget {
   });
 
   bool get _canViewReference {
+    if (kIsWeb) return false;
     final p = referencePdfPath;
     if (p == null || p.isEmpty) return false;
     return File(p).existsSync();
   }
 
   void _openReference(BuildContext context) {
+    if (kIsWeb) return;
     final p = referencePdfPath;
     if (p == null) return;
     Navigator.of(context).push(

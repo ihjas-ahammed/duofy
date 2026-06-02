@@ -1186,7 +1186,7 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
         final n = int.tryParse(setting);
         if (n != null && n >= 1) return n.clamp(1, 6);
       }
-      final cores = Platform.numberOfProcessors;
+      final cores = kIsWeb ? 1 : Platform.numberOfProcessors;
       if (cores >= 8) return 4;
       if (cores >= 4) return 3;
       return 2;

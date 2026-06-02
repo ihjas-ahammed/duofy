@@ -78,6 +78,27 @@ class GenerationManager extends ChangeNotifier {
   final List<AiTask> queue = [];
   Timer? _queueTimer;
   bool _isProcessing = false;
+  bool _isPaused = false;
+  bool _hasInterruptedTasks = false;
+
+  bool get isPaused => _isPaused;
+  bool get hasInterruptedTasks => _hasInterruptedTasks;
+
+  void clearInterruptedTasksFlag() {
+    _hasInterruptedTasks = false;
+    notifyListeners();
+  }
+
+  Future<void> setPaused(bool paused) async {
+    if (_isPaused == paused) return;
+    _isPaused = paused;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('generation_paused', paused);
+    notifyListeners();
+    if (!paused) {
+      _processQueue();
+    }
+  }
   
   final PdfService _pdfService = PdfService();
   final DatabaseService _dbService = DatabaseService();
@@ -124,6 +145,7 @@ class GenerationManager extends ChangeNotifier {
   Future<void> _loadQueueFromPrefs() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      _isPaused = prefs.getBool('generation_paused') ?? false;
       final jsonStr = prefs.getString('ai_generation_queue');
       if (jsonStr != null && jsonStr.isNotEmpty) {
         final List decoded = jsonDecode(jsonStr);
@@ -131,16 +153,27 @@ class GenerationManager extends ChangeNotifier {
         queue.addAll(decoded.map((e) => AiTask.fromJson(Map<String, dynamic>.from(e))));
         
         // Convert running to queued if interrupted
+        bool hadInterruptedTasks = false;
         for (final t in queue) {
           if (t.status == 'running') {
             t.status = 'queued';
             t.statusMessage = 'Queued (interrupted)';
+            hadInterruptedTasks = true;
           }
+        }
+        
+        _hasInterruptedTasks = hadInterruptedTasks;
+        if (hadInterruptedTasks) {
+          _isPaused = true;
+          await prefs.setBool('generation_paused', true);
         }
         
         _syncActiveMapsWithQueue();
         notifyListeners();
-        _processQueue();
+        
+        if (!_isPaused) {
+          _processQueue();
+        }
       }
     } catch (e) {
       print('[GenerationManager] Error loading queue: $e');
@@ -215,6 +248,14 @@ class GenerationManager extends ChangeNotifier {
   // ---------------------------------------------------------------------------
   Future<void> _processQueue() async {
     if (_isProcessing) return;
+    
+    // Check if generation is paused
+    final prefs = await SharedPreferences.getInstance();
+    final paused = prefs.getBool('generation_paused') ?? false;
+    if (paused) {
+      return;
+    }
+    
     _isProcessing = true;
     
     try {
@@ -342,15 +383,15 @@ class GenerationManager extends ChangeNotifier {
   }
 
   Future<void> _executeTask(AiTask task) async {
-    final apiKey = task.params['assignedApiKey'] as String;
-    task.status = 'running';
-    task.startTime = DateTime.now();
-    task.progress = 0.0;
-    task.statusMessage = 'Starting AI execution...';
-    notifyListeners();
-    _saveQueueToPrefs();
-    
     try {
+      final apiKey = (task.params['assignedApiKey'] as String? ?? '');
+      task.status = 'running';
+      task.startTime = DateTime.now();
+      task.progress = 0.0;
+      task.statusMessage = 'Starting AI execution...';
+      notifyListeners();
+      _saveQueueToPrefs();
+      
       switch (task.type) {
         case 'book_skeleton':
           await _runBookSkeletonForTask(task, apiKey);
@@ -1743,8 +1784,57 @@ class GenerationManager extends ChangeNotifier {
     notifyListeners();
   }
 
+  void _clearTaskNotification(AiTask task) {
+    try {
+      if (task.type == 'unit' && task.unitId != null) {
+        NotificationService.cancel(task.unitId!.hashCode);
+      } else if (task.type == 'manifest' && task.sectionId != null) {
+        NotificationService.cancel(task.sectionId!.hashCode);
+      } else if (task.type == 'qp') {
+        NotificationService.cancel(task.bookId.hashCode + 1);
+      } else if (task.type == 'pyq') {
+        NotificationService.cancel(task.bookId.hashCode + 2);
+      } else if (task.type == 'lesson_regen' && task.params['lessonId'] != null) {
+        NotificationService.cancel(('regen_${task.params['lessonId']}').hashCode);
+      } else if (task.type == 'book_skeleton') {
+        final timestampStr = task.id.replaceAll('skeleton_', '');
+        final notifId = int.tryParse(timestampStr)?.hashCode ?? task.id.hashCode;
+        NotificationService.cancel(notifId);
+        NotificationService.cancel(task.id.hashCode);
+        activeTasks.removeWhere((t) => t.id == timestampStr);
+      } else {
+        NotificationService.cancel(task.id.hashCode);
+      }
+    } catch (e) {
+      print('[GenerationManager] Error cancelling notification: $e');
+    }
+  }
+
   void cancelQueuedTask(String id) {
-    queue.removeWhere((t) => t.id == id);
+    final taskIndex = queue.indexWhere((t) => t.id == id);
+    if (taskIndex != -1) {
+      final task = queue[taskIndex];
+      _clearTaskNotification(task);
+      queue.removeAt(taskIndex);
+    }
+    _syncActiveMapsWithQueue();
+    notifyListeners();
+    _saveQueueToPrefs();
+    _processQueue();
+  }
+
+  void cancelAllTasks() {
+    final cancellableTasks = queue.where((t) => t.status == 'running' || t.status == 'queued').toList();
+    for (final task in cancellableTasks) {
+      _clearTaskNotification(task);
+    }
+    queue.removeWhere((t) => t.status == 'running' || t.status == 'queued');
+
+    for (final task in activeTasks) {
+      NotificationService.cancel(task.id.hashCode);
+    }
+    activeTasks.clear();
+
     _syncActiveMapsWithQueue();
     notifyListeners();
     _saveQueueToPrefs();
@@ -1760,7 +1850,7 @@ class GenerationManager extends ChangeNotifier {
 
   Future<int> _resolveConcurrency() async {
     try {
-      final cores = Platform.numberOfProcessors;
+      final cores = kIsWeb ? 1 : Platform.numberOfProcessors;
       if (cores >= 8) return 4;
       if (cores >= 4) return 3;
       return 2;

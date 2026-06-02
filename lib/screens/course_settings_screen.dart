@@ -430,36 +430,41 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: Colors.white12),
                   ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    leading: Icon(_getIconForType(slide.type), color: AppTheme.duoViolet),
-                    title: Text(slide.type.toUpperCase(),
-                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: AppTheme.duoViolet, letterSpacing: 1.0)),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 4.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                    clipBehavior: Clip.antiAlias,
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      leading: Icon(_getIconForType(slide.type), color: AppTheme.duoViolet),
+                      title: Text(slide.type.toUpperCase(),
+                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: AppTheme.duoViolet, letterSpacing: 1.0)),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 4.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Condition: ${slide.condition}",
+                                style: const TextStyle(color: AppTheme.duoOrange, fontSize: 10, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 4),
+                            Text(slide.description, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text("Condition: ${slide.condition}",
-                              style: const TextStyle(color: AppTheme.duoOrange, fontSize: 10, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 4),
-                          Text(slide.description, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                          IconButton(
+                            icon: const Icon(LucideIcons.edit2, size: 18, color: Colors.white54),
+                            onPressed: () => _editSlide(index),
+                          ),
+                          IconButton(
+                            icon: const Icon(LucideIcons.trash2, size: 18, color: AppTheme.duoRed),
+                            onPressed: () => setState(() => _slides.removeAt(index)),
+                          ),
+                          const Icon(LucideIcons.gripVertical, color: Colors.white38),
                         ],
                       ),
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(LucideIcons.edit2, size: 18, color: Colors.white54),
-                          onPressed: () => _editSlide(index),
-                        ),
-                        IconButton(
-                          icon: const Icon(LucideIcons.trash2, size: 18, color: AppTheme.duoRed),
-                          onPressed: () => setState(() => _slides.removeAt(index)),
-                        ),
-                        const Icon(LucideIcons.gripVertical, color: Colors.white38),
-                      ],
                     ),
                   ),
                 );

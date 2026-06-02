@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../services/fb/fb_auth.dart';
+import '../services/global_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/responsive_center.dart';
@@ -127,6 +128,17 @@ class _AuthScreenState extends State<AuthScreen> {
                 child: Text(
                   _isSignUp ? 'ALREADY HAVE AN ACCOUNT?' : 'CREATE A PROFILE',
                   style: const TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.w900, letterSpacing: 1.2),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () {
+                  GlobalState.isGuestNotifier.value = true;
+                  GlobalState.forceShowAuthScreen.value = false;
+                },
+                child: const Text(
+                  'CONTINUE AS GUEST',
+                  style: TextStyle(color: Colors.white54, fontWeight: FontWeight.w900, letterSpacing: 1.2),
                 ),
               )
             ],

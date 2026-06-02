@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -75,6 +76,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
   }
 
   Future<void> _checkMissingFiles() async {
+    if (kIsWeb) {
+      if (mounted) setState(() => _hasMissingFiles = false);
+      return;
+    }
     bool missing = false;
     for (final m in widget.book.modules) {
       for (final s in m.sections) {
@@ -373,7 +378,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         sectionManifestStatus: manifestTask,
                         completedLessons: _completedLessons,
                         hasMissingFiles: _hasMissingFiles,
-                        onLessonFinished: _loadProgress,
+                        onLessonFinished: () {
+                          _loadProgress();
+                          widget.onBookUpdated(widget.book);
+                        },
                         onGenerateUnit: (unit, unitIdx) {
                           _promptAndGenerateUnit(unit, mIdx, sIdx, unitIdx);
                         },
@@ -584,6 +592,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   Navigator.pop(ctx);
                   await ProgressService.markLessonCompleted(lesson.id);
                   await _loadProgress();
+                  widget.onBookUpdated(widget.book);
                 },
               ),
             if (isCompleted)
@@ -596,6 +605,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   Navigator.pop(ctx);
                   await ProgressService.clearLessonProgress(lesson.id);
                   await _loadProgress();
+                  widget.onBookUpdated(widget.book);
                 },
               ),
             _MenuActionItem(
@@ -639,6 +649,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   Navigator.pop(ctx);
                   await ProgressService.markUnitCompleted(unit);
                   await _loadProgress();
+                  widget.onBookUpdated(widget.book);
                 },
               ),
             if (completedCount > 0)
@@ -651,6 +662,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   Navigator.pop(ctx);
                   await ProgressService.clearUnitProgress(unit);
                   await _loadProgress();
+                  widget.onBookUpdated(widget.book);
                 },
               ),
             if (unit.isGenerated && unit.lessons.isNotEmpty)
@@ -724,6 +736,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   Navigator.pop(ctx);
                   await ProgressService.markSectionCompleted(section);
                   await _loadProgress();
+                  widget.onBookUpdated(widget.book);
                 },
               ),
             if (completedCount > 0)
@@ -736,6 +749,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   Navigator.pop(ctx);
                   await ProgressService.clearSectionProgress(section);
                   await _loadProgress();
+                  widget.onBookUpdated(widget.book);
                 },
               ),
           ],
@@ -841,6 +855,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   Navigator.pop(ctx);
                   await ProgressService.markModuleCompleted(module);
                   await _loadProgress();
+                  widget.onBookUpdated(widget.book);
                 },
               ),
             if (completedCount > 0)
@@ -853,6 +868,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   Navigator.pop(ctx);
                   await ProgressService.clearModuleProgress(module);
                   await _loadProgress();
+                  widget.onBookUpdated(widget.book);
                 },
               ),
           ],

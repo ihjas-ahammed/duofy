@@ -8,33 +8,155 @@ import 'services/notification_service.dart';
 import 'screens/auth_gate.dart';
 import 'screens/book_route_loader_screen.dart';
 
+import 'dart:ui';
+import 'package:flutter/foundation.dart';
+
 // Global Navigation Key to handle routing from notifications anywhere
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+String? startupError;
+bool _isGlobalErrorDialogOpen = false;
+
+void showGlobalErrorAlert(Object error, StackTrace? stack) {
+  debugPrint("GLOBAL ERROR OCCURRED: $error\n$stack");
+  final context = navigatorKey.currentContext;
+  if (context != null) {
+    if (_isGlobalErrorDialogOpen) return;
+    _isGlobalErrorDialogOpen = true;
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final currentContext = navigatorKey.currentContext;
+      if (currentContext == null) {
+        _isGlobalErrorDialogOpen = false;
+        return;
+      }
+      showDialog(
+        context: currentContext,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF1E293B),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.redAccent, size: 28),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  "An Error Occurred",
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  error.toString(),
+                  style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  "You can continue using other features. If the issue persists, please copy the details and report it.",
+                  style: TextStyle(color: Colors.white60, fontSize: 13, height: 1.4),
+                ),
+                if (stack != null) ...[
+                  const SizedBox(height: 12),
+                  const Text("Stack Trace:", style: TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black26,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    constraints: const BoxConstraints(maxHeight: 120),
+                    width: double.infinity,
+                    child: SingleChildScrollView(
+                      child: Text(
+                        stack.toString(),
+                        style: const TextStyle(color: Colors.white38, fontSize: 10, fontFamily: 'monospace'),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: "$error\n\n$stack"));
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  const SnackBar(content: Text("Error details copied!")),
+                );
+              },
+              child: const Text("Copy Details", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+            ),
+            TextButton(
+              onPressed: () {
+                _isGlobalErrorDialogOpen = false;
+                Navigator.pop(ctx);
+              },
+              child: const Text("Dismiss", style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ).then((_) => _isGlobalErrorDialogOpen = false);
+    });
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await FbCore.initializeApp();
   
-  // Initialize Background Notifications System
-  await NotificationService.init();
-
-  // Initialize shared prefs and load global XP early
-  final prefs = await SharedPreferences.getInstance();
-  GlobalState.xpNotifier.value = prefs.getInt('user_xp') ?? 0;
-
-  // One-time cleanup: older builds auto-saved `gemini-1.5-flash` into the
-  // generic models list / legacy scalar key whenever settings opened with
-  // nothing configured. That model is no longer routable on the Gemini
-  // API, so it kept poisoning every fallback ladder and surfaced as
-  // "model not found" errors mid-generation. Strip it on startup.
-  final legacyModels = prefs.getStringList('gemini_models_list') ?? const [];
-  if (legacyModels.contains('gemini-1.5-flash')) {
-    final cleaned = legacyModels.where((m) => m != 'gemini-1.5-flash').toList();
-    await prefs.setStringList('gemini_models_list', cleaned);
+  try {
+    await FbCore.initializeApp();
+  } catch (e, stack) {
+    startupError = "Firebase Init Error: $e\n$stack";
   }
-  if (prefs.getString('gemini_model') == 'gemini-1.5-flash') {
-    await prefs.remove('gemini_model');
+  
+  try {
+    await NotificationService.init();
+  } catch (e, stack) {
+    startupError = (startupError ?? "") + "\nNotification Init Error: $e\n$stack";
   }
+
+  try {
+    // Initialize shared prefs and load global XP early
+    final prefs = await SharedPreferences.getInstance();
+    GlobalState.xpNotifier.value = prefs.getInt('user_xp') ?? 0;
+
+    // One-time cleanup: older builds auto-saved `gemini-1.5-flash` into the
+    // generic models list / legacy scalar key whenever settings opened with
+    // nothing configured. That model is no longer routable on the Gemini
+    // API, so it kept poisoning every fallback ladder and surfaced as
+    // "model not found" errors mid-generation. Strip it on startup.
+    final legacyModels = prefs.getStringList('gemini_models_list') ?? const [];
+    if (legacyModels.contains('gemini-1.5-flash')) {
+      final cleaned = legacyModels.where((m) => m != 'gemini-1.5-flash').toList();
+      await prefs.setStringList('gemini_models_list', cleaned);
+    }
+    if (prefs.getString('gemini_model') == 'gemini-1.5-flash') {
+      await prefs.remove('gemini_model');
+    }
+  } catch (e, stack) {
+    startupError = (startupError ?? "") + "\nPrefs Init Error: $e\n$stack";
+  }
+
+  // Set up global error boundaries
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    showGlobalErrorAlert(details.exception, details.stack);
+  };
+
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    showGlobalErrorAlert(error, stack);
+    return true; // Prevent default app crash behavior
+  };
 
   runApp(const DuoFyApp());
 }

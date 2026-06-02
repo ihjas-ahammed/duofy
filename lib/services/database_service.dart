@@ -34,7 +34,7 @@ class DatabaseService {
   /// fully local unless the user turns it on.
   Future<bool> isCloudEnabled() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(cloudSyncPrefKey) ?? false;
+    return prefs.getBool(cloudSyncPrefKey) ?? kIsWeb;
   }
 
   Future<void> setCloudEnabled(bool enabled) async {

@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'package:duofy/services/generation_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import '../services/fb/fb_auth.dart';
+import '../services/global_state.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
@@ -39,11 +41,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// Local-first: cloud backup/sync is opt-in. Mirrors
   /// [DatabaseService.cloudSyncPrefKey].
   bool _cloudSync = false;
-  int? _lastSyncTime;
   bool _isSyncing = false;
   bool _isLoading = true;
+  bool _generationPaused = false;
+  int? _lastSyncTime;
   final GlobalKey<StringListManagerState> _keysManagerKey = GlobalKey<StringListManagerState>();
   final DatabaseService _db = DatabaseService();
+  final TextEditingController _customPromptController = TextEditingController();
 
   final user = FbAuth.instance.currentUser;
 
@@ -51,6 +55,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _loadSettings();
+  }
+
+  @override
+  void dispose() {
+    _customPromptController.dispose();
+    super.dispose();
   }
 
   /// Reads a per-slot model list, falling back to the legacy scalar key for
@@ -73,6 +83,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
 
     _cloudSync = await _db.isCloudEnabled();
+    _generationPaused = prefs.getBool('generation_paused') ?? false;
 
     List<String> keys = prefs.getStringList('gemini_api_keys_list') ?? [];
     if (keys.isEmpty) {
@@ -143,6 +154,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _scheduleStart = TimeOfDay(hour: startHour, minute: startMinute);
     _scheduleEnd = TimeOfDay(hour: endHour, minute: endMinute);
     _lastSyncTime = prefs.getInt('last_db_sync_time');
+    _customPromptController.text = prefs.getString('custom_live_chat_prompt') ?? '';
 
     setState(() {
       _isLoading = false;
@@ -211,6 +223,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setInt('schedule_start_minute', _scheduleStart.minute);
     await prefs.setInt('schedule_end_hour', _scheduleEnd.hour);
     await prefs.setInt('schedule_end_minute', _scheduleEnd.minute);
+    await prefs.setString('custom_live_chat_prompt', _customPromptController.text.trim());
+    await prefs.setBool('generation_paused', _generationPaused);
+    await GenerationManager.instance.setPaused(_generationPaused);
     await _db.setCloudEnabled(_cloudSync);
 
     // Mirror the head of each list back into the legacy scalar key so other
@@ -648,6 +663,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildPauseGenerationCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _generationPaused ? AppTheme.duoRed.withOpacity(0.5) : Colors.white12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(_generationPaused ? LucideIcons.pauseCircle : LucideIcons.playCircle,
+                  color: _generationPaused ? AppTheme.duoRed : AppTheme.duoGreen, size: 28),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Text('Pause AI Generation',
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white)),
+              ),
+              Switch(
+                value: _generationPaused,
+                activeColor: AppTheme.duoRed,
+                onChanged: (v) {
+                  setState(() => _generationPaused = v);
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'When turned on, any queued or scheduled lesson generations will be temporarily paused. Unpause to resume generating lessons.',
+            style: TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _formatTimeOfDay(TimeOfDay time) {
     final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
     final period = time.period == DayPeriod.am ? 'AM' : 'PM';
@@ -731,6 +785,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLiveChatPromptCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(LucideIcons.messageSquare, color: AppTheme.duoBlue, size: 28),
+              SizedBox(width: 16),
+              Text(
+                'Custom Chat System Prompt',
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'This prompt is appended to the tutor\'s instructions in both live and standard chat modes. Use it to specify custom personas, topics, or explanation guidelines.',
+            style: TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _customPromptController,
+            maxLines: 4,
+            minLines: 2,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.white),
+            decoration: InputDecoration(
+              hintText: 'e.g. Always explain concepts using analogies to space exploration. Keep tone humorous.',
+              hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+              filled: true,
+              fillColor: Colors.black26,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.white12),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppTheme.duoBlue),
+              ),
+            ),
           ),
         ],
       ),
@@ -860,6 +967,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildConcurrencyCard(),
             const SizedBox(height: 16),
             _buildScheduleCard(),
+            const SizedBox(height: 16),
+            _buildPauseGenerationCard(),
+
+            const SizedBox(height: 32),
+            const Text('Live Chat Assistant', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            const Text('Customize the behavior and system instructions for the real-time AI helper.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 16),
+            _buildLiveChatPromptCard(),
 
             const SizedBox(height: 48),
             DuoButton(
@@ -870,19 +986,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             
             const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: DuoButton(
-                text: 'Sign Out',
-                onPressed: () async {
-                  Navigator.pop(context);
-                  await FbAuth.instance.signOut();
-                },
-                color: AppTheme.duoRed,
-                shadowColor: AppTheme.duoRedDark,
-                isOutline: true,
+            if (user != null)
+              SizedBox(
+                width: double.infinity,
+                child: DuoButton(
+                  text: 'Sign Out',
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    await FbAuth.instance.signOut();
+                    GlobalState.isGuestNotifier.value = false;
+                  },
+                  color: AppTheme.duoRed,
+                  shadowColor: AppTheme.duoRedDark,
+                  isOutline: true,
+                ),
+              )
+            else
+              SizedBox(
+                width: double.infinity,
+                child: DuoButton(
+                  text: 'Sign In / Log In',
+                  onPressed: () {
+                    GlobalState.isGuestNotifier.value = false;
+                    GlobalState.forceShowAuthScreen.value = true;
+                    Navigator.pop(context);
+                  },
+                  color: AppTheme.duoBlue,
+                  shadowColor: AppTheme.duoBlueDark,
+                ),
               ),
-            ),
             const SizedBox(height: 32),
           ],
         ),

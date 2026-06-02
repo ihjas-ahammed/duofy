@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart' as wf;
 import 'package:webview_cef/webview_cef.dart' as wc;
 import 'package:webview_windows/webview_windows.dart' as ww;
+import 'web_webview_stub.dart' if (dart.library.html) 'web_webview_helper.dart';
 
 /// `webview_flutter` doesn't support Linux or Windows, so each desktop OS gets
 /// its own backend:
@@ -57,6 +58,7 @@ class _PlatformWebViewState extends State<PlatformWebView> {
   }
 
   void _load() {
+    if (kIsWeb) return;
     if (_useWindows) {
       _loadWindows();
     } else if (_useCef) {
@@ -156,6 +158,9 @@ class _PlatformWebViewState extends State<PlatformWebView> {
 
   @override
   Widget build(BuildContext context) {
+    if (kIsWeb) {
+      return buildWebWebView(widget.html, onJsError: widget.onJsError);
+    }
     if (_useWindows) {
       if (!_winReady || _winController == null) {
         return _loadingPlaceholder();

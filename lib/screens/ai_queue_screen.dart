@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -57,6 +56,33 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
     setState(() {
       _scheduleText = 'Auto-schedule: ${formatTime(startHour, startMinute)} - ${formatTime(endHour, endMinute)}';
     });
+  }
+
+  void _showCancelAllDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text('Cancel All Tasks?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: const Text('Are you sure you want to cancel all currently running and queued generation tasks? This will stop all active AI generations.', style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('No', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              GenerationManager.instance.cancelAllTasks();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('All tasks cancelled.')),
+              );
+            },
+            child: const Text('Yes, Cancel All', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   IconData _getIconForType(String type) {
@@ -356,6 +382,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
+          key: PageStorageKey<String>('module_$title'),
           leading: const Icon(LucideIcons.package, color: AppTheme.duoBlue, size: 20),
           title: Text(
             title,
@@ -387,6 +414,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
+          key: PageStorageKey<String>('section_$title'),
           leading: const Icon(LucideIcons.layers, color: AppTheme.duoViolet, size: 18),
           title: Text(
             title,
@@ -619,9 +647,18 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
             appBar: AppBar(
               title: const Text('AI Generation Center', style: TextStyle(fontWeight: FontWeight.w900)),
               actions: [
+                if (running.isNotEmpty || queued.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(LucideIcons.ban, size: 20, color: AppTheme.duoRed),
+                    tooltip: 'Cancel All Tasks',
+                    onPressed: () {
+                      _showCancelAllDialog(context);
+                    },
+                  ),
                 if (finished.isNotEmpty)
                   IconButton(
                     icon: const Icon(LucideIcons.trash2, size: 20),
+                    tooltip: 'Clear History',
                     onPressed: () {
                       GenerationManager.instance.clearCompletedTasks();
                       ScaffoldMessenger.of(context).showSnackBar(

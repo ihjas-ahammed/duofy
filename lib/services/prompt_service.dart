@@ -322,6 +322,10 @@ Return ONLY valid JSON matching this exact structure:
 Design a pedagogical lesson plan in PLAIN TEXT (do NOT output JSON yet).
 Break this unit down into multiple logical lessons based on the content.
 %custom_instructions%
+
+TEXTBOOK WRITING STYLE ADAPTATION (HIGH PRIORITY):
+Analyze the tone, vocabulary, terminology, density, and level of rigor of the attached textbook PDF chunk. Ensure that the lesson plan and lesson structures you design directly reflect the textbook's style, notations, terminology, and depth. Do not simplify the concepts excessively if the textbook treats them with high technical or mathematical rigor.
+
 UNIT SCOPE (CRITICAL — the attached PDF is shared by several units, so stay strictly inside THIS unit's boundary):
 %neighbor_context%
 Only plan lessons for the content belonging to "%unit_title%". Do NOT plan lessons that belong to the previous or next unit listed above — those are generated separately and duplicating them creates repeated lessons.
@@ -347,6 +351,9 @@ You previously created this optimal learning plan for the unit "%unit_title%":
 %lesson_plan%
 
 Based strictly on this plan and the attached content chunk, generate the full JSON content.
+
+TEXTBOOK WRITING STYLE ADAPTATION (HIGH PRIORITY):
+Carefully analyze the attached textbook PDF content chunk. The generated lessons must fully adapt to the writing style, terminology, specific notations, and level of rigor of the textbook. If the textbook uses formal proofs, advanced terminology, or specific technical notations, you MUST preserve and match them in the lesson slides. Maintain the same academic rigor and tone as the source textbook.
 
 $latexGuide
 
@@ -386,6 +393,9 @@ You previously created this learning plan for the unit "%unit_title%":
 
 Now generate ONLY lesson number %lesson_index% from that plan, with full slide content.
 Do not generate any other lessons in this response.
+
+TEXTBOOK WRITING STYLE ADAPTATION (HIGH PRIORITY):
+Carefully analyze the attached textbook PDF content chunk. The generated lessons must fully adapt to the writing style, terminology, specific notations, and level of rigor of the textbook. If the textbook uses formal proofs, advanced terminology, or specific technical notations, you MUST preserve and match them in the lesson slides. Maintain the same academic rigor and tone as the source textbook.
 
 UNIT SCOPE (the attached PDF is shared by several units — stay strictly inside THIS unit):
 %neighbor_context%
@@ -436,6 +446,9 @@ The slide you must regenerate has type "%slide_type%". Here is its current compl
 -------------------------------
 %regen_note%
 Produce a single, improved slide of the SAME type ("%slide_type%") covering the same pedagogical point, using the attached source content for accuracy. Keep it self-contained — do not reference "the previous slide".
+
+TEXTBOOK WRITING STYLE ADAPTATION (HIGH PRIORITY):
+The regenerated slide must match the writing style, tone, terminology, and level of rigor of the attached textbook content chunk. Ensure the explanation, math, and questions adhere to the textbook's specific terminology and standards of depth.
 
 $latexGuide
 

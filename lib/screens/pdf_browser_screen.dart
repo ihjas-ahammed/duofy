@@ -158,49 +158,54 @@ class _PdfBrowserScreenState extends State<PdfBrowserScreen> {
                       decoration: AppTheme.glassDecoration.copyWith(
                         border: Border.all(color: isOrphan ? AppTheme.duoOrange.withOpacity(0.4) : Colors.white12)
                       ),
-                      child: ListTile(
-                        onTap: () => _openFolder(meta),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        leading: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: isOrphan ? AppTheme.duoOrange.withOpacity(0.2) : AppTheme.duoBlue.withOpacity(0.2), 
-                            shape: BoxShape.circle
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
+                        clipBehavior: Clip.antiAlias,
+                        child: ListTile(
+                          onTap: () => _openFolder(meta),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          leading: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isOrphan ? AppTheme.duoOrange.withOpacity(0.2) : AppTheme.duoBlue.withOpacity(0.2), 
+                              shape: BoxShape.circle
+                            ),
+                            child: Icon(
+                              isOrphan ? LucideIcons.folderClosed : LucideIcons.folder, 
+                              color: isOrphan ? AppTheme.duoOrange : AppTheme.duoBlue, 
+                              size: 24
+                            ),
                           ),
-                          child: Icon(
-                            isOrphan ? LucideIcons.folderClosed : LucideIcons.folder, 
-                            color: isOrphan ? AppTheme.duoOrange : AppTheme.duoBlue, 
-                            size: 24
+                          title: Text(
+                            meta.linkedBook?.title ?? 'Unlinked Course', 
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900, 
+                              fontSize: 16, 
+                              color: isOrphan ? AppTheme.duoOrange : Colors.white
+                            )
                           ),
-                        ),
-                        title: Text(
-                          meta.linkedBook?.title ?? 'Unlinked Course', 
-                          style: TextStyle(
-                            fontWeight: FontWeight.w900, 
-                            fontSize: 16, 
-                            color: isOrphan ? AppTheme.duoOrange : Colors.white
-                          )
-                        ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 4.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(meta.folderId, style: const TextStyle(fontSize: 10, color: Colors.white38)),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Text('${meta.fileCount} items', style: const TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.bold)),
-                                  const SizedBox(width: 12),
-                                  Text('${meta.sizeMb.toStringAsFixed(2)} MB', style: const TextStyle(fontSize: 12, color: Colors.white54)),
-                                ],
-                              ),
-                            ],
+                          subtitle: Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(meta.folderId, style: const TextStyle(fontSize: 10, color: Colors.white38)),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Text('${meta.fileCount} items', style: const TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.bold)),
+                                    const SizedBox(width: 12),
+                                    Text('${meta.sizeMb.toStringAsFixed(2)} MB', style: const TextStyle(fontSize: 12, color: Colors.white54)),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(LucideIcons.trash2, color: AppTheme.duoRed, size: 20),
-                          onPressed: () => _deleteFolder(meta),
+                          trailing: IconButton(
+                            icon: const Icon(LucideIcons.trash2, color: AppTheme.duoRed, size: 20),
+                            onPressed: () => _deleteFolder(meta),
+                          ),
                         ),
                       ),
                     );

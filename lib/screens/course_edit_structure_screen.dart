@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
@@ -553,7 +555,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                       ),
                       Text(
                         _uploadedPdf != null
-                            ? _uploadedPdf!.path.split(Platform.pathSeparator).last
+                            ? _uploadedPdf!.path.split(kIsWeb ? '/' : Platform.pathSeparator).last
                             : 'Upload source PDF to preview pages and split component files.',
                         style: const TextStyle(color: Colors.white54, fontSize: 11),
                       ),

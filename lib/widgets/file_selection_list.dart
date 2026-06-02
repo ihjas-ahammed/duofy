@@ -88,21 +88,24 @@ class FileSelectionList extends StatelessWidget {
                   isPdf = file.name.toLowerCase().endsWith('.pdf');
                 }
                 
-                return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  leading: Icon(
-                    isPdf ? LucideIcons.fileText : LucideIcons.image,
-                    color: isPdf ? AppTheme.duoViolet : AppTheme.duoOrange,
-                  ),
-                  title: Text(
-                    name,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(LucideIcons.trash2, size: 18, color: AppTheme.duoRed),
-                    onPressed: () => onRemove(index),
+                return Material(
+                  color: Colors.transparent,
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    leading: Icon(
+                      isPdf ? LucideIcons.fileText : LucideIcons.image,
+                      color: isPdf ? AppTheme.duoViolet : AppTheme.duoOrange,
+                    ),
+                    title: Text(
+                      name,
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(LucideIcons.trash2, size: 18, color: AppTheme.duoRed),
+                      onPressed: () => onRemove(index),
+                    ),
                   ),
                 );
               },

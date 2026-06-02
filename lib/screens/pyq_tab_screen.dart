@@ -416,24 +416,29 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                             ),
                             child: Column(
                               children: [
-                                ListTile(
-                                  title: Text(
-                                    section.title,
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                Material(
+                                  color: Colors.transparent,
+                                  borderRadius: BorderRadius.circular(16),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: ListTile(
+                                    title: Text(
+                                      section.title,
+                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                    ),
+                                    subtitle: Text(
+                                      '${section.pyqQuestions.length} questions extracted',
+                                      style: const TextStyle(color: Colors.white38, fontSize: 12),
+                                    ),
+                                    trailing: Icon(
+                                      isExpanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
+                                      color: Colors.white54,
+                                    ),
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedSectionId = isExpanded ? null : section.id;
+                                      });
+                                    },
                                   ),
-                                  subtitle: Text(
-                                    '${section.pyqQuestions.length} questions extracted',
-                                    style: const TextStyle(color: Colors.white38, fontSize: 12),
-                                  ),
-                                  trailing: Icon(
-                                    isExpanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
-                                    color: Colors.white54,
-                                  ),
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedSectionId = isExpanded ? null : section.id;
-                                    });
-                                  },
                                 ),
                                 if (isExpanded) ...[
                                   const Divider(color: Colors.white10, height: 1),

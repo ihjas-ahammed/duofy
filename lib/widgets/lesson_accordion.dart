@@ -134,38 +134,43 @@ class _LessonAccordionState extends State<LessonAccordion> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: isActive ? secColor : (isCompleted ? AppTheme.duoGreen.withOpacity(0.3) : Colors.white10)),
       ),
-      child: ListTile(
-        onTap: () => _openLesson(
-          lesson,
-          isLocked,
-          modIdx: modIdx,
-          secIdx: secIdx,
-          unitIdx: unitIdx,
-          lessonIdx: lessonIdx,
-        ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        leading: Icon(iconData, color: iconColor, size: 28),
-        title: Text(
-          lesson.title, 
-          style: TextStyle(
-            fontWeight: FontWeight.bold, 
-            color: isLocked ? Colors.white54 : Colors.white
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          onTap: () => _openLesson(
+            lesson,
+            isLocked,
+            modIdx: modIdx,
+            secIdx: secIdx,
+            unitIdx: unitIdx,
+            lessonIdx: lessonIdx,
           ),
-          maxLines: 1, overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          lesson.description, 
-          style: TextStyle(color: Colors.white38, fontSize: 12, decoration: isCompleted ? TextDecoration.lineThrough : null),
-          maxLines: 1, overflow: TextOverflow.ellipsis,
-        ),
-        trailing: isActive ? Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: secColor,
-            borderRadius: BorderRadius.circular(12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          leading: Icon(iconData, color: iconColor, size: 28),
+          title: Text(
+            lesson.title, 
+            style: TextStyle(
+              fontWeight: FontWeight.bold, 
+              color: isLocked ? Colors.white54 : Colors.white
+            ),
+            maxLines: 1, overflow: TextOverflow.ellipsis,
           ),
-          child: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.2)),
-        ) : null,
+          subtitle: Text(
+            lesson.description, 
+            style: TextStyle(color: Colors.white38, fontSize: 12, decoration: isCompleted ? TextDecoration.lineThrough : null),
+            maxLines: 1, overflow: TextOverflow.ellipsis,
+          ),
+          trailing: isActive ? Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: secColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.2)),
+          ) : null,
+        ),
       ),
     );
   }

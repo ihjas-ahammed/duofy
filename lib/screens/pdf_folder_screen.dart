@@ -163,31 +163,36 @@ class _PdfFolderScreenState extends State<PdfFolderScreen> {
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
                       decoration: AppTheme.glassDecoration,
-                      child: ListTile(
-                        onTap: () => _openPdf(meta),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        leading: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(color: AppTheme.duoViolet.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
-                          child: const Icon(LucideIcons.fileText, color: AppTheme.duoViolet, size: 20),
-                        ),
-                        title: Text(meta.unitName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white)),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 4.0),
-                          child: Text('${meta.sizeKb} KB', style: const TextStyle(fontSize: 11, color: Colors.white54)),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(LucideIcons.share, color: Colors.white70, size: 20),
-                              onPressed: () => _sharePdf(meta),
-                            ),
-                            IconButton(
-                              icon: const Icon(LucideIcons.trash2, color: AppTheme.duoRed, size: 20),
-                              onPressed: () => _deleteFile(meta),
-                            ),
-                          ],
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
+                        clipBehavior: Clip.antiAlias,
+                        child: ListTile(
+                          onTap: () => _openPdf(meta),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          leading: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(color: AppTheme.duoViolet.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                            child: const Icon(LucideIcons.fileText, color: AppTheme.duoViolet, size: 20),
+                          ),
+                          title: Text(meta.unitName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white)),
+                          subtitle: Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: Text('${meta.sizeKb} KB', style: const TextStyle(fontSize: 11, color: Colors.white54)),
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(LucideIcons.share, color: Colors.white70, size: 20),
+                                onPressed: () => _sharePdf(meta),
+                              ),
+                              IconButton(
+                                icon: const Icon(LucideIcons.trash2, color: AppTheme.duoRed, size: 20),
+                                onPressed: () => _deleteFile(meta),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );

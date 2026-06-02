@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
+import '../services/fb/fb_auth.dart';
 import '../services/database_service.dart';
 import '../services/generation_manager.dart';
 import 'book_dashboard_screen.dart';
@@ -39,7 +40,11 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
         setState(() {
           _currentBook = updatedBook;
         });
-        if (wasGlobal || updatedBook.isGlobal) {
+        final user = FbAuth.instance.currentUser;
+        final bool isOwner = user != null && updatedBook.authorId == user.uid;
+        final bool isAdmin = user?.email == 'ihjas.one@gmail.com';
+        final bool canSyncOrPublish = updatedBook.authorId == null || isOwner || isAdmin;
+        if ((wasGlobal || updatedBook.isGlobal) && canSyncOrPublish) {
           _promptSyncPublishedBook(updatedBook);
         }
       }
@@ -57,7 +62,11 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
       setState(() {
         _currentBook = newBook;
       });
-      if (newBook.isGlobal) {
+      final user = FbAuth.instance.currentUser;
+      final bool isOwner = user != null && newBook.authorId == user.uid;
+      final bool isAdmin = user?.email == 'ihjas.one@gmail.com';
+      final bool canSyncOrPublish = newBook.authorId == null || isOwner || isAdmin;
+      if (newBook.isGlobal && canSyncOrPublish) {
         _promptSyncPublishedBook(newBook);
       }
     }
@@ -254,6 +263,11 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
       SummaryScreen(book: _currentBook),
     ];
 
+    final user = FbAuth.instance.currentUser;
+    final bool isOwner = user != null && _currentBook.authorId == user.uid;
+    final bool isAdmin = user?.email == 'ihjas.one@gmail.com';
+    final bool canSyncOrPublish = _currentBook.authorId == null || isOwner || isAdmin;
+
     final isDesktop = MediaQuery.of(context).size.width >= 900;
 
     if (isDesktop) {
@@ -261,7 +275,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
         body: Row(
           children: [
             // Desktop Left Sidebar (SideNav equivalent)
-            _buildDesktopSidebar(),
+            _buildDesktopSidebar(canSyncOrPublish),
             Container(width: 1, color: Colors.white.withOpacity(0.08)),
             // Desktop Main Content
             Expanded(
@@ -332,17 +346,18 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
             tooltip: 'Course Configuration',
             onPressed: _openCourseSettings,
           ),
-          IconButton(
-            icon: Icon(
-              _currentBook.isGlobal ? LucideIcons.refreshCw : LucideIcons.uploadCloud,
-              size: 22,
-              color: AppTheme.duoBlue,
+          if (canSyncOrPublish)
+            IconButton(
+              icon: Icon(
+                _currentBook.isGlobal ? LucideIcons.refreshCw : LucideIcons.uploadCloud,
+                size: 22,
+                color: AppTheme.duoBlue,
+              ),
+              tooltip: _currentBook.isGlobal
+                  ? 'Sync Course (Last: ${_formatLastSyncDate(_currentBook.updatedAt)})'
+                  : 'Publish to Community',
+              onPressed: _handlePublishOrSync,
             ),
-            tooltip: _currentBook.isGlobal
-                ? 'Sync Course (Last: ${_formatLastSyncDate(_currentBook.updatedAt)})'
-                : 'Publish to Community',
-            onPressed: _handlePublishOrSync,
-          ),
         ],
       ),
       body: IndexedStack(
@@ -377,7 +392,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     );
   }
 
-  Widget _buildDesktopSidebar() {
+  Widget _buildDesktopSidebar(bool canSyncOrPublish) {
     return Container(
       width: 280,
       color: Colors.black.withOpacity(0.4),
@@ -441,15 +456,16 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
             onTap: _openCourseSettings,
           ),
           const SizedBox(height: 8),
-          _buildSidebarActionButton(
-            icon: _currentBook.isGlobal ? LucideIcons.refreshCw : LucideIcons.uploadCloud,
-            label: _currentBook.isGlobal ? 'Sync Course' : 'Publish Course',
-            subtitle: _currentBook.isGlobal
-                ? 'Last: ${_formatLastSyncDate(_currentBook.updatedAt)}'
-                : null,
-            iconColor: AppTheme.duoBlue,
-            onTap: _handlePublishOrSync,
-          ),
+          if (canSyncOrPublish)
+            _buildSidebarActionButton(
+              icon: _currentBook.isGlobal ? LucideIcons.refreshCw : LucideIcons.uploadCloud,
+              label: _currentBook.isGlobal ? 'Sync Course' : 'Publish Course',
+              subtitle: _currentBook.isGlobal
+                  ? 'Last: ${_formatLastSyncDate(_currentBook.updatedAt)}'
+                  : null,
+              iconColor: AppTheme.duoBlue,
+              onTap: _handlePublishOrSync,
+            ),
         ],
       ),
     );
