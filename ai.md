@@ -1,23 +1,19 @@
 Make the following changes:
 
-- Update AI Generation system:
-    Schduled Generation:
-        Front-end:
-            A screen that shows all running AI requests with completed ones updated in real time, also scheduled ai requests:
-                Also a settings option to set auto schedule hours (by defualt 9pm - 9am) and 
-            A button to enabled shedule generation in long-click menu of book, modules and sections
-                Also show what kind of egenaryon: text/diagrams -> for sections this means autoplan and proceed
-
-        Back-end:
-            Make sure the threading is correct,like if I set 2 parallel then only 2 parallel requests mustbe  going, every other gets  qued, and scheduled are simply mean sto qued with least priority and only be ran if within those hours
-
-            Also if they have more than one api keys, use one for one of the paralle request to stop getting resource exhausion issue
-            
-        
-
-
-
-
+- Support web and Implement cloud manager:
+    1. For web version, since we cannot create pdf, only show a page with all published books:
+        1. at home page, all published books are listed
+        2. when a published book is clicked, directly open it with a path /book-id/, but still save last section open, completion progress etc. also support pyq analyzer because it doesnt need pdf splittting and saving, also save all new data in localstorage indexdb
+        3. Give the same icon
+        4. Support install to homescreen as web app
+        5. Rename Commmunity Books -> Published Courses , also make sure Owner can also delete their own published course or unpublish if needed
+    2. Cloud manager:
+        1. Show last sync time in settings
+        2. Add quick sync button
+        3. To fix conflict when multiple device are used, when overwriting already written database element in a different version, show a confirmtaion dialog with write time of both (only if its written from another device)
+        4. For published projects:
+            1. Ask sync everytime the published project data is edited/new content is generated
+            2. Also instead of publish to - turn that button to sync after published with last sync date
 
 
 Update prompt accordingly as I add new features and slide types

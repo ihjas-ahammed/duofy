@@ -89,6 +89,8 @@ The TOC lists the textbook's printed page numbers. We need ABSOLUTE PDF page num
 The user has told us that Chapter 1 actually starts on absolute PDF page %chapter1_abs_page%. That means: when the TOC says "printed page 1" you must output absolute page %chapter1_abs_page%. The offset to add to every printed page number is therefore (%chapter1_abs_page% - 1).
 Apply this offset to EVERY startPage and endPage you output. Never emit printed/TOC page numbers verbatim.''';
 
+  static const String offsetBlock = _offsetBlock;
+
   /// Stage 1 of the batched TOC flow: enumerate ONLY the top-level chapters.
   ///
   /// Splitting chapter enumeration into its own focused call fixes two failure
@@ -155,6 +157,35 @@ Return ONLY valid JSON matching this exact structure:
         { "id": "m1-s1", "title": "Section Title", "description": "...", "color": "duo-blue", "startPage": 1, "endPage": 2 }
       ]
     }
+  ]
+}''';
+
+  /// Extracted chapter titles and descriptions when the user selects chapter start pages.
+  static const String chapterStartsList = '''You are an expert curriculum designer. The attached PDF contains ONLY the first page of each chapter in a textbook named "%filename%".
+These pages are in sequential order.
+%custom_instructions%
+
+TASK: Analyze each page of the PDF (each page represents the start of a chapter/module). For each page, extract the Chapter/Module Title (the main title, e.g. "Chapter 1: Introduction to Chemistry", "Chapter 2: Atoms and Molecules", etc.).
+Do not skip any pages; if the PDF has 4 pages, you must return exactly 4 chapter objects in the "chapters" array.
+
+For each chapter provide:
+- "title": the chapter heading exactly as printed or inferred from the page.
+- "description": a one-line summary of what the chapter appears to cover based on the starting page content.
+
+Also generate, for the whole course:
+- a professional `title` (from the content or filename),
+- an `icon` reflecting the subject matter,
+- a `description`,
+- a `systemPrompt` for a tutor AI that STRICTLY instructs it to use double-escaped backslashes for all LaTeX (e.g. \\\\frac instead of \\frac).
+
+Return ONLY valid JSON matching this exact structure:
+{
+  "title": "Generated Course Title Here",
+  "icon": "Book",
+  "description": "Auto-generated book overview",
+  "systemPrompt": "You are an expert tutor...",
+  "chapters": [
+    { "id": "m1", "title": "Chapter 1: Title", "description": "..." }
   ]
 }''';
 

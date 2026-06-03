@@ -480,10 +480,12 @@ class GenerationManager extends ChangeNotifier {
   Future<Book?> startBookSkeletonGenerationTask(
     List<File> indexFiles,
     String filename, {
-    required int chapter1AbsolutePage,
+    required List<int> chapter1AbsolutePages,
     String? customInstructions,
     List<File> syllabusFiles = const [],
     bool isHandout = false,
+    List<List<int>>? chapterStarts,
+    List<File> sourceFiles = const [],
   }) async {
     final task = AiTask(
       id: 'skeleton_${DateTime.now().millisecondsSinceEpoch}',
@@ -496,9 +498,11 @@ class GenerationManager extends ChangeNotifier {
         'indexFilesPaths': indexFiles.map((f) => f.path).toList(),
         'syllabusFilesPaths': syllabusFiles.map((f) => f.path).toList(),
         'filename': filename,
-        'chapter1AbsolutePage': chapter1AbsolutePage,
+        'chapter1AbsolutePages': chapter1AbsolutePages,
         'customInstructions': customInstructions,
         'isHandout': isHandout,
+        if (chapterStarts != null) 'chapterStarts': chapterStarts,
+        'sourceFilesPaths': sourceFiles.map((f) => f.path).toList(),
       },
     );
     _enqueueTaskObject(task);
@@ -577,21 +581,30 @@ class GenerationManager extends ChangeNotifier {
   Future<void> _runBookSkeletonForTask(AiTask task, String apiKey) async {
     final indexFilesPaths = List<String>.from(task.params['indexFilesPaths']);
     final syllabusFilesPaths = List<String>.from(task.params['syllabusFilesPaths'] ?? []);
+    final sourceFilesPaths = List<String>.from(task.params['sourceFilesPaths'] ?? []);
     final filename = task.params['filename'] as String;
-    final chapter1AbsolutePage = task.params['chapter1AbsolutePage'] as int;
+    final chapter1AbsolutePages = List<int>.from(task.params['chapter1AbsolutePages'] ?? []);
     final customInstructions = task.params['customInstructions'] as String?;
     final isHandout = task.params['isHandout'] as bool? ?? false;
     
+    final chapterStartsRaw = task.params['chapterStarts'] as List?;
+    final List<List<int>>? chapterStarts = chapterStartsRaw != null
+        ? chapterStartsRaw.map((list) => List<int>.from(list as List)).toList()
+        : null;
+
     final indexFiles = indexFilesPaths.map((p) => File(p)).toList();
     final syllabusFiles = syllabusFilesPaths.map((p) => File(p)).toList();
+    final sourceFiles = sourceFilesPaths.map((p) => File(p)).toList();
     
     final result = await _aiService.generateBookSkeleton(
       indexFiles,
       filename,
-      chapter1AbsolutePage: chapter1AbsolutePage,
+      chapter1AbsolutePages: chapter1AbsolutePages,
       customInstructions: customInstructions,
       syllabusFiles: syllabusFiles,
       isHandout: isHandout,
+      chapterStarts: chapterStarts,
+      sourceFiles: sourceFiles,
       onProgress: (status, progress) {
         task.statusMessage = status;
         task.progress = progress;
@@ -1096,10 +1109,11 @@ class GenerationManager extends ChangeNotifier {
     List<File> sourceFiles,
     String filename, {
     required List<File> indexFiles,
-    required int chapter1AbsolutePage,
+    required List<int> chapter1AbsolutePages,
     String? customInstructions,
     List<File> syllabusFiles = const [],
     bool isHandout = false,
+    List<List<int>>? chapterStarts,
   }) async {
     sourceFiles = sourceFiles.toList();
     final taskId = DateTime.now().millisecondsSinceEpoch.toString();
@@ -1132,10 +1146,12 @@ class GenerationManager extends ChangeNotifier {
       final skeletonBook = await startBookSkeletonGenerationTask(
         indexFiles,
         filename,
-        chapter1AbsolutePage: chapter1AbsolutePage,
+        chapter1AbsolutePages: chapter1AbsolutePages,
         customInstructions: customInstructions,
         syllabusFiles: syllabusFiles,
         isHandout: isHandout,
+        chapterStarts: chapterStarts,
+        sourceFiles: sourceFiles,
       );
       
       stopwatch.stop();
@@ -1237,8 +1253,11 @@ class GenerationManager extends ChangeNotifier {
 
     try {
       List<File> finalSourceFiles = sourceFiles;
-      if (sourceFiles.length > 1 || (sourceFiles.isNotEmpty && !sourceFiles.first.path.toLowerCase().endsWith('.pdf'))) {
-        finalSourceFiles = [await _pdfService.mergeFiles(sourceFiles)];
+      final bool isMultiBookCourse = book.modules.any((m) => m.sections.any((s) => (s.bookIndex ?? 0) > 0));
+      if (!isMultiBookCourse) {
+        if (sourceFiles.length > 1 || (sourceFiles.isNotEmpty && !sourceFiles.first.path.toLowerCase().endsWith('.pdf'))) {
+          finalSourceFiles = [await _pdfService.mergeFiles(sourceFiles)];
+        }
       }
 
       final completeBook = await _pdfService.splitBookPdf(finalSourceFiles, book, (status, progress) {

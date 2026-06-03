@@ -150,13 +150,9 @@ class PdfService {
     }
 
     int currentChunk = 0;
-    final bool isPdfSource = inputFiles.length == 1 && inputFiles.first.path.toLowerCase().endsWith('.pdf');
-    sync_pdf.PdfDocument? originalDoc;
-    if (isPdfSource) {
-      originalDoc = sync_pdf.PdfDocument(inputBytes: await inputFiles.first.readAsBytes());
-    }
+    final Map<int, sync_pdf.PdfDocument> openedDocs = {};
 
-    Future<String> writeChunk(String id, int startPage, int endPage) async {
+    Future<String> writeChunk(String id, int startPage, int endPage, int bookIdx) async {
       int start = startPage - 1;
       int end = endPage - 1;
       if (start < 0) start = 0;
@@ -164,11 +160,22 @@ class PdfService {
       final filePath = '$bookDirPath/$id.pdf';
       final file = File(filePath);
 
-      if (isPdfSource && originalDoc != null) {
-        if (end >= originalDoc.pages.count) end = originalDoc.pages.count - 1;
+      final currentFile = (bookIdx >= 0 && bookIdx < inputFiles.length) ? inputFiles[bookIdx] : inputFiles.first;
+      final isPdf = currentFile.path.toLowerCase().endsWith('.pdf');
+
+      if (isPdf) {
+        sync_pdf.PdfDocument doc;
+        if (openedDocs.containsKey(bookIdx)) {
+          doc = openedDocs[bookIdx]!;
+        } else {
+          doc = sync_pdf.PdfDocument(inputBytes: await currentFile.readAsBytes());
+          openedDocs[bookIdx] = doc;
+        }
+
+        if (end >= doc.pages.count) end = doc.pages.count - 1;
         final chunkDoc = sync_pdf.PdfDocument();
         for (int i = start; i <= end; i++) {
-          final loaded = originalDoc.pages[i];
+          final loaded = doc.pages[i];
           chunkDoc.pageSettings.size = loaded.size;
           chunkDoc.pageSettings.margins.all = 0;
           final newPage = chunkDoc.pages.add();
@@ -178,6 +185,7 @@ class PdfService {
         await file.writeAsBytes(bytes);
         chunkDoc.dispose();
       } else {
+        // Fallback if the file is an image
         if (end >= inputFiles.length) end = inputFiles.length - 1;
         final pdf = pw.Document();
         for (int i = start; i <= end; i++) {
@@ -201,7 +209,7 @@ class PdfService {
         if (section.startPage != null && section.endPage != null) {
           currentChunk++;
           onProgress("Chunking section $currentChunk of $totalChunks...", totalChunks == 0 ? 1.0 : currentChunk / totalChunks);
-          final path = await writeChunk(section.id, section.startPage!, section.endPage!);
+          final path = await writeChunk(section.id, section.startPage!, section.endPage!, section.bookIndex ?? 0);
           updatedSections.add(section.copyWith(pdfPath: path));
           continue;
         }
@@ -212,7 +220,7 @@ class PdfService {
           if (unit.startPage != null && unit.endPage != null) {
             currentChunk++;
             onProgress("Chunking unit $currentChunk of $totalChunks...", totalChunks == 0 ? 1.0 : currentChunk / totalChunks);
-            final path = await writeChunk(unit.id, unit.startPage!, unit.endPage!);
+            final path = await writeChunk(unit.id, unit.startPage!, unit.endPage!, unit.bookIndex ?? 0);
             updatedUnits.add(unit.copyWith(pdfPath: path, isGenerated: false, lessons: []));
           } else {
             updatedUnits.add(unit.copyWith(isGenerated: false, lessons: []));
@@ -223,7 +231,11 @@ class PdfService {
       updatedModules.add(module.copyWith(sections: updatedSections));
     }
 
-    originalDoc?.dispose();
+    // Clean up all opened documents
+    for (final doc in openedDocs.values) {
+      doc.dispose();
+    }
+
     return book.copyWith(modules: updatedModules);
   }
 }

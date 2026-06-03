@@ -11,12 +11,26 @@ class AutoIndexScreen extends StatefulWidget {
   final List<File> syllabusFiles;
   final bool isCourse;
 
+  // Chained parameters
+  final List<File>? allSourcePdfs;
+  final int currentPdfIndex;
+  final List<List<int>>? collectedIndexPages;
+  final List<int>? collectedChapter1StartPages;
+  final bool isAutoMode;
+  final bool isHandout;
+
   const AutoIndexScreen({
     super.key,
     required this.sourcePdf,
     required this.filename,
     this.syllabusFiles = const [],
     this.isCourse = false,
+    this.allSourcePdfs,
+    this.currentPdfIndex = 0,
+    this.collectedIndexPages,
+    this.collectedChapter1StartPages,
+    this.isAutoMode = true,
+    this.isHandout = false,
   });
 
   @override
@@ -64,6 +78,12 @@ class _AutoIndexScreenState extends State<AutoIndexScreen> {
               isCourse: widget.isCourse,
               initialIndexPages: result.indexPages,
               initialChapter1Page: result.chapter1StartPage,
+              allSourcePdfs: widget.allSourcePdfs,
+              currentPdfIndex: widget.currentPdfIndex,
+              collectedIndexPages: widget.collectedIndexPages,
+              collectedChapter1StartPages: widget.collectedChapter1StartPages,
+              isAutoMode: widget.isAutoMode,
+              isHandout: widget.isHandout,
             ),
           ));
         }

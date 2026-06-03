@@ -12,7 +12,7 @@ import '../services/generation_manager.dart';
 import '../services/pdf_service.dart';
 
 enum GenerationMode { book, handout, course }
-enum IndexMode { auto, manual }
+enum IndexMode { auto, manual, chapters }
 
 class GenerateBookScreen extends StatefulWidget {
   const GenerateBookScreen({super.key});
@@ -70,7 +70,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
               children: [
                 CircularProgressIndicator(color: AppTheme.duoGreen),
                 SizedBox(height: 16),
-                Text('Preparing & Merging Files...', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                Text('Preparing Files...', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -81,11 +81,13 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
     Future.microtask(() async {
       try {
         final pdfService = PdfService();
-        File finalSourcePdf;
-        if (_selectedFiles.length == 1 && _selectedFiles.first.path.toLowerCase().endsWith('.pdf')) {
-          finalSourcePdf = _selectedFiles.first;
-        } else {
-          finalSourcePdf = await pdfService.mergeFiles(_selectedFiles);
+        File? finalSourcePdf;
+        if (_mode == GenerationMode.handout) {
+          if (_selectedFiles.length == 1 && _selectedFiles.first.path.toLowerCase().endsWith('.pdf')) {
+            finalSourcePdf = _selectedFiles.first;
+          } else {
+            finalSourcePdf = await pdfService.mergeFiles(_selectedFiles);
+          }
         }
 
         List<File> finalSyllabusFiles = [];
@@ -100,29 +102,38 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
         if (!mounted) return;
         Navigator.of(context).pop(); // dismiss loading dialog
 
-        final filename = finalSourcePdf.path.split(RegExp(r'[\\/]')).last;
+        final firstPdf = _mode == GenerationMode.handout ? finalSourcePdf! : _selectedFiles.first;
+        final filename = firstPdf.path.split(RegExp(r'[\\/]')).last;
 
-        if (_mode == GenerationMode.handout) {
-          _showHandoutPrompt(finalSourcePdf, filename);
-          return;
-        }
-
-        if (_indexMode == IndexMode.manual) {
+        if (_indexMode == IndexMode.manual || _indexMode == IndexMode.chapters) {
           Navigator.of(context).push(MaterialPageRoute(
             builder: (_) => IndexPickerScreen(
-              sourcePdf: finalSourcePdf,
+              sourcePdf: firstPdf,
               filename: filename,
               syllabusFiles: finalSyllabusFiles,
               isCourse: _mode == GenerationMode.course,
+              allSourcePdfs: _mode == GenerationMode.handout ? [finalSourcePdf!] : _selectedFiles,
+              currentPdfIndex: 0,
+              collectedIndexPages: const [],
+              collectedChapter1StartPages: const [],
+              isAutoMode: false,
+              isHandout: _mode == GenerationMode.handout,
+              indexMode: _indexMode,
             ),
           ));
         } else {
           Navigator.of(context).push(MaterialPageRoute(
             builder: (_) => AutoIndexScreen(
-              sourcePdf: finalSourcePdf,
+              sourcePdf: firstPdf,
               filename: filename,
               syllabusFiles: finalSyllabusFiles,
               isCourse: _mode == GenerationMode.course,
+              allSourcePdfs: _mode == GenerationMode.handout ? [finalSourcePdf!] : _selectedFiles,
+              currentPdfIndex: 0,
+              collectedIndexPages: const [],
+              collectedChapter1StartPages: const [],
+              isAutoMode: true,
+              isHandout: _mode == GenerationMode.handout,
             ),
           ));
         }
@@ -165,7 +176,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                 [finalSourcePdf],
                 filename,
                 indexFiles: [finalSourcePdf],
-                chapter1AbsolutePage: 1,
+                chapter1AbsolutePages: const [1],
                 customInstructions: instructionsCtrl.text.trim().isEmpty ? null : instructionsCtrl.text.trim(),
                 isHandout: true,
               );
@@ -199,6 +210,11 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
             _mode = mode;
             _selectedFiles.clear();
             _syllabusFiles.clear();
+            if (mode == GenerationMode.handout) {
+              _indexMode = IndexMode.chapters;
+            } else {
+              _indexMode = IndexMode.auto;
+            }
           });
         },
         child: Container(
@@ -221,7 +237,6 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
   }
 
   Widget _buildIndexModeSelector() {
-    if (_mode == GenerationMode.handout) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -235,8 +250,8 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                 value: IndexMode.auto,
                 groupValue: _indexMode,
                 onChanged: (v) => setState(() => _indexMode = v!),
-                title: const Text('Auto-Detect', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
-                subtitle: const Text('AI finds TOC', style: TextStyle(fontSize: 12, color: Colors.white54)),
+                title: const Text('Auto-Detect', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
+                subtitle: const Text('AI finds TOC', style: TextStyle(fontSize: 11, color: Colors.white54)),
                 activeColor: AppTheme.duoGreen,
                 contentPadding: EdgeInsets.zero,
               ),
@@ -246,8 +261,19 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                 value: IndexMode.manual,
                 groupValue: _indexMode,
                 onChanged: (v) => setState(() => _indexMode = v!),
-                title: const Text('Manual', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
-                subtitle: const Text('You pick pages', style: TextStyle(fontSize: 12, color: Colors.white54)),
+                title: const Text('Manual', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
+                subtitle: const Text('You pick TOC', style: TextStyle(fontSize: 11, color: Colors.white54)),
+                activeColor: AppTheme.duoGreen,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+            Expanded(
+              child: RadioListTile<IndexMode>(
+                value: IndexMode.chapters,
+                groupValue: _indexMode,
+                onChanged: (v) => setState(() => _indexMode = v!),
+                title: const Text('Chapters', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
+                subtitle: const Text('You pick starts', style: TextStyle(fontSize: 11, color: Colors.white54)),
                 activeColor: AppTheme.duoGreen,
                 contentPadding: EdgeInsets.zero,
               ),

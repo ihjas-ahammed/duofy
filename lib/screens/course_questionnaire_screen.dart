@@ -5,23 +5,28 @@ import '../services/pdf_service.dart';
 import '../services/generation_manager.dart';
 import '../services/ai_service.dart';
 import '../widgets/responsive_center.dart';
+import 'generate_book_screen.dart' show IndexMode;
 
 class CourseQuestionnaireScreen extends StatefulWidget {
-  final File sourcePdf;
+  final List<File> sourcePdfs;
   final String filename;
   final List<File> syllabusFiles;
   final bool isCourse;
-  final List<int> indexPages;
-  final int chapter1StartPage;
+  final List<List<int>> allIndexPages;
+  final List<int> allChapter1StartPages;
+  final bool isHandout;
+  final IndexMode indexMode;
 
   const CourseQuestionnaireScreen({
     super.key,
-    required this.sourcePdf,
+    required this.sourcePdfs,
     required this.filename,
     this.syllabusFiles = const [],
     this.isCourse = false,
-    required this.indexPages,
-    required this.chapter1StartPage,
+    required this.allIndexPages,
+    required this.allChapter1StartPages,
+    this.isHandout = false,
+    this.indexMode = IndexMode.manual,
   });
 
   @override
@@ -55,9 +60,10 @@ class _CourseQuestionnaireScreenState extends State<CourseQuestionnaireScreen> {
 
   Future<void> _generateAiQuestions() async {
     try {
+      if (widget.sourcePdfs.isEmpty || widget.allChapter1StartPages.isEmpty) return;
       final qs = await AiService().generateCourseQuestions(
-        sourcePdf: widget.sourcePdf,
-        chapter1StartPage: widget.chapter1StartPage,
+        sourcePdf: widget.sourcePdfs.first,
+        chapter1StartPage: widget.allChapter1StartPages.first,
       );
       
       if (qs != null && mounted) {
@@ -90,13 +96,19 @@ class _CourseQuestionnaireScreenState extends State<CourseQuestionnaireScreen> {
     
     final customInstructions = buffer.toString().trim();
 
-    File indexPdf;
+    final List<File> indexPdfs = [];
     try {
-      indexPdf = await PdfService().extractPages(
-        widget.sourcePdf,
-        widget.indexPages,
-        outputName: 'index_${widget.filename}',
-      );
+      for (int i = 0; i < widget.sourcePdfs.length; i++) {
+        final pdf = widget.sourcePdfs[i];
+        final pages = widget.allIndexPages[i];
+        final name = pdf.path.split(RegExp(r'[\\/]')).last;
+        final indexPdf = await PdfService().extractPages(
+          pdf,
+          pages,
+          outputName: 'index_$name',
+        );
+        indexPdfs.add(indexPdf);
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error extracting index: $e')));
@@ -107,12 +119,14 @@ class _CourseQuestionnaireScreenState extends State<CourseQuestionnaireScreen> {
 
     if (widget.isCourse && widget.syllabusFiles.isNotEmpty) {
       GenerationManager.instance.startBookGeneration(
-        [widget.sourcePdf],
+        widget.sourcePdfs,
         widget.filename,
-        indexFiles: [indexPdf],
-        chapter1AbsolutePage: widget.chapter1StartPage,
+        indexFiles: indexPdfs,
+        chapter1AbsolutePages: widget.allChapter1StartPages,
         customInstructions: customInstructions.isNotEmpty ? customInstructions : null,
         syllabusFiles: widget.syllabusFiles,
+        isHandout: widget.isHandout,
+        chapterStarts: widget.indexMode == IndexMode.chapters ? widget.allIndexPages : null,
       );
       
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Generating course in background...')));
@@ -120,11 +134,13 @@ class _CourseQuestionnaireScreenState extends State<CourseQuestionnaireScreen> {
     } else {
       // Normal book generation but with auto-index and custom instructions
       GenerationManager.instance.startBookGeneration(
-        [widget.sourcePdf],
+        widget.sourcePdfs,
         widget.filename,
-        indexFiles: [indexPdf],
-        chapter1AbsolutePage: widget.chapter1StartPage,
+        indexFiles: indexPdfs,
+        chapter1AbsolutePages: widget.allChapter1StartPages,
         customInstructions: customInstructions.isNotEmpty ? customInstructions : null,
+        isHandout: widget.isHandout,
+        chapterStarts: widget.indexMode == IndexMode.chapters ? widget.allIndexPages : null,
       );
       
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Generating course in background...')));

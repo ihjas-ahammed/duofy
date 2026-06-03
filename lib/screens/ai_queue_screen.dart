@@ -345,26 +345,64 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String moduleTitle, String sectionTitle) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 8, top: 12, bottom: 8),
-      child: Row(
-        children: [
-          const Icon(LucideIcons.layers, color: AppTheme.duoViolet, size: 14),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              '$moduleTitle > $sectionTitle',
-              style: const TextStyle(
-                color: Colors.white54,
-                fontWeight: FontWeight.bold,
-                fontSize: 11,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+  Widget _buildModuleDropdown({required String title, required List<Widget> children}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.surface.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          leading: const Icon(LucideIcons.package, color: AppTheme.duoBlue, size: 20),
+          title: Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              fontSize: 14,
             ),
           ),
-        ],
+          iconColor: AppTheme.duoBlue,
+          collapsedIconColor: Colors.white54,
+          childrenPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          expandedAlignment: Alignment.topLeft,
+          expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+          children: children,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionDropdown({required String title, required List<Widget> children}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.surface.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          leading: const Icon(LucideIcons.layers, color: AppTheme.duoViolet, size: 18),
+          title: Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
+          iconColor: AppTheme.duoViolet,
+          collapsedIconColor: Colors.white38,
+          childrenPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          expandedAlignment: Alignment.topLeft,
+          expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+          children: children,
+        ),
       ),
     );
   }
@@ -404,45 +442,153 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
 
       widgets.add(_buildCourseHeader(bookTitle));
 
-      // Group tasks under this book by section
-      final Map<String, List<AiTask>> tasksBySection = {};
-      final List<AiTask> bookGeneralTasks = [];
+      if (book == null) {
+        // Fallback when book structure isn't loaded: group by moduleId, then sectionId
+        final Map<String, List<AiTask>> moduleGroups = {};
+        final List<AiTask> noModTasks = [];
 
-      for (final task in bookTasks) {
-        if (task.sectionId != null && task.sectionId!.isNotEmpty) {
-          tasksBySection.putIfAbsent(task.sectionId!, () => []).add(task);
-        } else {
-          bookGeneralTasks.add(task);
+        for (final t in bookTasks) {
+          if (t.moduleId != null && t.moduleId!.isNotEmpty) {
+            moduleGroups.putIfAbsent(t.moduleId!, () => []).add(t);
+          } else {
+            noModTasks.add(t);
+          }
         }
-      }
 
-      // Render book-general tasks first (e.g. skeleton, book_content task)
-      if (bookGeneralTasks.isNotEmpty) {
-        widgets.addAll(bookGeneralTasks.map((t) => _buildTaskCard(t, indented: false)));
-      }
+        for (final t in noModTasks) {
+          widgets.add(_buildTaskCard(t));
+        }
 
-      // Render sections in order if we have the book structure
-      final Set<String> renderedSections = {};
-      if (book != null) {
-        for (final module in book.modules) {
-          for (final section in module.sections) {
-            final sectionTasks = tasksBySection[section.id];
-            if (sectionTasks != null && sectionTasks.isNotEmpty) {
-              widgets.add(_buildSectionHeader(module.title, section.title));
-              widgets.addAll(sectionTasks.map((t) => _buildTaskCard(t, indented: true)));
-              renderedSections.add(section.id);
+        moduleGroups.forEach((modId, modTasks) {
+          final Map<String, List<AiTask>> sectionGroups = {};
+          final List<AiTask> noSecTasks = [];
+
+          for (final t in modTasks) {
+            if (t.sectionId != null && t.sectionId!.isNotEmpty) {
+              sectionGroups.putIfAbsent(t.sectionId!, () => []).add(t);
+            } else {
+              noSecTasks.add(t);
+            }
+          }
+
+          final List<Widget> modChildren = [];
+          for (final t in noSecTasks) {
+            modChildren.add(_buildTaskCard(t));
+          }
+
+          sectionGroups.forEach((secId, secTasks) {
+            modChildren.add(
+              _buildSectionDropdown(
+                title: 'Section: $secId',
+                children: secTasks.map((t) => _buildTaskCard(t)).toList(),
+              ),
+            );
+          });
+
+          widgets.add(
+            _buildModuleDropdown(
+              title: 'Module: $modId',
+              children: modChildren,
+            ),
+          );
+        });
+      } else {
+        // Book structure exists
+        // 1. Separate book-level tasks
+        final List<AiTask> bookLevelTasks = [];
+        final Map<String, List<AiTask>> tasksByModule = {};
+
+        for (final t in bookTasks) {
+          if (t.moduleId == null || t.moduleId!.isEmpty) {
+            bookLevelTasks.add(t);
+          } else {
+            final hasModule = book.modules.any((m) => m.id == t.moduleId);
+            if (hasModule) {
+              tasksByModule.putIfAbsent(t.moduleId!, () => []).add(t);
+            } else {
+              bookLevelTasks.add(t);
             }
           }
         }
-      }
 
-      // Fallback: render any sections not found in the structural traversal
-      tasksBySection.forEach((sectionId, sectionTasks) {
-        if (!renderedSections.contains(sectionId)) {
-          widgets.add(_buildSectionHeader('General', 'Section ($sectionId)'));
-          widgets.addAll(sectionTasks.map((t) => _buildTaskCard(t, indented: true)));
+        for (final t in bookLevelTasks) {
+          widgets.add(_buildTaskCard(t));
         }
-      });
+
+        // 2. Traverse modules in book order
+        for (final module in book.modules) {
+          final modTasks = tasksByModule[module.id];
+          if (modTasks == null || modTasks.isEmpty) continue;
+
+          final List<AiTask> moduleLevelTasks = [];
+          final Map<String, List<AiTask>> tasksBySection = {};
+
+          for (final t in modTasks) {
+            if (t.sectionId == null || t.sectionId!.isEmpty) {
+              moduleLevelTasks.add(t);
+            } else {
+              final hasSection = module.sections.any((s) => s.id == t.sectionId);
+              if (hasSection) {
+                tasksBySection.putIfAbsent(t.sectionId!, () => []).add(t);
+              } else {
+                moduleLevelTasks.add(t);
+              }
+            }
+          }
+
+          final List<Widget> moduleChildren = [];
+          for (final t in moduleLevelTasks) {
+            moduleChildren.add(_buildTaskCard(t));
+          }
+
+          // Traverse sections in order
+          for (final section in module.sections) {
+            final secTasks = tasksBySection[section.id];
+            if (secTasks == null || secTasks.isEmpty) continue;
+
+            moduleChildren.add(
+              _buildSectionDropdown(
+                title: section.title,
+                children: secTasks.map((t) => _buildTaskCard(t)).toList(),
+              ),
+            );
+          }
+
+          // Fallback: render section tasks not found in structural sections list
+          tasksBySection.forEach((secId, secTasks) {
+            final isRendered = module.sections.any((s) => s.id == secId);
+            if (!isRendered) {
+              moduleChildren.add(
+                _buildSectionDropdown(
+                  title: 'Section: $secId',
+                  children: secTasks.map((t) => _buildTaskCard(t)).toList(),
+                ),
+              );
+            }
+          });
+
+          widgets.add(
+            _buildModuleDropdown(
+              title: module.title,
+              children: moduleChildren,
+            ),
+          );
+        }
+
+        // Fallback: render module tasks not found in structural modules list
+        tasksByModule.forEach((modId, modTasks) {
+          final isRendered = book.modules.any((m) => m.id == modId);
+          if (!isRendered) {
+            final List<Widget> modChildren = modTasks.map((t) => _buildTaskCard(t)).toList();
+            widgets.add(
+              _buildModuleDropdown(
+                title: 'Module: $modId',
+                children: modChildren,
+              ),
+            );
+          }
+        });
+      }
 
       widgets.add(const SizedBox(height: 12));
     });
@@ -450,7 +596,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
     // Render general tasks group
     if (generalTasks.isNotEmpty) {
       widgets.add(_buildCourseHeader('General & System Tasks'));
-      widgets.addAll(generalTasks.map((t) => _buildTaskCard(t, indented: false)));
+      widgets.addAll(generalTasks.map((t) => _buildTaskCard(t)));
     }
 
     return widgets;

@@ -220,9 +220,13 @@ class AiService {
     throw last ?? Exception('Retry exhausted');
   }
 
-  Future<List<Part>> _buildFileParts(List<File> files, {bool extractText = false}) async {
+  Future<List<Part>> _buildFileParts(List<File> files, {bool extractText = false, List<String>? fileLabels}) async {
     List<Part> parts = [];
-    for (var f in files) {
+    for (int idx = 0; idx < files.length; idx++) {
+      final f = files[idx];
+      if (fileLabels != null && idx < fileLabels.length) {
+        parts.add(TextPart(fileLabels[idx]));
+      }
       final ext = f.path.split('.').last.toLowerCase();
       if (ext == 'pdf') {
         if (extractText) {
@@ -391,18 +395,180 @@ Important Rules:
   Future<Book?> generateBookSkeleton(
     List<File> indexFiles,
     String filename, {
-    required int chapter1AbsolutePage,
+    required List<int> chapter1AbsolutePages,
     String? customInstructions,
     List<File> syllabusFiles = const [],
     bool isHandout = false,
     void Function(String status, double? progress)? onProgress,
     String? forcedApiKey,
+    List<List<int>>? chapterStarts,
+    List<File>? sourceFiles,
   }) async {
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getLiteModels();
     final instructionsBlock = PromptService.instructionsBlock(customInstructions);
-    final fileParts = await _buildFileParts(indexFiles);
+    
+    // Create the labels for files
+    final List<String> fileLabels = [];
+    for (int i = 0; i < indexFiles.length; i++) {
+      final name = indexFiles[i].path.split(RegExp(r'[\\/]')).last;
+      final ch1 = i < chapter1AbsolutePages.length ? chapter1AbsolutePages[i] : 1;
+      fileLabels.add('\n--- INDEX FOR BOOK $i: "$name" (Chapter 1 absolute page starts at page $ch1) ---\n');
+    }
+    
+    final fileParts = await _buildFileParts(indexFiles, fileLabels: fileLabels);
     final syllabusParts = await _buildFileParts(syllabusFiles, extractText: true);
+
+    // Chapter Starts Mode (Method Two)
+    if (chapterStarts != null && chapterStarts.isNotEmpty) {
+      onProgress?.call('Mapping chapter starts…', null);
+      
+      String multiBookInstruction = '';
+      if (indexFiles.length > 1) {
+        final bookDescriptions = List.generate(
+          indexFiles.length,
+          (i) => 'Book $i: "${indexFiles[i].path.split(RegExp(r'[\\/]')).last}"'
+        ).join('\n');
+
+        multiBookInstruction = '''
+IMPORTANT: We are using MULTIPLE reference textbooks. Here is the list of books and their indices:
+$bookDescriptions
+
+You must map each chapter/module to its corresponding book.
+In the returned JSON, for every chapter object in the "chapters" array, you MUST include a "bookIndex" field (0-based integer, e.g. 0 for Book 0, 1 for Book 1, etc.) indicating which textbook contains this chapter.
+''';
+      }
+
+      final chapterPrompt = PromptService.chapterStartsList
+          .replaceAll('%filename%', filename)
+          .replaceAll('%custom_instructions%', '$instructionsBlock\n$multiBookInstruction');
+
+      Map<String, dynamic>? meta;
+      Exception? lastException;
+      for (final modelName in modelsToTry) {
+        for (final apiKey in keys) {
+          try {
+            final model = GenerativeModel(
+              model: modelName,
+              apiKey: apiKey,
+              generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+            );
+            final response = await _retryTransient(
+              () => model.generateContent([Content.multi([TextPart(chapterPrompt), ...syllabusParts, ...fileParts])])
+                  .timeout(const Duration(minutes: 4)),
+              onRetry: (a, e) => print('[AiService] Chapter starts transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+            );
+            if (response.text != null) {
+              meta = _cleanAndDecodeJson(response.text!);
+              break;
+            }
+          } on TimeoutException {
+            lastException = Exception('Chapter starts mapping timed out ($modelName).');
+          } catch (e) {
+            lastException = Exception('Chapter starts mapping failed ($modelName): ${_cleanErrMsg(e)}');
+          }
+        }
+        if (meta != null) break;
+      }
+      if (meta == null) throw lastException ?? Exception('Failed to map chapters. All models/keys exhausted.');
+
+      final rawChapters = (meta['chapters'] ?? meta['modules']) as List?;
+      if (rawChapters == null || rawChapters.isEmpty) {
+        throw Exception('The model returned no chapters for this PDF.');
+      }
+
+      // Initialize pointers/data for each book
+      final Map<int, List<int>> bookStarts = {};
+      final Map<int, List<Map<String, dynamic>>> matchedChaptersByBook = {};
+      for (int i = 0; i < indexFiles.length; i++) {
+        final starts = List<int>.from(chapterStarts[i])..sort();
+        bookStarts[i] = starts;
+        matchedChaptersByBook[i] = [];
+      }
+
+      // Iterate through AI-returned chapters and match
+      for (var i = 0; i < rawChapters.length; i++) {
+        final c = rawChapters[i] is Map ? Map<String, dynamic>.from(rawChapters[i]) : <String, dynamic>{};
+        int bookIdx = _asInt(c['bookIndex']) ?? 0;
+        if (bookIdx < 0 || bookIdx >= indexFiles.length) {
+          bookIdx = 0;
+        }
+        
+        final starts = bookStarts[bookIdx]!;
+        final currentMatchedList = matchedChaptersByBook[bookIdx]!;
+        final int matchedCount = currentMatchedList.length;
+        
+        int? startPage;
+        int? endPage;
+        if (matchedCount < starts.length) {
+          startPage = starts[matchedCount];
+          if (matchedCount < starts.length - 1) {
+            endPage = starts[matchedCount + 1] - 1;
+          } else {
+            // Last chapter of this book
+            if (sourceFiles != null && bookIdx < sourceFiles.length) {
+              try {
+                endPage = await PdfService().getPageCount(sourceFiles[bookIdx]);
+              } catch (e) {
+                endPage = startPage + 20;
+              }
+            } else {
+              endPage = startPage + 20;
+            }
+          }
+        } else {
+          // Fallback
+          startPage = starts.isNotEmpty ? starts.last : 1;
+          endPage = startPage + 20;
+        }
+        
+        final cid = (c['id']?.toString().trim().isNotEmpty ?? false) ? c['id'].toString() : 'm${i + 1}';
+        
+        currentMatchedList.add({
+          'id': cid,
+          'title': c['title']?.toString() ?? 'Chapter ${i + 1}',
+          'description': c['description']?.toString() ?? '',
+          'startPage': startPage,
+          'endPage': endPage,
+          'bookIndex': bookIdx,
+        });
+      }
+      
+      // Assemble the flattened chapters
+      final chapters = <Map<String, dynamic>>[];
+      for (int i = 0; i < indexFiles.length; i++) {
+        chapters.addAll(matchedChaptersByBook[i]!);
+      }
+
+      final assembled = <String, dynamic>{
+        'id': 'book-${DateTime.now().millisecondsSinceEpoch}',
+        'title': meta['title']?.toString() ?? filename,
+        'description': meta['description']?.toString() ?? 'Auto-generated course',
+        'icon': meta['icon']?.toString() ?? 'Book',
+        if (meta['systemPrompt'] != null) 'systemPrompt': meta['systemPrompt'],
+        'modules': [
+          for (var i = 0; i < chapters.length; i++)
+            {
+              'id': chapters[i]['id'],
+              'title': chapters[i]['title'],
+              'description': chapters[i]['description'],
+              'sections': [
+                {
+                  'id': '${chapters[i]['id']}-s1',
+                  'title': chapters[i]['title'],
+                  'description': chapters[i]['description'],
+                  'color': 'duo-blue',
+                  'startPage': chapters[i]['startPage'],
+                  'endPage': chapters[i]['endPage'],
+                  'bookIndex': chapters[i]['bookIndex'] ?? 0,
+                }
+              ],
+            }
+        ],
+      };
+      onProgress?.call('Finalizing structure…', 1.0);
+      return Book.fromJson(assembled).copyWith(customInstructions: customInstructions);
+    }
 
     if (isHandout) {
       onProgress?.call('Analyzing handout content…', null);
@@ -457,10 +623,53 @@ Important Rules:
     onProgress?.call('Mapping chapters…', null);
     final bool isCourse = syllabusFiles.isNotEmpty;
     final promptTemplate = isCourse ? PromptService.syllabusChapterList : PromptService.chapterList;
-    final chapterPrompt = promptTemplate
+    
+    // Customize the offset block dynamically if we have multiple books!
+    String offsetBlock = '';
+    if (indexFiles.length == 1) {
+      final ch1 = chapter1AbsolutePages.isNotEmpty ? chapter1AbsolutePages.first : 1;
+      offsetBlock = '''OFFSET CORRECTION:
+- Page numbers in the table of contents refer to printed page numbers.
+- The PDF viewer uses absolute page numbers (1-based, starting from page 1 of the file).
+- Chapter 1 starts on absolute PDF page $ch1.
+- Use this start page to compute the correct absolute PDF page for all chapters in the TOC. For example, if Chapter 1 is listed as printed page "1" but actually starts on absolute page $ch1, then printed page "10" is absolute page (10 - 1) + $ch1 = 9 + $ch1.''';
+    } else {
+      final buffer = StringBuffer();
+      buffer.writeln('OFFSET CORRECTION FOR EACH BOOK:');
+      for (int i = 0; i < indexFiles.length; i++) {
+        final ch1 = i < chapter1AbsolutePages.length ? chapter1AbsolutePages[i] : 1;
+        buffer.writeln('- Book $i: Chapter 1 starts on absolute PDF page $ch1.');
+        buffer.writeln('  For Book $i, if Chapter 1 is listed as printed page "1" but starts on absolute page $ch1, then printed page "10" is absolute page (10 - 1) + $ch1 = 9 + $ch1.');
+      }
+      offsetBlock = buffer.toString();
+    }
+
+    String multiBookInstruction = '';
+    if (indexFiles.length > 1) {
+      final bookDescriptions = List.generate(
+        indexFiles.length,
+        (i) => 'Book $i: "${indexFiles[i].path.split(RegExp(r'[\\/]')).last}"'
+      ).join('\n');
+
+      multiBookInstruction = '''
+IMPORTANT: We are using MULTIPLE reference textbooks. Here is the list of books and their indices:
+$bookDescriptions
+
+You must map each chapter/module to its corresponding book.
+In the returned JSON, for every chapter object in the "chapters" array, you MUST include a "bookIndex" field (0-based integer, e.g. 0 for Book 0, 1 for Book 1, etc.) indicating which textbook contains this chapter, and "startPage" / "endPage" must refer to pages within that specific textbook.
+''';
+    }
+
+    var chapterPrompt = promptTemplate
         .replaceAll('%filename%', filename)
-        .replaceAll('%chapter1_abs_page%', '$chapter1AbsolutePage')
-        .replaceAll('%custom_instructions%', instructionsBlock);
+        .replaceAll('%custom_instructions%', '$instructionsBlock\n$multiBookInstruction');
+    
+    // Replace the default offset block with our custom one
+    chapterPrompt = chapterPrompt.replaceAll(PromptService.offsetBlock, offsetBlock);
+    
+    // Safe fallback for '%chapter1_abs_page%' placeholder just in case
+    final firstCh1 = chapter1AbsolutePages.isNotEmpty ? chapter1AbsolutePages.first : 1;
+    chapterPrompt = chapterPrompt.replaceAll('%chapter1_abs_page%', '$firstCh1');
 
     Map<String, dynamic>? meta;
     Exception? lastException;
@@ -507,13 +716,16 @@ Important Rules:
         'description': c['description']?.toString() ?? '',
         'startPage': _asInt(c['startPage']),
         'endPage': _asInt(c['endPage']),
+        'bookIndex': _asInt(c['bookIndex']) ?? 0,
       });
     }
     // Resolve bounds left-to-right: a missing/invalid endPage falls back to the
     // page before the next chapter starts, so every section call has a range.
     for (var i = 0; i < chapters.length; i++) {
       int? start = chapters[i]['startPage'] as int?;
-      start ??= (i == 0 ? chapter1AbsolutePage : null);
+      final int currentBookIdx = chapters[i]['bookIndex'] as int? ?? 0;
+      final int currentBookCh1 = currentBookIdx < chapter1AbsolutePages.length ? chapter1AbsolutePages[currentBookIdx] : 1;
+      start ??= (i == 0 ? currentBookCh1 : null);
       int? end = chapters[i]['endPage'] as int?;
       final nextStart = i + 1 < chapters.length ? chapters[i + 1]['startPage'] as int? : null;
       if (end == null || (start != null && end < start)) {
@@ -538,14 +750,21 @@ Important Rules:
         if (i >= chapterCount) break;
         nextIdx++;
         final ch = chapters[i];
+        
+        final int bookIdx = ch['bookIndex'] as int? ?? 0;
+        final File specificIndexFile = (bookIdx >= 0 && bookIdx < indexFiles.length) ? indexFiles[bookIdx] : indexFiles.first;
+        final int specificChapter1Page = bookIdx < chapter1AbsolutePages.length ? chapter1AbsolutePages[bookIdx] : 1;
+        final name = specificIndexFile.path.split(RegExp(r'[\\/]')).last;
+        final specificFileParts = await _buildFileParts([specificIndexFile], fileLabels: ['\n--- INDEX FOR BOOK $bookIdx: "$name" ---\n']);
+
         List<Map<String, dynamic>>? secs;
         try {
           secs = await _generateSectionsForChapter(
             chapter: ch,
-            filename: filename,
-            chapter1AbsolutePage: chapter1AbsolutePage,
+            filename: name,
+            chapter1AbsolutePage: specificChapter1Page,
             instructionsBlock: instructionsBlock,
-            fileParts: fileParts,
+            fileParts: specificFileParts,
             models: modelsToTry,
             keys: keys,
             isCourse: isCourse,
@@ -589,7 +808,13 @@ Important Rules:
             'id': chapters[i]['id'],
             'title': chapters[i]['title'],
             'description': chapters[i]['description'],
-            'sections': sectionSlots[i] ?? const <Map<String, dynamic>>[],
+            'sections': [
+              for (var s in (sectionSlots[i] ?? const <Map<String, dynamic>>[]))
+                {
+                  ...s,
+                  'bookIndex': chapters[i]['bookIndex'] ?? 0,
+                }
+            ],
           }
       ],
     };

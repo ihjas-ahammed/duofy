@@ -453,16 +453,17 @@ class Section {
   final int? endPage;
   final String? pdfPath;
   final bool unitsGenerated;
-  /// Set to true once the user has reviewed the AI\'s per-unit format
+  /// Set to true once the user has reviewed the AI's per-unit format
   /// suggestions (or accepted them as-is). Lessons stay gated behind a
   /// confirmation panel until this flips true.
   final bool unitFormatsConfirmed;
   /// Per-section planner instructions, captured on the "Plan units" panel.
-  /// Pre-filled from the book\'s [Book.customInstructions] but editable so a
+  /// Pre-filled from the book's [Book.customInstructions] but editable so a
   /// section can be planned with a tweaked focus. Persisted so a manifest
   /// retry reuses the same guidance.
   final String? customInstructions;
   final List<Slide> pyqQuestions;
+  final int? bookIndex;
 
   Section({
     required this.id,
@@ -477,6 +478,7 @@ class Section {
     this.unitFormatsConfirmed = false,
     this.customInstructions,
     this.pyqQuestions = const [],
+    this.bookIndex,
   });
 
   factory Section.fromJson(Map<String, dynamic> json) {
@@ -493,6 +495,7 @@ class Section {
       unitFormatsConfirmed: _bool(json['unitFormatsConfirmed'], false),
       customInstructions: _strOpt(json['customInstructions']),
       pyqQuestions: (json['pyqQuestions'] as List?)?.map((s) => Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
+      bookIndex: json['bookIndex'] is num ? (json['bookIndex'] as num).toInt() : int.tryParse(_str(json['bookIndex'])),
     );
   }
 
@@ -509,6 +512,7 @@ class Section {
     if (unitFormatsConfirmed) 'unitFormatsConfirmed': unitFormatsConfirmed,
     if (customInstructions != null) 'customInstructions': customInstructions,
     'pyqQuestions': pyqQuestions.map((s) => s.toJson()).toList(),
+    if (bookIndex != null) 'bookIndex': bookIndex,
   };
 
   /// True for skeletons that carry their own page-range and PDF chunk and
@@ -520,8 +524,8 @@ class Section {
   /// skeleton time.
   bool get needsUnitManifest => isLazySection && !unitsGenerated;
 
-  /// True when the units are present but the user hasn\'t signed off on
-  /// the AI\'s per-unit format assignments yet.
+  /// True when the units are present but the user hasn't signed off on
+  /// the AI's per-unit format assignments yet.
   bool get needsFormatConfirmation =>
       isLazySection && unitsGenerated && units.isNotEmpty && !unitFormatsConfirmed;
 
@@ -538,6 +542,7 @@ class Section {
     bool? unitFormatsConfirmed,
     String? customInstructions,
     List<Slide>? pyqQuestions,
+    int? bookIndex,
   }) {
     return Section(
       id: id ?? this.id,
@@ -552,6 +557,7 @@ class Section {
       unitFormatsConfirmed: unitFormatsConfirmed ?? this.unitFormatsConfirmed,
       customInstructions: customInstructions ?? this.customInstructions,
       pyqQuestions: pyqQuestions ?? this.pyqQuestions,
+      bookIndex: bookIndex ?? this.bookIndex,
     );
   }
 }
@@ -565,6 +571,7 @@ class Unit {
   final bool isGenerated;
   final String? pdfPath;
   final List<Lesson> lessons;
+  final int? bookIndex;
 
   Unit({
     required this.id,
@@ -575,6 +582,7 @@ class Unit {
     required this.isGenerated,
     this.pdfPath,
     required this.lessons,
+    this.bookIndex,
   });
 
   factory Unit.fromJson(Map<String, dynamic> json) {
@@ -587,6 +595,7 @@ class Unit {
       isGenerated: _bool(json['isGenerated'], true),
       pdfPath: _strOpt(json['pdfPath']),
       lessons: (json['lessons'] as List?)?.map((l) => Lesson.fromJson(l is Map ? Map<String, dynamic>.from(l) : {})).toList() ?? [],
+      bookIndex: json['bookIndex'] is num ? (json['bookIndex'] as num).toInt() : int.tryParse(_str(json['bookIndex'])),
     );
   }
 
@@ -599,6 +608,7 @@ class Unit {
     'isGenerated': isGenerated,
     if (pdfPath != null) 'pdfPath': pdfPath,
     'lessons': lessons.map((l) => l.toJson()).toList(),
+    if (bookIndex != null) 'bookIndex': bookIndex,
   };
 
   Unit copyWith({
@@ -610,6 +620,7 @@ class Unit {
     bool? isGenerated,
     String? pdfPath,
     List<Lesson>? lessons,
+    int? bookIndex,
   }) {
     return Unit(
       id: id ?? this.id,
@@ -620,6 +631,7 @@ class Unit {
       isGenerated: isGenerated ?? this.isGenerated,
       pdfPath: pdfPath ?? this.pdfPath,
       lessons: lessons ?? this.lessons,
+      bookIndex: bookIndex ?? this.bookIndex,
     );
   }
 }

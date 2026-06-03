@@ -9,6 +9,8 @@ import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/responsive_center.dart';
 import 'course_questionnaire_screen.dart';
+import 'auto_index_screen.dart';
+import 'generate_book_screen.dart' show IndexMode;
 
 /// Step 1 of the new book-generation flow.
 ///
@@ -32,6 +34,15 @@ class IndexPickerScreen extends StatefulWidget {
   final List<int>? initialIndexPages;
   final int? initialChapter1Page;
 
+  // Chained parameters
+  final List<File>? allSourcePdfs;
+  final int currentPdfIndex;
+  final List<List<int>>? collectedIndexPages;
+  final List<int>? collectedChapter1StartPages;
+  final bool isAutoMode;
+  final bool isHandout;
+  final IndexMode indexMode;
+
   const IndexPickerScreen({
     super.key,
     required this.sourcePdf,
@@ -40,6 +51,13 @@ class IndexPickerScreen extends StatefulWidget {
     this.isCourse = false,
     this.initialIndexPages,
     this.initialChapter1Page,
+    this.allSourcePdfs,
+    this.currentPdfIndex = 0,
+    this.collectedIndexPages,
+    this.collectedChapter1StartPages,
+    this.isAutoMode = false,
+    this.isHandout = false,
+    this.indexMode = IndexMode.manual,
   });
 
   @override
@@ -54,9 +72,18 @@ class _IndexPickerScreenState extends State<IndexPickerScreen> {
   int _pageCount = 0;
   bool _isStarting = false;
 
+  // Search functionality
+  bool _isSearching = false;
+  final TextEditingController _searchCtrl = TextEditingController();
+  PdfTextSearchResult? _searchResult;
+  bool _hasSearchResult = false;
+  int _currentSearchInstance = 0;
+  int _totalSearchInstances = 0;
+
   @override
   void initState() {
     super.initState();
+    _pdfCtrl.addListener(_pdfListener);
     if (widget.initialIndexPages != null) {
       _selectedPages.addAll(widget.initialIndexPages!);
     }
@@ -67,64 +94,278 @@ class _IndexPickerScreenState extends State<IndexPickerScreen> {
 
   @override
   void dispose() {
+    _pdfCtrl.removeListener(_pdfListener);
     _chapter1Ctrl.dispose();
+    _searchCtrl.dispose();
+    _searchResult?.removeListener(_onSearchResultChanged);
+    _searchResult?.clear();
     super.dispose();
   }
 
+  void _pdfListener() {
+    if (_pdfCtrl.pageNumber > 0 && _currentPage != _pdfCtrl.pageNumber) {
+      setState(() {
+        _currentPage = _pdfCtrl.pageNumber;
+      });
+    }
+  }
+
   void _toggleCurrentPage() {
+    final page = _pdfCtrl.pageNumber > 0 ? _pdfCtrl.pageNumber : _currentPage;
     setState(() {
-      if (_selectedPages.contains(_currentPage)) {
-        _selectedPages.remove(_currentPage);
+      if (_selectedPages.contains(page)) {
+        _selectedPages.remove(page);
       } else {
-        _selectedPages.add(_currentPage);
+        _selectedPages.add(page);
       }
     });
   }
 
   void _markAsChapter1Start() {
-    _chapter1Ctrl.text = _currentPage.toString();
+    final page = _pdfCtrl.pageNumber > 0 ? _pdfCtrl.pageNumber : _currentPage;
+    _chapter1Ctrl.text = page.toString();
     setState(() {});
+  }
+
+  void _search(String query) {
+    if (query.isEmpty) {
+      _clearSearch();
+      return;
+    }
+    _searchResult?.removeListener(_onSearchResultChanged);
+    _searchResult = _pdfCtrl.searchText(query);
+    _searchResult!.addListener(_onSearchResultChanged);
+    setState(() {});
+  }
+
+  void _onSearchResultChanged() {
+    if (mounted) {
+      setState(() {
+        _hasSearchResult = _searchResult?.hasResult ?? false;
+        _currentSearchInstance = _searchResult?.currentInstanceIndex ?? 0;
+        _totalSearchInstances = _searchResult?.totalInstanceCount ?? 0;
+      });
+    }
+  }
+
+  void _clearSearch() {
+    _searchResult?.clear();
+    _searchResult?.removeListener(_onSearchResultChanged);
+    _searchResult = null;
+    _searchCtrl.clear();
+    setState(() {
+      _hasSearchResult = false;
+      _currentSearchInstance = 0;
+      _totalSearchInstances = 0;
+    });
+  }
+
+  void _showGotoPageDialog() {
+    final TextEditingController pageCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text('Go to Page', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: pageCtrl,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'Enter page number (1 - $_pageCount)',
+            hintStyle: const TextStyle(color: Colors.white54),
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.duoBlue),
+            onPressed: () {
+              final page = int.tryParse(pageCtrl.text.trim());
+              if (page != null && page >= 1 && page <= _pageCount) {
+                _pdfCtrl.jumpToPage(page);
+                Navigator.of(context).pop();
+              }
+            },
+            child: const Text('Go', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _continue() async {
     if (_selectedPages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pick at least one index/TOC page.')),
+        SnackBar(content: Text(widget.indexMode == IndexMode.chapters
+            ? 'Pick at least one chapter start page.'
+            : 'Pick at least one index/TOC page.')),
       );
       return;
     }
-    final ch1 = int.tryParse(_chapter1Ctrl.text.trim());
-    if (ch1 == null || ch1 < 1 || (_pageCount > 0 && ch1 > _pageCount)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter the absolute PDF page where Chapter 1 starts.')),
-      );
-      return;
+    
+    int ch1;
+    if (widget.indexMode == IndexMode.chapters) {
+      ch1 = (_selectedPages.toList()..sort()).first;
+    } else {
+      final val = int.tryParse(_chapter1Ctrl.text.trim());
+      if (val == null || val < 1 || (_pageCount > 0 && val > _pageCount)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Enter the absolute PDF page where Chapter 1 starts.')),
+        );
+        return;
+      }
+      ch1 = val;
     }
 
-    // The mini-PDF is NOT extracted here anymore! We pass the pages directly
-    // to CourseQuestionnaireScreen, which will extract it and ask questions.
     if (!mounted) return;
     
     final pages = _selectedPages.toList()..sort();
-    Navigator.of(context).pushReplacement(MaterialPageRoute(
-      builder: (_) => CourseQuestionnaireScreen(
-        sourcePdf: widget.sourcePdf,
-        filename: widget.filename,
-        syllabusFiles: widget.syllabusFiles,
-        isCourse: widget.isCourse,
-        indexPages: pages,
-        chapter1StartPage: ch1,
-      ),
-    ));
+    
+    final currentPagesList = List<List<int>>.from(widget.collectedIndexPages ?? []);
+    final currentCh1List = List<int>.from(widget.collectedChapter1StartPages ?? []);
+    
+    currentPagesList.add(pages);
+    currentCh1List.add(ch1);
+
+    final sourcePdfs = widget.allSourcePdfs ?? [widget.sourcePdf];
+    final nextIdx = widget.currentPdfIndex + 1;
+
+    if (nextIdx < sourcePdfs.length) {
+      final nextPdf = sourcePdfs[nextIdx];
+      final nextFilename = nextPdf.path.split(RegExp(r'[\\/]')).last;
+
+      if (widget.isAutoMode) {
+        Navigator.of(context).pushReplacement(MaterialPageRoute(
+          builder: (_) => AutoIndexScreen(
+            sourcePdf: nextPdf,
+            filename: nextFilename,
+            syllabusFiles: widget.syllabusFiles,
+            isCourse: widget.isCourse,
+            allSourcePdfs: sourcePdfs,
+            currentPdfIndex: nextIdx,
+            collectedIndexPages: currentPagesList,
+            collectedChapter1StartPages: currentCh1List,
+            isAutoMode: true,
+            isHandout: widget.isHandout,
+          ),
+        ));
+      } else {
+        Navigator.of(context).pushReplacement(MaterialPageRoute(
+          builder: (_) => IndexPickerScreen(
+            sourcePdf: nextPdf,
+            filename: nextFilename,
+            syllabusFiles: widget.syllabusFiles,
+            isCourse: widget.isCourse,
+            allSourcePdfs: sourcePdfs,
+            currentPdfIndex: nextIdx,
+            collectedIndexPages: currentPagesList,
+            collectedChapter1StartPages: currentCh1List,
+            isAutoMode: false,
+            isHandout: widget.isHandout,
+            indexMode: widget.indexMode,
+          ),
+        ));
+      }
+    } else {
+      Navigator.of(context).pushReplacement(MaterialPageRoute(
+        builder: (_) => CourseQuestionnaireScreen(
+          sourcePdfs: sourcePdfs,
+          filename: widget.filename,
+          syllabusFiles: widget.syllabusFiles,
+          isCourse: widget.isCourse,
+          allIndexPages: currentPagesList,
+          allChapter1StartPages: currentCh1List,
+          isHandout: widget.isHandout,
+          indexMode: widget.indexMode,
+        ),
+      ));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final isSelected = _selectedPages.contains(_currentPage);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pick Index Pages', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
-      ),
+      appBar: _isSearching
+          ? AppBar(
+              leading: IconButton(
+                icon: const Icon(LucideIcons.arrowLeft),
+                onPressed: _clearSearch,
+              ),
+              title: TextField(
+                controller: _searchCtrl,
+                autofocus: true,
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+                decoration: const InputDecoration(
+                  hintText: 'Search in PDF...',
+                  hintStyle: TextStyle(color: Colors.white54),
+                  border: InputBorder.none,
+                ),
+                onChanged: _search,
+                onSubmitted: _search,
+              ),
+              actions: [
+                if (_totalSearchInstances > 0) ...[
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      child: Text(
+                        '$_currentSearchInstance/$_totalSearchInstances',
+                        style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(LucideIcons.chevronLeft),
+                    onPressed: () => _searchResult?.previousInstance(),
+                  ),
+                  IconButton(
+                    icon: const Icon(LucideIcons.chevronRight),
+                    onPressed: () => _searchResult?.nextInstance(),
+                  ),
+                ],
+                IconButton(
+                  icon: const Icon(LucideIcons.x),
+                  onPressed: () {
+                    setState(() {
+                      _isSearching = false;
+                      _clearSearch();
+                    });
+                  },
+                ),
+              ],
+            )
+          : AppBar(
+              title: Text(
+                widget.indexMode == IndexMode.chapters
+                    ? (widget.allSourcePdfs != null && widget.allSourcePdfs!.length > 1
+                        ? 'Pick Chapter Starts (${widget.currentPdfIndex + 1}/${widget.allSourcePdfs!.length})'
+                        : 'Pick Chapter Starts (Method Two)')
+                    : (widget.allSourcePdfs != null && widget.allSourcePdfs!.length > 1
+                        ? 'Pick Index (${widget.currentPdfIndex + 1}/${widget.allSourcePdfs!.length})'
+                        : 'Pick Index Pages'),
+                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(LucideIcons.hash),
+                  onPressed: _pageCount == 0 ? null : _showGotoPageDialog,
+                  tooltip: 'Go to Page',
+                ),
+                IconButton(
+                  icon: const Icon(LucideIcons.search),
+                  onPressed: () => setState(() => _isSearching = true),
+                  tooltip: 'Search Text',
+                ),
+              ],
+            ),
       body: ResponsiveCenter(
         child: SafeArea(
         child: Column(
@@ -161,16 +402,19 @@ class _IndexPickerScreenState extends State<IndexPickerScreen> {
                       right: 12,
                       child: Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: AppTheme.surface.withOpacity(0.92),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.white24),
-                            ),
-                            child: Text(
-                              _pageCount > 0 ? 'Page $_currentPage / $_pageCount' : 'Loading…',
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+                          GestureDetector(
+                            onTap: _pageCount == 0 ? null : _showGotoPageDialog,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: AppTheme.surface.withOpacity(0.92),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: Colors.white24),
+                              ),
+                              child: Text(
+                                _pageCount > 0 ? 'Page $_currentPage / $_pageCount' : 'Loading…',
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+                              ),
                             ),
                           ),
                           const Spacer(),
@@ -188,7 +432,9 @@ class _IndexPickerScreenState extends State<IndexPickerScreen> {
                                     Icon(isSelected ? LucideIcons.checkSquare : LucideIcons.plus, size: 14, color: Colors.white),
                                     const SizedBox(width: 6),
                                     Text(
-                                      isSelected ? 'INDEX PAGE' : 'MARK AS INDEX',
+                                      widget.indexMode == IndexMode.chapters
+                                          ? (isSelected ? 'CHAPTER START' : 'MARK AS START')
+                                          : (isSelected ? 'INDEX PAGE' : 'MARK AS INDEX'),
                                       style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 0.5),
                                     ),
                                   ],
@@ -223,19 +469,23 @@ class _IndexPickerScreenState extends State<IndexPickerScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              const Text(
-                                'Selected index pages',
-                                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Colors.white),
+                              Text(
+                                widget.indexMode == IndexMode.chapters
+                                    ? 'Selected chapter starts'
+                                    : 'Selected index pages',
+                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Colors.white),
                               ),
                               const SizedBox(height: 8),
                               SizedBox(
                                 height: 38,
                                 child: _selectedPages.isEmpty
-                                    ? const Align(
+                                    ? Align(
                                         alignment: Alignment.centerLeft,
                                         child: Text(
-                                          'No pages picked yet. Use the viewer above and tap "Mark as Index".',
-                                          style: TextStyle(color: Colors.white54, fontSize: 12),
+                                          widget.indexMode == IndexMode.chapters
+                                              ? 'No starts picked yet. Use the viewer above and tap "Mark as Start".'
+                                              : 'No pages picked yet. Use the viewer above and tap "Mark as Index".',
+                                          style: const TextStyle(color: Colors.white54, fontSize: 12),
                                         ),
                                       )
                                     : ListView(
@@ -261,41 +511,43 @@ class _IndexPickerScreenState extends State<IndexPickerScreen> {
                                         ],
                                       ),
                               ),
-                              const SizedBox(height: 16),
-                              const Text(
-                                'Chapter 1 starts on PDF page',
-                                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Colors.white),
-                              ),
-                              const SizedBox(height: 6),
-                              const Text(
-                                'Open the page where Chapter 1 actually begins and tap "Use current". This corrects the offset between the TOC\'s printed page numbers and absolute PDF pages.',
-                                style: TextStyle(color: Colors.white54, fontSize: 11, height: 1.4),
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: TextField(
-                                      controller: _chapter1Ctrl,
-                                      keyboardType: TextInputType.number,
-                                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                                      style: const TextStyle(fontWeight: FontWeight.bold),
-                                      decoration: InputDecoration(
-                                        isDense: true,
-                                        hintText: _pageCount > 0 ? 'e.g. 13 (out of $_pageCount)' : 'e.g. 13',
-                                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                              if (widget.indexMode != IndexMode.chapters) ...[
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'Chapter 1 starts on PDF page',
+                                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Colors.white),
+                                ),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  'Open the page where Chapter 1 actually begins and tap "Use current". This corrects the offset between the TOC\'s printed page numbers and absolute PDF pages.',
+                                  style: TextStyle(color: Colors.white54, fontSize: 11, height: 1.4),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextField(
+                                        controller: _chapter1Ctrl,
+                                        keyboardType: TextInputType.number,
+                                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                        style: const TextStyle(fontWeight: FontWeight.bold),
+                                        decoration: InputDecoration(
+                                          isDense: true,
+                                          hintText: _pageCount > 0 ? 'e.g. 13 (out of $_pageCount)' : 'e.g. 13',
+                                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  OutlinedButton.icon(
-                                    onPressed: _pageCount == 0 ? null : _markAsChapter1Start,
-                                    icon: const Icon(LucideIcons.crosshair, size: 14),
-                                    label: const Text('Use current', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
-                                  ),
-                                ],
-                              ),
+                                    const SizedBox(width: 8),
+                                    OutlinedButton.icon(
+                                      onPressed: _pageCount == 0 ? null : _markAsChapter1Start,
+                                      icon: const Icon(LucideIcons.crosshair, size: 14),
+                                      label: const Text('Use current', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                                    ),
+                                  ],
+                                ),
+                              ],
                               const SizedBox(height: 16),
                               DuoButton(
                                 text: _isStarting ? 'Starting…' : 'Continue',
