@@ -27,23 +27,27 @@ class PdfSplitPreviewScreen extends StatefulWidget {
 
 class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
   final PdfViewerController _pdfViewerController = PdfViewerController();
-  final PageController _imagePageController = PageController();
   
   late List<Module> _modules;
-  bool _isPdf = false;
-  int _currentImageIndex = 0;
+  int _selectedFileIndex = 0;
   bool _isSectionLevel = false;
 
   final Map<String, TextEditingController> _startPageControllers = {};
   final Map<String, TextEditingController> _endPageControllers = {};
   final Map<String, TextEditingController> _titleControllers = {};
+  final Map<String, int> _bookIndices = {};
 
   String? _editingTitleId;
+
+  bool get _isCurrentFilePdf {
+    if (widget.originalPdf.isEmpty) return false;
+    if (_selectedFileIndex < 0 || _selectedFileIndex >= widget.originalPdf.length) return false;
+    return widget.originalPdf[_selectedFileIndex].path.toLowerCase().endsWith('.pdf');
+  }
 
   @override
   void initState() {
     super.initState();
-    _isPdf = widget.originalPdf.length == 1 && widget.originalPdf.first.path.toLowerCase().endsWith('.pdf');
     _modules = List.from(widget.skeletonBook.modules);
     
     // Determine if section-level or unit-level flow is used
@@ -61,11 +65,13 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
           _startPageControllers[section.id] = TextEditingController(text: section.startPage?.toString() ?? '');
           _endPageControllers[section.id] = TextEditingController(text: section.endPage?.toString() ?? '');
           _titleControllers[section.id] = TextEditingController(text: section.title);
+          _bookIndices[section.id] = section.bookIndex ?? 0;
         } else {
           for (final unit in section.units) {
             _startPageControllers[unit.id] = TextEditingController(text: unit.startPage?.toString() ?? '');
             _endPageControllers[unit.id] = TextEditingController(text: unit.endPage?.toString() ?? '');
             _titleControllers[unit.id] = TextEditingController(text: unit.title);
+            _bookIndices[unit.id] = unit.bookIndex ?? 0;
           }
         }
       }
@@ -87,11 +93,13 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
         units: [],
         startPage: null,
         endPage: null,
+        bookIndex: _selectedFileIndex,
       );
       
       _startPageControllers[newId] = TextEditingController();
       _endPageControllers[newId] = TextEditingController();
       _titleControllers[newId] = TextEditingController(text: newSec.title);
+      _bookIndices[newId] = _selectedFileIndex;
       
       final updatedSections = List<Section>.from(_modules[moduleIndex].sections)..add(newSec);
       _modules[moduleIndex] = _modules[moduleIndex].copyWith(sections: updatedSections);
@@ -107,6 +115,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
       _startPageControllers.remove(sectionId)?.dispose();
       _endPageControllers.remove(sectionId)?.dispose();
       _titleControllers.remove(sectionId)?.dispose();
+      _bookIndices.remove(sectionId);
     });
   }
 
@@ -121,11 +130,13 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
         lessons: [],
         startPage: null,
         endPage: null,
+        bookIndex: _selectedFileIndex,
       );
       
       _startPageControllers[newId] = TextEditingController();
       _endPageControllers[newId] = TextEditingController();
       _titleControllers[newId] = TextEditingController(text: newUnit.title);
+      _bookIndices[newId] = _selectedFileIndex;
       
       final currentSection = _modules[moduleIndex].sections[sectionIndex];
       final updatedUnits = List<Unit>.from(currentSection.units)..add(newUnit);
@@ -151,6 +162,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
       _startPageControllers.remove(unitId)?.dispose();
       _endPageControllers.remove(unitId)?.dispose();
       _titleControllers.remove(unitId)?.dispose();
+      _bookIndices.remove(unitId);
     });
   }
 
@@ -162,16 +174,44 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
           _startPageControllers.remove(section.id)?.dispose();
           _endPageControllers.remove(section.id)?.dispose();
           _titleControllers.remove(section.id)?.dispose();
+          _bookIndices.remove(section.id);
         } else {
           for (final unit in section.units) {
             _startPageControllers.remove(unit.id)?.dispose();
             _endPageControllers.remove(unit.id)?.dispose();
             _titleControllers.remove(unit.id)?.dispose();
+            _bookIndices.remove(unit.id);
           }
         }
       }
       _modules.removeAt(moduleIndex);
     });
+  }
+
+  void _viewPage(String itemId) {
+    int? p = int.tryParse(_startPageControllers[itemId]?.text ?? '');
+    final fileIdx = _bookIndices[itemId] ?? 0;
+    if (fileIdx < 0 || fileIdx >= widget.originalPdf.length) return;
+
+    if (_selectedFileIndex == fileIdx) {
+      if (p != null && _isCurrentFilePdf) {
+        _pdfViewerController.jumpToPage(p);
+      }
+    } else {
+      setState(() {
+        _selectedFileIndex = fileIdx;
+      });
+      if (p != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Future.delayed(const Duration(milliseconds: 100), () {
+            if (!mounted) return;
+            if (_isCurrentFilePdf) {
+              _pdfViewerController.jumpToPage(p);
+            }
+          });
+        });
+      }
+    }
   }
 
   void _saveTitle(String itemId, int moduleIndex, int? sectionIndex) {
@@ -219,11 +259,13 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
           final sPage = int.tryParse(_startPageControllers[section.id]?.text ?? '');
           final ePage = int.tryParse(_endPageControllers[section.id]?.text ?? '');
           final title = _titleControllers[section.id]?.text ?? section.title;
+          final bookIdx = _bookIndices[section.id] ?? 0;
 
           finalSections.add(section.copyWith(
             title: title,
             startPage: sPage,
             endPage: ePage,
+            bookIndex: bookIdx,
           ));
         } else {
           List<Unit> finalUnits = [];
@@ -232,11 +274,13 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
             final sPage = int.tryParse(_startPageControllers[unit.id]?.text ?? '');
             final ePage = int.tryParse(_endPageControllers[unit.id]?.text ?? '');
             final title = _titleControllers[unit.id]?.text ?? unit.title;
+            final bookIdx = _bookIndices[unit.id] ?? 0;
 
             finalUnits.add(unit.copyWith(
               title: title,
               startPage: sPage,
               endPage: ePage,
+              bookIndex: bookIdx,
             ));
           }
           finalSections.add(section.copyWith(units: finalUnits));
@@ -254,7 +298,6 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
   @override
   void dispose() {
     _pdfViewerController.dispose();
-    _imagePageController.dispose();
     for (var ctrl in _startPageControllers.values) {
       ctrl.dispose();
     }
@@ -343,7 +386,44 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          if (widget.originalPdf.length > 1) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.white.withOpacity(0.12)),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<int>(
+                  value: _bookIndices[itemId] ?? 0,
+                  dropdownColor: AppTheme.surface,
+                  icon: const Icon(LucideIcons.chevronDown, size: 12, color: Colors.white54),
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() {
+                        _bookIndices[itemId] = val;
+                      });
+                    }
+                  },
+                  selectedItemBuilder: (BuildContext context) {
+                    return List.generate(widget.originalPdf.length, (index) {
+                      return Center(child: Text('F${index + 1}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)));
+                    });
+                  },
+                  items: List.generate(widget.originalPdf.length, (index) {
+                    final filename = widget.originalPdf[index].path.split(RegExp(r'[/\\]')).last;
+                    return DropdownMenuItem<int>(
+                      value: index,
+                      child: Text('File ${index + 1}: $filename', style: const TextStyle(fontSize: 11)),
+                    );
+                  }),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
           SizedBox(
             width: 50,
             child: TextField(
@@ -384,16 +464,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
             padding: const EdgeInsets.all(4),
             constraints: const BoxConstraints(),
             tooltip: 'View page',
-            onPressed: () {
-              int? p = int.tryParse(_startPageControllers[itemId]?.text ?? '');
-              if (p != null) {
-                if (_isPdf) {
-                  _pdfViewerController.jumpToPage(p);
-                } else if (p - 1 >= 0 && p - 1 < widget.originalPdf.length) {
-                  _imagePageController.jumpToPage(p - 1);
-                }
-              }
-            },
+            onPressed: () => _viewPage(itemId),
           ),
           IconButton(
             icon: const Icon(LucideIcons.trash2, color: AppTheme.duoRed, size: 16),
@@ -552,21 +623,59 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                 clipBehavior: Clip.hardEdge,
                 child: Stack(
                   children: [
-                    if (_isPdf)
+                    if (_isCurrentFilePdf)
                       SfPdfViewer.file(
-                        widget.originalPdf.first,
+                        widget.originalPdf[_selectedFileIndex],
+                        key: ValueKey(_selectedFileIndex),
                         controller: _pdfViewerController,
                         canShowScrollHead: false,
                         canShowScrollStatus: false,
                       )
                     else
-                      PageView.builder(
-                        controller: _imagePageController,
-                        onPageChanged: (i) => setState(() => _currentImageIndex = i),
-                        itemCount: widget.originalPdf.length,
-                        itemBuilder: (context, index) => Image.file(widget.originalPdf[index], fit: BoxFit.contain),
+                      Center(
+                        child: Image.file(
+                          widget.originalPdf[_selectedFileIndex],
+                          key: ValueKey(_selectedFileIndex),
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     
+                    if (widget.originalPdf.length > 1)
+                      Positioned(
+                        top: 12,
+                        left: 12,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppTheme.surface.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white24),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<int>(
+                              value: _selectedFileIndex,
+                              dropdownColor: AppTheme.surface,
+                              icon: const Icon(LucideIcons.chevronDown, size: 14, color: Colors.white70),
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setState(() {
+                                    _selectedFileIndex = val;
+                                  });
+                                }
+                              },
+                              items: List.generate(widget.originalPdf.length, (index) {
+                                final filename = widget.originalPdf[index].path.split(RegExp(r'[/\\]')).last;
+                                return DropdownMenuItem<int>(
+                                  value: index,
+                                  child: Text('File ${index + 1}: $filename', style: const TextStyle(fontSize: 11)),
+                                );
+                              }),
+                            ),
+                          ),
+                        ),
+                      ),
+
                     Positioned(
                       bottom: 12,
                       right: 12,
@@ -579,10 +688,10 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                         ),
                         child: Row(
                           children: [
-                            Icon(_isPdf ? LucideIcons.fileText : LucideIcons.image, size: 14, color: Colors.white54),
+                            Icon(_isCurrentFilePdf ? LucideIcons.fileText : LucideIcons.image, size: 14, color: Colors.white54),
                             const SizedBox(width: 8),
                             Text(
-                              _isPdf ? 'Use Viewer to find exact page #' : 'Image ${_currentImageIndex + 1} of ${widget.originalPdf.length}', 
+                              _isCurrentFilePdf ? 'Use Viewer to find exact page #' : 'File ${_selectedFileIndex + 1} of ${widget.originalPdf.length}', 
                               style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)
                             ),
                           ],
