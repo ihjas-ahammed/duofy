@@ -50,6 +50,24 @@ class AiService {
   Future<List<String>> _getLiteModels() =>
       _getModelsForSlot('model_lite_list', 'model_lite', 'gemini-flash-lite-latest');
 
+  Future<List<String>> _getLiveModels() =>
+      _getModelsForSlot('model_live_list', 'model_live', 'gemini-2.0-flash-exp');
+
+  Future<String> getLiveModelName() async {
+    final list = await _getLiveModels();
+    return list.isNotEmpty ? list.first : 'gemini-2.0-flash-exp';
+  }
+
+  Future<String> getPrimaryTextModelName() async {
+    final list = await _getPrimaryTextModels();
+    return list.isNotEmpty ? list.first : 'gemini-flash-lite-latest';
+  }
+
+  Future<String> getApiKey() async {
+    final keys = await _getKeys();
+    return keys.isNotEmpty ? keys.first : '';
+  }
+
   Map<String, dynamic> _cleanAndDecodeJson(String text) {
     String cleaned = text.trim();
 

@@ -197,6 +197,7 @@ class DatabaseService {
     List<String>? modelPrimaryTextList,
     List<String>? modelPrimaryGraphicsList,
     List<String>? modelLiteList,
+    List<String>? modelLiveList,
   }) async {
     if (uid == 'guest') return;
     if (!await isCloudEnabled()) return; // local-first: nothing to push
@@ -214,6 +215,10 @@ class DatabaseService {
       if (modelLiteList != null) ...{
         'modelLiteList': modelLiteList,
         if (modelLiteList.isNotEmpty) 'modelLite': modelLiteList.first,
+      },
+      if (modelLiveList != null) ...{
+        'modelLiveList': modelLiveList,
+        if (modelLiveList.isNotEmpty) 'modelLive': modelLiveList.first,
       },
       'updatedAt': DateTime.now().millisecondsSinceEpoch,
     }).then((_) {
@@ -243,6 +248,7 @@ class DatabaseService {
         'modelPrimaryTextList': readList('modelPrimaryTextList', 'modelPrimaryText'),
         'modelPrimaryGraphicsList': readList('modelPrimaryGraphicsList', 'modelPrimaryGraphics'),
         'modelLiteList': readList('modelLiteList', 'modelLite'),
+        'modelLiveList': readList('modelLiveList', 'modelLive'),
       };
     } catch (e) {
       print("[DatabaseService] Error fetching user settings: $e");

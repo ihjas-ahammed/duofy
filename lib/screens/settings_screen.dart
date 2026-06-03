@@ -29,6 +29,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   List<String> _modelPrimaryText = ['gemini-flash-lite-latest', 'gemma-4-31b-it'];
   List<String> _modelPrimaryGraphics = ['gemini-flash-latest','gemini-2.5-flash','gemma-4-26b-a4b-it'];
   List<String> _modelLite = ['gemini-flash-lite-latest','gemma-4-31b-it'];
+  List<String> _modelLive = ['gemini-2.0-flash-exp'];
   /// How many lesson requests to fire in parallel during generation.
   /// 'auto' lets the app pick from the device's capacity; otherwise a fixed
   /// count string ('1'..'4'). Read by AiService via the `gen_concurrency` pref.
@@ -89,6 +90,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     List<String> primaryText = await _loadModelList(prefs, 'model_primary_text_list', 'model_primary_text', 'gemini-flash-lite-latest');
     List<String> primaryGraphics = await _loadModelList(prefs, 'model_primary_graphics_list', 'model_primary_graphics', 'gemini-3.5-flash');
     List<String> lite = await _loadModelList(prefs, 'model_lite_list', 'model_lite', 'gemini-flash-lite-latest');
+    List<String> live = await _loadModelList(prefs, 'model_live_list', 'model_live', 'gemini-2.0-flash-exp');
 
     // Hydrate from Firestore if local is empty.
     if (keys.isEmpty || models.isEmpty) {
@@ -119,6 +121,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           lite = List<String>.from(remoteLite);
           await prefs.setStringList('model_lite_list', lite);
         }
+        final remoteLive = remote['modelLiveList'] as List? ?? const [];
+        if (remoteLive.isNotEmpty) {
+          live = List<String>.from(remoteLive);
+          await prefs.setStringList('model_live_list', live);
+        }
       }
     }
 
@@ -127,6 +134,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _modelPrimaryText = primaryText;
     _modelPrimaryGraphics = primaryGraphics;
     _modelLite = lite;
+    _modelLive = live;
     _genConcurrency = prefs.getString('gen_concurrency') ?? 'auto';
     final startHour = prefs.getInt('schedule_start_hour') ?? 21;
     final startMinute = prefs.getInt('schedule_start_minute') ?? 0;
@@ -197,6 +205,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final pTextSaved = await prefs.setStringList('model_primary_text_list', _modelPrimaryText);
     final pGraphicsSaved = await prefs.setStringList('model_primary_graphics_list', _modelPrimaryGraphics);
     final liteSaved = await prefs.setStringList('model_lite_list', _modelLite);
+    final liveSaved = await prefs.setStringList('model_live_list', _modelLive);
     await prefs.setString('gen_concurrency', _genConcurrency);
     await prefs.setInt('schedule_start_hour', _scheduleStart.hour);
     await prefs.setInt('schedule_start_minute', _scheduleStart.minute);
@@ -210,8 +219,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (_modelPrimaryText.isNotEmpty) await prefs.setString('model_primary_text', _modelPrimaryText.first);
     if (_modelPrimaryGraphics.isNotEmpty) await prefs.setString('model_primary_graphics', _modelPrimaryGraphics.first);
     if (_modelLite.isNotEmpty) await prefs.setString('model_lite', _modelLite.first);
+    if (_modelLive.isNotEmpty) await prefs.setString('model_live', _modelLive.first);
 
-    if (!keysSaved || !modelsSaved || !pTextSaved || !pGraphicsSaved || !liteSaved) {
+    if (!keysSaved || !modelsSaved || !pTextSaved || !pGraphicsSaved || !liteSaved || !liveSaved) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Local save failed — syncing to cloud only.')));
       }
@@ -223,6 +233,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       modelPrimaryTextList: _modelPrimaryText,
       modelPrimaryGraphicsList: _modelPrimaryGraphics,
       modelLiteList: _modelLite,
+      modelLiveList: _modelLive,
     );
 
     if (mounted) {
@@ -341,6 +352,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return _modelPrimaryGraphics;
       case 'Lite':
         return _modelLite;
+      case 'Live':
+        return _modelLive;
       default:
         return [];
     }
@@ -829,6 +842,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: 'Creates skeletons and maps lesson plan lists.',
               slotName: 'Lite',
               icon: LucideIcons.zap,
+            ),
+            const SizedBox(height: 16),
+
+            _buildModelSlotCard(
+              title: 'Live',
+              subtitle: 'Real-time live model for chat & voice assistance.',
+              slotName: 'Live',
+              icon: LucideIcons.mic,
             ),
 
             const SizedBox(height: 32),

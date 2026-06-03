@@ -17,6 +17,7 @@ import '../widgets/slide_views/fill_in_blank_view.dart';
 import '../widgets/slide_views/numerical_view.dart';
 import '../widgets/slide_views/one_word_view.dart';
 import '../widgets/slide_views/interactive_proof_view.dart';
+import '../widgets/lesson_assistant_chat.dart';
 import 'lesson_complete_screen.dart';
 
 class LessonScreen extends StatefulWidget {
@@ -388,6 +389,50 @@ class _LessonScreenState extends State<LessonScreen> {
     }
   }
 
+  void _openAssistant() {
+    String sectionNotes = "";
+    if (widget.book != null && widget.modIdx != null && widget.secIdx != null) {
+      try {
+        final sec = widget.book!.modules[widget.modIdx!].sections[widget.secIdx!];
+        final List<String> notesParts = [];
+        for (var unit in sec.units) {
+          for (var lesson in unit.lessons) {
+            for (var slide in lesson.slides) {
+              if (slide.type == 'theory') {
+                notesParts.add('**${slide.title}**\n${slide.content}');
+              }
+            }
+          }
+        }
+        sectionNotes = notesParts.join('\n\n');
+      } catch (e) {
+        print("Error generating section notes: $e");
+      }
+    }
+
+    if (sectionNotes.isEmpty) {
+      sectionNotes = _lesson.slides
+          .where((s) => s.type == 'theory')
+          .map((s) => '**${s.title}**\n${s.content}')
+          .join('\n\n');
+    }
+
+    final slide = _slideQueue[_currentIndex];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => LessonAssistantChat(
+        book: widget.book ?? Book(id: 'dummy', title: 'Lesson Course', description: '', icon: '', modules: [], lessonFormats: [], defaultFormatId: ''),
+        modIdx: widget.modIdx ?? 0,
+        secIdx: widget.secIdx ?? 0,
+        currentSlide: slide,
+        sectionNotes: sectionNotes,
+      ),
+    );
+  }
+
   /// Applies a slide edit coming from a child view (e.g. double-tap on an
   /// option or proof step). Updates the in-memory lesson and persists via
   /// GenerationManager so edits survive reloads.
@@ -603,6 +648,15 @@ class _LessonScreenState extends State<LessonScreen> {
                             valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.duoGreen),
                             minHeight: 16,
                           ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      GestureDetector(
+                        onTap: () => _openAssistant(),
+                        child: SizedBox(
+                          width: 40,
+                          height: 48,
+                          child: Icon(LucideIcons.messageCircle, color: AppTheme.duoBlue, size: 22),
                         ),
                       ),
                       const SizedBox(width: 8),
