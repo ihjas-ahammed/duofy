@@ -1,1 +1,39 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"duofy-database","appId":"1:627087433319:android:eabb5c3edb1dddb079fec2","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"duofy-database","configurations":{"android":"1:627087433319:android:eabb5c3edb1dddb079fec2","ios":"1:627087433319:ios:7621750a6702416379fec2","macos":"1:627087433319:ios:7621750a6702416379fec2","web":"1:627087433319:web:692ecabeaf47717f79fec2","windows":"1:627087433319:web:9054103b7c754b1079fec2"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "duofy-database",
+          "appId": "1:627087433319:android:eabb5c3edb1dddb079fec2",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "duofy-database",
+          "configurations": {
+            "android": "1:627087433319:android:eabb5c3edb1dddb079fec2",
+            "ios": "1:627087433319:ios:7621750a6702416379fec2",
+            "macos": "1:627087433319:ios:7621750a6702416379fec2",
+            "web": "1:627087433319:web:692ecabeaf47717f79fec2",
+            "windows": "1:627087433319:web:9054103b7c754b1079fec2"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
