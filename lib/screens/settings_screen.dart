@@ -29,7 +29,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   List<String> _modelPrimaryText = ['gemini-flash-lite-latest', 'gemma-4-31b-it'];
   List<String> _modelPrimaryGraphics = ['gemini-flash-latest','gemini-2.5-flash','gemma-4-26b-a4b-it'];
   List<String> _modelLite = ['gemini-flash-lite-latest','gemma-4-31b-it'];
-  List<String> _modelLive = ['gemini-2.0-flash-exp'];
+  List<String> _modelLive = ['gemini-3.1-flash-live-preview'];
   /// How many lesson requests to fire in parallel during generation.
   /// 'auto' lets the app pick from the device's capacity; otherwise a fixed
   /// count string ('1'..'4'). Read by AiService via the `gen_concurrency` pref.
@@ -90,7 +90,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     List<String> primaryText = await _loadModelList(prefs, 'model_primary_text_list', 'model_primary_text', 'gemini-flash-lite-latest');
     List<String> primaryGraphics = await _loadModelList(prefs, 'model_primary_graphics_list', 'model_primary_graphics', 'gemini-3.5-flash');
     List<String> lite = await _loadModelList(prefs, 'model_lite_list', 'model_lite', 'gemini-flash-lite-latest');
-    List<String> live = await _loadModelList(prefs, 'model_live_list', 'model_live', 'gemini-2.0-flash-exp');
+    List<String> live = await _loadModelList(prefs, 'model_live_list', 'model_live', 'gemini-3.1-flash-live-preview');
 
     // Hydrate from Firestore if local is empty.
     if (keys.isEmpty || models.isEmpty) {
@@ -258,13 +258,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (name.startsWith('models/')) name = name.substring(7);
       if (name.contains('gemini') || name.contains('gemma')) fetchedModels.add(name);
     }
-    for (final id in const ['gemma4', 'gemini-3.5-flash', 'gemini-flash-lite-latest', 'gemma-4-31b-it', 'gemma-4-26b-a4b-it']) {
+    for (final id in const ['gemma4', 'gemini-3.5-flash', 'gemini-3.1-flash-live-preview', 'gemini-flash-lite-latest', 'gemma-4-31b-it', 'gemma-4-26b-a4b-it']) {
       if (!fetchedModels.contains(id)) fetchedModels.add(id);
     }
     fetchedModels.sort((a, b) {
       int rank(String n) {
         if (n.startsWith('gemma-4') || n == 'gemma4') return 0;
-        if (n.startsWith('gemini-2')) return 1;
+        if (n.startsWith('gemini-3') || n.startsWith('gemini-2')) return 1;
         if (n.startsWith('gemini')) return 2;
         if (n.startsWith('gemma')) return 3;
         return 4;

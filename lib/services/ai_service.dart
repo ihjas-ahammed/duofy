@@ -51,11 +51,11 @@ class AiService {
       _getModelsForSlot('model_lite_list', 'model_lite', 'gemini-flash-lite-latest');
 
   Future<List<String>> _getLiveModels() =>
-      _getModelsForSlot('model_live_list', 'model_live', 'gemini-2.0-flash-exp');
+      _getModelsForSlot('model_live_list', 'model_live', 'gemini-3.1-flash-live-preview');
 
   Future<String> getLiveModelName() async {
     final list = await _getLiveModels();
-    return list.isNotEmpty ? list.first : 'gemini-2.0-flash-exp';
+    return list.isNotEmpty ? list.first : 'gemini-3.1-flash-live-preview';
   }
 
   Future<String> getPrimaryTextModelName() async {
