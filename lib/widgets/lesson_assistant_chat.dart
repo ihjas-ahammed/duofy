@@ -90,7 +90,9 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
     _webSocket?.close();
     _recorder.dispose();
     _audioPlayer.dispose();
-    _flutterTts.stop();
+    if (!Platform.isLinux) {
+      _flutterTts.stop();
+    }
     _textController.dispose();
     _scrollController.dispose();
     _pulsingController.dispose();
@@ -98,6 +100,10 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
   }
 
   Future<void> _initTts() async {
+    if (Platform.isLinux) {
+      print("TTS is not supported on Linux by flutter_tts.");
+      return;
+    }
     try {
       await _flutterTts.setLanguage("en-US");
       await _flutterTts.setSpeechRate(0.55);
@@ -528,7 +534,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
       });
       _scrollToBottom();
 
-      if (_voiceOutputEnabled) {
+      if (_voiceOutputEnabled && !Platform.isLinux) {
         await _flutterTts.speak(reply);
       }
     } catch (e) {
@@ -669,7 +675,9 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                             _connectWebSocket();
                           }
                           if (!_voiceOutputEnabled) {
-                            _flutterTts.stop();
+                            if (!Platform.isLinux) {
+                              _flutterTts.stop();
+                            }
                             _audioPlayer.stop();
                           }
                         },
