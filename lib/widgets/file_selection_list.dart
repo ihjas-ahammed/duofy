@@ -1,10 +1,12 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:file_picker/file_picker.dart';
 import '../theme/app_theme.dart';
 
 class FileSelectionList extends StatelessWidget {
-  final List<File> files;
+  final List<dynamic> files;
   final VoidCallback onAddMore;
   final Function(int) onRemove;
 
@@ -76,7 +78,16 @@ class FileSelectionList extends StatelessWidget {
               separatorBuilder: (_, _) => const Divider(height: 1, color: Colors.white12),
               itemBuilder: (context, index) {
                 final file = files[index];
-                final isPdf = file.path.toLowerCase().endsWith('.pdf');
+                String name = '';
+                bool isPdf = false;
+                if (file is File) {
+                  name = file.path.split('/').last.split('\\').last;
+                  isPdf = file.path.toLowerCase().endsWith('.pdf');
+                } else if (file is PlatformFile) {
+                  name = file.name;
+                  isPdf = file.name.toLowerCase().endsWith('.pdf');
+                }
+                
                 return ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   leading: Icon(
@@ -84,7 +95,7 @@ class FileSelectionList extends StatelessWidget {
                     color: isPdf ? AppTheme.duoViolet : AppTheme.duoOrange,
                   ),
                   title: Text(
-                    file.path.split('/').last,
+                    name,
                     style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

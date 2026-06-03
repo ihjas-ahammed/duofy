@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
@@ -86,6 +87,26 @@ class DatabaseService {
 
   Future<Map<String, Book>> _loadFromDisk(String u) async {
     final Map<String, Book> result = {};
+    if (kIsWeb) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final keys = prefs.getKeys();
+        for (final key in keys) {
+          if (key.startsWith('web_book_${u}_')) {
+            final txt = prefs.getString(key);
+            if (txt != null && txt.trim().isNotEmpty) {
+              final b = Book.fromJson(Map<String, dynamic>.from(jsonDecode(txt)));
+              if (b.id.isNotEmpty) result[b.id] = b;
+            }
+          }
+        }
+      } catch (e) {
+        print("[DatabaseService] web _loadFromDisk error: $e");
+      }
+      _mem[u] = result;
+      _loading.remove(u);
+      return result;
+    }
     try {
       final dir = await _booksDir(u);
       final files = dir
@@ -138,6 +159,11 @@ class DatabaseService {
   /// Atomic-ish single-book write: write to a temp file then rename, so an
   /// interrupted write can never leave a half-written (corrupt) book file.
   Future<void> _writeBookFile(String forUid, Book book) async {
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('web_book_${forUid}_${book.id}', jsonEncode(book.toJson()));
+      return;
+    }
     final dir = await _booksDir(forUid);
     final target = _bookFile(dir, book.id);
     final tmp = File('${target.path}.tmp');
@@ -147,6 +173,11 @@ class DatabaseService {
   }
 
   Future<void> _deleteBookFile(String forUid, String id) async {
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('web_book_${forUid}_$id');
+      return;
+    }
     try {
       final dir = await _booksDir(forUid);
       final f = _bookFile(dir, id);
@@ -222,7 +253,10 @@ class DatabaseService {
   // ---------------------------------------------------------------------------
   // Books
   // ---------------------------------------------------------------------------
-  Future<List<Book>> fetchBooks({bool forceRefresh = false}) async {
+  Future<List<Book>> fetchBooks({
+    bool forceRefresh = false,
+    Future<bool> Function(Book local, Book remote)? onConflict,
+  }) async {
     final local = await _ensureLoaded();
     final cloud = await isCloudEnabled();
 
@@ -259,9 +293,21 @@ class DatabaseService {
         if (remoteBook == null) {
           merged[localBook.id] = localBook;
           toPush.add(localBook);
-        } else if ((localBook.updatedAt ?? 0) > (remoteBook.updatedAt ?? 0)) {
-          merged[localBook.id] = localBook;
-          toPush.add(localBook);
+        } else if (localBook.updatedAt != remoteBook.updatedAt) {
+          // Conflict!
+          bool keepLocal = true;
+          if (onConflict != null) {
+            keepLocal = await onConflict(localBook, remoteBook);
+          } else {
+            // Default: newer wins
+            keepLocal = (localBook.updatedAt ?? 0) > (remoteBook.updatedAt ?? 0);
+          }
+          if (keepLocal) {
+            merged[localBook.id] = localBook;
+            toPush.add(localBook);
+          } else {
+            merged[localBook.id] = remoteBook;
+          }
         }
       }
 
@@ -282,6 +328,10 @@ class DatabaseService {
         await _seedGuestMocks(local);
         return _sorted(local.values);
       }
+
+      // Record successful sync time
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('last_db_sync_time', DateTime.now().millisecondsSinceEpoch);
 
       return _sorted(merged.values);
     } catch (e) {
@@ -395,12 +445,30 @@ class DatabaseService {
       isGlobal: true,
       updatedAt: DateTime.now().millisecondsSinceEpoch,
     );
-    _globalBooks.doc(book.id).set(publishedBook.toJson()).then((_) {
-      print("[DatabaseService] Published to global successfully.");
-    }).catchError((e) {
-      print("[DatabaseService] Error publishing to global: $e");
-    });
+    await _globalBooks.doc(book.id).set(publishedBook.toJson());
+    // Also save this local copy with isGlobal = true to local database!
+    await saveGeneratedBook(publishedBook);
     return true;
+  }
+
+  Future<Book?> fetchGlobalBookById(String id) async {
+    try {
+      final snap = await _globalBooks.doc(id).get().timeout(const Duration(seconds: 4));
+      if (snap.exists && snap.data() != null) {
+        return Book.fromJson(Map<String, dynamic>.from(snap.data()!));
+      }
+    } catch (e) {
+      print("[DatabaseService] Error fetching global book by id $id: $e");
+    }
+    try {
+      final cached = await fetchGlobalBooks(useCacheOnly: true);
+      for (final b in cached) {
+        if (b.id == id) return b;
+      }
+    } catch (e) {
+      print("[DatabaseService] Error checking local cache for global book by id $id: $e");
+    }
+    return null;
   }
 
   Future<void> deleteGlobalBook(String id) async {

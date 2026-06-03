@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
@@ -60,6 +62,7 @@ class QpGenTask {
 
 class GenerationManager extends ChangeNotifier {
   static final GenerationManager instance = GenerationManager._internal();
+  static final Map<String, List<PlatformFile>> _inMemoryPyqFiles = {};
   
   GenerationManager._internal() {
     _loadQueueFromPrefs();
@@ -394,8 +397,13 @@ class GenerationManager extends ChangeNotifier {
           await _runQpGenerationForTask(task, files, title, book, instructions, apiKey);
           break;
         case 'pyq':
-          final filePaths = List<String>.from(task.params['filePaths']);
-          final files = filePaths.map((p) => File(p)).toList();
+          List<dynamic> files = [];
+          if (_inMemoryPyqFiles.containsKey(task.id)) {
+            files = _inMemoryPyqFiles[task.id]!;
+          } else {
+            final filePaths = List<String>.from(task.params['filePaths'] ?? []);
+            files = filePaths.map((p) => File(p)).toList();
+          }
           final instructions = task.params['instructions'] as String?;
           final book = await _dbService.getBookFromCache(task.bookId);
           if (book == null) throw Exception("Course not found");
@@ -460,8 +468,9 @@ class GenerationManager extends ChangeNotifier {
     required bool generateGraphics,
     required bool isScheduled,
     required Map<String, dynamic> params,
+    String? customTaskId,
   }) {
-    final taskId = '${type}_${DateTime.now().millisecondsSinceEpoch}_${unitId ?? sectionId ?? moduleId ?? bookId}';
+    final taskId = customTaskId ?? '${type}_${DateTime.now().millisecondsSinceEpoch}_${unitId ?? sectionId ?? moduleId ?? bookId}';
     final task = AiTask(
       id: taskId,
       title: title,
@@ -943,7 +952,7 @@ class GenerationManager extends ChangeNotifier {
 
   Future<void> _runPyqGenerationForTask(
     AiTask task,
-    List<File> files,
+    List<dynamic> files,
     Book book,
     String? customInstructions,
     String apiKey,
@@ -1687,7 +1696,7 @@ class GenerationManager extends ChangeNotifier {
 
   Future<void> startPyqAnalysis(
     String bookId,
-    List<File> files,
+    List<dynamic> files,
     Book currentBook, {
     String? customInstructions,
     bool isScheduled = false,
@@ -1696,9 +1705,17 @@ class GenerationManager extends ChangeNotifier {
       return;
     }
     
-    final filePaths = files.map((f) => f.path).toList();
+    final taskId = 'pyq_${DateTime.now().millisecondsSinceEpoch}_$bookId';
+    
+    final platformFiles = files.whereType<PlatformFile>().toList();
+    if (platformFiles.isNotEmpty) {
+      _inMemoryPyqFiles[taskId] = platformFiles;
+    }
+    
+    final filePaths = files.whereType<File>().map((f) => f.path).toList();
     
     _enqueue(
+      customTaskId: taskId,
       title: 'PYQ: ${currentBook.title}',
       type: 'pyq',
       bookId: bookId,

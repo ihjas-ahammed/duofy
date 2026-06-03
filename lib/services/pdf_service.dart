@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui';
 import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart' as sync_pdf;
@@ -44,11 +45,8 @@ class PdfService {
     }
   }
 
-  /// Extracts all text from a PDF file locally.
-  /// Useful for sending dense documents (like syllabuses) to the AI as plain text
-  /// to avoid "unable to process input image" errors with inline PDFs.
-  Future<String> extractTextFromPdf(File pdfFile) async {
-    final doc = sync_pdf.PdfDocument(inputBytes: await pdfFile.readAsBytes());
+  Future<String> extractTextFromPdfBytes(Uint8List bytes) async {
+    final doc = sync_pdf.PdfDocument(inputBytes: bytes);
     try {
       final extractor = sync_pdf.PdfTextExtractor(doc);
       return extractor.extractText();
@@ -58,6 +56,13 @@ class PdfService {
     } finally {
       doc.dispose();
     }
+  }
+
+  /// Extracts all text from a PDF file locally.
+  /// Useful for sending dense documents (like syllabuses) to the AI as plain text
+  /// to avoid "unable to process input image" errors with inline PDFs.
+  Future<String> extractTextFromPdf(File pdfFile) async {
+    return extractTextFromPdfBytes(await pdfFile.readAsBytes());
   }
 
   /// Merges multiple PDF/Image files into a single temporary PDF file.

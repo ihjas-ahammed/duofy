@@ -26,6 +26,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   int _currentIndex = 0;
   late Book _currentBook;
   late StreamSubscription<Book> _bookUpdateSub;
+  bool _isSyncPromptOpen = false;
 
   @override
   void initState() {
@@ -34,9 +35,13 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
 
     _bookUpdateSub = GenerationManager.instance.bookUpdates.listen((updatedBook) {
       if (updatedBook.id == _currentBook.id && mounted) {
+        final wasGlobal = _currentBook.isGlobal;
         setState(() {
           _currentBook = updatedBook;
         });
+        if (wasGlobal || updatedBook.isGlobal) {
+          _promptSyncPublishedBook(updatedBook);
+        }
       }
     });
   }
@@ -52,6 +57,9 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
       setState(() {
         _currentBook = newBook;
       });
+      if (newBook.isGlobal) {
+        _promptSyncPublishedBook(newBook);
+      }
     }
   }
 
@@ -110,7 +118,12 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                     MaterialPageRoute(
                       builder: (_) => CourseSettingsScreen(book: _currentBook),
                     ),
-                  );
+                  ).then((_) async {
+                    final freshest = await DatabaseService().getBookFromCache(_currentBook.id);
+                    if (freshest != null && mounted) {
+                      _onBookUpdated(freshest);
+                    }
+                  });
                 },
               ),
               const SizedBox(height: 16),
@@ -127,25 +140,95 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: AppTheme.surface,
         title: const Text('Publish to Community?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: const Text('This will make your course available to everyone in the Global Community Picks.'),
+        content: const Text('This will make your course available to everyone in the Published Courses.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Publishing...')));
-              final published = await DatabaseService().publishToGlobal(_currentBook);
-              if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text(published
-                    ? 'Published Successfully!'
-                    : 'Enable Cloud Sync in Settings to publish to the community.'),
-              ));
+              _syncBook();
             },
             child: const Text('Publish', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
           )
         ]
       )
+    );
+  }
+
+  void _syncBook() async {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Syncing course to community...')));
+    final success = await DatabaseService().publishToGlobal(_currentBook);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(success ? 'Sync Completed!' : 'Enable Cloud Sync in Settings to sync.'),
+    ));
+    final freshest = await DatabaseService().getBookFromCache(_currentBook.id);
+    if (freshest != null && mounted) {
+      setState(() {
+        _currentBook = freshest;
+      });
+    }
+  }
+
+  void _handlePublishOrSync() {
+    if (_currentBook.isGlobal) {
+      _syncBook();
+    } else {
+      _publishBook();
+    }
+  }
+
+  String _formatLastSyncDate(int? ts) {
+    if (ts == null || ts == 0) return 'Never';
+    final dt = DateTime.fromMillisecondsSinceEpoch(ts);
+    final hour = dt.hour == 0 ? 12 : (dt.hour > 12 ? dt.hour - 12 : dt.hour);
+    final period = dt.hour >= 12 ? 'PM' : 'AM';
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final month = dt.month.toString().padLeft(2, '0');
+    final day = dt.day.toString().padLeft(2, '0');
+    return '$month-$day $hour:$minute $period';
+  }
+
+  void _promptSyncPublishedBook(Book book) {
+    if (_isSyncPromptOpen) return;
+    _isSyncPromptOpen = true;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text('Sync Changes?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: const Text('This is a published course. Would you like to sync the new changes/content to the community database?'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              _isSyncPromptOpen = false;
+              Navigator.pop(ctx);
+            },
+            child: const Text('Later', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () async {
+              _isSyncPromptOpen = false;
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Syncing course to community...')));
+              final success = await DatabaseService().publishToGlobal(book);
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text(success ? 'Sync Completed!' : 'Enable Cloud Sync in Settings to sync.'),
+              ));
+              final freshest = await DatabaseService().getBookFromCache(book.id);
+              if (freshest != null && mounted) {
+                setState(() {
+                  _currentBook = freshest;
+                });
+              }
+            },
+            child: const Text('Sync Now', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -250,9 +333,15 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
             onPressed: _openCourseSettings,
           ),
           IconButton(
-            icon: const Icon(LucideIcons.uploadCloud, size: 22, color: AppTheme.duoBlue),
-            tooltip: 'Publish to Community',
-            onPressed: _publishBook,
+            icon: Icon(
+              _currentBook.isGlobal ? LucideIcons.refreshCw : LucideIcons.uploadCloud,
+              size: 22,
+              color: AppTheme.duoBlue,
+            ),
+            tooltip: _currentBook.isGlobal
+                ? 'Sync Course (Last: ${_formatLastSyncDate(_currentBook.updatedAt)})'
+                : 'Publish to Community',
+            onPressed: _handlePublishOrSync,
           ),
         ],
       ),
@@ -353,10 +442,13 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
           ),
           const SizedBox(height: 8),
           _buildSidebarActionButton(
-            icon: LucideIcons.uploadCloud,
-            label: 'Publish Course',
+            icon: _currentBook.isGlobal ? LucideIcons.refreshCw : LucideIcons.uploadCloud,
+            label: _currentBook.isGlobal ? 'Sync Course' : 'Publish Course',
+            subtitle: _currentBook.isGlobal
+                ? 'Last: ${_formatLastSyncDate(_currentBook.updatedAt)}'
+                : null,
             iconColor: AppTheme.duoBlue,
-            onTap: _publishBook,
+            onTap: _handlePublishOrSync,
           ),
         ],
       ),
@@ -402,6 +494,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   Widget _buildSidebarActionButton({
     required IconData icon,
     required String label,
+    String? subtitle,
     required VoidCallback onTap,
     Color iconColor = Colors.white70,
   }) {
@@ -422,13 +515,32 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
               size: 24,
             ),
             const SizedBox(width: 16),
-            Text(
-              label,
-              style: const TextStyle(
-                fontFamily: 'Nunito',
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: Colors.white70,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontFamily: 'Nunito',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 11,
+                        color: Colors.white38,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
           ],

@@ -1,11 +1,11 @@
 {
-    "name": "duofy",
-    "short_name": "duofy",
+    "name": "DuoFY",
+    "short_name": "DuoFY",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Gamified AI study platform for books, lectures, and courses.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

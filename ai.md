@@ -1,20 +1,12 @@
 Make the following changes:
 
-- Support web and Implement cloud manager:
-    1. For web version, since we cannot create pdf, only show a page with all published books:
-        1. at home page, all published books are listed
-        2. when a published book is clicked, directly open it with a path /book-id/, but still save last section open, completion progress etc. also support pyq analyzer because it doesnt need pdf splittting and saving, also save all new data in localstorage indexdb
-        3. Give the same icon
-        4. Support install to homescreen as web app
-        5. Rename Commmunity Books -> Published Courses , also make sure Owner can also delete their own published course or unpublish if needed
-    2. Cloud manager:
-        1. Show last sync time in settings
-        2. Add quick sync button
-        3. To fix conflict when multiple device are used, when overwriting already written database element in a different version, show a confirmtaion dialog with write time of both (only if its written from another device)
-        4. For published projects:
-            1. Ask sync everytime the published project data is edited/new content is generated
-            2. Also instead of publish to - turn that button to sync after published with last sync date
-
+- Enable Lesson Assistance:
+    - Use gemini-flash-live (latest: search on google)
+    1. It will be given current section notes (generated) as input 
+    2. Simple chat screen: with optional voice input and also voice output (but still use live model because its fast), also it must be connected from the beginning to make it fluent
+    3. Add this to the lesson screen, and especially give info about current open lesson and slide, so user can directly ask question about that
+    4. Make sure even if its normal model it has latex support, also add model switch inside the chat if needed (like for complex problem)
+    5. Add a new model type: Live in settings (along with our default model time)
 
 Update prompt accordingly as I add new features and slide types
 

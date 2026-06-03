@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pdfx/pdfx.dart' as pdfx;
@@ -220,23 +223,43 @@ class AiService {
     throw last ?? Exception('Retry exhausted');
   }
 
-  Future<List<Part>> _buildFileParts(List<File> files, {bool extractText = false, List<String>? fileLabels}) async {
+  Future<List<Part>> _buildFileParts(List<dynamic> files, {bool extractText = false, List<String>? fileLabels}) async {
     List<Part> parts = [];
     for (int idx = 0; idx < files.length; idx++) {
       final f = files[idx];
       if (fileLabels != null && idx < fileLabels.length) {
         parts.add(TextPart(fileLabels[idx]));
       }
-      final ext = f.path.split('.').last.toLowerCase();
+
+      String name = '';
+      Uint8List bytes;
+
+      if (f is File) {
+        name = f.path;
+        bytes = await f.readAsBytes();
+      } else if (f is PlatformFile) {
+        name = f.name;
+        if (f.bytes != null) {
+          bytes = f.bytes!;
+        } else if (f.path != null) {
+          bytes = await File(f.path!).readAsBytes();
+        } else {
+          continue;
+        }
+      } else {
+        continue;
+      }
+
+      final ext = name.split('.').last.toLowerCase();
       if (ext == 'pdf') {
         if (extractText) {
-          final text = await PdfService().extractTextFromPdf(f);
+          final text = await PdfService().extractTextFromPdfBytes(bytes);
           if (text.trim().isNotEmpty) {
             parts.add(TextPart('--- SYLLABUS CONTENT START ---\n$text\n--- SYLLABUS CONTENT END ---'));
           }
         } else {
           try {
-            final doc = await pdfx.PdfDocument.openFile(f.path);
+            final doc = await pdfx.PdfDocument.openData(bytes);
             for (int i = 1; i <= doc.pagesCount; i++) {
               final page = await doc.getPage(i);
               final pageImage = await page.render(
@@ -252,7 +275,7 @@ class AiService {
           } catch (e) {
             print('PDF to Image fallback error: $e');
             // Last resort: extract text if image conversion fails
-            final text = await PdfService().extractTextFromPdf(f);
+            final text = await PdfService().extractTextFromPdfBytes(bytes);
             if (text.trim().isNotEmpty) {
               parts.add(TextPart('--- CONTENT START ---\n$text\n--- CONTENT END ---'));
             }
@@ -260,7 +283,7 @@ class AiService {
         }
       } else {
         final mime = ext == 'png' ? 'image/png' : 'image/jpeg';
-        parts.add(DataPart(mime, await f.readAsBytes()));
+        parts.add(DataPart(mime, bytes));
       }
     }
     return parts;
@@ -1643,7 +1666,7 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
   }
 
   Future<List<Slide>> extractPyqQuestionsForSection({
-    required List<File> files,
+    required List<dynamic> files,
     required Section section,
     required List<Slide> existingQuestions,
     required List<Map<String, String>> otherSections,

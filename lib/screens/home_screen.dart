@@ -13,6 +13,8 @@ import '../widgets/compact_book_card.dart';
 import '../widgets/community_book_card.dart';
 import '../widgets/generating_book_card.dart';
 import '../widgets/responsive_center.dart';
+import '../widgets/sync_conflict_dialog.dart';
+import 'package:flutter/foundation.dart';
 import 'main_layout_screen.dart';
 import 'settings_screen.dart';
 import 'generate_book_screen.dart';
@@ -101,7 +103,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _syncRemoteData() async {
     try {
-      final fetched = await _db.fetchBooks(forceRefresh: true);
+      final fetched = await _db.fetchBooks(
+        forceRefresh: true,
+        onConflict: (local, remote) => showSyncConflictDialog(context, local, remote),
+      );
       final globals = await _db.fetchGlobalBooks(useCacheOnly: false);
       
       Map<String, double> prog = {};
@@ -188,12 +193,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         title: Text('Discover', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 28, color: Colors.white)),
                       ),
                       actions:[
-                        IconButton(
-                          icon: const Icon(LucideIcons.cpu, size: 28),
-                          onPressed: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (_) => const AiQueueScreen()));
-                          },
-                        ),
+                        if (!kIsWeb)
+                          IconButton(
+                            icon: const Icon(LucideIcons.cpu, size: 28),
+                            onPressed: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const AiQueueScreen()));
+                            },
+                          ),
                         IconButton(
                           padding: const EdgeInsets.only(right: 16),
                           icon: const Icon(LucideIcons.userCircle, size: 28),
@@ -205,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                     
-                    if (activeTasks.isNotEmpty)
+                    if (activeTasks.isNotEmpty && !kIsWeb)
                       SliverPadding(
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                         sliver: SliverList(
@@ -234,96 +240,195 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     
-                    SliverToBoxAdapter(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.fromLTRB(24, 16, 24, 16),
-                            child: Text('Your Library', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
+                    if (!kIsWeb)
+                      SliverToBoxAdapter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.fromLTRB(24, 16, 24, 16),
+                              child: Text('Your Library', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
+                            ),
+                            if (books.isEmpty && activeTasks.isEmpty)
+                               Container(
+                                 height: 180,
+                                 margin: const EdgeInsets.symmetric(horizontal: 24),
+                                 decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(24)),
+                                 alignment: Alignment.center,
+                                 child: const Text('No courses found.\nTap + to create one!', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                               )
+                            else if (books.isNotEmpty)
+                               SizedBox(
+                                 height: 220,
+                                 child: ListView.builder(
+                                   scrollDirection: Axis.horizontal,
+                                   physics: const BouncingScrollPhysics(),
+                                   padding: const EdgeInsets.only(left: 8, right: 24),
+                                   itemCount: books.length,
+                                   itemBuilder: (context, index) {
+                                     final book = books[index];
+                                       return CompactBookCard(
+                                         book: book,
+                                         progress: progressMap[book.id] ?? 0.0,
+                                         onTap: () {
+                                           Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
+                                             .then((_) => _loadAllData(force: false));
+                                         },
+                                         onLongPress: () => _showBookLongPressMenu(book),
+                                         onDelete: () => _deleteLocalBook(book),
+                                       );
+                                   },
+                                 ),
+                               ),
+                          ],
+                        ),
+                      ),
+
+                    if (kIsWeb) ...[
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+                        sliver: SliverToBoxAdapter(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text(
+                                'Published Courses',
+                                style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.white),
+                              ),
+                              SizedBox(height: 6),
+                              Text(
+                                'Explore and study courses published by the community.',
+                                style: TextStyle(color: Colors.white54, fontSize: 13),
+                              ),
+                            ],
                           ),
-                          if (books.isEmpty && activeTasks.isEmpty)
-                             Container(
-                               height: 180,
-                               margin: const EdgeInsets.symmetric(horizontal: 24),
-                               decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(24)),
-                               alignment: Alignment.center,
-                               child: const Text('No courses found.\nTap + to create one!', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
-                             )
-                          else if (books.isNotEmpty)
-                             SizedBox(
-                               height: 220,
-                               child: ListView.builder(
-                                 scrollDirection: Axis.horizontal,
-                                 physics: const BouncingScrollPhysics(),
-                                 padding: const EdgeInsets.only(left: 8, right: 24),
-                                 itemCount: books.length,
-                                 itemBuilder: (context, index) {
-                                   final book = books[index];
-                                     return CompactBookCard(
-                                       book: book,
-                                       progress: progressMap[book.id] ?? 0.0,
-                                       onTap: () {
-                                         Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
-                                           .then((_) => _loadAllData(force: false));
-                                       },
-                                       onLongPress: () => _showBookLongPressMenu(book),
-                                       onDelete: () => _deleteLocalBook(book),
+                        ),
+                      ),
+                      SliverPadding(
+                        padding: const EdgeInsets.all(24),
+                        sliver: globalBooks.isEmpty
+                            ? const SliverToBoxAdapter(
+                                child: Center(
+                                  child: Text('No published courses yet.', style: TextStyle(color: Colors.white54)),
+                                ),
+                              )
+                            : SliverGrid(
+                                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                                  maxCrossAxisExtent: 360,
+                                  mainAxisExtent: 120,
+                                  crossAxisSpacing: 16,
+                                  mainAxisSpacing: 16,
+                                ),
+                                delegate: SliverChildBuilderDelegate(
+                                  (context, index) {
+                                    final gBook = globalBooks[index];
+                                    final user = FbAuth.instance.currentUser;
+                                    final bool isOwner = user != null && gBook.authorId == user.uid;
+                                    final bool isSuperAdmin = user?.email == 'ihjas.one@gmail.com';
+                                    final bool canDelete = isOwner || isSuperAdmin;
+
+                                    return CommunityBookCard(
+                                      book: gBook,
+                                      buttonText: 'OPEN',
+                                      onGetPressed: () {
+                                        Navigator.pushNamed(context, '/${gBook.id}');
+                                      },
+                                      onDeletePressed: canDelete ? () async {
+                                        final confirm = await showDialog<bool>(
+                                          context: context,
+                                          builder: (ctx) => AlertDialog(
+                                            backgroundColor: AppTheme.surface,
+                                            title: const Text('Unpublish Course?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                            content: const Text('Are you sure you want to unpublish this course from Published Courses? This won\'t delete your local copy if you have one.', style: TextStyle(color: Colors.white70)),
+                                            actions: [
+                                              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(ctx, true),
+                                                child: const Text('Unpublish', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                        if (confirm == true) {
+                                          await _db.deleteGlobalBook(gBook.id);
+                                          _loadAllData(force: true);
+                                        }
+                                      } : null,
+                                    );
+                                  },
+                                  childCount: globalBooks.length,
+                                ),
+                              ),
+                      ),
+                    ] else ...[
+                      SliverToBoxAdapter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.fromLTRB(24, 32, 24, 16),
+                              child: Text('Published Courses', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
+                            ),
+                            if (globalBooks.isEmpty)
+                               const Padding(
+                                 padding: EdgeInsets.symmetric(horizontal: 24.0),
+                                 child: Text('No published courses yet.', style: TextStyle(color: Colors.white54)),
+                               )
+                            else
+                               SizedBox(
+                                 height: 120,
+                                 child: ListView.builder(
+                                   scrollDirection: Axis.horizontal,
+                                   physics: const BouncingScrollPhysics(),
+                                   padding: const EdgeInsets.only(left: 8, right: 24),
+                                   itemCount: globalBooks.length,
+                                   itemBuilder: (context, index) {
+                                     final gBook = globalBooks[index];
+                                     final user = FbAuth.instance.currentUser;
+                                     final bool isOwner = user != null && gBook.authorId == user.uid;
+                                     final bool isSuperAdmin = user?.email == 'ihjas.one@gmail.com';
+                                     final bool canDelete = isOwner || isSuperAdmin;
+
+                                     return CommunityBookCard(
+                                       book: gBook,
+                                       buttonText: 'GET',
+                                       onGetPressed: () => _downloadGlobalBook(gBook),
+                                       onDeletePressed: canDelete ? () async {
+                                         final confirm = await showDialog<bool>(
+                                           context: context,
+                                           builder: (ctx) => AlertDialog(
+                                             backgroundColor: AppTheme.surface,
+                                             title: const Text('Unpublish Course?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                             content: const Text('Are you sure you want to unpublish this course from Published Courses? This won\'t delete your local copy if you have one.', style: TextStyle(color: Colors.white70)),
+                                             actions: [
+                                               TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+                                               TextButton(
+                                                 onPressed: () => Navigator.pop(ctx, true),
+                                                 child: const Text('Unpublish', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
+                                               ),
+                                             ],
+                                           ),
+                                         );
+                                         if (confirm == true) {
+                                           await _db.deleteGlobalBook(gBook.id);
+                                           _loadAllData(force: true);
+                                         }
+                                       } : null,
                                      );
-                                 },
+                                   },
+                                 ),
                                ),
-                             ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-
-                    SliverToBoxAdapter(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.fromLTRB(24, 32, 24, 16),
-                            child: Text('Community Picks', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
-                          ),
-                          if (globalBooks.isEmpty)
-                             const Padding(
-                               padding: EdgeInsets.symmetric(horizontal: 24.0),
-                               child: Text('No community books published yet.', style: TextStyle(color: Colors.white54)),
-                             )
-                          else
-                             SizedBox(
-                               height: 120,
-                               child: ListView.builder(
-                                 scrollDirection: Axis.horizontal,
-                                 physics: const BouncingScrollPhysics(),
-                                 padding: const EdgeInsets.only(left: 8, right: 24),
-                                 itemCount: globalBooks.length,
-                                 itemBuilder: (context, index) {
-                                   final gBook = globalBooks[index];
-                                   final user = FbAuth.instance.currentUser;
-                                   final bool isSuperAdmin = user?.email == 'ihjas.one@gmail.com';
-
-                                   return CommunityBookCard(
-                                     book: gBook,
-                                     onGetPressed: () => _downloadGlobalBook(gBook),
-                                     onDeletePressed: isSuperAdmin ? () async {
-                                        await _db.deleteGlobalBook(gBook.id);
-                                        _loadAllData(force: true);
-                                     } : null,
-                                   );
-                                 },
-                               ),
-                             ),
-                        ],
-                      ),
-                    ),
+                    ],
 
                     const SliverToBoxAdapter(child: SizedBox(height: 100)),
                   ],
                 ),
               ),
           ),
-          floatingActionButton: FloatingActionButton(
+          floatingActionButton: kIsWeb ? null : FloatingActionButton(
             backgroundColor: AppTheme.duoGreen,
             child: const Icon(LucideIcons.plus, color: Colors.white, size: 32),
             onPressed: () => Navigator.push(

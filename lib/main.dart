@@ -6,6 +6,7 @@ import 'services/fb/fb_core.dart';
 import 'services/global_state.dart';
 import 'services/notification_service.dart';
 import 'screens/auth_gate.dart';
+import 'screens/book_route_loader_screen.dart';
 
 // Global Navigation Key to handle routing from notifications anywhere
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -53,6 +54,20 @@ class DuoFyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       home: const AuthGate(),
+      onGenerateRoute: (settings) {
+        final name = settings.name ?? '';
+        if (name == '/' || name.isEmpty) {
+          return MaterialPageRoute(builder: (_) => const AuthGate());
+        }
+        final bookId = name.replaceAll('/', '');
+        if (bookId.isNotEmpty && bookId != 'index.html') {
+          return MaterialPageRoute(
+            settings: settings,
+            builder: (_) => BookRouteLoaderScreen(bookId: bookId),
+          );
+        }
+        return null;
+      },
       builder: (context, child) {
         return Shortcuts(
           shortcuts: <LogicalKeySet, Intent>{

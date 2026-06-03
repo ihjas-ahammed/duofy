@@ -7,12 +7,14 @@ class CommunityBookCard extends StatelessWidget {
   final Book book;
   final VoidCallback onGetPressed;
   final VoidCallback? onDeletePressed;
+  final String buttonText;
 
   const CommunityBookCard({
     super.key,
     required this.book,
     required this.onGetPressed,
     this.onDeletePressed,
+    this.buttonText = 'GET',
   });
 
   @override
@@ -33,10 +35,11 @@ class CommunityBookCard extends StatelessWidget {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: AppTheme.duoOrange.withOpacity(0.2),
+              color: AppTheme.duoBlue.withOpacity(0.18),
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.duoBlue.withOpacity(0.4)),
             ),
-            child: const Icon(LucideIcons.globe2, color: AppTheme.duoOrange, size: 32),
+            child: const Icon(LucideIcons.bookOpen, color: AppTheme.duoBlue, size: 28),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -83,7 +86,7 @@ class CommunityBookCard extends StatelessWidget {
                 color: AppTheme.duoBlue.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Text('GET', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.w900)),
+              child: Text(buttonText, style: const TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.w900)),
             ),
           )
         ],

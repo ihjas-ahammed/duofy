@@ -26,7 +26,7 @@ class PyqTabScreen extends StatefulWidget {
 }
 
 class _PyqTabScreenState extends State<PyqTabScreen> {
-  final List<File> _selectedFiles = [];
+  final List<PlatformFile> _selectedFiles = [];
   String? _selectedSectionId;
   final TextEditingController _customPromptCtrl = TextEditingController();
 
@@ -45,8 +45,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
 
     if (result != null) {
       setState(() {
-        final newFiles = result.paths.where((p) => p != null).map((p) => File(p!)).toList();
-        _selectedFiles.addAll(newFiles);
+        _selectedFiles.addAll(result.files);
       });
     }
   }

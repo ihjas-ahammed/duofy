@@ -9,6 +9,8 @@ import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/string_list_manager.dart';
 import '../widgets/responsive_center.dart';
+import '../widgets/sync_conflict_dialog.dart';
+import '../models/app_models.dart';
 import 'pdf_browser_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -36,6 +38,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// Local-first: cloud backup/sync is opt-in. Mirrors
   /// [DatabaseService.cloudSyncPrefKey].
   bool _cloudSync = false;
+  int? _lastSyncTime;
+  bool _isSyncing = false;
   bool _isLoading = true;
   final GlobalKey<StringListManagerState> _keysManagerKey = GlobalKey<StringListManagerState>();
   final DatabaseService _db = DatabaseService();
@@ -130,10 +134,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final endMinute = prefs.getInt('schedule_end_minute') ?? 0;
     _scheduleStart = TimeOfDay(hour: startHour, minute: startMinute);
     _scheduleEnd = TimeOfDay(hour: endHour, minute: endMinute);
+    _lastSyncTime = prefs.getInt('last_db_sync_time');
 
     setState(() {
       _isLoading = false;
     });
+  }
+
+  String formatTime(int? ts) {
+    if (ts == null || ts == 0) return 'Unknown';
+    final dt = DateTime.fromMillisecondsSinceEpoch(ts);
+    final hour = dt.hour == 0 ? 12 : (dt.hour > 12 ? dt.hour - 12 : dt.hour);
+    final period = dt.hour >= 12 ? 'PM' : 'AM';
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final month = dt.month.toString().padLeft(2, '0');
+    final day = dt.day.toString().padLeft(2, '0');
+    return '${dt.year}-$month-$day $hour:$minute $period';
+  }
+
+  Future<void> _triggerQuickSync() async {
+    setState(() {
+      _isSyncing = true;
+    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await _db.fetchBooks(
+        forceRefresh: true,
+        onConflict: (Book local, Book remote) => showSyncConflictDialog(context, local, remote),
+      );
+      final now = DateTime.now().millisecondsSinceEpoch;
+      await prefs.setInt('last_db_sync_time', now);
+      setState(() {
+        _lastSyncTime = now;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sync completed successfully.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Sync failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSyncing = false;
+        });
+      }
+    }
   }
 
   Future<void> _saveSettings() async {
@@ -472,6 +523,62 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     : 'Off — courses are stored only on this device (no network used). Turn on to back up and sync across devices, and to publish to the community.',
             style: const TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
           ),
+          if (_cloudSync && !_isGuest) ...[
+            const SizedBox(height: 16),
+            const Divider(color: Colors.white10, height: 1),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'LAST SYNCED',
+                      style: TextStyle(
+                        color: Colors.white38,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _lastSyncTime == null || _lastSyncTime == 0
+                          ? 'Never synced'
+                          : formatTime(_lastSyncTime),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                _isSyncing
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppTheme.duoBlue,
+                        ),
+                      )
+                    : TextButton.icon(
+                        onPressed: _triggerQuickSync,
+                        icon: const Icon(LucideIcons.refreshCw, size: 14, color: AppTheme.duoBlue),
+                        label: const Text(
+                          'Sync Now',
+                          style: TextStyle(
+                            color: AppTheme.duoBlue,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+              ],
+            ),
+          ]
         ],
       ),
     );
