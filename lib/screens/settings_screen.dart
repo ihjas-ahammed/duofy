@@ -24,9 +24,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // Each slot is now an ordered list — the first model is tried first, the
   // next is the fallback, and so on. Empty list means "use the built-in
   // default" but the UI keeps at least one entry to avoid that state.
-  List<String> _modelPrimaryText = ['gemini-flash-lite-latest'];
-  List<String> _modelPrimaryGraphics = ['gemini-flash-latest'];
-  List<String> _modelLite = ['gemini-flash-lite-latest'];
+  List<String> _modelPrimaryText = ['gemini-flash-lite-latest', 'gemma-4-31b-it'];
+  List<String> _modelPrimaryGraphics = ['gemini-flash-latest','gemini-2.5-flash','gemma-4-26b-a4b-it'];
+  List<String> _modelLite = ['gemini-flash-lite-latest','gemma-4-31b-it'];
   /// How many lesson requests to fire in parallel during generation.
   /// 'auto' lets the app pick from the device's capacity; otherwise a fixed
   /// count string ('1'..'4'). Read by AiService via the `gen_concurrency` pref.

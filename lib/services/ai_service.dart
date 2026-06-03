@@ -39,7 +39,7 @@ class AiService {
   }
 
   Future<List<String>> _getPrimaryTextModels() =>
-      _getModelsForSlot('model_primary_text_list', 'model_primary_text', 'gemma4');
+      _getModelsForSlot('model_primary_text_list', 'model_primary_text', 'gemini-flash-lite-latest');
 
   Future<List<String>> _getPrimaryGraphicsModels() =>
       _getModelsForSlot('model_primary_graphics_list', 'model_primary_graphics', 'gemini-3.5-flash');
@@ -727,11 +727,11 @@ Important Rules:
 
     // --- Stage 1: lesson plan (lite-model fallback ladder) ----------------
     // The plan is a small text outline; a lite model that hasn't answered in
-    // ~75s is misbehaving (overloaded / stuck), so we cap the wait and jump to
+    // ~120s is misbehaving (overloaded / stuck), so we cap the wait and jump to
     // the NEXT model/key rather than blocking the whole unit on one slow model.
     // A genuine transient server blip (502/overload) still gets one quick retry
     // on the same model before we move on; timeouts do NOT (retryTimeouts:false).
-    const planTimeout = Duration(seconds: 75);
+    const planTimeout = Duration(seconds: 120);
     onProgress("Analyzing PDF & Planning Layout...");
     final hydratedPlanPrompt = PromptService.plan
         .replaceAll('%unit_title%', unit.title)
