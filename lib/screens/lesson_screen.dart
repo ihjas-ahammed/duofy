@@ -54,6 +54,10 @@ class _LessonScreenState extends State<LessonScreen> {
   late DateTime _startTime;
   int _totalInteractive = 0;
   int _correctAttempts = 0;
+  /// How many times each interactive slide has been answered wrong, keyed by
+  /// slide id. Drives the "retry once, then skip" flow and ensures any failure
+  /// permanently counts against final accuracy.
+  final Map<String, int> _failCounts = {};
   List<Slide> _slideQueue = [];
   /// Live copy of the lesson. Starts as the one we were constructed with and
   /// gets refreshed whenever [GenerationManager] notifies — this is how the
@@ -249,7 +253,16 @@ class _LessonScreenState extends State<LessonScreen> {
       HapticFeedback.heavyImpact();
     } else {
       HapticFeedback.vibrate();
-      _slideQueue.add(slide);
+      final fails = (_failCounts[slide.id] ?? 0) + 1;
+      _failCounts[slide.id] = fails;
+      // Every wrong answer adds one to the interactive total, so accuracy is
+      // deducted even if the student later corrects it.
+      _totalInteractive++;
+      // First failure: requeue the slide so it reappears at the end. Second
+      // failure: skip it entirely (don't requeue).
+      if (fails < 2) {
+        _slideQueue.add(slide);
+      }
     }
 
     setState(() {
@@ -655,6 +668,7 @@ class _LessonScreenState extends State<LessonScreen> {
           children: [
             // Header Bar exactly as LessonView.tsx
             ClipRRect( // To clip the BackdropFilter
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(
@@ -662,6 +676,7 @@ class _LessonScreenState extends State<LessonScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.05),
+                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
                     border: const Border(bottom: BorderSide(color: Colors.white10)),
                   ),
                   child: Row(
