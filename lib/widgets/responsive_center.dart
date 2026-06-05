@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 /// Standard content-width tiers used with [ResponsiveCenter]. Centralising
 /// them keeps desktop sizing consistent across screens.
 abstract final class ResponsiveMaxWidth {
+  /// Phone-width column. Use to make a screen render as a centered mobile
+  /// view on tablets/desktops instead of stretching edge-to-edge.
+  static const double mobile = 480;
+
   /// Login / sign-up card.
   static const double auth = 420;
 

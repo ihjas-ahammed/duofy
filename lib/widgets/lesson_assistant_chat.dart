@@ -129,6 +129,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
   }
 
   void _addSystemMessage(String text) {
+    if (!mounted) return;
     setState(() {
       _messages.add(ChatMessage(sender: MessageSender.system, text: text));
     });
@@ -152,7 +153,14 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
       );
       
       _webSocket = await WebSocket.connect(uri.toString());
-      
+
+      // Widget may have been disposed while awaiting the connection.
+      if (!mounted) {
+        _webSocket?.close();
+        _webSocket = null;
+        return;
+      }
+
       setState(() {
         _isConnected = true;
         _isConnecting = false;
@@ -205,6 +213,10 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
         },
       );
     } catch (e) {
+      if (!mounted) {
+        _webSocket = null;
+        return;
+      }
       setState(() {
         _isConnecting = false;
         _isConnected = false;
@@ -218,6 +230,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
   }
 
   void _handleWebSocketMessage(dynamic data) {
+    if (!mounted) return;
     try {
       print("WebSocket received data type: ${data.runtimeType}");
       String jsonStr;
@@ -354,6 +367,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
   void _disconnectWebSocket() {
     _webSocket?.close();
     _webSocket = null;
+    if (!mounted) return;
     setState(() {
       _isConnected = false;
       _isConnecting = false;

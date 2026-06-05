@@ -648,7 +648,8 @@ class _LessonScreenState extends State<LessonScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F19),
       body: ResponsiveCenter(
-        maxWidth: ResponsiveMaxWidth.reading,
+        maxWidth: ResponsiveMaxWidth.mobile,
+        breakpoint: ResponsiveMaxWidth.mobile,
         child: SafeArea(
         child: Column(
           children: [

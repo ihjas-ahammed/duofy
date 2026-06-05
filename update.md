@@ -1,9 +1,50 @@
-Update windows build:
-    Use default app-icon
-    Fix data storage: the app seems to reset everytime it is opened
+Fix the following error which happens everytime I close live chat (not for REST API): Null check operator used on a null value
 
-Update QP Extractor:
-    Distinguish between extracted and generated questions using a tag
-    Extract only for current open module and so show only extracted questions in specific module and save them seperately
+#0      State.setState (package:flutter/src/widgets/framework.dart:1219)
+#1      _LessonAssistantChatState._addSystemMessage (package:duofy/widgets/lesson_assistant_chat.dart:132)
+#2      _LessonAssistantChatState._handleWebSocketClosed (package:duofy/widgets/lesson_assistant_chat.dart:350)
+#3      _LessonAssistantChatState._connectWebSocket.<anonymous closure> (package:duofy/widgets/lesson_assistant_chat.dart:204)
+#4      _RootZone.runGuarded (dart:async/zone.dart:879)
+#5      _BufferingStreamSubscription._sendDone.sendDone (dart:async/stream_impl.dart:434)
+#6      _BufferingStreamSubscription._sendDone (dart:async/stream_impl.dart:444)
+#7      _BufferingStreamSubscription._close (dart:async/stream_impl.dart:333)
+#8      _SyncStreamControllerDispatch._sendDone (dart:async/stream_controller.dart:806)
+#9      _StreamController._closeUnchecked (dart:async/stream_controller.dart:652)
+#10     _StreamController.close (dart:async/stream_controller.dart:645)
+#11     new _WebSocketImpl._fromSocket.<anonymous closure> (dart:_http/websocket_impl.dart:1281)
+#12     _RootZone.runGuarded (dart:async/zone.dart:879)
+#13     _BufferingStreamSubscription._sendDone.sendDone (dart:async/stream_impl.dart:434)
+#14     _BufferingStreamSubscription._sendDone (dart:async/stream_impl.dart:444)
+#15     _BufferingStreamSubscription._close (dart:async/stream_impl.dart:333)
+#16     _SinkTransformerStreamSubscription._close (dart:async/stream_transformers.dart:91)
+#17     _EventSinkWrapper.close (dart:async/stream_transformers.dart:21)
+#18     _WebSocketProtocolTransformer.close (dart:_http/websocket_impl.dart:123)
+#19     _SinkTransformerStreamSubscription._handleDone (dart:async/stream_transformers.dart:136)
+#20     _RootZone.runGuarded (dart:async/zone.dart:879)
+#21     _BufferingStreamSubscription._sendDone.sendDone (dart:async/stream_impl.dart:434)
+#22     _BufferingStreamSubscription._sendDone (dart:async/stream_impl.dart:444)
+#23     _BufferingStreamSubscription._close (dart:async/stream_impl.dart:333)
+#24     _SyncStreamControllerDispatch._sendDone (dart:async/stream_controller.dart:806)
+#25     _StreamController._closeUnchecked (dart:async/stream_controller.dart:652)
+#26     _StreamController.close (dart:async/stream_controller.dart:645)
+#27     _Socket._onData (dart:io-patch/socket_patch.dart:2881)
+#28     _RootZone.runUnaryGuarded (dart:async/zone.dart:891)
+#29     _BufferingStreamSubscription._sendData (dart:async/stream_impl.dart:381)
+#30     _BufferingStreamSubscription._add (dart:async/stream_impl.dart:312)
+#31     _SyncStreamControllerDispatch._sendData (dart:async/stream_controller.dart:798)
+#32     _StreamController._add (dart:async/stream_controller.dart:663)
+#33     _StreamController.add (dart:async/stream_controller.dart:618)
+#34     _RawSecureSocket._closeHandler (dart:io/secure_socket.dart:973)
+#35     _RawSecureSocket._eventDispatcher (dart:io/secure_socket.dart:930)
+#36     _RootZone.runUnaryGuarded (dart:async/zone.dart:891)
+#37     _BufferingStreamSubscription._sendData (dart:async/stream_impl.dart:381)
+#38     _BufferingStreamSubscription._add (dart:async/stream_impl.dart:312)
+#39     _SyncStreamControllerDispatch._sendData (dart:async/stream_controller.dart:798)
+#40     _StreamController._add (dart:async/stream_controller.dart:663)
+#41     _StreamController.add (dart:async/stream_controller.dart:618)
+#42     new _RawSocket.<anonymous closure> (dart:io-patch/socket_patch.dart:2319)
+#43     _NativeSocket.issueReadEvent.issue (dart:io-patch/socket_patch.dart:1640)
+#44     _microtaskLoop (dart:async/schedule_microtask.dart:40)
+#45     _startMicrotaskLoop (dart:async/schedule_microtask.dart:49)
 
 
