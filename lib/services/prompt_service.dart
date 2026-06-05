@@ -679,8 +679,9 @@ RULES:
 
     final instBlock = instructionsBlock(customInstructions);
 
-    return '''You are an expert tutor.
-Analyze the attached exam paper (PDF/images) and extract questions that align with the following course section.
+    return '''You are an exam-paper transcription assistant. Your PRIMARY job is to EXTRACT questions that genuinely appear in the attached exam paper(s) — transcribing them faithfully — NOT to invent new ones.
+
+Read the attached paper(s) carefully and pull out the questions that fall under the following course section. Reproduce each question's wording, numbers, and intent as faithfully as the source allows (you may fix obvious OCR/scan/formatting glitches and re-wrap math into LaTeX, but do NOT change what is being asked).
 
 SECTION DETAILS:
 - Title: $sectionTitle
@@ -688,6 +689,16 @@ SECTION DETAILS:
 - Subtopics/Units: ${unitTitles.join(', ')}
 
 $instBlock
+
+HONESTY ABOUT PROVENANCE (read carefully — this is critical):
+Every question you return MUST include a "source" field with one of exactly two values:
+- "extracted": the question actually appears in the attached paper and you are transcribing it (verbatim or near-verbatim, fixing only OCR/formatting). The wording, given values, and what is being asked all match the paper.
+- "generated": you created, invented, guessed, combined, or substantially rewrote/paraphrased the question — i.e. it is NOT a faithful transcription of something on the paper.
+Rules for honesty:
+- Do NOT label a question "extracted" unless you are confident it is genuinely on the attached paper. If you are unsure whether it is really in the paper, label it "generated".
+- Prefer returning FEWER, genuinely-extracted questions over padding the list with invented ones. Do NOT fabricate questions just to align with the section. If the paper contains no matching questions, return an empty list.
+- Only produce "generated" questions if the instructions above explicitly ask you to create/supplement questions; otherwise restrict yourself to extraction.
+- NOTE: "source" describes the QUESTION STATEMENT only. The step-by-step solution walkthrough you build in "interactiveSteps" is expected to be your own work and does not affect this label.
 
 ALREADY EXTRACTED QUESTIONS (Do NOT extract duplicates of these! Avoid similar questions to support continuous addition):
 $existingBlocks
@@ -704,6 +715,7 @@ RULES:
 2. For "one_word" types, do not use LaTeX math delimiters in the answer/blank fields.
 3. Be highly selective: only extract questions that are directly related to the section details. If none match, return an empty list.
 4. Enforce that all "proof" / Big Question types have the static question-restatement first step described above.
+5. Every question MUST carry an honest "source" of "extracted" or "generated" per the provenance rules above.
 
 Return ONLY a JSON object matching this schema:
 {
@@ -711,6 +723,7 @@ Return ONLY a JSON object matching this schema:
     {
       "id": "unique_id_string",
       "type": "one_word" | "proof",
+      "source": "extracted" | "generated", // "extracted" = faithfully transcribed from the attached paper; "generated" = invented/paraphrased by you. Be honest.
       "title": "Question Title",
       "content": "Full question text / statement.",
       "blankAnswer": "The answer (for a single one-word question). For multiple subquestions, put a comma-separated list of answers.",

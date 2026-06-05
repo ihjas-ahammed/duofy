@@ -1726,11 +1726,17 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
             final jsonMap = _cleanAndDecodeJson(response.text!);
             final questionsList = jsonMap['questions'] as List?;
             if (questionsList == null) return [];
-            // Tag every question lifted from the uploaded paper as extracted so
-            // the UI can distinguish it from AI-generated questions.
-            return questionsList
-                .map((q) => Slide.fromJson(Map<String, dynamic>.from(q)).copyWith(source: 'extracted'))
-                .toList();
+            // Honour the model's self-declared provenance instead of blindly
+            // tagging everything as extracted. Only an explicit "extracted"
+            // counts as lifted-from-the-paper; anything else (including a
+            // missing/unknown value) is treated as AI-generated, so invented
+            // questions can never masquerade as real exam questions.
+            return questionsList.map((q) {
+              final map = Map<String, dynamic>.from(q);
+              final declared = (map['source'] ?? '').toString().trim().toLowerCase();
+              final source = declared == 'extracted' ? 'extracted' : 'generated';
+              return Slide.fromJson(map).copyWith(source: source);
+            }).toList();
           }
         } catch (e) {
           lastException = Exception('PYQ extraction failed ($modelName): ${_cleanErrMsg(e)}');
