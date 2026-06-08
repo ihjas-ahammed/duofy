@@ -343,6 +343,7 @@ class _LessonPathState extends State<LessonPath> {
                             isGenerated: isGenerated,
                             generationTask: loading,
                             referencePdfPath: unitPdfPath,
+                            syllabusPdfPath: widget.book.syllabusPath,
                             onGenerate: () => widget.onGenerateUnit(unit, el.unitIdx!),
                             onClear: () => widget.onClearUnit(unit, el.unitIdx!),
                           ),

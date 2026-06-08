@@ -1,0 +1,746 @@
+{
+  "nodes": [
+    {
+      "id": "test_widget_test_main",
+      "label": "main",
+      "file_type": "code",
+      "source_file": "test/widget_test.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "web_index_html",
+      "label": "index.html",
+      "file_type": "document",
+      "source_file": "web/index.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "web_index_pdfrenderoptions",
+      "label": "pdfRenderOptions",
+      "file_type": "code",
+      "source_file": "web/index.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "web_manifest_json",
+      "label": "manifest.json",
+      "file_type": "document",
+      "source_file": "web/manifest.json",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "windows_cmakelists_apply_standard_settings",
+      "label": "APPLY_STANDARD_SETTINGS",
+      "file_type": "code",
+      "source_file": "windows/CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_cmakelists_flutter_wrapper_plugin",
+      "label": "flutter_wrapper_plugin",
+      "file_type": "code",
+      "source_file": "windows/flutter/CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_cmakelists_flutter_wrapper_app",
+      "label": "flutter_wrapper_app",
+      "file_type": "code",
+      "source_file": "windows/flutter/CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_cmakelists_flutter_assemble",
+      "label": "flutter_assemble",
+      "file_type": "code",
+      "source_file": "windows/flutter/CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_generated_plugin_registrant_registerplugins",
+      "label": "RegisterPlugins",
+      "file_type": "code",
+      "source_file": "windows/flutter/generated_plugin_registrant.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "ephemeral_flutter_plugin_registrar_flutterdesktoppluginregistrargetmessenger",
+      "label": "FlutterDesktopPluginRegistrarGetMessenger",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/flutter_plugin_registrar.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "ephemeral_flutter_plugin_registrar_flutterdesktopregistrargettextureregistrar",
+      "label": "FlutterDesktopRegistrarGetTextureRegistrar",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/flutter_plugin_registrar.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "ephemeral_flutter_messenger_flutterdesktopmessengersend",
+      "label": "FlutterDesktopMessengerSend",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/flutter_messenger.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "ephemeral_flutter_messenger_flutterdesktopmessengersendwithreply",
+      "label": "FlutterDesktopMessengerSendWithReply",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/flutter_messenger.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "ephemeral_flutter_messenger_flutterdesktopmessengersendresponse",
+      "label": "FlutterDesktopMessengerSendResponse",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/flutter_messenger.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "ephemeral_flutter_messenger_flutterdesktopmessengersetcallback",
+      "label": "FlutterDesktopMessengerSetCallback",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/flutter_messenger.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "ephemeral_flutter_messenger_flutterdesktopmessengeraddref",
+      "label": "FlutterDesktopMessengerAddRef",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/flutter_messenger.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "ephemeral_flutter_messenger_flutterdesktopmessengerrelease",
+      "label": "FlutterDesktopMessengerRelease",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/flutter_messenger.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "ephemeral_flutter_messenger_flutterdesktopmessengerisavailable",
+      "label": "FlutterDesktopMessengerIsAvailable",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/flutter_messenger.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "ephemeral_flutter_messenger_flutterdesktopmessengerlock",
+      "label": "FlutterDesktopMessengerLock",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/flutter_messenger.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "ephemeral_flutter_messenger_flutterdesktopmessengerunlock",
+      "label": "FlutterDesktopMessengerUnlock",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/flutter_messenger.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_dart_project_dartproject",
+      "label": "DartProject",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/dart_project.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cpp_client_wrapper_flutter_engine_flutterengine",
+      "label": "FlutterEngine",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/flutter_engine.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cpp_client_wrapper_flutter_view_controller_flutterviewcontroller",
+      "label": "FlutterViewController",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/flutter_view_controller.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cpp_client_wrapper_plugin_registrar_pluginregistrar",
+      "label": "PluginRegistrar",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/plugin_registrar.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cpp_client_wrapper_plugin_registrar_pluginregistrarmanager",
+      "label": "PluginRegistrarManager",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/plugin_registrar.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cpp_client_wrapper_binary_messenger_impl_binarymessengerimpl",
+      "label": "BinaryMessengerImpl",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/binary_messenger_impl.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cpp_client_wrapper_texture_registrar_impl_textureregistrarimpl",
+      "label": "TextureRegistrarImpl",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/texture_registrar_impl.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_binary_messenger_binarymessenger",
+      "label": "BinaryMessenger",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/binary_messenger.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_byte_streams_bytestreamreader",
+      "label": "ByteStreamReader",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/byte_streams.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_byte_streams_bytestreamwriter",
+      "label": "ByteStreamWriter",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/byte_streams.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cpp_client_wrapper_byte_buffer_streams_bytebufferstreamreader",
+      "label": "ByteBufferStreamReader",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/byte_buffer_streams.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cpp_client_wrapper_byte_buffer_streams_bytebufferstreamwriter",
+      "label": "ByteBufferStreamWriter",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/byte_buffer_streams.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cpp_client_wrapper_core_implementations_resizechannel",
+      "label": "ResizeChannel",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/core_implementations.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cpp_client_wrapper_core_implementations_setchannelwarnsonoverflow",
+      "label": "SetChannelWarnsOnOverflow",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/core_implementations.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cpp_client_wrapper_core_implementations_forwardtohandler",
+      "label": "ForwardToHandler",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/core_implementations.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_basic_message_channel_basicmessagechannel",
+      "label": "BasicMessageChannel",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/basic_message_channel.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cpp_client_wrapper_standard_codec_standardcodecserializer",
+      "label": "StandardCodecSerializer",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/standard_codec.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cpp_client_wrapper_standard_codec_standardmessagecodec",
+      "label": "StandardMessageCodec",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/standard_codec.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cpp_client_wrapper_standard_codec_standardmethodcodec",
+      "label": "StandardMethodCodec",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/standard_codec.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "test_widget_test_main",
+      "target": "lib_main_duofyapp",
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "test/widget_test.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "web_index_html",
+      "target": "web_manifest_json",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/index.html",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "web_index_html",
+      "target": "web_index_pdfrenderoptions",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "web/index.html",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "flutter_cmakelists_flutter_wrapper_plugin",
+      "target": "windows_cmakelists_apply_standard_settings",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "flutter_cmakelists_flutter_wrapper_app",
+      "target": "windows_cmakelists_apply_standard_settings",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cpp_client_wrapper_flutter_engine_flutterengine",
+      "target": "flutter_dart_project_dartproject",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/flutter_engine.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cpp_client_wrapper_flutter_view_controller_flutterviewcontroller",
+      "target": "flutter_dart_project_dartproject",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/flutter_view_controller.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cpp_client_wrapper_flutter_view_controller_flutterviewcontroller",
+      "target": "cpp_client_wrapper_flutter_engine_flutterengine",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/flutter_view_controller.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cpp_client_wrapper_plugin_registrar_pluginregistrar",
+      "target": "cpp_client_wrapper_binary_messenger_impl_binarymessengerimpl",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/plugin_registrar.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cpp_client_wrapper_plugin_registrar_pluginregistrar",
+      "target": "cpp_client_wrapper_texture_registrar_impl_textureregistrarimpl",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/plugin_registrar.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cpp_client_wrapper_binary_messenger_impl_binarymessengerimpl",
+      "target": "flutter_binary_messenger_binarymessenger",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/binary_messenger_impl.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cpp_client_wrapper_byte_buffer_streams_bytebufferstreamreader",
+      "target": "flutter_byte_streams_bytestreamreader",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/byte_buffer_streams.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cpp_client_wrapper_byte_buffer_streams_bytebufferstreamwriter",
+      "target": "flutter_byte_streams_bytestreamwriter",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/byte_buffer_streams.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cpp_client_wrapper_plugin_registrar_pluginregistrar",
+      "target": "ephemeral_flutter_plugin_registrar_flutterdesktoppluginregistrargetmessenger",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/plugin_registrar.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cpp_client_wrapper_plugin_registrar_pluginregistrar",
+      "target": "ephemeral_flutter_plugin_registrar_flutterdesktopregistrargettextureregistrar",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/plugin_registrar.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cpp_client_wrapper_binary_messenger_impl_binarymessengerimpl",
+      "target": "ephemeral_flutter_messenger_flutterdesktopmessengersend",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/core_implementations.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cpp_client_wrapper_binary_messenger_impl_binarymessengerimpl",
+      "target": "ephemeral_flutter_messenger_flutterdesktopmessengersendwithreply",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/core_implementations.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cpp_client_wrapper_binary_messenger_impl_binarymessengerimpl",
+      "target": "ephemeral_flutter_messenger_flutterdesktopmessengersetcallback",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/core_implementations.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cpp_client_wrapper_core_implementations_forwardtohandler",
+      "target": "ephemeral_flutter_messenger_flutterdesktopmessengerlock",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/core_implementations.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cpp_client_wrapper_core_implementations_forwardtohandler",
+      "target": "ephemeral_flutter_messenger_flutterdesktopmessengerunlock",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/core_implementations.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cpp_client_wrapper_core_implementations_forwardtohandler",
+      "target": "ephemeral_flutter_messenger_flutterdesktopmessengeraddref",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/core_implementations.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cpp_client_wrapper_core_implementations_forwardtohandler",
+      "target": "ephemeral_flutter_messenger_flutterdesktopmessengerrelease",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/core_implementations.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cpp_client_wrapper_core_implementations_forwardtohandler",
+      "target": "ephemeral_flutter_messenger_flutterdesktopmessengerisavailable",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/core_implementations.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cpp_client_wrapper_core_implementations_forwardtohandler",
+      "target": "ephemeral_flutter_messenger_flutterdesktopmessengersendresponse",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/core_implementations.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cpp_client_wrapper_core_implementations_resizechannel",
+      "target": "flutter_basic_message_channel_basicmessagechannel",
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/core_implementations.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cpp_client_wrapper_core_implementations_setchannelwarnsonoverflow",
+      "target": "flutter_basic_message_channel_basicmessagechannel",
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/core_implementations.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cpp_client_wrapper_standard_codec_standardmessagecodec",
+      "target": "cpp_client_wrapper_standard_codec_standardcodecserializer",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/standard_codec.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cpp_client_wrapper_standard_codec_standardmethodcodec",
+      "target": "cpp_client_wrapper_standard_codec_standardcodecserializer",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/standard_codec.cc",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "standard_coding_suite",
+      "label": "Standard Message/Method Coding Suite",
+      "nodes": [
+        "cpp_client_wrapper_standard_codec_standardcodecserializer",
+        "cpp_client_wrapper_standard_codec_standardmessagecodec",
+        "cpp_client_wrapper_standard_codec_standardmethodcodec"
+      ],
+      "relation": "implement",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/standard_codec.cc"
+    },
+    {
+      "id": "flutter_messenger_wrapper",
+      "label": "Flutter Messenger Wrapper Implementation",
+      "nodes": [
+        "flutter_binary_messenger_binarymessenger",
+        "cpp_client_wrapper_binary_messenger_impl_binarymessengerimpl",
+        "ephemeral_flutter_messenger_flutterdesktopmessengersend",
+        "ephemeral_flutter_messenger_flutterdesktopmessengersetcallback"
+      ],
+      "relation": "implement",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/binary_messenger_impl.h"
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

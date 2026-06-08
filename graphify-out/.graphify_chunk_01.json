@@ -1,0 +1,622 @@
+{
+  "nodes": [
+    {
+      "id": "disable_keyboard_main",
+      "label": "Disable Keyboard script entry",
+      "file_type": "code",
+      "source_file": "disable-keyboard.py",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "firebase_config",
+      "label": "Firebase Project Configuration",
+      "file_type": "document",
+      "source_file": "firebase.json",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "packup_load_gitignore_patterns",
+      "label": "load_gitignore_patterns",
+      "file_type": "code",
+      "source_file": "packup.py",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "packup_should_ignore",
+      "label": "should_ignore",
+      "file_type": "code",
+      "source_file": "packup.py",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "packup_is_likely_binary_file",
+      "label": "is_likely_binary_file",
+      "file_type": "code",
+      "source_file": "packup.py",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "packup_pack_project",
+      "label": "pack_project",
+      "file_type": "code",
+      "source_file": "packup.py",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "update_parse_snapshot",
+      "label": "parse_snapshot",
+      "file_type": "code",
+      "source_file": "update.py",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "update_update_project_from_snapshot",
+      "label": "update_project_from_snapshot",
+      "file_type": "code",
+      "source_file": "update.py",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "project_snapshot",
+      "label": "Project Snapshot File",
+      "file_type": "document",
+      "source_file": "project_snapshot.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "scratch_main",
+      "label": "scratch main entrypoint",
+      "file_type": "code",
+      "source_file": "scratch.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "scratch_inline_latex_poc",
+      "label": "Inline LaTeX Proof of Concept",
+      "file_type": "concept",
+      "source_file": "scratch.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "pubspec_dependencies",
+      "label": "Pubspec Dependencies",
+      "file_type": "document",
+      "source_file": "pubspec.yaml",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "workflows_build_apk_build",
+      "label": "Build APK Job",
+      "file_type": "code",
+      "source_file": ".github/workflows/build-apk.yml",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "workflows_build_windows_build",
+      "label": "Build Windows Job",
+      "file_type": "code",
+      "source_file": ".github/workflows/build-windows.yml",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_duofy_platform",
+      "label": "DuoFY Platform Concept",
+      "file_type": "concept",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Turns any book into an interactive lesson path using Gemini AI"
+    },
+    {
+      "id": "readme_3d_lesson_nodes",
+      "label": "3D Lesson Nodes Design Pattern",
+      "file_type": "rationale",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Tactile feedback: pressing sinks the cap into the lip, mimicking Duolingo's physical disc look"
+    },
+    {
+      "id": "readme_onboarding_personalization",
+      "label": "Onboarding Personalization Survey Pattern",
+      "file_type": "rationale",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Defines learning style, favorite genres, and interests to deeply contextualize AI generated stories"
+    },
+    {
+      "id": "readme_conditional_slide_gen",
+      "label": "Conditional Slide Generation Priorities",
+      "file_type": "rationale",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Guards exactly when the AI should output specific interactive blocks"
+    },
+    {
+      "id": "readme_background_processing",
+      "label": "Continuous Background Processing Strategy",
+      "file_type": "rationale",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Keeps generation screens active and resets instantly by pushing vector-splitting and AI processing entirely to the background"
+    },
+    {
+      "id": "readme_inline_blanks",
+      "label": "Auto-Expanding Inline Blanks Mechanism",
+      "file_type": "rationale",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "InlineBlankField measures typed text and grows from a 64px minimum up to 220px to flow inline with sentences"
+    },
+    {
+      "id": "readme_inline_latex",
+      "label": "Inline LaTeX Rendering Optimization",
+      "file_type": "rationale",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Replaced LatexElementBuilder with InlineMathBuilder to keep inline LaTeX inside the sentence instead of wrapping to its own line"
+    },
+    {
+      "id": "readme_html5_canvas",
+      "label": "Reusable HTML5 Canvas Strategy",
+      "file_type": "rationale",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Graphics model returns only a JavaScript draw function embedded in a single fixed HTML canvas host, reusing the scaffold for every diagram"
+    },
+    {
+      "id": "readme_resume_generation",
+      "label": "Resume / Continue Generation Architecture",
+      "file_type": "rationale",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Saves lessons in progress and fills only missing content, avoiding complete regeneration on interruptions"
+    },
+    {
+      "id": "readme_batched_skeleton_gen",
+      "label": "Batched Skeleton Generation",
+      "file_type": "rationale",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Runs sectionList calls in parallel after chapterList to prevent chapter/section splitting errors on Lite model"
+    },
+    {
+      "id": "readme_real_progress",
+      "label": "Real Progress Indicators",
+      "file_type": "rationale",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Uses actual work counts instead of a psychological crawl to show honest progress"
+    },
+    {
+      "id": "readme_sequential_lesson_gen",
+      "label": "Sequential Lesson + Diagram Generation",
+      "file_type": "rationale",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Produces lessons one at a time to stream content sequentially to the UI and avoid workers stalling on diagrams"
+    },
+    {
+      "id": "readme_lite_model_fallback",
+      "label": "Fast Lite-Model Fallback",
+      "file_type": "rationale",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Uses 120s timeout and jumps straight to next model/key to avoid blocking units for minutes on slow plans"
+    },
+    {
+      "id": "readme_hero_canvas",
+      "label": "Hero Canvas & Design-First Diagrams",
+      "file_type": "rationale",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Fills card edge-to-edge as a full-width 3:2 hero, sized by aspect ratio, focusing on visual elements rather than words"
+    },
+    {
+      "id": "future_continuous_file_selection",
+      "label": "Continuous File Selection for Exam/Course",
+      "file_type": "rationale",
+      "source_file": "future.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Separate screens to continuously select files and optional AI prompt comments to improve UX"
+    },
+    {
+      "id": "update_lesson_assistant_chat_null_bug",
+      "label": "Lesson Assistant Chat Null Check Bug",
+      "file_type": "concept",
+      "source_file": "update.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "State.setState is called after WebSocket is closed and state is unmounted"
+    }
+  ],
+  "edges": [
+    {
+      "source": "packup_pack_project",
+      "target": "packup_load_gitignore_patterns",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packup.py",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "packup_pack_project",
+      "target": "packup_should_ignore",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packup.py",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "packup_pack_project",
+      "target": "packup_is_likely_binary_file",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packup.py",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "update_update_project_from_snapshot",
+      "target": "update_parse_snapshot",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "update.py",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "packup_pack_project",
+      "target": "project_snapshot",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packup.py",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "update_update_project_from_snapshot",
+      "target": "project_snapshot",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "update.py",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "scratch_main",
+      "target": "scratch_inline_latex_poc",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "scratch.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "scratch_main",
+      "target": "pubspec_dependencies",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "scratch.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "workflows_build_apk_build",
+      "target": "workflows_build_windows_build",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".github/workflows/build-apk.yml",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_inline_latex",
+      "target": "scratch_inline_latex_poc",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_duofy_platform",
+      "target": "readme_3d_lesson_nodes",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_duofy_platform",
+      "target": "readme_onboarding_personalization",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_duofy_platform",
+      "target": "readme_conditional_slide_gen",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_duofy_platform",
+      "target": "readme_background_processing",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_duofy_platform",
+      "target": "readme_inline_blanks",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_duofy_platform",
+      "target": "readme_inline_latex",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_duofy_platform",
+      "target": "readme_html5_canvas",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_duofy_platform",
+      "target": "readme_resume_generation",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_duofy_platform",
+      "target": "readme_batched_skeleton_gen",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_duofy_platform",
+      "target": "readme_real_progress",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_duofy_platform",
+      "target": "readme_sequential_lesson_gen",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_duofy_platform",
+      "target": "readme_lite_model_fallback",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_duofy_platform",
+      "target": "readme_hero_canvas",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "future_continuous_file_selection",
+      "target": "readme_background_processing",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "future.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "project_snapshot_system",
+      "label": "Project Snapshot System",
+      "nodes": [
+        "packup_pack_project",
+        "update_update_project_from_snapshot",
+        "project_snapshot"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "packup.py"
+    },
+    {
+      "id": "build_packaging_system",
+      "label": "Project Build & Packaging System",
+      "nodes": [
+        "workflows_build_apk_build",
+        "workflows_build_windows_build",
+        "pubspec_dependencies"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "pubspec.yaml"
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

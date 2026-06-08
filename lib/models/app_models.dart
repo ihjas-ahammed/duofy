@@ -167,6 +167,7 @@ class Book {
   /// Id of the format used when a unit has no explicit `formatId` assigned.
   /// Always points to a real entry in [lessonFormats] after migration.
   final String defaultFormatId;
+  final String? syllabusPath;
 
   Book({
     required this.id,
@@ -183,6 +184,7 @@ class Book {
     this.questionPapers = const [],
     required this.lessonFormats,
     required this.defaultFormatId,
+    this.syllabusPath,
   });
 
   factory Book.fromJson(Map<String, dynamic> json) {
@@ -229,6 +231,7 @@ class Book {
       questionPapers: (json['questionPapers'] as List?)?.map((q) => QuestionPaper.fromJson(q is Map ? Map<String, dynamic>.from(q) : {})).toList() ?? [],
       lessonFormats: formats,
       defaultFormatId: defaultId,
+      syllabusPath: _strOpt(json['syllabusPath']),
     );
   }
 
@@ -247,6 +250,7 @@ class Book {
     'questionPapers': questionPapers.map((q) => q.toJson()).toList(),
     'lessonFormats': lessonFormats.map((f) => f.toJson()).toList(),
     'defaultFormatId': defaultFormatId,
+    if (syllabusPath != null) 'syllabusPath': syllabusPath,
   };
 
   /// Returns the format the AI should use for [lesson] — its explicit
@@ -279,6 +283,7 @@ class Book {
     List<QuestionPaper>? questionPapers,
     List<LessonFormat>? lessonFormats,
     String? defaultFormatId,
+    String? syllabusPath,
   }) {
     return Book(
       id: id ?? this.id,
@@ -295,6 +300,7 @@ class Book {
       questionPapers: questionPapers ?? this.questionPapers,
       lessonFormats: lessonFormats ?? this.lessonFormats,
       defaultFormatId: defaultFormatId ?? this.defaultFormatId,
+      syllabusPath: syllabusPath ?? this.syllabusPath,
     );
   }
 

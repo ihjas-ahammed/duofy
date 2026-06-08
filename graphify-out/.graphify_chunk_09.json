@@ -1,0 +1,722 @@
+{
+  "nodes": [
+    {
+      "id": "target_modifier_modify_target_script",
+      "label": "modify_target.sh",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/linux/target_modifier/modify_target.sh",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tools_import_webview_cef_header_my_application_script",
+      "label": "import_webview_cef_header_my_application.sh",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/linux/target_modifier/tools/import_webview_cef_header_my_application.sh",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tools_add_key_release_event_to_my_application_script",
+      "label": "add_key_release_event_to_my_application.sh",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/linux/target_modifier/tools/add_key_release_event_to_my_application.sh",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tools_add_key_press_event_to_my_application_script",
+      "label": "add_key_press_event_to_my_application.sh",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/linux/target_modifier/tools/add_key_press_event_to_my_application.sh",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tools_import_webview_cef_header_main_script",
+      "label": "import_webview_cef_header_main.sh",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/linux/target_modifier/tools/import_webview_cef_header_main.sh",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tools_add_webview_init_to_main_script",
+      "label": "add_webview_init_to_main.sh",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/linux/target_modifier/tools/add_webview_init_to_main.sh",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "classes_cefwrapper_cefwrapper",
+      "label": "CefWrapper",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/macos/Classes/CefWrapper.mm",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "classes_cefwrapper_webviewtexturerenderer",
+      "label": "WebviewTextureRenderer",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/macos/Classes/CefWrapper.mm",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "classes_cefwrapper_processkeyboardevent",
+      "label": "CefWrapper::processKeyboardEvent",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/macos/Classes/CefWrapper.mm",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "classes_cefwrapper_getmodifiersforevent",
+      "label": "CefWrapper::getModifiersForEvent",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/macos/Classes/CefWrapper.mm",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "classes_cefwrapper_iskeypadevent",
+      "label": "CefWrapper::isKeyPadEvent",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/macos/Classes/CefWrapper.mm",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "classes_cefwrapper_domessageloopwork",
+      "label": "CefWrapper::doMessageLoopWork",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/macos/Classes/CefWrapper.mm",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "classes_cefwrapper_encode_wvalue_to_flvalue",
+      "label": "CefWrapper::encode_wvalue_to_flvalue",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/macos/Classes/CefWrapper.mm",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "classes_cefwrapper_encode_flvalue_to_wvalue",
+      "label": "CefWrapper::encode_flvalue_to_wvalue",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/macos/Classes/CefWrapper.mm",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "classes_webviewcefplugin_webviewcefplugin",
+      "label": "WebviewCefPlugin",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/macos/Classes/WebviewCefPlugin.m",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "classes_webviewcefplugin_registerwithregistrar",
+      "label": "WebviewCefPlugin::registerWithRegistrar",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/macos/Classes/WebviewCefPlugin.m",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "classes_webviewcefplugin_handlemethodcall",
+      "label": "WebviewCefPlugin::handleMethodCall",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/macos/Classes/WebviewCefPlugin.m",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "classes_webviewceftexture_webviewceftexture",
+      "label": "WebviewCefTexture",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/macos/Classes/WebviewCefTexture.mm",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "classes_webviewceftexture_onframe",
+      "label": "WebviewCefTexture::onFrame",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/macos/Classes/WebviewCefTexture.mm",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "classes_webviewceftexture_copypixelbuffer",
+      "label": "WebviewCefTexture::copyPixelBuffer",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/macos/Classes/WebviewCefTexture.mm",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "windows_webview_cef_keyevent_iskeydown",
+      "label": "IsKeyDown",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/windows/webview_cef_keyevent.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "windows_webview_cef_keyevent_getcefkeyboardmodifiers",
+      "label": "GetCefKeyboardModifiers",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/windows/webview_cef_keyevent.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "windows_webview_cef_keyevent_getcefkeyevent",
+      "label": "getCefKeyEvent",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/windows/webview_cef_keyevent.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "windows_webview_cef_plugin_webviewcefplugin",
+      "label": "WebviewCefPlugin",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/windows/webview_cef_plugin.cpp",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "windows_webview_cef_plugin_webviewtexturerenderer",
+      "label": "WebviewTextureRenderer",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/windows/webview_cef_plugin.cpp",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "windows_webview_cef_plugin_encode_wvalue_to_flvalue",
+      "label": "encode_wvalue_to_flvalue",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/windows/webview_cef_plugin.cpp",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "windows_webview_cef_plugin_encode_flvalue_to_wvalue",
+      "label": "encode_flvalue_to_wvalue",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/windows/webview_cef_plugin.cpp",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "windows_webview_cef_plugin_registerwithregistrar",
+      "label": "WebviewCefPlugin::RegisterWithRegistrar",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/windows/webview_cef_plugin.cpp",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "windows_webview_cef_plugin_handlemessageproc",
+      "label": "WebviewCefPlugin::handleMessageProc",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/windows/webview_cef_plugin.cpp",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "windows_webview_cef_plugin_c_api_webviewcefplugincapiregisterwithregistrar",
+      "label": "WebviewCefPluginCApiRegisterWithRegistrar",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/windows/webview_cef_plugin_c_api.cpp",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "windows_webview_cef_plugin_c_api_initcefprocesses",
+      "label": "initCEFProcesses",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/windows/webview_cef_plugin_c_api.cpp",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "windows_webview_cef_plugin_c_api_handlewndprocforcef",
+      "label": "handleWndProcForCEF",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/windows/webview_cef_plugin_c_api.cpp",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "windows_cmakelists_project",
+      "label": "CMakeLists.txt",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/windows/CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "test_webview_cef_method_channel_test_main",
+      "label": "webview_cef_method_channel_test.dart main",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/test/webview_cef_method_channel_test.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "test_webview_cef_test_main",
+      "label": "webview_cef_test.dart main",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/test/webview_cef_test.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "test_webview_cef_test_mockwebviewcefplatform",
+      "label": "MockWebviewCefPlatform",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/test/webview_cef_test.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "test_webview_main_test_main",
+      "label": "webview_main_test.dart main",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/test/webview_main_test.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "scratch_test_bookmarks_main",
+      "label": "test_bookmarks.dart main",
+      "file_type": "code",
+      "source_file": "scratch/test_bookmarks.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "scratch_test_bookmarks_test",
+      "label": "test_bookmarks.dart test",
+      "file_type": "code",
+      "source_file": "scratch/test_bookmarks.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "scratch_test_firedart_main",
+      "label": "test_firedart.dart main",
+      "file_type": "code",
+      "source_file": "scratch/test_firedart.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "scratch_test_firedart_test",
+      "label": "test_firedart.dart test",
+      "file_type": "code",
+      "source_file": "scratch/test_firedart.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "scratch_test_types_main",
+      "label": "test_types.dart main",
+      "file_type": "code",
+      "source_file": "scratch/test_types.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "target_modifier_modify_target_script",
+      "target": "tools_import_webview_cef_header_my_application_script",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/linux/target_modifier/modify_target.sh",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "target_modifier_modify_target_script",
+      "target": "tools_add_key_release_event_to_my_application_script",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/linux/target_modifier/modify_target.sh",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "target_modifier_modify_target_script",
+      "target": "tools_add_key_press_event_to_my_application_script",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/linux/target_modifier/modify_target.sh",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "target_modifier_modify_target_script",
+      "target": "tools_import_webview_cef_header_main_script",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/linux/target_modifier/modify_target.sh",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "target_modifier_modify_target_script",
+      "target": "tools_add_webview_init_to_main_script",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/linux/target_modifier/modify_target.sh",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "classes_cefwrapper_processkeyboardevent",
+      "target": "classes_cefwrapper_getmodifiersforevent",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/macos/Classes/CefWrapper.mm",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "classes_cefwrapper_getmodifiersforevent",
+      "target": "classes_cefwrapper_iskeypadevent",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/macos/Classes/CefWrapper.mm",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "classes_webviewcefplugin_registerwithregistrar",
+      "target": "classes_cefwrapper_cefwrapper",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/macos/Classes/WebviewCefPlugin.m",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "classes_webviewcefplugin_handlemethodcall",
+      "target": "classes_cefwrapper_cefwrapper",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/macos/Classes/WebviewCefPlugin.m",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "windows_webview_cef_plugin_c_api_webviewcefplugincapiregisterwithregistrar",
+      "target": "windows_webview_cef_plugin_registerwithregistrar",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/windows/webview_cef_plugin_c_api.cpp",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "windows_webview_cef_plugin_c_api_handlewndprocforcef",
+      "target": "windows_webview_cef_plugin_handlemessageproc",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/windows/webview_cef_plugin_c_api.cpp",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "windows_webview_cef_plugin_handlemessageproc",
+      "target": "windows_webview_cef_keyevent_getcefkeyevent",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/windows/webview_cef_plugin.cpp",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "windows_webview_cef_keyevent_getcefkeyevent",
+      "target": "windows_webview_cef_keyevent_getcefkeyboardmodifiers",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/windows/webview_cef_keyevent.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "windows_webview_cef_keyevent_getcefkeyboardmodifiers",
+      "target": "windows_webview_cef_keyevent_iskeydown",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/windows/webview_cef_keyevent.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "scratch_test_bookmarks_main",
+      "target": "scratch_test_bookmarks_test",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scratch/test_bookmarks.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "scratch_test_firedart_main",
+      "target": "scratch_test_firedart_test",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scratch/test_firedart.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "classes_cefwrapper_encode_wvalue_to_flvalue",
+      "target": "windows_webview_cef_plugin_encode_wvalue_to_flvalue",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "packages/webview_cef/windows/webview_cef_plugin.cpp",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "classes_cefwrapper_encode_flvalue_to_wvalue",
+      "target": "windows_webview_cef_plugin_encode_flvalue_to_wvalue",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "packages/webview_cef/windows/webview_cef_plugin.cpp",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "classes_cefwrapper_cefwrapper",
+      "target": "windows_webview_cef_plugin_webviewcefplugin",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "packages/webview_cef/windows/webview_cef_plugin.cpp",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "classes_cefwrapper_processkeyboardevent",
+      "target": "windows_webview_cef_keyevent_getcefkeyevent",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "packages/webview_cef/windows/webview_cef_keyevent.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "scratch_test_bookmarks_main",
+      "target": "scratch_test_types_main",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "scratch/test_bookmarks.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "windows_cmakelists_project",
+      "target": "windows_webview_cef_plugin_webviewcefplugin",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "packages/webview_cef/windows/CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "platform_specific_method_channel_bindings",
+      "label": "Platform Specific Method Channel Bindings",
+      "nodes": [
+        "classes_cefwrapper_cefwrapper",
+        "classes_webviewcefplugin_webviewcefplugin",
+        "windows_webview_cef_plugin_webviewcefplugin",
+        "windows_webview_cef_plugin_c_api_webviewcefplugincapiregisterwithregistrar"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "packages/webview_cef/windows/webview_cef_plugin.cpp"
+    },
+    {
+      "id": "keyboard_event_conversion_helpers",
+      "label": "Keyboard Event Translation to CEF format",
+      "nodes": [
+        "classes_cefwrapper_processkeyboardevent",
+        "classes_cefwrapper_getmodifiersforevent",
+        "classes_cefwrapper_iskeypadevent",
+        "windows_webview_cef_keyevent_getcefkeyevent",
+        "windows_webview_cef_keyevent_getcefkeyboardmodifiers",
+        "windows_webview_cef_keyevent_iskeydown"
+      ],
+      "relation": "form",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "packages/webview_cef/windows/webview_cef_keyevent.h"
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

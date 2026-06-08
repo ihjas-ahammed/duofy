@@ -246,6 +246,8 @@ class _LessonAccordionState extends State<LessonAccordion> {
                       unit: unit,
                       isGenerated: false,
                       generationTask: widget.loadingUnitStatuses[unit.id],
+                      referencePdfPath: unit.pdfPath ?? section.pdfPath,
+                      syllabusPdfPath: widget.book.syllabusPath,
                       onGenerate: () => widget.onGenerateUnit(unit, m, s, u),
                       onClear: () {}, // Not needed for ungenerated unit
                     ),

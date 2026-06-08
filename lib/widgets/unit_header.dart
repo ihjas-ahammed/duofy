@@ -24,6 +24,7 @@ class UnitHeader extends StatelessWidget {
   /// the "View reference" affordance always opens the right pages. Null when
   /// the file is missing (e.g. user hasn't restored sources yet).
   final String? referencePdfPath;
+  final String? syllabusPdfPath;
 
   const UnitHeader({
     super.key,
@@ -33,11 +34,19 @@ class UnitHeader extends StatelessWidget {
     required this.onGenerate,
     required this.onClear,
     this.referencePdfPath,
+    this.syllabusPdfPath,
   });
 
   bool get _canViewReference {
     if (kIsWeb) return false;
     final p = referencePdfPath;
+    if (p == null || p.isEmpty) return false;
+    return File(p).existsSync();
+  }
+
+  bool get _canViewSyllabus {
+    if (kIsWeb) return false;
+    final p = syllabusPdfPath;
     if (p == null || p.isEmpty) return false;
     return File(p).existsSync();
   }
@@ -50,6 +59,20 @@ class UnitHeader extends StatelessWidget {
       MaterialPageRoute(
         builder: (_) => Scaffold(
           appBar: AppBar(title: Text(unit.title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold))),
+          body: SfPdfViewer.file(File(p)),
+        ),
+      ),
+    );
+  }
+
+  void _openSyllabus(BuildContext context) {
+    if (kIsWeb) return;
+    final p = syllabusPdfPath;
+    if (p == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: Text('${unit.title} - Syllabus', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold))),
           body: SfPdfViewer.file(File(p)),
         ),
       ),
@@ -118,6 +141,33 @@ class UnitHeader extends StatelessWidget {
                               Text(
                                 'PDF',
                                 style: TextStyle(color: AppTheme.duoBlue, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.6),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (_canViewSyllabus)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 6),
+                      child: InkWell(
+                        onTap: () => _openSyllabus(context),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.duoGreen.withOpacity(0.18),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppTheme.duoGreen.withOpacity(0.45)),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(LucideIcons.scroll, size: 11, color: AppTheme.duoGreen),
+                              SizedBox(width: 4),
+                              Text(
+                                'SYLLABUS',
+                                style: TextStyle(color: AppTheme.duoGreen, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.6),
                               ),
                             ],
                           ),

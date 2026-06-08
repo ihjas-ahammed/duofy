@@ -1,0 +1,386 @@
+{
+  "nodes": [
+    {
+      "id": "common_webview_js_handler_jsvalue",
+      "label": "JSValue",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/common/webview_js_handler.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "common_webview_js_handler_cefjsbridge",
+      "label": "CefJSBridge",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/common/webview_js_handler.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "common_webview_js_handler_cefjshandler",
+      "label": "CefJSHandler",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/common/webview_js_handler.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "common_webview_plugin_webviewtexture",
+      "label": "WebviewTexture",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/common/webview_plugin.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "common_webview_plugin_webviewplugin",
+      "label": "WebviewPlugin",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/common/webview_plugin.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "common_webview_plugin_initcefprocesses",
+      "label": "initCEFProcesses",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/common/webview_plugin.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "common_webview_plugin_startcef",
+      "label": "startCEF",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/common/webview_plugin.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "common_webview_plugin_stopcef",
+      "label": "stopCEF",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/common/webview_plugin.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "common_webview_value_wvalue",
+      "label": "WValue",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/common/webview_value.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "common_webview_value_wvaluetype",
+      "label": "WValueType",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/common/webview_value.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "example_readme_webview_cef_example",
+      "label": "webview_cef_example README",
+      "file_type": "document",
+      "source_file": "packages/webview_cef/example/README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "lib_main_myapp",
+      "label": "MyApp",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/example/lib/main.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "lib_main_myappstate",
+      "label": "_MyAppState",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/example/lib/main.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "linux_main_main",
+      "label": "main",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/example/linux/main.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "linux_my_application_myapplication",
+      "label": "MyApplication",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/example/linux/my_application.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_generated_plugin_registrant_fl_register_plugins",
+      "label": "fl_register_plugins",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/example/linux/flutter/generated_plugin_registrant.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "runner_appdelegate_appdelegate",
+      "label": "AppDelegate",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/example/macos/Runner/AppDelegate.swift",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "runner_mainflutterwindow_mainflutterwindow",
+      "label": "MainFlutterWindow",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/example/macos/Runner/MainFlutterWindow.swift",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "test_widget_test_widget_test",
+      "label": "Verify Platform version widget test",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/example/test/widget_test.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_generated_plugin_registrant_registerplugins",
+      "label": "RegisterPlugins",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/example/windows/flutter/generated_plugin_registrant.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "common_webview_plugin_webviewplugin",
+      "target": "common_webview_plugin_startcef",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/common/webview_plugin.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "common_webview_plugin_webviewplugin",
+      "target": "common_webview_plugin_stopcef",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/common/webview_plugin.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "common_webview_js_handler_cefjshandler",
+      "target": "common_webview_js_handler_cefjsbridge",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/common/webview_js_handler.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "common_webview_js_handler_cefjsbridge",
+      "target": "common_webview_js_handler_jsvalue",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/common/webview_js_handler.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "common_webview_value_wvalue",
+      "target": "common_webview_value_wvaluetype",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/common/webview_value.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "common_webview_plugin_webviewplugin",
+      "target": "common_webview_value_wvalue",
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/common/webview_plugin.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "linux_main_main",
+      "target": "common_webview_plugin_initcefprocesses",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/example/linux/main.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "linux_my_application_myapplication",
+      "target": "flutter_generated_plugin_registrant_fl_register_plugins",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/example/linux/my_application.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "flutter_generated_plugin_registrant_fl_register_plugins",
+      "target": "common_webview_plugin_webviewplugin",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "packages/webview_cef/example/linux/flutter/generated_plugin_registrant.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "lib_main_myappstate",
+      "target": "common_webview_plugin_webviewplugin",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "packages/webview_cef/example/lib/main.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "lib_main_myapp",
+      "target": "lib_main_myappstate",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/example/lib/main.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "test_widget_test_widget_test",
+      "target": "lib_main_myapp",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/example/test/widget_test.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "runner_appdelegate_appdelegate",
+      "target": "runner_mainflutterwindow_mainflutterwindow",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "packages/webview_cef/example/macos/Runner/AppDelegate.swift",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "cef_initialization_flow",
+      "label": "CEF Initialization Flow on Linux",
+      "nodes": [
+        "linux_main_main",
+        "common_webview_plugin_initcefprocesses",
+        "common_webview_plugin_startcef"
+      ],
+      "relation": "participate_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/example/linux/main.cc"
+    },
+    {
+      "id": "webview_cef_example_app",
+      "label": "Example Application Setup and Test Suite",
+      "nodes": [
+        "lib_main_myapp",
+        "lib_main_myappstate",
+        "test_widget_test_widget_test"
+      ],
+      "relation": "participate_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/example/lib/main.dart"
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

@@ -134,8 +134,9 @@ class PdfService {
   Future<Book> splitBookPdf(
     List<File> inputFiles,
     Book book,
-    void Function(String status, double progress) onProgress,
-  ) async {
+    void Function(String status, double progress) onProgress, {
+    bool preserveLessons = false,
+  }) async {
     final dir = await getApplicationDocumentsDirectory();
     final bookDirPath = '${dir.path}/books/${book.id}';
     final bookDir = Directory(bookDirPath);
@@ -226,9 +227,17 @@ class PdfService {
             currentChunk++;
             onProgress("Chunking unit $currentChunk of $totalChunks...", totalChunks == 0 ? 1.0 : currentChunk / totalChunks);
             final path = await writeChunk(unit.id, unit.startPage!, unit.endPage!, unit.bookIndex ?? 0);
-            updatedUnits.add(unit.copyWith(pdfPath: path, isGenerated: false, lessons: []));
+            if (preserveLessons) {
+              updatedUnits.add(unit.copyWith(pdfPath: path));
+            } else {
+              updatedUnits.add(unit.copyWith(pdfPath: path, isGenerated: false, lessons: []));
+            }
           } else {
-            updatedUnits.add(unit.copyWith(isGenerated: false, lessons: []));
+            if (preserveLessons) {
+              updatedUnits.add(unit);
+            } else {
+              updatedUnits.add(unit.copyWith(isGenerated: false, lessons: []));
+            }
           }
         }
         updatedSections.add(section.copyWith(units: updatedUnits));

@@ -31,9 +31,11 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
   
   late List<Module> _modules;
   bool _isSectionLevel = false;
-  File? _uploadedPdf;
+  List<File> _uploadedPdfs = [];
+  int _selectedFileIndex = 0;
   bool _showPdfPreview = false;
 
+  final Map<String, int> _bookIndices = {};
   final Map<String, TextEditingController> _startPageControllers = {};
   final Map<String, TextEditingController> _endPageControllers = {};
   final Map<String, TextEditingController> _titleControllers = {};
@@ -64,15 +66,14 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
       _titleControllers[module.id] = TextEditingController(text: module.title);
       for (final section in module.sections) {
         _titleControllers[section.id] = TextEditingController(text: section.title);
-        if (_isSectionLevel) {
-          _startPageControllers[section.id] = TextEditingController(text: section.startPage?.toString() ?? '');
-          _endPageControllers[section.id] = TextEditingController(text: section.endPage?.toString() ?? '');
-        } else {
-          for (final unit in section.units) {
-            _startPageControllers[unit.id] = TextEditingController(text: unit.startPage?.toString() ?? '');
-            _endPageControllers[unit.id] = TextEditingController(text: unit.endPage?.toString() ?? '');
-            _titleControllers[unit.id] = TextEditingController(text: unit.title);
-          }
+        _startPageControllers[section.id] = TextEditingController(text: section.startPage?.toString() ?? '');
+        _endPageControllers[section.id] = TextEditingController(text: section.endPage?.toString() ?? '');
+        _bookIndices[section.id] = section.bookIndex ?? 0;
+        for (final unit in section.units) {
+          _startPageControllers[unit.id] = TextEditingController(text: unit.startPage?.toString() ?? '');
+          _endPageControllers[unit.id] = TextEditingController(text: unit.endPage?.toString() ?? '');
+          _titleControllers[unit.id] = TextEditingController(text: unit.title);
+          _bookIndices[unit.id] = unit.bookIndex ?? 0;
         }
       }
     }
@@ -99,14 +100,16 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
     return '$prefix-${DateTime.now().microsecondsSinceEpoch}';
   }
 
-  Future<void> _pickPdf() async {
+  Future<void> _pickPdfs() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
+      allowMultiple: true,
     );
-    if (result != null && result.files.single.path != null) {
+    if (result != null && result.paths.isNotEmpty) {
       setState(() {
-        _uploadedPdf = File(result.files.single.path!);
+        _uploadedPdfs = result.paths.where((p) => p != null).map((p) => File(p!)).toList();
+        _selectedFileIndex = 0;
         _showPdfPreview = true;
       });
     }
@@ -159,10 +162,9 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
       );
       
       _titleControllers[newId] = TextEditingController(text: newSec.title);
-      if (_isSectionLevel) {
-        _startPageControllers[newId] = TextEditingController();
-        _endPageControllers[newId] = TextEditingController();
-      }
+      _startPageControllers[newId] = TextEditingController();
+      _endPageControllers[newId] = TextEditingController();
+      _bookIndices[newId] = _selectedFileIndex;
       
       final updatedSections = List<Section>.from(_modules[moduleIndex].sections)..add(newSec);
       _modules[moduleIndex] = _modules[moduleIndex].copyWith(sections: updatedSections);
@@ -178,6 +180,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
       _titleControllers.remove(sectionId)?.dispose();
       _startPageControllers.remove(sectionId)?.dispose();
       _endPageControllers.remove(sectionId)?.dispose();
+      _bookIndices.remove(sectionId);
     });
   }
 
@@ -197,6 +200,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
       _titleControllers[newId] = TextEditingController(text: newUnit.title);
       _startPageControllers[newId] = TextEditingController();
       _endPageControllers[newId] = TextEditingController();
+      _bookIndices[newId] = _selectedFileIndex;
       
       final currentSection = _modules[moduleIndex].sections[sectionIndex];
       final updatedUnits = List<Unit>.from(currentSection.units)..add(newUnit);
@@ -221,7 +225,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
       
       _titleControllers.remove(unitId)?.dispose();
       _startPageControllers.remove(unitId)?.dispose();
-      _endPageControllers.remove(unitId)?.dispose();
+      _bookIndices.remove(unitId);
     });
   }
 
@@ -262,35 +266,34 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
       for (var s = 0; s < module.sections.length; s++) {
         final section = module.sections[s];
 
-        if (_isSectionLevel) {
-          final sPage = int.tryParse(_startPageControllers[section.id]?.text ?? '');
-          final ePage = int.tryParse(_endPageControllers[section.id]?.text ?? '');
-          final title = _titleControllers[section.id]?.text ?? section.title;
+        final sPage = int.tryParse(_startPageControllers[section.id]?.text ?? '');
+        final ePage = int.tryParse(_endPageControllers[section.id]?.text ?? '');
+        final title = _titleControllers[section.id]?.text ?? section.title;
+        final bookIdx = _bookIndices[section.id] ?? 0;
 
-          finalSections.add(section.copyWith(
-            title: title,
-            startPage: sPage,
-            endPage: ePage,
-          ));
-        } else {
-          List<Unit> finalUnits = [];
-          for (var u = 0; u < section.units.length; u++) {
-            final unit = section.units[u];
-            final sPage = int.tryParse(_startPageControllers[unit.id]?.text ?? '');
-            final ePage = int.tryParse(_endPageControllers[unit.id]?.text ?? '');
-            final title = _titleControllers[unit.id]?.text ?? unit.title;
+        List<Unit> finalUnits = [];
+        for (var u = 0; u < section.units.length; u++) {
+          final unit = section.units[u];
+          final uStart = int.tryParse(_startPageControllers[unit.id]?.text ?? '');
+          final uEnd = int.tryParse(_endPageControllers[unit.id]?.text ?? '');
+          final uTitle = _titleControllers[unit.id]?.text ?? unit.title;
+          final uBookIdx = _bookIndices[unit.id] ?? 0;
 
-            finalUnits.add(unit.copyWith(
-              title: title,
-              startPage: sPage,
-              endPage: ePage,
-            ));
-          }
-          finalSections.add(section.copyWith(
-            title: _titleControllers[section.id]?.text ?? section.title,
-            units: finalUnits,
+          finalUnits.add(unit.copyWith(
+            title: uTitle,
+            startPage: uStart,
+            endPage: uEnd,
+            bookIndex: uBookIdx,
           ));
         }
+
+        finalSections.add(section.copyWith(
+          title: title,
+          startPage: sPage,
+          endPage: ePage,
+          bookIndex: bookIdx,
+          units: finalUnits,
+        ));
       }
       finalModules.add(module.copyWith(
         title: _titleControllers[module.id]?.text ?? module.title,
@@ -305,8 +308,8 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
       updatedAt: DateTime.now().millisecondsSinceEpoch,
     );
 
-    if (_uploadedPdf != null) {
-      await GenerationManager.instance.restoreBookFiles(updatedBook, [_uploadedPdf!]);
+    if (_uploadedPdfs.isNotEmpty) {
+      await GenerationManager.instance.restoreBookFiles(updatedBook, _uploadedPdfs);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Re-splitting pages and saving course in background...')),
@@ -404,7 +407,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          if ((type == 'section' && _isSectionLevel) || (type == 'unit' && !_isSectionLevel)) ...[
+          if (type == 'section' || type == 'unit') ...[
             SizedBox(
               width: 50,
               child: TextField(
@@ -441,22 +444,97 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 8),
+            () {
+              int maxBookIdx = 0;
+              for (final module in _modules) {
+                for (final section in module.sections) {
+                  if ((section.bookIndex ?? 0) > maxBookIdx) maxBookIdx = section.bookIndex!;
+                  for (final unit in section.units) {
+                    if ((unit.bookIndex ?? 0) > maxBookIdx) maxBookIdx = unit.bookIndex!;
+                  }
+                }
+              }
+              final int existingFileCount = maxBookIdx + 1;
+              final int fileCount = _uploadedPdfs.isNotEmpty ? _uploadedPdfs.length : (existingFileCount > 1 ? existingFileCount : 1);
+
+              if (fileCount > 1) {
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white.withOpacity(0.12)),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<int>(
+                          value: _bookIndices[itemId] ?? 0,
+                          dropdownColor: AppTheme.surface,
+                          icon: const Icon(LucideIcons.chevronDown, size: 12, color: Colors.white54),
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                _bookIndices[itemId] = val;
+                              });
+                            }
+                          },
+                          selectedItemBuilder: (BuildContext context) {
+                            return List.generate(fileCount, (index) {
+                              return Center(child: Text('F${index + 1}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)));
+                            });
+                          },
+                          items: List.generate(fileCount, (index) {
+                            final String label = _uploadedPdfs.isNotEmpty && index < _uploadedPdfs.length
+                                ? _uploadedPdfs[index].path.split(RegExp(r'[/\\]')).last
+                                : 'Source File ${index + 1}';
+                            return DropdownMenuItem<int>(
+                              value: index,
+                              child: Text('File ${index + 1}: $label', style: const TextStyle(fontSize: 11, color: Colors.white)),
+                            );
+                          }),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                );
+              }
+              return const SizedBox.shrink();
+            }(),
             IconButton(
               icon: const Icon(LucideIcons.eye, color: AppTheme.duoBlue, size: 16),
               padding: const EdgeInsets.all(4),
               constraints: const BoxConstraints(),
               tooltip: 'View page',
               onPressed: () {
-                if (_uploadedPdf == null) {
+                if (_uploadedPdfs.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Please upload the source PDF to preview pages.')),
                   );
                   return;
                 }
+                final targetBookIdx = _bookIndices[itemId] ?? 0;
+                if (targetBookIdx >= _uploadedPdfs.length) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Selected source file is not uploaded/loaded.')),
+                  );
+                  return;
+                }
+                
+                setState(() {
+                  _selectedFileIndex = targetBookIdx;
+                  _showPdfPreview = true;
+                });
+                
                 int? p = int.tryParse(_startPageControllers[itemId]?.text ?? '');
                 if (p != null) {
-                  _pdfViewerController.jumpToPage(p);
+                  Future.microtask(() {
+                    _pdfViewerController.jumpToPage(p);
+                  });
                 }
               },
             ),
@@ -528,10 +606,10 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: _uploadedPdf != null ? AppTheme.duoGreen.withOpacity(0.08) : AppTheme.surface,
+          color: _uploadedPdfs.isNotEmpty ? AppTheme.duoGreen.withOpacity(0.08) : AppTheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: _uploadedPdf != null ? AppTheme.duoGreen.withOpacity(0.3) : Colors.white12,
+            color: _uploadedPdfs.isNotEmpty ? AppTheme.duoGreen.withOpacity(0.3) : Colors.white12,
             width: 1,
           ),
         ),
@@ -540,8 +618,8 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
             Row(
               children: [
                 Icon(
-                  _uploadedPdf != null ? LucideIcons.fileCheck : LucideIcons.fileWarning,
-                  color: _uploadedPdf != null ? AppTheme.duoGreen : AppTheme.duoOrange,
+                  _uploadedPdfs.isNotEmpty ? LucideIcons.fileCheck : LucideIcons.fileWarning,
+                  color: _uploadedPdfs.isNotEmpty ? AppTheme.duoGreen : AppTheme.duoOrange,
                   size: 24,
                 ),
                 const SizedBox(width: 12),
@@ -550,13 +628,15 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _uploadedPdf != null ? 'Source PDF Loaded' : 'No Source PDF Loaded',
+                        _uploadedPdfs.isNotEmpty ? 'Source PDF(s) Loaded' : 'No Source PDF Loaded',
                         style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14),
                       ),
                       Text(
-                        _uploadedPdf != null
-                            ? _uploadedPdf!.path.split(kIsWeb ? '/' : Platform.pathSeparator).last
-                            : 'Upload source PDF to preview pages and split component files.',
+                        _uploadedPdfs.isNotEmpty
+                            ? _uploadedPdfs.map((f) => f.path.split(kIsWeb ? '/' : Platform.pathSeparator).last).join(', ')
+                            : 'Upload source PDF(s) to preview pages and split component files.',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(color: Colors.white54, fontSize: 11),
                       ),
                     ],
@@ -569,14 +649,14 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
               children: [
                 Expanded(
                   child: DuoButton(
-                    text: _uploadedPdf != null ? 'Change PDF' : 'Upload Source PDF',
+                    text: _uploadedPdfs.isNotEmpty ? 'Change PDF(s)' : 'Upload Source PDF(s)',
                     color: AppTheme.surface,
                     shadowColor: Colors.black,
                     isOutline: true,
-                    onPressed: _pickPdf,
+                    onPressed: _pickPdfs,
                   ),
                 ),
-                if (_uploadedPdf != null) ...[
+                if (_uploadedPdfs.isNotEmpty) ...[
                   const SizedBox(width: 12),
                   Expanded(
                     child: DuoButton(
@@ -591,8 +671,42 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                 ],
               ],
             ),
-            if (_uploadedPdf != null && _showPdfPreview) ...[
+            if (_uploadedPdfs.isNotEmpty && _showPdfPreview) ...[
               const SizedBox(height: 12),
+              if (_uploadedPdfs.length > 1) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white12),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<int>(
+                      value: _selectedFileIndex,
+                      dropdownColor: AppTheme.surface,
+                      isExpanded: true,
+                      icon: const Icon(LucideIcons.chevronDown, size: 16, color: Colors.white70),
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() {
+                            _selectedFileIndex = val;
+                          });
+                        }
+                      },
+                      items: List.generate(_uploadedPdfs.length, (index) {
+                        final filename = _uploadedPdfs[index].path.split(kIsWeb ? '/' : Platform.pathSeparator).last;
+                        return DropdownMenuItem<int>(
+                          value: index,
+                          child: Text('File ${index + 1}: $filename', style: const TextStyle(fontSize: 12, color: Colors.white)),
+                        );
+                      }),
+                    ),
+                  ),
+                ),
+              ],
               Container(
                 height: 280,
                 decoration: BoxDecoration(
@@ -601,7 +715,8 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                 ),
                 clipBehavior: Clip.hardEdge,
                 child: SfPdfViewer.file(
-                  _uploadedPdf!,
+                  _uploadedPdfs[_selectedFileIndex],
+                  key: ValueKey('preview-$_selectedFileIndex-${_uploadedPdfs[_selectedFileIndex].path}'),
                   controller: _pdfViewerController,
                   canShowScrollHead: false,
                   canShowScrollStatus: false,

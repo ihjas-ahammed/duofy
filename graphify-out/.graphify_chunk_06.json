@@ -1,0 +1,316 @@
+{
+  "nodes": [
+    {
+      "id": "runner_main_main",
+      "label": "main",
+      "file_type": "code",
+      "source_file": "linux/runner/main.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "runner_my_application_my_application_activate",
+      "label": "my_application_activate",
+      "file_type": "code",
+      "source_file": "linux/runner/my_application.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_generated_plugin_registrant_fl_register_plugins",
+      "label": "fl_register_plugins",
+      "file_type": "code",
+      "source_file": "linux/flutter/generated_plugin_registrant.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_generatedpluginregistrant_registergeneratedplugins",
+      "label": "RegisterGeneratedPlugins",
+      "file_type": "code",
+      "source_file": "macos/Flutter/GeneratedPluginRegistrant.swift",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "runner_mainflutterwindow_awakefromnib",
+      "label": "awakeFromNib",
+      "file_type": "code",
+      "source_file": "macos/Runner/MainFlutterWindow.swift",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "lib_lucide_icons_lucideicons",
+      "label": "LucideIcons",
+      "file_type": "code",
+      "source_file": "packages/lucide_icons/lib/lucide_icons.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "common_webview_app_webviewapp",
+      "label": "WebviewApp",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/common/webview_app.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "common_webview_app_webviewapp_onwebkitinitialized",
+      "label": "WebviewApp::OnWebKitInitialized",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/common/webview_app.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "common_webview_app_webviewapp_onprocessmessagereceived",
+      "label": "WebviewApp::OnProcessMessageReceived",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/common/webview_app.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "common_webview_handler_webviewhandler",
+      "label": "WebviewHandler",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/common/webview_handler.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "common_webview_handler_webviewhandler_onprocessmessagereceived",
+      "label": "WebviewHandler::OnProcessMessageReceived",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/common/webview_handler.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "common_webview_handler_webviewhandler_visitallcookies",
+      "label": "WebviewHandler::visitAllCookies",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/common/webview_handler.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "common_webview_cookievisitor_webviewcookievisitor",
+      "label": "WebviewCookieVisitor",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/common/webview_cookieVisitor.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "common_webview_js_handler_cefjshandler",
+      "label": "CefJSHandler",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/common/webview_js_handler.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "common_webview_js_handler_cefjsbridge",
+      "label": "CefJSBridge",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/common/webview_js_handler.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "common_webview_js_handler_cefjsbridge_executejscallbackfunc",
+      "label": "CefJSBridge::ExecuteJSCallbackFunc",
+      "file_type": "code",
+      "source_file": "packages/webview_cef/common/webview_js_handler.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "webview_cef_pubspec_multi_backend_webview_architecture",
+      "label": "Multi-backend WebView Architecture",
+      "file_type": "rationale",
+      "source_file": "packages/webview_cef/pubspec.yaml",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "The windows platform was intentionally removed from webview_cef to exclude it from Windows builds, because webview_flutter lacks a Windows backend and the app uses webview_windows (WebView2) on Windows instead. This avoids native compilation failures while keeping Linux/macOS CEF backends."
+    },
+    {
+      "id": "webview_cef_readme_single_process_mode",
+      "label": "Single Process Debug Mode in macOS",
+      "file_type": "rationale",
+      "source_file": "packages/webview_cef/README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "The macOS implementation is currently configured in single-process mode (using the --single-process flag) for debugging convenience. Multi-process support is disabled by default to simplify setup and avoid the need for separate helper bundles during development."
+    }
+  ],
+  "edges": [
+    {
+      "source": "runner_my_application_my_application_activate",
+      "target": "flutter_generated_plugin_registrant_fl_register_plugins",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "linux/runner/my_application.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "runner_mainflutterwindow_awakefromnib",
+      "target": "flutter_generatedpluginregistrant_registergeneratedplugins",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "macos/Runner/MainFlutterWindow.swift",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "common_webview_app_webviewapp_onwebkitinitialized",
+      "target": "common_webview_js_handler_cefjshandler",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/common/webview_app.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "common_webview_app_webviewapp_onprocessmessagereceived",
+      "target": "common_webview_js_handler_cefjsbridge_executejscallbackfunc",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/common/webview_app.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "common_webview_handler_webviewhandler_visitallcookies",
+      "target": "common_webview_cookievisitor_webviewcookievisitor",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/webview_cef/common/webview_handler.cc",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "webview_cef_pubspec_multi_backend_webview_architecture",
+      "target": "common_webview_app_webviewapp",
+      "relation": "rationale_for",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "packages/webview_cef/pubspec.yaml",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "webview_cef_readme_single_process_mode",
+      "target": "common_webview_app_webviewapp_onwebkitinitialized",
+      "relation": "rationale_for",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "packages/webview_cef/README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "flutter_generated_plugin_registrant_fl_register_plugins",
+      "target": "flutter_generatedpluginregistrant_registergeneratedplugins",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "linux/flutter/generated_plugin_registrant.h",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "cef_core_communication_layer",
+      "label": "CEF Core Communication Layer",
+      "nodes": [
+        "common_webview_app_webviewapp",
+        "common_webview_handler_webviewhandler",
+        "common_webview_js_handler_cefjshandler"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "packages/webview_cef/common/webview_app.cc"
+    },
+    {
+      "id": "flutter_platform_initialization",
+      "label": "Flutter Platform Initialization Flow",
+      "nodes": [
+        "runner_main_main",
+        "runner_my_application_my_application_activate",
+        "runner_mainflutterwindow_awakefromnib"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "linux/runner/main.cc"
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

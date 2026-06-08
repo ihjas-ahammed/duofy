@@ -255,36 +255,34 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
       for (var s = 0; s < module.sections.length; s++) {
         final section = module.sections[s];
 
-        if (_isSectionLevel) {
-          final sPage = int.tryParse(_startPageControllers[section.id]?.text ?? '');
-          final ePage = int.tryParse(_endPageControllers[section.id]?.text ?? '');
-          final title = _titleControllers[section.id]?.text ?? section.title;
-          final bookIdx = _bookIndices[section.id] ?? 0;
+        final sPage = int.tryParse(_startPageControllers[section.id]?.text ?? '');
+        final ePage = int.tryParse(_endPageControllers[section.id]?.text ?? '');
+        final title = _titleControllers[section.id]?.text ?? section.title;
+        final bookIdx = _bookIndices[section.id] ?? 0;
 
-          finalSections.add(section.copyWith(
-            title: title,
-            startPage: sPage,
-            endPage: ePage,
-            bookIndex: bookIdx,
+        List<Unit> finalUnits = [];
+        for (var u = 0; u < section.units.length; u++) {
+          final unit = section.units[u];
+          final uStart = int.tryParse(_startPageControllers[unit.id]?.text ?? '');
+          final uEnd = int.tryParse(_endPageControllers[unit.id]?.text ?? '');
+          final uTitle = _titleControllers[unit.id]?.text ?? unit.title;
+          final uBookIdx = _bookIndices[unit.id] ?? 0;
+
+          finalUnits.add(unit.copyWith(
+            title: uTitle,
+            startPage: uStart,
+            endPage: uEnd,
+            bookIndex: uBookIdx,
           ));
-        } else {
-          List<Unit> finalUnits = [];
-          for (var u = 0; u < section.units.length; u++) {
-            final unit = section.units[u];
-            final sPage = int.tryParse(_startPageControllers[unit.id]?.text ?? '');
-            final ePage = int.tryParse(_endPageControllers[unit.id]?.text ?? '');
-            final title = _titleControllers[unit.id]?.text ?? unit.title;
-            final bookIdx = _bookIndices[unit.id] ?? 0;
-
-            finalUnits.add(unit.copyWith(
-              title: title,
-              startPage: sPage,
-              endPage: ePage,
-              bookIndex: bookIdx,
-            ));
-          }
-          finalSections.add(section.copyWith(units: finalUnits));
         }
+
+        finalSections.add(section.copyWith(
+          title: title,
+          startPage: sPage,
+          endPage: ePage,
+          bookIndex: bookIdx,
+          units: finalUnits,
+        ));
       }
       finalModules.add(module.copyWith(sections: finalSections));
     }

@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart';
 import '../models/app_models.dart';
 import '../models/ai_task.dart';
 import 'pdf_service.dart';
@@ -19,6 +20,7 @@ class GenerationTask {
   final String id;
   final String title;
   final List<File> sourceFiles;
+  final List<File> syllabusFiles;
   BookGenState state;
   String statusMessage;
   Book? skeletonBook;
@@ -31,6 +33,7 @@ class GenerationTask {
     required this.id, 
     required this.title, 
     required this.sourceFiles,
+    this.syllabusFiles = const [],
     this.state = BookGenState.extracting,
     this.statusMessage = 'Extracting Metadata & Planning...', 
     required this.estimatedDuration,
@@ -1230,6 +1233,7 @@ class GenerationManager extends ChangeNotifier {
       id: taskId,
       title: filename,
       sourceFiles: sourceFiles,
+      syllabusFiles: syllabusFiles,
       startTime: DateTime.now(),
       estimatedDuration: estimatedDuration,
     );
@@ -1309,12 +1313,33 @@ class GenerationManager extends ChangeNotifier {
       task.statusMessage = 'Saving to Database...';
       notifyListeners();
       
-      await _dbService.saveGeneratedBook(completeBook);
+      Book finalBook = completeBook;
+      if (task.syllabusFiles.isNotEmpty) {
+        try {
+          final dir = await getApplicationDocumentsDirectory();
+          final bookDirPath = '${dir.path}/books/${completeBook.id}';
+          final bookDir = Directory(bookDirPath);
+          if (!await bookDir.exists()) {
+            await bookDir.create(recursive: true);
+          }
+          final f = task.syllabusFiles.first;
+          if (await f.exists()) {
+            final ext = f.path.split('.').last;
+            final targetPath = '$bookDirPath/syllabus.$ext';
+            await f.copy(targetPath);
+            finalBook = completeBook.copyWith(syllabusPath: targetPath);
+          }
+        } catch (e) {
+          print('Error automatically saving syllabus file: $e');
+        }
+      }
+
+      await _dbService.saveGeneratedBook(finalBook);
       
       activeTasks.remove(task);
       notifyListeners();
       
-      _bookUpdateController.add(completeBook);
+      _bookUpdateController.add(finalBook);
       onBookGenerated?.call();
 
       await NotificationService.cancel(notifId);
@@ -1365,7 +1390,7 @@ class GenerationManager extends ChangeNotifier {
         task.progress = progress;
         notifyListeners();
         NotificationService.showProgress(notifId, "Restoring Document", status, indeterminate: true);
-      });
+      }, preserveLessons: true);
 
       task.state = BookGenState.saving;
       task.statusMessage = 'Saving to Database...';

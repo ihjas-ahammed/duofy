@@ -1,0 +1,883 @@
+{
+  "nodes": [
+    {
+      "id": "widgets_mini_progress_bar_miniprogressbar",
+      "label": "MiniProgressBar",
+      "file_type": "code",
+      "source_file": "lib/widgets/mini_progress_bar.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "widgets_missing_files_banner_missingfilesbanner",
+      "label": "MissingFilesBanner",
+      "file_type": "code",
+      "source_file": "lib/widgets/missing_files_banner.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "widgets_platform_webview_platformwebview",
+      "label": "PlatformWebView",
+      "file_type": "code",
+      "source_file": "lib/widgets/platform_webview.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "widgets_platform_webview_platformwebviewbootstrap",
+      "label": "PlatformWebViewBootstrap",
+      "file_type": "code",
+      "source_file": "lib/widgets/platform_webview.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "widgets_qp_card_qpcard",
+      "label": "QpCard",
+      "file_type": "code",
+      "source_file": "lib/widgets/qp_card.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "widgets_real_progress_bar_realprogressbar",
+      "label": "RealProgressBar",
+      "file_type": "code",
+      "source_file": "lib/widgets/real_progress_bar.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "widgets_responsive_center_responsivemaxwidth",
+      "label": "ResponsiveMaxWidth",
+      "file_type": "code",
+      "source_file": "lib/widgets/responsive_center.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "widgets_responsive_center_responsivecenter",
+      "label": "ResponsiveCenter",
+      "file_type": "code",
+      "source_file": "lib/widgets/responsive_center.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "widgets_string_list_manager_stringlistmanager",
+      "label": "StringListManager",
+      "file_type": "code",
+      "source_file": "lib/widgets/string_list_manager.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "widgets_string_list_manager_stringlistmanagerstate",
+      "label": "StringListManagerState",
+      "file_type": "code",
+      "source_file": "lib/widgets/string_list_manager.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "widgets_sync_conflict_dialog_showsyncconflictdialog",
+      "label": "showSyncConflictDialog",
+      "file_type": "code",
+      "source_file": "lib/widgets/sync_conflict_dialog.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "widgets_unit_header_unitheader",
+      "label": "UnitHeader",
+      "file_type": "code",
+      "source_file": "lib/widgets/unit_header.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "widgets_web_webview_helper_buildwebwebview",
+      "label": "buildWebWebView",
+      "file_type": "code",
+      "source_file": "lib/widgets/web_webview_helper.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "widgets_web_webview_helper_webwebviewwidget",
+      "label": "WebWebViewWidget",
+      "file_type": "code",
+      "source_file": "lib/widgets/web_webview_helper.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "widgets_web_webview_stub_buildwebwebview",
+      "label": "buildWebWebView",
+      "file_type": "code",
+      "source_file": "lib/widgets/web_webview_stub.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "bottom_sheets_section_bottom_sheet_sectionbottomsheet",
+      "label": "SectionBottomSheet",
+      "file_type": "code",
+      "source_file": "lib/widgets/bottom_sheets/section_bottom_sheet.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "bottom_sheets_section_bottom_sheet_sectioncard",
+      "label": "_SectionCard",
+      "file_type": "code",
+      "source_file": "lib/widgets/bottom_sheets/section_bottom_sheet.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "selectors_module_selector_moduleselectorsheet",
+      "label": "ModuleSelectorSheet",
+      "file_type": "code",
+      "source_file": "lib/widgets/selectors/module_selector.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "selectors_module_selector_modulerow",
+      "label": "_ModuleRow",
+      "file_type": "code",
+      "source_file": "lib/widgets/selectors/module_selector.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "selectors_section_selector_sectionselector",
+      "label": "SectionSelector",
+      "file_type": "code",
+      "source_file": "lib/widgets/selectors/section_selector.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "slide_views_fill_in_blank_view_fillinblankview",
+      "label": "FillInBlankView",
+      "file_type": "code",
+      "source_file": "lib/widgets/slide_views/fill_in_blank_view.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "slide_views_interactive_proof_view_interactiveproofview",
+      "label": "InteractiveProofView",
+      "file_type": "code",
+      "source_file": "lib/widgets/slide_views/interactive_proof_view.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "slide_views_interactive_webview_interactivewebview",
+      "label": "InteractiveWebview",
+      "file_type": "code",
+      "source_file": "lib/widgets/slide_views/interactive_webview.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "slide_views_numerical_view_numericalview",
+      "label": "NumericalView",
+      "file_type": "code",
+      "source_file": "lib/widgets/slide_views/numerical_view.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "slide_views_one_word_view_onewordview",
+      "label": "OneWordView",
+      "file_type": "code",
+      "source_file": "lib/widgets/slide_views/one_word_view.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "slide_views_pyq_one_word_view_pyqonewordview",
+      "label": "PyqOneWordView",
+      "file_type": "code",
+      "source_file": "lib/widgets/slide_views/pyq_one_word_view.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "slide_views_quiz_view_quizview",
+      "label": "QuizView",
+      "file_type": "code",
+      "source_file": "lib/widgets/slide_views/quiz_view.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "slide_views_step_by_step_view_stepbystepview",
+      "label": "StepByStepView",
+      "file_type": "code",
+      "source_file": "lib/widgets/slide_views/step_by_step_view.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "slide_views_theory_view_theoryview",
+      "label": "TheoryView",
+      "file_type": "code",
+      "source_file": "lib/widgets/slide_views/theory_view.dart",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "linux_cmakelists_cmake",
+      "label": "CMakeLists",
+      "file_type": "code",
+      "source_file": "linux/CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_generated_plugin_registrant_flregisterplugins",
+      "label": "fl_register_plugins",
+      "file_type": "code",
+      "source_file": "linux/flutter/generated_plugin_registrant.cc",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "widgets_missing_files_banner_missingfilesbanner",
+      "target": "services_generation_manager_generationmanager",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/missing_files_banner.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "widgets_missing_files_banner_missingfilesbanner",
+      "target": "theme_app_theme_apptheme",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/missing_files_banner.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "widgets_platform_webview_platformwebview",
+      "target": "widgets_web_webview_stub_buildwebwebview",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/platform_webview.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "widgets_platform_webview_platformwebview",
+      "target": "widgets_web_webview_helper_buildwebwebview",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/platform_webview.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "widgets_platform_webview_platformwebview",
+      "target": "widgets_platform_webview_platformwebviewbootstrap",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/platform_webview.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "widgets_qp_card_qpcard",
+      "target": "theme_app_theme_apptheme",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/qp_card.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "widgets_real_progress_bar_realprogressbar",
+      "target": "theme_app_theme_apptheme",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/real_progress_bar.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "widgets_real_progress_bar_realprogressbar",
+      "target": "widgets_mini_progress_bar_miniprogressbar",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "lib/widgets/real_progress_bar.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "widgets_responsive_center_responsivecenter",
+      "target": "widgets_responsive_center_responsivemaxwidth",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/responsive_center.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "widgets_string_list_manager_stringlistmanagerstate",
+      "target": "theme_app_theme_apptheme",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/string_list_manager.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "widgets_sync_conflict_dialog_showsyncconflictdialog",
+      "target": "theme_app_theme_apptheme",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/sync_conflict_dialog.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "widgets_unit_header_unitheader",
+      "target": "theme_app_theme_apptheme",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/unit_header.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "widgets_unit_header_unitheader",
+      "target": "services_generation_manager_generationmanager",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/unit_header.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "widgets_unit_header_unitheader",
+      "target": "widgets_duo_button_duobutton",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/unit_header.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "widgets_unit_header_unitheader",
+      "target": "widgets_real_progress_bar_realprogressbar",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/unit_header.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "widgets_web_webview_helper_buildwebwebview",
+      "target": "widgets_web_webview_helper_webwebviewwidget",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/web_webview_helper.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "bottom_sheets_section_bottom_sheet_sectionbottomsheet",
+      "target": "utils_progress_utils_calculatesectionprogress",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/bottom_sheets/section_bottom_sheet.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "bottom_sheets_section_bottom_sheet_sectionbottomsheet",
+      "target": "widgets_mini_progress_bar_miniprogressbar",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/bottom_sheets/section_bottom_sheet.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "bottom_sheets_section_bottom_sheet_sectionbottomsheet",
+      "target": "bottom_sheets_section_bottom_sheet_sectioncard",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/bottom_sheets/section_bottom_sheet.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "bottom_sheets_section_bottom_sheet_sectioncard",
+      "target": "widgets_mini_progress_bar_miniprogressbar",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/bottom_sheets/section_bottom_sheet.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "selectors_module_selector_moduleselectorsheet",
+      "target": "utils_progress_utils_calculatemoduleprogress",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/selectors/module_selector.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "selectors_module_selector_moduleselectorsheet",
+      "target": "selectors_module_selector_modulerow",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/selectors/module_selector.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "selectors_module_selector_modulerow",
+      "target": "theme_app_theme_apptheme",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/selectors/module_selector.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "selectors_module_selector_modulerow",
+      "target": "widgets_mini_progress_bar_miniprogressbar",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/selectors/module_selector.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "selectors_section_selector_sectionselector",
+      "target": "theme_app_theme_apptheme",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/selectors/section_selector.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_fill_in_blank_view_fillinblankview",
+      "target": "theme_app_theme_apptheme",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/slide_views/fill_in_blank_view.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_fill_in_blank_view_fillinblankview",
+      "target": "widgets_math_markdown_mathmarkdown",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/slide_views/fill_in_blank_view.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_interactive_proof_view_interactiveproofview",
+      "target": "theme_app_theme_apptheme",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/slide_views/interactive_proof_view.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_interactive_proof_view_interactiveproofview",
+      "target": "widgets_canvas_art_view_canvasartview",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/slide_views/interactive_proof_view.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_interactive_proof_view_interactiveproofview",
+      "target": "widgets_math_markdown_mathmarkdown",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/slide_views/interactive_proof_view.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_interactive_proof_view_interactiveproofview",
+      "target": "widgets_duo_button_duobutton",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/slide_views/interactive_proof_view.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_interactive_webview_interactivewebview",
+      "target": "theme_app_theme_apptheme",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/slide_views/interactive_webview.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_interactive_webview_interactivewebview",
+      "target": "widgets_math_markdown_mathmarkdown",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/slide_views/interactive_webview.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_interactive_webview_interactivewebview",
+      "target": "widgets_platform_webview_platformwebview",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/slide_views/interactive_webview.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_numerical_view_numericalview",
+      "target": "theme_app_theme_apptheme",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/slide_views/numerical_view.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_numerical_view_numericalview",
+      "target": "widgets_math_markdown_mathmarkdown",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/slide_views/numerical_view.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_numerical_view_numericalview",
+      "target": "slide_views_one_word_view_onewordview",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "lib/widgets/slide_views/numerical_view.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_one_word_view_onewordview",
+      "target": "theme_app_theme_apptheme",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/slide_views/one_word_view.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_one_word_view_onewordview",
+      "target": "widgets_math_markdown_mathmarkdown",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/slide_views/one_word_view.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_pyq_one_word_view_pyqonewordview",
+      "target": "theme_app_theme_apptheme",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/slide_views/pyq_one_word_view.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_pyq_one_word_view_pyqonewordview",
+      "target": "widgets_math_markdown_mathmarkdown",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/slide_views/pyq_one_word_view.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_pyq_one_word_view_pyqonewordview",
+      "target": "slide_views_one_word_view_onewordview",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "lib/widgets/slide_views/pyq_one_word_view.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_quiz_view_quizview",
+      "target": "theme_app_theme_apptheme",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/slide_views/quiz_view.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_quiz_view_quizview",
+      "target": "widgets_math_markdown_mathmarkdown",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/slide_views/quiz_view.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_step_by_step_view_stepbystepview",
+      "target": "theme_app_theme_apptheme",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/slide_views/step_by_step_view.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_step_by_step_view_stepbystepview",
+      "target": "widgets_math_markdown_mathmarkdown",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/slide_views/step_by_step_view.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_step_by_step_view_stepbystepview",
+      "target": "widgets_duo_button_duobutton",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/slide_views/step_by_step_view.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_step_by_step_view_stepbystepview",
+      "target": "slide_views_interactive_proof_view_interactiveproofview",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/slide_views/step_by_step_view.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_theory_view_theoryview",
+      "target": "theme_app_theme_apptheme",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/slide_views/theory_view.dart",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "slide_views_theory_view_theoryview",
+      "target": "widgets_math_markdown_mathmarkdown",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/widgets/slide_views/theory_view.dart",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "slide_view_components",
+      "label": "Slide View Component Templates",
+      "nodes": [
+        "slide_views_fill_in_blank_view_fillinblankview",
+        "slide_views_interactive_proof_view_interactiveproofview",
+        "slide_views_interactive_webview_interactivewebview",
+        "slide_views_numerical_view_numericalview",
+        "slide_views_one_word_view_onewordview",
+        "slide_views_pyq_one_word_view_pyqonewordview",
+        "slide_views_quiz_view_quizview",
+        "slide_views_step_by_step_view_stepbystepview",
+        "slide_views_theory_view_theoryview"
+      ],
+      "relation": "form",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "lib/widgets/slide_views/theory_view.dart"
+    },
+    {
+      "id": "navigation_selectors",
+      "label": "Navigation Selectors",
+      "nodes": [
+        "bottom_sheets_section_bottom_sheet_sectionbottomsheet",
+        "selectors_module_selector_moduleselectorsheet",
+        "selectors_section_selector_sectionselector"
+      ],
+      "relation": "form",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "lib/widgets/selectors/section_selector.dart"
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

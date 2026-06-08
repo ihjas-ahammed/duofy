@@ -1,0 +1,593 @@
+{
+  "nodes": [
+    {
+      "id": "flutter_encodable_value_encodablevalue",
+      "label": "EncodableValue",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/encodable_value.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_engine_method_result_enginemethodresult",
+      "label": "EngineMethodResult",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/engine_method_result.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_event_channel_eventchannel",
+      "label": "EventChannel",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/event_channel.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_event_sink_eventsink",
+      "label": "EventSink",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/event_sink.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_event_stream_handler_streamhandler",
+      "label": "StreamHandler",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/event_stream_handler.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_event_stream_handler_functions_streamhandlerfunctions",
+      "label": "StreamHandlerFunctions",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/event_stream_handler_functions.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_flutter_engine_flutterengine",
+      "label": "FlutterEngine",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/flutter_engine.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_flutter_view_flutterview",
+      "label": "FlutterView",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/flutter_view.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_flutter_view_controller_flutterviewcontroller",
+      "label": "FlutterViewController",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/flutter_view_controller.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_message_codec_messagecodec",
+      "label": "MessageCodec",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/message_codec.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_method_call_methodcall",
+      "label": "MethodCall",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/method_call.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_method_channel_methodchannel",
+      "label": "MethodChannel",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/method_channel.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_method_codec_methodcodec",
+      "label": "MethodCodec",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/method_codec.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_method_result_methodresult",
+      "label": "MethodResult",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/method_result.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_method_result_functions_methodresultfunctions",
+      "label": "MethodResultFunctions",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/method_result_functions.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_plugin_registrar_pluginregistrar",
+      "label": "PluginRegistrar",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/plugin_registrar.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_plugin_registrar_windows_pluginregistrarwindows",
+      "label": "PluginRegistrarWindows",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/plugin_registrar_windows.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_plugin_registry_pluginregistry",
+      "label": "PluginRegistry",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/plugin_registry.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_standard_codec_serializer_standardcodecserializer",
+      "label": "StandardCodecSerializer",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/standard_codec_serializer.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_standard_message_codec_standardmessagecodec",
+      "label": "StandardMessageCodec",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/standard_message_codec.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_standard_method_codec_standardmethodcodec",
+      "label": "StandardMethodCodec",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/standard_method_codec.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "flutter_texture_registrar_textureregistrar",
+      "label": "TextureRegistrar",
+      "file_type": "code",
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/texture_registrar.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "runner_flutter_window_flutterwindow",
+      "label": "FlutterWindow",
+      "file_type": "code",
+      "source_file": "windows/runner/flutter_window.h",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "runner_flutter_window_flutterwindow_oncreate",
+      "label": "FlutterWindow::OnCreate",
+      "file_type": "code",
+      "source_file": "windows/runner/flutter_window.cpp",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "runner_flutter_window_flutterwindow_ondestroy",
+      "label": "FlutterWindow::OnDestroy",
+      "file_type": "code",
+      "source_file": "windows/runner/flutter_window.cpp",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "runner_flutter_window_flutterwindow_messagehandler",
+      "label": "FlutterWindow::MessageHandler",
+      "file_type": "code",
+      "source_file": "windows/runner/flutter_window.cpp",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "runner_main_wwinmain",
+      "label": "wWinMain",
+      "file_type": "code",
+      "source_file": "windows/runner/main.cpp",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "runner_main_wwinmain",
+      "target": "runner_flutter_window_flutterwindow",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/runner/main.cpp",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "runner_flutter_window_flutterwindow_oncreate",
+      "target": "flutter_flutter_view_controller_flutterviewcontroller",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/runner/flutter_window.cpp",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "runner_flutter_window_flutterwindow_oncreate",
+      "target": "flutter_flutter_engine_flutterengine",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/runner/flutter_window.cpp",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "runner_flutter_window_flutterwindow_oncreate",
+      "target": "flutter_flutter_view_flutterview",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/runner/flutter_window.cpp",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "runner_flutter_window_flutterwindow_messagehandler",
+      "target": "flutter_flutter_view_controller_flutterviewcontroller",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/runner/flutter_window.cpp",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "runner_flutter_window_flutterwindow_messagehandler",
+      "target": "flutter_flutter_engine_flutterengine",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/runner/flutter_window.cpp",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "runner_flutter_window_flutterwindow",
+      "target": "flutter_flutter_view_controller_flutterviewcontroller",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/runner/flutter_window.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "flutter_flutter_view_controller_flutterviewcontroller",
+      "target": "flutter_flutter_engine_flutterengine",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/flutter_view_controller.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "flutter_flutter_view_controller_flutterviewcontroller",
+      "target": "flutter_flutter_view_flutterview",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/flutter_view_controller.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "flutter_flutter_engine_flutterengine",
+      "target": "flutter_plugin_registry_pluginregistry",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/flutter_engine.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "flutter_plugin_registrar_windows_pluginregistrarwindows",
+      "target": "flutter_plugin_registrar_pluginregistrar",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/plugin_registrar_windows.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "flutter_plugin_registrar_pluginregistrar",
+      "target": "flutter_texture_registrar_textureregistrar",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/plugin_registrar.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "flutter_plugin_registrar_windows_pluginregistrarwindows",
+      "target": "flutter_flutter_view_flutterview",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/plugin_registrar_windows.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "flutter_standard_message_codec_standardmessagecodec",
+      "target": "flutter_message_codec_messagecodec",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/standard_message_codec.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "flutter_standard_message_codec_standardmessagecodec",
+      "target": "flutter_standard_codec_serializer_standardcodecserializer",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/standard_message_codec.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "flutter_standard_method_codec_standardmethodcodec",
+      "target": "flutter_method_codec_methodcodec",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/standard_method_codec.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "flutter_standard_method_codec_standardmethodcodec",
+      "target": "flutter_standard_codec_serializer_standardcodecserializer",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/standard_method_codec.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "flutter_engine_method_result_enginemethodresult",
+      "target": "flutter_method_result_methodresult",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/engine_method_result.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "flutter_method_result_functions_methodresultfunctions",
+      "target": "flutter_method_result_methodresult",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/method_result_functions.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "flutter_event_stream_handler_functions_streamhandlerfunctions",
+      "target": "flutter_event_stream_handler_streamhandler",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/event_stream_handler_functions.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "flutter_event_channel_eventchannel",
+      "target": "flutter_event_stream_handler_streamhandler",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/event_channel.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "flutter_event_channel_eventchannel",
+      "target": "flutter_method_codec_methodcodec",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/event_channel.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "flutter_method_channel_methodchannel",
+      "target": "flutter_method_codec_methodcodec",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/method_channel.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "flutter_method_channel_methodchannel",
+      "target": "flutter_method_call_methodcall",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/method_channel.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "flutter_method_channel_methodchannel",
+      "target": "flutter_event_channel_eventchannel",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/method_channel.h",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "flutter_message_codec_messagecodec",
+      "target": "flutter_method_codec_methodcodec",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/message_codec.h",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "flutter_communication_channels",
+      "label": "Flutter Communication Channels",
+      "nodes": [
+        "flutter_method_channel_methodchannel",
+        "flutter_event_channel_eventchannel"
+      ],
+      "relation": "form",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/method_channel.h"
+    },
+    {
+      "id": "flutter_codecs",
+      "label": "Flutter Message and Method Codecs",
+      "nodes": [
+        "flutter_message_codec_messagecodec",
+        "flutter_method_codec_methodcodec",
+        "flutter_standard_message_codec_standardmessagecodec",
+        "flutter_standard_method_codec_standardmethodcodec"
+      ],
+      "relation": "form",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "windows/flutter/ephemeral/cpp_client_wrapper/include/flutter/method_codec.h"
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}
