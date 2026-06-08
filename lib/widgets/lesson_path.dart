@@ -307,9 +307,10 @@ class _LessonPathState extends State<LessonPath> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (widget.hasMissingFiles)
+              if (widget.hasMissingFiles && !(widget.section.units.isNotEmpty && widget.section.units.every((u) => u.isGenerated))) ...[
                 MissingFilesBanner(book: widget.book),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
+              ],
               LayoutBuilder(
                 builder: (context, constraints) {
                   final double width = constraints.maxWidth;

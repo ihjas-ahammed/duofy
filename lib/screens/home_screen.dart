@@ -21,6 +21,7 @@ import 'main_layout_screen.dart';
 import 'settings_screen.dart';
 import 'generate_book_screen.dart';
 import 'pdf_split_preview_screen.dart';
+import 'course_edit_structure_screen.dart';
 import '../services/global_state.dart';
 import '../main.dart';
 
@@ -343,49 +344,49 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     
-                    if (!kIsWeb)
+                    if (!kIsWeb) ...[
                       SliverToBoxAdapter(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Padding(
-                              padding: EdgeInsets.fromLTRB(24, 16, 24, 16),
+                              padding: EdgeInsets.fromLTRB(24, 24, 24, 16),
                               child: Text('Your Library', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
                             ),
                             if (books.isEmpty && activeTasks.isEmpty)
-                               Container(
-                                 height: 180,
-                                 margin: const EdgeInsets.symmetric(horizontal: 24),
-                                 decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(24)),
-                                 alignment: Alignment.center,
-                                 child: const Text('No courses found.\nTap + to create one!', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
-                               )
-                            else if (books.isNotEmpty)
-                               SizedBox(
-                                 height: 220,
-                                 child: ListView.builder(
-                                   scrollDirection: Axis.horizontal,
-                                   physics: const BouncingScrollPhysics(),
-                                   padding: const EdgeInsets.only(left: 8, right: 24),
-                                   itemCount: books.length,
-                                   itemBuilder: (context, index) {
-                                     final book = books[index];
-                                       return CompactBookCard(
-                                         book: book,
-                                         progress: progressMap[book.id] ?? 0.0,
-                                         onTap: () {
-                                           Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
-                                             .then((_) => _loadAllData(force: false));
-                                         },
-                                         onLongPress: () => _showBookLongPressMenu(book),
-                                         onDelete: () => _deleteLocalBook(book),
-                                       );
-                                   },
-                                 ),
-                               ),
+                              Container(
+                                height: 180,
+                                margin: const EdgeInsets.symmetric(horizontal: 24),
+                                decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(24)),
+                                alignment: Alignment.center,
+                                child: const Text('No courses found.\nTap + to create one!', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                              ),
                           ],
                         ),
                       ),
+                      if (books.isNotEmpty)
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          sliver: SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                                final book = books[index];
+                                return CompactBookCard(
+                                  book: book,
+                                  progress: progressMap[book.id] ?? 0.0,
+                                  onTap: () {
+                                    Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
+                                      .then((_) => _loadAllData(force: false));
+                                  },
+                                  onLongPress: () => _showBookLongPressMenu(book),
+                                  onDelete: () => _deleteLocalBook(book),
+                                );
+                              },
+                              childCount: books.length,
+                            ),
+                          ),
+                        ),
+                    ],
 
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
@@ -493,6 +494,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showBookLongPressMenu(Book book) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         return ClipRRect(
@@ -506,100 +508,162 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
               ),
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
+              child: SafeArea(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppTheme.duoBlue.withOpacity(0.18),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppTheme.duoBlue.withOpacity(0.4)),
-                        ),
-                        child: const Icon(LucideIcons.bookOpen, color: AppTheme.duoBlue, size: 24),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppTheme.duoBlue.withOpacity(0.18),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: AppTheme.duoBlue.withOpacity(0.4)),
+                            ),
+                            child: const Icon(LucideIcons.bookOpen, color: AppTheme.duoBlue, size: 24),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'COURSE MENU',
+                                  style: TextStyle(
+                                    color: AppTheme.duoBlue,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  book.title,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'COURSE MENU',
-                              style: TextStyle(
-                                color: AppTheme.duoBlue,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1.2,
+                      const SizedBox(height: 16),
+                      _buildMenuItem(
+                        icon: LucideIcons.play,
+                        title: 'Generate Contents',
+                        subtitle: 'Generate all lessons and graphics now',
+                        iconColor: AppTheme.duoGreen,
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          _promptGenerateOrScheduleBook(book, isScheduled: false);
+                        },
+                      ),
+                      _buildMenuItem(
+                        icon: LucideIcons.calendar,
+                        title: 'Schedule Generation',
+                        subtitle: 'Queue for auto schedule hours',
+                        iconColor: AppTheme.duoViolet,
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          _promptGenerateOrScheduleBook(book, isScheduled: true);
+                        },
+                      ),
+                      _buildMenuItem(
+                        icon: LucideIcons.edit3,
+                        title: 'Edit Course Structure',
+                        subtitle: 'Rename modules/sections or re-map pages',
+                        iconColor: AppTheme.duoBlue,
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => CourseEditStructureScreen(
+                                book: book,
+                                onBookUpdated: (updatedBook) {
+                                  _loadAllData(force: false);
+                                },
                               ),
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              book.title,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                          );
+                        },
+                      ),
+                      _buildMenuItem(
+                        icon: LucideIcons.refreshCcw,
+                        title: 'Reset Progress',
+                        subtitle: 'Clear all lesson completion data',
+                        iconColor: AppTheme.duoOrange,
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          _resetBookProgress(book);
+                        },
+                      ),
+                      _buildMenuItem(
+                        icon: LucideIcons.trash2,
+                        title: 'Delete Course',
+                        subtitle: 'Remove from your library',
+                        iconColor: AppTheme.duoRed,
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          _deleteLocalBook(book);
+                        },
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text(
+                          'CANCEL',
+                          style: TextStyle(
+                            color: Color(0xFF94A3B8),
+                            fontWeight: FontWeight.w900,
+                            fontSize: 13,
+                            letterSpacing: 1.4,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  _buildMenuItem(
-                    icon: LucideIcons.play,
-                    title: 'Generate Contents',
-                    subtitle: 'Generate all lessons and graphics now',
-                    iconColor: AppTheme.duoGreen,
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _promptGenerateOrScheduleBook(book, isScheduled: false);
-                    },
-                  ),
-                  _buildMenuItem(
-                    icon: LucideIcons.calendar,
-                    title: 'Schedule Generation',
-                    subtitle: 'Queue for auto schedule hours',
-                    iconColor: AppTheme.duoViolet,
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _promptGenerateOrScheduleBook(book, isScheduled: true);
-                    },
-                  ),
-                  _buildMenuItem(
-                    icon: LucideIcons.trash2,
-                    title: 'Delete Course',
-                    subtitle: 'Remove from your library',
-                    iconColor: AppTheme.duoRed,
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _deleteLocalBook(book);
-                    },
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text(
-                      'CANCEL',
-                      style: TextStyle(
-                        color: Color(0xFF94A3B8),
-                        fontWeight: FontWeight.w900,
-                        fontSize: 13,
-                        letterSpacing: 1.4,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
         );
       },
+    );
+  }
+
+  void _resetBookProgress(Book book) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text('Reset Progress?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: Text('Are you sure you want to clear all completion progress for "${book.title}"?', style: const TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await ProgressService.clearBookProgress(book);
+              _loadAllData(force: false);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Course progress reset.')),
+                );
+              }
+            }, 
+            child: const Text('Reset', style: TextStyle(color: AppTheme.duoOrange, fontWeight: FontWeight.bold))
+          ),
+        ]
+      )
     );
   }
 

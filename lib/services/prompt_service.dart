@@ -478,7 +478,7 @@ RETURN ONLY VALID JSON FOR THIS ONE SLIDE (no wrapping array, no other keys). Ma
   ///   - `function sketch(canvas, W, H)` for INTERACTIVE 2D and/or 3D
   ///     (animation loops, mouse/touch input, WebGL via THREE.js).
   /// The model only ever supplies the drawing logic, never the page scaffold.
-  static const String canvasArt = '''You are a diagram artist who renders explanatory graphics with the HTML5 Canvas API and (when 3D is needed) THREE.js. Write a SINGLE JavaScript program that renders the concept below as a clear, visually strong diagram.
+  static const String canvasArt = '''You are a diagram artist who renders explanatory graphics with the HTML5 Canvas API, THREE.js (for 3D), or RAW SVG (for still pictures/circuits). Write a SINGLE JavaScript program OR output a raw `<svg>` block that renders the concept below as a clear, visually strong diagram.
 
 Think VISUALLY: the goal is a strong diagrammatic representation — shapes, structure, spatial relationships, arrows and colour that convey the idea at a glance. Words are a last resort, not the content.
 
@@ -514,9 +514,11 @@ PICK THE RIGHT ENTRY POINT — define EXACTLY ONE of the following (no others). 
 
   (C) 3D — use when the concept is inherently three-dimensional (rotatable solid, molecule, vector field in 3-space, orbiting body). Output one function:
         function sketch(canvas, W, H) { /* … */ }
-      Inside it use the globally-available `THREE` (the host pre-loads three.js r150 on `window.THREE`). Create a `WebGLRenderer({ canvas, alpha: true, antialias: true })`, a `PerspectiveCamera` with `aspect = W/H`, a `Scene`, lights, the geometry, and a render loop with `requestAnimationFrame`. Make the object rotate slowly so all faces are visible; OR attach pointer listeners to spin it on drag. Set `renderer.setSize(W, H, false)` ONCE (the host handles devicePixelRatio).
+      Inside it use the globally-available `THREE` (the host pre-loads three.js r150 on `window.THREE`). Create a `WebGLRenderer({ canvas, alpha: true, antialias: true })`, a `PerspectiveCamera` with `aspect = W/H`, a `Scene`, lights, the geometry, and a render loop with `requestAnimationFrame`. Set `renderer.setSize(W, H, false)` ONCE (the host handles devicePixelRatio).
 
-STYLE RULES (apply to A, B, C):
+  (D) RAW SVG — Use when the concept is a still picture, electric circuit schematic, block diagram, or simple static shape diagram. Output a single, clean raw `<svg>` markup block with viewBox="0 0 300 200" (3:2 aspect ratio). Use light-on-dark/harmonious colors matching theme: stroke "#E2E8F0" or "#3B82F6", accent "#58CC02", text "#F8FAFC".
+
+STYLE RULES (apply to A, B, C, D):
 1. Dark, already-cleared background. Light-on-dark colors: primary strokes `#E2E8F0`, accents `#3B82F6` (blue), `#58CC02` (green), `#FBBF24` (amber), `#F472B6` (pink). Label text `#F8FAFC`. Never assume a white page.
 2. Text is SECONDARY. Do NOT draw a title, heading, caption, or sentences. Add at most a few SHORT labels (axis names, a key variable, a single value) only where the diagram is unreadable without them. Use `ctx.font = "14px sans-serif"` or larger. Carry meaning with the drawing itself, not words.
 3. No external images, no `fetch`, no `XMLHttpRequest`, no DOM mutation outside the canvas, no popups, no `alert`, no `setInterval` (use `requestAnimationFrame`).
@@ -630,7 +632,22 @@ function sketch(canvas, W, H) {
   frame();
 }
 
-Return ONLY the chosen function (either `draw` or `sketch`). No surrounding text, no fences.''';
+EXAMPLE D — RAW SVG (An electrical circuit with a battery, resistor, and capacitor):
+<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Wires -->
+  <path d="M 50,100 L 100,100 M 160,100 L 210,100 M 250,100 L 270,100 M 270,100 L 270,150 L 30,150 L 30,100 L 50,100" stroke="#E2E8F0" stroke-width="3" fill="none" />
+  <!-- Resistor (zig-zag) -->
+  <path d="M 100,100 L 105,90 L 115,110 L 125,90 L 135,110 L 145,90 L 155,110 L 160,100" stroke="#3B82F6" stroke-width="4" fill="none" stroke-linejoin="bevel" />
+  <text x="110" y="75" fill="#F8FAFC" font-size="13" font-family="sans-serif" font-weight="bold">R = 100 Ω</text>
+  <!-- Capacitor (parallel plates) -->
+  <path d="M 210,80 L 210,120 M 220,80 L 220,120 M 220,100 L 250,100" stroke="#58CC02" stroke-width="4" fill="none" />
+  <text x="205" y="75" fill="#F8FAFC" font-size="13" font-family="sans-serif" font-weight="bold">C = 10 µF</text>
+  <!-- Battery (long/short plates) -->
+  <path d="M 50,85 L 50,115 M 58,93 L 58,107" stroke="#FBBF24" stroke-width="4" fill="none" />
+  <text x="38" y="75" fill="#F8FAFC" font-size="13" font-family="sans-serif" font-weight="bold">V = 9V</text>
+</svg>
+
+Return ONLY the chosen function (either `draw` or `sketch`) or the raw `<svg>` markup. No surrounding text, no markdown fences.''';
 
   static const String qpJson = '''SYSTEM PROMPT:
 %system_prompt%

@@ -96,13 +96,14 @@ class _FdCollection implements FbCollectionRef {
   FbDocRef doc(String id) => _FdDoc(_ref.document(id));
   @override
   Future<FbQuerySnapshot> get() async {
-    // firedart `get()` returns a Page<Document>; we only care about the first
-    // page for the small collections this app uses (per-user books, ~global
-    // catalog). Paging through more than 1024 docs would be a separate task.
-    final page = await _ref.get();
-    return FbQuerySnapshot(page
-        .map((d) => FbDocSnapshot(id: d.id, exists: true, data: d.map))
-        .toList());
+    final List<FbDocSnapshot> docs = [];
+    var page = await _ref.get();
+    docs.addAll(page.map((d) => FbDocSnapshot(id: d.id, exists: true, data: d.map)));
+    while (page.hasNextPage) {
+      page = await _ref.get(nextPageToken: page.nextPageToken);
+      docs.addAll(page.map((d) => FbDocSnapshot(id: d.id, exists: true, data: d.map)));
+    }
+    return FbQuerySnapshot(docs);
   }
 }
 

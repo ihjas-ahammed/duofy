@@ -18,6 +18,7 @@ class AutoIndexScreen extends StatefulWidget {
   final List<int>? collectedChapter1StartPages;
   final bool isAutoMode;
   final bool isHandout;
+  final String? customIndexingPrompt;
 
   const AutoIndexScreen({
     super.key,
@@ -31,6 +32,7 @@ class AutoIndexScreen extends StatefulWidget {
     this.collectedChapter1StartPages,
     this.isAutoMode = true,
     this.isHandout = false,
+    this.customIndexingPrompt,
   });
 
   @override
@@ -84,6 +86,7 @@ class _AutoIndexScreenState extends State<AutoIndexScreen> {
               collectedChapter1StartPages: widget.collectedChapter1StartPages,
               isAutoMode: widget.isAutoMode,
               isHandout: widget.isHandout,
+              customIndexingPrompt: widget.customIndexingPrompt,
             ),
           ));
         }

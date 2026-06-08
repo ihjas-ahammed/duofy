@@ -297,21 +297,51 @@ class GenerationManager extends ChangeNotifier {
         return;
       }
       
-      int availableSlots = limit - runningTasks.length;
-      if (availableSlots <= 0) {
-        _isProcessing = false;
-        return;
-      }
-      
-      // Select next tasks to run
-      final nextTasks = _getNextTasksToRun(queuedTasks, isWithinHours, availableSlots);
-      
       // Fetch available keys
       List<String> keys = prefs.getStringList('gemini_api_keys_list') ?? [];
       if (keys.isEmpty) {
         final keysString = prefs.getString('gemini_api_keys') ?? '';
         keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
       }
+      
+      // Execute all 'canvas_regen' tasks immediately
+      final canvasRegens = queuedTasks.where((t) => t.type == 'canvas_regen').toList();
+      if (canvasRegens.isNotEmpty) {
+        if (keys.isEmpty) {
+          for (final t in canvasRegens) {
+            t.status = 'failed';
+            t.statusMessage = 'Failed';
+            t.errorMessage = 'No API Keys configured. Please add keys in Settings.';
+            t.endTime = DateTime.now();
+            t.completer.completeError(Exception('No API Keys configured.'));
+          }
+        } else {
+          for (final task in canvasRegens) {
+            final assignedKey = _selectApiKeyForTask(task, keys, runningTasks);
+            task.params['assignedApiKey'] = assignedKey;
+            _executeTask(task);
+            runningTasks.add(task);
+          }
+        }
+        _syncActiveMapsWithQueue();
+        notifyListeners();
+        _saveQueueToPrefs();
+      }
+      
+      final remainingQueued = queuedTasks.where((t) => t.type != 'canvas_regen').toList();
+      if (remainingQueued.isEmpty) {
+        _isProcessing = false;
+        return;
+      }
+      
+      int availableSlots = limit - runningTasks.where((t) => t.type != 'canvas_regen').length;
+      if (availableSlots <= 0) {
+        _isProcessing = false;
+        return;
+      }
+      
+      // Select next tasks to run
+      final nextTasks = _getNextTasksToRun(remainingQueued, isWithinHours, availableSlots);
       
       if (keys.isEmpty) {
         for (final t in nextTasks) {
@@ -383,6 +413,10 @@ class GenerationManager extends ChangeNotifier {
   }
 
   Future<void> _executeTask(AiTask task) async {
+    final isCanvasRegen = task.type == 'canvas_regen';
+    if (isCanvasRegen) {
+      AiService.activeCanvasRegensCount++;
+    }
     try {
       final apiKey = (task.params['assignedApiKey'] as String? ?? '');
       task.status = 'running';
@@ -482,6 +516,9 @@ class GenerationManager extends ChangeNotifier {
       task.endTime = DateTime.now();
       task.completer.completeError(e);
     } finally {
+      if (isCanvasRegen) {
+        AiService.activeCanvasRegensCount = (AiService.activeCanvasRegensCount - 1).clamp(0, 9999);
+      }
       _syncActiveMapsWithQueue();
       notifyListeners();
       _saveQueueToPrefs();
@@ -680,7 +717,7 @@ class GenerationManager extends ChangeNotifier {
     final contextText = task.params['contextText'] as String? ?? '';
     final errorContext = task.params['errorContext'] as String?;
     
-    final result = await _aiService.generateCanvasArt(canvasPrompt, contextText: contextText, errorContext: errorContext, forcedApiKey: apiKey);
+    final result = await _aiService.generateCanvasArt(canvasPrompt, contextText: contextText, errorContext: errorContext, forcedApiKey: apiKey, isHighPriority: true);
     task.completer.complete(result);
   }
 
@@ -1872,5 +1909,73 @@ class GenerationManager extends ChangeNotifier {
     } catch (_) {
       return 2;
     }
+  }
+
+  Future<void> cancelCourseGeneration(String taskId) async {
+    final taskIndex = activeTasks.indexWhere((t) => t.id == taskId);
+    String? bookId;
+    if (taskIndex != -1) {
+      final task = activeTasks[taskIndex];
+      bookId = task.skeletonBook?.id;
+      activeTasks.removeAt(taskIndex);
+    }
+    
+    try {
+      await NotificationService.cancel(taskId.hashCode);
+    } catch (_) {}
+    
+    final List<AiTask> toRemove = [];
+    for (final t in queue) {
+      final match = t.id == taskId || 
+                    t.bookId == taskId || 
+                    (bookId != null && t.bookId == bookId) || 
+                    (bookId == null && t.bookId == 'new_book') ||
+                    t.params['taskId'] == taskId;
+      if (match) {
+        toRemove.add(t);
+      }
+    }
+    
+    for (final t in toRemove) {
+      if (t.status == 'running' || t.status == 'queued') {
+        t.status = 'failed';
+        t.errorMessage = 'Generation cancelled by user.';
+        t.statusMessage = 'Cancelled';
+        if (!t.completer.isCompleted) {
+          t.completer.completeError(Exception('Cancelled'));
+        }
+      }
+      queue.remove(t);
+    }
+    
+    _syncActiveMapsWithQueue();
+    notifyListeners();
+    _saveQueueToPrefs();
+    _processQueue();
+  }
+
+  Future<void> startBookGenerationFromBookmarks(
+    List<File> sourceFiles,
+    String filename,
+    Book skeletonBook,
+  ) async {
+    sourceFiles = sourceFiles.toList();
+    final taskId = DateTime.now().millisecondsSinceEpoch.toString();
+
+    final task = GenerationTask(
+      id: taskId,
+      title: filename,
+      sourceFiles: sourceFiles,
+      startTime: DateTime.now(),
+      estimatedDuration: const Duration(seconds: 15),
+    );
+
+    task.skeletonBook = skeletonBook;
+    task.state = BookGenState.review;
+    task.statusMessage = 'Action Required: Review Splits';
+    
+    activeTasks.add(task);
+    _syncActiveMapsWithQueue();
+    notifyListeners();
   }
 }

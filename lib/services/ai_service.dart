@@ -10,8 +10,17 @@ import 'package:pdfx/pdfx.dart' as pdfx;
 import '../models/app_models.dart';
 import 'prompt_service.dart';
 import 'pdf_service.dart';
+import 'database_service.dart';
 
 class AiService {
+  static int activeCanvasRegensCount = 0;
+
+  Future<void> _checkPause() async {
+    while (activeCanvasRegensCount > 0) {
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
+  }
+
   Future<List<String>> _getKeys({String? forcedApiKey}) async {
     if (forcedApiKey != null && forcedApiKey.trim().isNotEmpty) {
       return [forcedApiKey.trim()];
@@ -373,6 +382,7 @@ Return JSON format:
   }
 
   Future<Map<String, dynamic>?> scanIndexChunk(File chunkPdf, int startPage, int endPage, {String? forcedApiKey}) async {
+    await _checkPause();
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getLiteModels();
     final pdfBytes = await chunkPdf.readAsBytes();
@@ -445,6 +455,7 @@ Important Rules:
     List<List<int>>? chapterStarts,
     List<File>? sourceFiles,
   }) async {
+    await _checkPause();
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getLiteModels();
     final instructionsBlock = PromptService.instructionsBlock(customInstructions);
@@ -962,6 +973,7 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     void Function(List<Lesson> lessonsSoFar)? onLessonGenerated,
     String? forcedApiKey,
   }) async {
+    await _checkPause();
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final textModelsToTry = await _getPrimaryTextModels();
     final liteModelsToTry = await _getLiteModels();
@@ -1089,6 +1101,7 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     }
 
     for (int i = 0; i < total; i++) {
+      await _checkPause();
       Lesson? lesson = slots[i];
 
       // 1. Text — generate only when this slot isn't already filled (resume).
@@ -1278,6 +1291,7 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     bool generateGraphics = true,
     String? forcedApiKey,
   }) async {
+    await _checkPause();
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final textModels = await _getPrimaryTextModels();
 
@@ -1357,6 +1371,7 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     String? note,
     String? forcedApiKey,
   }) async {
+    await _checkPause();
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final textModels = await _getPrimaryTextModels();
 
@@ -1427,12 +1442,19 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
   /// [contextText] is a short snippet of the surrounding lesson content so
   /// the model can keep the diagram thematically consistent (e.g. variable
   /// names, units). Pass an empty string when not relevant.
-  Future<String?> generateCanvasArt(String canvasPrompt, {String contextText = '', String? errorContext, String? forcedApiKey}) async {
+  Future<String?> generateCanvasArt(String canvasPrompt, {String contextText = '', String? errorContext, String? forcedApiKey, bool isHighPriority = false}) async {
     if (canvasPrompt.trim().isEmpty) return null;
+
+    if (!isHighPriority) {
+      await _checkPause();
+    }
+
+    final reused = await findReusableCanvasArt(canvasPrompt, forcedApiKey: forcedApiKey);
+    if (reused != null) return reused;
 
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getPrimaryGraphicsModels();
-    // Cap context to keep prompts small — the SVG diagram doesn\'t need the
+    // Cap context to keep prompts small — the SVG diagram doesn't need the
     // entire lesson, only a few sentences for tone matching.
     final trimmedContext = contextText.length > 800 ? contextText.substring(0, 800) : contextText;
     String hydrated = PromptService.canvasArt
@@ -1469,20 +1491,25 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     return null;
   }
 
-  /// Pulls a clean JavaScript program out of the model's raw response.
-  /// Accepts either the static `function draw(ctx, W, H)` entry point or
-  /// the richer `function sketch(canvas, W, H)` entry point used for
-  /// interactive 2D and THREE.js-powered 3D diagrams. Strips Markdown code
-  /// fences first, then isolates the chosen function block by brace-matching
-  /// so any chatty text the model wrapped around it is dropped. Returns
-  /// null when no balanced function is found, so the caller keeps the
-  /// lesson art-free rather than embedding broken JS.
+  /// Pulls a clean JavaScript program or raw SVG markup out of the model's raw response.
+  /// Accepts either the static `function draw(ctx, W, H)` entry point, the richer
+  /// `function sketch(canvas, W, H)` entry point, or raw `<svg>` block.
+  /// Strips Markdown code fences first, then isolates the chosen function block or SVG element.
   String? _extractDrawFunction(String raw) {
     var s = raw.trim();
     // Strip code fences if present.
-    final fence = RegExp(r'```(?:js|javascript)?\s*([\s\S]*?)```', multiLine: true);
+    final fence = RegExp(r'```(?:js|javascript|svg|xml|html)?\s*([\s\S]*?)```', caseSensitive: false, multiLine: true);
     final fenceMatch = fence.firstMatch(s);
     if (fenceMatch != null) s = fenceMatch.group(1)!.trim();
+
+    // Check if it is raw SVG markup.
+    final svgStart = s.toLowerCase().indexOf('<svg');
+    if (svgStart >= 0) {
+      final svgEnd = s.toLowerCase().lastIndexOf('</svg>');
+      if (svgEnd >= 0 && svgEnd > svgStart) {
+        return s.substring(svgStart, svgEnd + 6).trim();
+      }
+    }
 
     // Prefer `sketch` (interactive / 3D) when present, otherwise fall back
     // to `draw` (static 2D). Either keyword is acceptable.
@@ -1505,6 +1532,143 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
       }
     }
     return null; // unbalanced — discard rather than embed broken JS
+  }
+
+  Future<String?> findReusableCanvasArt(String newPrompt, {String? forcedApiKey}) async {
+    try {
+      final books = await DatabaseService().fetchBooks(forceRefresh: false);
+      final Map<String, String> candidates = {};
+      for (final book in books) {
+        for (final module in book.modules) {
+          for (final section in module.sections) {
+            for (final unit in section.units) {
+              for (final lesson in unit.lessons) {
+                if (lesson.canvasPrompt != null &&
+                    lesson.canvasPrompt!.trim().isNotEmpty &&
+                    lesson.canvasSvg != null &&
+                    lesson.canvasSvg!.trim().isNotEmpty) {
+                  candidates[lesson.canvasPrompt!.trim()] = lesson.canvasSvg!.trim();
+                }
+                for (final slide in lesson.slides) {
+                  if (slide.canvasPrompt != null &&
+                      slide.canvasPrompt!.trim().isNotEmpty &&
+                      slide.canvasSvg != null &&
+                      slide.canvasSvg!.trim().isNotEmpty) {
+                    candidates[slide.canvasPrompt!.trim()] = slide.canvasSvg!.trim();
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (candidates.isEmpty) return null;
+
+      // Extract 1-2 keywords using a Lite model
+      final keys = await _getKeys(forcedApiKey: forcedApiKey);
+      final liteModels = await _getLiteModels();
+      if (keys.isEmpty || liteModels.isEmpty) return null;
+
+      final keywordPrompt = '''
+You are a keyword extractor. Extract 1-2 core technical keywords or short phrases from this canvas art prompt.
+These keywords will be used to run a fast pre-filter on existing diagram prompts.
+Be extremely specific to the concept (e.g. for "draw a resistor and capacitor circuit", extract "resistor, capacitor").
+Return ONLY the comma-separated keywords/phrases, no explanation, no markdown.
+
+Prompt: $newPrompt
+''';
+
+      String keywordsStr = '';
+      for (final modelName in liteModels) {
+        for (final apiKey in keys) {
+          try {
+            final model = GenerativeModel(model: modelName, apiKey: apiKey);
+            final response = await model.generateContent([Content.text(keywordPrompt)]);
+            if (response.text != null && response.text!.trim().isNotEmpty) {
+              keywordsStr = response.text!.trim();
+              break;
+            }
+          } catch (_) {}
+        }
+        if (keywordsStr.isNotEmpty) break;
+      }
+
+      if (keywordsStr.isEmpty) return null;
+
+      final keywords = keywordsStr
+          .split(',')
+          .map((k) => k.trim().toLowerCase())
+          .where((k) => k.isNotEmpty)
+          .toList();
+
+      if (keywords.isEmpty) return null;
+
+      // Pre-filter candidate prompts
+      final List<MapEntry<String, String>> filtered = [];
+      for (final entry in candidates.entries) {
+        final promptLower = entry.key.toLowerCase();
+        bool matches = false;
+        for (final kw in keywords) {
+          if (promptLower.contains(kw)) {
+            matches = true;
+            break;
+          }
+        }
+        if (matches) {
+          filtered.add(entry);
+        }
+      }
+
+      if (filtered.isEmpty) return null;
+
+      // Limit to top 10
+      final List<MapEntry<String, String>> topFiltered = filtered.take(10).toList();
+
+      // Ask Lite model if there is a match
+      final candidateListStr = topFiltered.asMap().entries.map((e) => 'Candidate ${e.key}: "${e.value.key}"').join('\n');
+      final matchPrompt = '''
+You are a diagram matching system. We have a new diagram to create:
+New Prompt: "$newPrompt"
+
+Below is a list of existing diagram prompts that we have already drawn.
+Check if any of the existing candidates is a direct technical match (meaning they describe the exact same diagram, circuit, or illustration concept). It doesn't have to be identical word-for-word, but must represent the exact same visual content (e.g., "sine wave" matches "a graph showing a sine wave").
+
+List of existing candidates:
+$candidateListStr
+
+If there is a match, reply with ONLY the text "MATCH: Index" where Index is the candidate number (e.g. "MATCH: 0").
+If there are no matches or you are not sure, reply with ONLY "NO_MATCH".
+Do not include any explanation or other text.
+''';
+
+      String matchResult = '';
+      for (final modelName in liteModels) {
+        for (final apiKey in keys) {
+          try {
+            final model = GenerativeModel(model: modelName, apiKey: apiKey);
+            final response = await model.generateContent([Content.text(matchPrompt)]);
+            if (response.text != null && response.text!.trim().isNotEmpty) {
+              matchResult = response.text!.trim();
+              break;
+            }
+          } catch (_) {}
+        }
+        if (matchResult.isNotEmpty) break;
+      }
+
+      if (matchResult.startsWith('MATCH:')) {
+        final indexStr = matchResult.substring(6).trim();
+        final idx = int.tryParse(indexStr);
+        if (idx != null && idx >= 0 && idx < topFiltered.length) {
+          print('[AiService] Found reusable canvas art for "$newPrompt" matching candidate "${topFiltered[idx].key}"');
+          return topFiltered[idx].value;
+        }
+      }
+    } catch (e) {
+      print('[AiService] Error in findReusableCanvasArt: $e');
+    }
+    return null;
   }
 
   /// Renders the diagram(s) for a SINGLE [lesson]: the lesson-level diagram
@@ -1639,6 +1803,7 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
   }
 
   Future<QuestionPaper> generateQuestionPaper(List<File> files, String qpTitle, String? systemPrompt, {String? customInstructions, String? forcedApiKey}) async {
+    await _checkPause();
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getPrimaryTextModels();
 
@@ -1691,6 +1856,7 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     String? customInstructions,
     String? forcedApiKey,
   }) async {
+    await _checkPause();
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getLiteModels();
     
@@ -1750,6 +1916,7 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     required List<Map<String, dynamic>> answersToGrade,
     String? forcedApiKey,
   }) async {
+    await _checkPause();
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getLiteModels();
     

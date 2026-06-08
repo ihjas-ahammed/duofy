@@ -136,6 +136,7 @@ class _LessonScreenState extends State<LessonScreen> {
 
   void _onGenerationManagerChange() {
     if (!mounted) return;
+    setState(() {});
     _refreshFromCache();
   }
 

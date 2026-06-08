@@ -8,6 +8,7 @@ import '../widgets/file_selection_list.dart';
 import '../widgets/responsive_center.dart';
 import 'index_picker_screen.dart';
 import 'auto_index_screen.dart';
+import 'pdf_split_preview_screen.dart';
 import '../services/generation_manager.dart';
 import '../services/pdf_service.dart';
 
@@ -26,6 +27,13 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
   IndexMode _indexMode = IndexMode.auto;
   final List<File> _selectedFiles = [];
   final List<File> _syllabusFiles = [];
+  final TextEditingController _customPromptController = TextEditingController();
+
+  @override
+  void dispose() {
+    _customPromptController.dispose();
+    super.dispose();
+  }
 
   Future<void> _pickFiles(bool forSyllabus) async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -105,37 +113,86 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
         final firstPdf = _mode == GenerationMode.handout ? finalSourcePdf! : _selectedFiles.first;
         final filename = firstPdf.path.split(RegExp(r'[\\/]')).last;
 
-        if (_indexMode == IndexMode.manual || _indexMode == IndexMode.chapters) {
-          Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => IndexPickerScreen(
-              sourcePdf: firstPdf,
-              filename: filename,
-              syllabusFiles: finalSyllabusFiles,
-              isCourse: _mode == GenerationMode.course,
-              allSourcePdfs: _mode == GenerationMode.handout ? [finalSourcePdf!] : _selectedFiles,
-              currentPdfIndex: 0,
-              collectedIndexPages: const [],
-              collectedChapter1StartPages: const [],
-              isAutoMode: false,
-              isHandout: _mode == GenerationMode.handout,
-              indexMode: _indexMode,
+        final hasBookmarks = await pdfService.hasBookmarks(firstPdf);
+        bool useBookmarks = false;
+        if (hasBookmarks && mounted) {
+          useBookmarks = await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: AppTheme.surface,
+              title: const Text('PDF Bookmarks Detected', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              content: const Text(
+                'This PDF contains table-of-contents bookmarks. Would you like to use them for indexing/structure instead of scanning via AI?',
+                style: TextStyle(color: Colors.white70),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  child: const Text('No, scan via AI', style: TextStyle(color: Colors.white54)),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  child: const Text('Yes, use bookmarks', style: TextStyle(color: AppTheme.duoGreen)),
+                ),
+              ],
             ),
-          ));
+          ) ?? false;
+        }
+
+        if (useBookmarks && mounted) {
+          final bookmarks = await pdfService.extractBookmarks(firstPdf);
+          final mappedBook = pdfService.mapBookmarksToBook(bookmarks, filename, firstPdf);
+          final sourceList = _mode == GenerationMode.handout ? [finalSourcePdf!] : _selectedFiles;
+          
+          await GenerationManager.instance.startBookGenerationFromBookmarks(sourceList, filename, mappedBook);
+          
+          final task = GenerationManager.instance.activeTasks.last;
+          if (mounted) {
+            Navigator.of(context).pushReplacement(MaterialPageRoute(
+              builder: (_) => PdfSplitPreviewScreen(
+                taskId: task.id,
+                originalPdf: sourceList,
+                skeletonBook: mappedBook,
+              ),
+            ));
+          }
         } else {
-          Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => AutoIndexScreen(
-              sourcePdf: firstPdf,
-              filename: filename,
-              syllabusFiles: finalSyllabusFiles,
-              isCourse: _mode == GenerationMode.course,
-              allSourcePdfs: _mode == GenerationMode.handout ? [finalSourcePdf!] : _selectedFiles,
-              currentPdfIndex: 0,
-              collectedIndexPages: const [],
-              collectedChapter1StartPages: const [],
-              isAutoMode: true,
-              isHandout: _mode == GenerationMode.handout,
-            ),
-          ));
+          final customPrompt = _customPromptController.text.trim();
+          if (_indexMode == IndexMode.manual || _indexMode == IndexMode.chapters) {
+            Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => IndexPickerScreen(
+                sourcePdf: firstPdf,
+                filename: filename,
+                syllabusFiles: finalSyllabusFiles,
+                isCourse: _mode == GenerationMode.course,
+                allSourcePdfs: _mode == GenerationMode.handout ? [finalSourcePdf!] : _selectedFiles,
+                currentPdfIndex: 0,
+                collectedIndexPages: const [],
+                collectedChapter1StartPages: const [],
+                isAutoMode: false,
+                isHandout: _mode == GenerationMode.handout,
+                indexMode: _indexMode,
+                customIndexingPrompt: customPrompt.isNotEmpty ? customPrompt : null,
+              ),
+            ));
+          } else {
+            Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => AutoIndexScreen(
+                sourcePdf: firstPdf,
+                filename: filename,
+                syllabusFiles: finalSyllabusFiles,
+                isCourse: _mode == GenerationMode.course,
+                allSourcePdfs: _mode == GenerationMode.handout ? [finalSourcePdf!] : _selectedFiles,
+                currentPdfIndex: 0,
+                collectedIndexPages: const [],
+                collectedChapter1StartPages: const [],
+                isAutoMode: true,
+                isHandout: _mode == GenerationMode.handout,
+                customIndexingPrompt: customPrompt.isNotEmpty ? customPrompt : null,
+              ),
+            ));
+          }
         }
       } catch (e) {
         if (mounted) {
@@ -326,6 +383,28 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                     ),
 
                     _buildIndexModeSelector(),
+                    const SizedBox(height: 24),
+                    const Text('CUSTOM INDEXING INSTRUCTIONS (OPTIONAL)', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _customPromptController,
+                      maxLines: 3,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: 'e.g. Ignore appendix chapters, focus on primary chapters, or translate topic names...',
+                        hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
+                        filled: true,
+                        fillColor: AppTheme.surface,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.white12),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppTheme.duoGreen),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

@@ -16,6 +16,7 @@ class CourseQuestionnaireScreen extends StatefulWidget {
   final List<int> allChapter1StartPages;
   final bool isHandout;
   final IndexMode indexMode;
+  final String? customIndexingPrompt;
 
   const CourseQuestionnaireScreen({
     super.key,
@@ -27,6 +28,7 @@ class CourseQuestionnaireScreen extends StatefulWidget {
     required this.allChapter1StartPages,
     this.isHandout = false,
     this.indexMode = IndexMode.manual,
+    this.customIndexingPrompt,
   });
 
   @override
@@ -85,6 +87,10 @@ class _CourseQuestionnaireScreenState extends State<CourseQuestionnaireScreen> {
 
   Future<void> _submit() async {
     final buffer = StringBuffer();
+    if (widget.customIndexingPrompt != null && widget.customIndexingPrompt!.trim().isNotEmpty) {
+      buffer.writeln('Indexing guidance:\n${widget.customIndexingPrompt!.trim()}');
+      buffer.writeln('');
+    }
     for (var q in _questions) {
       final ans = _answers[q]?.text.trim() ?? '';
       if (ans.isNotEmpty) {

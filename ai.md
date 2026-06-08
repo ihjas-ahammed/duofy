@@ -1,9 +1,6 @@
 Make the following changes:
 
 
-- Update canvas art:
-
-
 Update prompt accordingly as I add new features and slide types
 
 Always append process and instructions on readme

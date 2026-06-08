@@ -334,13 +334,19 @@ class DatabaseService {
     // Two-way sync: pull remote, merge by updatedAt, push back local-newer
     // books, and persist the merged set to the local file store.
     try {
-      final snapshot = await _userBooks.get().timeout(const Duration(seconds: 4));
+      final snapshot = await _userBooks.get().timeout(const Duration(seconds: 15));
       final Map<String, Book> remote = {};
       for (final doc in snapshot.docs) {
-        final data = doc.data();
-        if (data == null) continue;
-        final b = Book.fromJson(Map<String, dynamic>.from(data));
-        remote[b.id] = b;
+        try {
+          final data = doc.data();
+          if (data == null) continue;
+          final b = Book.fromJson(Map<String, dynamic>.from(data));
+          if (b.id.isNotEmpty) {
+            remote[b.id] = b;
+          }
+        } catch (e) {
+          print("[DatabaseService] Error parsing remote book ${doc.id}: $e");
+        }
       }
 
       final Map<String, Book> merged = {...remote};
@@ -422,7 +428,8 @@ class DatabaseService {
   }
 
   Future<void> saveGeneratedBook(Book book) async {
-    final updatedBook = book.copyWith(updatedAt: DateTime.now().millisecondsSinceEpoch);
+    final scopedBook = book.scopeBookIds(book.id);
+    final updatedBook = scopedBook.copyWith(updatedAt: DateTime.now().millisecondsSinceEpoch);
 
     // 1. Local file store first — this is the source of truth and must succeed
     //    for the book to appear in the UI. Only this one book's file is

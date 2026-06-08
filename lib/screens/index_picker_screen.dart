@@ -42,6 +42,7 @@ class IndexPickerScreen extends StatefulWidget {
   final bool isAutoMode;
   final bool isHandout;
   final IndexMode indexMode;
+  final String? customIndexingPrompt;
 
   const IndexPickerScreen({
     super.key,
@@ -58,6 +59,7 @@ class IndexPickerScreen extends StatefulWidget {
     this.isAutoMode = false,
     this.isHandout = false,
     this.indexMode = IndexMode.manual,
+    this.customIndexingPrompt,
   });
 
   @override
@@ -270,6 +272,7 @@ class _IndexPickerScreenState extends State<IndexPickerScreen> {
             isAutoMode: false,
             isHandout: widget.isHandout,
             indexMode: widget.indexMode,
+            customIndexingPrompt: widget.customIndexingPrompt,
           ),
         ));
       }
@@ -284,6 +287,7 @@ class _IndexPickerScreenState extends State<IndexPickerScreen> {
           allChapter1StartPages: currentCh1List,
           isHandout: widget.isHandout,
           indexMode: widget.indexMode,
+          customIndexingPrompt: widget.customIndexingPrompt,
         ),
       ));
     }

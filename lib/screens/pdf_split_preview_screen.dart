@@ -608,7 +608,44 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Review Page Splits', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18))),
+      appBar: AppBar(
+        title: const Text('Review Page Splits', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+        actions: [
+          IconButton(
+            icon: const Icon(LucideIcons.trash2, color: AppTheme.duoRed),
+            tooltip: 'Cancel course generation',
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  backgroundColor: AppTheme.surface,
+                  title: const Text('Cancel Course Generation?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  content: const Text(
+                    'Are you sure you want to cancel the generation of this course? All progress and generated skeleton files will be discarded.',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(false),
+                      child: const Text('Keep Generating', style: TextStyle(color: Colors.white54)),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      child: const Text('Cancel & Discard', style: TextStyle(color: AppTheme.duoRed)),
+                    ),
+                  ],
+                ),
+              );
+              if (confirm == true && mounted) {
+                await GenerationManager.instance.cancelCourseGeneration(widget.taskId);
+                if (mounted) {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                }
+              }
+            },
+          ),
+        ],
+      ),
       body: ResponsiveCenter(
         child: Column(
           children: [

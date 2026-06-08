@@ -297,6 +297,55 @@ class Book {
       defaultFormatId: defaultFormatId ?? this.defaultFormatId,
     );
   }
+
+  Book scopeBookIds(String newBookId) {
+    final oldBookId = id;
+    
+    String updateId(String oldId) {
+      if (oldId.startsWith('${newBookId}_')) return oldId;
+      if (oldId.startsWith('${oldBookId}_')) {
+        return oldId.replaceFirst('${oldBookId}_', '${newBookId}_');
+      }
+      return '${newBookId}_$oldId';
+    }
+
+    return copyWith(
+      id: newBookId,
+      modules: modules.map((m) {
+        return m.copyWith(
+          id: updateId(m.id),
+          practiceQuestions: m.practiceQuestions.map((q) => q.copyWith(id: updateId(q.id))).toList(),
+          sections: m.sections.map((s) {
+            return s.copyWith(
+              id: updateId(s.id),
+              pyqQuestions: s.pyqQuestions.map((q) => q.copyWith(id: updateId(q.id))).toList(),
+              units: s.units.map((u) {
+                return u.copyWith(
+                  id: updateId(u.id),
+                  lessons: u.lessons.map((l) {
+                    return l.copyWith(
+                      id: updateId(l.id),
+                      slides: l.slides.map((sl) => sl.copyWith(id: updateId(sl.id))).toList(),
+                    );
+                  }).toList(),
+                );
+              }).toList(),
+            );
+          }).toList(),
+        );
+      }).toList(),
+      questionPapers: questionPapers.map((qp) {
+        return qp.copyWith(
+          id: updateId(qp.id),
+          sections: qp.sections.map((qs) {
+            return qs.copyWith(
+              questions: qs.questions.map((q) => q.copyWith(id: updateId(q.id))).toList(),
+            );
+          }).toList(),
+        );
+      }).toList(),
+    );
+  }
 }
 
 class QpQuestion {
@@ -323,6 +372,18 @@ class QpQuestion {
     'questionText': questionText,
     'solutionText': solutionText,
   };
+
+  QpQuestion copyWith({
+    String? id,
+    String? questionText,
+    String? solutionText,
+  }) {
+    return QpQuestion(
+      id: id ?? this.id,
+      questionText: questionText ?? this.questionText,
+      solutionText: solutionText ?? this.solutionText,
+    );
+  }
 }
 
 class QpSection {
@@ -345,6 +406,16 @@ class QpSection {
     'title': title,
     'questions': questions.map((q) => q.toJson()).toList(),
   };
+
+  QpSection copyWith({
+    String? title,
+    List<QpQuestion>? questions,
+  }) {
+    return QpSection(
+      title: title ?? this.title,
+      questions: questions ?? this.questions,
+    );
+  }
 }
 
 class QuestionPaper {
@@ -387,6 +458,18 @@ class QuestionPaper {
     'title': title,
     'sections': sections.map((s) => s.toJson()).toList(),
   };
+
+  QuestionPaper copyWith({
+    String? id,
+    String? title,
+    List<QpSection>? sections,
+  }) {
+    return QuestionPaper(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      sections: sections ?? this.sections,
+    );
+  }
 }
 
 class Module {

@@ -243,4 +243,279 @@ class PdfService {
 
     return book.copyWith(modules: updatedModules);
   }
+
+  Future<bool> hasBookmarks(File pdfFile) async {
+    try {
+      final doc = sync_pdf.PdfDocument(inputBytes: await pdfFile.readAsBytes());
+      final count = doc.bookmarks.count;
+      doc.dispose();
+      return count > 0;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<List<PdfBookmarkNode>> extractBookmarks(File pdfFile) async {
+    try {
+      final doc = sync_pdf.PdfDocument(inputBytes: await pdfFile.readAsBytes());
+      final List<PdfBookmarkNode> list = [];
+      _traverseBookmarks(doc, doc.bookmarks, list);
+      doc.dispose();
+      return list;
+    } catch (e) {
+      print('PdfService extractBookmarks error: $e');
+      return [];
+    }
+  }
+
+  void _traverseBookmarks(
+    sync_pdf.PdfDocument doc,
+    sync_pdf.PdfBookmarkBase bookmarks,
+    List<PdfBookmarkNode> output,
+  ) {
+    for (int i = 0; i < bookmarks.count; i++) {
+      final b = bookmarks[i];
+      final p = _resolveBookmarkPage(doc, b) ?? 1;
+      final List<PdfBookmarkNode> children = [];
+      if (b.count > 0) {
+        _traverseBookmarks(doc, b, children);
+      }
+      output.add(PdfBookmarkNode(
+        title: b.title,
+        pageNumber: p,
+        children: children,
+      ));
+    }
+  }
+
+  int? _resolveBookmarkPage(sync_pdf.PdfDocument doc, sync_pdf.PdfBookmark bookmark) {
+    if (bookmark.destination != null && bookmark.destination!.page != null) {
+      final idx = doc.pages.indexOf(bookmark.destination!.page!);
+      if (idx >= 0) return idx + 1;
+    }
+    return null;
+  }
+
+  Book mapBookmarksToBook(List<PdfBookmarkNode> bookmarks, String filename, File pdfFile) {
+    int totalPages = 100;
+    try {
+      final doc = sync_pdf.PdfDocument(inputBytes: pdfFile.readAsBytesSync());
+      totalPages = doc.pages.count;
+      doc.dispose();
+    } catch (_) {}
+
+    int maxDepth(List<PdfBookmarkNode> nodes) {
+      if (nodes.isEmpty) return 0;
+      int max = 0;
+      for (final n in nodes) {
+        final d = maxDepth(n.children);
+        if (d > max) max = d;
+      }
+      return max + 1;
+    }
+
+    final depth = maxDepth(bookmarks);
+    final List<Module> modules = [];
+
+    int getEndPage(List<PdfBookmarkNode> siblings, int index, int parentEnd) {
+      if (index + 1 < siblings.length) {
+        return siblings[index + 1].pageNumber - 1;
+      }
+      return parentEnd;
+    }
+
+    if (depth >= 3) {
+      for (int i = 0; i < bookmarks.length; i++) {
+        final mNode = bookmarks[i];
+        final mEnd = getEndPage(bookmarks, i, totalPages);
+        final List<Section> sections = [];
+        
+        for (int j = 0; j < mNode.children.length; j++) {
+          final sNode = mNode.children[j];
+          final sEnd = getEndPage(mNode.children, j, mEnd);
+          final List<Unit> units = [];
+          
+          for (int k = 0; k < sNode.children.length; k++) {
+            final uNode = sNode.children[k];
+            final uEnd = getEndPage(sNode.children, k, sEnd);
+            units.add(Unit(
+              id: 'unit_${DateTime.now().millisecondsSinceEpoch}_${i}_${j}_${k}',
+              title: uNode.title,
+              description: 'Unit on ${uNode.title}',
+              startPage: uNode.pageNumber,
+              endPage: uEnd,
+              isGenerated: false,
+              bookIndex: 0,
+              lessons: const [],
+            ));
+          }
+          
+          if (units.isEmpty) {
+            units.add(Unit(
+              id: 'unit_${DateTime.now().millisecondsSinceEpoch}_${i}_${j}_0',
+              title: sNode.title,
+              description: 'Unit on ${sNode.title}',
+              startPage: sNode.pageNumber,
+              endPage: sEnd,
+              isGenerated: false,
+              bookIndex: 0,
+              lessons: const [],
+            ));
+          }
+          
+          sections.add(Section(
+            id: 'section_${DateTime.now().millisecondsSinceEpoch}_${i}_${j}',
+            title: sNode.title,
+            description: 'Section on ${sNode.title}',
+            color: 'duo-blue',
+            units: units,
+          ));
+        }
+        
+        if (sections.isEmpty) {
+          sections.add(Section(
+            id: 'section_${DateTime.now().millisecondsSinceEpoch}_${i}_0',
+            title: mNode.title,
+            description: 'Section on ${mNode.title}',
+            color: 'duo-blue',
+            units: [
+              Unit(
+                id: 'unit_${DateTime.now().millisecondsSinceEpoch}_${i}_0_0',
+                title: mNode.title,
+                description: 'Unit on ${mNode.title}',
+                startPage: mNode.pageNumber,
+                endPage: mEnd,
+                isGenerated: false,
+                bookIndex: 0,
+                lessons: const [],
+              )
+            ],
+          ));
+        }
+
+        modules.add(Module(
+          id: 'module_${DateTime.now().millisecondsSinceEpoch}_${i}',
+          title: mNode.title,
+          description: 'Module on ${mNode.title}',
+          practiceQuestions: const [],
+          sections: sections,
+        ));
+      }
+    } else if (depth == 2) {
+      for (int i = 0; i < bookmarks.length; i++) {
+        final mNode = bookmarks[i];
+        final mEnd = getEndPage(bookmarks, i, totalPages);
+        final List<Unit> units = [];
+        
+        for (int j = 0; j < mNode.children.length; j++) {
+          final uNode = mNode.children[j];
+          final uEnd = getEndPage(mNode.children, j, mEnd);
+          units.add(Unit(
+            id: 'unit_${DateTime.now().millisecondsSinceEpoch}_${i}_${j}',
+            title: uNode.title,
+            description: 'Unit on ${uNode.title}',
+            startPage: uNode.pageNumber,
+            endPage: uEnd,
+            isGenerated: false,
+            bookIndex: 0,
+            lessons: const [],
+          ));
+        }
+        
+        if (units.isEmpty) {
+          units.add(Unit(
+            id: 'unit_${DateTime.now().millisecondsSinceEpoch}_${i}_0',
+            title: mNode.title,
+            description: 'Unit on ${mNode.title}',
+            startPage: mNode.pageNumber,
+            endPage: mEnd,
+            isGenerated: false,
+            bookIndex: 0,
+            lessons: const [],
+          ));
+        }
+
+        modules.add(Module(
+          id: 'module_${DateTime.now().millisecondsSinceEpoch}_${i}',
+          title: mNode.title,
+          description: 'Module on ${mNode.title}',
+          practiceQuestions: const [],
+          sections: [
+            Section(
+              id: 'section_${DateTime.now().millisecondsSinceEpoch}_${i}',
+              title: mNode.title,
+              description: 'Section on ${mNode.title}',
+              color: 'duo-blue',
+              units: units,
+            )
+          ],
+        ));
+      }
+    } else {
+      final List<Unit> units = [];
+      for (int i = 0; i < bookmarks.length; i++) {
+        final uNode = bookmarks[i];
+        final uEnd = getEndPage(bookmarks, i, totalPages);
+        units.add(Unit(
+          id: 'unit_${DateTime.now().millisecondsSinceEpoch}_${i}',
+          title: uNode.title,
+          description: 'Unit on ${uNode.title}',
+          startPage: uNode.pageNumber,
+          endPage: uEnd,
+          isGenerated: false,
+          bookIndex: 0,
+          lessons: const [],
+        ));
+      }
+      
+      if (units.isEmpty) {
+        units.add(Unit(
+          id: 'unit_${DateTime.now().millisecondsSinceEpoch}_0',
+          title: filename,
+          description: 'Unit on ${filename}',
+          startPage: 1,
+          endPage: totalPages,
+          isGenerated: false,
+          bookIndex: 0,
+          lessons: const [],
+        ));
+      }
+
+      modules.add(Module(
+        id: 'module_${DateTime.now().millisecondsSinceEpoch}',
+        title: filename,
+        description: 'Module on ${filename}',
+        practiceQuestions: const [],
+        sections: [
+          Section(
+            id: 'section_${DateTime.now().millisecondsSinceEpoch}',
+            title: filename,
+            description: 'Main sections of $filename',
+            color: 'duo-blue',
+            units: units,
+          )
+        ],
+      ));
+    }
+
+    return Book(
+      id: 'book_${DateTime.now().millisecondsSinceEpoch}',
+      title: filename,
+      description: 'Course generated from PDF bookmarks of $filename',
+      icon: 'Book',
+      authorName: 'Unknown',
+      authorId: 'Unknown',
+      lessonFormats: LessonFormat.defaultFormats,
+      defaultFormatId: 'default',
+      modules: modules,
+      updatedAt: DateTime.now().millisecondsSinceEpoch,
+    );
+  }
+}
+
+class PdfBookmarkNode {
+  final String title;
+  final int pageNumber;
+  final List<PdfBookmarkNode> children;
+  PdfBookmarkNode({required this.title, required this.pageNumber, required this.children});
 }
