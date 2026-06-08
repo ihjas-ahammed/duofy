@@ -77,18 +77,43 @@ class ProgressService {
 
   static Future<double> getBookProgress(Book book) async {
     final completed = await getCompletedLessons();
-    int total = 0;
+
+    // First pass: count actual lessons in generated units and figure out
+    // the average lessons-per-unit so we can estimate ungenerated ones.
+    int generatedUnitCount = 0;
+    int generatedLessonCount = 0;
+    int ungeneratedUnitCount = 0;
     int done = 0;
+
     for (var m in book.modules) {
       for (var s in m.sections) {
         for (var u in s.units) {
-          for (var l in u.lessons) {
-            total++;
-            if (completed.contains(l.id)) done++;
+          if (u.isGenerated && u.lessons.isNotEmpty) {
+            generatedUnitCount++;
+            generatedLessonCount += u.lessons.length;
+            for (var l in u.lessons) {
+              if (completed.contains(l.id)) done++;
+            }
+          } else if (u.lessons.isNotEmpty) {
+            // Partially generated / interrupted — count actual lessons.
+            generatedLessonCount += u.lessons.length;
+            generatedUnitCount++;
+            for (var l in u.lessons) {
+              if (completed.contains(l.id)) done++;
+            }
+          } else {
+            ungeneratedUnitCount++;
           }
         }
       }
     }
+
+    // Estimate: average lessons per generated unit, or 4 as a sensible default.
+    final avgLessons = generatedUnitCount > 0
+        ? (generatedLessonCount / generatedUnitCount).round()
+        : 4;
+
+    final total = generatedLessonCount + (ungeneratedUnitCount * avgLessons);
     return total == 0 ? 0.0 : (done / total);
   }
 

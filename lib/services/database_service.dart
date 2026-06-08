@@ -30,11 +30,11 @@ class DatabaseService {
   // ---------------------------------------------------------------------------
   static const String cloudSyncPrefKey = 'cloud_sync_enabled';
 
-  /// Whether cloud backup/sync is enabled. Defaults to false so the app is
-  /// fully local unless the user turns it on.
+  /// Whether cloud backup/sync is enabled. Defaults to true so every user
+  /// gets cloud backup out of the box. Can be turned off in Settings.
   Future<bool> isCloudEnabled() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(cloudSyncPrefKey) ?? kIsWeb;
+    return prefs.getBool(cloudSyncPrefKey) ?? true;
   }
 
   Future<void> setCloudEnabled(bool enabled) async {

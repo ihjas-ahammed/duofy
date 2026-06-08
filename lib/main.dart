@@ -6,6 +6,7 @@ import 'services/fb/fb_core.dart';
 import 'services/global_state.dart';
 import 'services/notification_service.dart';
 import 'screens/auth_gate.dart';
+import 'screens/settings_screen.dart';
 import 'screens/book_route_loader_screen.dart';
 
 import 'dart:ui';
@@ -152,6 +153,72 @@ void showGlobalErrorAlert(Object error, StackTrace? stack) {
       ).then((_) => _isGlobalErrorDialogOpen = false);
     });
   }
+}
+
+bool _isRateLimitDialogOpen = false;
+
+/// Shows a non-blocking dialog asking the user to configure their own API
+/// key when the shared fallback key hits rate limits. Debounced so it only
+/// shows once at a time.
+void showRateLimitDialog() {
+  if (_isRateLimitDialogOpen) return;
+  final context = navigatorKey.currentContext;
+  if (context == null) return;
+  _isRateLimitDialogOpen = true;
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final ctx = navigatorKey.currentContext;
+    if (ctx == null) {
+      _isRateLimitDialogOpen = false;
+      return;
+    }
+    showDialog(
+      context: ctx,
+      barrierDismissible: true,
+      builder: (dCtx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.speed, color: Colors.orangeAccent, size: 28),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                "Rate Limit Reached",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          "You're using the shared API key, which has limited capacity. "
+          "Add your own Gemini API key in Settings for uninterrupted usage.",
+          style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              _isRateLimitDialogOpen = false;
+              Navigator.pop(dCtx);
+            },
+            child: const Text("Later", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+          ),
+          TextButton(
+            onPressed: () {
+              _isRateLimitDialogOpen = false;
+              Navigator.pop(dCtx);
+              // Navigate to SettingsScreen
+              navigatorKey.currentState?.push(
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
+            },
+            child: Text("Go to Settings", style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    ).then((_) => _isRateLimitDialogOpen = false);
+  });
 }
 
 void main() async {

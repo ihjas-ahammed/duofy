@@ -1,6 +1,11 @@
 Make the following changes:
 
 
+- Add pdf button in unit title by defualt and ask to select pdf if pdf is missing
+- Fix the edit course strycture always say No Source PDF Loaded and also it doesnt support uplaoding multiple pdf if the course was made with multiple pdf (use a window when pdf is misiing to chose all pdf) also save their name when a course is made so user can correctly map, also the syllabus pdf, save it by default and update the course creation promnpt based on syllabus pdf to get more accurate results
+
+- Add a 'change start page' option when we confirm course structure (also support multiple books there)
+
 Update prompt accordingly as I add new features and slide types
 
 Always append process and instructions on readme

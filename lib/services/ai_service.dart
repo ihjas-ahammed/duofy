@@ -8,12 +8,22 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pdfx/pdfx.dart' as pdfx;
 import '../models/app_models.dart';
+import '../main.dart' show showRateLimitDialog;
 import 'prompt_service.dart';
 import 'pdf_service.dart';
 import 'database_service.dart';
+import 'fb/fb_firestore.dart';
 
 class AiService {
   static int activeCanvasRegensCount = 0;
+
+  /// Tracks whether the most recent _getKeys call returned the shared
+  /// fallback key (from Firestore /secrets/apikeys/GENAI). When true,
+  /// rate-limit errors trigger the "add your own key" dialog.
+  bool _usingDefaultKey = false;
+
+  /// Cached fallback key fetched from Firestore so we only read once.
+  static String? _cachedDefaultKey;
 
   Future<void> _checkPause() async {
     while (activeCanvasRegensCount > 0) {
@@ -22,6 +32,7 @@ class AiService {
   }
 
   Future<List<String>> _getKeys({String? forcedApiKey}) async {
+    _usingDefaultKey = false;
     if (forcedApiKey != null && forcedApiKey.trim().isNotEmpty) {
       return [forcedApiKey.trim()];
     }
@@ -31,10 +42,40 @@ class AiService {
       final keysString = prefs.getString('gemini_api_keys') ?? '';
       keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
     }
-    if (keys.isEmpty) {
-      throw Exception('No API Keys configured.');
+    if (keys.isNotEmpty) return keys;
+
+    // --- Fallback: shared default key from Firestore ---
+    if (_cachedDefaultKey != null && _cachedDefaultKey!.isNotEmpty) {
+      _usingDefaultKey = true;
+      return [_cachedDefaultKey!];
     }
-    return keys;
+    try {
+      final doc = await FbFirestore.instance
+          .collection('secrets')
+          .doc('apikeys')
+          .get();
+      if (doc.exists) {
+        final data = doc.data();
+        final defaultKey = data?['GENAI'] as String?;
+        if (defaultKey != null && defaultKey.trim().isNotEmpty) {
+          _cachedDefaultKey = defaultKey.trim();
+          _usingDefaultKey = true;
+          return [_cachedDefaultKey!];
+        }
+      }
+    } catch (e) {
+      debugPrint('[AiService] Failed to fetch default API key from Firestore: $e');
+    }
+    throw Exception('No API Keys configured. Go to Settings to add your Gemini API key.');
+  }
+
+  /// Returns true when the error looks like a rate-limit / quota error.
+  bool _isRateLimitError(Object e) {
+    final s = e.toString().toLowerCase();
+    return s.contains('429') ||
+        s.contains('rate limit') ||
+        s.contains('resource exhausted') ||
+        s.contains('quota');
   }
 
   /// Reads an ordered list of preferred models for one slot. Falls back to
@@ -238,6 +279,10 @@ class AiService {
         return await op();
       } catch (e) {
         last = e;
+        // Surface rate-limit dialog when the shared default key is exhausted.
+        if (_usingDefaultKey && _isRateLimitError(e)) {
+          showRateLimitDialog();
+        }
         // When [retryTimeouts] is false, a timeout is rethrown immediately so
         // the caller can fall back to the NEXT model/key instead of burning
         // more attempts (and more wall-clock) on a model that's already slow.
