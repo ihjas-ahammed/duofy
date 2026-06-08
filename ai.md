@@ -1,12 +1,8 @@
 Make the following changes:
 
-- Enable Lesson Assistance:
-    - Use gemini-flash-live (latest: search on google)
-    1. It will be given current section notes (generated) as input 
-    2. Simple chat screen: with optional voice input and also voice output (but still use live model because its fast), also it must be connected from the beginning to make it fluent
-    3. Add this to the lesson screen, and especially give info about current open lesson and slide, so user can directly ask question about that
-    4. Make sure even if its normal model it has latex support, also add model switch inside the chat if needed (like for complex problem)
-    5. Add a new model type: Live in settings (along with our default model time)
+
+- Update canvas art:
+
 
 Update prompt accordingly as I add new features and slide types
 

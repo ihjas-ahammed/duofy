@@ -21,6 +21,22 @@ class NumericalView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    String placeholder = '0.0';
+    if (slide.numericAnswer != null) {
+      final str = slide.numericAnswer!.toString();
+      final parts = str.split('.');
+      if (parts.length < 2) {
+        placeholder = '0';
+      } else {
+        final fraction = parts[1];
+        if (fraction == '0') {
+          placeholder = '0';
+        } else {
+          placeholder = '0.' + ('0' * fraction.length);
+        }
+      }
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -54,7 +70,7 @@ class NumericalView extends StatelessWidget {
                     color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.amber,
                   ),
                   decoration: InputDecoration(
-                    hintText: '0.0',
+                    hintText: placeholder,
                     hintStyle: const TextStyle(color: Colors.white24),
                     filled: true,
                     fillColor: Colors.black45,

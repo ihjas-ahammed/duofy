@@ -80,68 +80,72 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   void _openCourseSettings() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: AppTheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(2),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Course Configuration',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const Icon(LucideIcons.edit3, color: AppTheme.duoBlue),
-                title: const Text('Edit Course Structure', style: TextStyle(color: Colors.white)),
-                subtitle: const Text('Rename components, add modules/sections, or re-map pages', style: TextStyle(color: Colors.white54, fontSize: 11)),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CourseEditStructureScreen(
-                        book: _currentBook,
-                        onBookUpdated: _onBookUpdated,
+                const SizedBox(height: 16),
+                const Text(
+                  'Course Configuration',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: const Icon(LucideIcons.edit3, color: AppTheme.duoBlue),
+                  title: const Text('Edit Course Structure', style: TextStyle(color: Colors.white)),
+                  subtitle: const Text('Rename components, add modules/sections, or re-map pages', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => CourseEditStructureScreen(
+                          book: _currentBook,
+                          onBookUpdated: _onBookUpdated,
+                        ),
                       ),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(LucideIcons.list, color: AppTheme.duoViolet),
-                title: const Text('Lesson Formats', style: TextStyle(color: Colors.white)),
-                subtitle: const Text('Manage pedagogical structures and AI guidance rules', style: TextStyle(color: Colors.white54, fontSize: 11)),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CourseSettingsScreen(book: _currentBook),
-                    ),
-                  ).then((_) async {
-                    final freshest = await DatabaseService().getBookFromCache(_currentBook.id);
-                    if (freshest != null && mounted) {
-                      _onBookUpdated(freshest);
-                    }
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
-            ],
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(LucideIcons.list, color: AppTheme.duoViolet),
+                  title: const Text('Lesson Formats', style: TextStyle(color: Colors.white)),
+                  subtitle: const Text('Manage pedagogical structures and AI guidance rules', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => CourseSettingsScreen(book: _currentBook),
+                      ),
+                    ).then((_) async {
+                      final freshest = await DatabaseService().getBookFromCache(_currentBook.id);
+                      if (freshest != null && mounted) {
+                        _onBookUpdated(freshest);
+                      }
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         );
       },

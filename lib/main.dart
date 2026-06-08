@@ -68,78 +68,87 @@ void showGlobalErrorAlert(Object error, StackTrace? stack) {
       showDialog(
         context: currentContext,
         barrierDismissible: false,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1E293B),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Row(
-            children: [
-              Icon(Icons.error_outline, color: Colors.redAccent, size: 28),
-              SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  "An Error Occurred",
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+        builder: (ctx) {
+          if (!kDebugMode) {
+            Future.delayed(const Duration(seconds: 3), () {
+              if (_isGlobalErrorDialogOpen && ctx.mounted) {
+                Navigator.of(ctx).pop();
+              }
+            });
+          }
+          return AlertDialog(
+            backgroundColor: const Color(0xFF1E293B),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Row(
               children: [
-                Text(
-                  error.toString(),
-                  style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  "You can continue using other features. If the issue persists, please copy the details and report it.",
-                  style: TextStyle(color: Colors.white60, fontSize: 13, height: 1.4),
-                ),
-                if (stack != null) ...[
-                  const SizedBox(height: 12),
-                  const Text("Stack Trace:", style: TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.black26,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    constraints: const BoxConstraints(maxHeight: 120),
-                    width: double.infinity,
-                    child: SingleChildScrollView(
-                      child: Text(
-                        stack.toString(),
-                        style: const TextStyle(color: Colors.white38, fontSize: 10, fontFamily: 'monospace'),
-                      ),
-                    ),
+                Icon(Icons.error_outline, color: Colors.redAccent, size: 28),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    "An Error Occurred",
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ],
+                ),
               ],
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: "$error\n\n$stack"));
-                ScaffoldMessenger.of(ctx).showSnackBar(
-                  const SnackBar(content: Text("Error details copied!")),
-                );
-              },
-              child: const Text("Copy Details", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    error.toString(),
+                    style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    "You can continue using other features. If the issue persists, please copy the details and report it.",
+                    style: TextStyle(color: Colors.white60, fontSize: 13, height: 1.4),
+                  ),
+                  if (stack != null) ...[
+                    const SizedBox(height: 12),
+                    const Text("Stack Trace:", style: TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black26,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      constraints: const BoxConstraints(maxHeight: 120),
+                      width: double.infinity,
+                      child: SingleChildScrollView(
+                        child: Text(
+                          stack.toString(),
+                          style: const TextStyle(color: Colors.white38, fontSize: 10, fontFamily: 'monospace'),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
-            TextButton(
-              onPressed: () {
-                _isGlobalErrorDialogOpen = false;
-                Navigator.pop(ctx);
-              },
-              child: const Text("Dismiss", style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: "$error\n\n$stack"));
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(content: Text("Error details copied!")),
+                  );
+                },
+                child: const Text("Copy Details", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+              ),
+              TextButton(
+                onPressed: () {
+                  _isGlobalErrorDialogOpen = false;
+                  Navigator.pop(ctx);
+                },
+                child: const Text("Dismiss", style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          );
+        },
       ).then((_) => _isGlobalErrorDialogOpen = false);
     });
   }

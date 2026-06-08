@@ -239,7 +239,19 @@ class _LessonScreenState extends State<LessonScreen> {
         }
       }
     } else if (slide.type == 'fill_in_blank') {
-      correct = _blankInput.trim().toLowerCase() == slide.blankAnswer?.toLowerCase().replaceAll(r'\', '');
+      final userParts = _blankInput.split(',').map((s) => s.trim().toLowerCase().replaceAll(r'\', '')).toList();
+      final correctParts = (slide.blankAnswer ?? '').split(',').map((s) => s.trim().toLowerCase().replaceAll(r'\', '')).toList();
+      if (userParts.length == correctParts.length) {
+        correct = true;
+        for (int i = 0; i < userParts.length; i++) {
+          if (userParts[i] != correctParts[i]) {
+            correct = false;
+            break;
+          }
+        }
+      } else {
+        correct = false;
+      }
     } else if (slide.type == 'one_word') {
       correct = _wordInput.trim().toLowerCase() == (slide.blankAnswer ?? '').trim().toLowerCase().replaceAll(r'\', '');
     } else if (slide.type == 'numerical') {
