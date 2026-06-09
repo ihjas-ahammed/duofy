@@ -39,12 +39,27 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isLoading = true;
   int _selectedTabIndex = 0;
 
+  final TextEditingController _librarySearchController = TextEditingController();
+  final TextEditingController _publishedSearchController = TextEditingController();
+  String _librarySearchQuery = '';
+  String _publishedSearchQuery = '';
+
   StreamSubscription<Book>? _bookUpdateSubscription;
   List<GenerationTask> _prevActiveTasks = [];
 
   @override
   void initState() {
     super.initState();
+    _librarySearchController.addListener(() {
+      setState(() {
+        _librarySearchQuery = _librarySearchController.text;
+      });
+    });
+    _publishedSearchController.addListener(() {
+      setState(() {
+        _publishedSearchQuery = _publishedSearchController.text;
+      });
+    });
     _prevActiveTasks = List.from(GenerationManager.instance.activeTasks);
     _loadAllData(force: false);
     _syncRemoteData();
@@ -111,9 +126,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pop(ctx);
                 manager.clearInterruptedTasksFlag();
                 await manager.setPaused(false);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Resuming lesson generation...")),
-                );
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Resuming lesson generation...")),
+                  );
+                }
               },
               child: const Text("Resume", style: TextStyle(color: AppTheme.duoGreen, fontWeight: FontWeight.bold)),
             ),
@@ -123,8 +140,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+
   @override
   void dispose() {
+    _librarySearchController.dispose();
+    _publishedSearchController.dispose();
     GenerationManager.instance.removeListener(_handleGenerationTasksChange);
     _bookUpdateSubscription?.cancel();
     super.dispose();
@@ -280,7 +300,59 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
   }
 
+  Widget _buildSearchBar({
+    required TextEditingController controller,
+    required String value,
+    required String hintText,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.04),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.08), width: 1.2),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            const Icon(LucideIcons.search, color: Colors.white54, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                controller: controller,
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+                textInputAction: TextInputAction.search,
+                onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
+                decoration: InputDecoration(
+                  hintText: hintText,
+                  hintStyle: const TextStyle(color: Colors.white30),
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            if (value.isNotEmpty)
+              GestureDetector(
+                onTap: () {
+                  controller.clear();
+                },
+                child: const Icon(LucideIcons.x, color: Colors.white54, size: 18),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildLibraryTab(List<GenerationTask> activeTasks, double screenWidth) {
+    final filtered = books.where((b) {
+      final query = _librarySearchQuery.toLowerCase().trim();
+      if (query.isEmpty) return true;
+      return b.title.toLowerCase().contains(query);
+    }).toList();
+
     return ResponsiveCenter(
       child: RefreshIndicator(
         color: AppTheme.duoBlue,
@@ -292,14 +364,24 @@ class _HomeScreenState extends State<HomeScreen> {
           physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
           slivers: [
             SliverAppBar(
-              expandedHeight: 120,
               floating: true,
+              pinned: true,
               backgroundColor: AppTheme.background,
-              flexibleSpace: const FlexibleSpaceBar(
-                titlePadding: EdgeInsets.only(left: 24, bottom: 16),
-                title: Text('Your Library', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 28, color: Colors.white)),
+              elevation: 0,
+              centerTitle: false,
+              titleSpacing: 24,
+              title: const Text(
+                'Your Library',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.white),
               ),
               actions: _buildAppBarActions(),
+            ),
+            SliverToBoxAdapter(
+              child: _buildSearchBar(
+                controller: _librarySearchController,
+                value: _librarySearchQuery,
+                hintText: 'Search your courses...',
+              ),
             ),
             if (activeTasks.isNotEmpty && !kIsWeb)
               SliverPadding(
@@ -340,7 +422,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     )
                   : const SizedBox.shrink(),
             ),
-            if (books.isNotEmpty)
+            SliverToBoxAdapter(
+              child: books.isNotEmpty && filtered.isEmpty
+                  ? Container(
+                      height: 120,
+                      alignment: Alignment.center,
+                      child: const Text(
+                        'No matching courses found.',
+                        style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+            if (filtered.isNotEmpty)
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 sliver: SliverGrid(
@@ -359,7 +453,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
-                      final book = books[index];
+                      final book = filtered[index];
                       return Dismissible(
                         key: Key(book.id),
                         direction: DismissDirection.endToStart,
@@ -385,7 +479,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       );
                     },
-                    childCount: books.length,
+                    childCount: filtered.length,
                   ),
                 ),
               ),
@@ -397,6 +491,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildPublishedTab(double screenWidth) {
+    final filteredGlobals = globalBooks.where((b) {
+      final query = _publishedSearchQuery.toLowerCase().trim();
+      if (query.isEmpty) return true;
+      return b.title.toLowerCase().contains(query);
+    }).toList();
+
     return ResponsiveCenter(
       child: RefreshIndicator(
         color: AppTheme.duoBlue,
@@ -408,14 +508,24 @@ class _HomeScreenState extends State<HomeScreen> {
           physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
           slivers: [
             SliverAppBar(
-              expandedHeight: 120,
               floating: true,
+              pinned: true,
               backgroundColor: AppTheme.background,
-              flexibleSpace: const FlexibleSpaceBar(
-                titlePadding: EdgeInsets.only(left: 24, bottom: 16),
-                title: Text('Published Courses', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 28, color: Colors.white)),
+              elevation: 0,
+              centerTitle: false,
+              titleSpacing: 24,
+              title: const Text(
+                'Published',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.white),
               ),
               actions: _buildAppBarActions(),
+            ),
+            SliverToBoxAdapter(
+              child: _buildSearchBar(
+                controller: _publishedSearchController,
+                value: _publishedSearchQuery,
+                hintText: 'Search published courses...',
+              ),
             ),
             SliverToBoxAdapter(
               child: globalBooks.isEmpty
@@ -428,7 +538,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     )
                   : const SizedBox.shrink(),
             ),
-            if (globalBooks.isNotEmpty)
+            SliverToBoxAdapter(
+              child: globalBooks.isNotEmpty && filteredGlobals.isEmpty
+                  ? Container(
+                      height: 120,
+                      alignment: Alignment.center,
+                      child: const Text(
+                        'No matching published courses.',
+                        style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+            if (filteredGlobals.isNotEmpty)
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 sliver: SliverGrid(
@@ -447,7 +569,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
-                      final book = globalBooks[index];
+                      final book = filteredGlobals[index];
                       final user = FbAuth.instance.currentUser;
                       final bool isOwner = user != null && book.authorId == user.uid;
                       final bool isSuperAdmin = user?.email == 'ihjas.one@gmail.com';
@@ -502,7 +624,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       );
                     },
-                    childCount: globalBooks.length,
+                    childCount: filteredGlobals.length,
                   ),
                 ),
               ),
@@ -910,6 +1032,7 @@ class _HomeScreenState extends State<HomeScreen> {
       isScheduled: isScheduled,
     );
     
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: AppTheme.surface,
