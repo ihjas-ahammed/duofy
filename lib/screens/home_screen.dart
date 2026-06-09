@@ -12,7 +12,6 @@ import '../services/learning_sync.dart';
 import 'bookmarks_screen.dart';
 import '../theme/app_theme.dart';
 import '../widgets/compact_book_card.dart';
-import '../widgets/community_book_card.dart';
 import '../widgets/generating_book_card.dart';
 import '../widgets/responsive_center.dart';
 import '../widgets/sync_conflict_dialog.dart';
@@ -38,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Book> globalBooks = [];
   Map<String, double> progressMap = {};
   bool isLoading = true;
+  int _selectedTabIndex = 0;
 
   StreamSubscription<Book>? _bookUpdateSubscription;
   List<GenerationTask> _prevActiveTasks = [];
@@ -155,6 +155,9 @@ class _HomeScreenState extends State<HomeScreen> {
     for (var b in fetched) {
       prog[b.id] = await ProgressService.getBookProgress(b);
     }
+    for (var b in globals) {
+      prog[b.id] = await ProgressService.getBookProgress(b);
+    }
 
     if (mounted) {
       setState(() {
@@ -190,6 +193,9 @@ class _HomeScreenState extends State<HomeScreen> {
       for (var b in fetched) {
         prog[b.id] = await ProgressService.getBookProgress(b);
       }
+      for (var b in globals) {
+        prog[b.id] = await ProgressService.getBookProgress(b);
+      }
 
       if (mounted) {
         setState(() {
@@ -203,66 +209,18 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _downloadGlobalBook(Book globalBook) async {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Downloading ${globalBook.title}...')));
-    
-    final newId = 'dl_${DateTime.now().millisecondsSinceEpoch}';
-    final newBook = globalBook.copyWith(
-      id: newId,
-      isGlobal: false,
-    );
-    
-    await _db.saveGeneratedBook(newBook);
-
-    try {
-      final oldBookId = globalBook.id;
-      final completed = await ProgressService.getCompletedLessons();
-      final List<String> newCompletedToMark = [];
-
-      for (var m in globalBook.modules) {
-        for (var s in m.sections) {
-          for (var u in s.units) {
-            for (var l in u.lessons) {
-              if (completed.contains(l.id)) {
-                String newLessonId;
-                if (l.id.startsWith('${newId}_')) {
-                  newLessonId = l.id;
-                } else if (l.id.startsWith('${oldBookId}_')) {
-                  newLessonId = l.id.replaceFirst('${oldBookId}_', '${newId}_');
-                } else {
-                  newLessonId = '${newId}_${l.id}';
-                }
-                newCompletedToMark.add(newLessonId);
-              }
-            }
-          }
-        }
-      }
-
-      if (newCompletedToMark.isNotEmpty) {
-        await ProgressService.markLessonsCompletedSilent(newCompletedToMark);
-      }
-    } catch (e) {
-      print("[HomeScreen] Error mapping downloaded book progress: $e");
-    }
-    
-    await _loadAllData(force: false);
-    
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved to your library!')));
-  }
-
-  void _deleteLocalBook(Book book) {
-    showDialog(
+  Future<bool> _deleteLocalBook(Book book) async {
+    final bool? result = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppTheme.surface,
         title: const Text('Delete Course?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         content: const Text('Are you sure you want to delete this course from your local library?', style: TextStyle(color: Colors.white70)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
           TextButton(
             onPressed: () async {
-              Navigator.pop(ctx);
+              Navigator.pop(ctx, true);
               await ProgressService.clearBookProgress(book);
               await _db.deleteBook(book.id);
               _loadAllData(force: true);
@@ -272,10 +230,425 @@ class _HomeScreenState extends State<HomeScreen> {
         ]
       )
     );
+    return result ?? false;
+  }
+
+  List<Widget> _buildAppBarActions() {
+    return [
+      if (kIsWeb && FbAuth.instance.currentUser == null)
+        Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: TextButton.icon(
+            icon: const Icon(LucideIcons.logIn, size: 20, color: Colors.white),
+            label: const Text(
+              'LOG IN',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 13,
+                letterSpacing: 1.0,
+              ),
+            ),
+            onPressed: () {
+              GlobalState.isGuestNotifier.value = false;
+              GlobalState.forceShowAuthScreen.value = true;
+            },
+          ),
+        ),
+      IconButton(
+        icon: const Icon(LucideIcons.bookmark, size: 26),
+        tooltip: 'Bookmarks',
+        onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const BookmarksScreen()));
+        },
+      ),
+      if (!kIsWeb)
+        IconButton(
+          icon: const Icon(LucideIcons.cpu, size: 28),
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const AiQueueScreen()));
+          },
+        ),
+      IconButton(
+        padding: const EdgeInsets.only(right: 16),
+        icon: const Icon(LucideIcons.userCircle, size: 28),
+        onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()))
+            .then((_) => _loadAllData(force: false));
+        },
+      )
+    ];
+  }
+
+  Widget _buildLibraryTab(List<GenerationTask> activeTasks, double screenWidth) {
+    return ResponsiveCenter(
+      child: RefreshIndicator(
+        color: AppTheme.duoBlue,
+        onRefresh: () async {
+          await _loadAllData(force: false);
+          await _syncRemoteData();
+        },
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 120,
+              floating: true,
+              backgroundColor: AppTheme.background,
+              flexibleSpace: const FlexibleSpaceBar(
+                titlePadding: EdgeInsets.only(left: 24, bottom: 16),
+                title: Text('Your Library', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 28, color: Colors.white)),
+              ),
+              actions: _buildAppBarActions(),
+            ),
+            if (activeTasks.isNotEmpty && !kIsWeb)
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final task = activeTasks[index];
+                      return GeneratingBookCard(
+                        task: task,
+                        onTap: () {
+                          if (task.state == BookGenState.review && task.skeletonBook != null) {
+                            Navigator.push(context, MaterialPageRoute(
+                              builder: (_) => PdfSplitPreviewScreen(
+                                taskId: task.id,
+                                originalPdf: task.sourceFiles,
+                                skeletonBook: task.skeletonBook!,
+                              )
+                            )).then((_) => _loadAllData(force: false));
+                          } else if (task.state == BookGenState.error) {
+                            GenerationManager.instance.dismissTask(task.id);
+                          }
+                        }
+                      );
+                    },
+                    childCount: activeTasks.length,
+                  ),
+                ),
+              ),
+            SliverToBoxAdapter(
+              child: books.isEmpty && activeTasks.isEmpty
+                  ? Container(
+                      height: 180,
+                      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(24)),
+                      alignment: Alignment.center,
+                      child: const Text('No courses found.\nTap + to create one!', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+            if (books.isNotEmpty)
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                sliver: SliverGrid(
+                  gridDelegate: screenWidth < 600
+                      ? const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          childAspectRatio: 0.78,
+                        )
+                      : const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 120,
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: 0.78,
+                        ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final book = books[index];
+                      return Dismissible(
+                        key: Key(book.id),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade900.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Icon(LucideIcons.trash2, color: Colors.white, size: 20),
+                        ),
+                        confirmDismiss: (direction) async {
+                          return await _deleteLocalBook(book);
+                        },
+                        child: CompactBookCard(
+                          book: book,
+                          progress: progressMap[book.id] ?? 0.0,
+                          onTap: () {
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
+                              .then((_) => _loadAllData(force: false));
+                          },
+                          onLongPress: () => _showBookLongPressMenu(book),
+                        ),
+                      );
+                    },
+                    childCount: books.length,
+                  ),
+                ),
+              ),
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPublishedTab(double screenWidth) {
+    return ResponsiveCenter(
+      child: RefreshIndicator(
+        color: AppTheme.duoBlue,
+        onRefresh: () async {
+          await _loadAllData(force: false);
+          await _syncRemoteData();
+        },
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 120,
+              floating: true,
+              backgroundColor: AppTheme.background,
+              flexibleSpace: const FlexibleSpaceBar(
+                titlePadding: EdgeInsets.only(left: 24, bottom: 16),
+                title: Text('Published Courses', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 28, color: Colors.white)),
+              ),
+              actions: _buildAppBarActions(),
+            ),
+            SliverToBoxAdapter(
+              child: globalBooks.isEmpty
+                  ? Container(
+                      height: 180,
+                      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(24)),
+                      alignment: Alignment.center,
+                      child: const Text('No published courses yet.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+            if (globalBooks.isNotEmpty)
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                sliver: SliverGrid(
+                  gridDelegate: screenWidth < 600
+                      ? const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          childAspectRatio: 0.78,
+                        )
+                      : const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 120,
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: 0.78,
+                        ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final book = globalBooks[index];
+                      final user = FbAuth.instance.currentUser;
+                      final bool isOwner = user != null && book.authorId == user.uid;
+                      final bool isSuperAdmin = user?.email == 'ihjas.one@gmail.com';
+                      final bool canDelete = isOwner || isSuperAdmin;
+
+                      return Dismissible(
+                        key: Key(book.id),
+                        direction: canDelete ? DismissDirection.endToStart : DismissDirection.none,
+                        background: Container(
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade900.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Icon(LucideIcons.trash2, color: Colors.white, size: 20),
+                        ),
+                        confirmDismiss: (direction) async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              backgroundColor: AppTheme.surface,
+                              title: const Text('Unpublish Course?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                              content: const Text('Are you sure you want to unpublish this course from Published Courses? This won\'t delete your local copy if you have one.', style: TextStyle(color: Colors.white70)),
+                              actions: [
+                                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: const Text('Unpublish', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirm == true) {
+                            await _db.deleteGlobalBook(book.id);
+                            _loadAllData(force: true);
+                            return true;
+                          }
+                          return false;
+                        },
+                        child: CompactBookCard(
+                          book: book,
+                          progress: progressMap[book.id] ?? 0.0,
+                          onTap: () {
+                            if (kIsWeb) {
+                              Navigator.pushNamed(context, '/${book.id}').then((_) => _loadAllData(force: false));
+                            } else {
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
+                                .then((_) => _loadAllData(force: false));
+                            }
+                          },
+                          onLongPress: () => _showPublishedBookLongPressMenu(book),
+                        ),
+                      );
+                    },
+                    childCount: globalBooks.length,
+                  ),
+                ),
+              ),
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPublishedBookLongPressMenu(Book book) {
+    final user = FbAuth.instance.currentUser;
+    final bool isOwner = user != null && book.authorId == user.uid;
+    final bool isSuperAdmin = user?.email == 'ihjas.one@gmail.com';
+    final bool canDelete = isOwner || isSuperAdmin;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.7),
+                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+              child: SafeArea(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppTheme.duoBlue.withOpacity(0.18),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: AppTheme.duoBlue.withOpacity(0.4)),
+                            ),
+                            child: const Icon(LucideIcons.globe, color: AppTheme.duoBlue, size: 24),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'PUBLISHED COURSE MENU',
+                                  style: TextStyle(
+                                    color: AppTheme.duoBlue,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  book.title,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      _buildMenuItem(
+                        icon: LucideIcons.refreshCcw,
+                        title: 'Reset Progress',
+                        subtitle: 'Clear all lesson completion data',
+                        iconColor: AppTheme.duoOrange,
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          _resetBookProgress(book);
+                        },
+                      ),
+                      if (canDelete)
+                        _buildMenuItem(
+                          icon: LucideIcons.trash2,
+                          title: 'Unpublish Course',
+                          subtitle: 'Remove from published courses',
+                          iconColor: AppTheme.duoRed,
+                          onTap: () async {
+                            Navigator.pop(ctx);
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                backgroundColor: AppTheme.surface,
+                                title: const Text('Unpublish Course?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                content: const Text('Are you sure you want to unpublish this course from Published Courses? This won\'t delete your local copy if you have one.', style: TextStyle(color: Colors.white70)),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    child: const Text('Unpublish', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirm == true) {
+                              await _db.deleteGlobalBook(book.id);
+                              _loadAllData(force: true);
+                            }
+                          },
+                        ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text(
+                          'CANCEL',
+                          style: TextStyle(
+                            color: Color(0xFF94A3B8),
+                            fontWeight: FontWeight.w900,
+                            fontSize: 13,
+                            letterSpacing: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final double screenWidth = MediaQuery.of(context).size.width;
     return AnimatedBuilder(
       animation: GenerationManager.instance,
       builder: (context, child) {
@@ -283,243 +656,48 @@ class _HomeScreenState extends State<HomeScreen> {
 
         return Scaffold(
           backgroundColor: AppTheme.background,
-          body: ResponsiveCenter(
-            child: isLoading
-            ? const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue))
-            : RefreshIndicator(
-                color: AppTheme.duoBlue,
-                onRefresh: () async {
-                  await _loadAllData(force: false);
-                  await _syncRemoteData();
-                },
-                child: CustomScrollView(
-                  physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-                  slivers:[
-                    SliverAppBar(
-                      expandedHeight: 120,
-                      floating: true,
-                      backgroundColor: AppTheme.background,
-                      flexibleSpace: const FlexibleSpaceBar(
-                        titlePadding: EdgeInsets.only(left: 24, bottom: 16),
-                        title: Text('Discover', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 28, color: Colors.white)),
-                      ),
-                      actions:[
-                        if (kIsWeb && FbAuth.instance.currentUser == null)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: TextButton.icon(
-                              icon: const Icon(LucideIcons.logIn, size: 20, color: Colors.white),
-                              label: const Text(
-                                'LOG IN',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 13,
-                                  letterSpacing: 1.0,
-                                ),
-                              ),
-                              onPressed: () {
-                                GlobalState.isGuestNotifier.value = false;
-                                GlobalState.forceShowAuthScreen.value = true;
-                              },
-                            ),
-                          ),
-                        IconButton(
-                          icon: const Icon(LucideIcons.bookmark, size: 26),
-                          tooltip: 'Bookmarks',
-                          onPressed: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (_) => const BookmarksScreen()));
-                          },
-                        ),
-                        if (!kIsWeb)
-                          IconButton(
-                            icon: const Icon(LucideIcons.cpu, size: 28),
-                            onPressed: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const AiQueueScreen()));
-                            },
-                          ),
-                        IconButton(
-                          padding: const EdgeInsets.only(right: 16),
-                          icon: const Icon(LucideIcons.userCircle, size: 28),
-                          onPressed: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()))
-                              .then((_) => _loadAllData(force: false));
-                          },
-                        )
-                      ],
-                    ),
-                    
-                    if (activeTasks.isNotEmpty && !kIsWeb)
-                      SliverPadding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                        sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              final task = activeTasks[index];
-                              return GeneratingBookCard(
-                                task: task,
-                                onTap: () {
-                                  if (task.state == BookGenState.review && task.skeletonBook != null) {
-                                    Navigator.push(context, MaterialPageRoute(
-                                      builder: (_) => PdfSplitPreviewScreen(
-                                        taskId: task.id,
-                                        originalPdf: task.sourceFiles,
-                                        skeletonBook: task.skeletonBook!,
-                                      )
-                                    )).then((_) => _loadAllData(force: false));
-                                  } else if (task.state == BookGenState.error) {
-                                    GenerationManager.instance.dismissTask(task.id);
-                                  }
-                                }
-                              );
-                            },
-                            childCount: activeTasks.length,
-                          ),
-                        ),
-                      ),
-                    
-                    if (!kIsWeb) ...[
-                      SliverToBoxAdapter(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Padding(
-                              padding: EdgeInsets.fromLTRB(24, 24, 24, 16),
-                              child: Text('Your Library', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
-                            ),
-                            if (books.isEmpty && activeTasks.isEmpty)
-                              Container(
-                                height: 180,
-                                margin: const EdgeInsets.symmetric(horizontal: 24),
-                                decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(24)),
-                                alignment: Alignment.center,
-                                child: const Text('No courses found.\nTap + to create one!', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
-                              ),
-                          ],
-                        ),
-                      ),
-                      if (books.isNotEmpty)
-                        SliverPadding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          sliver: SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                                final book = books[index];
-                                return CompactBookCard(
-                                  book: book,
-                                  progress: progressMap[book.id] ?? 0.0,
-                                  onTap: () {
-                                    Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
-                                      .then((_) => _loadAllData(force: false));
-                                  },
-                                  onLongPress: () => _showBookLongPressMenu(book),
-                                  onDelete: () => _deleteLocalBook(book),
-                                );
-                              },
-                              childCount: books.length,
-                            ),
-                          ),
-                        ),
-                    ],
-
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
-                      sliver: SliverToBoxAdapter(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Published Courses',
-                              style: TextStyle(
-                                fontSize: kIsWeb ? 26 : 22,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                              ),
-                            ),
-                            if (kIsWeb) ...[
-                              const SizedBox(height: 6),
-                              const Text(
-                                'Explore and study courses published by the community.',
-                                style: TextStyle(color: Colors.white54, fontSize: 13),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (globalBooks.isEmpty)
-                      const SliverPadding(
-                        padding: EdgeInsets.symmetric(horizontal: 24.0),
-                        sliver: SliverToBoxAdapter(
-                          child: Text(
-                            'No published courses yet.',
-                            style: TextStyle(color: Colors.white54),
-                          ),
-                        ),
-                      )
-                    else
-                      SliverPadding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              final gBook = globalBooks[index];
-                              final user = FbAuth.instance.currentUser;
-                              final bool isOwner = user != null && gBook.authorId == user.uid;
-                              final bool isSuperAdmin = user?.email == 'ihjas.one@gmail.com';
-                              final bool canDelete = isOwner || isSuperAdmin;
-
-                              return CommunityBookCard(
-                                book: gBook,
-                                buttonText: kIsWeb ? 'OPEN' : 'GET',
-                                onGetPressed: () {
-                                  if (kIsWeb) {
-                                    Navigator.pushNamed(context, '/${gBook.id}');
-                                  } else {
-                                    _downloadGlobalBook(gBook);
-                                  }
-                                },
-                                onDeletePressed: canDelete ? () async {
-                                  final confirm = await showDialog<bool>(
-                                    context: context,
-                                    builder: (ctx) => AlertDialog(
-                                      backgroundColor: AppTheme.surface,
-                                      title: const Text('Unpublish Course?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                      content: const Text('Are you sure you want to unpublish this course from Published Courses? This won\'t delete your local copy if you have one.', style: TextStyle(color: Colors.white70)),
-                                      actions: [
-                                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
-                                        TextButton(
-                                          onPressed: () => Navigator.pop(ctx, true),
-                                          child: const Text('Unpublish', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                  if (confirm == true) {
-                                    await _db.deleteGlobalBook(gBook.id);
-                                    _loadAllData(force: true);
-                                  }
-                                } : null,
-                              );
-                            },
-                            childCount: globalBooks.length,
-                          ),
-                        ),
-                      ),
-
-                    const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          body: isLoading
+              ? const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue))
+              : IndexedStack(
+                  index: _selectedTabIndex,
+                  children: [
+                    _buildLibraryTab(activeTasks, screenWidth),
+                    _buildPublishedTab(screenWidth),
                   ],
                 ),
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: _selectedTabIndex,
+            onTap: (index) {
+              setState(() {
+                _selectedTabIndex = index;
+              });
+            },
+            backgroundColor: AppTheme.surface,
+            selectedItemColor: AppTheme.duoBlue,
+            unselectedItemColor: Colors.white54,
+            selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+            unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(LucideIcons.bookOpen),
+                label: 'Your Library',
               ),
+              BottomNavigationBarItem(
+                icon: Icon(LucideIcons.globe),
+                label: 'Published',
+              ),
+            ],
           ),
-          floatingActionButton: kIsWeb ? null : FloatingActionButton(
-            backgroundColor: AppTheme.duoGreen,
-            child: const Icon(LucideIcons.plus, color: Colors.white, size: 32),
-            onPressed: () => Navigator.push(
-              context, 
-              MaterialPageRoute(builder: (_) => const GenerateBookScreen())
-            ).then((_) => _loadAllData(force: false)),
-          ),
+          floatingActionButton: _selectedTabIndex == 0 && !kIsWeb
+              ? FloatingActionButton(
+                  backgroundColor: AppTheme.duoGreen,
+                  child: const Icon(LucideIcons.plus, color: Colors.white, size: 32),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const GenerateBookScreen())
+                  ).then((_) => _loadAllData(force: false)),
+                )
+              : null,
         );
       },
     );

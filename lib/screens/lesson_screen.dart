@@ -814,7 +814,7 @@ class _LessonScreenState extends State<LessonScreen> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      if (widget.book != null)
+                      if (widget.book != null && !widget.book!.isGlobal)
                         GestureDetector(
                           onTap: _onPdfPressed,
                           child: SizedBox(

@@ -1,6 +1,11 @@
 Make the following changes:
 
 
+- Redesign the start page book list view card:
+    - Remove delete button, delete by swipe left (with confirmation)
+    - Give the whole space for icon, name
+    - Move progressbar below icon, name (with full width)
+    - Update the book icon to the most used icon in lessons icon in that same course
 
 
 

@@ -107,24 +107,19 @@ class UnitHeader extends StatelessWidget {
                                   ),
                                 ],
                               )
-                            : Column(
+                            : Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  RealProgressBar(
-                                    progress: generationTask!.progress,
-                                    isCircular: false,
-                                    label: status ?? 'Loading...',
+                                  Expanded(
+                                    child: RealProgressBar(
+                                      progress: generationTask!.progress,
+                                      isCircular: false,
+                                      label: status ?? 'Loading...',
+                                    ),
                                   ),
                                   if (status == 'Queued' || status == 'queued') ...[
-                                    const SizedBox(height: 8),
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: DuoButton(
-                                        text: 'Resume Generation',
-                                        color: AppTheme.duoViolet,
-                                        shadowColor: AppTheme.duoVioletDark,
-                                        onPressed: onGenerate,
-                                      ),
-                                    ),
+                                    const SizedBox(width: 12),
+                                    _ResumeIconButton(onPressed: onGenerate),
                                   ],
                                 ],
                               ))
@@ -189,3 +184,58 @@ class UnitHeader extends StatelessWidget {
     );
   }
 }
+
+class _ResumeIconButton extends StatefulWidget {
+  final VoidCallback onPressed;
+
+  const _ResumeIconButton({required this.onPressed});
+
+  @override
+  State<_ResumeIconButton> createState() => _ResumeIconButtonState();
+}
+
+class _ResumeIconButtonState extends State<_ResumeIconButton> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        widget.onPressed();
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 100),
+        margin: EdgeInsets.only(top: _isPressed ? 3 : 0, bottom: _isPressed ? 0 : 3),
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: AppTheme.duoViolet,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppTheme.duoVioletDark,
+            width: 2,
+          ),
+          boxShadow: _isPressed
+              ? []
+              : [
+                  const BoxShadow(
+                    color: AppTheme.duoVioletDark,
+                    offset: Offset(0, 3),
+                  )
+                ],
+        ),
+        child: const Center(
+          child: Icon(
+            LucideIcons.play,
+            color: Colors.white,
+            size: 16,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
