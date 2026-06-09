@@ -86,10 +86,9 @@ window.addEventListener('error', function(e) { _showError(e.message || 'unknown'
 function _render() {
   const { W, H, dpr } = _sizeCanvas();
   if (typeof sketch === 'function') {
-    if (__setupRan) return; // sketch owns its own lifecycle; resize just resizes the canvas.
+    if (__setupRan) return;
     __setupRan = true;
     try {
-      // 2D path: pre-scale for devicePixelRatio so coordinates are CSS pixels.
       if (typeof window.THREE === 'undefined' || !/WebGLRenderer|new\\s+THREE\\.WebGL/.test(sketch.toString())) {
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
@@ -99,9 +98,68 @@ function _render() {
   }
   if (typeof draw === 'function') {
     try {
+      // --- Auto-fit: render offscreen, measure bounds, re-render scaled ---
+      const REF = Math.max(W, H, 800);
+      const off = document.createElement('canvas');
+      off.width = REF; off.height = REF;
+      const oc = off.getContext('2d');
+      oc.clearRect(0, 0, REF, REF);
+      draw(oc, REF, REF);
+
+      // Scan pixels to find content bounding box
+      const imgData = oc.getImageData(0, 0, REF, REF);
+      const px = imgData.data;
+      let minX = REF, minY = REF, maxX = 0, maxY = 0;
+      let found = false;
+      // Sample every 2nd pixel for speed
+      for (let y = 0; y < REF; y += 2) {
+        for (let x = 0; x < REF; x += 2) {
+          const i = (y * REF + x) * 4;
+          if (px[i+3] > 10) { // non-transparent pixel
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+            found = true;
+          }
+        }
+      }
+
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
-      draw(ctx, W, H);
+
+      if (!found) {
+        // Nothing drawn, just render normally
+        draw(ctx, W, H);
+      } else {
+        // Add a small padding around the content
+        const pad = 16;
+        minX = Math.max(0, minX - pad);
+        minY = Math.max(0, minY - pad);
+        maxX = Math.min(REF, maxX + pad);
+        maxY = Math.min(REF, maxY + pad);
+
+        const contentW = maxX - minX;
+        const contentH = maxY - minY;
+        if (contentW < 1 || contentH < 1) {
+          draw(ctx, W, H);
+        } else {
+          const scaleX = W / contentW;
+          const scaleY = H / contentH;
+          const scale = Math.min(scaleX, scaleY, 1.5); // cap upscale at 1.5x
+          const drawW = contentW * scale;
+          const drawH = contentH * scale;
+          const offsetX = (W - drawW) / 2;
+          const offsetY = (H - drawH) / 2;
+
+          ctx.save();
+          ctx.translate(offsetX, offsetY);
+          ctx.scale(scale, scale);
+          ctx.translate(-minX, -minY);
+          draw(ctx, REF, REF);
+          ctx.restore();
+        }
+      }
     } catch (e) { _showError(e.message || String(e)); }
     return;
   }

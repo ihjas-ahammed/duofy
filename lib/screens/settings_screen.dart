@@ -807,7 +807,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Icon(LucideIcons.messageSquare, color: AppTheme.duoBlue, size: 28),
               SizedBox(width: 16),
               Text(
-                'Custom Chat System Prompt',
+                'Chat System Prompt',
                 style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white),
               ),
             ],
