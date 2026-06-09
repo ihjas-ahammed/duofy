@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'source_pdf_upload_screen.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
@@ -123,6 +126,92 @@ class _LessonScreenState extends State<LessonScreen> {
           nowBookmarked ? 'Lesson bookmarked' : 'Bookmark removed',
           style: const TextStyle(color: Colors.white),
         ),
+      ),
+    );
+  }
+
+  String? get _pdfPath {
+    if (widget.book == null || widget.modIdx == null || widget.secIdx == null || widget.unitIdx == null) return null;
+    try {
+      final sec = widget.book!.modules[widget.modIdx!].sections[widget.secIdx!];
+      final unit = sec.units[widget.unitIdx!];
+      return unit.pdfPath ?? sec.pdfPath;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool get _isPdfMissing {
+    final path = _pdfPath;
+    if (path == null || path.isEmpty) return true;
+    return !File(path).existsSync();
+  }
+
+  void _onPdfPressed() {
+    if (!_isPdfMissing) {
+      final path = _pdfPath!;
+      final title = widget.book!.modules[widget.modIdx!].sections[widget.secIdx!].units[widget.unitIdx!].title;
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => Scaffold(
+            appBar: AppBar(
+              title: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+              backgroundColor: const Color(0xFF0B0F19),
+            ),
+            body: SfPdfViewer.file(File(path)),
+          ),
+        ),
+      );
+    } else {
+      _showMissingPdfDialog();
+    }
+  }
+
+  Future<void> _showMissingPdfDialog() async {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Row(
+          children: [
+            Icon(LucideIcons.fileWarning, color: AppTheme.duoOrange, size: 28),
+            SizedBox(width: 12),
+            Text(
+              'Missing Reference PDF',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+          ],
+        ),
+        content: const Text(
+          'The source PDF file for this unit is missing on this device. Would you like to select and restore the source PDF(s) to view it?',
+          style: TextStyle(color: Colors.white70, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _openSourcePdfManagementScreen();
+            },
+            child: const Text(
+              'Restore PDF(s)',
+              style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openSourcePdfManagementScreen() {
+    if (widget.book == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SourcePdfUploadScreen(book: widget.book!),
       ),
     );
   }
@@ -725,6 +814,20 @@ class _LessonScreenState extends State<LessonScreen> {
                         ),
                       ),
                       const SizedBox(width: 8),
+                      if (widget.book != null)
+                        GestureDetector(
+                          onTap: _onPdfPressed,
+                          child: SizedBox(
+                            width: 40,
+                            height: 48,
+                            child: Icon(
+                              LucideIcons.fileText,
+                              color: _isPdfMissing ? AppTheme.duoOrange : AppTheme.duoBlue,
+                              size: 22,
+                            ),
+                          ),
+                        ),
+                      if (widget.book != null) const SizedBox(width: 8),
                       if (_canBookmark)
                         GestureDetector(
                           onTap: _toggleBookmark,
