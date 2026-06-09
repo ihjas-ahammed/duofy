@@ -47,6 +47,7 @@ class UnitGenTask {
   DateTime startTime;
   bool isError;
   double? progress;
+  int? plannedLessonsCount;
 
   UnitGenTask({
     required this.status,
@@ -54,6 +55,7 @@ class UnitGenTask {
     required this.startTime,
     this.isError = false,
     this.progress,
+    this.plannedLessonsCount,
   });
 }
 
@@ -202,6 +204,7 @@ class GenerationManager extends ChangeNotifier {
               startTime: task.startTime ?? DateTime.now(),
               isError: isError,
               progress: task.progress,
+              plannedLessonsCount: task.params['plannedLessonsCount'] as int?,
             );
           }
         } else if (task.type == 'manifest') {
@@ -504,6 +507,14 @@ class GenerationManager extends ChangeNotifier {
         case 'canvas_regen':
           await _runCanvasRegenForTask(task, apiKey);
           break;
+        case 'custom_lesson_gen':
+          final modIdx = task.params['modIdx'] as int;
+          final secIdx = task.params['secIdx'] as int;
+          final unitIdx = task.params['unitIdx'] as int;
+          final book = await _dbService.getBookFromCache(task.bookId);
+          if (book == null) throw Exception("Course not found");
+          await _runCustomLessonGenForTask(task, book, modIdx, secIdx, unitIdx, apiKey);
+          break;
         default:
           throw Exception("Unknown task type: ${task.type}");
       }
@@ -532,8 +543,19 @@ class GenerationManager extends ChangeNotifier {
   // ---------------------------------------------------------------------------
   // Task Queue Enqueue Wrappers (Returning Completer Futures)
   // ---------------------------------------------------------------------------
-  void _enqueueTaskObject(AiTask task) {
-    queue.add(task);
+  void _enqueueTaskObject(AiTask task, {bool highPriority = false}) {
+    if (highPriority) {
+      int insertIdx = 0;
+      for (int i = 0; i < queue.length; i++) {
+        if (queue[i].status == 'queued') {
+          insertIdx = i;
+          break;
+        }
+      }
+      queue.insert(insertIdx, task);
+    } else {
+      queue.add(task);
+    }
     _syncActiveMapsWithQueue();
     notifyListeners();
     _saveQueueToPrefs();
@@ -551,6 +573,7 @@ class GenerationManager extends ChangeNotifier {
     required bool isScheduled,
     required Map<String, dynamic> params,
     String? customTaskId,
+    bool highPriority = false,
   }) {
     final taskId = customTaskId ?? '${type}_${DateTime.now().millisecondsSinceEpoch}_${unitId ?? sectionId ?? moduleId ?? bookId}';
     final task = AiTask(
@@ -565,7 +588,7 @@ class GenerationManager extends ChangeNotifier {
       isScheduled: isScheduled,
       params: params,
     );
-    _enqueueTaskObject(task);
+    _enqueueTaskObject(task, highPriority: highPriority);
   }
 
   Future<Book?> startBookSkeletonGenerationTask(
@@ -577,6 +600,7 @@ class GenerationManager extends ChangeNotifier {
     bool isHandout = false,
     List<List<int>>? chapterStarts,
     List<File> sourceFiles = const [],
+    String? parentTaskId,
   }) async {
     final task = AiTask(
       id: 'skeleton_${DateTime.now().millisecondsSinceEpoch}',
@@ -594,6 +618,7 @@ class GenerationManager extends ChangeNotifier {
         'isHandout': isHandout,
         if (chapterStarts != null) 'chapterStarts': chapterStarts,
         'sourceFilesPaths': sourceFiles.map((f) => f.path).toList(),
+        if (parentTaskId != null) 'parentTaskId': parentTaskId,
       },
     );
     _enqueueTaskObject(task);
@@ -699,6 +724,17 @@ class GenerationManager extends ChangeNotifier {
       onProgress: (status, progress) {
         task.statusMessage = status;
         task.progress = progress;
+        
+        final parentTaskId = task.params['parentTaskId'] as String?;
+        if (parentTaskId != null) {
+          final parentIdx = activeTasks.indexWhere((t) => t.id == parentTaskId);
+          if (parentIdx != -1) {
+            activeTasks[parentIdx].statusMessage = status;
+            activeTasks[parentIdx].progress = progress;
+          }
+        }
+        
+        _syncActiveMapsWithQueue();
         notifyListeners();
       },
       forcedApiKey: apiKey,
@@ -798,9 +834,13 @@ class GenerationManager extends ChangeNotifier {
       final updatedUnit = await _aiService.generateUnitContent(
         unit,
         ctxBook,
-        (status, [progress]) {
+        (status, {progress, plannedLessons}) {
           task.statusMessage = status;
-          task.progress = progress;
+          if (progress != null) task.progress = progress;
+          if (plannedLessons != null) {
+            task.params['plannedLessonsCount'] = plannedLessons;
+          }
+          _syncActiveMapsWithQueue();
           notifyListeners();
         },
         sectionPdfPath: sectionPdfPath,
@@ -910,6 +950,7 @@ class GenerationManager extends ChangeNotifier {
     if (section.needsUnitManifest) {
       task.statusMessage = 'Planning section units...';
       task.progress = 0.1;
+      _syncActiveMapsWithQueue();
       notifyListeners();
       
       await _runManifestGenerationForTask(task, book, modIdx, secIdx, null, false, apiKey);
@@ -935,6 +976,7 @@ class GenerationManager extends ChangeNotifier {
     if (unitsToGen.isEmpty) {
       task.statusMessage = 'All units already generated';
       task.progress = 1.0;
+      _syncActiveMapsWithQueue();
       notifyListeners();
       return;
     }
@@ -956,6 +998,7 @@ class GenerationManager extends ChangeNotifier {
     }
     task.statusMessage = 'Enqueued ${unitsToGen.length} units';
     task.progress = 1.0;
+    _syncActiveMapsWithQueue();
     notifyListeners();
   }
 
@@ -975,6 +1018,7 @@ class GenerationManager extends ChangeNotifier {
     }
     task.statusMessage = 'Enqueued ${module.sections.length} sections';
     task.progress = 1.0;
+    _syncActiveMapsWithQueue();
     notifyListeners();
   }
 
@@ -992,6 +1036,7 @@ class GenerationManager extends ChangeNotifier {
     }
     task.statusMessage = 'Enqueued ${book.modules.length} modules';
     task.progress = 1.0;
+    _syncActiveMapsWithQueue();
     notifyListeners();
   }
 
@@ -1169,6 +1214,9 @@ class GenerationManager extends ChangeNotifier {
       final Unit? nextUnit = unitIdx < sectionUnits.length - 1 ? sectionUnits[unitIdx + 1] : null;
       final String? sectionPdfPath = ctxBook.modules[modIdx].sections[secIdx].pdfPath;
       
+      final String? customPrompt = task.params['customPrompt'];
+      final String? newFormatId = task.params['newFormatId'];
+      
       final fresh = await _aiService.regenerateLesson(
         lesson: lesson,
         unit: unit,
@@ -1178,6 +1226,8 @@ class GenerationManager extends ChangeNotifier {
         nextUnit: nextUnit,
         generateGraphics: task.generateGraphics,
         forcedApiKey: apiKey,
+        customPrompt: customPrompt,
+        newFormatId: newFormatId,
       );
       if (fresh == null) {
         throw Exception('Lesson regeneration failed. The previous lesson is kept.');
@@ -1203,6 +1253,123 @@ class GenerationManager extends ChangeNotifier {
       await NotificationService.cancel(notifId);
       rethrow;
     }
+  }
+
+  Future<void> _runCustomLessonGenForTask(
+    AiTask task,
+    Book book,
+    int modIdx,
+    int secIdx,
+    int unitIdx,
+    String apiKey,
+  ) async {
+    final String prompt = task.params['prompt'] as String;
+    final List<String> filePaths = List<String>.from(task.params['filePaths'] ?? []);
+    final List<File> files = filePaths.map((p) => File(p)).toList();
+    final Map<String, dynamic> formatJson = task.params['format'] as Map<String, dynamic>;
+    final format = LessonFormat.fromJson(formatJson);
+    final String lessonId = task.params['lessonId'] as String;
+
+    final notifId = ('custom_gen_$lessonId').hashCode;
+    await NotificationService.showProgress(notifId, 'Creating custom lesson', 'Preparing...', indeterminate: true);
+
+    try {
+      final ctxBook = (await _dbService.getBookFromCache(book.id)) ?? book;
+      final unit = ctxBook.modules[modIdx].sections[secIdx].units[unitIdx];
+      final List<Slide> generatedSlides = [];
+      final totalSlides = format.slides.length;
+
+      for (int i = 0; i < totalSlides; i++) {
+        final template = format.slides[i];
+        
+        await NotificationService.showProgress(
+          notifId,
+          'Creating custom lesson',
+          'Generating slide ${i + 1} of $totalSlides (${template.type})...',
+          indeterminate: true,
+        );
+
+        task.progress = i / totalSlides;
+        task.statusMessage = 'Generating slide ${i + 1} of $totalSlides';
+        _syncActiveMapsWithQueue();
+        notifyListeners();
+
+        final slide = await _aiService.generateCustomLessonSlide(
+          lessonTitle: 'Custom Lesson',
+          unitTitle: unit.title,
+          slideType: template.type,
+          slideDescription: template.description,
+          userInstructions: prompt,
+          attachedFiles: files,
+          slidesSoFar: generatedSlides,
+          slideIndex: i + 1,
+          totalSlides: totalSlides,
+          bookContext: ctxBook,
+          forcedApiKey: apiKey,
+        );
+
+        if (slide != null) {
+          generatedSlides.add(slide);
+          
+          final base = (await _dbService.getBookFromCache(book.id)) ?? book;
+          final mods = List<Module>.from(base.modules);
+          final secs = List<Section>.from(mods[modIdx].sections);
+          final uns = List<Unit>.from(secs[secIdx].units);
+          final lessons = List<Lesson>.from(uns[unitIdx].lessons);
+          
+          final lessonIndex = lessons.indexWhere((l) => l.id == lessonId);
+          if (lessonIndex != -1) {
+            lessons[lessonIndex] = lessons[lessonIndex].copyWith(
+              slides: List.from(generatedSlides),
+              title: generatedSlides.isNotEmpty ? generatedSlides.first.title : 'Custom Lesson',
+            );
+            uns[unitIdx] = uns[unitIdx].copyWith(lessons: lessons);
+            secs[secIdx] = secs[secIdx].copyWith(units: uns);
+            mods[modIdx] = mods[modIdx].copyWith(sections: secs);
+            final newBook = base.copyWith(modules: mods);
+            
+            await _dbService.saveGeneratedBook(newBook);
+            _bookUpdateController.add(newBook);
+          }
+        }
+      }
+      await NotificationService.cancel(notifId);
+    } catch (e) {
+      await NotificationService.cancel(notifId);
+      rethrow;
+    }
+  }
+
+  Future<void> startCustomLessonGeneration({
+    required Book book,
+    required int modIdx,
+    required int secIdx,
+    required int unitIdx,
+    required String prompt,
+    required List<File> selectedFiles,
+    required LessonFormat format,
+    required String lessonId,
+  }) async {
+    _enqueue(
+      title: 'Generate Custom Lesson',
+      type: 'custom_lesson_gen',
+      bookId: book.id,
+      moduleId: book.modules[modIdx].id,
+      sectionId: book.modules[modIdx].sections[secIdx].id,
+      unitId: book.modules[modIdx].sections[secIdx].units[unitIdx].id,
+      generateGraphics: false,
+      isScheduled: false,
+      highPriority: true,
+      params: {
+        'modIdx': modIdx,
+        'secIdx': secIdx,
+        'unitIdx': unitIdx,
+        'prompt': prompt,
+        'filePaths': selectedFiles.map((f) => f.path).toList(),
+        'format': format.toJson(),
+        'lessonId': lessonId,
+      },
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -1256,6 +1423,7 @@ class GenerationManager extends ChangeNotifier {
         isHandout: isHandout,
         chapterStarts: chapterStarts,
         sourceFiles: sourceFiles,
+        parentTaskId: taskId,
       );
       
       stopwatch.stop();
@@ -1697,6 +1865,8 @@ class GenerationManager extends ChangeNotifier {
     bool generateGraphics = true,
     void Function(String message)? errorSink,
     bool isScheduled = false,
+    String? customPrompt,
+    String? newFormatId,
   }) async {
     final lesson = book.modules[modIdx].sections[secIdx].units[unitIdx].lessons[lessonIdx];
     if (queue.any((t) => t.params['lessonId'] == lesson.id && (t.status == 'queued' || t.status == 'running'))) {
@@ -1718,6 +1888,8 @@ class GenerationManager extends ChangeNotifier {
         'unitIdx': unitIdx,
         'lessonIdx': lessonIdx,
         'lessonId': lesson.id,
+        if (customPrompt != null) 'customPrompt': customPrompt,
+        if (newFormatId != null) 'newFormatId': newFormatId,
       },
     );
   }

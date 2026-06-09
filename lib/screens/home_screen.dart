@@ -1036,7 +1036,10 @@ class _HomeScreenState extends State<HomeScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: AppTheme.surface,
-        content: Text(isScheduled ? 'Course generation scheduled!' : 'Course generation queued!'),
+        content: Text(
+          isScheduled ? 'Course generation scheduled!' : 'Course generation queued!',
+          style: const TextStyle(color: Colors.white),
+        ),
       ),
     );
   }

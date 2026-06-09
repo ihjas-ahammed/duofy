@@ -324,10 +324,13 @@ class AiService {
 
       final ext = name.split('.').last.toLowerCase();
       if (ext == 'pdf') {
-        if (extractText) {
+        final bool useTextOnly = extractText || (!kIsWeb && Platform.isLinux);
+        if (useTextOnly) {
           final text = await PdfService().extractTextFromPdfBytes(bytes);
           if (text.trim().isNotEmpty) {
-            parts.add(TextPart('--- SYLLABUS CONTENT START ---\n$text\n--- SYLLABUS CONTENT END ---'));
+            parts.add(TextPart(extractText
+                ? '--- SYLLABUS CONTENT START ---\n$text\n--- SYLLABUS CONTENT END ---'
+                : '--- CONTENT START ---\n$text\n--- CONTENT END ---'));
           }
         } else {
           try {
@@ -1009,7 +1012,7 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
   Future<Unit> generateUnitContent(
     Unit unit,
     Book bookContext,
-    void Function(String status, [double? progress]) onProgress, {
+    void Function(String status, {double? progress, int? plannedLessons}) onProgress, {
     String? sectionPdfPath,
     Unit? previousUnit,
     Unit? nextUnit,
@@ -1171,7 +1174,7 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
         if (lesson != null) slots[i] = lesson;
       }
       doneSteps++;
-      onProgress('Generating lessons (${collected().length}/$total)...', doneSteps / totalSteps);
+      onProgress('Generating lessons (${collected().length}/$total)...', progress: doneSteps / totalSteps, plannedLessons: total);
       onLessonGenerated?.call(collected()); // show this lesson right away
 
       // 2. This lesson's diagram(s), then stream the lesson again with its art.
@@ -1185,7 +1188,7 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
           }
         }
         doneSteps++; // counted even when skipped/failed so totals reconcile
-        onProgress('Rendering diagrams (${i + 1}/$total)...', doneSteps / totalSteps);
+        onProgress('Rendering diagrams (${i + 1}/$total)...', progress: doneSteps / totalSteps, plannedLessons: total);
       }
     }
 
@@ -1335,6 +1338,8 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     Unit? nextUnit,
     bool generateGraphics = true,
     String? forcedApiKey,
+    String? customPrompt,
+    String? newFormatId,
   }) async {
     await _checkPause();
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
@@ -1352,6 +1357,8 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     final neighborContext = _buildNeighborContext(previousUnit, unit, nextUnit);
     final instructionsBlock = PromptService.instructionsBlock(bookContext.customInstructions);
 
+    final String targetFormatId = newFormatId ?? lesson.formatId ?? bookContext.defaultFormatId;
+
     // Synthesise a one-lesson plan so the model regenerates THIS lesson
     // specifically rather than picking a new topic.
     final synthPlan = StringBuffer()
@@ -1361,7 +1368,10 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     if (lesson.canvasPrompt != null && lesson.canvasPrompt!.trim().isNotEmpty) {
       synthPlan.writeln('Diagram: ${lesson.canvasPrompt!.trim()}');
     }
-    synthPlan.writeln('Cover the same pedagogical point. Use the same lesson format ("${lesson.formatId ?? bookContext.defaultFormatId}") and a similar slide structure.');
+    if (customPrompt != null && customPrompt.trim().isNotEmpty) {
+      synthPlan.writeln('User request/guidelines for this regeneration: ${customPrompt.trim()}');
+    }
+    synthPlan.writeln('Cover the same pedagogical point. Use the lesson format "$targetFormatId" and a similar slide structure.');
 
     final fileParts = await _buildFileParts([chunkFile]);
     Lesson? fresh;
@@ -1387,6 +1397,7 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     // Preserve the original lesson id so the unit's lesson order stays stable.
     fresh = fresh.copyWith(
       id: lesson.id,
+      formatId: targetFormatId,
       slides: fresh.slides.map((s) {
         // Rewrite slide ids so they're rooted on the kept lesson id.
         final tail = s.id.split('-').last;
@@ -1995,6 +2006,69 @@ Do not include any explanation or other text.
       }
     }
     throw lastException ?? Exception('Failed to grade PYQ answers.');
+  }
+
+  Future<Slide?> generateCustomLessonSlide({
+    required String lessonTitle,
+    required String unitTitle,
+    required String slideType,
+    required String slideDescription,
+    required String userInstructions,
+    required List<File> attachedFiles,
+    required List<Slide> slidesSoFar,
+    required int slideIndex,
+    required int totalSlides,
+    required Book bookContext,
+    String? forcedApiKey,
+  }) async {
+    await _checkPause();
+    final keys = await _getKeys(forcedApiKey: forcedApiKey);
+    final liteModels = await _getLiteModels(); // We use lite model as requested
+
+    final neighborContext = slidesSoFar.isEmpty 
+        ? 'No slides generated yet.' 
+        : 'Slides generated so far: ' + jsonEncode(slidesSoFar.map((s) => s.toJson()).toList());
+
+    final prompt = PromptService.customSlideJson
+        .replaceAll('%lesson_title%', lessonTitle)
+        .replaceAll('%unit_title%', unitTitle)
+        .replaceAll('%slide_type%', slideType)
+        .replaceAll('%slide_description%', slideDescription)
+        .replaceAll('%user_prompt%', userInstructions)
+        .replaceAll('%slides_so_far%', neighborContext)
+        .replaceAll('%slide_index%', '$slideIndex')
+        .replaceAll('%total_slides%', '$totalSlides')
+        .replaceAll('%slide_id%', '${lessonTitle.replaceAll(RegExp(r'\s+'), '_').toLowerCase()}_s$slideIndex');
+
+    final fileParts = await _buildFileParts(attachedFiles);
+    final parts = <Part>[TextPart(prompt), ...fileParts];
+
+    Object? lastErr;
+    for (final modelName in liteModels) {
+      for (final apiKey in keys) {
+        try {
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: apiKey,
+            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+          );
+          final response = await _retryTransient(
+            () => model.generateContent([Content.multi(parts)]).timeout(const Duration(minutes: 3)),
+            onRetry: (a, e) => print('[AiService] Custom slide $slideIndex transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+          );
+          final text = response.text;
+          if (text == null || text.trim().isEmpty) {
+            throw Exception('Empty response for custom slide $slideIndex.');
+          }
+          final jsonMap = _cleanAndDecodeJson(text);
+          final slide = Slide.fromJson(jsonMap);
+          return slide;
+        } catch (e) {
+          lastErr = e;
+        }
+      }
+    }
+    throw lastErr ?? Exception('Failed to generate custom slide $slideIndex.');
   }
 }
 

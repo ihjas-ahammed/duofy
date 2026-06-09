@@ -85,8 +85,17 @@ class NotificationService {
       ongoing: true,
       autoCancel: false,
     );
-    final NotificationDetails details = NotificationDetails(android: androidDetails);
-    await _plugin.show(id: id,title:  title,body: body,notificationDetails:  details);
+    final NotificationDetails details = NotificationDetails(
+      android: androidDetails,
+      linux: const LinuxNotificationDetails(),
+      iOS: const DarwinNotificationDetails(),
+      macOS: const DarwinNotificationDetails(),
+    );
+    try {
+      await _plugin.show(id: id, title: title, body: body, notificationDetails: details);
+    } catch (e) {
+      debugPrint('[NotificationService] Error showing progress notification: $e');
+    }
   }
 
   static Future<void> showActionable(int id, String title, String body, String payload) async {
@@ -98,11 +107,24 @@ class NotificationService {
       priority: Priority.high,
       autoCancel: true,
     );
-    const NotificationDetails details = NotificationDetails(android: androidDetails);
-    await _plugin.show(id: id,title:  title,body:  body,notificationDetails:  details, payload: payload);
+    const NotificationDetails details = NotificationDetails(
+      android: androidDetails,
+      linux: const LinuxNotificationDetails(),
+      iOS: const DarwinNotificationDetails(),
+      macOS: const DarwinNotificationDetails(),
+    );
+    try {
+      await _plugin.show(id: id, title: title, body: body, notificationDetails: details, payload: payload);
+    } catch (e) {
+      debugPrint('[NotificationService] Error showing actionable notification: $e');
+    }
   }
 
   static Future<void> cancel(int id) async {
-    await _plugin.cancel(id: id);
+    try {
+      await _plugin.cancel(id: id);
+    } catch (e) {
+      debugPrint('[NotificationService] Error cancelling notification: $e');
+    }
   }
 }

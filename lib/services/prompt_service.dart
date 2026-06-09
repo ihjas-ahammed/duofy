@@ -469,6 +469,44 @@ RETURN ONLY VALID JSON FOR THIS ONE SLIDE (no wrapping array, no other keys). Ma
 - "numerical": {"id": "%slide_id%", "type": "numerical", "title": "Title", "content": "...", "numericAnswer": 12.3, "numericTolerance": 0.01}
 - "proof" / "step_by_step": {"id": "%slide_id%", "type": "proof", "title": "Title", "content": "...", "interactiveSteps": [{"prompt": "...", "options": [...]}, {"stepText": "..."}]}''';
 
+  static const String customSlideJson = '''You are an expert tutor.
+TASK:
+You are generating slide index %slide_index% out of %total_slides% for a custom lesson titled "%lesson_title%" (part of the unit "%unit_title%").
+
+This slide has type "%slide_type%" and should follow this description:
+"%slide_description%"
+
+Here is the custom prompt/guideline requested by the user:
+"%user_prompt%"
+
+Here is the JSON representation of all slides generated so far in this lesson (empty if this is the first slide):
+%slides_so_far%
+
+Use the attached reference materials (textbook files, images, etc.) for absolute accuracy and terminology.
+Produce a single slide of type "%slide_type%" covering the next logical pedagogical step. Do NOT repeat concepts already covered in previous slides. Keep it self-contained.
+
+TEXTBOOK WRITING STYLE ADAPTATION (HIGH PRIORITY):
+Match the writing style, tone, terminology, and level of rigor of the attached textbook content.
+
+$latexGuide
+
+CRITICAL SCHEMA & MICRO-LEARNING RULES:
+1. "theory" slides: `content` MUST be a few sentences explaining a concept DIRECTLY. Use Markdown. NEVER use storytelling, narrative framings, characters, or imagined scenarios.
+2. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
+3. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word. Include an array of 3 `blankDistractors`.
+4. "one_word" slides: `content` is a question with a SINGLE-word answer (no `___`). `blankAnswer` is that exact word; no `options` or `blankDistractors`.
+5. "numerical" slides: `content` is a problem with a numeric answer. `numericAnswer` is that plain number (no units); `numericTolerance` is the allowed absolute error (0.01 default). No `options`. Do NOT include any hints, notes, or text in `content` that reveal or suggest the correct numeric answer.
+6. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array of stages; a step can be static (`stepText` only) or a question (`prompt` and `options`). Include a `canvasPrompt` only if a figure is genuinely needed.
+7. LaTeX must follow the LATEX GUIDE above (double-escaped, correct delimiters, no inline-on-its-own-line).
+
+RETURN ONLY VALID JSON FOR THIS ONE SLIDE (no wrapping array, no other keys). Make sure to include all fields required for the slide type matching the schema:
+- "theory": {"id": "%slide_id%", "type": "theory", "title": "Title", "content": "..."}
+- "quiz": {"id": "%slide_id%", "type": "quiz", "title": "Title", "content": "...", "options": [{"id": "opt1", "text": "Option A", "isCorrect": true, "explanation": "..."}, ...]}
+- "fill_in_blank": {"id": "%slide_id%", "type": "fill_in_blank", "title": "Title", "content": "... ___ ...", "blankAnswer": "word", "blankDistractors": ["wrong1", "wrong2", "wrong3"]}
+- "one_word": {"id": "%slide_id%", "type": "one_word", "title": "Title", "content": "...", "blankAnswer": "word"}
+- "numerical": {"id": "%slide_id%", "type": "numerical", "title": "Title", "content": "...", "numericAnswer": 12.3, "numericTolerance": 0.01}
+- "proof" / "step_by_step": {"id": "%slide_id%", "type": "proof", "title": "Title", "content": "...", "interactiveSteps": [{"prompt": "...", "options": [...]}, {"stepText": "..."}]}''';
+
   /// Stage-2 prompt: feeds a single `canvasPrompt` (produced by the text
   /// model) into the graphics model and asks it for a JavaScript program
   /// that renders the concept. The app embeds that program in a fixed,

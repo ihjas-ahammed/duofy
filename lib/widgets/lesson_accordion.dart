@@ -175,6 +175,31 @@ class _LessonAccordionState extends State<LessonAccordion> {
     );
   }
 
+  Widget _buildPlaceholderLessonTile(int index, Color secColor) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8, left: 16, right: 16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.02),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: ListTile(
+        leading: Icon(LucideIcons.loader, color: secColor.withOpacity(0.4), size: 28),
+        title: Text(
+          'Lesson ${index + 1}: Planning Content...', 
+          style: TextStyle(
+            fontWeight: FontWeight.bold, 
+            color: Colors.white.withOpacity(0.3)
+          ),
+        ),
+        subtitle: Text(
+          'This lesson will be available soon.',
+          style: TextStyle(color: Colors.white.withOpacity(0.15), fontSize: 12),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     List<Widget> listItems = [];
@@ -200,6 +225,10 @@ class _LessonAccordionState extends State<LessonAccordion> {
         for (int u = 0; u < section.units.length; u++) {
           final unit = section.units[u];
           final isGenerated = unit.isGenerated && unit.lessons.isNotEmpty;
+          final generationTask = widget.loadingUnitStatuses[unit.id];
+          final isQueuedOrRunning = generationTask != null;
+          final isInterrupted = !unit.isGenerated && unit.lessons.isNotEmpty;
+          final showExpandable = isGenerated || isQueuedOrRunning || isInterrupted;
           final isExpanded = _activeUnitId == unit.id;
 
           listItems.add(
@@ -213,7 +242,7 @@ class _LessonAccordionState extends State<LessonAccordion> {
               clipBehavior: Clip.hardEdge,
               child: Theme(
                 data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                child: isGenerated 
+                child: showExpandable 
                   ? ExpansionTile(
                       initiallyExpanded: isExpanded,
                       iconColor: secColor,
@@ -225,17 +254,40 @@ class _LessonAccordionState extends State<LessonAccordion> {
                           padding: const EdgeInsets.only(bottom: 8.0),
                           child: Column(
                             children: [
-                              for (int lIdx = 0; lIdx < unit.lessons.length; lIdx++) ...(() {
-                                final lesson = unit.lessons[lIdx];
-                                final bool isCompleted = widget.completedLessons.contains(lesson.id);
-                                final bool isLocked = !previousCompleted && !isCompleted;
-                                final bool isActive = previousCompleted && !isCompleted;
-                                final tile = _buildLessonTile(
-                                  lesson, isCompleted, isLocked, isActive, secColor,
-                                  modIdx: m, secIdx: s, unitIdx: u, lessonIdx: lIdx,
-                                );
-                                previousCompleted = isCompleted;
-                                return [tile];
+                              if (!isGenerated)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  child: UnitHeader(
+                                    unit: unit,
+                                    isGenerated: false,
+                                    generationTask: generationTask,
+                                    onGenerate: () => widget.onGenerateUnit(unit, m, s, u),
+                                    onClear: () => widget.onClearUnit(unit, m, s, u),
+                                    book: widget.book,
+                                  ),
+                                ),
+                              ...(() {
+                                final List<Widget> children = [];
+                                final bool showPlaceholders = isQueuedOrRunning || isInterrupted;
+                                final int totalPlanned = showPlaceholders
+                                    ? (generationTask?.plannedLessonsCount ?? (unit.lessons.isNotEmpty ? unit.lessons.length + 3 : 4))
+                                    : unit.lessons.length;
+                                for (int lIdx = 0; lIdx < totalPlanned; lIdx++) {
+                                  if (lIdx < unit.lessons.length) {
+                                    final lesson = unit.lessons[lIdx];
+                                    final bool isCompleted = widget.completedLessons.contains(lesson.id);
+                                    final bool isLocked = !previousCompleted && !isCompleted;
+                                    final bool isActive = previousCompleted && !isCompleted;
+                                    children.add(_buildLessonTile(
+                                      lesson, isCompleted, isLocked, isActive, secColor,
+                                      modIdx: m, secIdx: s, unitIdx: u, lessonIdx: lIdx,
+                                    ));
+                                    previousCompleted = isCompleted;
+                                  } else {
+                                    children.add(_buildPlaceholderLessonTile(lIdx, secColor));
+                                  }
+                                }
+                                return children;
                               })(),
                             ],
                           ),
@@ -245,7 +297,7 @@ class _LessonAccordionState extends State<LessonAccordion> {
                   : UnitHeader(
                       unit: unit,
                       isGenerated: false,
-                      generationTask: widget.loadingUnitStatuses[unit.id],
+                      generationTask: generationTask,
                       onGenerate: () => widget.onGenerateUnit(unit, m, s, u),
                       onClear: () {}, // Not needed for ungenerated unit
                       book: widget.book,

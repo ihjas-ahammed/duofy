@@ -6,6 +6,8 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'source_pdf_upload_screen.dart';
+import 'course_settings_screen.dart';
+import 'package:file_picker/file_picker.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../services/generation_manager.dart';
@@ -179,30 +181,149 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
   /// are re-rendered too when the user opts in. The previous lesson is kept
   /// if every model/key fails.
   Future<void> _promptRegenerateLesson(int modIdx, int secIdx, int unitIdx, int lessonIdx, Lesson lesson) async {
-    final wantsGraphics = await showDialog<bool>(
+    final customPromptController = TextEditingController();
+    String selectedFormatId = lesson.formatId ?? widget.book.defaultFormatId;
+    
+    // Ensure selectedFormatId is valid in the book's formats
+    final bool isValidFormat = widget.book.lessonFormats.any((f) => f.id == selectedFormatId);
+    if (!isValidFormat && widget.book.lessonFormats.isNotEmpty) {
+      selectedFormatId = widget.book.lessonFormats.first.id;
+    }
+    
+    bool generateGraphics = true;
+
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Regenerate lesson?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: Text(
-          'The AI will replace "${lesson.title}" with a fresh take using the source PDF. The lesson\'s slot in the unit is kept.',
-          style: const TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Text only', style: TextStyle(color: Colors.white54)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('With diagrams', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: AppTheme.surface,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              title: const Text(
+                'Regenerate Lesson',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Replace "${lesson.title}" with a fresh version generated from the source PDF.',
+                      style: const TextStyle(color: Colors.white70, fontSize: 13),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'CUSTOM INSTRUCTIONS (OPTIONAL)',
+                      style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: customPromptController,
+                      maxLines: 3,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: 'e.g. Focus more on proofs, make explanation simpler, add more examples...',
+                        hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
+                        filled: true,
+                        fillColor: Colors.white.withOpacity(0.05),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.all(12),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'LESSON FORMAT',
+                      style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: selectedFormatId,
+                          dropdownColor: AppTheme.surface,
+                          isExpanded: true,
+                          icon: const Icon(Icons.arrow_drop_down, color: Colors.white54),
+                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                          items: widget.book.lessonFormats.map((f) {
+                            return DropdownMenuItem<String>(
+                              value: f.id,
+                              child: Text('${f.name} (${f.description})'),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                selectedFormatId = val;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        const Text(
+                          'Generate diagrams',
+                          style: TextStyle(color: Colors.white70, fontSize: 14),
+                        ),
+                        const Spacer(),
+                        Switch(
+                          value: generateGraphics,
+                          activeColor: AppTheme.duoBlue,
+                          onChanged: (val) {
+                            setState(() {
+                              generateGraphics = val;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(ctx, {
+                      'customPrompt': customPromptController.text,
+                      'newFormatId': selectedFormatId,
+                      'generateGraphics': generateGraphics,
+                    });
+                  },
+                  child: const Text(
+                    'Regenerate',
+                    style: TextStyle(color: AppTheme.duoOrange, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
-    if (wantsGraphics == null) return;
+
+    if (result == null) return;
     if (!mounted) return;
+
+    final String customPrompt = result['customPrompt'] as String;
+    final String newFormatId = result['newFormatId'] as String;
+    final bool genGraphics = result['generateGraphics'] as bool;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: AppTheme.surface,
@@ -210,13 +331,16 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
         duration: const Duration(seconds: 3),
       ),
     );
+
     GenerationManager.instance.regenerateLesson(
       book: widget.book,
       modIdx: modIdx,
       secIdx: secIdx,
       unitIdx: unitIdx,
       lessonIdx: lessonIdx,
-      generateGraphics: wantsGraphics,
+      generateGraphics: genGraphics,
+      customPrompt: customPrompt.trim().isEmpty ? null : customPrompt.trim(),
+      newFormatId: newFormatId,
       errorSink: (msg) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -299,7 +423,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: AppTheme.surface,
-        content: Text(scheduled ? 'Lesson generation scheduled!' : 'Lesson generation queued!'),
+        content: Text(
+          scheduled ? 'Lesson generation scheduled!' : 'Lesson generation queued!',
+          style: const TextStyle(color: Colors.white),
+        ),
       ),
     );
   }
@@ -824,6 +951,16 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
           icon: LucideIcons.bookmark,
           color: AppTheme.duoViolet,
           items: [
+            _MenuActionItem(
+              icon: LucideIcons.plusCircle,
+              title: 'Create Lesson',
+              subtitle: 'Manually create a custom lesson under this unit',
+              iconColor: AppTheme.duoBlue,
+              onTap: () {
+                Navigator.pop(ctx);
+                _showCreateCustomLessonDialog(modIdx, secIdx, unitIdx, unit);
+              },
+            ),
             if (incompleteCount > 0)
               _MenuActionItem(
                 icon: LucideIcons.checkCircle,
@@ -864,6 +1001,289 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
           ],
         );
       },
+    );
+  }
+
+  Future<void> _showCreateCustomLessonDialog(
+    int modIdx,
+    int secIdx,
+    int unitIdx,
+    Unit unit,
+  ) async {
+    final promptController = TextEditingController();
+    final List<File> selectedFiles = [];
+    LessonFormat? selectedFormat = widget.book.lessonFormats.isNotEmpty ? widget.book.lessonFormats.first : null;
+
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: AppTheme.surface,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              title: const Text(
+                'Create Custom Lesson',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'LESSON INSTRUCTIONS & TOPIC',
+                      style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: promptController,
+                      maxLines: 3,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: 'What should this custom lesson cover?',
+                        hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
+                        filled: true,
+                        fillColor: Colors.white.withOpacity(0.05),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.all(12),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'REFERENCE FILES (PDF/IMAGES)',
+                      style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            selectedFiles.isEmpty
+                                ? 'No files selected'
+                                : '${selectedFiles.length} file(s) added',
+                            style: TextStyle(
+                              color: selectedFiles.isEmpty ? Colors.white38 : AppTheme.duoGreen,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: () async {
+                            final pickerResult = await FilePicker.platform.pickFiles(
+                              type: FileType.custom,
+                              allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
+                              allowMultiple: true,
+                            );
+                            if (pickerResult != null) {
+                              setState(() {
+                                final newFiles = pickerResult.paths
+                                    .where((p) => p != null)
+                                    .map((p) => File(p!))
+                                    .toList();
+                                selectedFiles.addAll(newFiles);
+                              });
+                            }
+                          },
+                          icon: const Icon(LucideIcons.paperclip, size: 16, color: AppTheme.duoBlue),
+                          label: const Text('Add', style: TextStyle(color: AppTheme.duoBlue)),
+                        ),
+                      ],
+                    ),
+                    if (selectedFiles.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        constraints: const BoxConstraints(maxHeight: 120),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.02),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: selectedFiles.length,
+                          itemBuilder: (context, idx) {
+                            final f = selectedFiles[idx];
+                            final name = f.path.split('/').last;
+                            return ListTile(
+                              dense: true,
+                              title: Text(name, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                              trailing: IconButton(
+                                icon: const Icon(LucideIcons.trash2, size: 14, color: AppTheme.duoRed),
+                                onPressed: () {
+                                  setState(() {
+                                    selectedFiles.removeAt(idx);
+                                  });
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    const Text(
+                      'SLIDES FORMAT',
+                      style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<LessonFormat>(
+                                value: selectedFormat,
+                                dropdownColor: AppTheme.surface,
+                                isExpanded: true,
+                                icon: const Icon(Icons.arrow_drop_down, color: Colors.white54),
+                                style: const TextStyle(color: Colors.white, fontSize: 13),
+                                items: widget.book.lessonFormats.map((f) {
+                                  return DropdownMenuItem<LessonFormat>(
+                                    value: f,
+                                    child: Text(f.name, overflow: TextOverflow.ellipsis),
+                                  );
+                                }).toList(),
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    setState(() {
+                                      selectedFormat = val;
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        TextButton.icon(
+                          onPressed: () async {
+                            final newFormat = LessonFormat(
+                              id: 'format-custom-${DateTime.now().millisecondsSinceEpoch}',
+                              name: 'Custom Format',
+                              description: 'Custom slide structure',
+                              slides: List.of(SlideTemplate.defaultTemplate),
+                            );
+                            final edited = await Navigator.of(context).push<LessonFormat>(
+                              MaterialPageRoute(builder: (_) => FormatEditorScreen(format: newFormat)),
+                            );
+                            if (edited != null) {
+                              final base = widget.book;
+                              final updatedFormats = List<LessonFormat>.from(base.lessonFormats)..add(edited);
+                              final newBook = base.copyWith(lessonFormats: updatedFormats);
+                              await DatabaseService().saveGeneratedBook(newBook);
+                              widget.onBookUpdated(newBook);
+                              
+                              setState(() {
+                                selectedFormat = edited;
+                              });
+                            }
+                          },
+                          icon: const Icon(LucideIcons.plus, size: 16, color: AppTheme.duoBlue),
+                          label: const Text('New', style: TextStyle(color: AppTheme.duoBlue)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+                ),
+                TextButton(
+                  onPressed: () {
+                    final prompt = promptController.text.trim();
+                    if (prompt.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Please enter a lesson prompt.')),
+                      );
+                      return;
+                    }
+                    if (selectedFormat == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Please select a lesson format.')),
+                      );
+                      return;
+                    }
+                    Navigator.pop(ctx, {
+                      'prompt': prompt,
+                      'files': selectedFiles,
+                      'format': selectedFormat,
+                    });
+                  },
+                  child: const Text(
+                    'Create',
+                    style: TextStyle(color: AppTheme.duoGreen, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (result == null) return;
+    if (!mounted) return;
+
+    final String prompt = result['prompt'] as String;
+    final List<File> files = result['files'] as List<File>;
+    final LessonFormat format = result['format'] as LessonFormat;
+
+    final customLessonId = 'lesson_custom_${DateTime.now().millisecondsSinceEpoch}';
+
+    final customLesson = Lesson(
+      id: customLessonId,
+      title: 'Generating custom lesson...',
+      description: prompt,
+      icon: 'BookOpen',
+      slides: [],
+      formatId: format.id,
+    );
+
+    final base = (await DatabaseService().getBookFromCache(widget.book.id)) ?? widget.book;
+    final mods = List<Module>.from(base.modules);
+    final secs = List<Section>.from(mods[modIdx].sections);
+    final uns = List<Unit>.from(secs[secIdx].units);
+    final lessons = List<Lesson>.from(uns[unitIdx].lessons)..add(customLesson);
+    
+    uns[unitIdx] = uns[unitIdx].copyWith(
+      lessons: lessons,
+      isGenerated: true,
+    );
+    secs[secIdx] = secs[secIdx].copyWith(units: uns);
+    mods[modIdx] = mods[modIdx].copyWith(sections: secs);
+    final newBook = base.copyWith(modules: mods);
+
+    await DatabaseService().saveGeneratedBook(newBook);
+    widget.onBookUpdated(newBook);
+
+    await GenerationManager.instance.startCustomLessonGeneration(
+      book: newBook,
+      modIdx: modIdx,
+      secIdx: secIdx,
+      unitIdx: unitIdx,
+      prompt: prompt,
+      selectedFiles: files,
+      format: format,
+      lessonId: customLessonId,
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        backgroundColor: AppTheme.surface,
+        content: Text('Custom lesson queued with top priority...', style: TextStyle(color: Colors.white)),
+        duration: Duration(seconds: 3),
+      ),
     );
   }
 
@@ -980,7 +1400,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: AppTheme.surface,
-        content: Text(isScheduled ? 'Section generation scheduled!' : 'Section generation queued!'),
+        content: Text(
+          isScheduled ? 'Section generation scheduled!' : 'Section generation queued!',
+          style: const TextStyle(color: Colors.white),
+        ),
       ),
     );
   }
@@ -1099,7 +1522,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: AppTheme.surface,
-        content: Text(isScheduled ? 'Module generation scheduled!' : 'Module generation queued!'),
+        content: Text(
+          isScheduled ? 'Module generation scheduled!' : 'Module generation queued!',
+          style: const TextStyle(color: Colors.white),
+        ),
       ),
     );
   }

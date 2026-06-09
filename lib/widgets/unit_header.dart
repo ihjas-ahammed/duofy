@@ -119,7 +119,11 @@ class UnitHeader extends StatelessWidget {
                                   ),
                                   if (status == 'Queued' || status == 'queued') ...[
                                     const SizedBox(width: 12),
-                                    _ResumeIconButton(onPressed: onGenerate),
+                                    _ResumeIconButton(
+                                      onPressed: () {
+                                        GenerationManager.instance.setPaused(false);
+                                      },
+                                    ),
                                   ],
                                 ],
                               ))
@@ -128,22 +132,19 @@ class UnitHeader extends StatelessWidget {
                             // mid-run): some lessons were saved but the unit was
                             // never marked complete. Offer to pick up where it
                             // left off rather than silently restarting.
-                            ? Column(
+                            ? Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  Text(
-                                    'Generation was interrupted — ${unit.lessons.length} lesson${unit.lessons.length == 1 ? '' : 's'} saved.',
-                                    style: const TextStyle(color: AppTheme.duoOrange, fontWeight: FontWeight.bold, fontSize: 10),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: DuoButton(
-                                      text: 'Resume Generation',
-                                      color: AppTheme.duoViolet,
-                                      shadowColor: AppTheme.duoVioletDark,
-                                      onPressed: onGenerate,
+                                  Expanded(
+                                    child: RealProgressBar(
+                                      progress: unit.lessons.isEmpty ? 0.0 : (unit.lessons.length / (unit.lessons.length + 2)),
+                                      isCircular: false,
+                                      label: 'Interrupted — ${unit.lessons.length} lesson${unit.lessons.length == 1 ? '' : 's'} saved',
                                     ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  _ResumeIconButton(
+                                    onPressed: onGenerate,
                                   ),
                                 ],
                               )

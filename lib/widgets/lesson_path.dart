@@ -237,12 +237,16 @@ class _LessonPathState extends State<LessonPath> {
     for (int uIdx = 0; uIdx < widget.section.units.length; uIdx++) {
       final unit = widget.section.units[uIdx];
       final bool hasLessons = unit.lessons.isNotEmpty;
-      final bool generating = widget.loadingUnitStatuses.containsKey(unit.id);
+      final loading = widget.loadingUnitStatuses[unit.id];
+      final bool generating = loading != null;
       final bool fullyGenerated = unit.isGenerated && hasLessons;
+      final bool showPlaceholders = generating || (!unit.isGenerated && hasLessons);
+      final bool hasNodes = hasLessons || showPlaceholders;
+      
       // Use a tight gap when neither this nor the previous unit drew lesson
       // nodes, so a run of ungenerated unit headers stacks compactly.
       if (uIdx > 0) {
-        y += (prevUnitHadNodes || hasLessons) ? _interUnitGap : _interUnitGapUngenerated;
+        y += (prevUnitHadNodes || hasNodes) ? _interUnitGap : _interUnitGapUngenerated;
       }
 
       elements.add(_Element.header(unit: unit, unitIdx: uIdx, y: y));
@@ -252,26 +256,34 @@ class _LessonPathState extends State<LessonPath> {
 
       // Render lesson nodes for any lessons we have so far — this is what
       // makes streamed lessons appear one-by-one during generation.
-      if (hasLessons) {
-        for (int lIdx = 0; lIdx < unit.lessons.length; lIdx++) {
-          final lesson = unit.lessons[lIdx];
+      if (hasNodes) {
+        final int totalPlanned = showPlaceholders
+            ? (loading?.plannedLessonsCount ?? (unit.lessons.isNotEmpty ? unit.lessons.length + 3 : 4))
+            : unit.lessons.length;
+        for (int lIdx = 0; lIdx < totalPlanned; lIdx++) {
           double offset = 0;
           if (globalIdx % 4 == 1) offset = _zigOffset;
           if (globalIdx % 4 == 3) offset = -_zigOffset;
-
           final x = _centerX + offset;
-          points.add(_PathPoint(x: x, y: y, id: lesson.id));
-          elements.add(_Element.lesson(unit: unit, unitIdx: uIdx, lesson: lesson, lessonIdx: lIdx, x: x, y: y));
 
-          if (lesson.id == _lastLessonId) {
-            targetY = y;
+          if (lIdx < unit.lessons.length) {
+            final lesson = unit.lessons[lIdx];
+            points.add(_PathPoint(x: x, y: y, id: lesson.id));
+            elements.add(_Element.lesson(unit: unit, unitIdx: uIdx, lesson: lesson, lessonIdx: lIdx, x: x, y: y));
+            if (lesson.id == _lastLessonId) {
+              targetY = y;
+            }
+          } else {
+            final fakeLessonId = '${unit.id}-pending-$lIdx';
+            points.add(_PathPoint(x: x, y: y, id: fakeLessonId));
+            elements.add(_Element.placeholder(unit: unit, unitIdx: uIdx, lessonIdx: lIdx, x: x, y: y));
           }
 
           y += _nodeSpacing;
           globalIdx++;
         }
       }
-      prevUnitHadNodes = hasLessons;
+      prevUnitHadNodes = hasNodes;
     }
 
     _elements = elements;
@@ -351,6 +363,33 @@ class _LessonPathState extends State<LessonPath> {
                             onGenerate: () => widget.onGenerateUnit(unit, el.unitIdx!),
                             onClear: () => widget.onClearUnit(unit, el.unitIdx!),
                             book: widget.book,
+                          ),
+                        ),
+                      ));
+                      continue;
+                    }
+                    if (el.kind == _ElementKind.placeholder) {
+                      final fakeLesson = Lesson(
+                        id: '${el.unit!.id}-pending-${el.lessonIdx}',
+                        title: 'Lesson ${el.lessonIdx! + 1}',
+                        description: 'Planning Content...',
+                        icon: 'BookOpen',
+                        slides: const [],
+                      );
+                      const nodeSize = 80.0;
+                      lessonWidgets.add(Positioned(
+                        left: (el.x! * scaleX) - (nodeSize / 2),
+                        top: el.y - (nodeSize / 2),
+                        child: SizedBox(
+                          width: nodeSize,
+                          child: LessonNodeWidget(
+                            lesson: fakeLesson,
+                            isCompleted: false,
+                            isLocked: true,
+                            isActive: false,
+                            isNextToStart: false,
+                            sectionColorStr: widget.section.color,
+                            onTap: () {},
                           ),
                         ),
                       ));
@@ -447,7 +486,7 @@ class _PathPoint {
   _PathPoint({required this.x, required this.y, required this.id});
 }
 
-enum _ElementKind { header, lesson }
+enum _ElementKind { header, lesson, placeholder }
 
 class _Element {
   final _ElementKind kind;
@@ -472,6 +511,15 @@ class _Element {
     required double y,
   }) =>
       _Element._(kind: _ElementKind.lesson, unit: unit, unitIdx: unitIdx, lesson: lesson, lessonIdx: lessonIdx, x: x, y: y);
+
+  factory _Element.placeholder({
+    required Unit unit,
+    required int unitIdx,
+    required int lessonIdx,
+    required double x,
+    required double y,
+  }) =>
+      _Element._(kind: _ElementKind.placeholder, unit: unit, unitIdx: unitIdx, lessonIdx: lessonIdx, x: x, y: y);
 }
 
 class _PathConnectorPainter extends CustomPainter {

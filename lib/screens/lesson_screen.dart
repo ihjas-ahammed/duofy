@@ -1,9 +1,6 @@
-import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
-import 'source_pdf_upload_screen.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
@@ -101,6 +98,46 @@ class _LessonScreenState extends State<LessonScreen> {
     // Bookmark state + stamp last-opened time if this lesson is bookmarked.
     _loadBookmarkState();
     BookmarkService.markOpened(widget.lesson.id);
+    if (_canRegenerateCanvas) {
+      _triggerBackgroundCanvasGeneration();
+    }
+  }
+
+  void _triggerBackgroundCanvasGeneration() {
+    if (widget.book == null || widget.modIdx == null || widget.secIdx == null || widget.unitIdx == null || widget.lessonIdx == null) return;
+    
+    final book = widget.book!;
+    final modIdx = widget.modIdx!;
+    final secIdx = widget.secIdx!;
+    final unitIdx = widget.unitIdx!;
+    final lessonIdx = widget.lessonIdx!;
+    final lesson = _lesson;
+
+    // Trigger lesson canvas if prompt is present but SVG is empty
+    if ((lesson.canvasPrompt?.trim().isNotEmpty ?? false) && (lesson.canvasSvg?.trim().isEmpty ?? true)) {
+      GenerationManager.instance.regenerateLessonCanvas(
+        book: book,
+        modIdx: modIdx,
+        secIdx: secIdx,
+        unitIdx: unitIdx,
+        lessonIdx: lessonIdx,
+      );
+    }
+
+    // Trigger slide canvas for any slide that has a prompt but no SVG
+    for (int i = 0; i < lesson.slides.length; i++) {
+      final s = lesson.slides[i];
+      if ((s.canvasPrompt?.trim().isNotEmpty ?? false) && (s.canvasSvg?.trim().isEmpty ?? true)) {
+        GenerationManager.instance.regenerateSlideCanvas(
+          book: book,
+          modIdx: modIdx,
+          secIdx: secIdx,
+          unitIdx: unitIdx,
+          lessonIdx: lessonIdx,
+          slideIdx: i,
+        );
+      }
+    }
   }
 
   Future<void> _loadBookmarkState() async {
@@ -130,91 +167,7 @@ class _LessonScreenState extends State<LessonScreen> {
     );
   }
 
-  String? get _pdfPath {
-    if (widget.book == null || widget.modIdx == null || widget.secIdx == null || widget.unitIdx == null) return null;
-    try {
-      final sec = widget.book!.modules[widget.modIdx!].sections[widget.secIdx!];
-      final unit = sec.units[widget.unitIdx!];
-      return unit.pdfPath ?? sec.pdfPath;
-    } catch (_) {
-      return null;
-    }
-  }
 
-  bool get _isPdfMissing {
-    final path = _pdfPath;
-    if (path == null || path.isEmpty) return true;
-    return !File(path).existsSync();
-  }
-
-  void _onPdfPressed() {
-    if (!_isPdfMissing) {
-      final path = _pdfPath!;
-      final title = widget.book!.modules[widget.modIdx!].sections[widget.secIdx!].units[widget.unitIdx!].title;
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => Scaffold(
-            appBar: AppBar(
-              title: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-              backgroundColor: const Color(0xFF0B0F19),
-            ),
-            body: SfPdfViewer.file(File(path)),
-          ),
-        ),
-      );
-    } else {
-      _showMissingPdfDialog();
-    }
-  }
-
-  Future<void> _showMissingPdfDialog() async {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Row(
-          children: [
-            Icon(LucideIcons.fileWarning, color: AppTheme.duoOrange, size: 28),
-            SizedBox(width: 12),
-            Text(
-              'Missing Reference PDF',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-          ],
-        ),
-        content: const Text(
-          'The source PDF file for this unit is missing on this device. Would you like to select and restore the source PDF(s) to view it?',
-          style: TextStyle(color: Colors.white70, fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _openSourcePdfManagementScreen();
-            },
-            child: const Text(
-              'Restore PDF(s)',
-              style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _openSourcePdfManagementScreen() {
-    if (widget.book == null) return;
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => SourcePdfUploadScreen(book: widget.book!),
-      ),
-    );
-  }
 
   @override
   void dispose() {
@@ -260,6 +213,7 @@ class _LessonScreenState extends State<LessonScreen> {
             _currentIndex = _slideQueue.isEmpty ? 0 : _slideQueue.length - 1;
           }
         });
+        _triggerBackgroundCanvasGeneration();
       }
     } catch (_) {
       // Indices may be stale (book regenerated). Ignore — we keep showing
@@ -814,20 +768,6 @@ class _LessonScreenState extends State<LessonScreen> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      if (widget.book != null && !widget.book!.isGlobal)
-                        GestureDetector(
-                          onTap: _onPdfPressed,
-                          child: SizedBox(
-                            width: 40,
-                            height: 48,
-                            child: Icon(
-                              LucideIcons.fileText,
-                              color: _isPdfMissing ? AppTheme.duoOrange : AppTheme.duoBlue,
-                              size: 22,
-                            ),
-                          ),
-                        ),
-                      if (widget.book != null) const SizedBox(width: 8),
                       if (_canBookmark)
                         GestureDetector(
                           onTap: _toggleBookmark,
