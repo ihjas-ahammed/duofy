@@ -3,7 +3,6 @@ Make the following changes:
 
 
 
-- Redesign the start page based on the given screenshot
 
 
 Always append process and instructions on readme

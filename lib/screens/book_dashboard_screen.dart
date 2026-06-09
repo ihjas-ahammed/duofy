@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'source_pdf_upload_screen.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../services/generation_manager.dart';
@@ -348,6 +350,165 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     );
   }
 
+  bool _isSectionPdfMissing(Section sec) {
+    if (kIsWeb) return true;
+    final p = sec.pdfPath;
+    if (p == null || p.isEmpty) return true;
+    return !File(p).existsSync();
+  }
+
+  void _onSectionPdfPressed(Section sec) {
+    if (!_isSectionPdfMissing(sec)) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => Scaffold(
+            appBar: AppBar(
+              title: Text(sec.title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+              backgroundColor: const Color(0xFF0B0F19),
+            ),
+            body: SfPdfViewer.file(File(sec.pdfPath!)),
+          ),
+        ),
+      );
+    } else {
+      _showMissingPdfDialog();
+    }
+  }
+
+  void _showMissingPdfDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Row(
+          children: [
+            Icon(LucideIcons.fileWarning, color: AppTheme.duoOrange, size: 28),
+            SizedBox(width: 12),
+            Text(
+              'Missing Reference PDF',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+          ],
+        ),
+        content: const Text(
+          'The source PDF file for this section is missing on this device. Would you like to select and restore the source PDF(s) to view it?',
+          style: TextStyle(color: Colors.white70, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => SourcePdfUploadScreen(book: widget.book),
+                ),
+              );
+            },
+            child: const Text(
+              'Restore PDF(s)',
+              style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionPdfBar(Section sec) {
+    final isMissing = _isSectionPdfMissing(sec);
+    final hasSyllabus = widget.book.syllabusPath != null && widget.book.syllabusPath!.isNotEmpty;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: InkWell(
+              onTap: () => _onSectionPdfPressed(sec),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: (isMissing ? AppTheme.duoOrange : AppTheme.duoBlue).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: (isMissing ? AppTheme.duoOrange : AppTheme.duoBlue).withOpacity(0.35)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      isMissing ? LucideIcons.fileWarning : LucideIcons.fileText,
+                      size: 16,
+                      color: isMissing ? AppTheme.duoOrange : AppTheme.duoBlue,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      isMissing ? 'MISSING SECTION REFERENCE PDF' : 'VIEW SECTION REFERENCE PDF',
+                      style: TextStyle(
+                        color: isMissing ? AppTheme.duoOrange : AppTheme.duoBlue,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (hasSyllabus && File(widget.book.syllabusPath!).existsSync()) ...[
+            const SizedBox(width: 8),
+            InkWell(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => Scaffold(
+                      appBar: AppBar(
+                        title: Text('${widget.book.title} - Syllabus', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                        backgroundColor: const Color(0xFF0B0F19),
+                      ),
+                      body: SfPdfViewer.file(File(widget.book.syllabusPath!)),
+                    ),
+                  ),
+                );
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: AppTheme.duoGreen.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.duoGreen.withOpacity(0.35)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(LucideIcons.scroll, size: 16, color: AppTheme.duoGreen),
+                    SizedBox(width: 8),
+                    Text(
+                      'SYLLABUS',
+                      style: TextStyle(
+                        color: AppTheme.duoGreen,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.book.modules.isEmpty) {
@@ -399,6 +560,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         sectionManifestStatus: manifestTask,
                         completedLessons: _completedLessons,
                         hasMissingFiles: _hasMissingFiles,
+                        topHeader: _buildSectionPdfBar(activeSec),
                         onLessonFinished: () {
                           _loadProgress();
                           widget.onBookUpdated(widget.book);

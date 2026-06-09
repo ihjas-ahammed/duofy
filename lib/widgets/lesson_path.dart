@@ -43,6 +43,7 @@ class LessonPath extends StatefulWidget {
   /// [Section.unitFormatsConfirmed] true so lessons become reachable.
   final void Function(List<Unit> confirmedUnits)? onConfirmFormats;
   final bool hasMissingFiles;
+  final Widget? topHeader;
 
   const LessonPath({
     super.key,
@@ -61,6 +62,7 @@ class LessonPath extends StatefulWidget {
     this.onPlanManifest,
     this.onConfirmFormats,
     required this.hasMissingFiles,
+    this.topHeader,
   });
 
   @override
@@ -307,6 +309,10 @@ class _LessonPathState extends State<LessonPath> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (widget.topHeader != null) ...[
+                widget.topHeader!,
+                const SizedBox(height: 16),
+              ],
               if (widget.hasMissingFiles && !(widget.section.units.isNotEmpty && widget.section.units.every((u) => u.isGenerated))) ...[
                 MissingFilesBanner(book: widget.book),
                 const SizedBox(height: 20),
@@ -342,8 +348,6 @@ class _LessonPathState extends State<LessonPath> {
                             unit: unit,
                             isGenerated: isGenerated,
                             generationTask: loading,
-                            referencePdfPath: unitPdfPath,
-                            syllabusPdfPath: widget.book.syllabusPath,
                             onGenerate: () => widget.onGenerateUnit(unit, el.unitIdx!),
                             onClear: () => widget.onClearUnit(unit, el.unitIdx!),
                             book: widget.book,
