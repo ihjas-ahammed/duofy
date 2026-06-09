@@ -2,10 +2,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
 import 'global_state.dart';
 import 'learning_sync.dart';
+import 'fb/fb_auth.dart';
 
 class ProgressService {
-  static const String _completedKey = 'completed_lessons';
-  static const String _xpKey = 'user_xp';
+  /// Returns the current user's UID (or 'guest' when not signed in).
+  static String get _uid => FbAuth.instance.currentUser?.uid ?? 'guest';
+
+  /// Per-user SharedPreferences keys so switching accounts never pollutes
+  /// or resets another user's progress.
+  static String get _completedKey => 'completed_lessons_${_uid}';
+  static String get _xpKey => 'user_xp_${_uid}';
 
   /// Notifies listeners + backs up to the cloud after a completion change.
   /// Called by every mutation so the UI refreshes and cloud stays in sync.
@@ -17,6 +23,7 @@ class ProgressService {
 
   static Future<List<String>> getCompletedLessons() async {
     final prefs = await SharedPreferences.getInstance();
+    await LearningSync.migrateLegacyKeys(prefs);
     return prefs.getStringList(_completedKey) ?? [];
   }
 
@@ -41,6 +48,22 @@ class ProgressService {
       int newXp = currentXp + xpGained;
       await prefs.setInt(_xpKey, newXp);
       GlobalState.xpNotifier.value = newXp;
+      _onProgressChanged();
+    }
+  }
+
+  static Future<void> markLessonsCompletedSilent(List<String> lessonIds) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> completed = prefs.getStringList(_completedKey) ?? [];
+    bool changed = false;
+    for (var id in lessonIds) {
+      if (!completed.contains(id)) {
+        completed.add(id);
+        changed = true;
+      }
+    }
+    if (changed) {
+      await prefs.setStringList(_completedKey, completed);
       _onProgressChanged();
     }
   }
@@ -72,7 +95,10 @@ class ProgressService {
 
   static Future<int> getXp() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_xpKey) ?? 0;
+    await LearningSync.migrateLegacyKeys(prefs);
+    final currentXp = prefs.getInt(_xpKey) ?? 0;
+    GlobalState.xpNotifier.value = currentXp;
+    return currentXp;
   }
 
   static Future<double> getBookProgress(Book book) async {

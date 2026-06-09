@@ -1322,11 +1322,16 @@ class GenerationManager extends ChangeNotifier {
           if (!await bookDir.exists()) {
             await bookDir.create(recursive: true);
           }
-          final f = task.syllabusFiles.first;
-          if (await f.exists()) {
-            final ext = f.path.split('.').last;
+          File finalSyllabusFile;
+          if (task.syllabusFiles.length == 1) {
+            finalSyllabusFile = task.syllabusFiles.first;
+          } else {
+            finalSyllabusFile = await _pdfService.mergeFiles(task.syllabusFiles);
+          }
+          if (await finalSyllabusFile.exists()) {
+            final ext = finalSyllabusFile.path.split('.').last;
             final targetPath = '$bookDirPath/syllabus.$ext';
-            await f.copy(targetPath);
+            await finalSyllabusFile.copy(targetPath);
             finalBook = completeBook.copyWith(syllabusPath: targetPath);
           }
         } catch (e) {

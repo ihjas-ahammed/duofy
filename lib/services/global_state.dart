@@ -29,7 +29,7 @@ class GlobalState {
     final prefs = await SharedPreferences.getInstance();
     final newXp = xpNotifier.value + amount;
     xpNotifier.value = newXp;
-    await prefs.setInt('user_xp', newXp);
+    await prefs.setInt(LearningSync.xpKey, newXp);
     // Back up XP to the cloud (no-op when cloud sync is disabled).
     LearningSync.push();
   }

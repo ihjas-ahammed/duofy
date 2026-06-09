@@ -89,28 +89,12 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
     Future.microtask(() async {
       try {
         final pdfService = PdfService();
-        File? finalSourcePdf;
-        if (_mode == GenerationMode.handout) {
-          if (_selectedFiles.length == 1 && _selectedFiles.first.path.toLowerCase().endsWith('.pdf')) {
-            finalSourcePdf = _selectedFiles.first;
-          } else {
-            finalSourcePdf = await pdfService.mergeFiles(_selectedFiles);
-          }
-        }
-
-        List<File> finalSyllabusFiles = [];
-        if (_mode == GenerationMode.course && _syllabusFiles.isNotEmpty) {
-          if (_syllabusFiles.length == 1 && _syllabusFiles.first.path.toLowerCase().endsWith('.pdf')) {
-            finalSyllabusFiles = [_syllabusFiles.first];
-          } else {
-            finalSyllabusFiles = [await pdfService.mergeFiles(_syllabusFiles)];
-          }
-        }
+        final List<File> finalSyllabusFiles = _syllabusFiles;
 
         if (!mounted) return;
         Navigator.of(context).pop(); // dismiss loading dialog
 
-        final firstPdf = _mode == GenerationMode.handout ? finalSourcePdf! : _selectedFiles.first;
+        final firstPdf = _selectedFiles.first;
         final filename = firstPdf.path.split(RegExp(r'[\\/]')).last;
 
         final hasBookmarks = await pdfService.hasBookmarks(firstPdf);
@@ -143,7 +127,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
         if (useBookmarks && mounted) {
           final bookmarks = await pdfService.extractBookmarks(firstPdf);
           final mappedBook = pdfService.mapBookmarksToBook(bookmarks, filename, firstPdf);
-          final sourceList = _mode == GenerationMode.handout ? [finalSourcePdf!] : _selectedFiles;
+          final sourceList = _selectedFiles;
           
           await GenerationManager.instance.startBookGenerationFromBookmarks(sourceList, filename, mappedBook);
           
@@ -159,14 +143,16 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
           }
         } else {
           final customPrompt = _customPromptController.text.trim();
-          if (_indexMode == IndexMode.manual || _indexMode == IndexMode.chapters) {
+          if (_mode == GenerationMode.handout) {
+            _showHandoutPrompt(_selectedFiles, filename);
+          } else if (_indexMode == IndexMode.manual || _indexMode == IndexMode.chapters) {
             Navigator.of(context).push(MaterialPageRoute(
               builder: (_) => IndexPickerScreen(
                 sourcePdf: firstPdf,
                 filename: filename,
                 syllabusFiles: finalSyllabusFiles,
                 isCourse: _mode == GenerationMode.course,
-                allSourcePdfs: _mode == GenerationMode.handout ? [finalSourcePdf!] : _selectedFiles,
+                allSourcePdfs: _selectedFiles,
                 currentPdfIndex: 0,
                 collectedIndexPages: const [],
                 collectedChapter1StartPages: const [],
@@ -183,7 +169,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                 filename: filename,
                 syllabusFiles: finalSyllabusFiles,
                 isCourse: _mode == GenerationMode.course,
-                allSourcePdfs: _mode == GenerationMode.handout ? [finalSourcePdf!] : _selectedFiles,
+                allSourcePdfs: _selectedFiles,
                 currentPdfIndex: 0,
                 collectedIndexPages: const [],
                 collectedChapter1StartPages: const [],
@@ -203,7 +189,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
     });
   }
 
-  void _showHandoutPrompt(File finalSourcePdf, String filename) {
+  void _showHandoutPrompt(List<File> selectedFiles, String filename) {
     final TextEditingController instructionsCtrl = TextEditingController();
     showDialog(
       context: context,
@@ -230,9 +216,9 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
             onPressed: () {
               Navigator.of(ctx).pop();
               GenerationManager.instance.startBookGeneration(
-                [finalSourcePdf],
+                selectedFiles,
                 filename,
-                indexFiles: [finalSourcePdf],
+                indexFiles: selectedFiles,
                 chapter1AbsolutePages: const [1],
                 customInstructions: instructionsCtrl.text.trim().isEmpty ? null : instructionsCtrl.text.trim(),
                 isHandout: true,

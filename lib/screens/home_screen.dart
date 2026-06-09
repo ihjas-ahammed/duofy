@@ -206,12 +206,46 @@ class _HomeScreenState extends State<HomeScreen> {
   void _downloadGlobalBook(Book globalBook) async {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Downloading ${globalBook.title}...')));
     
+    final newId = 'dl_${DateTime.now().millisecondsSinceEpoch}';
     final newBook = globalBook.copyWith(
-      id: 'dl_${DateTime.now().millisecondsSinceEpoch}',
+      id: newId,
       isGlobal: false,
     );
     
     await _db.saveGeneratedBook(newBook);
+
+    try {
+      final oldBookId = globalBook.id;
+      final completed = await ProgressService.getCompletedLessons();
+      final List<String> newCompletedToMark = [];
+
+      for (var m in globalBook.modules) {
+        for (var s in m.sections) {
+          for (var u in s.units) {
+            for (var l in u.lessons) {
+              if (completed.contains(l.id)) {
+                String newLessonId;
+                if (l.id.startsWith('${newId}_')) {
+                  newLessonId = l.id;
+                } else if (l.id.startsWith('${oldBookId}_')) {
+                  newLessonId = l.id.replaceFirst('${oldBookId}_', '${newId}_');
+                } else {
+                  newLessonId = '${newId}_${l.id}';
+                }
+                newCompletedToMark.add(newLessonId);
+              }
+            }
+          }
+        }
+      }
+
+      if (newCompletedToMark.isNotEmpty) {
+        await ProgressService.markLessonsCompletedSilent(newCompletedToMark);
+      }
+    } catch (e) {
+      print("[HomeScreen] Error mapping downloaded book progress: $e");
+    }
+    
     await _loadAllData(force: false);
     
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved to your library!')));

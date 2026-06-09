@@ -1,5 +1,8 @@
 Make the following changes:
 
+- In lesson screen, show the PDF button even if file is missing, actually show a dialog to choose SOURCE PDF(s) if the file is missing also give a new screen for that and also make sure it supports multifile like if the course is made of more than one file, that should work too
+
+- Redesign the start page based on the given screenshot
 
 
 Always append process and instructions on readme

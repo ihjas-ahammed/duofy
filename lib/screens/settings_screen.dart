@@ -995,6 +995,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Navigator.pop(context);
                     await FbAuth.instance.signOut();
                     GlobalState.isGuestNotifier.value = false;
+                    GlobalState.xpNotifier.value = 0;
                   },
                   color: AppTheme.duoRed,
                   shadowColor: AppTheme.duoRedDark,

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'database_service.dart';
 import 'global_state.dart';
+import 'fb/fb_auth.dart';
 
 /// Central place that mirrors the device's **learning state** (completed
 /// lessons, XP and bookmarks) to/from the cloud learning doc.
@@ -11,12 +12,18 @@ import 'global_state.dart';
 /// the user is a guest. ProgressService and BookmarkService both call [push]
 /// after a local change so any one of them keeps the whole doc current.
 class LearningSync {
-  // Shared SharedPreferences keys (kept in sync with ProgressService /
-  // BookmarkService so this file can read them without importing those and
-  // creating an import cycle).
-  static const String completedKey = 'completed_lessons';
-  static const String xpKey = 'user_xp';
+  /// Current user UID (mirrors ProgressService._uid).
+  static String get _uid => FbAuth.instance.currentUser?.uid ?? 'guest';
+
+  // Per-user SharedPreferences keys — scoped by UID so switching accounts
+  // never pollutes or resets another user's progress.
+  static String get completedKey => 'completed_lessons_${_uid}';
+  static String get xpKey => 'user_xp_${_uid}';
   static const String bookmarksKey = 'bookmarks';
+
+  // Legacy unscoped keys — used only for one-time migration.
+  static const String _legacyCompletedKey = 'completed_lessons';
+  static const String _legacyXpKey = 'user_xp';
 
   /// Background push of the full learning state. Fire-and-forget — callers
   /// don't await the network.
@@ -44,27 +51,39 @@ class LearningSync {
     final db = DatabaseService();
     if (db.uid == 'guest') return false;
     if (!await db.isCloudEnabled()) return false;
+
+    final prefs = await SharedPreferences.getInstance();
+
+    // One-time migration: move unscoped legacy keys into the per-user keys
+    // so existing users don't lose their progress after this update.
+    await migrateLegacyKeys(prefs);
+
     final remote = await db.fetchLearningState();
     if (remote == null) return false;
 
-    final prefs = await SharedPreferences.getInstance();
     bool changed = false;
 
-    // Completed lessons — union.
+    // Completed lessons — union (detect ANY difference, not just remote-ahead).
     final localCompleted = (prefs.getStringList(completedKey) ?? const <String>[]).toSet();
     final remoteCompleted = List<String>.from(remote['completedLessons'] ?? const []).toSet();
-    if (!remoteCompleted.every(localCompleted.contains)) {
-      final merged = {...localCompleted, ...remoteCompleted}.toList();
-      await prefs.setStringList(completedKey, merged);
+    final mergedCompleted = {...localCompleted, ...remoteCompleted};
+    if (mergedCompleted.length != localCompleted.length ||
+        mergedCompleted.length != remoteCompleted.length) {
+      await prefs.setStringList(completedKey, mergedCompleted.toList());
       changed = true;
     }
 
-    // XP — keep the higher value.
+    // XP — keep the higher value and always push back so the cloud stays
+    // current even when local is ahead.
     final localXp = prefs.getInt(xpKey) ?? 0;
     final remoteXp = (remote['xp'] as int?) ?? 0;
-    if (remoteXp > localXp) {
-      await prefs.setInt(xpKey, remoteXp);
-      GlobalState.xpNotifier.value = remoteXp;
+    final bestXp = localXp > remoteXp ? localXp : remoteXp;
+    GlobalState.xpNotifier.value = bestXp;
+    if (bestXp != localXp) {
+      await prefs.setInt(xpKey, bestXp);
+      changed = true;
+    } else if (bestXp != remoteXp) {
+      // Local is ahead — still need to push (handled by `changed` flag below).
       changed = true;
     }
 
@@ -105,6 +124,35 @@ class LearningSync {
       await push();
     }
     return changed;
+  }
+
+  /// One-time migration: move unscoped legacy keys into the per-user keys
+  /// so existing users don't lose their progress after this update.
+  static Future<void> migrateLegacyKeys(SharedPreferences prefs) async {
+    final uid = _uid;
+    if (uid == 'guest') return;
+
+    // completed_lessons -> completed_lessons_<uid>
+    if (prefs.containsKey(_legacyCompletedKey)) {
+      final legacyList = prefs.getStringList(_legacyCompletedKey) ?? [];
+      if (legacyList.isNotEmpty) {
+        final currentList = prefs.getStringList(completedKey) ?? [];
+        final merged = {...currentList, ...legacyList}.toList();
+        await prefs.setStringList(completedKey, merged);
+      }
+      await prefs.remove(_legacyCompletedKey);
+    }
+
+    // user_xp -> user_xp_<uid>
+    if (prefs.containsKey(_legacyXpKey)) {
+      final legacyXp = prefs.getInt(_legacyXpKey) ?? 0;
+      if (legacyXp > 0) {
+        final currentXp = prefs.getInt(xpKey) ?? 0;
+        final bestXp = legacyXp > currentXp ? legacyXp : currentXp;
+        await prefs.setInt(xpKey, bestXp);
+      }
+      await prefs.remove(_legacyXpKey);
+    }
   }
 
   static List<Map<String, dynamic>> decodeBookmarks(String? raw) {

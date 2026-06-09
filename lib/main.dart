@@ -8,6 +8,7 @@ import 'services/notification_service.dart';
 import 'screens/auth_gate.dart';
 import 'screens/settings_screen.dart';
 import 'screens/book_route_loader_screen.dart';
+import 'services/learning_sync.dart';
 
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
@@ -239,7 +240,7 @@ void main() async {
   try {
     // Initialize shared prefs and load global XP early
     final prefs = await SharedPreferences.getInstance();
-    GlobalState.xpNotifier.value = prefs.getInt('user_xp') ?? 0;
+    GlobalState.xpNotifier.value = prefs.getInt(LearningSync.xpKey) ?? 0;
 
     // Restore the guest-mode choice so desktop users who continued as a guest
     // aren't bounced to the login screen (and away from their guest library)
@@ -326,8 +327,8 @@ class DuoFyApp extends StatelessWidget {
       },
       builder: (context, child) {
         return Shortcuts(
-          shortcuts: <LogicalKeySet, Intent>{
-            LogicalKeySet(LogicalKeyboardKey.escape): const PopIntent(),
+          shortcuts: <ShortcutActivator, Intent>{
+            const SingleActivator(LogicalKeyboardKey.escape): const PopIntent(),
           },
           child: Actions(
             actions: <Type, Action<Intent>>{
