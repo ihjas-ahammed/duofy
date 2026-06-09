@@ -41,9 +41,9 @@ class UnitHeader extends StatelessWidget {
           filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.6),
+              color: Colors.white.withOpacity(0.03),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.1)),
+              border: Border.all(color: Colors.white.withOpacity(0.08)),
               boxShadow: [
                 BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 30, offset: const Offset(0, 8)),
               ],
@@ -59,19 +59,6 @@ class UnitHeader extends StatelessWidget {
                     fontSize: 14,
                     color: Colors.white,
                     letterSpacing: -0.2,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  unit.description.toUpperCase(),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 10,
-                    color: Color(0xFF94A3B8),
-                    letterSpacing: 1.4,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 2,
@@ -157,25 +144,6 @@ class UnitHeader extends StatelessWidget {
                                   onPressed: onGenerate,
                                 ),
                               )),
-                  )
-                else
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: GestureDetector(
-                      onTap: onClear,
-                      behavior: HitTestBehavior.opaque,
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(LucideIcons.refreshCcw, size: 12, color: AppTheme.duoOrange),
-                          SizedBox(width: 4),
-                          Text(
-                            'Delete Unit',
-                            style: TextStyle(color: AppTheme.duoOrange, fontSize: 10, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
                   ),
               ],
             ),

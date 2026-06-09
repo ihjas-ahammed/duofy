@@ -160,16 +160,21 @@ class _LessonPathState extends State<LessonPath> {
   }
 
   static const double _pathWidth = 400;
-  static const double _centerX = 200;
-  static const double _zigOffset = 65;
+  static const double _centerX = 60;
+  static const double _zigOffset = 0;
   // Header height varies: when the unit is not yet generated the header shows
   // a tall "Generate Unit" button (~155px); once generated it collapses to a
   // shorter glass panel (~120px). Reserve enough space below it so the first
   // lesson node never collides with the title.
-  static const double _headerHeightGenerated = 190;
-  static const double _headerHeightNeedsGen = 250;
-  static const double _nodeSpacing = 155;
-  static const double _interUnitGap = 70;
+  static const double _headerHeightGenerated = 116;
+  static const double _headerHeightFirstUnit = 130;
+  static const double _headerHeightNeedsGen = 170;
+  static const double _nodeSpacing = 80;
+  static const double _interUnitGap = 60;
+  // Y-offset from the header element's y to the bottom of the visible header
+  // panel, used to place the stem path-point so the connector line appears to
+  // emerge from the header.
+  static const double _headerStemOffset = 60;
   // Tighter gap used between consecutive units that have no lesson nodes yet
   // (not generated). Without this, ungenerated unit headers float far apart
   // because the full node-spacing slot is reserved even though nothing is
@@ -250,13 +255,23 @@ class _LessonPathState extends State<LessonPath> {
       }
 
       elements.add(_Element.header(unit: unit, unitIdx: uIdx, y: y));
+      final double headerY = y; // remember for stem point
       // While generating (even with some lessons already streamed in) the
       // header still shows a progress bar, so keep the taller slot reserved.
-      y += (fullyGenerated && !generating) ? _headerHeightGenerated : _headerHeightNeedsGen;
+      if (fullyGenerated && !generating) {
+        y += (uIdx == 0) ? _headerHeightFirstUnit : _headerHeightGenerated;
+      } else {
+        y += _headerHeightNeedsGen;
+      }
 
       // Render lesson nodes for any lessons we have so far — this is what
       // makes streamed lessons appear one-by-one during generation.
       if (hasNodes) {
+        // Add a stem point at the bottom of the unit header so the connector
+        // line visually emerges from beneath the header panel.
+        final stemY = headerY + _headerStemOffset;
+        points.add(_PathPoint(x: _centerX, y: stemY, id: '__stem_${unit.id}'));
+
         final int totalPlanned = showPlaceholders
             ? (loading?.plannedLessonsCount ?? (unit.lessons.isNotEmpty ? unit.lessons.length + 3 : 4))
             : unit.lessons.length;
@@ -265,21 +280,39 @@ class _LessonPathState extends State<LessonPath> {
           if (globalIdx % 4 == 1) offset = _zigOffset;
           if (globalIdx % 4 == 3) offset = -_zigOffset;
           final x = _centerX + offset;
+          const bool textOnRight = true;
 
           if (lIdx < unit.lessons.length) {
             final lesson = unit.lessons[lIdx];
             points.add(_PathPoint(x: x, y: y, id: lesson.id));
-            elements.add(_Element.lesson(unit: unit, unitIdx: uIdx, lesson: lesson, lessonIdx: lIdx, x: x, y: y));
+            elements.add(_Element.lesson(
+              unit: unit,
+              unitIdx: uIdx,
+              lesson: lesson,
+              lessonIdx: lIdx,
+              x: x,
+              y: y,
+              textOnRight: textOnRight,
+            ));
             if (lesson.id == _lastLessonId) {
               targetY = y;
             }
           } else {
             final fakeLessonId = '${unit.id}-pending-$lIdx';
             points.add(_PathPoint(x: x, y: y, id: fakeLessonId));
-            elements.add(_Element.placeholder(unit: unit, unitIdx: uIdx, lessonIdx: lIdx, x: x, y: y));
+            elements.add(_Element.placeholder(
+              unit: unit,
+              unitIdx: uIdx,
+              lessonIdx: lIdx,
+              x: x,
+              y: y,
+              textOnRight: textOnRight,
+            ));
           }
 
-          y += _nodeSpacing;
+          if (lIdx < totalPlanned - 1) {
+            y += _nodeSpacing;
+          }
           globalIdx++;
         }
       }
@@ -347,7 +380,6 @@ class _LessonPathState extends State<LessonPath> {
                       final unit = el.unit!;
                       final loading = widget.loadingUnitStatuses[unit.id];
                       final isGenerated = unit.isGenerated && unit.lessons.isNotEmpty;
-                      final unitPdfPath = unit.pdfPath ?? widget.section.pdfPath;
                       headerWidgets.add(Positioned(
                         left: 16,
                         right: 16,
@@ -376,12 +408,13 @@ class _LessonPathState extends State<LessonPath> {
                         icon: 'BookOpen',
                         slides: const [],
                       );
-                      const nodeSize = 80.0;
+                      final nodeSize = LessonNodeWidget.nodeSize;
+                      final leftPos = (el.x! * scaleX) - (nodeSize / 2);
                       lessonWidgets.add(Positioned(
-                        left: (el.x! * scaleX) - (nodeSize / 2),
+                        left: leftPos,
                         top: el.y - (nodeSize / 2),
                         child: SizedBox(
-                          width: nodeSize,
+                          width: width - leftPos,
                           child: LessonNodeWidget(
                             lesson: fakeLesson,
                             isCompleted: false,
@@ -390,6 +423,7 @@ class _LessonPathState extends State<LessonPath> {
                             isNextToStart: false,
                             sectionColorStr: widget.section.color,
                             onTap: () {},
+                            textOnRight: el.textOnRight ?? true,
                           ),
                         ),
                       ));
@@ -400,12 +434,13 @@ class _LessonPathState extends State<LessonPath> {
                     final isUnlocked = unlocked.contains(lesson.id);
                     final isActive = isUnlocked && !isCompleted;
                     final isLocked = !isCompleted && !isUnlocked;
-                    const nodeSize = 80.0;
+                    final nodeSize = LessonNodeWidget.nodeSize;
+                    final leftPos = (el.x! * scaleX) - (nodeSize / 2);
                     lessonWidgets.add(Positioned(
-                      left: (el.x! * scaleX) - (nodeSize / 2),
+                      left: leftPos,
                       top: el.y - (nodeSize / 2),
                       child: SizedBox(
-                        width: nodeSize,
+                        width: width - leftPos,
                         child: LessonNodeWidget(
                           lesson: lesson,
                           isCompleted: isCompleted,
@@ -439,6 +474,7 @@ class _LessonPathState extends State<LessonPath> {
                               widget.onLessonFinished();
                             }
                           },
+                          textOnRight: el.textOnRight ?? true,
                         ),
                       ),
                     ));
@@ -496,8 +532,18 @@ class _Element {
   final int? lessonIdx;
   final double? x;
   final double y;
+  final bool? textOnRight;
 
-  _Element._({required this.kind, required this.y, this.unit, this.unitIdx, this.lesson, this.lessonIdx, this.x});
+  _Element._({
+    required this.kind,
+    required this.y,
+    this.unit,
+    this.unitIdx,
+    this.lesson,
+    this.lessonIdx,
+    this.x,
+    this.textOnRight,
+  });
 
   factory _Element.header({required Unit unit, required int unitIdx, required double y}) =>
       _Element._(kind: _ElementKind.header, unit: unit, unitIdx: unitIdx, y: y);
@@ -509,8 +555,18 @@ class _Element {
     required int lessonIdx,
     required double x,
     required double y,
+    required bool textOnRight,
   }) =>
-      _Element._(kind: _ElementKind.lesson, unit: unit, unitIdx: unitIdx, lesson: lesson, lessonIdx: lessonIdx, x: x, y: y);
+      _Element._(
+        kind: _ElementKind.lesson,
+        unit: unit,
+        unitIdx: unitIdx,
+        lesson: lesson,
+        lessonIdx: lessonIdx,
+        x: x,
+        y: y,
+        textOnRight: textOnRight,
+      );
 
   factory _Element.placeholder({
     required Unit unit,
@@ -518,8 +574,17 @@ class _Element {
     required int lessonIdx,
     required double x,
     required double y,
+    required bool textOnRight,
   }) =>
-      _Element._(kind: _ElementKind.placeholder, unit: unit, unitIdx: unitIdx, lessonIdx: lessonIdx, x: x, y: y);
+      _Element._(
+        kind: _ElementKind.placeholder,
+        unit: unit,
+        unitIdx: unitIdx,
+        lessonIdx: lessonIdx,
+        x: x,
+        y: y,
+        textOnRight: textOnRight,
+      );
 }
 
 class _PathConnectorPainter extends CustomPainter {
@@ -543,9 +608,9 @@ class _PathConnectorPainter extends CustomPainter {
   Path _segment(_PathPoint a, _PathPoint b) {
     final ax = a.x * scaleX;
     final bx = b.x * scaleX;
-    final cy = (a.y + b.y) / 2;
-    final p = Path()..moveTo(ax, a.y);
-    p.cubicTo(ax, cy, bx, cy, bx, b.y);
+    final p = Path()
+      ..moveTo(ax, a.y)
+      ..lineTo(bx, b.y);
     return p;
   }
 
@@ -567,13 +632,13 @@ class _PathConnectorPainter extends CustomPainter {
     for (int i = 0; i < points.length - 1; i++) {
       final p1 = points[i];
       final p2 = points[i + 1];
-      final p1Done = completed.contains(p1.id);
-      final p2Done = completed.contains(p2.id);
-      final p2Unlocked = unlocked.contains(p2.id);
+      final p1Done = p1.id.startsWith('__stem_') || completed.contains(p1.id);
+      final p2Done = p2.id.startsWith('__stem_') || completed.contains(p2.id);
+      final p2Unlocked = p2.id.startsWith('__stem_') || unlocked.contains(p2.id);
       final isActive = p1Done && (p2Done || p2Unlocked);
       if (!isActive) continue;
 
-      final stroke = (p1Done && p2Done) ? _amber : sectionColor;
+      final stroke = sectionColor;
       final paint = Paint()
         ..color = stroke
         ..style = PaintingStyle.stroke

@@ -236,9 +236,9 @@ class _NextNodePopState extends State<NextNodePop> with SingleTickerProviderStat
 ///   3. **Body** — bright disc with the icon. Sinks down onto the shadow when
 ///      pressed so the lip visually disappears.
 class LessonNodeWidget extends StatefulWidget {
-  static const double nodeSize = 80;
+  static const double nodeSize = 56;
   static const double labelTopGap = 14;
-  static const double labelWidth = 160;
+  static const double labelWidth = 260;
 
   final Lesson lesson;
   final bool isCompleted;
@@ -250,6 +250,7 @@ class LessonNodeWidget extends StatefulWidget {
   /// Long-press the node to surface destructive/maintenance actions
   /// (currently: regenerate this entire lesson). Null hides the affordance.
   final VoidCallback? onLongPress;
+  final bool textOnRight;
 
   const LessonNodeWidget({
     super.key,
@@ -261,6 +262,7 @@ class LessonNodeWidget extends StatefulWidget {
     required this.sectionColorStr,
     required this.onTap,
     this.onLongPress,
+    required this.textOnRight,
   });
 
   @override
@@ -271,7 +273,7 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget> with SingleTickerPr
   bool _isPressed = false;
   late AnimationController _glowCtrl;
 
-  static const double _depthOffset = 9;
+  static const double _depthOffset = 6;
 
   @override
   void initState() {
@@ -309,9 +311,6 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget> with SingleTickerPr
     if (widget.isLocked) {
       bgColor = const Color(0xFF334155);
       iconColor = const Color(0xFF64748B);
-    } else if (widget.isCompleted) {
-      bgColor = const Color(0xFFFBBF24);
-      iconColor = Colors.white;
     } else {
       bgColor = sectionColor;
       iconColor = Colors.white;
@@ -326,231 +325,290 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget> with SingleTickerPr
     // When pressed, it shifts to 0, covering the shadow.
     final double topFaceOffset = (_isPressed && !widget.isLocked) ? 0 : -_depthOffset;
 
-    return Stack(
-      clipBehavior: Clip.none,
-      alignment: Alignment.topCenter,
-      children: [
-        NextNodePop(
-          animate: widget.isNextToStart && !widget.isLocked,
-          child: GestureDetector(
-            onTapDown: (_) => setState(() => _isPressed = true),
-            onTapUp: (_) {
-              setState(() => _isPressed = false);
-              if (!widget.isLocked) widget.onTap();
-            },
-            onTapCancel: () => setState(() => _isPressed = false),
-            onLongPress: (widget.onLongPress != null && !widget.isLocked)
-                ? () {
-                    setState(() => _isPressed = false);
-                    widget.onLongPress!();
-                  }
-                : null,
-            child: SizedBox(
-              width: LessonNodeWidget.nodeSize,
-              height: LessonNodeWidget.nodeSize,
-              child: AnimatedBuilder(
-                animation: _glowCtrl,
-                builder: (context, _) {
-                  final t = Curves.easeInOut.transform(_glowCtrl.value);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final parentWidth = constraints.maxWidth;
+        final computedLabelWidth = parentWidth - LessonNodeWidget.nodeSize - 20 - 32;
+        final labelWidth = computedLabelWidth > 50 ? computedLabelWidth : 140.0;
 
-                  // GLOW dimensions / intensity depend on active state.
-                  final bool active = widget.isActive && !widget.isLocked;
-                  final double extra = active ? 14 + 8 * t : 10;
-                  final double glowSize = LessonNodeWidget.nodeSize + extra * 2;
-                  final Color glowColor = active ? bgColor : Colors.black;
-                  final double glowOpacity = active
-                      ? 0.35 + 0.30 * t
-                      : (widget.isLocked ? 0.20 : 0.35);
+        return Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.centerLeft,
+          children: [
+            NextNodePop(
+              animate: widget.isNextToStart && !widget.isLocked,
+              child: GestureDetector(
+                onTapDown: (_) => setState(() => _isPressed = true),
+                onTapUp: (_) {
+                  setState(() => _isPressed = false);
+                  if (!widget.isLocked) widget.onTap();
+                },
+                onTapCancel: () => setState(() => _isPressed = false),
+                onLongPress: (widget.onLongPress != null && !widget.isLocked)
+                    ? () {
+                        setState(() => _isPressed = false);
+                        widget.onLongPress!();
+                      }
+                    : null,
+                child: SizedBox(
+                  width: LessonNodeWidget.nodeSize,
+                  height: LessonNodeWidget.nodeSize,
+                  child: AnimatedBuilder(
+                    animation: _glowCtrl,
+                    builder: (context, _) {
+                      final t = Curves.easeInOut.transform(_glowCtrl.value);
 
-                  return Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      // 1. GLOW — circle behind everything.
-                      Positioned(
-                        left: -extra,
-                        top: -extra,
-                        width: glowSize,
-                        height: glowSize,
-                        child: IgnorePointer(
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [
-                                  glowColor.withOpacity(glowOpacity),
-                                  glowColor.withOpacity(0),
-                                ],
-                                stops: const [0.42, 1.0],
+                      // GLOW dimensions / intensity depend on active state.
+                      final bool active = widget.isActive && !widget.isLocked;
+                      final double extra = active ? 10 + 6 * t : 6;
+                      final double glowSize = LessonNodeWidget.nodeSize + extra * 2;
+                      final Color glowColor = active ? bgColor : Colors.black;
+                      final double glowOpacity = active
+                          ? 0.35 + 0.30 * t
+                          : (widget.isLocked ? 0.20 : 0.35);
+
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          // 1. GLOW — circle behind everything.
+                          Positioned(
+                            left: -extra,
+                            top: -extra,
+                            width: glowSize,
+                            height: glowSize,
+                            child: IgnorePointer(
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      glowColor.withOpacity(glowOpacity),
+                                      glowColor.withOpacity(0),
+                                    ],
+                                    stops: const [0.42, 1.0],
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ),
 
-                      // 2. The 3D Button Container
-                      Positioned(
-                        left: 0,
-                        top: 0,
-                        width: LessonNodeWidget.nodeSize,
-                        height: LessonNodeWidget.nodeSize,
-                        child: Container(
-                          clipBehavior: Clip.antiAlias,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                          ),
-                          child: Stack(
-                            children: [
-                              // Circle 1: Background
-                              Positioned.fill(
-                                child: Container(
-                                  color: bgColor,
-                                ),
+                          // 2. The 3D Button Container
+                          Positioned(
+                            left: 0,
+                            top: 0,
+                            width: LessonNodeWidget.nodeSize,
+                            height: LessonNodeWidget.nodeSize,
+                            child: Container(
+                              clipBehavior: Clip.antiAlias,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
                               ),
-                              
-                              // Circle 2: Transparent black for shadow effect
-                              Positioned.fill(
-                                child: Container(
-                                  color: Colors.black.withOpacity(0.2),
-                                ),
-                              ),
-
-                              // Circle 3: Top face
-                              AnimatedPositioned(
-                                duration: const Duration(milliseconds: 80),
-                                curve: Curves.easeOut,
-                                left: 0,
-                                top: topFaceOffset,
-                                width: LessonNodeWidget.nodeSize,
-                                height: LessonNodeWidget.nodeSize,
-                                child: DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: RadialGradient(
-                                      center: const Alignment(-0.2, -0.55),
-                                      radius: 0.95,
-                                      colors: [
-                                        Color.alphaBlend(highlightColor, bgColor),
-                                        bgColor,
-                                        Color.alphaBlend(rimShade, bgColor),
-                                      ],
-                                      stops: const [0.0, 0.55, 1.0],
+                              child: Stack(
+                                children: [
+                                  // Circle 1: Background
+                                  Positioned.fill(
+                                    child: Container(
+                                      color: bgColor,
                                     ),
                                   ),
-                                  child: Stack(
-                                    clipBehavior: Clip.none,
-                                    children: [
-                                      // glossy top sliver — sells the spherical feel
-                                      Positioned(
-                                        top: 6,
-                                        left: 14,
-                                        right: 14,
-                                        height: 14,
-                                        child: IgnorePointer(
-                                          child: DecoratedBox(
-                                            decoration: BoxDecoration(
-                                              borderRadius: BorderRadius.circular(40),
-                                              gradient: LinearGradient(
-                                                begin: Alignment.topCenter,
-                                                end: Alignment.bottomCenter,
-                                                colors: [
-                                                  Colors.white.withOpacity(widget.isLocked ? 0.10 : 0.28),
-                                                  Colors.white.withOpacity(0.0),
-                                                ],
+                                  
+                                  // Circle 2: Transparent black for shadow effect
+                                  Positioned.fill(
+                                    child: Container(
+                                      color: Colors.black.withOpacity(0.2),
+                                    ),
+                                  ),
+
+                                  // Circle 3: Top face
+                                  AnimatedPositioned(
+                                    duration: const Duration(milliseconds: 80),
+                                    curve: Curves.easeOut,
+                                    left: 0,
+                                    top: topFaceOffset,
+                                    width: LessonNodeWidget.nodeSize,
+                                    height: LessonNodeWidget.nodeSize,
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: RadialGradient(
+                                          center: const Alignment(-0.2, -0.55),
+                                          radius: 0.95,
+                                          colors: [
+                                            Color.alphaBlend(highlightColor, bgColor),
+                                            bgColor,
+                                            Color.alphaBlend(rimShade, bgColor),
+                                          ],
+                                          stops: const [0.0, 0.55, 1.0],
+                                        ),
+                                      ),
+                                      child: Stack(
+                                        clipBehavior: Clip.none,
+                                        children: [
+                                          // glossy top sliver — sells the spherical feel
+                                          Positioned(
+                                            top: 6,
+                                            left: 14,
+                                            right: 14,
+                                            height: 14,
+                                            child: IgnorePointer(
+                                              child: DecoratedBox(
+                                                decoration: BoxDecoration(
+                                                  borderRadius: BorderRadius.circular(40),
+                                                  gradient: LinearGradient(
+                                                    begin: Alignment.topCenter,
+                                                    end: Alignment.bottomCenter,
+                                                    colors: [
+                                                      Colors.white.withOpacity(widget.isLocked ? 0.10 : 0.28),
+                                                      Colors.white.withOpacity(0.0),
+                                                    ],
+                                                  ),
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        ),
+                                        ],
                                       ),
-                                    ],
+                                    ),
                                   ),
-                                ),
-                              ),
 
-                              // Icon perfectly centered in the overall node (both focus)
-                              Positioned.fill(
-                                child: Center(
-                                  child: Icon(
-                                    getIconData(widget.lesson.icon),
-                                    color: iconColor,
-                                    size: 34,
+                                  // Icon perfectly centered in the overall node (both focus)
+                                  Positioned.fill(
+                                    child: Center(
+                                      child: Icon(
+                                        getIconData(widget.lesson.icon),
+                                        color: iconColor,
+                                        size: 24,
+                                      ),
+                                    ),
                                   ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          // Completion badge — positioned at the top right of the perfect circle
+                          if (widget.isCompleted)
+                            Positioned(
+                              top: -2,
+                              right: -2,
+                              child: Container(
+                                padding: const EdgeInsets.all(3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF4ADE80),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: const Color(0xFF16A34A), width: 1.5),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.35),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 1.5),
+                                    ),
+                                  ],
                                 ),
+                                child: const Icon(LucideIcons.check, size: 11, color: Color(0xFF14532D)),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+            // Horizontal Connector Line with Chevron: (icon) -> (text)
+            Positioned(
+              left: widget.textOnRight ? LessonNodeWidget.nodeSize - 4 : null,
+              right: !widget.textOnRight ? LessonNodeWidget.nodeSize - 4 : null,
+              top: LessonNodeWidget.nodeSize / 2 - 10,
+              width: 28, // gap of 20px + 8px
+              height: 20,
+              child: Center(
+                child: Row(
+                  children: widget.textOnRight
+                      ? [
+                          Expanded(
+                            child: Container(
+                              height: 2,
+                              color: widget.isLocked ? const Color(0xFF475569) : sectionColor.withOpacity(0.5),
+                            ),
+                          ),
+                          Icon(
+                            Icons.chevron_right,
+                            size: 14,
+                            color: widget.isLocked ? const Color(0xFF475569) : sectionColor.withOpacity(0.8),
+                          ),
+                        ]
+                      : [
+                          Icon(
+                            Icons.chevron_left,
+                            size: 14,
+                            color: widget.isLocked ? const Color(0xFF475569) : sectionColor.withOpacity(0.8),
+                          ),
+                          Expanded(
+                            child: Container(
+                              height: 2,
+                              color: widget.isLocked ? const Color(0xFF475569) : sectionColor.withOpacity(0.5),
+                            ),
+                          ),
+                        ],
+                ),
+              ),
+            ),
+            // Title pill next to the icon
+            Positioned(
+              left: widget.textOnRight ? LessonNodeWidget.nodeSize + 20 : null,
+              right: !widget.textOnRight ? LessonNodeWidget.nodeSize + 20 : null,
+              top: 0,
+              bottom: 0,
+              width: labelWidth,
+              child: IgnorePointer(
+                child: Opacity(
+                  opacity: widget.isLocked ? 0.5 : 1.0,
+                  child: Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                        child: Container(
+                          width: labelWidth,
+                          height: 44,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.03),
+                            border: Border.all(color: Colors.white.withOpacity(0.08)),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.3),
+                                blurRadius: 30,
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
-                        ),
-                      ),
-
-                      // Crown badge — positioned at the top right of the perfect circle
-                      if (widget.isCompleted)
-                        Positioned(
-                          top: -4,
-                          right: -4,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFBBF24),
-                              shape: BoxShape.circle,
-                              border: Border.all(color: const Color(0xFFD97706), width: 2),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.35),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
+                          child: Center(
+                            child: Text(
+                              widget.lesson.title.toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFFE2E8F0),
+                                height: 1.15,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            child: const Icon(LucideIcons.crown, size: 14, color: Color(0xFF92400E)),
                           ),
                         ),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
-        // Title pill below
-        Positioned(
-          top: LessonNodeWidget.nodeSize + LessonNodeWidget.labelTopGap,
-          left: (LessonNodeWidget.nodeSize - LessonNodeWidget.labelWidth) / 2,
-          width: LessonNodeWidget.labelWidth,
-          child: IgnorePointer(
-            child: Opacity(
-              opacity: widget.isLocked ? 0.5 : 1.0,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.03),
-                      border: Border.all(color: Colors.white.withOpacity(0.08)),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 30, offset: const Offset(0, 4)),
-                      ],
-                    ),
-                    child: Text(
-                      widget.lesson.title.toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFFE2E8F0),
-                        height: 1.15,
                       ),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 }
