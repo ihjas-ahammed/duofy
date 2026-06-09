@@ -198,16 +198,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _syncRemoteData() async {
     try {
-      // Pull + merge cloud learning state (completed lessons, XP, bookmarks)
-      // before recomputing per-book progress so the bars reflect any progress
-      // made on another device.
-      await LearningSync.pullAndMerge();
+      // Run sync operations in parallel to load faster (especially when offline or on a low network)
+      final results = await Future.wait([
+        LearningSync.pullAndMerge().catchError((e) {
+          print("[HomeScreen] pullAndMerge error: $e");
+          return false;
+        }),
+        _db.fetchBooks(
+          forceRefresh: true,
+          onConflict: (local, remote) => showSyncConflictDialog(context, local, remote),
+        ).catchError((e) {
+          print("[HomeScreen] fetchBooks error: $e");
+          return <Book>[];
+        }),
+        _db.fetchGlobalBooks(useCacheOnly: false).catchError((e) {
+          print("[HomeScreen] fetchGlobalBooks error: $e");
+          return <Book>[];
+        }),
+      ]);
 
-      final fetched = await _db.fetchBooks(
-        forceRefresh: true,
-        onConflict: (local, remote) => showSyncConflictDialog(context, local, remote),
-      );
-      final globals = await _db.fetchGlobalBooks(useCacheOnly: false);
+      final fetched = results[1] as List<Book>;
+      final globals = results[2] as List<Book>;
 
       Map<String, double> prog = {};
       for (var b in fetched) {
@@ -440,7 +451,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 sliver: SliverGrid(
                   gridDelegate: screenWidth < 600
                       ? const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 4,
+                          crossAxisCount: 3,
                           mainAxisSpacing: 10,
                           crossAxisSpacing: 10,
                           childAspectRatio: 0.78,
@@ -556,7 +567,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 sliver: SliverGrid(
                   gridDelegate: screenWidth < 600
                       ? const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 4,
+                          crossAxisCount: 3,
                           mainAxisSpacing: 10,
                           crossAxisSpacing: 10,
                           childAspectRatio: 0.78,

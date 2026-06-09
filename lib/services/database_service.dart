@@ -318,8 +318,8 @@ class DatabaseService {
     final local = await _ensureLoaded();
     final cloud = await isCloudEnabled();
 
-    // Local-first path: when cloud is off we never touch the network.
-    if (!cloud) {
+    // Local-first path: when cloud is off or user is guest, we never touch the network.
+    if (!cloud || uid == 'guest') {
       if (local.isEmpty && uid == 'guest') {
         await _seedGuestMocks(local);
       }
@@ -334,7 +334,7 @@ class DatabaseService {
     // Two-way sync: pull remote, merge by updatedAt, push back local-newer
     // books, and persist the merged set to the local file store.
     try {
-      final snapshot = await _userBooks.get().timeout(const Duration(seconds: 15));
+      final snapshot = await _userBooks.get().timeout(const Duration(seconds: 4));
       final Map<String, Book> remote = {};
       for (final doc in snapshot.docs) {
         try {
@@ -359,12 +359,19 @@ class DatabaseService {
           toPush.add(localBook);
         } else if (localBook.updatedAt != remoteBook.updatedAt) {
           // Conflict!
+          final localTime = localBook.updatedAt ?? 0;
+          final remoteTime = remoteBook.updatedAt ?? 0;
+          final diff = (localTime - remoteTime).abs();
+
           bool keepLocal = true;
-          if (onConflict != null) {
+          if (diff > const Duration(hours: 1).inMilliseconds) {
+            // Auto take the latest version
+            keepLocal = localTime > remoteTime;
+          } else if (onConflict != null) {
             keepLocal = await onConflict(localBook, remoteBook);
           } else {
             // Default: newer wins
-            keepLocal = (localBook.updatedAt ?? 0) > (remoteBook.updatedAt ?? 0);
+            keepLocal = localTime > remoteTime;
           }
           if (keepLocal) {
             merged[localBook.id] = localBook;
