@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
@@ -54,12 +55,13 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
 
   void _onGenerationManagerChange() {
     final taskId = "restore_${widget.book.id}";
-    final hasActiveTask = GenerationManager.instance.activeTasks.any((t) => t.id == taskId);
+    final taskIndex = GenerationManager.instance.activeTasks.indexWhere((t) => t.id == taskId);
+    final hasActiveRunningTask = taskIndex != -1 && GenerationManager.instance.activeTasks[taskIndex].state != BookGenState.error;
     
     if (mounted) {
       setState(() {
         // If it was restoring and now it's not, and the files exist on disk, we succeeded!
-        if (_isRestoring && !hasActiveTask) {
+        if (_isRestoring && !hasActiveRunningTask) {
           bool allRestored = true;
           for (int i = 0; i < expectedFileCount; i++) {
             if (!_isSlotRestoredOnDisk(i)) {
@@ -71,7 +73,7 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
             _successMessage = "All PDF reference chunks successfully restored!";
           }
         }
-        _isRestoring = hasActiveTask;
+        _isRestoring = hasActiveRunningTask;
       });
     }
   }
@@ -318,56 +320,127 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                         ),
                       ),
 
-                    // Active restore progress
-                    if (_isRestoring)
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 20),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppTheme.duoBlue.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppTheme.duoBlue.withOpacity(0.3)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.duoBlue),
+                    // Active restore progress / error state
+                    if (task.id.isNotEmpty) ...[
+                      if (task.state == BookGenState.error)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 20),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppTheme.duoRed.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppTheme.duoRed.withOpacity(0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(LucideIcons.alertTriangle, color: AppTheme.duoRed, size: 24),
+                                  const SizedBox(width: 12),
+                                  const Expanded(
+                                    child: Text(
+                                      'Restore Failed',
+                                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    task.statusMessage.isNotEmpty ? task.statusMessage : 'Restoring course files...',
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                  IconButton(
+                                    icon: const Icon(LucideIcons.x, color: Colors.white54, size: 20),
+                                    onPressed: () {
+                                      GenerationManager.instance.dismissTask(taskId);
+                                    },
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: LinearProgressIndicator(
-                                value: (task.progress ?? 0) > 0 ? task.progress : null,
-                                backgroundColor: Colors.white10,
-                                valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.duoBlue),
-                                minHeight: 8,
+                                ],
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Please keep the app open. We are splitting the files into optimized PDF reference chunks for each topic.',
-                              style: TextStyle(color: Colors.white54, fontSize: 11),
-                            ),
-                          ],
+                              const SizedBox(height: 10),
+                              SelectableText(
+                                task.errorMessage ?? task.statusMessage,
+                                style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.white.withOpacity(0.08),
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    ),
+                                    icon: const Icon(LucideIcons.copy, size: 14),
+                                    label: const Text('Copy Error', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                    onPressed: () {
+                                      final errText = task.errorMessage ?? task.statusMessage;
+                                      Clipboard.setData(ClipboardData(text: errText));
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Error copied to clipboard')),
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(width: 10),
+                                  TextButton(
+                                    child: const Text('Dismiss', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold, fontSize: 12)),
+                                    onPressed: () {
+                                      GenerationManager.instance.dismissTask(taskId);
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        )
+                      else if (_isRestoring)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 20),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppTheme.duoBlue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppTheme.duoBlue.withOpacity(0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.duoBlue),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      task.statusMessage.isNotEmpty ? task.statusMessage : 'Restoring course files...',
+                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: LinearProgressIndicator(
+                                  value: (task.progress ?? 0) > 0 ? task.progress : null,
+                                  backgroundColor: Colors.white10,
+                                  valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.duoBlue),
+                                  minHeight: 8,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Please keep the app open. We are splitting the files into optimized PDF reference chunks for each topic.',
+                                style: TextStyle(color: Colors.white54, fontSize: 11),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                    ],
 
                     // Instructions
                     Padding(

@@ -94,13 +94,17 @@ class _LessonScreenState extends State<LessonScreen> {
     GenerationManager.instance.addListener(_onGenerationManagerChange);
     // Pull the latest from cache once on open in case background art landed
     // between the dashboard build and this screen mounting.
-    _refreshFromCache();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _refreshFromCache();
+        if (_canRegenerateCanvas) {
+          _triggerBackgroundCanvasGeneration();
+        }
+      }
+    });
     // Bookmark state + stamp last-opened time if this lesson is bookmarked.
     _loadBookmarkState();
     BookmarkService.markOpened(widget.lesson.id);
-    if (_canRegenerateCanvas) {
-      _triggerBackgroundCanvasGeneration();
-    }
   }
 
   void _triggerBackgroundCanvasGeneration() {
@@ -203,7 +207,7 @@ class _LessonScreenState extends State<LessonScreen> {
           _lesson = lesson;
           // Refresh the queue so each Slide object reflects the latest
           // canvasSvg / content. Length and order remain stable because
-          // we\'re looking up the same lesson in the same book.
+          // we're looking up the same lesson in the same book.
           _slideQueue = List.of(_lesson.slides);
           // The queue may have grown earlier (wrong-answer repeats are
           // appended) and _currentIndex advanced into that region. Rebuilding
@@ -213,7 +217,11 @@ class _LessonScreenState extends State<LessonScreen> {
             _currentIndex = _slideQueue.isEmpty ? 0 : _slideQueue.length - 1;
           }
         });
-        _triggerBackgroundCanvasGeneration();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _triggerBackgroundCanvasGeneration();
+          }
+        });
       }
     } catch (_) {
       // Indices may be stale (book regenerated). Ignore — we keep showing

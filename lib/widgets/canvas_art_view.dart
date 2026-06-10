@@ -92,10 +92,13 @@ class _CanvasArtViewState extends State<CanvasArtView> {
                 // Renders an SVG or a JS canvas draw function depending on what
                 // the model produced. Malformed SVG falls back to the
                 // tap-to-generate card instead of a red error widget.
-                ? buildCanvasArt(
-                    widget.svg!,
-                    svgPlaceholder: (_) => _TapToGenerateCard(prompt: widget.prompt, onTap: widget.onRegenerate == null ? null : () => widget.onRegenerate!(null), embedded: true),
-                    onJsError: _handleJsError,
+                ? CanvasDoubleTapDetector(
+                    onDoubleTap: () => showCanvasCodeDialog(context, widget.svg!),
+                    child: buildCanvasArt(
+                      widget.svg!,
+                      svgPlaceholder: (_) => _TapToGenerateCard(prompt: widget.prompt, onTap: widget.onRegenerate == null ? null : () => widget.onRegenerate!(null), embedded: true),
+                      onJsError: _handleJsError,
+                    ),
                   )
                 : const _CanvasPlaceholder(label: 'Generating diagram…', spinning: true),
           ),

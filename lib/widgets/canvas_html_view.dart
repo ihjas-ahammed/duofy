@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import '../theme/app_theme.dart';
 import 'platform_webview.dart';
 
 /// Canvas-art rendering helpers.
@@ -19,7 +21,12 @@ import 'platform_webview.dart';
 /// verbatim every time.
 
 /// True when [content] is legacy raw SVG markup rather than a JS program.
-bool isSvgCanvas(String content) => content.contains('<svg');
+bool isSvgCanvas(String content) {
+  final trimmed = content.trim();
+  return trimmed.startsWith('<') ||
+      trimmed.toLowerCase().contains('<svg') ||
+      trimmed.toLowerCase().contains('xmlns="http://www.w3.org/2000/svg"');
+}
 
 /// Heuristic: program needs THREE.js when it references `THREE.` or uses
 /// the WebGL context name (some models add a manual fallback). Used to
@@ -261,17 +268,23 @@ class _CanvasFullScreenScreen extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: isSvg
-                    ? InteractiveViewer(
-                        minScale: 0.5,
-                        maxScale: 5,
-                        child: Center(
-                          child: SvgPicture.string(content, fit: BoxFit.contain),
+                    ? CanvasDoubleTapDetector(
+                        onDoubleTap: () => showCanvasCodeDialog(context, content),
+                        child: InteractiveViewer(
+                          minScale: 0.5,
+                          maxScale: 5,
+                          child: Center(
+                            child: SvgPicture.string(content, fit: BoxFit.contain),
+                          ),
                         ),
                       )
-                    : Center(
-                        child: AspectRatio(
-                          aspectRatio: 3 / 2,
-                          child: CanvasHtmlView(drawFunction: content),
+                    : CanvasDoubleTapDetector(
+                        onDoubleTap: () => showCanvasCodeDialog(context, content),
+                        child: Center(
+                          child: AspectRatio(
+                            aspectRatio: 3 / 2,
+                            child: CanvasHtmlView(drawFunction: content),
+                          ),
                         ),
                       ),
               ),
@@ -297,4 +310,187 @@ class _CanvasFullScreenScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Helper widget to detect double taps even on top of PlatformViews/WebViews
+/// that would normally swallow standard Flutter gestures.
+class CanvasDoubleTapDetector extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onDoubleTap;
+
+  const CanvasDoubleTapDetector({
+    super.key,
+    required this.child,
+    required this.onDoubleTap,
+  });
+
+  @override
+  State<CanvasDoubleTapDetector> createState() => _CanvasDoubleTapDetectorState();
+}
+
+class _CanvasDoubleTapDetectorState extends State<CanvasDoubleTapDetector> {
+  DateTime? _lastTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (event) {
+        final now = DateTime.now();
+        if (_lastTap != null &&
+            now.difference(_lastTap!) < const Duration(milliseconds: 320)) {
+          _lastTap = null;
+          widget.onDoubleTap();
+        } else {
+          _lastTap = now;
+        }
+      },
+      child: widget.child,
+    );
+  }
+}
+
+void showCanvasCodeDialog(BuildContext context, String code) {
+  final isSvg = isSvgCanvas(code);
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return Dialog(
+        backgroundColor: const Color(0xFF0F172A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Colors.white12),
+        ),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.85,
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
+          ),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Source Code',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: isSvg
+                                ? AppTheme.duoGreen.withOpacity(0.15)
+                                : AppTheme.duoBlue.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: isSvg
+                                  ? AppTheme.duoGreen.withOpacity(0.3)
+                                  : AppTheme.duoBlue.withOpacity(0.3),
+                            ),
+                          ),
+                          child: Text(
+                            isSvg ? 'SVG Vector Markup' : 'JS Canvas / Three.js',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              color: isSvg ? AppTheme.duoGreen : AppTheme.duoBlue,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(LucideIcons.x, color: Colors.white54, size: 20),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Code Area
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF020617),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: SelectableText(
+                      code.trim(),
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 11,
+                        color: Color(0xFFE2E8F0),
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Actions
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.duoBlue,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      icon: const Icon(LucideIcons.copy, size: 16),
+                      label: const Text(
+                        'Copy Code',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: code));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Code copied to clipboard'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.white54,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text(
+                      'Close',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
