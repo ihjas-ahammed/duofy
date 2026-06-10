@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import '../widgets/safe_pdf_viewer.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
@@ -101,7 +101,7 @@ class _PdfFolderScreenState extends State<PdfFolderScreen> {
       MaterialPageRoute(
         builder: (_) => Scaffold(
           appBar: AppBar(title: Text(meta.unitName, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold))),
-          body: SfPdfViewer.file(meta.file),
+          body: SafePdfViewer(file: meta.file),
         )
       )
     );

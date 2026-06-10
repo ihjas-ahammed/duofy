@@ -73,6 +73,8 @@ class _IndexPickerScreenState extends State<IndexPickerScreen> {
   int _currentPage = 1;
   int _pageCount = 0;
   bool _isStarting = false;
+  bool _pdfLoadError = false;
+  String _pdfErrorMessage = '';
 
   // Search functionality
   bool _isSearching = false;
@@ -394,12 +396,45 @@ class _IndexPickerScreenState extends State<IndexPickerScreen> {
                         setState(() {
                           _pageCount = _pdfCtrl.pageCount;
                           _currentPage = _pdfCtrl.pageNumber;
+                          _pdfLoadError = false;
+                        });
+                      },
+                      onDocumentLoadFailed: (details) {
+                        setState(() {
+                          _pdfLoadError = true;
+                          _pdfErrorMessage = details.description;
                         });
                       },
                       onPageChanged: (details) {
                         setState(() => _currentPage = details.newPageNumber);
                       },
                     ),
+                    if (_pdfLoadError)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Container(
+                            padding: const EdgeInsets.all(16.0),
+                            decoration: BoxDecoration(
+                              color: AppTheme.surface.withOpacity(0.95),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.error_outline, color: Colors.redAccent, size: 36),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Failed to render PDF preview:\n$_pdfErrorMessage\n\nYou can still continue or manually type the start page of Chapter 1.',
+                                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     Positioned(
                       bottom: 12,
                       left: 12,

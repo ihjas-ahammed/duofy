@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import '../widgets/safe_pdf_viewer.dart';
 import 'source_pdf_upload_screen.dart';
 import 'course_settings_screen.dart';
 import 'package:file_picker/file_picker.dart';
@@ -493,7 +493,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
               title: Text(sec.title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
               backgroundColor: const Color(0xFF0B0F19),
             ),
-            body: SfPdfViewer.file(File(sec.pdfPath!)),
+            body: SafePdfViewer(file: File(sec.pdfPath!)),
           ),
         ),
       );
@@ -575,7 +575,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      isMissing ? 'MISSING SECTION REFERENCE PDF' : 'VIEW SECTION REFERENCE PDF',
+                      isMissing ? 'MISSING REFERENCE' : 'VIEW REFERENCE',
                       style: TextStyle(
                         color: isMissing ? AppTheme.duoOrange : AppTheme.duoBlue,
                         fontSize: 11,
@@ -599,7 +599,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         title: Text('${widget.book.title} - Syllabus', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                         backgroundColor: const Color(0xFF0B0F19),
                       ),
-                      body: SfPdfViewer.file(File(widget.book.syllabusPath!)),
+                      body: SafePdfViewer(file: File(widget.book.syllabusPath!)),
                     ),
                   ),
                 );

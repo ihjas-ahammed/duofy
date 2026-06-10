@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/generation_manager.dart';
@@ -303,9 +304,36 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: AppTheme.duoRed.withOpacity(0.2)),
                   ),
-                  child: Text(
-                    task.errorMessage!,
-                    style: const TextStyle(color: AppTheme.duoRed, fontSize: 11, fontFamily: 'monospace'),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          task.errorMessage!,
+                          style: const TextStyle(color: AppTheme.duoRed, fontSize: 11, fontFamily: 'monospace'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () {
+                          Clipboard.setData(ClipboardData(text: task.errorMessage!));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Error copied to clipboard'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                        child: const MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: Icon(
+                            Icons.copy_rounded,
+                            size: 14,
+                            color: AppTheme.duoRed,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

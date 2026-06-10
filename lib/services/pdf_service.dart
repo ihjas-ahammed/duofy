@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart' as sync_pdf;
 import 'package:pdf/widgets.dart' as pw;
+import 'package:pdfx/pdfx.dart' as pdfx;
 import '../models/app_models.dart';
 
 class PdfService {
@@ -17,8 +20,9 @@ class PdfService {
     if (pageNumbers.isEmpty) {
       throw ArgumentError('extractPages: pageNumbers must not be empty');
     }
-    final doc = sync_pdf.PdfDocument(inputBytes: await sourcePdf.readAsBytes());
+    sync_pdf.PdfDocument? doc;
     try {
+      doc = sync_pdf.PdfDocument(inputBytes: await sourcePdf.readAsBytes());
       final out = sync_pdf.PdfDocument();
       for (final p in pageNumbers) {
         final idx = p - 1;
@@ -27,7 +31,32 @@ class PdfService {
         out.pageSettings.size = loaded.size;
         out.pageSettings.margins.all = 0;
         final newPage = out.pages.add();
-        newPage.graphics.drawPdfTemplate(loaded.createTemplate(), const Offset(0, 0));
+        final completer = Completer<void>();
+        runZonedGuarded(() {
+          try {
+            newPage.graphics.drawPdfTemplate(loaded.createTemplate(), const Offset(0, 0));
+            completer.complete();
+          } catch (e) {
+            completer.completeError(e);
+          }
+        }, (error, stack) {
+          if (!completer.isCompleted) {
+            completer.completeError(error);
+          }
+        });
+
+        try {
+          await completer.future;
+        } catch (e) {
+          print('[PdfService] drawPdfTemplate failed (Syncfusion type cast bug: $e). Recovering by rendering page $p as a high-quality raster image fallback...');
+          final imgBytes = await _renderPageToImage(sourcePdf, p);
+          if (imgBytes != null) {
+            final sync_pdf.PdfImage img = sync_pdf.PdfBitmap(imgBytes);
+            newPage.graphics.drawImage(img, Rect.fromLTWH(0, 0, newPage.size.width, newPage.size.height));
+          } else {
+            rethrow;
+          }
+        }
       }
       if (out.pages.count == 0) {
         out.dispose();
@@ -41,7 +70,7 @@ class PdfService {
       await file.writeAsBytes(bytes);
       return file;
     } finally {
-      doc.dispose();
+      doc?.dispose();
     }
   }
 
@@ -80,7 +109,32 @@ class PdfService {
               out.pageSettings.size = loaded.size;
               out.pageSettings.margins.all = 0;
               final newPage = out.pages.add();
-              newPage.graphics.drawPdfTemplate(loaded.createTemplate(), const Offset(0, 0));
+              final completer = Completer<void>();
+              runZonedGuarded(() {
+                try {
+                  newPage.graphics.drawPdfTemplate(loaded.createTemplate(), const Offset(0, 0));
+                  completer.complete();
+                } catch (e) {
+                  completer.completeError(e);
+                }
+              }, (error, stack) {
+                if (!completer.isCompleted) {
+                  completer.completeError(error);
+                }
+              });
+
+              try {
+                await completer.future;
+              } catch (e) {
+                print('[PdfService] mergeFiles template failed (Syncfusion type cast bug: $e). Recovering by rendering page ${i + 1} as a high-quality raster image fallback...');
+                final imgBytes = await _renderPageToImage(file, i + 1);
+                if (imgBytes != null) {
+                  final sync_pdf.PdfImage img = sync_pdf.PdfBitmap(imgBytes);
+                  newPage.graphics.drawImage(img, Rect.fromLTWH(0, 0, newPage.size.width, newPage.size.height));
+                } else {
+                  rethrow;
+                }
+              }
             }
           } catch (e) {
             print('Error merging PDF ${file.path}: $e');
@@ -170,26 +224,60 @@ class PdfService {
       final isPdf = currentFile.path.toLowerCase().endsWith('.pdf');
 
       if (isPdf) {
-        sync_pdf.PdfDocument doc;
-        if (openedDocs.containsKey(bookIdx)) {
-          doc = openedDocs[bookIdx]!;
-        } else {
-          doc = sync_pdf.PdfDocument(inputBytes: await currentFile.readAsBytes());
-          openedDocs[bookIdx] = doc;
-        }
+        try {
+          sync_pdf.PdfDocument doc;
+          if (openedDocs.containsKey(bookIdx)) {
+            doc = openedDocs[bookIdx]!;
+          } else {
+            doc = sync_pdf.PdfDocument(inputBytes: await currentFile.readAsBytes());
+            openedDocs[bookIdx] = doc;
+          }
 
-        if (end >= doc.pages.count) end = doc.pages.count - 1;
-        final chunkDoc = sync_pdf.PdfDocument();
-        for (int i = start; i <= end; i++) {
-          final loaded = doc.pages[i];
-          chunkDoc.pageSettings.size = loaded.size;
-          chunkDoc.pageSettings.margins.all = 0;
-          final newPage = chunkDoc.pages.add();
-          newPage.graphics.drawPdfTemplate(loaded.createTemplate(), const Offset(0, 0));
+          if (end >= doc.pages.count) end = doc.pages.count - 1;
+          final chunkDoc = sync_pdf.PdfDocument();
+          for (int i = start; i <= end; i++) {
+            final loaded = doc.pages[i];
+            chunkDoc.pageSettings.size = loaded.size;
+            chunkDoc.pageSettings.margins.all = 0;
+            final newPage = chunkDoc.pages.add();
+            final completer = Completer<void>();
+            runZonedGuarded(() {
+              try {
+                newPage.graphics.drawPdfTemplate(loaded.createTemplate(), const Offset(0, 0));
+                completer.complete();
+              } catch (e) {
+                completer.completeError(e);
+              }
+            }, (error, stack) {
+              if (!completer.isCompleted) {
+                completer.completeError(error);
+              }
+            });
+
+            try {
+              await completer.future;
+            } catch (e) {
+              print('[PdfService] splitBookPdf template failed (Syncfusion type cast bug: $e). Recovering by rendering page ${i + 1} as a high-quality raster image fallback...');
+              final imgBytes = await _renderPageToImage(currentFile, i + 1);
+              if (imgBytes != null) {
+                final sync_pdf.PdfImage img = sync_pdf.PdfBitmap(imgBytes);
+                newPage.graphics.drawImage(img, Rect.fromLTWH(0, 0, newPage.size.width, newPage.size.height));
+              } else {
+                rethrow;
+              }
+            }
+          }
+          final bytes = await chunkDoc.save();
+          await file.writeAsBytes(bytes);
+          chunkDoc.dispose();
+        } catch (outerErr) {
+          print('[PdfService] Chunking failed for $id ($startPage-$endPage) due to Syncfusion cast error and unsupported raster rendering on this platform: $outerErr. Falling back to copying full original PDF...');
+          try {
+            await currentFile.copy(file.path);
+          } catch (copyErr) {
+            print('[PdfService] Failed to copy fallback full original PDF: $copyErr');
+          }
         }
-        final bytes = await chunkDoc.save();
-        await file.writeAsBytes(bytes);
-        chunkDoc.dispose();
       } else {
         // Fallback if the file is an image
         if (end >= inputFiles.length) end = inputFiles.length - 1;
@@ -283,24 +371,32 @@ class PdfService {
     List<PdfBookmarkNode> output,
   ) {
     for (int i = 0; i < bookmarks.count; i++) {
-      final b = bookmarks[i];
-      final p = _resolveBookmarkPage(doc, b) ?? 1;
-      final List<PdfBookmarkNode> children = [];
-      if (b.count > 0) {
-        _traverseBookmarks(doc, b, children);
+      try {
+        final b = bookmarks[i];
+        final p = _resolveBookmarkPage(doc, b) ?? 1;
+        final List<PdfBookmarkNode> children = [];
+        if (b.count > 0) {
+          _traverseBookmarks(doc, b, children);
+        }
+        output.add(PdfBookmarkNode(
+          title: b.title,
+          pageNumber: p,
+          children: children,
+        ));
+      } catch (e) {
+        print('[PdfService] Error traversing bookmark at index $i: $e');
       }
-      output.add(PdfBookmarkNode(
-        title: b.title,
-        pageNumber: p,
-        children: children,
-      ));
     }
   }
 
   int? _resolveBookmarkPage(sync_pdf.PdfDocument doc, sync_pdf.PdfBookmark bookmark) {
-    if (bookmark.destination != null && bookmark.destination!.page != null) {
-      final idx = doc.pages.indexOf(bookmark.destination!.page!);
-      if (idx >= 0) return idx + 1;
+    try {
+      if (bookmark.destination != null && bookmark.destination!.page != null) {
+        final idx = doc.pages.indexOf(bookmark.destination!.page!);
+        if (idx >= 0) return idx + 1;
+      }
+    } catch (e) {
+      print('[PdfService] Error resolving page for bookmark "${bookmark.title}": $e');
     }
     return null;
   }
@@ -519,6 +615,45 @@ class PdfService {
       modules: modules,
       updatedAt: DateTime.now().millisecondsSinceEpoch,
     );
+  }
+  Future<Uint8List?> _renderPageToImage(File pdfFile, int pageNumber) async {
+    try {
+      final hasSupport = await pdfx.hasPdfSupport();
+      if (!hasSupport) {
+        print('[PdfService] Platform reports no PDF rendering support.');
+        return null;
+      }
+    } catch (e) {
+      print('[PdfService] Error checking PDF support: $e');
+      return null;
+    }
+
+    final completer = Completer<Uint8List?>();
+    
+    runZonedGuarded(() async {
+      try {
+        final doc = await pdfx.PdfDocument.openFile(pdfFile.path);
+        final page = await doc.getPage(pageNumber);
+        final pageImage = await page.render(
+          width: page.width * 2.0,
+          height: page.height * 2.0,
+          format: pdfx.PdfPageImageFormat.jpeg,
+        );
+        await page.close();
+        await doc.close();
+        completer.complete(pageImage?.bytes);
+      } catch (e) {
+        print('[PdfService] Error rendering page $pageNumber: $e');
+        if (!completer.isCompleted) completer.complete(null);
+      }
+    }, (error, stack) {
+      print('[PdfService] Caught unhandled zone error during page $pageNumber rendering: $error');
+      if (!completer.isCompleted) {
+        completer.complete(null);
+      }
+    });
+
+    return completer.future;
   }
 }
 

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import '../widgets/safe_pdf_viewer.dart';
 import 'package:file_picker/file_picker.dart';
 import '../models/app_models.dart';
 import '../services/generation_manager.dart';
@@ -714,8 +715,8 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 clipBehavior: Clip.hardEdge,
-                child: SfPdfViewer.file(
-                  _uploadedPdfs[_selectedFileIndex],
+                child: SafePdfViewer(
+                  file: _uploadedPdfs[_selectedFileIndex],
                   key: ValueKey('preview-$_selectedFileIndex-${_uploadedPdfs[_selectedFileIndex].path}'),
                   controller: _pdfViewerController,
                   canShowScrollHead: false,

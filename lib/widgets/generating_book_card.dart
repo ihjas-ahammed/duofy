@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../services/generation_manager.dart';
 import '../theme/app_theme.dart';
@@ -95,11 +96,37 @@ class GeneratingBookCard extends StatelessWidget {
                           if (task.state == BookGenState.error && task.errorMessage != null)
                             Padding(
                               padding: const EdgeInsets.only(top: 4.0),
-                              child: Text(
-                                task.errorMessage!,
-                                style: const TextStyle(fontSize: 10, color: Colors.white38),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      task.errorMessage!,
+                                      style: const TextStyle(fontSize: 10, color: Colors.white38),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  GestureDetector(
+                                    onTap: () {
+                                      Clipboard.setData(ClipboardData(text: task.errorMessage!));
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Error copied to clipboard'),
+                                          duration: Duration(seconds: 2),
+                                        ),
+                                      );
+                                    },
+                                    child: const MouseRegion(
+                                      cursor: SystemMouseCursors.click,
+                                      child: Icon(
+                                        Icons.copy_rounded,
+                                        size: 11,
+                                        color: Colors.white38,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           if (task.state == BookGenState.review)
