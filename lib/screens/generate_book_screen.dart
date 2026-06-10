@@ -128,14 +128,18 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
 
         if (useBookmarks && mounted) {
           final bookmarks = await pdfService.extractBookmarks(firstPdf);
-          final mappedBook = pdfService.mapBookmarksToBook(bookmarks, filename, firstPdf);
+          var mappedBook = pdfService.mapBookmarksToBook(bookmarks, filename, firstPdf);
           final sourceList = _selectedFiles;
           
           final presetTitle = _titleController.text.trim();
           if (presetTitle.isNotEmpty) {
             mappedBook = mappedBook.copyWith(title: presetTitle);
           }
-          await GenerationManager.instance.startBookGenerationFromBookmarks(sourceList, filename, mappedBook);
+          await GenerationManager.instance.startBookGenerationFromBookmarks(
+            sourceList,
+            presetTitle.isNotEmpty ? presetTitle : filename,
+            mappedBook,
+          );
           
           final task = GenerationManager.instance.activeTasks.last;
           if (mounted) {
@@ -151,12 +155,12 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
           final customPrompt = _customPromptController.text.trim();
           final presetTitle = _titleController.text.trim().isEmpty ? null : _titleController.text.trim();
           if (_mode == GenerationMode.handout) {
-            _showHandoutPrompt(_selectedFiles, filename);
+            _showHandoutPrompt(_selectedFiles, presetTitle ?? filename);
           } else if (_indexMode == IndexMode.manual || _indexMode == IndexMode.chapters) {
             Navigator.of(context).push(MaterialPageRoute(
               builder: (_) => IndexPickerScreen(
                 sourcePdf: firstPdf,
-                filename: filename,
+                filename: presetTitle ?? filename,
                 syllabusFiles: finalSyllabusFiles,
                 isCourse: _mode == GenerationMode.course,
                 allSourcePdfs: _selectedFiles,
@@ -173,10 +177,9 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
             Navigator.of(context).push(MaterialPageRoute(
               builder: (_) => AutoIndexScreen(
                 sourcePdf: firstPdf,
-                filename: filename,
+                filename: presetTitle ?? filename,
                 syllabusFiles: finalSyllabusFiles,
                 isCourse: _mode == GenerationMode.course,
-                presetTitle: presetTitle,
                 allSourcePdfs: _selectedFiles,
                 currentPdfIndex: 0,
                 collectedIndexPages: const [],
