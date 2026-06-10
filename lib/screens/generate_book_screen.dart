@@ -28,10 +28,12 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
   final List<File> _selectedFiles = [];
   final List<File> _syllabusFiles = [];
   final TextEditingController _customPromptController = TextEditingController();
+  final TextEditingController _titleController = TextEditingController();
 
   @override
   void dispose() {
     _customPromptController.dispose();
+    _titleController.dispose();
     super.dispose();
   }
 
@@ -129,6 +131,10 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
           final mappedBook = pdfService.mapBookmarksToBook(bookmarks, filename, firstPdf);
           final sourceList = _selectedFiles;
           
+          final presetTitle = _titleController.text.trim();
+          if (presetTitle.isNotEmpty) {
+            mappedBook = mappedBook.copyWith(title: presetTitle);
+          }
           await GenerationManager.instance.startBookGenerationFromBookmarks(sourceList, filename, mappedBook);
           
           final task = GenerationManager.instance.activeTasks.last;
@@ -143,6 +149,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
           }
         } else {
           final customPrompt = _customPromptController.text.trim();
+          final presetTitle = _titleController.text.trim().isEmpty ? null : _titleController.text.trim();
           if (_mode == GenerationMode.handout) {
             _showHandoutPrompt(_selectedFiles, filename);
           } else if (_indexMode == IndexMode.manual || _indexMode == IndexMode.chapters) {
@@ -169,6 +176,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                 filename: filename,
                 syllabusFiles: finalSyllabusFiles,
                 isCourse: _mode == GenerationMode.course,
+                presetTitle: presetTitle,
                 allSourcePdfs: _selectedFiles,
                 currentPdfIndex: 0,
                 collectedIndexPages: const [],
@@ -343,6 +351,27 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _buildModeSelector(),
+                    const SizedBox(height: 24),
+                    const Text('COURSE TITLE (OPTIONAL)', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _titleController,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: 'e.g. Organic Chemistry, Linear Algebra...',
+                        hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
+                        filled: true,
+                        fillColor: AppTheme.surface,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.white12),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppTheme.duoGreen),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 24),
                     
                     if (_mode == GenerationMode.course) ...[
