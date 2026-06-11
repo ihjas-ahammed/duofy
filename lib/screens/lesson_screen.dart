@@ -585,16 +585,20 @@ class _LessonScreenState extends State<LessonScreen> {
 
   Widget _buildActionBottomBar(Slide slide) {
     final isInteractive = ['quiz', 'fill_in_blank', 'one_word', 'numerical'].contains(slide.type);
-    return Container(
+    final feedbackColor = _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
       decoration: BoxDecoration(
         color: _answered 
-          ? (_isCorrect ? AppTheme.duoGreen.withOpacity(0.1) : AppTheme.duoRed.withOpacity(0.1))
+          ? feedbackColor.withOpacity(0.1)
           : Colors.transparent,
-        border: Border(
-          top: BorderSide(
-            color: _answered ? (_isCorrect ? AppTheme.duoGreen.withOpacity(0.3) : AppTheme.duoRed.withOpacity(0.3)) : Colors.white10, 
-            width: 1
-          )
+        borderRadius: BorderRadius.circular(_answered ? 20 : 0),
+        border: Border.all(
+          color: _answered 
+            ? feedbackColor.withOpacity(0.3)
+            : Colors.transparent,
+          width: 1,
         ),
       ),
       padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 24),
@@ -602,45 +606,60 @@ class _LessonScreenState extends State<LessonScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (_answered && !_isCorrect)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.duoRed.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppTheme.duoRed.withOpacity(0.4)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('CORRECT ANSWER:', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.2)),
-                    const SizedBox(height: 8),
-                    MathMarkdown(
-                      data: _getCorrectAnswerText(slide), 
-                      textStyle: const TextStyle(color: AppTheme.duoRed, fontSize: 18, fontWeight: FontWeight.bold)
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              return SizeTransition(
+                sizeFactor: animation,
+                child: FadeTransition(opacity: animation, child: child),
+              );
+            },
+            child: (_answered && !_isCorrect)
+                ? Padding(
+                    key: const ValueKey('incorrect_feedback'),
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppTheme.duoRed.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppTheme.duoRed.withOpacity(0.4)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('CORRECT ANSWER:', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.2)),
+                          const SizedBox(height: 8),
+                          MathMarkdown(
+                            data: _getCorrectAnswerText(slide), 
+                            textStyle: const TextStyle(color: AppTheme.duoRed, fontSize: 18, fontWeight: FontWeight.bold)
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-              ),
-            ),
-            
-          isInteractive && !_answered
-              ? DuoButton(
-                  text: 'CHECK',
-                  color: _canCheck(slide) ? AppTheme.duoGreen : const Color(0xFF334155),
-                  shadowColor: _canCheck(slide) ? AppTheme.duoGreenDark : const Color(0xFF1E293B),
-                  onPressed: () {
-                    if (_canCheck(slide)) _checkAnswer(slide);
-                  },
-                )
-              : DuoButton(
-                  text: _answered && !_isCorrect ? 'GOT IT' : 'CONTINUE',
-                  color: _answered && !_isCorrect ? AppTheme.duoRed : AppTheme.duoGreen,
-                  shadowColor: _answered && !_isCorrect ? AppTheme.duoRedDark : AppTheme.duoGreenDark,
-                  onPressed: _nextSlide,
-                ),
+                  )
+                : const SizedBox.shrink(key: ValueKey('empty_feedback')),
+          ),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: isInteractive && !_answered
+                ? DuoButton(
+                    key: const ValueKey('check_button'),
+                    text: 'CHECK',
+                    color: _canCheck(slide) ? AppTheme.duoGreen : const Color(0xFF334155),
+                    shadowColor: _canCheck(slide) ? AppTheme.duoGreenDark : const Color(0xFF1E293B),
+                    onPressed: () {
+                      if (_canCheck(slide)) _checkAnswer(slide);
+                    },
+                  )
+                : DuoButton(
+                    key: const ValueKey('continue_button'),
+                    text: _answered && !_isCorrect ? 'GOT IT' : 'CONTINUE',
+                    color: _answered && !_isCorrect ? AppTheme.duoRed : AppTheme.duoGreen,
+                    shadowColor: _answered && !_isCorrect ? AppTheme.duoRedDark : AppTheme.duoGreenDark,
+                    onPressed: _nextSlide,
+                  ),
+          ),
         ],
       ),
     );
@@ -720,104 +739,115 @@ class _LessonScreenState extends State<LessonScreen> {
         // Wrap theory content matching LessonView.tsx default renderer (glass panel)
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4.0),
-          child: SingleChildScrollView(
+          child: CustomScrollView(
              physics: const BouncingScrollPhysics(),
-             child: Column(
-                children: [
-                   // Lesson-level canvas stacked above the theory text
-                   _buildLessonCanvas(),
-
-                   if (!hasCanvas)
-                     Padding(
-                       padding: const EdgeInsets.only(bottom: 16.0, top: 16.0),
-                       child: Text(
-                         _lesson.title,
-                         style: const TextStyle(
-                           fontSize: 28,
-                           fontWeight: FontWeight.w900,
-                           color: Colors.white,
-                           letterSpacing: -0.5,
+             slivers: [
+               SliverToBoxAdapter(
+                 child: Column(
+                    children: [
+                       // Lesson-level canvas stacked above the theory text
+                       _buildLessonCanvas(),
+    
+                       if (!hasCanvas)
+                         Padding(
+                           padding: const EdgeInsets.only(bottom: 16.0, top: 16.0),
+                           child: Text(
+                             _lesson.title,
+                             style: const TextStyle(
+                               fontSize: 28,
+                               fontWeight: FontWeight.w900,
+                               color: Colors.white,
+                               letterSpacing: -0.5,
+                             ),
+                             textAlign: TextAlign.center,
+                           ),
                          ),
-                         textAlign: TextAlign.center,
-                       ),
-                     ),
-
-                   if (!hasCanvas && slide.title.isNotEmpty && slide.title.toLowerCase() != _lesson.title.toLowerCase())
-                     Padding(
-                        padding: const EdgeInsets.only(bottom: 24.0, top: 16.0),
-                        child: Text(
-                          slide.title,
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            letterSpacing: -0.5,
-                          ),
-                          textAlign: TextAlign.center,
-                        )
-                     ),
-                   Container(
-                     width: double.infinity,
-                     padding: const EdgeInsets.all(24),
-                     decoration: AppTheme.glassDecoration.copyWith(
-                        borderRadius: hasCanvas
-                            ? const BorderRadius.vertical(bottom: Radius.circular(24))
-                            : BorderRadius.circular(24),
-                        color: Colors.black.withOpacity(0.4),
-                        border: hasCanvas
-                            ? Border(
-                                left: BorderSide(color: Colors.white.withOpacity(0.1)),
-                                right: BorderSide(color: Colors.white.withOpacity(0.1)),
-                                bottom: BorderSide(color: Colors.white.withOpacity(0.1)),
-                              )
-                            : null,
-                     ),
-                     child: Builder(
-                       builder: (context) {
-                         final lines = slide.content.split('\n');
-                         return Column(
-                           crossAxisAlignment: CrossAxisAlignment.start,
-                           mainAxisSize: MainAxisSize.min,
-                           children: [
-                             if (hasCanvas && slide.title.isNotEmpty)
-                               Padding(
-                                 padding: const EdgeInsets.only(bottom: 16.0),
-                                 child: Center(
-                                   child: Text(
-                                     slide.title,
-                                     style: const TextStyle(
-                                       fontSize: 24,
-                                       fontWeight: FontWeight.w900,
-                                       color: Colors.white,
-                                       letterSpacing: -0.5,
+    
+                       if (!hasCanvas && slide.title.isNotEmpty && slide.title.toLowerCase() != _lesson.title.toLowerCase())
+                         Padding(
+                            padding: const EdgeInsets.only(bottom: 24.0, top: 16.0),
+                            child: Text(
+                              slide.title,
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: -0.5,
+                              ),
+                              textAlign: TextAlign.center,
+                            )
+                         ),
+                       Container(
+                         width: double.infinity,
+                         padding: const EdgeInsets.all(24),
+                         decoration: AppTheme.glassDecoration.copyWith(
+                            borderRadius: hasCanvas
+                                ? const BorderRadius.vertical(bottom: Radius.circular(24))
+                                : BorderRadius.circular(24),
+                            color: Colors.black.withOpacity(0.4),
+                            border: hasCanvas
+                                ? Border(
+                                    left: BorderSide(color: Colors.white.withOpacity(0.1)),
+                                    right: BorderSide(color: Colors.white.withOpacity(0.1)),
+                                    bottom: BorderSide(color: Colors.white.withOpacity(0.1)),
+                                  )
+                                : null,
+                         ),
+                         child: Builder(
+                           builder: (context) {
+                             final lines = slide.content.split('\n');
+                             return Column(
+                               crossAxisAlignment: CrossAxisAlignment.start,
+                               mainAxisSize: MainAxisSize.min,
+                               children: [
+                                 if (hasCanvas && slide.title.isNotEmpty)
+                                   Padding(
+                                     padding: const EdgeInsets.only(bottom: 16.0),
+                                     child: Center(
+                                       child: Text(
+                                         slide.title,
+                                         style: const TextStyle(
+                                           fontSize: 24,
+                                           fontWeight: FontWeight.w900,
+                                           color: Colors.white,
+                                           letterSpacing: -0.5,
+                                         ),
+                                         textAlign: TextAlign.center,
+                                       ),
                                      ),
-                                     textAlign: TextAlign.center,
                                    ),
-                                 ),
-                               ),
-                             ...lines.map((line) {
-                               if (line.isEmpty) {
-                                 return const SizedBox(height: 8);
-                               }
-                               return Padding(
-                                 padding: const EdgeInsets.symmetric(vertical: 4.0),
-                                 child: MathMarkdown(
-                                   data: line,
-                                   textStyle: const TextStyle(fontSize: 16, color: Colors.white),
-                                 ),
-                               );
-                             }),
-                           ],
-                         );
-                       }
-                     ),
+                                 ...lines.map((line) {
+                                   if (line.isEmpty) {
+                                     return const SizedBox(height: 8);
+                                   }
+                                   return Padding(
+                                     padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                     child: MathMarkdown(
+                                       data: line,
+                                       textStyle: const TextStyle(fontSize: 16, color: Colors.white),
+                                     ),
+                                   );
+                                 }),
+                               ],
+                             );
+                           }
+                         ),
+                       ),
+                    ]
+                 ),
+               ),
+               if (bottomBar != null)
+                 SliverFillRemaining(
+                   hasScrollBody: false,
+                   child: Column(
+                     mainAxisAlignment: MainAxisAlignment.end,
+                     children: [
+                       const SizedBox(height: 24),
+                       bottomBar,
+                     ],
                    ),
-                   if (bottomBar != null) ...[
-                     const SizedBox(height: 24),
-                     bottomBar,
-                   ],
-                ]
-             )
+                 ),
+             ],
           ),
         );
     }

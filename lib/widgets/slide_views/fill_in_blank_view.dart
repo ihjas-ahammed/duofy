@@ -173,134 +173,160 @@ class _FillInBlankViewState extends State<FillInBlankView> {
       String updatedContent = widget.slide.content.replaceAllMapped(RegExp(r'___+'), (match) {
         final i = blankCounter++;
         final displayWord = userAnswers[i].isEmpty ? r'\_\_\_\_\_' : userAnswers[i];
-        final isActive = i == _activeBlankIndex;
-        // Bold and point if active
-        return isActive ? '**[ 👉 $displayWord ]**' : '*[ $displayWord ]*';
+        return '**$displayWord**';
       });
 
-      return SingleChildScrollView(
+      return Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: AppTheme.glassDecoration,
-              child: MathMarkdown(
-                data: updatedContent,
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: AppTheme.glassDecoration,
+                    child: MathMarkdown(
+                      data: updatedContent,
+                    ),
+                  ),
+                  if (numBlanks > 1 && !widget.isAnswered) ...[
+                    const SizedBox(height: 20),
+                    const Text(
+                      'SELECT BLANK TO FILL',
+                      style: TextStyle(
+                        color: Colors.white54,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 10,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(numBlanks, (i) {
+                          final isActive = i == _activeBlankIndex;
+                          final val = userAnswers[i];
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                            child: GestureDetector(
+                              onTap: () => setState(() => _activeBlankIndex = i),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: isActive
+                                      ? AppTheme.duoBlue.withOpacity(0.15)
+                                      : Colors.white.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isActive ? AppTheme.duoBlue : Colors.white24,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Text(
+                                  'Blank ${i + 1}: ${val.isEmpty ? '___' : val}',
+                                  style: TextStyle(
+                                    color: isActive ? AppTheme.duoBlue : Colors.white70,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                  ],
+                  _buildSuggestionsBank(numBlanks, userAnswers),
+                ],
               ),
             ),
-            if (numBlanks > 1 && !widget.isAnswered) ...[
-              const SizedBox(height: 20),
-              const Text(
-                'SELECT BLANK TO FILL',
-                style: TextStyle(
-                  color: Colors.white54,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 10,
-                  letterSpacing: 1.5,
+            if (widget.bottomBar != null)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    const SizedBox(height: 24),
+                    widget.bottomBar!,
+                  ],
                 ),
               ),
-              const SizedBox(height: 10),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(numBlanks, (i) {
-                    final isActive = i == _activeBlankIndex;
-                    final val = userAnswers[i];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                      child: GestureDetector(
-                        onTap: () => setState(() => _activeBlankIndex = i),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: isActive
-                                ? AppTheme.duoBlue.withOpacity(0.15)
-                                : Colors.white.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isActive ? AppTheme.duoBlue : Colors.white24,
-                              width: 2,
-                            ),
-                          ),
-                          child: Text(
-                            'Blank ${i + 1}: ${val.isEmpty ? '___' : val}',
-                            style: TextStyle(
-                              color: isActive ? AppTheme.duoBlue : Colors.white70,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                ),
-              ),
-            ],
-            _buildSuggestionsBank(numBlanks, userAnswers),
-            if (widget.bottomBar != null) ...[
-              const SizedBox(height: 24),
-              widget.bottomBar!,
-            ],
           ],
         ),
       );
     }
 
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: AppTheme.glassDecoration,
-            child: MathMarkdown(data: widget.slide.content, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-          const SizedBox(height: 32),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: widget.isAnswered ? (widget.isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.white12, width: 2),
-            ),
+      child: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text('YOUR ANSWER', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.5)),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _controller,
-                  enabled: !widget.isAnswered,
-                  onChanged: widget.onChanged,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: widget.isAnswered ? (widget.isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.amber,
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: AppTheme.glassDecoration,
+                  child: MathMarkdown(data: widget.slide.content, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(height: 32),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: widget.isAnswered ? (widget.isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.white12, width: 2),
                   ),
-                  decoration: InputDecoration(
-                    hintText: '___',
-                    hintStyle: const TextStyle(color: Colors.white24),
-                    filled: true,
-                    fillColor: Colors.black45,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.amber, width: 2)),
+                  child: Column(
+                    children: [
+                      const Text('YOUR ANSWER', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.5)),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _controller,
+                        enabled: !widget.isAnswered,
+                        onChanged: widget.onChanged,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          color: widget.isAnswered ? (widget.isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.amber,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: '___',
+                          hintStyle: const TextStyle(color: Colors.white24),
+                          filled: true,
+                          fillColor: Colors.black45,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.amber, width: 2)),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                _buildSuggestionsBank(),
               ],
             ),
           ),
-          _buildSuggestionsBank(),
-          if (widget.bottomBar != null) ...[
-            const SizedBox(height: 24),
-            widget.bottomBar!,
-          ],
+          if (widget.bottomBar != null)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  const SizedBox(height: 24),
+                  widget.bottomBar!,
+                ],
+              ),
+            ),
         ],
       ),
     );
