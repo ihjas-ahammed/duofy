@@ -13,6 +13,8 @@ class QuizView extends StatelessWidget {
   /// lesson screen owns persistence + re-rendering. Null disables editing.
   final void Function(Slide updated)? onUpdateSlide;
 
+  final Widget? bottomBar;
+
   const QuizView({
     super.key,
     required this.slide,
@@ -20,6 +22,7 @@ class QuizView extends StatelessWidget {
     required this.isAnswered,
     required this.onSelect,
     this.onUpdateSlide,
+    this.bottomBar,
   });
 
   Future<void> _editOption(BuildContext context, QuizOption opt) async {
@@ -122,6 +125,10 @@ class QuizView extends StatelessWidget {
                 ),
               );
             }),
+          if (bottomBar != null) ...[
+            const SizedBox(height: 24),
+            bottomBar!,
+          ],
         ],
       ),
     );

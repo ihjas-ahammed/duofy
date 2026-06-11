@@ -10,13 +10,16 @@ class NumericalView extends StatelessWidget {
   final bool isCorrect;
   final Function(String) onChanged;
 
+  final Widget? bottomBar;
+
   const NumericalView({
     super.key, 
     required this.slide, 
     required this.value, 
     required this.isAnswered, 
     required this.isCorrect, 
-    required this.onChanged
+    required this.onChanged,
+    this.bottomBar,
   });
 
   @override
@@ -82,6 +85,10 @@ class NumericalView extends StatelessWidget {
               ],
             ),
           ),
+          if (bottomBar != null) ...[
+            const SizedBox(height: 24),
+            bottomBar!,
+          ],
         ],
       ),
     );

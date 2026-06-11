@@ -84,12 +84,31 @@ function _showError(msg) {
     c2.fillStyle = '#94A3B8';
     c2.font = '12px sans-serif';
     c2.fillText('Diagram error: ' + msg, 10, 20);
-    if (window.DuoErrorChannel) {
-      window.DuoErrorChannel.postMessage(msg);
+    
+    let retries = 0;
+    function send() {
+      let sent = false;
+      if (window.DuoErrorChannel && typeof window.DuoErrorChannel.postMessage === 'function') {
+        window.DuoErrorChannel.postMessage(msg);
+        sent = true;
+      } else if (typeof window.DuoErrorChannel === 'function') {
+        window.DuoErrorChannel(msg);
+        sent = true;
+      } else if (typeof DuoErrorChannel === 'function') {
+        DuoErrorChannel(msg);
+        sent = true;
+      }
+      
+      if (!sent && retries < 100) {
+        retries++;
+        setTimeout(send, 50);
+      }
     }
+    send();
   } catch (_) {}
 }
 window.addEventListener('error', function(e) { _showError(e.message || 'unknown'); });
+window.addEventListener('unhandledrejection', function(e) { _showError(e.reason || 'unhandled promise rejection'); });
 function _render() {
   const { W, H, dpr } = _sizeCanvas();
   if (typeof sketch === 'function') {
@@ -172,7 +191,11 @@ function _render() {
   }
   _showError('no draw() or sketch() defined');
 }
+</script>
+<script>
 $userJs
+</script>
+<script>
 let __lastW = 0, __lastH = 0, __stableFrames = 0;
 function _waitForLayout() {
   if (__setupRan) return;
@@ -228,12 +251,19 @@ Widget buildCanvasArt(
   BoxFit fit = BoxFit.contain,
   WidgetBuilder? svgPlaceholder,
   ValueChanged<String>? onJsError,
+  VoidCallback? onSvgError,
 }) {
   if (isSvgCanvas(content)) {
     return SvgPicture.string(
       content,
       fit: fit,
       placeholderBuilder: svgPlaceholder,
+      errorBuilder: onSvgError != null
+          ? (context, error, stackTrace) {
+              WidgetsBinding.instance.addPostFrameCallback((_) => onSvgError());
+              return svgPlaceholder?.call(context) ?? const SizedBox.shrink();
+            }
+          : null,
     );
   }
   return CanvasHtmlView(drawFunction: content, onJsError: onJsError);

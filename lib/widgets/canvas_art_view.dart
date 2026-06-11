@@ -27,6 +27,9 @@ class CanvasArtView extends StatefulWidget {
   final bool isLoading;
   final void Function(String? errorContext)? onRegenerate;
 
+  final bool isStackedWithContent;
+  final VoidCallback? onError;
+
   const CanvasArtView({
     super.key,
     required this.svg,
@@ -34,6 +37,8 @@ class CanvasArtView extends StatefulWidget {
     this.prompt,
     this.isLoading = false,
     this.onRegenerate,
+    this.isStackedWithContent = false,
+    this.onError,
   });
 
   @override
@@ -41,23 +46,42 @@ class CanvasArtView extends StatefulWidget {
 }
 
 class _CanvasArtViewState extends State<CanvasArtView> {
-  bool _hasAutoRetried = false;
+  bool _hasError = false;
+
+  @override
+  void didUpdateWidget(CanvasArtView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.svg != oldWidget.svg || widget.isLoading != oldWidget.isLoading) {
+      _hasError = false;
+    }
+  }
 
   void _handleJsError(String message) {
-    if (!_hasAutoRetried && widget.onRegenerate != null && !widget.isLoading) {
-      _hasAutoRetried = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && widget.onRegenerate != null) {
-          widget.onRegenerate!(message);
-        }
+    if (mounted) {
+      setState(() {
+        _hasError = true;
       });
+      widget.onError?.call();
+    }
+  }
+
+  void _handleSvgError() {
+    if (mounted) {
+      setState(() {
+        _hasError = true;
+      });
+      widget.onError?.call();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // No prompt → no slot at all. We don\'t want an empty rectangle for
-    // lessons the text AI decided didn\'t need a diagram.
+    if (_hasError) {
+      return const SizedBox.shrink();
+    }
+
+    // No prompt → no slot at all. We don't want an empty rectangle for
+    // lessons the text AI decided didn't need a diagram.
     if (!widget.hasPrompt && (widget.svg == null || widget.svg!.trim().isEmpty)) {
       return const SizedBox.shrink();
     }
@@ -65,10 +89,9 @@ class _CanvasArtViewState extends State<CanvasArtView> {
     final hasArt = widget.svg != null && widget.svg!.trim().isNotEmpty;
 
     // No art and not actively generating → the diagram either failed or was
-    // never generated. Instead of a blank placeholder box, show the prompt
-    // text with a "tap to generate" affordance.
+    // never generated. Hide it.
     if (!hasArt && !widget.isLoading) {
-      return _TapToGenerateCard(prompt: widget.prompt, onTap: widget.onRegenerate == null ? null : () => widget.onRegenerate!(null));
+      return const SizedBox.shrink();
     }
 
     // Full-width hero sized by aspect ratio (not a fixed screen fraction) so
@@ -77,12 +100,22 @@ class _CanvasArtViewState extends State<CanvasArtView> {
     // own proportions. The full-screen / refresh buttons float on top, and the
     // canvas is allowed to sit directly beneath them.
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: widget.isStackedWithContent
+          ? EdgeInsets.zero
+          : const EdgeInsets.only(bottom: 16),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.04),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white12),
+        borderRadius: widget.isStackedWithContent
+            ? const BorderRadius.vertical(top: Radius.circular(24))
+            : BorderRadius.circular(16),
+        border: widget.isStackedWithContent
+            ? Border(
+                top: BorderSide(color: Colors.white.withOpacity(0.1)),
+                left: BorderSide(color: Colors.white.withOpacity(0.1)),
+                right: BorderSide(color: Colors.white.withOpacity(0.1)),
+              )
+            : Border.all(color: Colors.white.withOpacity(0.1)),
       ),
       child: Stack(
         children: [
@@ -96,8 +129,9 @@ class _CanvasArtViewState extends State<CanvasArtView> {
                     onDoubleTap: () => showCanvasCodeDialog(context, widget.svg!),
                     child: buildCanvasArt(
                       widget.svg!,
-                      svgPlaceholder: (_) => _TapToGenerateCard(prompt: widget.prompt, onTap: widget.onRegenerate == null ? null : () => widget.onRegenerate!(null), embedded: true),
+                      svgPlaceholder: (_) => const SizedBox.shrink(),
                       onJsError: _handleJsError,
+                      onSvgError: _handleSvgError,
                     ),
                   )
                 : const _CanvasPlaceholder(label: 'Generating diagram…', spinning: true),

@@ -11,6 +11,8 @@ class FillInBlankView extends StatefulWidget {
   final bool isCorrect;
   final Function(String) onChanged;
 
+  final Widget? bottomBar;
+
   const FillInBlankView({
     super.key,
     required this.slide,
@@ -18,6 +20,7 @@ class FillInBlankView extends StatefulWidget {
     required this.isAnswered,
     required this.isCorrect,
     required this.onChanged,
+    this.bottomBar,
   });
 
   @override
@@ -239,6 +242,10 @@ class _FillInBlankViewState extends State<FillInBlankView> {
               ),
             ],
             _buildSuggestionsBank(numBlanks, userAnswers),
+            if (widget.bottomBar != null) ...[
+              const SizedBox(height: 24),
+              widget.bottomBar!,
+            ],
           ],
         ),
       );
@@ -290,6 +297,10 @@ class _FillInBlankViewState extends State<FillInBlankView> {
             ),
           ),
           _buildSuggestionsBank(),
+          if (widget.bottomBar != null) ...[
+            const SizedBox(height: 24),
+            widget.bottomBar!,
+          ],
         ],
       ),
     );

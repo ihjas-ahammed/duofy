@@ -54,6 +54,7 @@ class _LessonScreenState extends State<LessonScreen> {
   late DateTime _startTime;
   int _totalInteractive = 0;
   int _correctAttempts = 0;
+  final Set<String> _failedCanvasIds = {};
   /// How many times each interactive slide has been answered wrong, keyed by
   /// slide id. Drives the "retry once, then skip" flow and ensures any failure
   /// permanently counts against final accuracy.
@@ -205,6 +206,7 @@ class _LessonScreenState extends State<LessonScreen> {
           identical(lesson.slides, _lesson.slides) == false) {
         setState(() {
           _lesson = lesson;
+          _failedCanvasIds.remove(lesson.id);
           // Refresh the queue so each Slide object reflects the latest
           // canvasSvg / content. Length and order remain stable because
           // we're looking up the same lesson in the same book.
@@ -362,11 +364,20 @@ class _LessonScreenState extends State<LessonScreen> {
   /// Lesson-level canvas widget. Returns SizedBox.shrink when the canvas
   /// has no prompt so callers can embed it unconditionally.
   Widget _buildLessonCanvas() {
+    final hasFailed = _failedCanvasIds.contains(_lesson.id);
     return CanvasArtView(
       svg: _lesson.canvasSvg,
       hasPrompt: (_lesson.canvasPrompt?.trim().isNotEmpty ?? false),
       prompt: _lesson.canvasPrompt,
       isLoading: GenerationManager.instance.activeCanvasRegens.contains(_lesson.id),
+      isStackedWithContent: !hasFailed,
+      onError: () {
+        if (mounted) {
+          setState(() {
+            _failedCanvasIds.add(_lesson.id);
+          });
+        }
+      },
       onRegenerate: _canRegenerateCanvas
           ? (err) => GenerationManager.instance.regenerateLessonCanvas(
                 book: widget.book!,
@@ -572,7 +583,70 @@ class _LessonScreenState extends State<LessonScreen> {
     }
   }
 
-  Widget _buildSlideContent(Slide slide) {
+  Widget _buildActionBottomBar(Slide slide) {
+    final isInteractive = ['quiz', 'fill_in_blank', 'one_word', 'numerical'].contains(slide.type);
+    return Container(
+      decoration: BoxDecoration(
+        color: _answered 
+          ? (_isCorrect ? AppTheme.duoGreen.withOpacity(0.1) : AppTheme.duoRed.withOpacity(0.1))
+          : Colors.transparent,
+        border: Border(
+          top: BorderSide(
+            color: _answered ? (_isCorrect ? AppTheme.duoGreen.withOpacity(0.3) : AppTheme.duoRed.withOpacity(0.3)) : Colors.white10, 
+            width: 1
+          )
+        ),
+      ),
+      padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (_answered && !_isCorrect)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.duoRed.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.duoRed.withOpacity(0.4)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('CORRECT ANSWER:', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.2)),
+                    const SizedBox(height: 8),
+                    MathMarkdown(
+                      data: _getCorrectAnswerText(slide), 
+                      textStyle: const TextStyle(color: AppTheme.duoRed, fontSize: 18, fontWeight: FontWeight.bold)
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+          isInteractive && !_answered
+              ? DuoButton(
+                  text: 'CHECK',
+                  color: _canCheck(slide) ? AppTheme.duoGreen : const Color(0xFF334155),
+                  shadowColor: _canCheck(slide) ? AppTheme.duoGreenDark : const Color(0xFF1E293B),
+                  onPressed: () {
+                    if (_canCheck(slide)) _checkAnswer(slide);
+                  },
+                )
+              : DuoButton(
+                  text: _answered && !_isCorrect ? 'GOT IT' : 'CONTINUE',
+                  color: _answered && !_isCorrect ? AppTheme.duoRed : AppTheme.duoGreen,
+                  shadowColor: _answered && !_isCorrect ? AppTheme.duoRedDark : AppTheme.duoGreenDark,
+                  onPressed: _nextSlide,
+                ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSlideContent(Slide slide, Widget? bottomBar) {
     switch (slide.type) {
       case 'step_by_step':
       case 'proof':
@@ -610,6 +684,7 @@ class _LessonScreenState extends State<LessonScreen> {
           isAnswered: _answered,
           onSelect: (id) => setState(() => _selectedQuizOption = id),
           onUpdateSlide: _applySlideEdit,
+          bottomBar: bottomBar,
         );
       case 'fill_in_blank':
         return FillInBlankView(
@@ -618,6 +693,7 @@ class _LessonScreenState extends State<LessonScreen> {
           isAnswered: _answered,
           isCorrect: _isCorrect,
           onChanged: (val) => setState(() => _blankInput = val),
+          bottomBar: bottomBar,
         );
       case 'numerical':
         return NumericalView(
@@ -626,6 +702,7 @@ class _LessonScreenState extends State<LessonScreen> {
           isAnswered: _answered,
           isCorrect: _isCorrect,
           onChanged: (val) => setState(() => _numericInput = val),
+          bottomBar: bottomBar,
         );
       case 'one_word':
         return OneWordView(
@@ -634,10 +711,12 @@ class _LessonScreenState extends State<LessonScreen> {
           isAnswered: _answered,
           isCorrect: _isCorrect,
           onChanged: (val) => setState(() => _wordInput = val),
+          bottomBar: bottomBar,
         );
       case 'theory':
       case 'theory_group':
       default:
+        final hasCanvas = (_lesson.canvasPrompt?.trim().isNotEmpty ?? false) && !_failedCanvasIds.contains(_lesson.id);
         // Wrap theory content matching LessonView.tsx default renderer (glass panel)
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4.0),
@@ -648,7 +727,22 @@ class _LessonScreenState extends State<LessonScreen> {
                    // Lesson-level canvas stacked above the theory text
                    _buildLessonCanvas(),
 
-                   if (slide.title.isNotEmpty)
+                   if (!hasCanvas)
+                     Padding(
+                       padding: const EdgeInsets.only(bottom: 16.0, top: 16.0),
+                       child: Text(
+                         _lesson.title,
+                         style: const TextStyle(
+                           fontSize: 28,
+                           fontWeight: FontWeight.w900,
+                           color: Colors.white,
+                           letterSpacing: -0.5,
+                         ),
+                         textAlign: TextAlign.center,
+                       ),
+                     ),
+
+                   if (!hasCanvas && slide.title.isNotEmpty && slide.title.toLowerCase() != _lesson.title.toLowerCase())
                      Padding(
                         padding: const EdgeInsets.only(bottom: 24.0, top: 16.0),
                         child: Text(
@@ -666,8 +760,17 @@ class _LessonScreenState extends State<LessonScreen> {
                      width: double.infinity,
                      padding: const EdgeInsets.all(24),
                      decoration: AppTheme.glassDecoration.copyWith(
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: hasCanvas
+                            ? const BorderRadius.vertical(bottom: Radius.circular(24))
+                            : BorderRadius.circular(24),
                         color: Colors.black.withOpacity(0.4),
+                        border: hasCanvas
+                            ? Border(
+                                left: BorderSide(color: Colors.white.withOpacity(0.1)),
+                                right: BorderSide(color: Colors.white.withOpacity(0.1)),
+                                bottom: BorderSide(color: Colors.white.withOpacity(0.1)),
+                              )
+                            : null,
                      ),
                      child: Builder(
                        builder: (context) {
@@ -675,22 +778,44 @@ class _LessonScreenState extends State<LessonScreen> {
                          return Column(
                            crossAxisAlignment: CrossAxisAlignment.start,
                            mainAxisSize: MainAxisSize.min,
-                           children: lines.map((line) {
-                             if (line.isEmpty) {
-                               return const SizedBox(height: 8);
-                             }
-                             return Padding(
-                               padding: const EdgeInsets.symmetric(vertical: 4.0),
-                               child: MathMarkdown(
-                                 data: line,
-                                 textStyle: const TextStyle(fontSize: 16, color: Colors.white),
+                           children: [
+                             if (hasCanvas && slide.title.isNotEmpty)
+                               Padding(
+                                 padding: const EdgeInsets.only(bottom: 16.0),
+                                 child: Center(
+                                   child: Text(
+                                     slide.title,
+                                     style: const TextStyle(
+                                       fontSize: 24,
+                                       fontWeight: FontWeight.w900,
+                                       color: Colors.white,
+                                       letterSpacing: -0.5,
+                                     ),
+                                     textAlign: TextAlign.center,
+                                   ),
+                                 ),
                                ),
-                             );
-                           }).toList(),
+                             ...lines.map((line) {
+                               if (line.isEmpty) {
+                                 return const SizedBox(height: 8);
+                               }
+                               return Padding(
+                                 padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                 child: MathMarkdown(
+                                   data: line,
+                                   textStyle: const TextStyle(fontSize: 16, color: Colors.white),
+                                 ),
+                               );
+                             }),
+                           ],
                          );
                        }
                      ),
-                   )
+                   ),
+                   if (bottomBar != null) ...[
+                     const SizedBox(height: 24),
+                     bottomBar,
+                   ],
                 ]
              )
           ),
@@ -719,8 +844,8 @@ class _LessonScreenState extends State<LessonScreen> {
 
     final slide = _slideQueue[_currentIndex];
     final progress = (_currentIndex) / _slideQueue.length;
-    final isInteractive = ['quiz', 'fill_in_blank', 'one_word', 'numerical'].contains(slide.type);
     final hasCustomBar = _isCustomBottomBar(slide);
+    final bottomBar = (!hasCustomBar && !_isEditingMode) ? _buildActionBottomBar(slide) : null;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F19),
@@ -858,12 +983,12 @@ class _LessonScreenState extends State<LessonScreen> {
                             _isEditingMode = true;
                           });
                         },
-                        child: _buildSlideContent(slide),
+                        child: _buildSlideContent(slide, bottomBar),
                       ),
               )
             ),
             
-            // Action Bottom Bar
+            // Action Bottom Bar (SAVE only in editing mode)
             if (_isEditingMode)
               Container(
                 decoration: const BoxDecoration(
@@ -882,66 +1007,6 @@ class _LessonScreenState extends State<LessonScreen> {
                     });
                     _applySlideEdit(updatedSlide);
                   },
-                ),
-              )
-            else if (!hasCustomBar)
-              Container(
-                decoration: BoxDecoration(
-                  color: _answered 
-                    ? (_isCorrect ? AppTheme.duoGreen.withOpacity(0.1) : AppTheme.duoRed.withOpacity(0.1))
-                    : Colors.transparent,
-                  border: Border(
-                    top: BorderSide(
-                      color: _answered ? (_isCorrect ? AppTheme.duoGreen.withOpacity(0.3) : AppTheme.duoRed.withOpacity(0.3)) : Colors.white10, 
-                      width: 1
-                    )
-                  ),
-                ),
-                padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (_answered && !_isCorrect)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppTheme.duoRed.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppTheme.duoRed.withOpacity(0.4)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('CORRECT ANSWER:', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.2)),
-                              const SizedBox(height: 8),
-                              MathMarkdown(
-                                data: _getCorrectAnswerText(slide), 
-                                textStyle: const TextStyle(color: AppTheme.duoRed, fontSize: 18, fontWeight: FontWeight.bold)
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      
-                    isInteractive && !_answered
-                        ? DuoButton(
-                            text: 'CHECK',
-                            color: _canCheck(slide) ? AppTheme.duoGreen : const Color(0xFF334155),
-                            shadowColor: _canCheck(slide) ? AppTheme.duoGreenDark : const Color(0xFF1E293B),
-                            onPressed: () {
-                              if (_canCheck(slide)) _checkAnswer(slide);
-                            },
-                          )
-                        : DuoButton(
-                            text: _answered && !_isCorrect ? 'GOT IT' : 'CONTINUE',
-                            color: _answered && !_isCorrect ? AppTheme.duoRed : AppTheme.duoGreen, // React defaults to green for continue
-                            shadowColor: _answered && !_isCorrect ? AppTheme.duoRedDark : AppTheme.duoGreenDark,
-                            onPressed: _nextSlide,
-                          ),
-                  ],
                 ),
               )
           ],
