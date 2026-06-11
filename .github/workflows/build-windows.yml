@@ -3,6 +3,8 @@ name: Build Windows App
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'builds/**'
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -13,9 +15,15 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 30
 
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -30,13 +38,33 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Extract version from pubspec.yaml
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//' | xargs)
+          echo "vname=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Build release Windows app
         run: flutter build windows --release
 
-      - name: Upload Windows artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: duofy-windows
-          path: build/windows/x64/runner/Release/
-          if-no-files-found: error
-          retention-days: 14
+      - name: Zip Windows build output
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.vname }}"
+          New-Item -ItemType Directory -Force -Path builds | Out-Null
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath "builds\duofy-v${version}-windows-x64.zip" -Force
+          Get-ChildItem builds\
+
+      - name: Commit and push builds to repository
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add builds/
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore: add Windows build v${{ steps.version.outputs.vname }} [skip ci]"
+            git push origin main
+          fi
