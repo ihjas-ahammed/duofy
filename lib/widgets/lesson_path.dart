@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
 import '../screens/lesson_screen.dart';
 import '../services/generation_manager.dart';
+import '../services/ai_estimator.dart';
 import '../utils/progress_utils.dart';
 import 'lesson_node.dart';
 import 'unit_header.dart';
@@ -408,8 +410,9 @@ class _LessonPathState extends State<LessonPath> {
                       continue;
                     }
                     if (el.kind == _ElementKind.placeholder) {
+                      final unit = el.unit!;
                       final fakeLesson = Lesson(
-                        id: '${el.unit!.id}-pending-${el.lessonIdx}',
+                        id: '${unit.id}-pending-${el.lessonIdx}',
                         title: 'Lesson ${el.lessonIdx! + 1}',
                         description: 'Planning Content...',
                         icon: 'BookOpen',
@@ -417,21 +420,32 @@ class _LessonPathState extends State<LessonPath> {
                       );
                       final nodeSize = LessonNodeWidget.nodeSize;
                       final leftPos = (el.x! * scaleX) - (nodeSize / 2);
+                      
+                      final bool generating = widget.loadingUnitStatuses[unit.id] != null;
+                      final bool isGeneratingNode = generating && el.lessonIdx == unit.lessons.length;
+                      
                       lessonWidgets.add(Positioned(
                         left: leftPos,
                         top: el.y - (nodeSize / 2),
                         child: SizedBox(
                           width: width - leftPos,
-                          child: LessonNodeWidget(
-                            lesson: fakeLesson,
-                            isCompleted: false,
-                            isLocked: true,
-                            isActive: false,
-                            isNextToStart: false,
-                            sectionColorStr: widget.section.color,
-                            onTap: () {},
-                            textOnRight: el.textOnRight ?? true,
-                          ),
+                          child: isGeneratingNode
+                              ? _ActiveGeneratingNodeWrapper(
+                                  unitId: el.unit!.id,
+                                  lesson: fakeLesson,
+                                  sectionColorStr: widget.section.color,
+                                  textOnRight: el.textOnRight ?? true,
+                                )
+                              : LessonNodeWidget(
+                                  lesson: fakeLesson,
+                                  isCompleted: false,
+                                  isLocked: true,
+                                  isActive: false,
+                                  isNextToStart: false,
+                                  sectionColorStr: widget.section.color,
+                                  onTap: () {},
+                                  textOnRight: el.textOnRight ?? true,
+                                ),
                         ),
                       ));
                       continue;
@@ -1023,6 +1037,102 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ActiveGeneratingNodeWrapper extends StatefulWidget {
+  final String unitId;
+  final Lesson lesson;
+  final String sectionColorStr;
+  final bool textOnRight;
+
+  const _ActiveGeneratingNodeWrapper({
+    required this.unitId,
+    required this.lesson,
+    required this.sectionColorStr,
+    required this.textOnRight,
+  });
+
+  @override
+  State<_ActiveGeneratingNodeWrapper> createState() => _ActiveGeneratingNodeWrapperState();
+}
+
+class _ActiveGeneratingNodeWrapperState extends State<_ActiveGeneratingNodeWrapper> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pendingIdx = widget.lesson.id.split('-pending-').last;
+    final targetId = '${widget.unitId}-pending-$pendingIdx';
+    final reqInfo = AiEstimator.activeRequests[targetId];
+    
+    double progress = 0.0;
+    if (reqInfo != null) {
+      final elapsed = DateTime.now().difference(reqInfo.startTime).inMilliseconds;
+      final est = reqInfo.estimatedDuration.inMilliseconds;
+      if (est > 0) {
+        progress = (elapsed / est * 0.95).clamp(0.0, 0.95);
+      }
+    } else {
+      final unitTask = GenerationManager.instance.activeUnitGenerations[widget.unitId];
+      if (unitTask != null) {
+        final elapsed = DateTime.now().difference(unitTask.startTime).inMilliseconds;
+        final est = unitTask.estimatedDuration.inMilliseconds;
+        if (est > 0) {
+          progress = (elapsed / est * 0.95).clamp(0.0, 0.95);
+        }
+      }
+    }
+
+    final nodeSize = LessonNodeWidget.nodeSize;
+    final progressRingSize = nodeSize + 8;
+
+    return Stack(
+      alignment: Alignment.centerLeft,
+      clipBehavior: Clip.none,
+      children: [
+        LessonNodeWidget(
+          lesson: widget.lesson,
+          isCompleted: false,
+          isLocked: true,
+          isActive: false,
+          isNextToStart: false,
+          sectionColorStr: widget.sectionColorStr,
+          onTap: () {},
+          textOnRight: widget.textOnRight,
+        ),
+        Positioned(
+          left: -4,
+          top: -4,
+          width: progressRingSize,
+          height: progressRingSize,
+          child: IgnorePointer(
+            child: CircularProgressIndicator(
+              value: progress,
+              strokeWidth: 4.0,
+              color: SectionColors.base(widget.sectionColorStr),
+              backgroundColor: Colors.white.withOpacity(0.1),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

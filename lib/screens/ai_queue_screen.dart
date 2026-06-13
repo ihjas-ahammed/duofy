@@ -8,6 +8,7 @@ import '../models/app_models.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/responsive_center.dart';
+import '../widgets/real_progress_bar.dart';
 
 class AiQueueScreen extends StatefulWidget {
   const AiQueueScreen({super.key});
@@ -264,27 +265,14 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                 task.statusMessage,
                 style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
               ),
-              if (isRunning && task.progress != null) ...[
+              if (isRunning) ...[
                 const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: task.progress,
-                          backgroundColor: Colors.white10,
-                          color: AppTheme.duoBlue,
-                          minHeight: 6,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      '${(task.progress! * 100).toInt()}%',
-                      style: const TextStyle(color: AppTheme.duoBlue, fontSize: 11, fontWeight: FontWeight.w900),
-                    ),
-                  ],
+                RealProgressBar(
+                  progress: task.progress,
+                  startTime: task.startTime,
+                  estimatedDuration: task.estimatedDuration,
+                  isComplete: task.status == 'completed',
+                  isError: task.status == 'failed',
                 ),
               ],
               if (isQueued && task.isScheduled) ...[

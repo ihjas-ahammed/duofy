@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import '../services/ai_estimator.dart';
 import '../theme/app_theme.dart';
 import 'canvas_html_view.dart';
 
@@ -29,6 +31,7 @@ class CanvasArtView extends StatefulWidget {
 
   final bool isStackedWithContent;
   final VoidCallback? onError;
+  final String? targetId;
 
   const CanvasArtView({
     super.key,
@@ -39,6 +42,7 @@ class CanvasArtView extends StatefulWidget {
     this.onRegenerate,
     this.isStackedWithContent = false,
     this.onError,
+    this.targetId,
   });
 
   @override
@@ -134,7 +138,7 @@ class _CanvasArtViewState extends State<CanvasArtView> {
                       onSvgError: _handleSvgError,
                     ),
                   )
-                : const _CanvasPlaceholder(label: 'Generating diagram…', spinning: true),
+                : _CanvasPlaceholder(label: 'Generating diagram…', spinning: true, targetId: widget.targetId),
           ),
           // Expand-to-full-screen affordance (top-left).
           if (hasArt)
@@ -269,13 +273,71 @@ class _TapToGenerateCard extends StatelessWidget {
   }
 }
 
-class _CanvasPlaceholder extends StatelessWidget {
+class _CanvasPlaceholder extends StatefulWidget {
   final String label;
   final bool spinning;
-  const _CanvasPlaceholder({required this.label, required this.spinning});
+  final String? targetId;
+  const _CanvasPlaceholder({
+    required this.label,
+    required this.spinning,
+    this.targetId,
+  });
+
+  @override
+  State<_CanvasPlaceholder> createState() => _CanvasPlaceholderState();
+}
+
+class _CanvasPlaceholderState extends State<_CanvasPlaceholder> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimerIfNeeded();
+  }
+
+  @override
+  void didUpdateWidget(_CanvasPlaceholder oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _startTimerIfNeeded();
+  }
+
+  void _startTimerIfNeeded() {
+    if (widget.spinning && widget.targetId != null) {
+      if (_timer == null) {
+        _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+          if (mounted) {
+            setState(() {});
+          }
+        });
+      }
+    } else {
+      _timer?.cancel();
+      _timer = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    double? progressValue;
+    if (widget.spinning && widget.targetId != null) {
+      final info = AiEstimator.activeRequests[widget.targetId];
+      if (info != null) {
+        final elapsed = DateTime.now().difference(info.startTime).inMilliseconds;
+        final est = info.estimatedDuration.inMilliseconds;
+        if (est > 0) {
+          final ratio = elapsed / est;
+          progressValue = (ratio * 0.95).clamp(0.0, 0.95);
+        }
+      }
+    }
+
     return Container(
       alignment: Alignment.center,
       decoration: BoxDecoration(
@@ -286,19 +348,42 @@ class _CanvasPlaceholder extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (spinning)
-            const SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.duoBlue),
+          if (widget.spinning)
+            SizedBox(
+              width: 40,
+              height: 40,
+              child: progressValue == null
+                  ? const CircularProgressIndicator(
+                      strokeWidth: 3,
+                      color: AppTheme.duoBlue,
+                      backgroundColor: Colors.white12,
+                    )
+                  : CircularProgressIndicator(
+                      value: progressValue,
+                      strokeWidth: 3,
+                      color: AppTheme.duoBlue,
+                      backgroundColor: Colors.white12,
+                    ),
             )
           else
             const Icon(LucideIcons.image, color: Colors.white24, size: 26),
           const SizedBox(height: 8),
           Text(
-            label,
+            widget.label,
             style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w800),
           ),
+          if (progressValue != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Text(
+                '${(progressValue * 100).round()}%',
+                style: const TextStyle(
+                  color: AppTheme.duoBlue,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
         ],
       ),
     );

@@ -259,6 +259,7 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                   prompt: widget.slide.canvasPrompt,
                   isLoading: widget.canvasIsLoading,
                   onRegenerate: widget.onRegenerateCanvas,
+                  targetId: widget.slide.id,
                 ),
 
                 if (widget.slide.content.isNotEmpty)

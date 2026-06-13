@@ -371,6 +371,7 @@ class _LessonScreenState extends State<LessonScreen> {
       prompt: _lesson.canvasPrompt,
       isLoading: GenerationManager.instance.activeCanvasRegens.contains(_lesson.id),
       isStackedWithContent: !hasFailed,
+      targetId: _lesson.id,
       onError: () {
         if (mounted) {
           setState(() {

@@ -13,6 +13,7 @@ import 'database_service.dart';
 import 'ai_service.dart';
 import 'notification_service.dart';
 import 'progress_service.dart';
+import 'ai_estimator.dart';
 
 enum BookGenState { extracting, review, chunking, saving, error }
 
@@ -76,6 +77,13 @@ class GenerationManager extends ChangeNotifier {
   GenerationManager._internal() {
     _loadQueueFromPrefs();
     _startQueueTimer();
+    
+    AiEstimator.onRegisterActiveRequest = (targetId, info) {
+      notifyListeners();
+    };
+    AiEstimator.onUnregisterActiveRequest = (targetId) {
+      notifyListeners();
+    };
   }
 
   final List<GenerationTask> activeTasks = [];
@@ -112,6 +120,17 @@ class GenerationManager extends ChangeNotifier {
   final PdfService _pdfService = PdfService();
   final DatabaseService _dbService = DatabaseService();
   final AiService _aiService = AiService();
+
+  String _cachedTextModel = 'gemini-flash-lite-latest';
+  String _cachedGraphicsModel = 'gemini-3.5-flash';
+  
+  Future<void> _cacheModels() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _cachedTextModel = prefs.getString('model_primary_text') ?? 'gemini-flash-lite-latest';
+      _cachedGraphicsModel = prefs.getString('model_primary_graphics') ?? 'gemini-3.5-flash';
+    } catch (_) {}
+  }
 
   final StreamController<Book> _bookUpdateController = StreamController<Book>.broadcast();
   Stream<Book> get bookUpdates => _bookUpdateController.stream;
@@ -152,6 +171,7 @@ class GenerationManager extends ChangeNotifier {
   }
 
   Future<void> _loadQueueFromPrefs() async {
+    await _cacheModels();
     try {
       final prefs = await SharedPreferences.getInstance();
       _isPaused = prefs.getBool('generation_paused') ?? false;
@@ -189,6 +209,16 @@ class GenerationManager extends ChangeNotifier {
     }
   }
 
+  void registerActiveRequest(String targetId, ActiveRequestInfo info) {
+    AiEstimator.activeRequests[targetId] = info;
+    notifyListeners();
+  }
+
+  void unregisterActiveRequest(String targetId) {
+    AiEstimator.activeRequests.remove(targetId);
+    notifyListeners();
+  }
+
   void _syncActiveMapsWithQueue() {
     activeUnitGenerations.clear();
     activeSectionManifests.clear();
@@ -202,20 +232,34 @@ class GenerationManager extends ChangeNotifier {
         
         if (task.type == 'unit') {
           if (task.unitId != null) {
+            final int? plannedLessonsCount = task.params['plannedLessonsCount'] as int?;
+            final double estSecs = AiEstimator.estimateUnitDurationSync(
+              textModel: _cachedTextModel,
+              graphicsModel: _cachedGraphicsModel,
+              generateGraphics: task.generateGraphics,
+              plannedLessonsCount: plannedLessonsCount,
+            );
+            final Duration estDuration = Duration(milliseconds: (estSecs * 1000).toInt());
+            task.estimatedDuration = estDuration;
+
             activeUnitGenerations[task.unitId!] = UnitGenTask(
               status: statusMsg,
-              estimatedDuration: const Duration(seconds: 90),
+              estimatedDuration: estDuration,
               startTime: task.startTime ?? DateTime.now(),
               isError: isError,
               progress: task.progress,
-              plannedLessonsCount: task.params['plannedLessonsCount'] as int?,
+              plannedLessonsCount: plannedLessonsCount,
             );
           }
         } else if (task.type == 'manifest') {
           if (task.sectionId != null) {
+            final double estSecs = AiEstimator.estimateDurationSync(_cachedTextModel, 20000);
+            final Duration estDuration = Duration(milliseconds: (estSecs * 1000).toInt());
+            task.estimatedDuration = estDuration;
+
             activeSectionManifests[task.sectionId!] = UnitGenTask(
               status: statusMsg,
-              estimatedDuration: const Duration(seconds: 30),
+              estimatedDuration: estDuration,
               startTime: task.startTime ?? DateTime.now(),
               isError: isError,
               progress: task.progress,
@@ -258,6 +302,7 @@ class GenerationManager extends ChangeNotifier {
   // ---------------------------------------------------------------------------
   Future<void> _processQueue() async {
     if (_isProcessing) return;
+    await _cacheModels();
     
     // Check if generation is paused
     final prefs = await SharedPreferences.getInstance();
@@ -850,7 +895,24 @@ class GenerationManager extends ChangeNotifier {
         ctxBook,
         (status, {progress, plannedLessons}) {
           task.statusMessage = status;
-          if (progress != null) task.progress = progress;
+          if (progress != null) {
+            task.progress = progress;
+            NotificationService.showProgress(
+              notifId,
+              "Generating Unit: ${unit.title}",
+              status,
+              progress: (progress * 100).toInt(),
+              maxProgress: 100,
+              indeterminate: false,
+            );
+          } else {
+            NotificationService.showProgress(
+              notifId,
+              "Generating Unit: ${unit.title}",
+              status,
+              indeterminate: true,
+            );
+          }
           if (plannedLessons != null) {
             task.params['plannedLessonsCount'] = plannedLessons;
           }

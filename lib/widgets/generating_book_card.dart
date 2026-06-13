@@ -64,6 +64,8 @@ class GeneratingBookCard extends StatelessWidget {
                       child: task.state == BookGenState.extracting || task.state == BookGenState.chunking || task.state == BookGenState.saving
                         ? RealProgressBar(
                             progress: task.progress,
+                            startTime: task.startTime,
+                            estimatedDuration: task.estimatedDuration,
                             isCircular: true,
                           )
                         : Icon(statusIcon, size: 50, color: iconColor),

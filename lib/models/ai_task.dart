@@ -18,6 +18,7 @@ class AiTask {
   String? errorMessage;
   DateTime? startTime;
   DateTime? endTime;
+  Duration? estimatedDuration;
   
   final Map<String, dynamic> params;
 
@@ -40,6 +41,7 @@ class AiTask {
     this.errorMessage,
     this.startTime,
     this.endTime,
+    this.estimatedDuration,
     required this.params,
   }) {
     // Prevent unhandled future errors by registering a silent catchError handler
@@ -63,6 +65,7 @@ class AiTask {
       'errorMessage': errorMessage,
       'startTime': startTime?.millisecondsSinceEpoch,
       'endTime': endTime?.millisecondsSinceEpoch,
+      'estimatedDurationMs': estimatedDuration?.inMilliseconds,
       'params': params,
     };
   }
@@ -84,6 +87,7 @@ class AiTask {
       errorMessage: json['errorMessage'],
       startTime: json['startTime'] != null ? DateTime.fromMillisecondsSinceEpoch(json['startTime']) : null,
       endTime: json['endTime'] != null ? DateTime.fromMillisecondsSinceEpoch(json['endTime']) : null,
+      estimatedDuration: json['estimatedDurationMs'] != null ? Duration(milliseconds: json['estimatedDurationMs']) : null,
       params: Map<String, dynamic>.from(json['params'] ?? {}),
     );
   }

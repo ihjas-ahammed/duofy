@@ -13,6 +13,7 @@ import 'prompt_service.dart';
 import 'pdf_service.dart';
 import 'database_service.dart';
 import 'fb/fb_firestore.dart';
+import 'ai_estimator.dart';
 
 class AiService {
   static int activeCanvasRegensCount = 0;
@@ -1297,7 +1298,13 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
             generationConfig: GenerationConfig(responseMimeType: 'application/json'),
           );
           final response = await _retryTransient(
-            () => model.generateContent([Content.multi(parts)]).timeout(const Duration(minutes: 3)),
+            () => _generateContentWithTiming(
+              model: model,
+              modelName: modelName,
+              contents: [Content.multi(parts)],
+              requestType: 'lesson_gen',
+              targetId: '${unit.id}-pending-${index - 1}',
+            ).timeout(const Duration(minutes: 3)),
             onRetry: (a, e) => print('[AiService] Lesson $index transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
           );
           final text = response.text;
@@ -1501,15 +1508,24 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
   /// [contextText] is a short snippet of the surrounding lesson content so
   /// the model can keep the diagram thematically consistent (e.g. variable
   /// names, units). Pass an empty string when not relevant.
-  Future<String?> generateCanvasArt(String canvasPrompt, {String contextText = '', String? errorContext, String? forcedApiKey, bool isHighPriority = false}) async {
+  Future<String?> generateCanvasArt(String canvasPrompt, {
+    String contextText = '',
+    String? errorContext,
+    String? forcedApiKey,
+    bool isHighPriority = false,
+    String? targetId,
+    bool skipReuse = false,
+  }) async {
     if (canvasPrompt.trim().isEmpty) return null;
 
     if (!isHighPriority) {
       await _checkPause();
     }
 
-    final reused = await findReusableCanvasArt(canvasPrompt, forcedApiKey: forcedApiKey);
-    if (reused != null) return reused;
+    if (!skipReuse) {
+      final reused = await findReusableCanvasArt(canvasPrompt, forcedApiKey: forcedApiKey);
+      if (reused != null) return reused;
+    }
 
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getPrimaryGraphicsModels();
@@ -1530,8 +1546,13 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
         try {
           final model = GenerativeModel(model: modelName, apiKey: apiKey);
           final response = await _retryTransient(
-            () => model.generateContent([Content.text(hydrated)])
-                .timeout(const Duration(minutes: 2)),
+            () => _generateContentWithTiming(
+              model: model,
+              modelName: modelName,
+              contents: [Content.text(hydrated)],
+              requestType: 'diagram_gen',
+              targetId: targetId,
+            ).timeout(const Duration(minutes: 2)),
             onRetry: (a, e) => print('[AiService] Canvas art transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
           );
           final text = response.text;
@@ -1741,7 +1762,7 @@ Do not include any explanation or other text.
     String? lessonArt = lesson.canvasSvg;
     if (lessonArt == null && (lesson.canvasPrompt?.trim().isNotEmpty ?? false)) {
       final ctx = lesson.slides.isNotEmpty ? lesson.slides.first.content : '';
-      lessonArt = await generateCanvasArt(lesson.canvasPrompt!, contextText: ctx, forcedApiKey: forcedApiKey);
+      lessonArt = await generateCanvasArt(lesson.canvasPrompt!, contextText: ctx, forcedApiKey: forcedApiKey, targetId: lesson.id);
     }
 
     // 2. Per-slide diagrams for proof / step_by_step slides only.
@@ -1750,7 +1771,7 @@ Do not include any explanation or other text.
       final isProofLike = slide.type == 'proof' || slide.type == 'step_by_step';
       String? slideArt = slide.canvasSvg;
       if (isProofLike && slideArt == null && (slide.canvasPrompt?.trim().isNotEmpty ?? false)) {
-        slideArt = await generateCanvasArt(slide.canvasPrompt!, contextText: slide.content, forcedApiKey: forcedApiKey);
+        slideArt = await generateCanvasArt(slide.canvasPrompt!, contextText: slide.content, forcedApiKey: forcedApiKey, targetId: slide.id);
       }
       updatedSlides.add(slide.copyWith(canvasSvg: slideArt));
     }
@@ -2127,6 +2148,57 @@ Do not include any explanation or other text.
       }
     }
     throw lastErr ?? Exception('Failed to generate custom slide $slideIndex.');
+  }
+
+  Future<GenerateContentResponse> _generateContentWithTiming({
+    required GenerativeModel model,
+    required String modelName,
+    required List<Content> contents,
+    required String? targetId,
+    String? requestType,
+  }) async {
+    final startTime = DateTime.now();
+    int payloadSize = 0;
+    for (final c in contents) {
+      for (final p in c.parts) {
+        if (p is TextPart) {
+          payloadSize += p.text.length;
+        } else if (p is DataPart) {
+          payloadSize += p.bytes.length;
+        }
+      }
+    }
+    
+    // Estimate duration
+    final double estSecs = AiEstimator.estimateDurationSync(modelName, payloadSize);
+    final estDuration = Duration(milliseconds: (estSecs * 1000).toInt());
+    
+    // Register active request if targetId is provided
+    if (targetId != null) {
+      final info = ActiveRequestInfo(
+        startTime: startTime,
+        estimatedDuration: estDuration,
+        label: requestType ?? 'AI processing',
+      );
+      AiEstimator.activeRequests[targetId] = info;
+      AiEstimator.onRegisterActiveRequest?.call(targetId, info);
+    }
+    
+    try {
+      final response = await model.generateContent(contents);
+      final endTime = DateTime.now();
+      final actualDuration = endTime.difference(startTime);
+      
+      // Record timing
+      await AiEstimator.recordRequest(modelName, payloadSize, actualDuration, requestType: requestType);
+      
+      return response;
+    } finally {
+      if (targetId != null) {
+        AiEstimator.activeRequests.remove(targetId);
+        AiEstimator.onUnregisterActiveRequest?.call(targetId);
+      }
+    }
   }
 }
 

@@ -100,6 +100,8 @@ class UnitHeader extends StatelessWidget {
                                   Expanded(
                                     child: RealProgressBar(
                                       progress: generationTask!.progress,
+                                      startTime: generationTask!.startTime,
+                                      estimatedDuration: generationTask!.estimatedDuration,
                                       isCircular: false,
                                       label: status ?? 'Loading...',
                                     ),

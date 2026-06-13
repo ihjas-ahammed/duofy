@@ -71,7 +71,14 @@ class NotificationService {
     }
   }
 
-  static Future<void> showProgress(int id, String title, String body, {bool indeterminate = false}) async {
+  static Future<void> showProgress(
+    int id,
+    String title,
+    String body, {
+    int progress = 0,
+    int maxProgress = 100,
+    bool indeterminate = false,
+  }) async {
     final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'progress_channel',
       'Task Progress',
@@ -79,8 +86,8 @@ class NotificationService {
       importance: Importance.low,
       priority: Priority.low,
       showProgress: true,
-      maxProgress: 100,
-      progress: 0,
+      maxProgress: maxProgress,
+      progress: progress,
       indeterminate: indeterminate,
       ongoing: true,
       autoCancel: false,

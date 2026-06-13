@@ -361,8 +361,9 @@ Design a pedagogical lesson plan in PLAIN TEXT (do NOT output JSON yet).
 Break this unit down into multiple logical lessons based on the content.
 %custom_instructions%
 
-TEXTBOOK WRITING STYLE ADAPTATION (HIGH PRIORITY):
-Analyze the tone, vocabulary, terminology, density, and level of rigor of the attached textbook PDF chunk. Ensure that the lesson plan and lesson structures you design directly reflect the textbook's style, notations, terminology, and depth. Do not simplify the concepts excessively if the textbook treats them with high technical or mathematical rigor.
+TEXTBOOK WRITING STYLE & COMPREHENSIVENESS (STRICTEST PRIORITY):
+1. WRITING STYLE: You MUST strictly adopt the exact writing style, academic tone, advanced vocabulary, specific notations, and level of rigor of the source textbook. Do NOT simplify concepts or rewrite them in a casual tone.
+2. COMPLETENESS: You MUST include every single theory, lemma, theorem, axiom, definition, corollary, worked example, and explanation from the textbook chunk, even the small ones. Do NOT skip any details, side notes, or smaller subtopics. Every piece of textbook content must be represented.
 
 UNIT SCOPE (CRITICAL — the attached PDF is shared by several units, so stay strictly inside THIS unit's boundary):
 %neighbor_context%
@@ -390,8 +391,9 @@ You previously created this optimal learning plan for the unit "%unit_title%":
 
 Based strictly on this plan and the attached content chunk, generate the full JSON content.
 
-TEXTBOOK WRITING STYLE ADAPTATION (HIGH PRIORITY):
-Carefully analyze the attached textbook PDF content chunk. The generated lessons must fully adapt to the writing style, terminology, specific notations, and level of rigor of the textbook. If the textbook uses formal proofs, advanced terminology, or specific technical notations, you MUST preserve and match them in the lesson slides. Maintain the same academic rigor and tone as the source textbook.
+TEXTBOOK WRITING STYLE & COMPREHENSIVENESS (STRICTEST PRIORITY):
+1. WRITING STYLE: You MUST strictly adapt to the exact writing style, terminology, mathematical/technical notations, and level of rigor of the source textbook. If the textbook uses formal proofs or advanced vocabulary, you MUST preserve and match them in the lesson slides.
+2. COMPLETENESS: You MUST include every single theory, lemma, theorem, axiom, definition, worked example, and explanation from the textbook chunk, even the small ones. Do NOT omit any conceptual details or smaller subtopics.
 
 $latexGuide
 
@@ -404,7 +406,7 @@ CRITICAL SCHEMA & MICRO-LEARNING RULES:
 6. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
 7. LaTeX formatting must follow the LATEX GUIDE above (double-escaped, correct delimiters, no inline-on-its-own-line).
 8. $_iconRule
-9. Each lesson MUST include a `canvasPrompt` field: a 1–2 sentence natural-language description of the single most useful diagram for this lesson. Prefer concrete visual structures (free-body diagram, vector triangle, graph of a function, circuit, geometry construction). When the topic genuinely benefits from interactivity or three dimensions (animated process, 3D shape, draggable parameter), say so explicitly in the prompt — e.g. "Interactive: drag a slider for ω to see the sine wave change frequency", "3D: rotatable cube showing diagonal d = a√3". Otherwise keep it static.
+9. Diagrams are OPTIONAL. If and only if a lesson genuinely needs/benefits from a visual diagram or illustration to explain the concept (such as geometry, physics forces, circuits, coordinate graphs, structure diagrams), provide a 'canvasPrompt' containing a 1-2 sentence description of the diagram. If the lesson is purely textual, conceptual, or algebraic, and does not require a visual aid, set 'canvasPrompt' to null. Do NOT force a diagram for every lesson.
 10. For "proof" and "step_by_step" slides ONLY: include a `canvasPrompt` on the slide itself if and only if the proof or worked example genuinely needs a figure to follow (geometry, circuits, triangles, graphs, free-body diagrams, etc.). If the proof is purely algebraic and no figure adds value, omit `canvasPrompt` on the slide.
 11. Each lesson MUST specify a `formatId` corresponding to the lesson format type it follows (e.g., "theory", "example", or "proof" based on the available formats).
 
@@ -432,8 +434,9 @@ You previously created this learning plan for the unit "%unit_title%":
 Now generate ONLY lesson number %lesson_index% from that plan, with full slide content.
 Do not generate any other lessons in this response.
 
-TEXTBOOK WRITING STYLE ADAPTATION (HIGH PRIORITY):
-Carefully analyze the attached textbook PDF content chunk. The generated lessons must fully adapt to the writing style, terminology, specific notations, and level of rigor of the textbook. If the textbook uses formal proofs, advanced terminology, or specific technical notations, you MUST preserve and match them in the lesson slides. Maintain the same academic rigor and tone as the source textbook.
+TEXTBOOK WRITING STYLE & COMPREHENSIVENESS (STRICTEST PRIORITY):
+1. WRITING STYLE: You MUST strictly adapt to the exact writing style, terminology, mathematical/technical notations, and level of rigor of the source textbook. If the textbook uses formal proofs or advanced vocabulary, you MUST preserve and match them in the lesson slides.
+2. COMPLETENESS: You MUST include every single theory, lemma, theorem, axiom, definition, worked example, and explanation from the textbook chunk, even the small ones. Do NOT omit any conceptual details or smaller subtopics.
 
 UNIT SCOPE (the attached PDF is shared by several units — stay strictly inside THIS unit):
 %neighbor_context%
@@ -452,7 +455,7 @@ CRITICAL SCHEMA & MICRO-LEARNING RULES:
 6. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
 7. LaTeX formatting must follow the LATEX GUIDE above (double-escaped, correct delimiters, no inline-on-its-own-line).
 8. $_iconRule
-9. Include a `canvasPrompt` field on the lesson: a 1–2 sentence natural-language description of the single most useful diagram. Prefer concrete visual structures (free-body diagram, vector triangle, graph, circuit, geometry). When the topic genuinely benefits from interactivity or three dimensions, explicitly say so — e.g. "Interactive: drag a charge to see the field lines update", "3D: rotatable molecule of methane". Otherwise keep the diagram static.
+9. Diagrams are OPTIONAL. If and only if a lesson genuinely needs/benefits from a visual diagram or illustration to explain the concept (such as geometry, physics forces, circuits, coordinate graphs, structure diagrams), provide a 'canvasPrompt' containing a 1-2 sentence description of the diagram. If the lesson is purely textual, conceptual, or algebraic, and does not require a visual aid, set 'canvasPrompt' to null. Do NOT force a diagram for every lesson.
 10. For "proof" and "step_by_step" slides ONLY: include a `canvasPrompt` on the slide itself if and only if the proof / worked example genuinely needs a figure (geometry, circuits, triangles, graphs, free-body diagrams). Omit on purely algebraic slides.
 11. Specify the `formatId` corresponding to the lesson format type this lesson follows (e.g., "theory", "example", or "proof" based on the available formats).
 
@@ -485,8 +488,9 @@ The slide you must regenerate has type "%slide_type%". Here is its current compl
 %regen_note%
 Produce a single, improved slide of the SAME type ("%slide_type%") covering the same pedagogical point, using the attached source content for accuracy. Keep it self-contained — do not reference "the previous slide".
 
-TEXTBOOK WRITING STYLE ADAPTATION (HIGH PRIORITY):
-The regenerated slide must match the writing style, tone, terminology, and level of rigor of the attached textbook content chunk. Ensure the explanation, math, and questions adhere to the textbook's specific terminology and standards of depth.
+TEXTBOOK WRITING STYLE & COMPREHENSIVENESS (STRICTEST PRIORITY):
+1. WRITING STYLE: The regenerated slide must strictly match the writing style, tone, terminology, and level of rigor of the attached textbook content chunk. Ensure the explanation, math, and questions adhere to the textbook's specific terminology.
+2. COMPLETENESS: Ensure that all related theories, worked examples, axioms, or definitions from the textbook chunk are fully included and not simplified.
 
 $latexGuide
 
@@ -523,8 +527,9 @@ Here is the JSON representation of all slides generated so far in this lesson (e
 Use the attached reference materials (textbook files, images, etc.) for absolute accuracy and terminology.
 Produce a single slide of type "%slide_type%" covering the next logical pedagogical step. Do NOT repeat concepts already covered in previous slides. Keep it self-contained.
 
-TEXTBOOK WRITING STYLE ADAPTATION (HIGH PRIORITY):
-Match the writing style, tone, terminology, and level of rigor of the attached textbook content.
+TEXTBOOK WRITING STYLE & COMPREHENSIVENESS (STRICTEST PRIORITY):
+1. WRITING STYLE: Match the writing style, tone, terminology, and level of rigor of the attached textbook content.
+2. COMPLETENESS: Include all relevant theories, examples, axioms, etc., from the textbook.
 
 $latexGuide
 
