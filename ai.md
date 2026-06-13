@@ -1,12 +1,10 @@
 Make the following changes:
 
 
-- Redesign the start page book list view card:
-    - Remove delete button, delete by swipe left (with confirmation)
-    - Give the whole space for icon, name
-    - Move progressbar below icon, name (with full width)
-    - Update the book icon to the most used icon in lessons icon in that same course
-
+- Update default lesson generation, content chosing prompts:
+    1. Force to take textbook writing style, include every theory, example, axioms, etc from textbook, also even small 
+    2. Make the need of diagrams optional for each lessons, ie make diagrams only if they are needed and also reuse old diagrams like if they are already generated
+    
 
 
 

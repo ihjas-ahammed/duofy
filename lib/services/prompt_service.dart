@@ -23,6 +23,12 @@ $trimmed
 ''';
   }
 
+  /// Formats the user's selected objective planner choices.
+  static String plannerChoicesBlock(List<String>? choices) {
+    if (choices == null || choices.isEmpty) return 'None specified.';
+    return choices.map((c) => '- $c').join('\n');
+  }
+
   /// Comma-separated list of allowed `icon` values for lessons, derived from
   /// the actual icon vocabulary supported by the renderer. Anything not in
   /// this list will silently fall back to `book-open` at render time.
@@ -280,9 +286,41 @@ Return ONLY valid JSON matching this exact structure (no "units" array):
   /// pedagogical content (theory recap, worked example, proof, etc.). The
   /// user then confirms / edits those assignments before lessons are
   /// generated.
+  static const String generateLessonFormatsPrompt = '''You are an expert curriculum designer. The attached PDF is the content of ONE section of a textbook:
+Section title: "%section_title%"
+Section description: "%section_description%"
+
+Analyze the pedagogical needs of the attached PDF content. Generate 1-4 custom lesson formats tailored specifically to the material (e.g., "Theory Focus" for conceptual parts, "Worked Example" for problem solving, "Derivation/Proof Walkthrough" for mathematical content, or specialized formats like "Lab Experiment Analysis", "Case Study Walkthrough", etc.).
+
+Each format should have a descriptive name, a pedagogical description of when the AI should select it, and a list of slide templates. Each slide template must define:
+- `type`: one of "theory", "quiz", "fill_in_blank", "one_word", "numerical", "proof", "step_by_step"
+- `condition`: optional condition when to show it
+- `description`: description of slide structure
+
+Return ONLY valid JSON matching this exact structure (do NOT wrap in markdown code blocks, do NOT output anything else):
+{
+  "lessonFormats": [
+    {
+      "id": "format-id",
+      "name": "Format Name",
+      "description": "Pedagogical description of when to use this format.",
+      "slides": [
+        {
+          "type": "theory",
+          "description": "Explanation of the slide content."
+        }
+      ]
+    }
+  ]
+}
+''';
   static const String unitManifest = '''You are an expert curriculum designer. The attached PDF is the content of ONE section of a textbook:
 Section title: "%section_title%"
 Section description: "%section_description%"
+
+OBJECTIVES & FOCUS:
+%planner_choices%
+
 %custom_instructions%
 TASK:
 1. Break this section into a small number of pedagogical units (typically 2-5). Each unit groups a few closely related lessons. Do NOT generate lesson slides here — just the unit metadata.

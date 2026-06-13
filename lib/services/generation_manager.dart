@@ -28,6 +28,8 @@ class GenerationTask {
   Duration estimatedDuration;
   DateTime startTime;
   double? progress;
+  final List<String>? plannerQuestions;
+  final List<String>? selectedQuestions;
 
   GenerationTask({
     required this.id, 
@@ -38,6 +40,8 @@ class GenerationTask {
     this.statusMessage = 'Extracting Metadata & Planning...', 
     required this.estimatedDuration,
     required this.startTime,
+    this.plannerQuestions,
+    this.selectedQuestions,
   });
 }
 
@@ -455,9 +459,19 @@ class GenerationManager extends ChangeNotifier {
           final secIdx = task.params['secIdx'] as int;
           final instructions = task.params['instructions'] as String?;
           final saveGlobally = task.params['saveGlobally'] as bool? ?? false;
+          final selectedQuestions = (task.params['selectedQuestions'] as List?)?.cast<String>();
           final book = await _dbService.getBookFromCache(bookId);
           if (book == null) throw Exception("Course not found");
-          await _runManifestGenerationForTask(task, book, modIdx, secIdx, instructions, saveGlobally, apiKey);
+          await _runManifestGenerationForTask(
+            task,
+            book,
+            modIdx,
+            secIdx,
+            instructions,
+            saveGlobally,
+            apiKey,
+            selectedQuestions: selectedQuestions,
+          );
           break;
         case 'section':
           await _runSectionGenerationForTask(task, task.bookId, task.params['modIdx'] as int, task.params['secIdx'] as int, apiKey);
@@ -878,9 +892,14 @@ class GenerationManager extends ChangeNotifier {
     int secIdx,
     String? instructions,
     bool saveGlobally,
-    String apiKey,
-  ) async {
-    final section = book.modules[modIdx].sections[secIdx];
+    String apiKey, {
+    List<String>? selectedQuestions,
+  }) async {
+    final originalSection = book.modules[modIdx].sections[secIdx];
+    final section = selectedQuestions != null
+        ? originalSection.copyWith(selectedQuestions: selectedQuestions)
+        : originalSection;
+
     final String? effectiveInstructions =
         (instructions?.trim().isNotEmpty ?? false)
             ? instructions!.trim()
@@ -902,25 +921,28 @@ class GenerationManager extends ChangeNotifier {
       final baseBook = (await _dbService.getBookFromCache(book.id)) ?? book;
       final modules = List<Module>.from(baseBook.modules);
       final sections = List<Section>.from(modules[modIdx].sections);
+
+      final List<LessonFormat> updatedSectionFormats = List.from(sections[secIdx].lessonFormats ?? baseBook.lessonFormats);
+      for (final nf in newFormats) {
+        final alreadyExists = updatedSectionFormats.any((lf) =>
+            lf.id == nf.id || lf.name.toLowerCase() == nf.name.toLowerCase());
+        if (!alreadyExists) {
+          updatedSectionFormats.add(nf);
+        }
+      }
+
       sections[secIdx] = sections[secIdx].copyWith(
         units: units,
         unitsGenerated: true,
         customInstructions: effectiveInstructions,
+        selectedQuestions: selectedQuestions ?? sections[secIdx].selectedQuestions,
+        lessonFormats: updatedSectionFormats,
       );
       modules[modIdx] = modules[modIdx].copyWith(sections: sections);
 
-      final List<LessonFormat> updatedFormats = List.from(baseBook.lessonFormats);
-      for (final nf in newFormats) {
-        final alreadyExists = updatedFormats.any((lf) =>
-            lf.id == nf.id || lf.name.toLowerCase() == nf.name.toLowerCase());
-        if (!alreadyExists) {
-          updatedFormats.add(nf);
-        }
-      }
-
       final newBook = baseBook.copyWith(
         modules: modules,
-        lessonFormats: updatedFormats,
+        selectedQuestions: saveGlobally ? (selectedQuestions ?? baseBook.selectedQuestions) : baseBook.selectedQuestions,
         customInstructions: saveGlobally ? effectiveInstructions : baseBook.customInstructions,
       );
 
@@ -1384,6 +1406,8 @@ class GenerationManager extends ChangeNotifier {
     List<File> syllabusFiles = const [],
     bool isHandout = false,
     List<List<int>>? chapterStarts,
+    List<String>? plannerQuestions,
+    List<String>? selectedQuestions,
   }) async {
     sourceFiles = sourceFiles.toList();
     final taskId = DateTime.now().millisecondsSinceEpoch.toString();
@@ -1403,6 +1427,8 @@ class GenerationManager extends ChangeNotifier {
       syllabusFiles: syllabusFiles,
       startTime: DateTime.now(),
       estimatedDuration: estimatedDuration,
+      plannerQuestions: plannerQuestions,
+      selectedQuestions: selectedQuestions,
     );
 
     activeTasks.add(task);
@@ -1482,6 +1508,12 @@ class GenerationManager extends ChangeNotifier {
       notifyListeners();
       
       Book finalBook = completeBook;
+      if (task.plannerQuestions != null) {
+        finalBook = finalBook.copyWith(plannerQuestions: task.plannerQuestions);
+      }
+      if (task.selectedQuestions != null) {
+        finalBook = finalBook.copyWith(selectedQuestions: task.selectedQuestions);
+      }
       if (task.syllabusFiles.isNotEmpty) {
         try {
           final dir = await getApplicationDocumentsDirectory();
@@ -1630,6 +1662,7 @@ class GenerationManager extends ChangeNotifier {
     int modIdx,
     int secIdx, {
     String? instructions,
+    List<String>? selectedQuestions,
     bool saveGlobally = false,
     bool isScheduled = false,
   }) async {
@@ -1650,6 +1683,7 @@ class GenerationManager extends ChangeNotifier {
         'modIdx': modIdx,
         'secIdx': secIdx,
         'instructions': instructions,
+        if (selectedQuestions != null) 'selectedQuestions': selectedQuestions,
         'saveGlobally': saveGlobally,
       },
     );

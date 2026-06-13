@@ -38,10 +38,12 @@ class LessonPath extends StatefulWidget {
   /// Starts (or retries) the unit-manifest call with optional planner
   /// instructions captured on the panel. Replaces the old auto-trigger so the
   /// user can review/tweak the guidance before units are planned.
-  final void Function(String? instructions, bool saveGlobally)? onPlanManifest;
-  /// Commits the user\'s per-unit format selections and flips
+  final void Function(String? instructions, List<String>? selectedQuestions, bool saveGlobally)? onPlanManifest;
+  /// Commits the user's per-unit format selections and flips
   /// [Section.unitFormatsConfirmed] true so lessons become reachable.
   final void Function(List<Unit> confirmedUnits)? onConfirmFormats;
+  final VoidCallback? onResetFormats;
+  final VoidCallback? onEditFormats;
   final bool hasMissingFiles;
   final Widget? topHeader;
 
@@ -61,6 +63,8 @@ class LessonPath extends StatefulWidget {
     this.sectionManifestStatus,
     this.onPlanManifest,
     this.onConfirmFormats,
+    this.onResetFormats,
+    this.onEditFormats,
     required this.hasMissingFiles,
     this.topHeader,
   });
@@ -208,6 +212,7 @@ class _LessonPathState extends State<LessonPath> {
     if (widget.section.units.isEmpty) {
       return _SectionManifestPanel(
         section: widget.section,
+        book: widget.book,
         task: widget.sectionManifestStatus,
         sectionColor: color,
         initialInstructions: widget.section.customInstructions ?? widget.book.customInstructions,
@@ -215,16 +220,18 @@ class _LessonPathState extends State<LessonPath> {
       );
     }
 
-    // Units exist but the user hasn\'t signed off on the per-unit format
+    // Units exist but the user hasn't signed off on the per-unit format
     // assignments yet. Gate lessons behind a confirmation step so the
     // chosen pedagogical structure is explicit before any lesson is
     // generated.
     if (widget.section.needsFormatConfirmation) {
       return _UnitFormatConfirmPanel(
         section: widget.section,
-        formats: widget.book.lessonFormats,
+        formats: widget.book.formatsForSection(widget.section),
         sectionColor: color,
         onConfirm: widget.onConfirmFormats,
+        onEditFormats: widget.onEditFormats,
+        onResetFormats: widget.onResetFormats,
       );
     }
 
@@ -665,13 +672,15 @@ class _PathConnectorPainter extends CustomPainter {
 /// instructions and can be tweaked per-section before planning.
 class _SectionManifestPanel extends StatefulWidget {
   final Section section;
+  final Book book;
   final UnitGenTask? task;
   final Color sectionColor;
   final String? initialInstructions;
-  final void Function(String? instructions, bool saveGlobally)? onPlan;
+  final void Function(String? instructions, List<String>? selectedQuestions, bool saveGlobally)? onPlan;
 
   const _SectionManifestPanel({
     required this.section,
+    required this.book,
     required this.task,
     required this.sectionColor,
     required this.initialInstructions,
@@ -686,18 +695,19 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
   late final TextEditingController _ctrl;
   bool _saveGlobally = false;
   final Set<String> _selectedChips = {};
-  final List<String> _chipOptions = [
-    'Theory Heavy',
-    'Practical Examples',
-    'Exam Focused',
-    'Step-by-Step Proofs',
-    'Concise Summaries',
-  ];
 
   @override
   void initState() {
     super.initState();
     _ctrl = TextEditingController(text: widget.initialInstructions ?? '');
+
+    final available = widget.book.plannerQuestions;
+    final initialSelections = widget.section.selectedQuestions ?? widget.book.selectedQuestions;
+    if (initialSelections.isNotEmpty) {
+      _selectedChips.addAll(initialSelections);
+    } else {
+      _selectedChips.addAll(available.take(2));
+    }
   }
 
   @override
@@ -708,12 +718,11 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
 
   void _plan() {
     final text = _ctrl.text.trim();
-    final chips = _selectedChips.join(', ');
-    String combined = text;
-    if (chips.isNotEmpty) {
-      combined = combined.isEmpty ? 'Style preferences: $chips' : 'Style preferences: $chips\n\n$combined';
-    }
-    widget.onPlan?.call(combined.isEmpty ? null : combined, _saveGlobally);
+    widget.onPlan?.call(
+      text.isEmpty ? null : text,
+      _selectedChips.toList(),
+      _saveGlobally,
+    );
   }
 
   @override
@@ -782,7 +791,7 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: _chipOptions.map((chip) {
+                  children: widget.book.plannerQuestions.map((chip) {
                     final isSelected = _selectedChips.contains(chip);
                     return ChoiceChip(
                       label: Text(chip, style: TextStyle(color: isSelected ? Colors.white : Colors.white54, fontSize: 12)),
@@ -858,12 +867,16 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
   final List<LessonFormat> formats;
   final Color sectionColor;
   final void Function(List<Unit> confirmedUnits)? onConfirm;
+  final VoidCallback? onEditFormats;
+  final VoidCallback? onResetFormats;
 
   const _UnitFormatConfirmPanel({
     required this.section,
     required this.formats,
     required this.sectionColor,
     required this.onConfirm,
+    this.onEditFormats,
+    this.onResetFormats,
   });
 
   void _confirm() {
@@ -932,9 +945,40 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
                 
               const SizedBox(height: 20),
               
-              const Text(
-                'Available lesson formats:',
-                style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w800, fontSize: 13),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Available lesson formats:',
+                    style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w800, fontSize: 13),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextButton.icon(
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white70,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        onPressed: onEditFormats,
+                        icon: const Icon(Icons.edit, size: 14),
+                        label: const Text('Edit', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(width: 4),
+                      TextButton.icon(
+                        style: TextButton.styleFrom(
+                          foregroundColor: sectionColor,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        onPressed: onResetFormats,
+                        icon: const Icon(Icons.auto_awesome, size: 14),
+                        label: const Text('Reset (AI)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
               Container(

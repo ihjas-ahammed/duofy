@@ -12,6 +12,7 @@ import 'package:file_picker/file_picker.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../services/generation_manager.dart';
+import '../services/ai_service.dart';
 import '../services/progress_service.dart';
 import '../services/database_service.dart';
 import '../utils/progress_utils.dart';
@@ -183,12 +184,14 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
   /// if every model/key fails.
   Future<void> _promptRegenerateLesson(int modIdx, int secIdx, int unitIdx, int lessonIdx, Lesson lesson) async {
     final customPromptController = TextEditingController();
+    final section = widget.book.modules[modIdx].sections[secIdx];
+    final sectionFormats = widget.book.formatsForSection(section);
     String selectedFormatId = lesson.formatId ?? widget.book.defaultFormatId;
     
-    // Ensure selectedFormatId is valid in the book's formats
-    final bool isValidFormat = widget.book.lessonFormats.any((f) => f.id == selectedFormatId);
-    if (!isValidFormat && widget.book.lessonFormats.isNotEmpty) {
-      selectedFormatId = widget.book.lessonFormats.first.id;
+    // Ensure selectedFormatId is valid in the section's formats
+    final bool isValidFormat = sectionFormats.any((f) => f.id == selectedFormatId);
+    if (!isValidFormat && sectionFormats.isNotEmpty) {
+      selectedFormatId = sectionFormats.first.id;
     }
     
     bool generateGraphics = true;
@@ -255,7 +258,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                           isExpanded: true,
                           icon: const Icon(Icons.arrow_drop_down, color: Colors.white54),
                           style: const TextStyle(color: Colors.white, fontSize: 14),
-                          items: widget.book.lessonFormats.map((f) {
+                          items: sectionFormats.map((f) {
                             return DropdownMenuItem<String>(
                               value: f.id,
                               child: Text('${f.name} (${f.description})'),
@@ -702,17 +705,37 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         onUnitLongPress: (unitIdx, unit) {
                           _showUnitLongPressMenu(mIdx, sIdx, unitIdx, unit);
                         },
-                        onPlanManifest: (instructions, saveGlobally) {
+                        onPlanManifest: (instructions, selectedQuestions, saveGlobally) {
                           GenerationManager.instance.clearSectionManifestError(activeSec.id);
                           GenerationManager.instance.startSectionUnitManifest(
                             widget.book, mIdx, sIdx,
                             instructions: instructions,
+                            selectedQuestions: selectedQuestions,
                             saveGlobally: saveGlobally,
                           );
                         },
+                        onEditFormats: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => CourseSettingsScreen(
+                                book: widget.book,
+                                section: activeSec,
+                                modIdx: mIdx,
+                                secIdx: sIdx,
+                              ),
+                            ),
+                          );
+                          final freshest = await DatabaseService().getBookFromCache(widget.book.id);
+                          if (freshest != null && mounted) {
+                            widget.onBookUpdated(freshest);
+                          }
+                        },
+                        onResetFormats: () async {
+                          _showResetFormatsDialog(activeSec, mIdx, sIdx);
+                        },
                         onConfirmFormats: (confirmedUnits) async {
                           // User signed off on per-unit format assignments.
-                          // Persist them and flip the section\'s confirmation
+                          // Persist them and flip the section's confirmation
                           // flag so the lesson path opens up.
                           final modules = List<Module>.from(widget.book.modules);
                           final secs = List<Section>.from(modules[mIdx].sections);
@@ -1010,7 +1033,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
   ) async {
     final promptController = TextEditingController();
     final List<File> selectedFiles = [];
-    LessonFormat? selectedFormat = widget.book.lessonFormats.isNotEmpty ? widget.book.lessonFormats.first : null;
+    final section = widget.book.modules[modIdx].sections[secIdx];
+    final sectionFormats = widget.book.formatsForSection(section);
+    LessonFormat? selectedFormat = sectionFormats.isNotEmpty ? sectionFormats.first : null;
 
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
@@ -1143,7 +1168,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                 isExpanded: true,
                                 icon: const Icon(Icons.arrow_drop_down, color: Colors.white54),
                                 style: const TextStyle(color: Colors.white, fontSize: 13),
-                                items: widget.book.lessonFormats.map((f) {
+                                items: sectionFormats.map((f) {
                                   return DropdownMenuItem<LessonFormat>(
                                     value: f,
                                     child: Text(f.name, overflow: TextOverflow.ellipsis),
@@ -1174,8 +1199,16 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                             );
                             if (edited != null) {
                               final base = widget.book;
-                              final updatedFormats = List<LessonFormat>.from(base.lessonFormats)..add(edited);
-                              final newBook = base.copyWith(lessonFormats: updatedFormats);
+                              final updatedFormats = List<LessonFormat>.from(base.formatsForSection(section))..add(edited);
+                              
+                              final modules = List<Module>.from(base.modules);
+                              final sections = List<Section>.from(modules[modIdx].sections);
+                              sections[secIdx] = sections[secIdx].copyWith(
+                                lessonFormats: updatedFormats,
+                              );
+                              modules[modIdx] = modules[modIdx].copyWith(sections: sections);
+                              final newBook = base.copyWith(modules: modules);
+                              
                               await DatabaseService().saveGeneratedBook(newBook);
                               widget.onBookUpdated(newBook);
                               
@@ -1660,12 +1693,86 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                     ),
                   ),
                 ],
-              ),
             ),
           ),
         ),
       ),
+    ),
+  );
+}
+
+  Future<void> _showResetFormatsDialog(Section section, int modIdx, int secIdx) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const AlertDialog(
+          backgroundColor: AppTheme.surface,
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 20),
+              Expanded(
+                child: Text('AI is analyzing section PDF and generating custom formats...',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        );
+      },
     );
+
+    try {
+      final generatedFormats = await AiService().generateSectionFormats(section);
+      
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      final List<LessonFormat> finalFormats = [];
+      for (final gf in generatedFormats) {
+        final alreadyExists = finalFormats.any((lf) =>
+            lf.id == gf.id || lf.name.toLowerCase() == gf.name.toLowerCase());
+        if (!alreadyExists) {
+          finalFormats.add(gf);
+        }
+      }
+
+      final modules = List<Module>.from(widget.book.modules);
+      final sections = List<Section>.from(modules[modIdx].sections);
+      sections[secIdx] = sections[secIdx].copyWith(
+        lessonFormats: finalFormats,
+      );
+      modules[modIdx] = modules[modIdx].copyWith(sections: sections);
+      final newBook = widget.book.copyWith(modules: modules);
+      await DatabaseService().saveGeneratedBook(newBook);
+      widget.onBookUpdated(newBook);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Section lesson formats reset and generated successfully.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppTheme.surface,
+          title: const Text('Generation Failed', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          content: Text(e.toString(), style: const TextStyle(color: Colors.white70)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 }
 

@@ -36,28 +36,18 @@ class CourseQuestionnaireScreen extends StatefulWidget {
 }
 
 class _CourseQuestionnaireScreenState extends State<CourseQuestionnaireScreen> {
-  final Map<String, TextEditingController> _answers = {};
-  List<String> _questions = [
-    "What is your primary goal for this material? (e.g. Exam prep, casual learning)",
-    "Do you prefer more theory or more practical worked examples?",
+  final List<String> _choices = [
+    "Include core conceptual theory and definitions",
+    "Include step-by-step worked examples",
   ];
+  final Set<String> _selectedChoices = {};
   bool _isLoadingAiQuestions = true;
 
   @override
   void initState() {
     super.initState();
-    for (var q in _questions) {
-      _answers[q] = TextEditingController();
-    }
+    _selectedChoices.addAll(_choices);
     _generateAiQuestions();
-  }
-
-  @override
-  void dispose() {
-    for (var ctrl in _answers.values) {
-      ctrl.dispose();
-    }
-    super.dispose();
   }
 
   Future<void> _generateAiQuestions() async {
@@ -71,9 +61,8 @@ class _CourseQuestionnaireScreenState extends State<CourseQuestionnaireScreen> {
       if (qs != null && mounted) {
         setState(() {
           for (var q in qs) {
-            if (!_questions.contains(q)) {
-              _questions.add(q);
-              _answers[q] = TextEditingController();
+            if (!_choices.contains(q)) {
+              _choices.add(q);
             }
           }
         });
@@ -86,21 +75,9 @@ class _CourseQuestionnaireScreenState extends State<CourseQuestionnaireScreen> {
   }
 
   Future<void> _submit() async {
-    final buffer = StringBuffer();
-    if (widget.customIndexingPrompt != null && widget.customIndexingPrompt!.trim().isNotEmpty) {
-      buffer.writeln('Indexing guidance:\n${widget.customIndexingPrompt!.trim()}');
-      buffer.writeln('');
-    }
-    for (var q in _questions) {
-      final ans = _answers[q]?.text.trim() ?? '';
-      if (ans.isNotEmpty) {
-        buffer.writeln('Q: $q');
-        buffer.writeln('A: $ans');
-        buffer.writeln('');
-      }
-    }
-    
-    final customInstructions = buffer.toString().trim();
+    final String? customInstructions = (widget.customIndexingPrompt != null && widget.customIndexingPrompt!.trim().isNotEmpty)
+        ? 'Indexing guidance:\n${widget.customIndexingPrompt!.trim()}'
+        : null;
 
     final List<File> indexPdfs = [];
     try {
@@ -123,35 +100,21 @@ class _CourseQuestionnaireScreenState extends State<CourseQuestionnaireScreen> {
 
     if (!mounted) return;
 
-    if (widget.isCourse && widget.syllabusFiles.isNotEmpty) {
-      GenerationManager.instance.startBookGeneration(
-        widget.sourcePdfs,
-        widget.filename,
-        indexFiles: indexPdfs,
-        chapter1AbsolutePages: widget.allChapter1StartPages,
-        customInstructions: customInstructions.isNotEmpty ? customInstructions : null,
-        syllabusFiles: widget.syllabusFiles,
-        isHandout: widget.isHandout,
-        chapterStarts: widget.indexMode == IndexMode.chapters ? widget.allIndexPages : null,
-      );
-      
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Generating course in background...')));
-      Navigator.of(context).popUntil((route) => route.isFirst);
-    } else {
-      // Normal book generation but with auto-index and custom instructions
-      GenerationManager.instance.startBookGeneration(
-        widget.sourcePdfs,
-        widget.filename,
-        indexFiles: indexPdfs,
-        chapter1AbsolutePages: widget.allChapter1StartPages,
-        customInstructions: customInstructions.isNotEmpty ? customInstructions : null,
-        isHandout: widget.isHandout,
-        chapterStarts: widget.indexMode == IndexMode.chapters ? widget.allIndexPages : null,
-      );
-      
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Generating course in background...')));
-      Navigator.of(context).popUntil((route) => route.isFirst);
-    }
+    GenerationManager.instance.startBookGeneration(
+      widget.sourcePdfs,
+      widget.filename,
+      indexFiles: indexPdfs,
+      chapter1AbsolutePages: widget.allChapter1StartPages,
+      customInstructions: customInstructions,
+      syllabusFiles: widget.syllabusFiles,
+      isHandout: widget.isHandout,
+      chapterStarts: widget.indexMode == IndexMode.chapters ? widget.allIndexPages : null,
+      plannerQuestions: _choices,
+      selectedQuestions: _selectedChoices.toList(),
+    );
+    
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Generating course in background...')));
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   @override
@@ -162,51 +125,70 @@ class _CourseQuestionnaireScreenState extends State<CourseQuestionnaireScreen> {
       body: ResponsiveCenter(
         maxWidth: ResponsiveMaxWidth.form,
         child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text('Personalize Your Course', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 8),
-            const Text('Answer a few questions to tailor the generated units to your learning style.', style: TextStyle(color: Colors.white54, fontSize: 13)),
-            const SizedBox(height: 24),
-            
-            ..._questions.map((q) => Padding(
-              padding: const EdgeInsets.only(bottom: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(q, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _answers[q],
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
-                    decoration: InputDecoration(
-                      hintText: 'Your answer (optional)',
-                      hintStyle: const TextStyle(color: Colors.white38),
-                      filled: true,
-                      fillColor: AppTheme.surface,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('Personalize Your Course', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 8),
+              const Text('Select options to tailor the generated units to your learning style.', style: TextStyle(color: Colors.white54, fontSize: 13)),
+              const SizedBox(height: 24),
+              
+              ..._choices.map((choice) {
+                final isSelected = _selectedChoices.contains(choice);
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isSelected ? AppTheme.duoBlue : Colors.white12,
+                      width: 1.5,
                     ),
                   ),
-                ],
-              ),
-            )),
-            
-            if (_isLoadingAiQuestions)
-              const Center(child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: CircularProgressIndicator(color: AppTheme.duoBlue),
-              )),
+                  child: CheckboxListTile(
+                    value: isSelected,
+                    activeColor: AppTheme.duoBlue,
+                    checkColor: Colors.white,
+                    title: Text(
+                      choice,
+                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    onChanged: (val) {
+                      setState(() {
+                        if (val == true) {
+                          _selectedChoices.add(choice);
+                        } else {
+                          _selectedChoices.remove(choice);
+                        }
+                      });
+                    },
+                  ),
+                );
+              }),
               
-            const SizedBox(height: 24),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.duoGreen, padding: const EdgeInsets.symmetric(vertical: 16)),
-              onPressed: _submit,
-              child: const Text('Start Generation', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
+              if (_isLoadingAiQuestions)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: CircularProgressIndicator(color: AppTheme.duoBlue),
+                  ),
+                ),
+                
+              const SizedBox(height: 24),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.duoGreen,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                onPressed: _submit,
+                child: const Text('Start Generation', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
         ),
       ),
     );

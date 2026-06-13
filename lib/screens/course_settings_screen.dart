@@ -12,8 +12,17 @@ import '../widgets/responsive_center.dart';
 /// picks the format that fits each lesson's concept during generation.
 class CourseSettingsScreen extends StatefulWidget {
   final Book book;
+  final Section? section;
+  final int? modIdx;
+  final int? secIdx;
 
-  const CourseSettingsScreen({super.key, required this.book});
+  const CourseSettingsScreen({
+    super.key,
+    required this.book,
+    this.section,
+    this.modIdx,
+    this.secIdx,
+  });
 
   @override
   State<CourseSettingsScreen> createState() => _CourseSettingsScreenState();
@@ -22,16 +31,19 @@ class CourseSettingsScreen extends StatefulWidget {
 class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
   late List<LessonFormat> _formats;
   late String _defaultFormatId;
+  late List<String> _plannerQuestions;
 
   @override
   void initState() {
     super.initState();
-    _formats = List.of(widget.book.lessonFormats);
+    final formatsSource = widget.section?.lessonFormats ?? widget.book.lessonFormats;
+    _formats = List.of(formatsSource);
     _defaultFormatId = widget.book.defaultFormatId;
     if (_formats.isEmpty) {
       _formats = List.of(LessonFormat.defaultFormats);
       _defaultFormatId = _formats.first.id;
     }
+    _plannerQuestions = List.of(widget.book.plannerQuestions);
   }
 
   String _genFormatId() {
@@ -84,43 +96,56 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
     setState(() {
       _formats = List.of(LessonFormat.defaultFormats);
       _defaultFormatId = _formats.first.id;
+      _plannerQuestions = [
+        "Include core conceptual theory and definitions",
+        "Include step-by-step worked examples",
+        "Include mathematical proofs or derivations",
+        "Include interactive code or pseudo-code snippets",
+        "Include quiz or exercises for self-testing",
+        "Include summary slides for quick review",
+      ];
     });
   }
 
   Future<void> _save() async {
-    final updated = widget.book.copyWith(
-      lessonFormats: _formats,
-      defaultFormatId: _defaultFormatId,
-    );
+    Book updated;
+    if (widget.section != null && widget.modIdx != null && widget.secIdx != null) {
+      final modules = List<Module>.from(widget.book.modules);
+      final sections = List<Section>.from(modules[widget.modIdx!].sections);
+      sections[widget.secIdx!] = sections[widget.secIdx!].copyWith(
+        lessonFormats: _formats,
+      );
+      modules[widget.modIdx!] = modules[widget.modIdx!].copyWith(sections: sections);
+      updated = widget.book.copyWith(
+        modules: modules,
+        plannerQuestions: _plannerQuestions,
+      );
+    } else {
+      updated = widget.book.copyWith(
+        lessonFormats: _formats,
+        defaultFormatId: _defaultFormatId,
+        plannerQuestions: _plannerQuestions,
+      );
+    }
     await DatabaseService().saveGeneratedBook(updated);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lesson formats saved.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Course settings saved.')));
       Navigator.pop(context);
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Lesson Formats', style: TextStyle(fontWeight: FontWeight.w900)),
-        actions: [
-          IconButton(
-            icon: const Icon(LucideIcons.refreshCcw, color: AppTheme.duoOrange),
-            tooltip: 'Reset to defaults',
-            onPressed: _resetDefaults,
-          ),
-        ],
-      ),
-      body: ResponsiveCenter(
-        maxWidth: ResponsiveMaxWidth.form,
-        child: Column(
+  Widget _buildFormatsTab(BuildContext context) {
+    return ResponsiveCenter(
+      maxWidth: ResponsiveMaxWidth.form,
+      child: Column(
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(24, 16, 24, 16),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
             child: Text(
-              'Define multiple lesson formats — one per pedagogical pattern (theory, worked example, proof, etc.). The AI assigns one to each unit when it generates the unit list; you confirm or change the assignments afterwards.',
-              style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
+              widget.section != null
+                  ? 'Define multiple lesson formats for this section. The AI assigns one of these formats to each unit in this section.'
+                  : 'Define multiple lesson formats — one per pedagogical pattern (theory, worked example, proof, etc.). The AI assigns one to each unit when it generates the unit list; you confirm or change the assignments afterwards.',
+              style: const TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
             ),
           ),
           Expanded(
@@ -132,9 +157,9 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: AppTheme.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white12, width: 1),
+                     color: AppTheme.surface,
+                     borderRadius: BorderRadius.circular(16),
+                     border: Border.all(color: Colors.white12, width: 1),
                   ),
                   child: InkWell(
                     onTap: () => _openEditor(i),
@@ -211,6 +236,130 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPromptChoicesTab(BuildContext context) {
+    return ResponsiveCenter(
+      maxWidth: ResponsiveMaxWidth.form,
+      child: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(24, 16, 24, 16),
+            child: Text(
+              'Edit the objective options that appear as selection chips when planning section units. Users can toggle these choices to guide the AI.',
+              style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _plannerQuestions.length,
+              itemBuilder: (context, i) {
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white12, width: 1),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          initialValue: _plannerQuestions[i],
+                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                          decoration: const InputDecoration(
+                            hintText: 'e.g. Include interactive coding exercises',
+                            border: InputBorder.none,
+                            hintStyle: TextStyle(color: Colors.white38),
+                          ),
+                          onChanged: (val) {
+                            _plannerQuestions[i] = val.trim();
+                          },
+                        ),
+                       ),
+                       IconButton(
+                         icon: const Icon(LucideIcons.trash2, color: AppTheme.duoRed, size: 20),
+                         onPressed: () {
+                           setState(() {
+                             _plannerQuestions.removeAt(i);
+                           });
+                         },
+                       ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: DuoButton(
+                    text: 'Add Choice',
+                    onPressed: () {
+                      setState(() {
+                        _plannerQuestions.add('');
+                      });
+                    },
+                    color: AppTheme.surface,
+                    shadowColor: Colors.black,
+                    isOutline: true,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: DuoButton(
+                    text: 'Save',
+                    onPressed: _save,
+                    color: AppTheme.duoBlue,
+                    shadowColor: AppTheme.duoBlueDark,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            widget.section != null
+                ? 'Section Formats: ${widget.section!.title}'
+                : 'Course Settings',
+            style: const TextStyle(fontWeight: FontWeight.w900),
+          ),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Lesson Formats'),
+              Tab(text: 'Prompt Choices'),
+            ],
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(LucideIcons.refreshCcw, color: AppTheme.duoOrange),
+              tooltip: 'Reset to defaults',
+              onPressed: _resetDefaults,
+            ),
+          ],
+        ),
+        body: TabBarView(
+          children: [
+            _buildFormatsTab(context),
+            _buildPromptChoicesTab(context),
+          ],
+        ),
       ),
     );
   }

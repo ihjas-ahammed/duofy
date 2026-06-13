@@ -389,14 +389,15 @@ class AiService {
 
     final prompt = '''
 Analyze the attached preface/guide pages of this textbook.
-Generate 2-3 questions to ask the student about how they want this book structured or taught, based specifically on the book's stated goals in the preface.
-For example, if the preface mentions "focus on proofs", ask "This book contains many proofs. Should we emphasize them or focus on application?"
-
-Keep the questions very short and concise (under 10 words each).
+Identify 3-4 custom learning options or pedagogical style preferences specific to the content/goals of this textbook (for example: "Include mathematical proofs and derivations", "Include real-world case studies", "Include code implementations", "Focus on hardware design").
+Keep each option short, clear, and objective (under 10 words each). Do NOT write them as questions, but as objective preferences starting with "Include" or "Focus on".
 
 Return JSON format:
 {
-  "questions": ["Question 1", "Question 2"]
+  "choices": [
+    "Include real-world case studies",
+    "Include mathematical proofs and derivations"
+  ]
 }
 ''';
 
@@ -417,7 +418,9 @@ Return JSON format:
 
           if (response.text != null) {
             final jsonMap = _cleanAndDecodeJson(response.text!);
-            if (jsonMap['questions'] is List) {
+            if (jsonMap['choices'] is List) {
+              return (jsonMap['choices'] as List).map((e) => e.toString()).toList();
+            } else if (jsonMap['questions'] is List) {
               return (jsonMap['questions'] as List).map((e) => e.toString()).toList();
             }
           }
@@ -1757,6 +1760,59 @@ Do not include any explanation or other text.
 
 
 
+  Future<List<LessonFormat>> generateSectionFormats(
+    Section section, {
+    String? forcedApiKey,
+  }) async {
+    if (section.pdfPath == null) {
+      throw Exception('Section has no PDF chunk — cannot generate formats.');
+    }
+    final chunkFile = File(section.pdfPath!);
+    if (!chunkFile.existsSync()) {
+      throw Exception("Local file missing. Tap 'Restore' on the warning banner to re-link source files.");
+    }
+
+    final keys = await _getKeys(forcedApiKey: forcedApiKey);
+    final modelsToTry = await _getLiteModels();
+
+    final hydratedPrompt = PromptService.generateLessonFormatsPrompt
+        .replaceAll('%section_title%', section.title)
+        .replaceAll('%section_description%', section.description);
+
+    final parts = <Part>[TextPart(hydratedPrompt), ...await _buildFileParts([chunkFile])];
+
+    Exception? lastException;
+    for (final modelName in modelsToTry) {
+      for (final apiKey in keys) {
+        try {
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: apiKey,
+            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+          );
+          final response = await _retryTransient(
+            () => model.generateContent([Content.multi(parts)])
+                .timeout(const Duration(minutes: 3)),
+            onRetry: (a, e) => print('[AiService] Lesson formats transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+          );
+          final text = response.text;
+          if (text == null) continue;
+
+          final decoded = _cleanAndDecodeJson(text);
+          final formatsJson = decoded['lessonFormats'] as List?;
+          if (formatsJson != null) {
+            return formatsJson
+                .map((f) => LessonFormat.fromJson(f is Map ? Map<String, dynamic>.from(f) : {}))
+                .toList();
+          }
+        } catch (e) {
+          lastException = e as Exception;
+        }
+      }
+    }
+    throw lastException ?? Exception('Failed to generate lesson formats.');
+  }
+
   /// path continues to work unchanged. [customInstructions] is the planner
   /// guidance captured on the "Plan units" panel (pre-filled from the book's
   /// instructions but editable per-section); injected into the prompt.
@@ -1779,7 +1835,8 @@ Do not include any explanation or other text.
 
     // Build the catalog the AI picks `formatId` from. Each entry is one
     // line: "- <id> :: <name> — <one-line summary>".
-    final formatCatalog = bookContext.lessonFormats
+    final formats = bookContext.formatsForSection(section);
+    final formatCatalog = formats
         .map((f) => '- ${f.id} :: ${f.name} — ${f.description}')
         .join('\n');
 
@@ -1787,6 +1844,7 @@ Do not include any explanation or other text.
         .replaceAll('%section_title%', section.title)
         .replaceAll('%section_description%', section.description)
         .replaceAll('%format_catalog%', formatCatalog)
+        .replaceAll('%planner_choices%', PromptService.plannerChoicesBlock(section.selectedQuestions ?? bookContext.selectedQuestions))
         .replaceAll('%custom_instructions%', PromptService.instructionsBlock(customInstructions));
 
     final parts = <Part>[TextPart(hydratedPrompt), ...await _buildFileParts([chunkFile])];

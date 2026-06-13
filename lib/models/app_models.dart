@@ -160,7 +160,7 @@ class Book {
   /// Named collections of slide templates. A book carries several so that
   /// different units (theory vs. example vs. proof) can be generated with
   /// different pedagogical structures. Always non-empty after parsing — an
-  /// old book\'s single `lessonTemplate` is migrated into a "default"
+  /// old book's single `lessonTemplate` is migrated into a "default"
   /// format on read, and books missing both fields fall back to
   /// [LessonFormat.defaultFormats].
   final List<LessonFormat> lessonFormats;
@@ -168,6 +168,17 @@ class Book {
   /// Always points to a real entry in [lessonFormats] after migration.
   final String defaultFormatId;
   final String? syllabusPath;
+  final List<String> plannerQuestions;
+  final List<String> selectedQuestions;
+
+  static const List<String> defaultPlannerQuestions = [
+    'Include core conceptual theory and definitions',
+    'Include step-by-step worked examples',
+    'Include mathematical proofs or derivations',
+    'Include interactive code or pseudo-code snippets',
+    'Include quiz or exercises for self-testing',
+    'Include summary slides for quick review',
+  ];
 
   Book({
     required this.id,
@@ -185,6 +196,8 @@ class Book {
     required this.lessonFormats,
     required this.defaultFormatId,
     this.syllabusPath,
+    this.plannerQuestions = defaultPlannerQuestions,
+    this.selectedQuestions = const [],
   });
 
   factory Book.fromJson(Map<String, dynamic> json) {
@@ -216,6 +229,16 @@ class Book {
       defaultId = formats.first.id;
     }
 
+    final plannerQuestionsJson = json['plannerQuestions'] as List?;
+    final plannerQuestions = plannerQuestionsJson != null
+        ? plannerQuestionsJson.map((q) => _str(q)).toList()
+        : defaultPlannerQuestions;
+
+    final selectedQuestionsJson = json['selectedQuestions'] as List?;
+    final selectedQuestions = selectedQuestionsJson != null
+        ? selectedQuestionsJson.map((q) => _str(q)).toList()
+        : [defaultPlannerQuestions[0], defaultPlannerQuestions[1]];
+
     return Book(
       id: _str(json['id']),
       title: _str(json['title']),
@@ -232,6 +255,8 @@ class Book {
       lessonFormats: formats,
       defaultFormatId: defaultId,
       syllabusPath: _strOpt(json['syllabusPath']),
+      plannerQuestions: plannerQuestions,
+      selectedQuestions: selectedQuestions,
     );
   }
 
@@ -251,21 +276,31 @@ class Book {
     'lessonFormats': lessonFormats.map((f) => f.toJson()).toList(),
     'defaultFormatId': defaultFormatId,
     if (syllabusPath != null) 'syllabusPath': syllabusPath,
+    'plannerQuestions': plannerQuestions,
+    'selectedQuestions': selectedQuestions,
   };
+
+  List<LessonFormat> formatsForSection(Section section) {
+    if (section.lessonFormats != null && section.lessonFormats!.isNotEmpty) {
+      return section.lessonFormats!;
+    }
+    return lessonFormats;
+  }
 
   /// Returns the format the AI should use for [lesson] — its explicit
   /// [Lesson.formatId] when valid, otherwise the book's default. Never null.
-  LessonFormat formatForLesson(Lesson lesson) {
+  LessonFormat formatForLesson(Lesson lesson, Section section) {
     final wanted = lesson.formatId;
+    final formats = formatsForSection(section);
     if (wanted != null) {
-      for (final f in lessonFormats) {
+      for (final f in formats) {
         if (f.id == wanted) return f;
       }
     }
-    for (final f in lessonFormats) {
+    for (final f in formats) {
       if (f.id == defaultFormatId) return f;
     }
-    return lessonFormats.first;
+    return formats.first;
   }
 
   Book copyWith({
@@ -284,6 +319,8 @@ class Book {
     List<LessonFormat>? lessonFormats,
     String? defaultFormatId,
     String? syllabusPath,
+    List<String>? plannerQuestions,
+    List<String>? selectedQuestions,
   }) {
     return Book(
       id: id ?? this.id,
@@ -301,6 +338,8 @@ class Book {
       lessonFormats: lessonFormats ?? this.lessonFormats,
       defaultFormatId: defaultFormatId ?? this.defaultFormatId,
       syllabusPath: syllabusPath ?? this.syllabusPath,
+      plannerQuestions: plannerQuestions ?? this.plannerQuestions,
+      selectedQuestions: selectedQuestions ?? this.selectedQuestions,
     );
   }
 
@@ -553,6 +592,8 @@ class Section {
   final String? customInstructions;
   final List<Slide> pyqQuestions;
   final int? bookIndex;
+  final List<String>? selectedQuestions;
+  final List<LessonFormat>? lessonFormats;
 
   Section({
     required this.id,
@@ -568,6 +609,8 @@ class Section {
     this.customInstructions,
     this.pyqQuestions = const [],
     this.bookIndex,
+    this.selectedQuestions,
+    this.lessonFormats,
   });
 
   factory Section.fromJson(Map<String, dynamic> json) {
@@ -585,6 +628,10 @@ class Section {
       customInstructions: _strOpt(json['customInstructions']),
       pyqQuestions: (json['pyqQuestions'] as List?)?.map((s) => Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
       bookIndex: json['bookIndex'] is num ? (json['bookIndex'] as num).toInt() : int.tryParse(_str(json['bookIndex'])),
+      selectedQuestions: (json['selectedQuestions'] as List?)?.map((q) => _str(q)).toList(),
+      lessonFormats: (json['lessonFormats'] as List?)
+          ?.map((f) => LessonFormat.fromJson(f is Map ? Map<String, dynamic>.from(f) : {}))
+          .toList(),
     );
   }
 
@@ -602,6 +649,8 @@ class Section {
     if (customInstructions != null) 'customInstructions': customInstructions,
     'pyqQuestions': pyqQuestions.map((s) => s.toJson()).toList(),
     if (bookIndex != null) 'bookIndex': bookIndex,
+    if (selectedQuestions != null) 'selectedQuestions': selectedQuestions,
+    if (lessonFormats != null) 'lessonFormats': lessonFormats!.map((f) => f.toJson()).toList(),
   };
 
   /// True for skeletons that carry their own page-range and PDF chunk and
@@ -632,6 +681,8 @@ class Section {
     String? customInstructions,
     List<Slide>? pyqQuestions,
     int? bookIndex,
+    List<String>? selectedQuestions,
+    List<LessonFormat>? lessonFormats,
   }) {
     return Section(
       id: id ?? this.id,
@@ -647,6 +698,8 @@ class Section {
       customInstructions: customInstructions ?? this.customInstructions,
       pyqQuestions: pyqQuestions ?? this.pyqQuestions,
       bookIndex: bookIndex ?? this.bookIndex,
+      selectedQuestions: selectedQuestions ?? this.selectedQuestions,
+      lessonFormats: lessonFormats ?? this.lessonFormats,
     );
   }
 }
