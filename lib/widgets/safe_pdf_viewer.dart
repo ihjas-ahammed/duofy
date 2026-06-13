@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:syncfusion_flutter_core/theme.dart';
 import '../theme/app_theme.dart';
 
 class SafePdfViewer extends StatefulWidget {
@@ -10,6 +11,9 @@ class SafePdfViewer extends StatefulWidget {
   final bool canShowScrollStatus;
   final void Function(PdfDocumentLoadedDetails)? onDocumentLoaded;
   final void Function(PdfPageChangedDetails)? onPageChanged;
+  final void Function(PdfZoomDetails)? onZoomLevelChanged;
+  final double maxZoomLevel;
+  final bool enableDoubleTapZooming;
 
   const SafePdfViewer({
     super.key,
@@ -19,6 +23,9 @@ class SafePdfViewer extends StatefulWidget {
     this.canShowScrollStatus = true,
     this.onDocumentLoaded,
     this.onPageChanged,
+    this.onZoomLevelChanged,
+    this.maxZoomLevel = 3.0,
+    this.enableDoubleTapZooming = true,
   });
 
   @override
@@ -65,27 +72,35 @@ class _SafePdfViewerState extends State<SafePdfViewer> {
       );
     }
 
-    return SfPdfViewer.file(
-      widget.file,
-      controller: widget.controller,
-      canShowScrollHead: widget.canShowScrollHead,
-      canShowScrollStatus: widget.canShowScrollStatus,
-      onDocumentLoaded: (details) {
-        if (widget.onDocumentLoaded != null) {
-          widget.onDocumentLoaded!(details);
-        }
-      },
-      onDocumentLoadFailed: (details) {
-        setState(() {
-          _hasError = true;
-          _errorMessage = details.description;
-        });
-      },
-      onPageChanged: (details) {
-        if (widget.onPageChanged != null) {
-          widget.onPageChanged!(details);
-        }
-      },
+    return SfPdfViewerTheme(
+      data: SfPdfViewerThemeData(
+        backgroundColor: const Color(0xFF0B0F19),
+      ),
+      child: SfPdfViewer.file(
+        widget.file,
+        controller: widget.controller,
+        canShowScrollHead: widget.canShowScrollHead,
+        canShowScrollStatus: widget.canShowScrollStatus,
+        maxZoomLevel: widget.maxZoomLevel,
+        enableDoubleTapZooming: widget.enableDoubleTapZooming,
+        onZoomLevelChanged: widget.onZoomLevelChanged,
+        onDocumentLoaded: (details) {
+          if (widget.onDocumentLoaded != null) {
+            widget.onDocumentLoaded!(details);
+          }
+        },
+        onDocumentLoadFailed: (details) {
+          setState(() {
+            _hasError = true;
+            _errorMessage = details.description;
+          });
+        },
+        onPageChanged: (details) {
+          if (widget.onPageChanged != null) {
+            widget.onPageChanged!(details);
+          }
+        },
+      ),
     );
   }
 }

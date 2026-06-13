@@ -6,6 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/safe_pdf_viewer.dart';
 import 'source_pdf_upload_screen.dart';
+import 'reference_pdf_viewer_screen.dart';
 import 'course_settings_screen.dart';
 import 'package:file_picker/file_picker.dart';
 import '../models/app_models.dart';
@@ -488,12 +489,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     if (!_isSectionPdfMissing(sec)) {
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => Scaffold(
-            appBar: AppBar(
-              title: Text(sec.title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-              backgroundColor: const Color(0xFF0B0F19),
-            ),
-            body: SafePdfViewer(file: File(sec.pdfPath!)),
+          builder: (_) => ReferencePdfViewerScreen(
+            book: widget.book,
+            initialSection: sec,
           ),
         ),
       );
