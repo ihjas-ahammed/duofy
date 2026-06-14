@@ -867,4 +867,52 @@ Return ONLY a JSON object matching this schema:
   ]
 }''';
   }
+
+  static const String extractWritingStyleProfilePrompt = '''You are an expert computational linguist. Analyze the following descriptive answers written by a user to profile their native writing style.
+
+We need to construct a "best possible version" of their writing style. Your task is to extract stylometric and linguistic parameters into the requested JSON format.
+
+Analyze clause depth, sentence length, vocabulary diversity, transitional mechanics (favored prepositions, conjunctions, logical connectors), tone, register, and formality.
+
+User answers:
+%user_answers%
+
+Return ONLY valid JSON matching this schema:
+{
+  "syntactic_complexity": "low" | "medium" | "high",
+  "lexical_richness": "simple" | "moderate" | "complex",
+  "pacing_and_rhythm": "A description of the user's sentence variation and pace (e.g. 'flowing, meandering prose' or 'staccato, short declarative statements')",
+  "transitional_mechanics": ["List of favorite transition/function words found, e.g. 'furthermore', 'however', 'consequently'"],
+  "tone_and_register": "informal" | "formal" | "objective" | "casual"
+}
+''';
+
+  static const String generateDiagnosticQuestionsPrompt = '''You are an expert educator and psychometrician.
+Analyze the attached table of contents or syllabus content.
+Generate exactly 5 multiple-choice questions (MCQs) designed to evaluate a student's prior knowledge and conceptual readiness on these topics.
+
+Each question must target a specific concept, formula, or term from the syllabus/TOC.
+The questions must span different levels of cognitive depth:
+- Question 1 & 2: Remembering/Understanding (evaluating definitions/basic concepts)
+- Question 3 & 4: Applying/Analyzing (evaluating application of rules/relational logic)
+- Question 5: Evaluating/Creating (evaluating synthesis of concepts/hypothetical scenarios)
+
+For each question, provide:
+1. Clear question text.
+2. Exactly 4 distinct options (one correct, three plausible distractors).
+3. The 0-based index of the correct option.
+4. The estimated Bloom's Taxonomy level ("Remembering/Understanding", "Applying/Analyzing", "Evaluating/Creating").
+
+Return ONLY valid JSON matching this schema:
+{
+  "questions": [
+    {
+      "question": "Question text...",
+      "options": ["Option 0", "Option 1", "Option 2", "Option 3"],
+      "correctIndex": 0,
+      "bloomLevel": "Remembering/Understanding"
+    }
+  ]
+}
+''';
 }

@@ -31,6 +31,7 @@ class GenerationTask {
   double? progress;
   final List<String>? plannerQuestions;
   final List<String>? selectedQuestions;
+  final String? bloomLevel;
 
   GenerationTask({
     required this.id, 
@@ -43,6 +44,7 @@ class GenerationTask {
     required this.startTime,
     this.plannerQuestions,
     this.selectedQuestions,
+    this.bloomLevel,
   });
 }
 
@@ -1470,6 +1472,7 @@ class GenerationManager extends ChangeNotifier {
     List<List<int>>? chapterStarts,
     List<String>? plannerQuestions,
     List<String>? selectedQuestions,
+    String? bloomLevel,
   }) async {
     sourceFiles = sourceFiles.toList();
     final taskId = DateTime.now().millisecondsSinceEpoch.toString();
@@ -1491,6 +1494,7 @@ class GenerationManager extends ChangeNotifier {
       estimatedDuration: estimatedDuration,
       plannerQuestions: plannerQuestions,
       selectedQuestions: selectedQuestions,
+      bloomLevel: bloomLevel,
     );
 
     activeTasks.add(task);
@@ -1575,6 +1579,9 @@ class GenerationManager extends ChangeNotifier {
       }
       if (task.selectedQuestions != null) {
         finalBook = finalBook.copyWith(selectedQuestions: task.selectedQuestions);
+      }
+      if (task.bloomLevel != null) {
+        finalBook = finalBook.copyWith(bloomLevel: task.bloomLevel);
       }
       if (task.syllabusFiles.isNotEmpty) {
         try {

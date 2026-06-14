@@ -25,11 +25,23 @@ class GlobalState {
   // Indicator to force displaying the login screen even on Web
   static final ValueNotifier<bool> forceShowAuthScreen = ValueNotifier<bool>(false);
 
-  static Future<void> addXp(int amount) async {
+  static Future<void> addXp(int amount, String courseId) async {
     final prefs = await SharedPreferences.getInstance();
-    final newXp = xpNotifier.value + amount;
-    xpNotifier.value = newXp;
-    await prefs.setInt(LearningSync.xpKey, newXp);
+    final uid = auth.FirebaseAuth.instance.currentUser?.uid ?? 'guest';
+    final courseXpKey = 'user_xp_${uid}_$courseId';
+    
+    // Update course-specific XP
+    final currentCourseXp = prefs.getInt(courseXpKey) ?? 0;
+    final newCourseXp = currentCourseXp + amount;
+    await prefs.setInt(courseXpKey, newCourseXp);
+    xpNotifier.value = newCourseXp;
+
+    // Update overall global XP
+    final globalKey = LearningSync.xpKey;
+    final currentGlobalXp = prefs.getInt(globalKey) ?? 0;
+    final newGlobalXp = currentGlobalXp + amount;
+    await prefs.setInt(globalKey, newGlobalXp);
+
     // Back up XP to the cloud (no-op when cloud sync is disabled).
     LearningSync.push();
   }

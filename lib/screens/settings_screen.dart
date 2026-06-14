@@ -14,6 +14,7 @@ import '../widgets/responsive_center.dart';
 import '../widgets/sync_conflict_dialog.dart';
 import '../models/app_models.dart';
 import 'pdf_browser_screen.dart';
+import 'metacognition_setup_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -48,6 +49,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final GlobalKey<StringListManagerState> _keysManagerKey = GlobalKey<StringListManagerState>();
   final DatabaseService _db = DatabaseService();
   final TextEditingController _customPromptController = TextEditingController();
+  Map<String, dynamic>? _writingStyleProfile;
 
   final user = FbAuth.instance.currentUser;
 
@@ -155,6 +157,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _scheduleEnd = TimeOfDay(hour: endHour, minute: endMinute);
     _lastSyncTime = prefs.getInt('last_db_sync_time');
     _customPromptController.text = prefs.getString('custom_live_chat_prompt') ?? '';
+
+    final String? profileStr = prefs.getString('user_writing_style_profile');
+    if (profileStr != null) {
+      try {
+        _writingStyleProfile = jsonDecode(profileStr) as Map<String, dynamic>;
+      } catch (e) {
+        print('Error decoding style profile: $e');
+      }
+    } else {
+      _writingStyleProfile = null;
+    }
 
     setState(() {
       _isLoading = false;
@@ -844,6 +857,101 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildMetacognitionCard() {
+    final profile = _writingStyleProfile;
+    final hasProfile = profile != null;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: AppTheme.glassDecoration,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(LucideIcons.brain, color: AppTheme.duoBlue, size: 24),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Writing Style Personalized',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+              ),
+              if (hasProfile)
+                const Icon(LucideIcons.checkCircle2, color: AppTheme.duoGreen, size: 20)
+              else
+                const Icon(LucideIcons.alertCircle, color: AppTheme.duoOrange, size: 20),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (hasProfile) ...[
+            _buildProfileRow('Syntactic Complexity', profile['syntactic_complexity']?.toString().toUpperCase() ?? 'MEDIUM'),
+            _buildProfileRow('Lexical Richness', profile['lexical_richness']?.toString().toUpperCase() ?? 'MODERATE'),
+            _buildProfileRow('Tone & Register', profile['tone_and_register']?.toString().toUpperCase() ?? 'OBJECTIVE'),
+            _buildProfileRow('Pacing & Rhythm', profile['pacing_and_rhythm']?.toString() ?? 'Flowing prose'),
+            _buildProfileRow('Transitions Favored', (profile['transitional_mechanics'] as List?)?.join(', ') ?? 'however, furthermore'),
+          ] else ...[
+            const Text(
+              'No custom writing style profile is set yet. Duofy is currently generating lessons in standard academic style.',
+              style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.4),
+            ),
+          ],
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.duoBlue,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const MetacognitionSetupScreen(isSettingsMode: true),
+                  ),
+                ).then((updated) {
+                  if (updated == true) {
+                    _loadSettings();
+                  }
+                });
+              },
+              child: Text(
+                hasProfile ? 'Re-evaluate Writing Style' : 'Set Up Writing Style Profile',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 150,
+            child: Text(
+              label,
+              style: const TextStyle(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -900,6 +1008,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 shadowColor: AppTheme.duoVioletDark,
               ),
             ),
+            const SizedBox(height: 32),
+
+            const Text('Metacognitive Personalization', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            const Text('Personalize the generated course content and pedagogical tone to your writing style.',
+                style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 16),
+            _buildMetacognitionCard(),
             const SizedBox(height: 32),
 
             const Text('Storage', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),

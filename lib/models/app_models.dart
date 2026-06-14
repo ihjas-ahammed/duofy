@@ -170,6 +170,7 @@ class Book {
   final String? syllabusPath;
   final List<String> plannerQuestions;
   final List<String> selectedQuestions;
+  final String bloomLevel;
 
   static const List<String> defaultPlannerQuestions = [
     'Include core conceptual theory and definitions',
@@ -198,6 +199,7 @@ class Book {
     this.syllabusPath,
     this.plannerQuestions = defaultPlannerQuestions,
     this.selectedQuestions = const [],
+    this.bloomLevel = 'Remembering / Understanding',
   });
 
   factory Book.fromJson(Map<String, dynamic> json) {
@@ -257,6 +259,7 @@ class Book {
       syllabusPath: _strOpt(json['syllabusPath']),
       plannerQuestions: plannerQuestions,
       selectedQuestions: selectedQuestions,
+      bloomLevel: _str(json['bloomLevel'], 'Remembering / Understanding'),
     );
   }
 
@@ -278,6 +281,7 @@ class Book {
     if (syllabusPath != null) 'syllabusPath': syllabusPath,
     'plannerQuestions': plannerQuestions,
     'selectedQuestions': selectedQuestions,
+    'bloomLevel': bloomLevel,
   };
 
   List<LessonFormat> formatsForSection(Section section) {
@@ -321,6 +325,7 @@ class Book {
     String? syllabusPath,
     List<String>? plannerQuestions,
     List<String>? selectedQuestions,
+    String? bloomLevel,
   }) {
     return Book(
       id: id ?? this.id,
@@ -340,6 +345,7 @@ class Book {
       syllabusPath: syllabusPath ?? this.syllabusPath,
       plannerQuestions: plannerQuestions ?? this.plannerQuestions,
       selectedQuestions: selectedQuestions ?? this.selectedQuestions,
+      bloomLevel: bloomLevel ?? this.bloomLevel,
     );
   }
 

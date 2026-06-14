@@ -266,6 +266,58 @@ class _LessonScreenState extends State<LessonScreen> {
 
     await ProgressService.markLessonCompleted(widget.lesson.id);
     await GlobalState.addXp(xpEarned);
+
+    if (widget.book != null) {
+      final String currentLevel = widget.book!.bloomLevel;
+      String newLevel = currentLevel;
+
+      if (accuracy >= 80) {
+        if (currentLevel == 'Remembering / Understanding') {
+          newLevel = 'Applying / Analyzing';
+        } else if (currentLevel == 'Applying / Analyzing') {
+          newLevel = 'Evaluating / Creating';
+        }
+      } else if (accuracy < 50) {
+        if (currentLevel == 'Evaluating / Creating') {
+          newLevel = 'Applying / Analyzing';
+        } else if (currentLevel == 'Applying / Analyzing') {
+          newLevel = 'Remembering / Understanding';
+        }
+      }
+
+      if (newLevel != currentLevel) {
+        final updatedBook = widget.book!.copyWith(bloomLevel: newLevel);
+        await DatabaseService().saveGeneratedBook(updatedBook);
+        GenerationManager.instance.triggerBookUpdate(updatedBook);
+        
+        if (mounted) {
+          final isPromotion = accuracy >= 80;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(
+                    isPromotion ? LucideIcons.trendingUp : LucideIcons.trendingDown,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      isPromotion
+                          ? "Metacognitive progression: Promoted to $newLevel!"
+                          : "Scaffolding activated: Adapted to $newLevel.",
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: isPromotion ? AppTheme.duoGreen : AppTheme.duoOrange,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    }
     
     if (mounted) {
       Navigator.pushReplacement(

@@ -21,8 +21,10 @@ import 'settings_screen.dart';
 import 'generate_book_screen.dart';
 import 'pdf_split_preview_screen.dart';
 import 'course_edit_structure_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/global_state.dart';
 import '../main.dart';
+import 'metacognition_setup_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -76,7 +78,22 @@ class _HomeScreenState extends State<HomeScreen> {
         startupError = null;
       }
       _checkInterruptedTasks();
+      _checkMetacognitionProfile();
     });
+  }
+
+  Future<void> _checkMetacognitionProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+    final profile = prefs.getString('user_writing_style_profile');
+    if (profile == null) {
+      if (mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => const MetacognitionSetupScreen(),
+          ),
+        );
+      }
+    }
   }
 
   void _checkInterruptedTasks() {
