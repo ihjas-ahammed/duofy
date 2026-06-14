@@ -134,6 +134,8 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
 
   Future<void> _loadProgress() async {
     final comp = await ProgressService.getCompletedLessons();
+    final courseXp = await ProgressService.getXpForCourse(widget.book.id);
+    GlobalState.xpNotifier.value = courseXp;
     if (mounted) setState(() => _completedLessons = comp);
   }
 
@@ -156,7 +158,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
             onPressed: () async {
               Navigator.pop(ctx);
               for (var l in unit.lessons) {
-                await ProgressService.clearLessonProgress(l.id);
+                await ProgressService.clearLessonProgress(l.id, widget.book.id);
               }
               final List<Unit> updatedUnits = List.from(widget.book.modules[modIdx].sections[secIdx].units);
               updatedUnits[unitIdx] = unit.copyWith(isGenerated: false, lessons: []);
@@ -922,7 +924,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                 iconColor: AppTheme.duoGreen,
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await ProgressService.markLessonCompleted(lesson.id);
+                  await ProgressService.markLessonCompleted(lesson.id, widget.book.id);
                   await _loadProgress();
                   widget.onBookUpdated(widget.book);
                 },
@@ -935,7 +937,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                 iconColor: AppTheme.duoRed,
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await ProgressService.clearLessonProgress(lesson.id);
+                  await ProgressService.clearLessonProgress(lesson.id, widget.book.id);
                   await _loadProgress();
                   widget.onBookUpdated(widget.book);
                 },
@@ -990,7 +992,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                 iconColor: AppTheme.duoGreen,
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await ProgressService.markUnitCompleted(unit);
+                  await ProgressService.markUnitCompleted(unit, widget.book.id);
                   await _loadProgress();
                   widget.onBookUpdated(widget.book);
                 },
@@ -1003,7 +1005,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                 iconColor: AppTheme.duoRed,
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await ProgressService.clearUnitProgress(unit);
+                  await ProgressService.clearUnitProgress(unit, widget.book.id);
                   await _loadProgress();
                   widget.onBookUpdated(widget.book);
                 },
@@ -1371,7 +1373,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                 iconColor: AppTheme.duoGreen,
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await ProgressService.markSectionCompleted(section);
+                  await ProgressService.markSectionCompleted(section, widget.book.id);
                   await _loadProgress();
                   widget.onBookUpdated(widget.book);
                 },
@@ -1384,7 +1386,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                 iconColor: AppTheme.duoRed,
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await ProgressService.clearSectionProgress(section);
+                  await ProgressService.clearSectionProgress(section, widget.book.id);
                   await _loadProgress();
                   widget.onBookUpdated(widget.book);
                 },
@@ -1494,7 +1496,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                 iconColor: AppTheme.duoGreen,
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await ProgressService.markModuleCompleted(module);
+                  await ProgressService.markModuleCompleted(module, widget.book.id);
                   await _loadProgress();
                   widget.onBookUpdated(widget.book);
                 },
@@ -1507,7 +1509,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                 iconColor: AppTheme.duoRed,
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await ProgressService.clearModuleProgress(module);
+                  await ProgressService.clearModuleProgress(module, widget.book.id);
                   await _loadProgress();
                   widget.onBookUpdated(widget.book);
                 },

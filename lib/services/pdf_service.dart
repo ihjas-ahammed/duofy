@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
@@ -20,57 +21,92 @@ class PdfService {
     if (pageNumbers.isEmpty) {
       throw ArgumentError('extractPages: pageNumbers must not be empty');
     }
-    sync_pdf.PdfDocument? doc;
-    try {
-      doc = sync_pdf.PdfDocument(inputBytes: await sourcePdf.readAsBytes());
-      final out = sync_pdf.PdfDocument();
-      for (final p in pageNumbers) {
-        final idx = p - 1;
-        if (idx < 0 || idx >= doc.pages.count) continue;
-        final loaded = doc.pages[idx];
-        out.pageSettings.size = loaded.size;
-        out.pageSettings.margins.all = 0;
-        final newPage = out.pages.add();
-        final completer = Completer<void>();
-        runZonedGuarded(() {
-          try {
-            newPage.graphics.drawPdfTemplate(loaded.createTemplate(), const Offset(0, 0));
-            completer.complete();
-          } catch (e) {
-            completer.completeError(e);
-          }
-        }, (error, stack) {
-          if (!completer.isCompleted) {
-            completer.completeError(error);
-          }
-        });
+    final sourcePath = sourcePdf.path;
+    final tmpDir = await getTemporaryDirectory();
+    final tmpPath = tmpDir.path;
+    final name = outputName ?? 'index_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
+    try {
+      return await Isolate.run(() async {
+        sync_pdf.PdfDocument? doc;
         try {
-          await completer.future;
-        } catch (e) {
-          print('[PdfService] drawPdfTemplate failed (Syncfusion type cast bug: $e). Recovering by rendering page $p as a high-quality raster image fallback...');
-          final imgBytes = await _renderPageToImage(sourcePdf, p);
-          if (imgBytes != null) {
-            final sync_pdf.PdfImage img = sync_pdf.PdfBitmap(imgBytes);
-            newPage.graphics.drawImage(img, Rect.fromLTWH(0, 0, newPage.size.width, newPage.size.height));
-          } else {
-            rethrow;
+          final file = File(sourcePath);
+          doc = sync_pdf.PdfDocument(inputBytes: await file.readAsBytes());
+          final out = sync_pdf.PdfDocument();
+          for (final p in pageNumbers) {
+            final idx = p - 1;
+            if (idx < 0 || idx >= doc.pages.count) continue;
+            final loaded = doc.pages[idx];
+            out.pageSettings.size = loaded.size;
+            out.pageSettings.margins.all = 0;
+            final newPage = out.pages.add();
+            newPage.graphics.drawPdfTemplate(loaded.createTemplate(), const Offset(0, 0));
+          }
+          if (out.pages.count == 0) {
+            out.dispose();
+            throw Exception('extractPages: none of the requested pages exist in the source PDF.');
+          }
+          final outFile = File('$tmpPath/$name');
+          final bytes = await out.save();
+          out.dispose();
+          await outFile.writeAsBytes(bytes);
+          return outFile;
+        } finally {
+          doc?.dispose();
+        }
+      });
+    } catch (e) {
+      print('[PdfService] Isolate extractPages failed: $e. Falling back to main isolate with raster rendering support...');
+      sync_pdf.PdfDocument? doc;
+      try {
+        doc = sync_pdf.PdfDocument(inputBytes: await sourcePdf.readAsBytes());
+        final out = sync_pdf.PdfDocument();
+        for (final p in pageNumbers) {
+          final idx = p - 1;
+          if (idx < 0 || idx >= doc.pages.count) continue;
+          final loaded = doc.pages[idx];
+          out.pageSettings.size = loaded.size;
+          out.pageSettings.margins.all = 0;
+          final newPage = out.pages.add();
+          final completer = Completer<void>();
+          runZonedGuarded(() {
+            try {
+              newPage.graphics.drawPdfTemplate(loaded.createTemplate(), const Offset(0, 0));
+              completer.complete();
+            } catch (e) {
+              completer.completeError(e);
+            }
+          }, (error, stack) {
+            if (!completer.isCompleted) {
+              completer.completeError(error);
+            }
+          });
+
+          try {
+            await completer.future;
+          } catch (e) {
+            print('[PdfService] Fallback drawPdfTemplate failed (Syncfusion type cast bug: $e). Recovering by rendering page $p as a high-quality raster image fallback...');
+            final imgBytes = await _renderPageToImage(sourcePdf, p);
+            if (imgBytes != null) {
+              final sync_pdf.PdfImage img = sync_pdf.PdfBitmap(imgBytes);
+              newPage.graphics.drawImage(img, Rect.fromLTWH(0, 0, newPage.size.width, newPage.size.height));
+            } else {
+              rethrow;
+            }
           }
         }
-      }
-      if (out.pages.count == 0) {
+        if (out.pages.count == 0) {
+          out.dispose();
+          throw Exception('extractPages: none of the requested pages exist in the source PDF.');
+        }
+        final file = File('$tmpPath/$name');
+        final bytes = await out.save();
         out.dispose();
-        throw Exception('extractPages: none of the requested pages exist in the source PDF.');
+        await file.writeAsBytes(bytes);
+        return file;
+      } finally {
+        doc?.dispose();
       }
-      final tmpDir = await getTemporaryDirectory();
-      final name = outputName ?? 'index_${DateTime.now().millisecondsSinceEpoch}.pdf';
-      final file = File('${tmpDir.path}/$name');
-      final bytes = await out.save();
-      out.dispose();
-      await file.writeAsBytes(bytes);
-      return file;
-    } finally {
-      doc?.dispose();
     }
   }
 
@@ -168,11 +204,15 @@ class PdfService {
 
   /// Helper to get the total page count of a PDF document.
   Future<int> getPageCount(File pdfFile) async {
-    final bytes = await pdfFile.readAsBytes();
-    final doc = sync_pdf.PdfDocument(inputBytes: bytes);
-    final count = doc.pages.count;
-    doc.dispose();
-    return count;
+    final path = pdfFile.path;
+    return await Isolate.run(() async {
+      final file = File(path);
+      final bytes = await file.readAsBytes();
+      final doc = sync_pdf.PdfDocument(inputBytes: bytes);
+      final count = doc.pages.count;
+      doc.dispose();
+      return count;
+    });
   }
 
   /// Splits the source file(s) into per-section or per-unit PDF chunks.

@@ -76,6 +76,10 @@ class _IndexPickerScreenState extends State<IndexPickerScreen> {
   bool _pdfLoadError = false;
   String _pdfErrorMessage = '';
 
+  // Defer PDF loading to prevent page transition animation lags
+  bool _isTransitionFinished = false;
+  Animation<double>? _routeAnimation;
+
   // Search functionality
   bool _isSearching = false;
   final TextEditingController _searchCtrl = TextEditingController();
@@ -97,7 +101,36 @@ class _IndexPickerScreenState extends State<IndexPickerScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final modalRoute = ModalRoute.of(context);
+    if (modalRoute != null && modalRoute.animation != null) {
+      _routeAnimation = modalRoute.animation;
+      if (_routeAnimation!.isCompleted) {
+        _isTransitionFinished = true;
+      } else {
+        _routeAnimation!.addStatusListener(_handleAnimationStatus);
+      }
+    } else {
+      _isTransitionFinished = true;
+    }
+  }
+
+  void _handleAnimationStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed) {
+      if (mounted) {
+        setState(() {
+          _isTransitionFinished = true;
+        });
+      }
+      _routeAnimation?.removeStatusListener(_handleAnimationStatus);
+      _routeAnimation = null;
+    }
+  }
+
+  @override
   void dispose() {
+    _routeAnimation?.removeStatusListener(_handleAnimationStatus);
     _pdfCtrl.removeListener(_pdfListener);
     _chapter1Ctrl.dispose();
     _searchCtrl.dispose();
@@ -387,28 +420,49 @@ class _IndexPickerScreenState extends State<IndexPickerScreen> {
                 clipBehavior: Clip.hardEdge,
                 child: Stack(
                   children: [
-                    SfPdfViewer.file(
-                      widget.sourcePdf,
-                      controller: _pdfCtrl,
-                      canShowScrollHead: false,
-                      canShowScrollStatus: false,
-                      onDocumentLoaded: (details) {
-                        setState(() {
-                          _pageCount = _pdfCtrl.pageCount;
-                          _currentPage = _pdfCtrl.pageNumber;
-                          _pdfLoadError = false;
-                        });
-                      },
-                      onDocumentLoadFailed: (details) {
-                        setState(() {
-                          _pdfLoadError = true;
-                          _pdfErrorMessage = details.description;
-                        });
-                      },
-                      onPageChanged: (details) {
-                        setState(() => _currentPage = details.newPageNumber);
-                      },
-                    ),
+                    if (!_isTransitionFinished)
+                      Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const CircularProgressIndicator(
+                              color: AppTheme.duoBlue,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Preparing PDF preview...',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.7),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      SfPdfViewer.file(
+                        widget.sourcePdf,
+                        controller: _pdfCtrl,
+                        canShowScrollHead: false,
+                        canShowScrollStatus: false,
+                        onDocumentLoaded: (details) {
+                          setState(() {
+                            _pageCount = _pdfCtrl.pageCount;
+                            _currentPage = _pdfCtrl.pageNumber;
+                            _pdfLoadError = false;
+                          });
+                        },
+                        onDocumentLoadFailed: (details) {
+                          setState(() {
+                            _pdfLoadError = true;
+                            _pdfErrorMessage = details.description;
+                          });
+                        },
+                        onPageChanged: (details) {
+                          setState(() => _currentPage = details.newPageNumber);
+                        },
+                      ),
                     if (_pdfLoadError)
                       Center(
                         child: Padding(

@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'ai_queue_screen.dart';
+import 'lesson_screen.dart';
 import '../services/fb/fb_auth.dart';
 import '../models/app_models.dart';
 import '../services/database_service.dart';
@@ -12,6 +13,7 @@ import '../services/learning_sync.dart';
 import 'bookmarks_screen.dart';
 import '../theme/app_theme.dart';
 import '../widgets/compact_book_card.dart';
+import '../widgets/compact_book_list_item.dart';
 import '../widgets/generating_book_card.dart';
 import '../widgets/responsive_center.dart';
 import '../widgets/sync_conflict_dialog.dart';
@@ -25,6 +27,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/global_state.dart';
 import '../main.dart';
 import 'metacognition_setup_screen.dart';
+import '../widgets/analytics_view.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -41,6 +44,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isLoading = true;
   int _selectedTabIndex = 0;
 
+  bool _isListView = true;
+
   final TextEditingController _librarySearchController = TextEditingController();
   final TextEditingController _publishedSearchController = TextEditingController();
   String _librarySearchQuery = '';
@@ -49,9 +54,25 @@ class _HomeScreenState extends State<HomeScreen> {
   StreamSubscription<Book>? _bookUpdateSubscription;
   List<GenerationTask> _prevActiveTasks = [];
 
+  Future<void> _loadListViewPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isListView = prefs.getBool('home_is_list_view') ?? true;
+    });
+  }
+
+  Future<void> _toggleListView() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isListView = !_isListView;
+      prefs.setBool('home_is_list_view', _isListView);
+    });
+  }
+
   @override
   void initState() {
     super.initState();
+    _loadListViewPreference();
     _librarySearchController.addListener(() {
       setState(() {
         _librarySearchQuery = _librarySearchController.text;
@@ -304,6 +325,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       IconButton(
+        icon: Icon(_isListView ? LucideIcons.layoutGrid : LucideIcons.list, size: 26),
+        tooltip: _isListView ? 'Switch to Grid View' : 'Switch to List View',
+        onPressed: _toggleListView,
+      ),
+      IconButton(
         icon: const Icon(LucideIcons.bookmark, size: 26),
         tooltip: 'Bookmarks',
         onPressed: () {
@@ -375,11 +401,131 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildLibraryTab(List<GenerationTask> activeTasks, double screenWidth) {
+    final query = _librarySearchQuery.toLowerCase().trim();
+    final isSearching = query.isNotEmpty;
+
     final filtered = books.where((b) {
-      final query = _librarySearchQuery.toLowerCase().trim();
       if (query.isEmpty) return true;
       return b.title.toLowerCase().contains(query);
     }).toList();
+
+    final List<SearchResultItem> searchResults = [];
+    if (isSearching) {
+      outerLoop:
+      for (final book in books) {
+        if (book.title.toLowerCase().contains(query) ||
+            book.description.toLowerCase().contains(query)) {
+          searchResults.add(SearchResultItem(
+            book: book,
+            type: 'book',
+            title: book.title,
+            context: 'Course',
+          ));
+          if (searchResults.length >= 50) break outerLoop;
+        }
+
+        for (int modIdx = 0; modIdx < book.modules.length; modIdx++) {
+          final module = book.modules[modIdx];
+          if (module.title.toLowerCase().contains(query) ||
+              module.description.toLowerCase().contains(query)) {
+            searchResults.add(SearchResultItem(
+              book: book,
+              type: 'module',
+              title: module.title,
+              context: '${book.title} • Module ${modIdx + 1}',
+              modIdx: modIdx,
+            ));
+            if (searchResults.length >= 50) break outerLoop;
+          }
+
+          for (int secIdx = 0; secIdx < module.sections.length; secIdx++) {
+            final section = module.sections[secIdx];
+            if (section.title.toLowerCase().contains(query) ||
+                section.description.toLowerCase().contains(query)) {
+              searchResults.add(SearchResultItem(
+                book: book,
+                type: 'section',
+                title: section.title,
+                context: '${book.title} • ${module.title}',
+                modIdx: modIdx,
+                secIdx: secIdx,
+              ));
+              if (searchResults.length >= 50) break outerLoop;
+            }
+
+            for (int unitIdx = 0; unitIdx < section.units.length; unitIdx++) {
+              final unit = section.units[unitIdx];
+              if (unit.title.toLowerCase().contains(query) ||
+                  unit.description.toLowerCase().contains(query)) {
+                searchResults.add(SearchResultItem(
+                  book: book,
+                  type: 'unit',
+                  title: unit.title,
+                  context: '${book.title} • ${section.title}',
+                  modIdx: modIdx,
+                  secIdx: secIdx,
+                  unitIdx: unitIdx,
+                ));
+                if (searchResults.length >= 50) break outerLoop;
+              }
+
+              for (int lessonIdx = 0; lessonIdx < unit.lessons.length; lessonIdx++) {
+                final lesson = unit.lessons[lessonIdx];
+                if (lesson.title.toLowerCase().contains(query) ||
+                    lesson.description.toLowerCase().contains(query)) {
+                  searchResults.add(SearchResultItem(
+                    book: book,
+                    type: 'lesson',
+                    title: lesson.title,
+                    context: '${book.title} • ${unit.title}',
+                    modIdx: modIdx,
+                    secIdx: secIdx,
+                    unitIdx: unitIdx,
+                    lessonIdx: lessonIdx,
+                    lesson: lesson,
+                  ));
+                  if (searchResults.length >= 50) break outerLoop;
+                }
+
+                for (int slideIdx = 0; slideIdx < lesson.slides.length; slideIdx++) {
+                  final slide = lesson.slides[slideIdx];
+                  final inContent = slide.content.toLowerCase().contains(query);
+                  final inTitle = slide.title.toLowerCase().contains(query);
+                  final inAnswer = slide.blankAnswer?.toLowerCase().contains(query) ?? false;
+
+                  if (inContent || inTitle || inAnswer) {
+                    String snippet = '';
+                    if (inContent) {
+                      snippet = _extractSnippet(slide.content, query);
+                    } else if (inAnswer) {
+                      snippet = 'Answer: ${slide.blankAnswer}';
+                    } else {
+                      snippet = slide.content;
+                      if (snippet.length > 100) snippet = '${snippet.substring(0, 100)}...';
+                    }
+
+                    searchResults.add(SearchResultItem(
+                      book: book,
+                      type: 'slide',
+                      title: slide.title.isNotEmpty ? slide.title : 'Theory Slide',
+                      context: '${book.title} • ${lesson.title}',
+                      snippet: snippet,
+                      modIdx: modIdx,
+                      secIdx: secIdx,
+                      unitIdx: unitIdx,
+                      lessonIdx: lessonIdx,
+                      lesson: lesson,
+                      slideId: slide.id,
+                    ));
+                    if (searchResults.length >= 50) break outerLoop;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
 
     return ResponsiveCenter(
       child: RefreshIndicator(
@@ -411,7 +557,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 hintText: 'Search your courses...',
               ),
             ),
-            if (activeTasks.isNotEmpty && !kIsWeb)
+            if (!isSearching && activeTasks.isNotEmpty && !kIsWeb)
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 sliver: SliverList(
@@ -439,81 +585,161 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-            SliverToBoxAdapter(
-              child: books.isEmpty && activeTasks.isEmpty
-                  ? Container(
-                      height: 180,
-                      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(24)),
-                      alignment: Alignment.center,
-                      child: const Text('No courses found.\nTap + to create one!', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-            SliverToBoxAdapter(
-              child: books.isNotEmpty && filtered.isEmpty
-                  ? Container(
-                      height: 120,
-                      alignment: Alignment.center,
-                      child: const Text(
-                        'No matching courses found.',
-                        style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-            if (filtered.isNotEmpty)
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                sliver: SliverGrid(
-                  gridDelegate: screenWidth < 600
-                      ? const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          mainAxisSpacing: 10,
-                          crossAxisSpacing: 10,
-                          childAspectRatio: 0.78,
-                        )
-                      : const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 120,
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
-                          childAspectRatio: 0.78,
+            if (!isSearching)
+              SliverToBoxAdapter(
+                child: books.isEmpty && activeTasks.isEmpty
+                    ? Container(
+                        height: 180,
+                        margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(24)),
+                        alignment: Alignment.center,
+                        child: const Text('No courses found.\nTap + to create one!', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            if (isSearching)
+              SliverToBoxAdapter(
+                child: searchResults.isEmpty
+                    ? Container(
+                        height: 200,
+                        alignment: Alignment.center,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(LucideIcons.search, color: Colors.white24, size: 40),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'No matching courses or content found.',
+                              style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold),
+                            ),
+                          ],
                         ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            if (isSearching && searchResults.isNotEmpty)
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
-                      final book = filtered[index];
-                      return Dismissible(
-                        key: Key(book.id),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: Colors.red.shade900.withOpacity(0.8),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: const Icon(LucideIcons.trash2, color: Colors.white, size: 20),
-                        ),
-                        confirmDismiss: (direction) async {
-                          return await _deleteLocalBook(book);
-                        },
-                        child: CompactBookCard(
-                          book: book,
-                          progress: progressMap[book.id] ?? 0.0,
-                          onTap: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
-                              .then((_) => _loadAllData(force: false));
-                          },
-                          onLongPress: () => _showBookLongPressMenu(book),
-                        ),
-                      );
+                      final result = searchResults[index];
+                      return _buildSearchResultCard(context, result, query);
                     },
-                    childCount: filtered.length,
+                    childCount: searchResults.length,
                   ),
                 ),
               ),
+            if (!isSearching && books.isNotEmpty)
+              _isListView
+                  ? SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final book = books[index];
+                            return Dismissible(
+                              key: Key(book.id),
+                              direction: DismissDirection.endToStart,
+                              background: Container(
+                                alignment: Alignment.center,
+                                margin: const EdgeInsets.symmetric(vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade900.withOpacity(0.8),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: const Icon(LucideIcons.trash2, color: Colors.white, size: 20),
+                              ),
+                              confirmDismiss: (direction) async {
+                                return await _deleteLocalBook(book);
+                              },
+                              child: CompactBookListItem(
+                                book: book,
+                                progress: progressMap[book.id] ?? 0.0,
+                                onTap: () {
+                                  Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
+                                    .then((_) => _loadAllData(force: false));
+                                },
+                                onLongPress: () => _showBookLongPressMenu(book),
+                              ),
+                            );
+                          },
+                          childCount: books.length,
+                        ),
+                      ),
+                    )
+                  : SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      sliver: SliverGrid(
+                        gridDelegate: screenWidth < 600
+                            ? const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                mainAxisSpacing: 10,
+                                crossAxisSpacing: 10,
+                                childAspectRatio: 0.78,
+                              )
+                            : const SliverGridDelegateWithMaxCrossAxisExtent(
+                                maxCrossAxisExtent: 120,
+                                mainAxisSpacing: 12,
+                                crossAxisSpacing: 12,
+                                childAspectRatio: 0.78,
+                              ),
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final book = books[index];
+                            return Dismissible(
+                              key: Key(book.id),
+                              direction: DismissDirection.endToStart,
+                              background: Container(
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade900.withOpacity(0.8),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: const Icon(LucideIcons.trash2, color: Colors.white, size: 20),
+                              ),
+                              confirmDismiss: (direction) async {
+                                return await _deleteLocalBook(book);
+                              },
+                              child: CompactBookCard(
+                                book: book,
+                                progress: progressMap[book.id] ?? 0.0,
+                                onTap: () {
+                                  Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
+                                    .then((_) => _loadAllData(force: false));
+                                },
+                                onLongPress: () => _showBookLongPressMenu(book),
+                              ),
+                            );
+                          },
+                          childCount: books.length,
+                        ),
+                      ),
+                    ),
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildAnalyticsTab(double screenWidth) {
+    return ResponsiveCenter(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: AppTheme.background,
+          elevation: 0,
+          centerTitle: false,
+          titleSpacing: 24,
+          title: const Text(
+            'Analytics',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.white),
+          ),
+          actions: _buildAppBarActions(),
+        ),
+        body: const AnalyticsView(),
       ),
     );
   }
@@ -812,6 +1038,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   index: _selectedTabIndex,
                   children: [
                     _buildLibraryTab(activeTasks, screenWidth),
+                    _buildAnalyticsTab(screenWidth),
                     _buildPublishedTab(screenWidth),
                   ],
                 ),
@@ -831,6 +1058,10 @@ class _HomeScreenState extends State<HomeScreen> {
               BottomNavigationBarItem(
                 icon: Icon(LucideIcons.bookOpen),
                 label: 'Your Library',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(LucideIcons.barChart2),
+                label: 'Analytics',
               ),
               BottomNavigationBarItem(
                 icon: Icon(LucideIcons.globe),
@@ -1129,4 +1360,250 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  String _extractSnippet(String text, String query) {
+    final idx = text.toLowerCase().indexOf(query.toLowerCase());
+    if (idx == -1) {
+      return text.length > 100 ? '${text.substring(0, 100)}...' : text;
+    }
+    
+    int start = idx - 40;
+    if (start < 0) start = 0;
+    
+    int end = idx + query.length + 60;
+    if (end > text.length) end = text.length;
+    
+    String prefix = start > 0 ? '...' : '';
+    String suffix = end < text.length ? '...' : '';
+    
+    return prefix + text.substring(start, end).replaceAll('\n', ' ') + suffix;
+  }
+
+  Widget _highlightedText(String text, String query, TextStyle baseStyle, TextStyle highlightStyle) {
+    if (query.isEmpty) return Text(text, style: baseStyle);
+    final textLower = text.toLowerCase();
+    final queryLower = query.toLowerCase();
+    
+    final List<TextSpan> spans = [];
+    int start = 0;
+    int index = textLower.indexOf(queryLower, start);
+    
+    while (index != -1) {
+      if (index > start) {
+        spans.add(TextSpan(text: text.substring(start, index)));
+      }
+      spans.add(TextSpan(
+        text: text.substring(index, index + query.length),
+        style: highlightStyle,
+      ));
+      start = index + query.length;
+      index = textLower.indexOf(queryLower, start);
+    }
+    
+    if (start < text.length) {
+      spans.add(TextSpan(text: text.substring(start)));
+    }
+    
+    return RichText(
+      text: TextSpan(
+        style: baseStyle,
+        children: spans,
+      ),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  Widget _buildSearchResultCard(BuildContext context, SearchResultItem result, String query) {
+    IconData icon;
+    Color color;
+    String typeLabel;
+
+    switch (result.type) {
+      case 'book':
+        icon = LucideIcons.book;
+        color = AppTheme.duoBlue;
+        typeLabel = 'Course';
+        break;
+      case 'module':
+        icon = LucideIcons.folder;
+        color = AppTheme.duoViolet;
+        typeLabel = 'Module';
+        break;
+      case 'section':
+        icon = LucideIcons.layout;
+        color = AppTheme.duoOrange;
+        typeLabel = 'Section';
+        break;
+      case 'unit':
+        icon = LucideIcons.bookmark;
+        color = Colors.tealAccent;
+        typeLabel = 'Unit';
+        break;
+      case 'lesson':
+        icon = LucideIcons.bookOpen;
+        color = AppTheme.duoGreen;
+        typeLabel = 'Lesson';
+        break;
+      case 'slide':
+      default:
+        icon = LucideIcons.fileText;
+        color = Colors.white70;
+        typeLabel = 'Lesson Text';
+        break;
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () async {
+            if (result.type == 'lesson' || result.type == 'slide') {
+              if (result.lesson != null) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => LessonScreen(
+                      lesson: result.lesson!,
+                      book: result.book,
+                      modIdx: result.modIdx,
+                      secIdx: result.secIdx,
+                      unitIdx: result.unitIdx,
+                      lessonIdx: result.lessonIdx,
+                      initialSlideId: result.type == 'slide' ? result.slideId : null,
+                    ),
+                  ),
+                ).then((_) => _loadAllData(force: false));
+              }
+            } else {
+              if (result.modIdx != null) {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setInt('last_mod_idx_${result.book.id}', result.modIdx!);
+                if (result.secIdx != null) {
+                  await prefs.setInt('last_sec_idx_${result.book.id}', result.secIdx!);
+                }
+              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => MainLayoutScreen(
+                    book: result.book,
+                    initialModuleIdx: result.modIdx,
+                  ),
+                ),
+              ).then((_) => _loadAllData(force: false));
+            }
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.02),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: color.withOpacity(0.15), width: 1),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: color.withOpacity(0.2), width: 1),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(icon, color: color, size: 18),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              typeLabel,
+                              style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              result.context,
+                              style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      _highlightedText(
+                        result.title,
+                        query,
+                        const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                        TextStyle(color: color, fontWeight: FontWeight.bold, backgroundColor: color.withOpacity(0.1)),
+                      ),
+                      if (result.snippet != null && result.snippet!.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        _highlightedText(
+                          result.snippet!,
+                          query,
+                          TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12, height: 1.3),
+                          TextStyle(color: color, fontWeight: FontWeight.bold, backgroundColor: color.withOpacity(0.1)),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  LucideIcons.chevronRight,
+                  color: Colors.white.withOpacity(0.15),
+                  size: 16,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class SearchResultItem {
+  final Book book;
+  final String type; // 'book' | 'module' | 'section' | 'unit' | 'lesson' | 'slide'
+  final String title;
+  final String context;
+  final String? snippet;
+  final int? modIdx;
+  final int? secIdx;
+  final int? unitIdx;
+  final int? lessonIdx;
+  final Lesson? lesson;
+  final String? slideId;
+
+  SearchResultItem({
+    required this.book,
+    required this.type,
+    required this.title,
+    required this.context,
+    this.snippet,
+    this.modIdx,
+    this.secIdx,
+    this.unitIdx,
+    this.lessonIdx,
+    this.lesson,
+    this.slideId,
+  });
 }

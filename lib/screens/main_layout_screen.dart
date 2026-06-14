@@ -13,11 +13,13 @@ import 'summary_screen.dart';
 import 'pyq_tab_screen.dart';
 import 'course_settings_screen.dart';
 import 'course_edit_structure_screen.dart';
+import '../widgets/analytics_view.dart';
 
 class MainLayoutScreen extends StatefulWidget {
   final Book book;
+  final int? initialModuleIdx;
 
-  const MainLayoutScreen({super.key, required this.book});
+  const MainLayoutScreen({super.key, required this.book, this.initialModuleIdx});
 
   @override
   State<MainLayoutScreen> createState() => _MainLayoutScreenState();
@@ -31,12 +33,13 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
 
   /// The module currently open on the Path tab. Shared with the PYQ tab so the
   /// QP extractor operates on (and shows) only the current module.
-  final ValueNotifier<int> _activeModule = ValueNotifier<int>(0);
+  late final ValueNotifier<int> _activeModule;
 
   @override
   void initState() {
     super.initState();
     _currentBook = widget.book;
+    _activeModule = ValueNotifier<int>(widget.initialModuleIdx ?? 0);
 
     _bookUpdateSub = GenerationManager.instance.bookUpdates.listen((updatedBook) {
       if (updatedBook.id == _currentBook.id && mounted) {
@@ -262,6 +265,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
         activeModule: _activeModule,
       ),
       PracticeScreen(book: _currentBook),
+      AnalyticsView(courseId: _currentBook.id),
       PyqTabScreen(
         book: _currentBook,
         activeModule: _activeModule,
@@ -308,8 +312,10 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                             : _currentIndex == 1
                                 ? 'Practice Arena'
                                 : _currentIndex == 2
-                                    ? 'PYQ Analyzer'
-                                    : 'Course Summary',
+                                    ? 'Analytics'
+                                    : _currentIndex == 3
+                                        ? 'PYQ Analyzer'
+                                        : 'Course Summary',
                         style: const TextStyle(
                           fontFamily: 'Nunito',
                           fontWeight: FontWeight.w900,
@@ -395,8 +401,9 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                 children: [
                   _buildNavItem(0, LucideIcons.map),
                   _buildNavItem(1, LucideIcons.dumbbell),
-                  _buildNavItem(2, LucideIcons.fileQuestion),
-                  _buildNavItem(3, LucideIcons.clipboardList),
+                  _buildNavItem(2, LucideIcons.barChart2),
+                  _buildNavItem(3, LucideIcons.fileQuestion),
+                  _buildNavItem(4, LucideIcons.clipboardList),
                 ],
               ),
             ),
@@ -457,9 +464,11 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
           const SizedBox(height: 8),
           _buildSidebarNavItem(1, LucideIcons.dumbbell, 'Practice'),
           const SizedBox(height: 8),
-          _buildSidebarNavItem(2, LucideIcons.fileQuestion, 'PYQ'),
+          _buildSidebarNavItem(2, LucideIcons.barChart2, 'Analytics'),
           const SizedBox(height: 8),
-          _buildSidebarNavItem(3, LucideIcons.clipboardList, 'Summary'),
+          _buildSidebarNavItem(3, LucideIcons.fileQuestion, 'PYQ'),
+          const SizedBox(height: 8),
+          _buildSidebarNavItem(4, LucideIcons.clipboardList, 'Summary'),
           
           const Spacer(),
           

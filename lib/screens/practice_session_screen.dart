@@ -14,6 +14,7 @@ import '../widgets/slide_views/one_word_view.dart';
 import '../widgets/slide_views/interactive_proof_view.dart';
 import '../widgets/slide_views/pyq_one_word_view.dart';
 import '../services/ai_service.dart';
+import '../services/progress_service.dart';
 import 'pyq_complete_screen.dart';
 import 'lesson_complete_screen.dart';
 
@@ -244,7 +245,18 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
         Navigator.pop(context);
       }
 
-      await GlobalState.addXp(xpEarned);
+      await GlobalState.addXp(xpEarned, widget.book.id);
+
+      int correctCount = gradedResults.where((r) => r['isCorrect'] == true).length;
+      int pyqAccuracy = gradedResults.isNotEmpty ? ((correctCount / gradedResults.length) * 100).round() : 100;
+      await ProgressService.logActivity(
+        courseId: widget.book.id,
+        lessonId: 'practice_pyq',
+        activityType: 'practice',
+        xp: xpEarned,
+        timeSpent: timeSpent,
+        accuracy: pyqAccuracy,
+      );
 
       if (mounted) {
         Navigator.pushReplacement(
@@ -260,7 +272,16 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     }
 
     int accuracy = _totalQuestions > 0 ? (((_totalQuestions) / (_totalQuestions + _mistakesMade)) * 100).round() : 100;
-    await GlobalState.addXp(xpEarned);
+    await GlobalState.addXp(xpEarned, widget.book.id);
+
+    await ProgressService.logActivity(
+      courseId: widget.book.id,
+      lessonId: 'practice_${widget.practiceType}',
+      activityType: 'practice',
+      xp: xpEarned,
+      timeSpent: timeSpent,
+      accuracy: accuracy,
+    );
 
     if (mounted) {
       Navigator.pushReplacement(

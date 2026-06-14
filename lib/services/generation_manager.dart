@@ -1330,7 +1330,7 @@ class GenerationManager extends ChangeNotifier {
       mods[modIdx] = mods[modIdx].copyWith(sections: secs);
       final newBook = base.copyWith(modules: mods);
       
-      await ProgressService.clearLessonProgress(lesson.id);
+      await ProgressService.clearLessonProgress(lesson.id, book.id);
       await _dbService.saveGeneratedBook(newBook);
       _bookUpdateController.add(newBook);
       await NotificationService.cancel(notifId);

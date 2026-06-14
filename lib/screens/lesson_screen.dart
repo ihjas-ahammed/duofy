@@ -32,6 +32,8 @@ class LessonScreen extends StatefulWidget {
   final int? unitIdx;
   final int? lessonIdx;
 
+  final String? initialSlideId;
+
   const LessonScreen({
     super.key,
     required this.lesson,
@@ -40,6 +42,7 @@ class LessonScreen extends StatefulWidget {
     this.secIdx,
     this.unitIdx,
     this.lessonIdx,
+    this.initialSlideId,
   });
 
   @override
@@ -92,6 +95,12 @@ class _LessonScreenState extends State<LessonScreen> {
     _startTime = DateTime.now();
     _lesson = widget.lesson;
     _buildSlideQueue();
+    if (widget.initialSlideId != null) {
+      final index = _slideQueue.indexWhere((s) => s.id == widget.initialSlideId);
+      if (index != -1) {
+        _currentIndex = index;
+      }
+    }
     GenerationManager.instance.addListener(_onGenerationManagerChange);
     // Pull the latest from cache once on open in case background art landed
     // between the dashboard build and this screen mounting.
@@ -261,11 +270,21 @@ class _LessonScreenState extends State<LessonScreen> {
     int timeSpent = DateTime.now().difference(_startTime).inSeconds;
     int accuracy = _totalInteractive > 0 ? ((_correctAttempts / _totalInteractive) * 100).round() : 100;
     
+    final courseId = widget.book?.id ?? 'unknown_course';
     bool isNewCompletion = !(await ProgressService.getCompletedLessons()).contains(widget.lesson.id);
     int xpEarned = isNewCompletion ? 20 : 5;
 
-    await ProgressService.markLessonCompleted(widget.lesson.id);
-    await GlobalState.addXp(xpEarned);
+    await ProgressService.markLessonCompleted(widget.lesson.id, courseId);
+    await GlobalState.addXp(xpEarned, courseId);
+
+    await ProgressService.logActivity(
+      courseId: courseId,
+      lessonId: widget.lesson.id,
+      activityType: 'lesson',
+      xp: xpEarned,
+      timeSpent: timeSpent,
+      accuracy: accuracy,
+    );
 
     if (widget.book != null) {
       final String currentLevel = widget.book!.bloomLevel;
