@@ -1,4 +1,4 @@
-name: Build APK
+name: Build App
 
 on:
   push:
@@ -11,9 +11,9 @@ on:
 
 jobs:
   build:
-    name: Build release APK
-    runs-on: ubuntu-latest
-    timeout-minutes: 50
+    name: Build Release Windows Executable and Android APK
+    runs-on: windows-latest
+    timeout-minutes: 60
 
     permissions:
       contents: write
@@ -35,25 +35,38 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.44.0'
+          flutter-version: '3.44.1'
           cache: true
 
-      - name: Show Flutter version
-        run: flutter --version
+      - name: Enable Windows build
+        run: flutter config --enable-windows-desktop
 
       - name: Install dependencies
         run: flutter pub get
 
       - name: Extract version from pubspec.yaml
         id: version
+        shell: bash
         run: |
           VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//' | xargs)
           echo "vname=$VERSION" >> $GITHUB_OUTPUT
 
+      - name: Build release Windows app
+        run: flutter build windows --release
+
       - name: Build release APK (split per ABI)
         run: flutter build apk --release --split-per-abi
 
+      - name: Zip Windows build output
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.vname }}"
+          New-Item -ItemType Directory -Force -Path builds | Out-Null
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath "builds\duofy-v${version}-windows-x64.zip" -Force
+          Get-ChildItem builds\
+
       - name: Copy APKs to builds directory
+        shell: bash
         run: |
           VERSION="${{ steps.version.outputs.vname }}"
           mkdir -p builds
@@ -64,6 +77,7 @@ jobs:
           ls -lh builds/
 
       - name: Commit and push builds to repository
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -71,6 +85,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
-            git commit -m "chore: add APK builds v${{ steps.version.outputs.vname }} [skip ci]"
+            git commit -m "chore: add Android and Windows builds v${{ steps.version.outputs.vname }} [skip ci]"
             git push origin main
           fi
