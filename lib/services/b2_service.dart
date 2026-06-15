@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'fb/fb_firestore.dart';
 
 class B2Object {
   final String key;
@@ -93,122 +95,208 @@ class B2Service {
         creds.bucketName != 'YOUR_BUCKET_NAME';
   }
 
-  /// Lists objects in the bucket.
+  /// Lists objects in the bucket (reads from Firestore metadata).
   Future<List<B2Object>> listObjects() async {
-    final creds = await getCredentials();
-    if (!creds.isValid) {
-      throw Exception('Backblaze B2 is not configured.');
-    }
-
-    final dateTime = DateTime.now().toUtc();
-    final host = '${creds.bucketName}.s3.${creds.region}.backblazeb2.com';
-    final queryParams = {'list-type': '2'};
+    final snap = await FbFirestore.instance.collection('document_store').get();
+    final List<B2Object> objects = [];
     
-    final headers = _sign(
-      creds: creds,
-      method: 'GET',
-      path: '/',
-      queryParams: queryParams,
-      payloadBytes: const [],
-      dateTime: dateTime,
-    );
+    for (final doc in snap.docs) {
+      final data = doc.data();
+      if (data == null) continue;
+      
+      final key = data['key'] as String? ?? '';
+      if (key.isEmpty) continue;
 
-    final uri = Uri.https(host, '/', queryParams);
-    
-    final response = await http.get(uri, headers: headers);
-    if (response.statusCode != 200) {
-      throw Exception('Failed to list files: [${response.statusCode}] ${response.body}');
+      objects.add(B2Object(
+        key: key,
+        size: data['size'] as int? ?? 0,
+        lastModified: data['uploadedAt'] as String? ?? DateTime.now().toUtc().toIso8601String(),
+      ));
+
+      // Add a virtual thumbnail object so the UI is aware it exists in B2
+      objects.add(B2Object(
+        key: '$key.thumb.jpg',
+        size: 20 * 1024, // Estimate 20 KB
+        lastModified: data['uploadedAt'] as String? ?? DateTime.now().toUtc().toIso8601String(),
+      ));
     }
-
-    return _parseListObjects(response.body);
+    
+    return objects;
   }
 
-  /// Uploads a file to the bucket.
-  Future<void> uploadObject(String filename, List<int> bytes) async {
-    final creds = await getCredentials();
-    if (!creds.isValid) {
-      throw Exception('Backblaze B2 is not configured.');
+  /// Uploads a file split into 1MB chunks to the bucket, utilizing unique ID S3 keys for safety.
+  Future<void> uploadObject(
+    String filename,
+    List<int> bytes, {
+    void Function(double progress)? onProgress,
+  }) async {
+    final isThumb = filename.endsWith('.thumb.jpg');
+    final mainFilename = isThumb
+        ? filename.substring(0, filename.length - '.thumb.jpg'.length)
+        : filename;
+        
+    final folder = mainFilename.split('/').first; // e.g. reference or syllabus
+    final hash = sha256.convert(utf8.encode(mainFilename)).toString();
+    final b2Key = isThumb
+        ? '$folder/$hash.pdf.thumb.jpg'
+        : '$folder/$hash.pdf';
+
+    if (isThumb) {
+      // Upload thumbnail directly as a single B2 object (usually ~30KB)
+      await _uploadPartDirect(b2Key, bytes);
+      return;
     }
 
-    final dateTime = DateTime.now().toUtc();
-    final host = '${creds.bucketName}.s3.${creds.region}.backblazeb2.com';
-    final path = '/$filename';
+    const partSize = 1024 * 1024; // 1 MB
+    final List<List<int>> parts = [];
 
-    final headers = _sign(
-      creds: creds,
-      method: 'PUT',
-      path: path,
-      queryParams: const {},
-      payloadBytes: bytes,
-      dateTime: dateTime,
-    );
+    if (bytes.length <= partSize) {
+      // Small file: upload directly as a single part
+      parts.add(bytes);
+    } else {
+      // Large file: split into 1 MB chunks
+      for (var i = 0; i < bytes.length; i += partSize) {
+        final end = (i + partSize < bytes.length) ? i + partSize : bytes.length;
+        parts.add(bytes.sublist(i, end));
+      }
+    }
 
-    headers['Content-Type'] = 'application/pdf';
-    headers['Content-Length'] = bytes.length.toString();
+    var uploadedBytes = 0;
+    for (var i = 0; i < parts.length; i++) {
+      // If there's only 1 part (small file), B2 key is b2Key.
+      // If there are multiple parts, key is b2Key.part_000, b2Key.part_001, etc.
+      final partKey = (parts.length == 1)
+          ? b2Key
+          : '$b2Key.part_${i.toString().padLeft(3, '0')}';
+      
+      await _uploadPartDirect(partKey, parts[i]);
+      uploadedBytes += parts[i].length;
+      if (onProgress != null) {
+        onProgress(uploadedBytes / bytes.length);
+      }
+    }
 
-    final uri = Uri.https(host, path);
+    final docId = mainFilename.replaceAll('/', '_');
     
-    final response = await http.put(uri, headers: headers, body: bytes);
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Failed to upload file: [${response.statusCode}] ${response.body}');
-    }
+    await FbFirestore.instance.collection('document_store').doc(docId).set({
+      'name': mainFilename.split('/').last,
+      'key': mainFilename, // UI uses original filename for list & local cache
+      'size': bytes.length,
+      'category': folder,
+      'partsCount': parts.length,
+      'uploadedAt': DateTime.now().toUtc().toIso8601String(),
+    });
   }
 
-  /// Downloads file bytes from the bucket.
-  Future<Uint8List> downloadObject(String filename) async {
-    final creds = await getCredentials();
-    if (!creds.isValid) {
-      throw Exception('Backblaze B2 is not configured.');
+  /// Downloads file bytes. If it's a split file, downloads parts and concatenates.
+  Future<Uint8List> downloadObject(
+    String filename, {
+    void Function(double progress)? onProgress,
+  }) async {
+    final isThumb = filename.endsWith('.thumb.jpg');
+    final mainFilename = isThumb
+        ? filename.substring(0, filename.length - '.thumb.jpg'.length)
+        : filename;
+        
+    final folder = mainFilename.split('/').first;
+    final hash = sha256.convert(utf8.encode(mainFilename)).toString();
+    final b2Key = isThumb
+        ? '$folder/$hash.pdf.thumb.jpg'
+        : '$folder/$hash.pdf';
+
+    if (isThumb) {
+      return _downloadPartDirect(b2Key);
     }
 
-    final dateTime = DateTime.now().toUtc();
-    final host = '${creds.bucketName}.s3.${creds.region}.backblazeb2.com';
-    final path = '/$filename';
-
-    final headers = _sign(
-      creds: creds,
-      method: 'GET',
-      path: path,
-      queryParams: const {},
-      payloadBytes: const [],
-      dateTime: dateTime,
-    );
-
-    final uri = Uri.https(host, path);
+    final docId = mainFilename.replaceAll('/', '_');
+    final docSnap = await FbFirestore.instance.collection('document_store').doc(docId).get();
     
-    final response = await http.get(uri, headers: headers);
-    if (response.statusCode != 200) {
-      throw Exception('Failed to download file: [${response.statusCode}] ${response.body}');
+    int partsCount = 1;
+    int totalSize = 0;
+
+    if (docSnap.exists) {
+      final data = docSnap.data()!;
+      partsCount = data['partsCount'] as int? ?? 1;
+      totalSize = data['size'] as int? ?? 0;
     }
 
-    return response.bodyBytes;
+    if (partsCount <= 1) {
+      // Download single part directly
+      final bytes = await _downloadPartDirect(b2Key);
+      if (onProgress != null) {
+        onProgress(1.0);
+      }
+      return bytes;
+    }
+
+    // Split file: download all parts and combine
+    final List<int> combinedBytes = [];
+    var downloadedBytes = 0;
+
+    for (var i = 0; i < partsCount; i++) {
+      final partKey = '$b2Key.part_${i.toString().padLeft(3, '0')}';
+      
+      final partBytes = await _downloadPartDirect(partKey);
+      combinedBytes.addAll(partBytes);
+      downloadedBytes += partBytes.length;
+      if (onProgress != null && totalSize > 0) {
+        onProgress(downloadedBytes / totalSize);
+      }
+    }
+
+    return Uint8List.fromList(combinedBytes);
   }
 
-  /// Deletes a file from the bucket.
+  /// Deletes all parts of a file from the bucket and deletes Firestore metadata.
   Future<void> deleteObject(String filename) async {
-    final creds = await getCredentials();
-    if (!creds.isValid) {
-      throw Exception('Backblaze B2 is not configured.');
+    final isThumb = filename.endsWith('.thumb.jpg');
+    final mainFilename = isThumb
+        ? filename.substring(0, filename.length - '.thumb.jpg'.length)
+        : filename;
+        
+    final folder = mainFilename.split('/').first;
+    final hash = sha256.convert(utf8.encode(mainFilename)).toString();
+    final b2Key = isThumb
+        ? '$folder/$hash.pdf.thumb.jpg'
+        : '$folder/$hash.pdf';
+
+    if (isThumb) {
+      await _deletePartDirect(b2Key);
+      return;
     }
 
-    final dateTime = DateTime.now().toUtc();
-    final host = '${creds.bucketName}.s3.${creds.region}.backblazeb2.com';
-    final path = '/$filename';
-
-    final headers = _sign(
-      creds: creds,
-      method: 'DELETE',
-      path: path,
-      queryParams: const {},
-      payloadBytes: const [],
-      dateTime: dateTime,
-    );
-
-    final uri = Uri.https(host, path);
+    final docId = mainFilename.replaceAll('/', '_');
+    final docSnap = await FbFirestore.instance.collection('document_store').doc(docId).get();
     
-    final response = await http.delete(uri, headers: headers);
-    if (response.statusCode != 204 && response.statusCode != 200) {
-      throw Exception('Failed to delete file: [${response.statusCode}] ${response.body}');
+    int partsCount = 1;
+    if (docSnap.exists) {
+      partsCount = docSnap.data()?['partsCount'] as int? ?? 1;
+    }
+
+    if (partsCount <= 1) {
+      try {
+        await _deletePartDirect(b2Key);
+      } catch (e) {
+        print('[B2Service] Failed to delete file $b2Key: $e');
+      }
+    } else {
+      for (var i = 0; i < partsCount; i++) {
+        final partKey = '$b2Key.part_${i.toString().padLeft(3, '0')}';
+        try {
+          await _deletePartDirect(partKey);
+        } catch (e) {
+          print('[B2Service] Failed to delete part $partKey: $e');
+        }
+      }
+    }
+
+    final thumbKey = '$b2Key.thumb.jpg';
+    try {
+      await _deletePartDirect(thumbKey);
+    } catch (_) {}
+
+    if (docSnap.exists) {
+      await FbFirestore.instance.collection('document_store').doc(docId).delete();
     }
   }
 
@@ -322,33 +410,96 @@ class B2Service {
         .replaceAll('-', '');
   }
 
-  /// Custom regular-expression based XML parser for ListObjectsV2 response
-  List<B2Object> _parseListObjects(String xml) {
-    final List<B2Object> objects = [];
-    final contentsRegex = RegExp(r'<Contents>(.*?)</Contents>', dotAll: true, caseSensitive: false);
-    final keyRegex = RegExp(r'<Key[^>]*>(.*?)</Key>', caseSensitive: false);
-    final sizeRegex = RegExp(r'<Size[^>]*>(\d+)</Size>', caseSensitive: false);
-    final lmRegex = RegExp(r'<LastModified[^>]*>(.*?)</LastModified>', caseSensitive: false);
 
-    final matches = contentsRegex.allMatches(xml);
-    for (final match in matches) {
-      final content = match.group(1) ?? '';
-      final keyMatch = keyRegex.firstMatch(content);
-      final sizeMatch = sizeRegex.firstMatch(content);
-      final lmMatch = lmRegex.firstMatch(content);
 
-      if (keyMatch != null) {
-        final key = keyMatch.group(1) ?? '';
-        final size = int.tryParse(sizeMatch?.group(1) ?? '0') ?? 0;
-        final lastModifiedStr = lmMatch?.group(1) ?? '';
+  // --- Direct Single-Part Upload/Download/Delete Helpers ---
 
-        objects.add(B2Object(
-          key: key,
-          size: size,
-          lastModified: lastModifiedStr,
-        ));
-      }
+  Future<void> _uploadPartDirect(
+    String filename,
+    List<int> bytes,
+  ) async {
+    final creds = await getCredentials();
+    if (!creds.isValid) {
+      throw Exception('Backblaze B2 is not configured.');
     }
-    return objects;
+
+    final dateTime = DateTime.now().toUtc();
+    final host = '${creds.bucketName}.s3.${creds.region}.backblazeb2.com';
+    final path = '/$filename';
+
+    final headers = _sign(
+      creds: creds,
+      method: 'PUT',
+      path: path,
+      queryParams: const {},
+      payloadBytes: bytes,
+      dateTime: dateTime,
+    );
+
+    final contentType = filename.endsWith('.jpg') ? 'image/jpeg' : 'application/pdf';
+    headers['Content-Type'] = contentType;
+
+    final uri = Uri.https(host, path);
+
+    final response = await http.put(uri, headers: headers, body: bytes);
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Failed to upload part: [${response.statusCode}] ${response.body}');
+    }
+  }
+
+  Future<Uint8List> _downloadPartDirect(String filename) async {
+    final creds = await getCredentials();
+    if (!creds.isValid) {
+      throw Exception('Backblaze B2 is not configured.');
+    }
+
+    final dateTime = DateTime.now().toUtc();
+    final host = '${creds.bucketName}.s3.${creds.region}.backblazeb2.com';
+    final path = '/$filename';
+
+    final headers = _sign(
+      creds: creds,
+      method: 'GET',
+      path: path,
+      queryParams: const {},
+      payloadBytes: const [],
+      dateTime: dateTime,
+    );
+
+    final uri = Uri.https(host, path);
+
+    final response = await http.get(uri, headers: headers);
+    if (response.statusCode != 200) {
+      throw Exception('Failed to download part: [${response.statusCode}] ${response.body}');
+    }
+
+    return response.bodyBytes;
+  }
+
+  Future<void> _deletePartDirect(String filename) async {
+    final creds = await getCredentials();
+    if (!creds.isValid) {
+      throw Exception('Backblaze B2 is not configured.');
+    }
+
+    final dateTime = DateTime.now().toUtc();
+    final host = '${creds.bucketName}.s3.${creds.region}.backblazeb2.com';
+    final path = '/$filename';
+
+    final headers = _sign(
+      creds: creds,
+      method: 'DELETE',
+      path: path,
+      queryParams: const {},
+      payloadBytes: const [],
+      dateTime: dateTime,
+    );
+
+    final uri = Uri.https(host, path);
+    
+    final response = await http.delete(uri, headers: headers);
+    if (response.statusCode != 204 && response.statusCode != 200) {
+      throw Exception('Failed to delete file: [${response.statusCode}] ${response.body}');
+    }
   }
 }

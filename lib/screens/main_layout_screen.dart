@@ -14,6 +14,7 @@ import 'pyq_tab_screen.dart';
 import 'course_settings_screen.dart';
 import 'course_edit_structure_screen.dart';
 import '../widgets/analytics_view.dart';
+import '../widgets/glassy_nav_bar.dart';
 
 class MainLayoutScreen extends StatefulWidget {
   final Book book;
@@ -385,30 +386,29 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
         children: pages,
       ),
       
-      bottomNavigationBar: ClipRRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.6),
-              border: Border(top: BorderSide(color: Colors.white.withOpacity(0.15))),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildNavItem(0, LucideIcons.map),
-                  _buildNavItem(1, LucideIcons.dumbbell),
-                  _buildNavItem(2, LucideIcons.barChart2),
-                  _buildNavItem(3, LucideIcons.fileQuestion),
-                  _buildNavItem(4, LucideIcons.clipboardList),
-                ],
-              ),
-            ),
-          ),
-        ),
+      bottomNavigationBar: GlassyNavBar(
+        currentIndex: _currentIndex,
+        blur: 14.0,
+        icons: const [
+          LucideIcons.map,
+          LucideIcons.dumbbell,
+          LucideIcons.barChart2,
+          LucideIcons.fileQuestion,
+          LucideIcons.clipboardList,
+        ],
+        tooltips: const [
+          'Path',
+          'Practice',
+          'Analytics',
+          'PYQ',
+          'Summary',
+        ],
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        activeColor: AppTheme.duoBlue,
       ),
     );
   }
@@ -588,20 +588,4 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon) {
-    final isActive = _currentIndex == index;
-    final color = isActive ? AppTheme.duoBlue : Colors.white54;
-    
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _currentIndex = index),
-        behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Icon(icon, color: color, size: 28),
-        ),
-      ),
-    );
-  }
 }

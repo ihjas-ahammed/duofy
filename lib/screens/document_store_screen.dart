@@ -10,7 +10,26 @@ import '../services/b2_service.dart';
 import '../widgets/responsive_center.dart';
 import '../widgets/safe_pdf_viewer.dart';
 import '../widgets/duo_button.dart';
-import 'settings_screen.dart';
+import '../services/pdf_service.dart';
+import '../services/ai_service.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
+
+enum DocCategory { reference, syllabus }
+
+DocCategory getDocCategory(B2Object obj) {
+  if (obj.key.startsWith('syllabus/')) {
+    return DocCategory.syllabus;
+  }
+  if (obj.key.startsWith('reference/')) {
+    return DocCategory.reference;
+  }
+  // Fallback for legacy files
+  final lowerKey = obj.key.toLowerCase();
+  if (lowerKey.contains('syllabus')) {
+    return DocCategory.syllabus;
+  }
+  return DocCategory.reference;
+}
 
 class DocumentStoreScreen extends StatefulWidget {
   const DocumentStoreScreen({super.key});
@@ -27,10 +46,33 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
   List<B2Object> _files = [];
   String? _errorMessage;
 
+  DocCategory _selectedCategory = DocCategory.reference;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+  String? _cacheDirPath;
+  double _actionProgress = 0.0;
+  bool _actionCancelled = false;
+
   @override
   void initState() {
     super.initState();
+    _initCacheDir();
     _checkConfigAndLoad();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initCacheDir() async {
+    final appDir = await getApplicationDocumentsDirectory();
+    if (mounted) {
+      setState(() {
+        _cacheDirPath = '${appDir.path}/b2_cache';
+      });
+    }
   }
 
   Future<void> _checkConfigAndLoad() async {
@@ -79,8 +121,70 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
     }
   }
 
+  Future<DocCategory?> _showCategorySelectionDialog() async {
+    return showDialog<DocCategory>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Select Category',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Choose where to organize this PDF document:',
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.duoBlue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(LucideIcons.bookOpen, color: AppTheme.duoBlue),
+              ),
+              title: const Text('Reference Book', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              subtitle: const Text('Textbooks, guides, and reference material', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              onTap: () => Navigator.pop(ctx, DocCategory.reference),
+            ),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.duoOrange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(LucideIcons.fileSpreadsheet, color: AppTheme.duoOrange),
+              ),
+              title: const Text('Syllabus', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              subtitle: const Text('Course outlines and syllabus documents', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              onTap: () => Navigator.pop(ctx, DocCategory.syllabus),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, null),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _pickAndUpload() async {
     if (_isActionLoading) return;
+
+    final category = await _showCategorySelectionDialog();
+    if (category == null) return;
 
     try {
       final result = await FilePicker.platform.pickFiles(
@@ -94,24 +198,98 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
       final path = result.files.single.path!;
       final file = File(path);
       final filename = result.files.single.name;
+
+      // Show the ConfirmNameDialog to confirm/customize the filename
+      final confirmedName = await showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => ConfirmNameDialog(
+          pdfFile: file,
+          originalName: filename,
+        ),
+      );
+
+      if (confirmedName == null || confirmedName.isEmpty) return;
+
       final bytes = await file.readAsBytes();
+      final folder = category == DocCategory.syllabus ? 'syllabus' : 'reference';
+      final objectKey = '$folder/$confirmedName';
 
       setState(() {
         _isActionLoading = true;
-        _actionLoadingText = 'Uploading $filename...';
+        _actionProgress = 0.0;
+        _actionLoadingText = 'Uploading $confirmedName...';
+        _actionCancelled = false;
       });
 
-      await B2Service.instance.uploadObject(filename, bytes);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Successfully uploaded $filename')),
+      // 1. Upload the main PDF file with progress
+      await B2Service.instance.uploadObject(
+        objectKey,
+        bytes,
+        onProgress: (p) {
+          if (_actionCancelled) {
+            throw Exception('Cancelled');
+          }
+          if (mounted) {
+            setState(() {
+              _actionProgress = p;
+            });
+          }
+        },
       );
+
+      // 2. Generate and upload thumbnail (page 1)
+      try {
+        setState(() {
+          _actionProgress = 0.0;
+          _actionLoadingText = 'Generating thumbnail...';
+        });
+        final thumbBytes = await PdfService().renderPageToImage(file, 1);
+        if (thumbBytes != null) {
+          setState(() {
+            _actionLoadingText = 'Uploading thumbnail...';
+          });
+          final thumbKey = '$objectKey.thumb.jpg';
+          await B2Service.instance.uploadObject(thumbKey, thumbBytes);
+
+          // Save thumbnail to local cache
+          if (_cacheDirPath != null) {
+            final localThumbFile = File('$_cacheDirPath/$thumbKey');
+            if (!await localThumbFile.parent.exists()) {
+              await localThumbFile.parent.create(recursive: true);
+            }
+            await localThumbFile.writeAsBytes(thumbBytes);
+          }
+        }
+      } catch (thumbErr) {
+        debugPrint('Failed to generate/upload thumbnail: $thumbErr');
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Successfully uploaded $confirmedName')),
+        );
+      }
+
+      setState(() {
+        _selectedCategory = category;
+      });
 
       await _loadFiles();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Upload failed: $e'), backgroundColor: AppTheme.duoRed),
-      );
+      if (_actionCancelled) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Upload cancelled.')),
+          );
+        }
+        return;
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Upload failed: $e'), backgroundColor: AppTheme.duoRed),
+        );
+      }
     } finally {
       setState(() {
         _isActionLoading = false;
@@ -125,34 +303,92 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
     try {
       final appDir = await getApplicationDocumentsDirectory();
       final cacheDir = Directory('${appDir.path}/b2_cache');
-      if (!await cacheDir.exists()) {
-        await cacheDir.create(recursive: true);
-      }
-
       final localFile = File('${cacheDir.path}/${b2Obj.key}');
 
       // If already cached locally, open directly
       if (await localFile.exists()) {
-        _openPdfViewer(localFile, b2Obj.key);
+        // Just in case, check if thumbnail exists locally, if not generate it
+        final thumbFile = File('${cacheDir.path}/${b2Obj.key}.thumb.jpg');
+        if (!await thumbFile.exists()) {
+          try {
+            final thumbBytes = await PdfService().renderPageToImage(localFile, 1);
+            if (thumbBytes != null) {
+              if (!await thumbFile.parent.exists()) {
+                await thumbFile.parent.create(recursive: true);
+              }
+              await thumbFile.writeAsBytes(thumbBytes);
+            }
+          } catch (e) {
+            debugPrint('Failed to generate local thumbnail on cached view: $e');
+          }
+        }
+
+        _openPdfViewer(localFile, b2Obj.key.split('/').last);
         return;
       }
 
       // Download from B2
       setState(() {
         _isActionLoading = true;
-        _actionLoadingText = 'Downloading ${b2Obj.key}...';
+        _actionProgress = 0.0;
+        _actionLoadingText = 'Downloading ${b2Obj.key.split('/').last}...';
+        _actionCancelled = false;
       });
 
-      final bytes = await B2Service.instance.downloadObject(b2Obj.key);
+      final bytes = await B2Service.instance.downloadObject(
+        b2Obj.key,
+        onProgress: (p) {
+          if (_actionCancelled) {
+            throw Exception('Cancelled');
+          }
+          if (mounted) {
+            setState(() {
+              _actionProgress = p;
+            });
+          }
+        },
+      );
+
+      // Ensure parent directory for local cached file exists
+      if (!await localFile.parent.exists()) {
+        await localFile.parent.create(recursive: true);
+      }
       await localFile.writeAsBytes(bytes);
 
+      // Render thumbnail if not already present
+      final thumbFile = File('${cacheDir.path}/${b2Obj.key}.thumb.jpg');
+      if (!await thumbFile.exists()) {
+        try {
+          final thumbBytes = await PdfService().renderPageToImage(localFile, 1);
+          if (thumbBytes != null) {
+            if (!await thumbFile.parent.exists()) {
+              await thumbFile.parent.create(recursive: true);
+            }
+            await thumbFile.writeAsBytes(thumbBytes);
+          }
+        } catch (e) {
+          debugPrint('Failed to generate local thumbnail after download: $e');
+        }
+      }
+
       if (mounted) {
-        _openPdfViewer(localFile, b2Obj.key);
+        setState(() {}); // Rebuild so that cached status is updated
+        _openPdfViewer(localFile, b2Obj.key.split('/').last);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Download failed: $e'), backgroundColor: AppTheme.duoRed),
-      );
+      if (_actionCancelled) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Download cancelled.')),
+          );
+        }
+        return;
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Download failed: $e'), backgroundColor: AppTheme.duoRed),
+        );
+      }
     } finally {
       setState(() {
         _isActionLoading = false;
@@ -170,12 +406,13 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
   }
 
   Future<void> _deleteFile(B2Object b2Obj) async {
+    final displayName = b2Obj.key.split('/').last;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppTheme.surface,
         title: const Text('Delete Document?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: Text('Are you sure you want to permanently delete "${b2Obj.key}" from Backblaze B2?', style: const TextStyle(color: Colors.white70)),
+        content: Text('Are you sure you want to permanently delete "$displayName" from cloud store?', style: const TextStyle(color: Colors.white70)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -193,28 +430,50 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
 
     setState(() {
       _isActionLoading = true;
-      _actionLoadingText = 'Deleting ${b2Obj.key}...';
+      _actionLoadingText = 'Deleting $displayName...';
     });
 
     try {
+      // 1. Delete main PDF
       await B2Service.instance.deleteObject(b2Obj.key);
 
-      // Clean local cache if exists
+      // 2. Delete cloud thumbnail if it exists
+      final thumbKey = '${b2Obj.key}.thumb.jpg';
+      final hasCloudThumb = _files.any((f) => f.key == thumbKey);
+      if (hasCloudThumb) {
+        try {
+          await B2Service.instance.deleteObject(thumbKey);
+        } catch (thumbErr) {
+          debugPrint('Failed to delete cloud thumbnail: $thumbErr');
+        }
+      }
+
+      // 3. Clean local cache PDF if exists
       final appDir = await getApplicationDocumentsDirectory();
       final localFile = File('${appDir.path}/b2_cache/${b2Obj.key}');
       if (await localFile.exists()) {
         await localFile.delete();
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Successfully deleted ${b2Obj.key}')),
-      );
+      // 4. Clean local cache thumbnail if exists
+      final localThumb = File('${appDir.path}/b2_cache/$thumbKey');
+      if (await localThumb.exists()) {
+        await localThumb.delete();
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Successfully deleted $displayName')),
+        );
+      }
 
       await _loadFiles();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Delete failed: $e'), backgroundColor: AppTheme.duoRed),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Delete failed: $e'), backgroundColor: AppTheme.duoRed),
+        );
+      }
     } finally {
       setState(() {
         _isActionLoading = false;
@@ -228,6 +487,19 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.background,
+      floatingActionButton: _isConfigured && !_isLoading && _errorMessage == null
+          ? Padding(
+              padding: const EdgeInsets.only(bottom: 80),
+              child: FloatingActionButton(
+                heroTag: 'doc_store_fab',
+                onPressed: _pickAndUpload,
+                backgroundColor: AppTheme.duoGreen,
+                foregroundColor: Colors.white,
+                elevation: 4,
+                child: const Icon(LucideIcons.upload, size: 22),
+              ),
+            )
+          : null,
       body: Stack(
         children: [
           SafeArea(
@@ -240,7 +512,22 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                   children: [
                     // Header Area
                     _buildHeader(),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
+
+                    // Search & Categories (only show when configured and loaded successfully)
+                    if (_isConfigured && !_isLoading && _errorMessage == null) ...[
+                      _buildSearchBar(),
+                      const SizedBox(height: 16),
+                      CategoryTabs(
+                        selectedCategory: _selectedCategory,
+                        onCategoryChanged: (category) {
+                          setState(() {
+                            _selectedCategory = category;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                    ],
 
                     // Main Content
                     Expanded(
@@ -272,6 +559,44 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                       Text(
                         _actionLoadingText,
                         style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
+                      if (_actionProgress > 0.0) ...[
+                        const SizedBox(height: 16),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: SizedBox(
+                            width: 200,
+                            height: 8,
+                            child: LinearProgressIndicator(
+                              value: _actionProgress,
+                              backgroundColor: Colors.white12,
+                              valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.duoViolet),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${(_actionProgress * 100).toStringAsFixed(0)}%',
+                          style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _actionCancelled = true;
+                            _isActionLoading = false;
+                          });
+                        },
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(
+                            color: AppTheme.duoRed,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -305,7 +630,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
               const SizedBox(height: 4),
               Text(
                 _isConfigured
-                    ? 'Upload and download PDF references from Backblaze B2'
+                    ? 'Upload and download PDF references from cloud store'
                     : '10 GB free cloud storage setup',
                 style: const TextStyle(color: Colors.white54, fontSize: 13, fontWeight: FontWeight.bold),
               ),
@@ -357,7 +682,9 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
       );
     }
 
-    if (_files.isEmpty) {
+    final filtered = _getFilteredFiles();
+
+    if (filtered.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -368,102 +695,121 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                 color: Colors.white.withOpacity(0.02),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(LucideIcons.folderClosed, size: 64, color: Colors.white24),
+              child: Icon(
+                _searchQuery.isNotEmpty ? LucideIcons.search : LucideIcons.folderClosed,
+                size: 64,
+                color: Colors.white24,
+              ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'No Documents Uploaded',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+            Text(
+              _searchQuery.isNotEmpty ? 'No Search Results' : 'No Documents',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Upload your first PDF document to the cloud store.',
-              style: TextStyle(color: Colors.white54, fontSize: 13),
+            Text(
+              _searchQuery.isNotEmpty
+                  ? 'No documents in this category match "$_searchQuery".'
+                  : 'Organize your references here by uploading a PDF document.',
+              style: const TextStyle(color: Colors.white54, fontSize: 13),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
-            DuoButton(
-              text: 'Upload PDF',
-              onPressed: _pickAndUpload,
-              color: AppTheme.duoGreen,
-              shadowColor: AppTheme.duoGreenDark,
-            ),
+            
           ],
         ),
       );
     }
 
-    return Column(
-      children: [
-        // Quick Action Upload Card
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          margin: const EdgeInsets.only(bottom: 20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppTheme.duoViolet.withOpacity(0.15), Colors.transparent],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppTheme.duoViolet.withOpacity(0.25)),
-          ),
-          child: Row(
-            children: [
-              const Icon(LucideIcons.cloudLightning, color: AppTheme.duoViolet, size: 32),
-              const SizedBox(width: 16),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Store PDF Reference Chunks',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Access your uploaded references from any device.',
-                      style: TextStyle(color: Colors.white54, fontSize: 11),
-                    ),
-                  ],
-                ),
-              ),
-              ElevatedButton.icon(
-                onPressed: _pickAndUpload,
-                icon: const Icon(LucideIcons.upload, size: 16),
-                label: const Text('UPLOAD', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.duoGreen,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 2,
-                ),
-              ),
-            ],
-          ),
-        ),
+    int crossAxisCount = screenWidth > 900 ? 5 : (screenWidth > 600 ? 3 : 2);
 
-        // File List
-        Expanded(
-          child: ListView.separated(
-            itemCount: _files.length,
-            physics: const BouncingScrollPhysics(),
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final file = _files[index];
-              return _buildFileItem(file);
-            },
-          ),
-        ),
-      ],
+    return GridView.builder(
+      padding: const EdgeInsets.only(bottom: 80),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 0.72,
+      ),
+      itemCount: filtered.length,
+      physics: const BouncingScrollPhysics(),
+      itemBuilder: (context, index) {
+        final file = filtered[index];
+        return _buildGridFileItem(file);
+      },
     );
   }
 
-  Widget _buildFileItem(B2Object file) {
-    final formattedDate = file.lastModifiedDate != null
-        ? '${file.lastModifiedDate!.month}/${file.lastModifiedDate!.day}/${file.lastModifiedDate!.year}'
-        : 'Unknown';
+  List<B2Object> _getFilteredFiles() {
+    return _files.where((file) {
+      if (file.key.endsWith('.thumb.jpg')) return false;
+
+      final category = getDocCategory(file);
+      if (category != _selectedCategory) return false;
+
+      if (_searchQuery.isNotEmpty) {
+        final displayName = file.key.split('/').last.toLowerCase();
+        if (!displayName.contains(_searchQuery.toLowerCase())) {
+          return false;
+        }
+      }
+
+      return true;
+    }).toList();
+  }
+
+  bool _isPdfCached(String key) {
+    if (_cacheDirPath == null) return false;
+    return File('$_cacheDirPath/$key').existsSync();
+  }
+
+  Widget _buildSearchBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Row(
+        children: [
+          const Icon(LucideIcons.search, color: Colors.white30, size: 18),
+          const SizedBox(width: 12),
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              onChanged: (val) {
+                setState(() {
+                  _searchQuery = val;
+                });
+              },
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              decoration: const InputDecoration(
+                hintText: 'Search documents...',
+                hintStyle: TextStyle(color: Colors.white30, fontSize: 14),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+          if (_searchQuery.isNotEmpty)
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _searchController.clear();
+                  _searchQuery = '';
+                });
+              },
+              child: const Icon(LucideIcons.x, color: Colors.white60, size: 16),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGridFileItem(B2Object file) {
+    final isCached = _isPdfCached(file.key);
+    final displayName = file.key.split('/').last;
 
     return Container(
       decoration: BoxDecoration(
@@ -471,63 +817,127 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withOpacity(0.08)),
       ),
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.redAccent.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          children: [
+            // 1. Thumbnail Hero
+            Positioned.fill(
+              child: PdfThumbnailWidget(
+                pdfObj: file,
+                cloudFiles: _files,
+              ),
             ),
-            child: const Icon(LucideIcons.fileText, color: Colors.redAccent, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  file.key,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+
+            // 2. Subtle Cloud status indicator
+            if (!isCached)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white12),
+                  ),
+                  child: const Icon(
+                    LucideIcons.cloud,
+                    color: Colors.white60,
+                    size: 10,
+                  ),
                 ),
-                const SizedBox(height: 4),
-                Row(
+              ),
+
+            // 3. Bottom Gradient & Actions
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.black.withOpacity(0.9),
+                      Colors.black.withOpacity(0.5),
+                      Colors.transparent,
+                    ],
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                  ),
+                ),
+                padding: const EdgeInsets.only(
+                  left: 10,
+                  right: 6,
+                  bottom: 8,
+                  top: 24,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Title
                     Text(
-                      file.sizeFormatted,
-                      style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold),
+                      displayName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(width: 12),
-                    Container(width: 4, height: 4, decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle)),
-                    const SizedBox(width: 12),
-                    Text(
-                      formattedDate,
-                      style: const TextStyle(color: Colors.white54, fontSize: 11),
+                    const SizedBox(height: 2),
+
+                    // Actions
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          file.sizeFormatted,
+                          style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // View/Download
+                            IconButton(
+                              icon: Icon(
+                                isCached ? LucideIcons.eye : LucideIcons.download,
+                                color: isCached ? AppTheme.duoBlue : AppTheme.duoGreen,
+                                size: 16,
+                              ),
+                              constraints: const BoxConstraints(),
+                              padding: const EdgeInsets.all(6),
+                              tooltip: isCached ? 'Open & View' : 'Download',
+                              onPressed: () => _downloadAndView(file),
+                            ),
+                            // Delete
+                            IconButton(
+                              icon: const Icon(
+                                LucideIcons.trash2,
+                                color: AppTheme.duoRed,
+                                size: 16,
+                              ),
+                              constraints: const BoxConstraints(),
+                              padding: const EdgeInsets.all(6),
+                              tooltip: 'Delete',
+                              onPressed: () => _deleteFile(file),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
-          ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: const Icon(LucideIcons.eye, color: AppTheme.duoBlue, size: 20),
-                tooltip: 'Open & View',
-                onPressed: () => _downloadAndView(file),
-              ),
-              IconButton(
-                icon: const Icon(LucideIcons.trash2, color: AppTheme.duoRed, size: 20),
-                tooltip: 'Delete',
-                onPressed: () => _deleteFile(file),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -651,6 +1061,452 @@ class B2PdfViewerScreen extends StatelessWidget {
         ],
       ),
       body: SafePdfViewer(file: file),
+    );
+  }
+}
+
+class PdfThumbnailWidget extends StatefulWidget {
+  final B2Object pdfObj;
+  final List<B2Object> cloudFiles;
+
+  const PdfThumbnailWidget({
+    super.key,
+    required this.pdfObj,
+    required this.cloudFiles,
+  });
+
+  @override
+  State<PdfThumbnailWidget> createState() => _PdfThumbnailWidgetState();
+}
+
+class _PdfThumbnailWidgetState extends State<PdfThumbnailWidget> {
+  Uint8List? _imageBytes;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThumbnail();
+  }
+
+  @override
+  void didUpdateWidget(PdfThumbnailWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pdfObj.key != widget.pdfObj.key) {
+      _loadThumbnail();
+    }
+  }
+
+  Future<void> _loadThumbnail() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+      _imageBytes = null;
+    });
+
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final thumbFile = File('${appDir.path}/b2_cache/${widget.pdfObj.key}.thumb.jpg');
+
+      // 1. Check if local thumbnail cache exists
+      if (await thumbFile.exists()) {
+        final bytes = await thumbFile.readAsBytes();
+        if (mounted) {
+          setState(() {
+            _imageBytes = bytes;
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
+      // 2. Check if cloud has thumbnail
+      final thumbKey = '${widget.pdfObj.key}.thumb.jpg';
+      final hasCloudThumb = widget.cloudFiles.any((f) => f.key == thumbKey);
+
+      if (hasCloudThumb) {
+        final bytes = await B2Service.instance.downloadObject(thumbKey);
+        // Save to local cache
+        if (!await thumbFile.parent.exists()) {
+          await thumbFile.parent.create(recursive: true);
+        }
+        await thumbFile.writeAsBytes(bytes);
+        if (mounted) {
+          setState(() {
+            _imageBytes = bytes;
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
+      // 3. Check if local PDF is already cached
+      final pdfFile = File('${appDir.path}/b2_cache/${widget.pdfObj.key}');
+      if (await pdfFile.exists()) {
+        final bytes = await PdfService().renderPageToImage(pdfFile, 1);
+        if (bytes != null) {
+          if (!await thumbFile.parent.exists()) {
+            await thumbFile.parent.create(recursive: true);
+          }
+          await thumbFile.writeAsBytes(bytes);
+          if (mounted) {
+            setState(() {
+              _imageBytes = bytes;
+              _isLoading = false;
+            });
+          }
+          return;
+        }
+      }
+
+      // 4. Default: No thumbnail available
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading thumbnail for ${widget.pdfObj.key}: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Container(
+        color: Colors.white.withOpacity(0.02),
+        child: const Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppTheme.duoBlue,
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (_imageBytes != null) {
+      return Image.memory(
+        _imageBytes!,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      );
+    }
+
+    // Gradient background with file icon fallback
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.surface,
+            AppTheme.surface.withOpacity(0.7),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.duoBlue.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                LucideIcons.fileText,
+                color: AppTheme.duoBlue,
+                size: 32,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'PDF',
+              style: TextStyle(
+                color: Colors.white60,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class CategoryTabs extends StatelessWidget {
+  final DocCategory selectedCategory;
+  final ValueChanged<DocCategory> onCategoryChanged;
+
+  const CategoryTabs({
+    super.key,
+    required this.selectedCategory,
+    required this.onCategoryChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildTab(
+              context,
+              category: DocCategory.reference,
+              label: 'Reference Books',
+              icon: LucideIcons.bookOpen,
+            ),
+          ),
+          Expanded(
+            child: _buildTab(
+              context,
+              category: DocCategory.syllabus,
+              label: 'Syllabus',
+              icon: LucideIcons.fileSpreadsheet,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTab(
+    BuildContext context, {
+    required DocCategory category,
+    required String label,
+    required IconData icon,
+  }) {
+    final isSelected = selectedCategory == category;
+    return GestureDetector(
+      onTap: () => onCategoryChanged(category),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.duoViolet : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? Colors.white : Colors.white60,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.white60,
+                fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ConfirmNameDialog extends StatefulWidget {
+  final File pdfFile;
+  final String originalName;
+
+  const ConfirmNameDialog({
+    super.key,
+    required this.pdfFile,
+    required this.originalName,
+  });
+
+  @override
+  State<ConfirmNameDialog> createState() => _ConfirmNameDialogState();
+}
+
+class _ConfirmNameDialogState extends State<ConfirmNameDialog> {
+  late TextEditingController _nameController;
+  bool _isSuggesting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final nameWithoutExt = widget.originalName.endsWith('.pdf')
+        ? widget.originalName.substring(0, widget.originalName.length - 4)
+        : widget.originalName;
+    _nameController = TextEditingController(text: nameWithoutExt);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _getAiSuggestion() async {
+    setState(() {
+      _isSuggesting = true;
+    });
+
+    try {
+      // 1. Extract only the first page
+      final firstPagePdf = await PdfService().extractPages(widget.pdfFile, [1]);
+      // 2. Extract text from the first page
+      final text = await PdfService().extractTextFromPdf(firstPagePdf);
+      
+      // 3. Query Lite AI
+      final apiKey = await AiService().getApiKey();
+      final modelName = await AiService().getPrimaryTextModelName();
+      final model = GenerativeModel(model: modelName, apiKey: apiKey);
+      
+      final prompt = '''
+You are an AI assistant helping to clean up academic/reference PDF filenames.
+Analyze the following text from the first page of a PDF document and propose a clean, concise, human-readable title (e.g. "Calculus 101", "Thermodynamics Syllabus", "Linear Algebra").
+Do NOT include the file extension. Avoid special characters. Keep it under 50 characters.
+
+Original Filename: ${widget.originalName}
+
+First Page Text Content:
+$text
+
+Proposed clean title:
+''';
+
+      final content = [Content.text(prompt)];
+      final response = await model.generateContent(content);
+      String suggested = response.text?.trim() ?? '';
+      
+      // Cleanup suggested name
+      suggested = suggested.replaceAll('"', '').replaceAll("'", "").trim();
+      if (suggested.endsWith('.pdf')) {
+        suggested = suggested.substring(0, suggested.length - 4);
+      }
+      
+      if (suggested.isNotEmpty) {
+        _nameController.text = suggested;
+      }
+    } catch (e) {
+      debugPrint('AI Suggestion Error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('AI Suggestion failed: $e'), backgroundColor: AppTheme.duoRed),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSuggesting = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppTheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: const Text(
+        'Confirm Document Name',
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Confirm or customize the document name before upload:',
+            style: TextStyle(color: Colors.white70, fontSize: 13),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.04),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  child: TextField(
+                    controller: _nameController,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: _isSuggesting ? null : _getAiSuggestion,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.duoViolet.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.duoViolet.withOpacity(0.3)),
+                  ),
+                  child: _isSuggesting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppTheme.duoViolet,
+                          ),
+                        )
+                      : const Icon(
+                          LucideIcons.sparkles,
+                          color: AppTheme.duoViolet,
+                          size: 18,
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, null),
+          child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final name = _nameController.text.trim();
+            if (name.isEmpty) return;
+            Navigator.pop(context, name.endsWith('.pdf') ? name : '$name.pdf');
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.duoGreen,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+          child: const Text('Confirm', style: TextStyle(fontWeight: FontWeight.bold)),
+        ),
+      ],
     );
   }
 }

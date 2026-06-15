@@ -29,6 +29,7 @@ import '../main.dart';
 import 'metacognition_setup_screen.dart';
 import '../widgets/analytics_view.dart';
 import 'document_store_screen.dart';
+import '../widgets/glassy_nav_bar.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -1032,6 +1033,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final activeTasks = GenerationManager.instance.activeTasks;
 
         return Scaffold(
+          extendBody: true,
           backgroundColor: AppTheme.background,
           body: isLoading
               ? const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue))
@@ -1044,40 +1046,31 @@ class _HomeScreenState extends State<HomeScreen> {
                     const DocumentStoreScreen(),
                   ],
                 ),
-          bottomNavigationBar: BottomNavigationBar(
+          bottomNavigationBar: GlassyNavBar(
             currentIndex: _selectedTabIndex,
-            type: BottomNavigationBarType.fixed,
+            blur: 6.0,
+            icons: const [
+              LucideIcons.bookOpen,
+              LucideIcons.barChart2,
+              LucideIcons.globe,
+              LucideIcons.hardDrive,
+            ],
+            tooltips: const [
+              'Library',
+              'Analytics',
+              'Published',
+              'Doc Store',
+            ],
             onTap: (index) {
               setState(() {
                 _selectedTabIndex = index;
               });
             },
-            backgroundColor: AppTheme.surface,
-            selectedItemColor: AppTheme.duoBlue,
-            unselectedItemColor: Colors.white54,
-            selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-            unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(LucideIcons.bookOpen),
-                label: 'Your Library',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(LucideIcons.barChart2),
-                label: 'Analytics',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(LucideIcons.globe),
-                label: 'Published',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(LucideIcons.hardDrive),
-                label: 'Doc Store',
-              ),
-            ],
+            activeColor: AppTheme.duoGreen,
           ),
           floatingActionButton: _selectedTabIndex == 0 && !kIsWeb
               ? FloatingActionButton(
+                  heroTag: 'home_fab',
                   backgroundColor: AppTheme.duoGreen,
                   child: const Icon(LucideIcons.plus, color: Colors.white, size: 32),
                   onPressed: () => Navigator.push(

@@ -123,6 +123,7 @@ class ExamScreen extends StatelessWidget {
           floatingActionButton: Padding(
             padding: const EdgeInsets.only(bottom: 80),
             child: FloatingActionButton.extended(
+              heroTag: 'exam_fab',
               backgroundColor: AppTheme.duoBlue,
               icon: const Icon(LucideIcons.plus, color: Colors.white),
               label: const Text('Add Paper', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),

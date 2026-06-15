@@ -8,12 +8,14 @@ import '../theme/app_theme.dart';
 class FileSelectionList extends StatelessWidget {
   final List<dynamic> files;
   final VoidCallback onAddMore;
+  final VoidCallback? onSelectFromStore;
   final Function(int) onRemove;
 
   const FileSelectionList({
     super.key,
     required this.files,
     required this.onAddMore,
+    this.onSelectFromStore,
     required this.onRemove,
   });
 
@@ -40,23 +42,47 @@ class FileSelectionList extends StatelessWidget {
                   '${files.length} File(s) Selected', 
                   style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.white)
                 ),
-                GestureDetector(
-                  onTap: onAddMore,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppTheme.duoBlue.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (onSelectFromStore != null) ...[
+                      GestureDetector(
+                        onTap: onSelectFromStore,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppTheme.duoViolet.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(LucideIcons.cloud, size: 14, color: AppTheme.duoViolet),
+                              SizedBox(width: 4),
+                              ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    GestureDetector(
+                      onTap: onAddMore,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppTheme.duoBlue.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(LucideIcons.plus, size: 14, color: AppTheme.duoBlue),
+                            SizedBox(width: 4),
+                            Text('Add', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold, fontSize: 12)),
+                          ],
+                        ),
+                      ),
                     ),
-                    child: const Row(
-                      children: [
-                        Icon(LucideIcons.plus, size: 14, color: AppTheme.duoBlue),
-                        SizedBox(width: 4),
-                        Text('Add', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold, fontSize: 12)),
-                      ],
-                    ),
-                  ),
-                )
+                  ],
+                ),
               ],
             ),
           ),

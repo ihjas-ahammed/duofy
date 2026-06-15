@@ -357,6 +357,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
         automaticallyImplyLeading: false,
       ),
       body: SafeArea(
+        bottom: false,
         child: ListView(
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),

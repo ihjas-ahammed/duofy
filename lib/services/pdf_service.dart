@@ -674,9 +674,14 @@ class PdfService {
       try {
         final doc = await pdfx.PdfDocument.openFile(pdfFile.path);
         final page = await doc.getPage(pageNumber);
+        
+        // Cap width to 360 to prevent memory crashes on Android/iOS
+        double scale = 360.0 / page.width;
+        if (scale > 1.0) scale = 1.0;
+
         final pageImage = await page.render(
-          width: page.width * 2.0,
-          height: page.height * 2.0,
+          width: page.width * scale,
+          height: page.height * scale,
           format: pdfx.PdfPageImageFormat.jpeg,
         );
         await page.close();
@@ -694,6 +699,52 @@ class PdfService {
     });
 
     return completer.future;
+  }
+
+  Future<Uint8List?> renderPageToImage(File pdfFile, int pageNumber) async {
+    final bytes = await _renderPageToImage(pdfFile, pageNumber);
+    if (bytes != null) return bytes;
+
+    if (Platform.isLinux) {
+      try {
+        final tempDir = await Directory.systemTemp.createTemp('pdf_thumb_');
+        final outputPrefix = '${tempDir.path}/thumb';
+        final result = await Process.run('pdftoppm', [
+          '-jpeg',
+          '-f',
+          '$pageNumber',
+          '-l',
+          '$pageNumber',
+          '-scale-to-x',
+          '400',
+          '-scale-to-y',
+          '-1',
+          pdfFile.path,
+          outputPrefix,
+        ]);
+
+        if (result.exitCode == 0) {
+          final files = tempDir.listSync();
+          File? jpegFile;
+          for (final entity in files) {
+            if (entity is File && entity.path.endsWith('.jpg')) {
+              jpegFile = entity;
+              break;
+            }
+          }
+          if (jpegFile != null) {
+            final bytes = await jpegFile.readAsBytes();
+            await tempDir.delete(recursive: true);
+            return bytes;
+          }
+        }
+        await tempDir.delete(recursive: true);
+      } catch (e) {
+        print('[PdfService] Linux pdftoppm fallback failed: $e');
+      }
+    }
+
+    return null;
   }
 }
 
