@@ -28,6 +28,7 @@ import '../services/global_state.dart';
 import '../main.dart';
 import 'metacognition_setup_screen.dart';
 import '../widgets/analytics_view.dart';
+import 'document_store_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -1040,10 +1041,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildLibraryTab(activeTasks, screenWidth),
                     _buildAnalyticsTab(screenWidth),
                     _buildPublishedTab(screenWidth),
+                    const DocumentStoreScreen(),
                   ],
                 ),
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: _selectedTabIndex,
+            type: BottomNavigationBarType.fixed,
             onTap: (index) {
               setState(() {
                 _selectedTabIndex = index;
@@ -1066,6 +1069,10 @@ class _HomeScreenState extends State<HomeScreen> {
               BottomNavigationBarItem(
                 icon: Icon(LucideIcons.globe),
                 label: 'Published',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(LucideIcons.hardDrive),
+                label: 'Doc Store',
               ),
             ],
           ),

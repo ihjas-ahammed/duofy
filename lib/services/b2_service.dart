@@ -1,0 +1,354 @@
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:crypto/crypto.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
+class B2Object {
+  final String key;
+  final int size;
+  final String lastModified;
+
+  B2Object({
+    required this.key,
+    required this.size,
+    required this.lastModified,
+  });
+
+  String get sizeFormatted {
+    if (size <= 0) return '0 B';
+    const suffixes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    var i = 0;
+    double dSize = size.toDouble();
+    while (dSize >= 1024 && i < suffixes.length - 1) {
+      dSize /= 1024;
+      i++;
+    }
+    return '${dSize.toStringAsFixed(1)} ${suffixes[i]}';
+  }
+
+  DateTime? get lastModifiedDate {
+    try {
+      return DateTime.parse(lastModified);
+    } catch (_) {
+      return null;
+    }
+  }
+}
+
+class B2Credentials {
+  final String keyId;
+  final String applicationKey;
+  final String bucketName;
+  final String region;
+
+  B2Credentials({
+    required this.keyId,
+    required this.applicationKey,
+    required this.bucketName,
+    required this.region,
+  });
+
+  bool get isValid =>
+      keyId.isNotEmpty &&
+      applicationKey.isNotEmpty &&
+      bucketName.isNotEmpty &&
+      region.isNotEmpty;
+}
+
+class B2Service {
+  B2Service._privateConstructor();
+  static final B2Service instance = B2Service._privateConstructor();
+
+  // Define placeholders for shared credentials
+  static const String defaultKeyId = '00384db7dd2f3390000000001';
+  static const String defaultApplicationKey = 'K003EUCIHsnIRRoLkgDu7mXM4mSttW8';
+  static const String defaultBucketName = 'duofyug';
+  static const String defaultRegion = 'eu-central-003';
+
+  /// Resolves the current credentials to use: checks SharedPreferences first,
+  /// falling back to the hardcoded constants.
+  Future<B2Credentials> getCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    final keyId = prefs.getString('b2_key_id')?.trim();
+    final appKey = prefs.getString('b2_application_key')?.trim();
+    final bucket = prefs.getString('b2_bucket_name')?.trim();
+    final region = prefs.getString('b2_region')?.trim();
+
+    return B2Credentials(
+      keyId: (keyId != null && keyId.isNotEmpty) ? keyId : defaultKeyId,
+      applicationKey: (appKey != null && appKey.isNotEmpty) ? appKey : defaultApplicationKey,
+      bucketName: (bucket != null && bucket.isNotEmpty) ? bucket : defaultBucketName,
+      region: (region != null && region.isNotEmpty) ? region : defaultRegion,
+    );
+  }
+
+  /// Helper to check if credentials are configured
+  Future<bool> isConfigured() async {
+    final creds = await getCredentials();
+    return creds.isValid &&
+        creds.keyId != 'YOUR_KEY_ID' &&
+        creds.applicationKey != 'YOUR_APPLICATION_KEY' &&
+        creds.bucketName != 'YOUR_BUCKET_NAME';
+  }
+
+  /// Lists objects in the bucket.
+  Future<List<B2Object>> listObjects() async {
+    final creds = await getCredentials();
+    if (!creds.isValid) {
+      throw Exception('Backblaze B2 is not configured.');
+    }
+
+    final dateTime = DateTime.now().toUtc();
+    final host = '${creds.bucketName}.s3.${creds.region}.backblazeb2.com';
+    final queryParams = {'list-type': '2'};
+    
+    final headers = _sign(
+      creds: creds,
+      method: 'GET',
+      path: '/',
+      queryParams: queryParams,
+      payloadBytes: const [],
+      dateTime: dateTime,
+    );
+
+    final uri = Uri.https(host, '/', queryParams);
+    
+    final response = await http.get(uri, headers: headers);
+    if (response.statusCode != 200) {
+      throw Exception('Failed to list files: [${response.statusCode}] ${response.body}');
+    }
+
+    return _parseListObjects(response.body);
+  }
+
+  /// Uploads a file to the bucket.
+  Future<void> uploadObject(String filename, List<int> bytes) async {
+    final creds = await getCredentials();
+    if (!creds.isValid) {
+      throw Exception('Backblaze B2 is not configured.');
+    }
+
+    final dateTime = DateTime.now().toUtc();
+    final host = '${creds.bucketName}.s3.${creds.region}.backblazeb2.com';
+    final path = '/$filename';
+
+    final headers = _sign(
+      creds: creds,
+      method: 'PUT',
+      path: path,
+      queryParams: const {},
+      payloadBytes: bytes,
+      dateTime: dateTime,
+    );
+
+    headers['Content-Type'] = 'application/pdf';
+    headers['Content-Length'] = bytes.length.toString();
+
+    final uri = Uri.https(host, path);
+    
+    final response = await http.put(uri, headers: headers, body: bytes);
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Failed to upload file: [${response.statusCode}] ${response.body}');
+    }
+  }
+
+  /// Downloads file bytes from the bucket.
+  Future<Uint8List> downloadObject(String filename) async {
+    final creds = await getCredentials();
+    if (!creds.isValid) {
+      throw Exception('Backblaze B2 is not configured.');
+    }
+
+    final dateTime = DateTime.now().toUtc();
+    final host = '${creds.bucketName}.s3.${creds.region}.backblazeb2.com';
+    final path = '/$filename';
+
+    final headers = _sign(
+      creds: creds,
+      method: 'GET',
+      path: path,
+      queryParams: const {},
+      payloadBytes: const [],
+      dateTime: dateTime,
+    );
+
+    final uri = Uri.https(host, path);
+    
+    final response = await http.get(uri, headers: headers);
+    if (response.statusCode != 200) {
+      throw Exception('Failed to download file: [${response.statusCode}] ${response.body}');
+    }
+
+    return response.bodyBytes;
+  }
+
+  /// Deletes a file from the bucket.
+  Future<void> deleteObject(String filename) async {
+    final creds = await getCredentials();
+    if (!creds.isValid) {
+      throw Exception('Backblaze B2 is not configured.');
+    }
+
+    final dateTime = DateTime.now().toUtc();
+    final host = '${creds.bucketName}.s3.${creds.region}.backblazeb2.com';
+    final path = '/$filename';
+
+    final headers = _sign(
+      creds: creds,
+      method: 'DELETE',
+      path: path,
+      queryParams: const {},
+      payloadBytes: const [],
+      dateTime: dateTime,
+    );
+
+    final uri = Uri.https(host, path);
+    
+    final response = await http.delete(uri, headers: headers);
+    if (response.statusCode != 204 && response.statusCode != 200) {
+      throw Exception('Failed to delete file: [${response.statusCode}] ${response.body}');
+    }
+  }
+
+  /// Computes the AWS Signature Version 4 for B2 S3 API request signing.
+  Map<String, String> _sign({
+    required B2Credentials creds,
+    required String method,
+    required String path,
+    required Map<String, String> queryParams,
+    required List<int> payloadBytes,
+    required DateTime dateTime,
+  }) {
+    final amzDate = _formatAmzDate(dateTime);
+    final dateStamp = _formatDateStamp(dateTime);
+    final host = '${creds.bucketName}.s3.${creds.region}.backblazeb2.com';
+
+    // 1. Canonical URI
+    final segments = path.split('/').where((s) => s.isNotEmpty).map((s) => Uri.encodeComponent(s)).join('/');
+    var canonicalUri = '/$segments';
+    if (path.endsWith('/') && !canonicalUri.endsWith('/')) {
+      canonicalUri += '/';
+    }
+
+    // 2. Canonical Query String
+    final sortedKeys = queryParams.keys.toList()..sort();
+    final canonicalQueryString = sortedKeys
+        .map((k) => '${Uri.encodeComponent(k)}=${Uri.encodeComponent(queryParams[k]!)}')
+        .join('&');
+
+    // 3. Payload Hash
+    final payloadHash = sha256.convert(payloadBytes).toString();
+
+    // 4. Canonical Headers
+    final headersToSign = {
+      'host': host,
+      'x-amz-content-sha256': payloadHash,
+      'x-amz-date': amzDate,
+    };
+
+    final sortedHeaderKeys = headersToSign.keys.toList()..sort();
+    final canonicalHeaders = sortedHeaderKeys
+        .map((k) => '$k:${headersToSign[k]!.trim()}\n')
+        .join('');
+
+    // 5. Signed Headers
+    final signedHeaders = sortedHeaderKeys.join(';');
+
+    // 6. Canonical Request
+    final canonicalRequest = [
+      method.toUpperCase(),
+      canonicalUri,
+      canonicalQueryString,
+      canonicalHeaders,
+      signedHeaders,
+      payloadHash,
+    ].join('\n');
+
+    final hashedCanonicalRequest = sha256.convert(utf8.encode(canonicalRequest)).toString();
+
+    // 7. String to Sign
+    final credentialScope = '$dateStamp/${creds.region}/s3/aws4_request';
+    final stringToSign = [
+      'AWS4-HMAC-SHA256',
+      amzDate,
+      credentialScope,
+      hashedCanonicalRequest,
+    ].join('\n');
+
+    // 8. Calculate Signing Key
+    final kDate = _hmacSha256(utf8.encode('AWS4${creds.applicationKey}'), dateStamp);
+    final kRegion = _hmacSha256(kDate, creds.region);
+    final kService = _hmacSha256(kRegion, 's3');
+    final kSigning = _hmacSha256(kService, 'aws4_request');
+
+    // 9. Calculate Signature
+    final signature = _hmacSha256Hex(kSigning, stringToSign);
+
+    // 10. Build Authorization Header
+    final authorization = 'AWS4-HMAC-SHA256 Credential=${creds.keyId}/$credentialScope, SignedHeaders=$signedHeaders, Signature=$signature';
+
+    return {
+      'Authorization': authorization,
+      'x-amz-content-sha256': payloadHash,
+      'x-amz-date': amzDate,
+      'host': host,
+    };
+  }
+
+  List<int> _hmacSha256(List<int> key, String data) {
+    final hmac = Hmac(sha256, key);
+    return hmac.convert(utf8.encode(data)).bytes;
+  }
+
+  String _hmacSha256Hex(List<int> key, String data) {
+    final hmac = Hmac(sha256, key);
+    return hmac.convert(utf8.encode(data)).toString();
+  }
+
+  String _formatAmzDate(DateTime dt) {
+    final iso = dt.toIso8601String()
+        .replaceAll('-', '')
+        .replaceAll(':', '')
+        .split('.')
+        .first;
+    return '${iso}Z';
+  }
+
+  String _formatDateStamp(DateTime dt) {
+    return dt.toIso8601String()
+        .substring(0, 10)
+        .replaceAll('-', '');
+  }
+
+  /// Custom regular-expression based XML parser for ListObjectsV2 response
+  List<B2Object> _parseListObjects(String xml) {
+    final List<B2Object> objects = [];
+    final contentsRegex = RegExp(r'<Contents>(.*?)</Contents>', dotAll: true, caseSensitive: false);
+    final keyRegex = RegExp(r'<Key[^>]*>(.*?)</Key>', caseSensitive: false);
+    final sizeRegex = RegExp(r'<Size[^>]*>(\d+)</Size>', caseSensitive: false);
+    final lmRegex = RegExp(r'<LastModified[^>]*>(.*?)</LastModified>', caseSensitive: false);
+
+    final matches = contentsRegex.allMatches(xml);
+    for (final match in matches) {
+      final content = match.group(1) ?? '';
+      final keyMatch = keyRegex.firstMatch(content);
+      final sizeMatch = sizeRegex.firstMatch(content);
+      final lmMatch = lmRegex.firstMatch(content);
+
+      if (keyMatch != null) {
+        final key = keyMatch.group(1) ?? '';
+        final size = int.tryParse(sizeMatch?.group(1) ?? '0') ?? 0;
+        final lastModifiedStr = lmMatch?.group(1) ?? '';
+
+        objects.add(B2Object(
+          key: key,
+          size: size,
+          lastModified: lastModifiedStr,
+        ));
+      }
+    }
+    return objects;
+  }
+}
