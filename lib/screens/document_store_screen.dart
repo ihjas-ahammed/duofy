@@ -503,6 +503,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
       body: Stack(
         children: [
           SafeArea(
+            bottom: false,
             child: ResponsiveCenter(
               maxWidth: ResponsiveMaxWidth.content,
               child: Padding(

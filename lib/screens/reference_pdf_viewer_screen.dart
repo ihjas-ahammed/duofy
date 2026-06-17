@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
@@ -23,7 +22,7 @@ class ReferencePdfViewerScreen extends StatefulWidget {
 }
 
 class _ReferencePdfViewerScreenState extends State<ReferencePdfViewerScreen> {
-  late PdfViewerController _pdfViewerController;
+  late SafePdfViewerController _pdfViewerController;
   late List<Section> _pdfSections;
   late int _currentIndex;
   
@@ -34,7 +33,7 @@ class _ReferencePdfViewerScreenState extends State<ReferencePdfViewerScreen> {
   @override
   void initState() {
     super.initState();
-    _pdfViewerController = PdfViewerController();
+    _pdfViewerController = SafePdfViewerController();
     
     _pdfSections = [];
     for (var module in widget.book.modules) {

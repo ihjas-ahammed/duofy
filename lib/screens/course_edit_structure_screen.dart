@@ -1,9 +1,7 @@
 import 'dart:io';
-import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../widgets/safe_pdf_viewer.dart';
 import 'package:file_picker/file_picker.dart';
 import '../models/app_models.dart';
@@ -28,7 +26,7 @@ class CourseEditStructureScreen extends StatefulWidget {
 }
 
 class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
-  final PdfViewerController _pdfViewerController = PdfViewerController();
+  final SafePdfViewerController _pdfViewerController = SafePdfViewerController();
   
   late List<Module> _modules;
   bool _isSectionLevel = false;

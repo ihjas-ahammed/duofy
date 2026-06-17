@@ -31,7 +31,7 @@ class GlassyNavBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        margin: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+        margin: const EdgeInsets.fromLTRB(24, 0, 24, 26),
         height: 64,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(32),

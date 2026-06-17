@@ -225,6 +225,15 @@ void showRateLimitDialog() {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    systemNavigationBarColor: Colors.transparent,
+    systemNavigationBarDividerColor: Colors.transparent,
+    systemNavigationBarIconBrightness: Brightness.light,
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+  ));
+  
   try {
     await FbCore.initializeApp();
   } catch (e, stack) {

@@ -215,6 +215,84 @@ class PdfService {
     });
   }
 
+  /// Generates a PDF containing placeholder (blank) pages for the entire document,
+  /// but populates content only for the pages specified in [pagesToPopulate].
+  /// This allows fast loading of huge PDFs while maintaining the correct total page count.
+  Future<File> generatePlaceholderPdf(File sourcePdf, List<int> pagesToPopulate, {String? outputName}) async {
+    final sourcePath = sourcePdf.path;
+    final tmpDir = await getTemporaryDirectory();
+    final tmpPath = tmpDir.path;
+    final name = outputName ?? 'window_${DateTime.now().millisecondsSinceEpoch}.pdf';
+
+    try {
+      return await Isolate.run(() async {
+        sync_pdf.PdfDocument? doc;
+        sync_pdf.PdfDocument? out;
+        try {
+          final file = File(sourcePath);
+          doc = sync_pdf.PdfDocument(inputBytes: await file.readAsBytes());
+          out = sync_pdf.PdfDocument();
+          
+          final count = doc.pages.count;
+          final pagesToPopulateSet = pagesToPopulate.toSet();
+
+          for (int i = 0; i < count; i++) {
+            final loadedPage = doc.pages[i];
+            out.pageSettings.size = loadedPage.size;
+            out.pageSettings.margins.all = 0;
+            final newPage = out.pages.add();
+            
+            if (pagesToPopulateSet.contains(i + 1)) {
+              newPage.graphics.drawPdfTemplate(loadedPage.createTemplate(), const Offset(0, 0));
+            }
+          }
+
+          final outFile = File('$tmpPath/$name');
+          final bytes = await out.save();
+          await outFile.writeAsBytes(bytes);
+          return outFile;
+        } finally {
+          doc?.dispose();
+          out?.dispose();
+        }
+      });
+    } catch (e) {
+      print('[PdfService] Isolate generatePlaceholderPdf failed: $e. Falling back to main isolate...');
+      sync_pdf.PdfDocument? doc;
+      sync_pdf.PdfDocument? out;
+      try {
+        doc = sync_pdf.PdfDocument(inputBytes: await sourcePdf.readAsBytes());
+        out = sync_pdf.PdfDocument();
+        final count = doc.pages.count;
+        final pagesToPopulateSet = pagesToPopulate.toSet();
+
+        for (int i = 0; i < count; i++) {
+          final loadedPage = doc.pages[i];
+          out.pageSettings.size = loadedPage.size;
+          out.pageSettings.margins.all = 0;
+          final newPage = out.pages.add();
+          
+          if (pagesToPopulateSet.contains(i + 1)) {
+            try {
+              newPage.graphics.drawPdfTemplate(loadedPage.createTemplate(), const Offset(0, 0));
+            } catch (err) {
+              print('[PdfService] Fallback drawPdfTemplate failed for page ${i + 1}: $err');
+            }
+          }
+        }
+
+        final file = File('$tmpPath/$name');
+        final bytes = await out.save();
+        await file.writeAsBytes(bytes);
+        return file;
+      } finally {
+        doc?.dispose();
+        out?.dispose();
+      }
+    }
+  }
+
+
   /// Splits the source file(s) into per-section or per-unit PDF chunks.
   ///
   /// - **New-flow books** (any section with `startPage`/`endPage` set):

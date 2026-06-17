@@ -8,6 +8,7 @@ import '../services/pdf_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/responsive_center.dart';
+import '../widgets/safe_pdf_viewer.dart';
 import 'course_questionnaire_screen.dart';
 import 'auto_index_screen.dart';
 import 'generate_book_screen.dart' show IndexMode;
@@ -67,7 +68,7 @@ class IndexPickerScreen extends StatefulWidget {
 }
 
 class _IndexPickerScreenState extends State<IndexPickerScreen> {
-  final PdfViewerController _pdfCtrl = PdfViewerController();
+  final SafePdfViewerController _pdfCtrl = SafePdfViewerController();
   final TextEditingController _chapter1Ctrl = TextEditingController();
   final Set<int> _selectedPages = <int>{};
   int _currentPage = 1;
@@ -441,8 +442,8 @@ class _IndexPickerScreenState extends State<IndexPickerScreen> {
                         ),
                       )
                     else
-                      SfPdfViewer.file(
-                        widget.sourcePdf,
+                      SafePdfViewer(
+                        file: widget.sourcePdf,
                         controller: _pdfCtrl,
                         canShowScrollHead: false,
                         canShowScrollStatus: false,
