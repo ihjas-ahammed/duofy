@@ -85,7 +85,7 @@ class DatabaseService {
     if (uid == 'guest') return null;
     if (!await isCloudEnabled()) return null;
     try {
-      final snap = await _userLearningDoc.get().timeout(const Duration(seconds: 4));
+      final snap = await _userLearningDoc.get().timeout(const Duration(seconds: 30));
       if (!snap.exists) return null;
       final data = snap.data() ?? {};
       return {
@@ -284,7 +284,7 @@ class DatabaseService {
     if (uid == 'guest') return null;
     if (!await isCloudEnabled()) return null; // local-first: don't hit network
     try {
-      final snap = await _userSettingsDoc.get().timeout(const Duration(seconds: 4));
+      final snap = await _userSettingsDoc.get().timeout(const Duration(seconds: 30));
       if (!snap.exists) return null;
       final data = snap.data() ?? {};
       List<String> readList(String listKey, String scalarKey) {
@@ -334,7 +334,7 @@ class DatabaseService {
     // Two-way sync: pull remote, merge by updatedAt, push back local-newer
     // books, and persist the merged set to the local file store.
     try {
-      final snapshot = await _userBooks.get().timeout(const Duration(seconds: 4));
+      final snapshot = await _userBooks.get().timeout(const Duration(seconds: 30));
       final Map<String, Book> remote = {};
       for (final doc in snapshot.docs) {
         try {
@@ -493,7 +493,7 @@ class DatabaseService {
     if (!await isCloudEnabled()) return cachedGlobals;
 
     try {
-      final snapshot = await _globalBooks.get().timeout(const Duration(seconds: 4));
+      final snapshot = await _globalBooks.get().timeout(const Duration(seconds: 30));
       final freshGlobals = snapshot.docs
           .where((d) => d.data() != null)
           .map((d) => Book.fromJson(Map<String, dynamic>.from(d.data()!)))
@@ -525,7 +525,7 @@ class DatabaseService {
 
   Future<Book?> fetchGlobalBookById(String id) async {
     try {
-      final snap = await _globalBooks.doc(id).get().timeout(const Duration(seconds: 4));
+      final snap = await _globalBooks.doc(id).get().timeout(const Duration(seconds: 30));
       if (snap.exists && snap.data() != null) {
         return Book.fromJson(Map<String, dynamic>.from(snap.data()!));
       }

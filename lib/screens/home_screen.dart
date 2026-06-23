@@ -406,11 +406,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final query = _librarySearchQuery.toLowerCase().trim();
     final isSearching = query.isNotEmpty;
 
-    final filtered = books.where((b) {
-      if (query.isEmpty) return true;
-      return b.title.toLowerCase().contains(query);
-    }).toList();
-
     final List<SearchResultItem> searchResults = [];
     if (isSearching) {
       outerLoop:

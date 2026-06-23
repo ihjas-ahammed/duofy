@@ -141,10 +141,13 @@ class _FdAuth implements FbAuth {
       try {
         final u = await fd.FirebaseAuth.instance.getUser();
         _current = _FdUser(u);
-      } catch (_) {
+        print("[_FdAuth] Hydrated user successfully: ${u.id}");
+      } catch (e, s) {
+        print("[_FdAuth] Hydration failed: $e\n$s");
         _current = null;
       }
     } else {
+      print("[_FdAuth] Hydration skipped: not signed in");
       _current = null;
     }
   }

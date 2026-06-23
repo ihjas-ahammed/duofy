@@ -316,7 +316,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                                     ? 'Analytics'
                                     : _currentIndex == 3
                                         ? 'PYQ Analyzer'
-                                        : 'Course Summary',
+                                        : 'Video Class Finder',
                         style: const TextStyle(
                           fontFamily: 'Nunito',
                           fontWeight: FontWeight.w900,
@@ -394,14 +394,14 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
           LucideIcons.dumbbell,
           LucideIcons.barChart2,
           LucideIcons.fileQuestion,
-          LucideIcons.clipboardList,
+          LucideIcons.playCircle,
         ],
         tooltips: const [
           'Path',
           'Practice',
           'Analytics',
           'PYQ',
-          'Summary',
+          'Videos',
         ],
         onTap: (index) {
           setState(() {
@@ -468,7 +468,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
           const SizedBox(height: 8),
           _buildSidebarNavItem(3, LucideIcons.fileQuestion, 'PYQ'),
           const SizedBox(height: 8),
-          _buildSidebarNavItem(4, LucideIcons.clipboardList, 'Summary'),
+          _buildSidebarNavItem(4, LucideIcons.playCircle, 'Videos'),
           
           const Spacer(),
           

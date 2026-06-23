@@ -447,7 +447,7 @@ const String _htmlTemplate = """<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=4.0, user-scalable=yes">
   <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
   <script>
     window.onerror = function(message, source, lineno, colno, error) {
@@ -502,7 +502,7 @@ const String _htmlTemplate = """<!DOCTYPE html>
       display: flex;
       flex-direction: column;
       align-items: center;
-      overflow-x: hidden;
+      overflow-x: auto;
       overflow-y: auto;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
@@ -787,8 +787,11 @@ const String _htmlTemplate = """<!DOCTYPE html>
       for (var i = 1; i <= pages.length; i++) {
         var pageInfo = pages[i];
         if (pageInfo) {
-          var width = Math.min(window.innerWidth * 0.9, 800);
-          pageInfo.wrapper.style.height = (width * pageInfo.aspectRatio) + 'px';
+          var baseWidth = Math.min(window.innerWidth * 0.9, 800);
+          var zoomedWidth = baseWidth * zoomFactor;
+          pageInfo.wrapper.style.width = zoomedWidth + 'px';
+          pageInfo.wrapper.style.maxWidth = 'none';
+          pageInfo.wrapper.style.height = (zoomedWidth * pageInfo.aspectRatio) + 'px';
           
           if (pageInfo.rendered) {
             if (pageInfo.canvas && pageInfo.canvas.parentNode) {

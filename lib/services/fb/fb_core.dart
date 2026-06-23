@@ -48,11 +48,20 @@ class _FileTokenStore extends fd.TokenStore {
   @override
   fd.Token? read() {
     try {
-      if (!_file.existsSync()) return null;
+      if (!_file.existsSync()) {
+        print("[_FileTokenStore] Token file does not exist at ${_file.path}");
+        return null;
+      }
       final raw = _file.readAsStringSync();
-      if (raw.trim().isEmpty) return null;
-      return fd.Token.fromMap(Map<String, dynamic>.from(jsonDecode(raw)));
-    } catch (_) {
+      if (raw.trim().isEmpty) {
+        print("[_FileTokenStore] Token file is empty");
+        return null;
+      }
+      final token = fd.Token.fromMap(Map<String, dynamic>.from(jsonDecode(raw)));
+      print("[_FileTokenStore] Token read successfully. UserId: ${token.toMap()['userId']}");
+      return token;
+    } catch (e, s) {
+      print("[_FileTokenStore] Error reading token file: $e\n$s");
       return null;
     }
   }
@@ -61,19 +70,24 @@ class _FileTokenStore extends fd.TokenStore {
   void write(fd.Token? token) {
     try {
       if (token == null) {
+        print("[_FileTokenStore] Deleting token file...");
         if (_file.existsSync()) _file.deleteSync();
       } else {
+        print("[_FileTokenStore] Writing token file for userId: ${token.toMap()['userId']}...");
         _file.writeAsStringSync(jsonEncode(token.toMap()));
       }
-    } catch (_) {
-      // Best-effort: if persistence fails the user just signs in again.
+    } catch (e, s) {
+      print("[_FileTokenStore] Error writing token file: $e\n$s");
     }
   }
 
   @override
   void delete() {
     try {
+      print("[_FileTokenStore] Deleting token file...");
       if (_file.existsSync()) _file.deleteSync();
-    } catch (_) {}
+    } catch (e, s) {
+      print("[_FileTokenStore] Error deleting token file: $e\n$s");
+    }
   }
 }

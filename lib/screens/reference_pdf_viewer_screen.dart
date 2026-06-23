@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../widgets/safe_pdf_viewer.dart';
@@ -87,6 +88,16 @@ class _ReferencePdfViewerScreenState extends State<ReferencePdfViewerScreen> {
     });
   }
 
+  void _sharePdf() {
+    final currentSection = _pdfSections[_currentIndex];
+    if (currentSection.pdfPath != null) {
+      Share.shareXFiles(
+        [XFile(currentSection.pdfPath!)],
+        text: currentSection.title,
+      );
+    }
+  }
+
   void _goToPreviousSection() {
     if (_currentIndex > 0) {
       setState(() {
@@ -134,34 +145,11 @@ class _ReferencePdfViewerScreenState extends State<ReferencePdfViewerScreen> {
           maxLines: 1,
         ),
         actions: [
-          // Zoom Actions
+          // Share Action
           IconButton(
-            icon: const Icon(LucideIcons.zoomOut, color: Colors.white70, size: 20),
-            tooltip: 'Zoom Out',
-            onPressed: _isDocumentLoaded ? _zoomOut : null,
-          ),
-          Center(
-            child: InkWell(
-              onTap: _isDocumentLoaded ? _resetZoom : null,
-              borderRadius: BorderRadius.circular(6),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                child: Text(
-                  '${(_zoomFactor * 100).round()}%',
-                  style: TextStyle(
-                    color: _isDocumentLoaded ? AppTheme.duoBlue : Colors.white38,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Nunito',
-                  ),
-                ),
-              ),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(LucideIcons.zoomIn, color: Colors.white70, size: 20),
-            tooltip: 'Zoom In',
-            onPressed: _isDocumentLoaded ? _zoomIn : null,
+            icon: const Icon(LucideIcons.share2, color: Colors.white70, size: 20),
+            tooltip: 'Share PDF',
+            onPressed: _isDocumentLoaded ? _sharePdf : null,
           ),
           const VerticalDivider(
             color: Colors.white12,

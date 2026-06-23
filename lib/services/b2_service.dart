@@ -328,6 +328,111 @@ class B2Service {
     }
   }
 
+  Future<void> _copyObjectDirect(String srcFilename, String destFilename) async {
+    final creds = await getCredentials();
+    if (!creds.isValid) {
+      throw Exception('Backblaze B2 is not configured.');
+    }
+
+    final dateTime = DateTime.now().toUtc();
+    final host = '${creds.bucketName}.s3.${creds.region}.backblazeb2.com';
+    final path = '/$destFilename';
+    final copySource = '/${creds.bucketName}/$srcFilename';
+
+    final headers = _sign(
+      creds: creds,
+      method: 'PUT',
+      path: path,
+      queryParams: const {},
+      payloadBytes: const [],
+      dateTime: dateTime,
+      extraHeaders: {
+        'x-amz-copy-source': copySource,
+      },
+    );
+
+    headers['Content-Length'] = '0';
+
+    final uri = Uri.https(host, path);
+
+    final response = await http.put(uri, headers: headers);
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Failed to copy file: [${response.statusCode}] ${response.body}');
+    }
+  }
+
+  Future<void> moveObject(String oldFilename, String newFilename) async {
+    final oldDocId = oldFilename.replaceAll('/', '_');
+    final docSnap = await FbFirestore.instance.collection('document_store').doc(oldDocId).get();
+    if (!docSnap.exists) {
+      throw Exception('Document not found in store.');
+    }
+    final data = docSnap.data()!;
+    final partsCount = data['partsCount'] as int? ?? 1;
+    final size = data['size'] as int? ?? 0;
+
+    final oldFolder = oldFilename.split('/').first;
+    final oldHash = sha256.convert(utf8.encode(oldFilename)).toString();
+    final oldB2Key = '$oldFolder/$oldHash.pdf';
+
+    final newFolder = newFilename.split('/').first;
+    final newHash = sha256.convert(utf8.encode(newFilename)).toString();
+    final newB2Key = '$newFolder/$newHash.pdf';
+
+    final List<Map<String, String>> keysToMove = [];
+    
+    if (partsCount <= 1) {
+      keysToMove.add({
+        'src': oldB2Key,
+        'dest': newB2Key,
+      });
+    } else {
+      for (var i = 0; i < partsCount; i++) {
+        final pad = i.toString().padLeft(3, '0');
+        keysToMove.add({
+          'src': '$oldB2Key.part_$pad',
+          'dest': '$newB2Key.part_$pad',
+        });
+      }
+    }
+
+    keysToMove.add({
+      'src': '$oldB2Key.thumb.jpg',
+      'dest': '$newB2Key.thumb.jpg',
+    });
+
+    // Copy B2 objects
+    for (final pair in keysToMove) {
+      try {
+        await _copyObjectDirect(pair['src']!, pair['dest']!);
+      } catch (e) {
+        if (!pair['src']!.endsWith('.thumb.jpg')) {
+          rethrow;
+        }
+      }
+    }
+
+    // Delete old B2 objects
+    for (final pair in keysToMove) {
+      try {
+        await _deletePartDirect(pair['src']!);
+      } catch (_) {}
+    }
+
+    // Update Firestore records
+    final newDocId = newFilename.replaceAll('/', '_');
+    await FbFirestore.instance.collection('document_store').doc(newDocId).set({
+      'name': data['name'] ?? oldFilename.split('/').last,
+      'key': newFilename,
+      'size': size,
+      'category': newFolder,
+      'partsCount': partsCount,
+      'uploadedAt': data['uploadedAt'] ?? DateTime.now().toUtc().toIso8601String(),
+    });
+    
+    await FbFirestore.instance.collection('document_store').doc(oldDocId).delete();
+  }
+
   /// Runs tasks concurrently with a limit.
   Future<List<T>> _runWithConcurrencyLimit<T>({
     required int concurrency,
@@ -372,6 +477,7 @@ class B2Service {
     required Map<String, String> queryParams,
     required List<int> payloadBytes,
     required DateTime dateTime,
+    Map<String, String> extraHeaders = const {},
   }) {
     final amzDate = _formatAmzDate(dateTime);
     final dateStamp = _formatDateStamp(dateTime);
@@ -398,6 +504,7 @@ class B2Service {
       'host': host,
       'x-amz-content-sha256': payloadHash,
       'x-amz-date': amzDate,
+      ...extraHeaders,
     };
 
     final sortedHeaderKeys = headersToSign.keys.toList()..sort();
@@ -446,6 +553,7 @@ class B2Service {
       'x-amz-content-sha256': payloadHash,
       'x-amz-date': amzDate,
       'host': host,
+      ...extraHeaders,
     };
   }
 

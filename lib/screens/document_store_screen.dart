@@ -396,6 +396,191 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
     }
   }
 
+  void _showContextMenu(B2Object file) {
+    final category = getDocCategory(file);
+    final displayName = file.key.split('/').last;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return AppTheme.applyGlassBlur(
+          borderRadius: 24,
+          color: AppTheme.surface.withOpacity(0.95),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    displayName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    category == DocCategory.reference
+                        ? 'Current Category: Reference Book'
+                        : 'Current Category: Syllabus',
+                    style: TextStyle(
+                      color: category == DocCategory.reference
+                          ? AppTheme.duoBlue
+                          : AppTheme.duoOrange,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  if (category == DocCategory.reference)
+                    _buildContextActionItem(
+                      icon: LucideIcons.fileSpreadsheet,
+                      label: 'Change Type to Syllabus',
+                      color: AppTheme.duoOrange,
+                      onTap: () {
+                        Navigator.pop(context);
+                        _changeDocumentCategory(file, DocCategory.syllabus);
+                      },
+                    )
+                  else
+                    _buildContextActionItem(
+                      icon: LucideIcons.bookOpen,
+                      label: 'Change Type to Reference Book',
+                      color: AppTheme.duoBlue,
+                      onTap: () {
+                        Navigator.pop(context);
+                        _changeDocumentCategory(file, DocCategory.reference);
+                      },
+                    ),
+                  const SizedBox(height: 8),
+                  _buildContextActionItem(
+                    icon: LucideIcons.x,
+                    label: 'Cancel',
+                    color: Colors.white60,
+                    onTap: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildContextActionItem({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: color, size: 20),
+        title: Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        onTap: onTap,
+      ),
+    );
+  }
+
+  Future<void> _changeDocumentCategory(B2Object file, DocCategory targetCategory) async {
+    setState(() {
+      _isActionLoading = true;
+      _actionLoadingText = 'Changing document type...';
+      _actionProgress = 0.0;
+    });
+
+    final oldKey = file.key;
+    final filenameOnly = oldKey.split('/').last;
+    final newKey = targetCategory == DocCategory.syllabus
+        ? 'syllabus/$filenameOnly'
+        : 'reference/$filenameOnly';
+
+    try {
+      await B2Service.instance.moveObject(oldKey, newKey);
+
+      // Rename local cache files
+      if (_cacheDirPath != null) {
+        try {
+          final oldLocalFile = File('$_cacheDirPath/$oldKey');
+          final newLocalFile = File('$_cacheDirPath/$newKey');
+          if (oldLocalFile.existsSync()) {
+            newLocalFile.parent.createSync(recursive: true);
+            oldLocalFile.renameSync(newLocalFile.path);
+          }
+
+          final oldLocalThumb = File('$_cacheDirPath/$oldKey.thumb.jpg');
+          final newLocalThumb = File('$_cacheDirPath/$newKey.thumb.jpg');
+          if (oldLocalThumb.existsSync()) {
+            newLocalThumb.parent.createSync(recursive: true);
+            oldLocalThumb.renameSync(newLocalThumb.path);
+          }
+        } catch (e) {
+          print('[DocumentStoreScreen] Error moving local cache files: $e');
+        }
+      }
+
+      await _loadFiles();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Successfully changed document type to ${targetCategory == DocCategory.syllabus ? "Syllabus" : "Reference Book"}.'),
+            backgroundColor: AppTheme.duoGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to change document type: $e'),
+            backgroundColor: AppTheme.duoRed,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isActionLoading = false;
+        });
+      }
+    }
+  }
+
   void _openPdfViewer(File file, String filename) {
     Navigator.push(
       context,
@@ -735,7 +920,10 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
       physics: const BouncingScrollPhysics(),
       itemBuilder: (context, index) {
         final file = filtered[index];
-        return _buildGridFileItem(file);
+        return GestureDetector(
+          onLongPress: () => _showContextMenu(file),
+          child: _buildGridFileItem(file),
+        );
       },
     );
   }

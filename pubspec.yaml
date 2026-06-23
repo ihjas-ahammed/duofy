@@ -73,6 +73,7 @@ dependencies:
   # webview_cef is hidden from the Windows build at the plugin level — see the
   # `flutter.plugin.platforms` block in packages/webview_cef/pubspec.yaml.
   webview_windows: ^0.4.0
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
