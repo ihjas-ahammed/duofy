@@ -349,23 +349,6 @@ class _SummaryScreenState extends State<SummaryScreen> {
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
-            SliverAppBar(
-              title: const Text(
-                'Video Class Finder',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 22, fontFamily: 'Nunito'),
-              ),
-              automaticallyImplyLeading: false,
-              floating: true,
-              backgroundColor: AppTheme.background.withOpacity(0.8),
-              actions: [
-                IconButton(
-                  icon: const Icon(LucideIcons.refreshCw, color: Colors.white70),
-                  tooltip: 'Sync current section',
-                  onPressed: _loadPreferences,
-                ),
-                const SizedBox(width: 8),
-              ],
-            ),
 
             if (currentModule == null || currentSection == null)
               const SliverFillRemaining(
