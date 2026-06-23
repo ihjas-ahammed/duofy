@@ -1,129 +1,183 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
-// ignore: depend_on_referenced_packages
-import 'package:syncfusion_flutter_core/theme.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import '../services/pdf_service.dart';
 import '../theme/app_theme.dart';
+import 'platform_webview.dart';
+
+class WebPdfTextSearchResult extends PdfTextSearchResult {
+  bool _hasResult = false;
+  int _currentInstanceIndex = 0;
+  int _totalInstanceCount = 0;
+
+  final void Function()? _onNext;
+  final void Function()? _onPrev;
+  final void Function()? _onClear;
+
+  WebPdfTextSearchResult({
+    void Function()? onNext,
+    void Function()? onPrev,
+    void Function()? onClear,
+  }) : _onNext = onNext,
+       _onPrev = onPrev,
+       _onClear = onClear;
+
+  void update({required bool hasResult, required int currentInstanceIndex, required int totalInstanceCount}) {
+    _hasResult = hasResult;
+    _currentInstanceIndex = currentInstanceIndex;
+    _totalInstanceCount = totalInstanceCount;
+    notifyListeners();
+  }
+
+  @override
+  bool get hasResult => _hasResult;
+
+  @override
+  int get currentInstanceIndex => _currentInstanceIndex;
+
+  @override
+  int get totalInstanceCount => _totalInstanceCount;
+
+  @override
+  void nextInstance() {
+    _onNext?.call();
+  }
+
+  @override
+  void previousInstance() {
+    _onPrev?.call();
+  }
+
+  @override
+  void clear() {
+    _hasResult = false;
+    _currentInstanceIndex = 0;
+    _totalInstanceCount = 0;
+    _onClear?.call();
+    notifyListeners();
+  }
+}
 
 class SafePdfViewerController extends PdfViewerController {
-  PdfViewerController? _internalController;
+  PlatformWebViewController? _webViewController;
   int _totalPageCount = 0;
-  int _currentMaxLoadedPage = 50;
-  int? _overridePageCount;
+  int _currentPageNumber = 1;
+  double _currentZoomLevel = 1.0;
 
-  Future<void> Function(int targetPage)? _onLoadPageRequested;
+  WebPdfTextSearchResult? _activeSearchResult;
+  void Function(String query)? _onSearchText;
 
-  void _setInternalController(PdfViewerController controller) {
-    _internalController?.removeListener(notifyListeners);
-    _internalController = controller;
-    _internalController?.addListener(notifyListeners);
+  void _updatePageNumber(int pageNum) {
+    if (_currentPageNumber != pageNum) {
+      _currentPageNumber = pageNum;
+      notifyListeners();
+    }
   }
 
-  @override
-  int get pageCount => _overridePageCount ?? _totalPageCount;
-
-  @override
-  int get pageNumber => _internalController?.pageNumber ?? 0;
-
-  @override
-  double get zoomLevel => _internalController?.zoomLevel ?? 1.0;
-
-  @override
-  set zoomLevel(double newValue) {
-    _internalController?.zoomLevel = newValue;
+  void _updatePageCount(int count) {
+    if (_totalPageCount != count) {
+      _totalPageCount = count;
+      notifyListeners();
+    }
   }
 
-  @override
-  Offset get scrollOffset => _internalController?.scrollOffset ?? Offset.zero;
-
-  @override
-  void jumpTo({double xOffset = 0.0, double yOffset = 0.0}) {
-    _internalController?.jumpTo(xOffset: xOffset, yOffset: yOffset);
-  }
-
-  @override
-  void jumpToPage(int pageNumber) {
-    if (_onLoadPageRequested != null && pageNumber > _currentMaxLoadedPage && pageNumber <= _totalPageCount) {
-      _onLoadPageRequested!(pageNumber).then((_) {
-        Future.delayed(const Duration(milliseconds: 250), () {
-          _internalController?.jumpToPage(pageNumber);
-        });
-      });
-    } else {
-      _internalController?.jumpToPage(pageNumber);
+  void _updateZoomLevel(double zoom) {
+    if (_currentZoomLevel != zoom) {
+      _currentZoomLevel = zoom;
+      notifyListeners();
     }
   }
 
   @override
+  int get pageCount => _totalPageCount;
+
+  @override
+  int get pageNumber => _currentPageNumber;
+
+  @override
+  double get zoomLevel => _currentZoomLevel;
+
+  @override
+  set zoomLevel(double newValue) {
+    _updateZoomLevel(newValue);
+    _webViewController?.runJavaScript?.call('setZoom($newValue);');
+  }
+
+  @override
+  Offset get scrollOffset => Offset.zero;
+
+  @override
+  void jumpTo({double xOffset = 0.0, double yOffset = 0.0}) {
+    _webViewController?.runJavaScript?.call('scrollToOffset($xOffset, $yOffset);');
+  }
+
+  @override
+  void jumpToPage(int pageNumber) {
+    _webViewController?.runJavaScript?.call('jumpToPage($pageNumber);');
+  }
+
+  @override
   void nextPage() {
-    final curPage = pageNumber;
-    if (_onLoadPageRequested != null && curPage == _currentMaxLoadedPage && _currentMaxLoadedPage < _totalPageCount) {
-      _onLoadPageRequested!(curPage + 1).then((_) {
-        Future.delayed(const Duration(milliseconds: 250), () {
-          _internalController?.jumpToPage(curPage + 1);
-        });
-      });
-    } else {
-      _internalController?.nextPage();
+    if (_currentPageNumber < _totalPageCount) {
+      _webViewController?.runJavaScript?.call('jumpToPage(${_currentPageNumber + 1});');
     }
   }
 
   @override
   void previousPage() {
-    _internalController?.previousPage();
-  }
-
-  @override
-  void firstPage() {
-    _internalController?.firstPage();
-  }
-
-  @override
-  void lastPage() {
-    if (_onLoadPageRequested != null && _totalPageCount > _currentMaxLoadedPage) {
-      _onLoadPageRequested!(_totalPageCount).then((_) {
-        Future.delayed(const Duration(milliseconds: 250), () {
-          _internalController?.jumpToPage(_totalPageCount);
-        });
-      });
-    } else {
-      _internalController?.lastPage();
+    if (_currentPageNumber > 1) {
+      _webViewController?.runJavaScript?.call('jumpToPage(${_currentPageNumber - 1});');
     }
   }
 
   @override
+  void firstPage() {
+    _webViewController?.runJavaScript?.call('jumpToPage(1);');
+  }
+
+  @override
+  void lastPage() {
+    _webViewController?.runJavaScript?.call('jumpToPage($_totalPageCount);');
+  }
+
+  @override
   PdfTextSearchResult searchText(String searchText, {TextSearchOption? searchOption}) {
-    return _internalController?.searchText(searchText, searchOption: searchOption) ?? PdfTextSearchResult();
+    _activeSearchResult?.clear();
+    _activeSearchResult = WebPdfTextSearchResult(
+      onNext: () {
+        _webViewController?.runJavaScript?.call('nextSearchInstance();');
+      },
+      onPrev: () {
+        _webViewController?.runJavaScript?.call('prevSearchInstance();');
+      },
+      onClear: () {
+        _webViewController?.runJavaScript?.call('clearSearch();');
+      },
+    );
+    _onSearchText?.call(searchText);
+    return _activeSearchResult!;
   }
 
   @override
   bool clearSelection() {
-    return _internalController?.clearSelection() ?? false;
+    _activeSearchResult?.clear();
+    _webViewController?.runJavaScript?.call('clearSearch();');
+    return true;
   }
 
   @override
-  void importFormData(List<int> inputBytes, DataFormat dataFormat, [bool continueImportOnError = false]) {
-    _internalController?.importFormData(inputBytes, dataFormat, continueImportOnError);
-  }
+  void importFormData(List<int> inputBytes, DataFormat dataFormat, [bool continueImportOnError = false]) {}
 
   @override
   List<int> exportFormData({required DataFormat dataFormat}) {
-    return _internalController?.exportFormData(dataFormat: dataFormat) ?? <int>[];
+    return <int>[];
   }
 
   @override
   Future<List<int>> saveDocument({PdfFlattenOption flattenOption = PdfFlattenOption.none}) {
-    return _internalController?.saveDocument(flattenOption: flattenOption) ?? Future.value(<int>[]);
-  }
-
-  @override
-  void dispose() {
-    _internalController?.removeListener(notifyListeners);
-    super.dispose();
+    return Future.value(<int>[]);
   }
 }
 
@@ -160,19 +214,10 @@ class SafePdfViewer extends StatefulWidget {
 class _SafePdfViewerState extends State<SafePdfViewer> {
   bool _hasError = false;
   String _errorMessage = '';
+  bool _isLoading = true;
+  String? _base64Data;
+  bool _isWebviewReady = false;
 
-  File? _currentFile;
-  int _currentPage = 1;
-  int _currentMaxLoadedPage = 50;
-  int _totalPageCount = 0;
-  bool _isLoadingPages = false;
-
-  bool _needsRestorePosition = false;
-  double _savedZoomLevel = 1.0;
-  Offset _savedScrollOffset = Offset.zero;
-  int _savedPageNumber = 1;
-
-  late PdfViewerController _internalPdfViewerController;
   late SafePdfViewerController _externalSafePdfViewerController;
   bool _createdInternalController = false;
 
@@ -180,12 +225,10 @@ class _SafePdfViewerState extends State<SafePdfViewer> {
   void initState() {
     super.initState();
     _initController();
-    _initViewer();
+    _loadPdfData();
   }
 
   void _initController() {
-    _internalPdfViewerController = PdfViewerController();
-
     if (widget.controller != null) {
       _externalSafePdfViewerController = widget.controller!;
       _createdInternalController = false;
@@ -193,9 +236,10 @@ class _SafePdfViewerState extends State<SafePdfViewer> {
       _externalSafePdfViewerController = SafePdfViewerController();
       _createdInternalController = true;
     }
-
-    _externalSafePdfViewerController._setInternalController(_internalPdfViewerController);
-    _externalSafePdfViewerController._onLoadPageRequested = _handleLoadPageRequested;
+    _externalSafePdfViewerController._onSearchText = (query) {
+      _externalSafePdfViewerController._webViewController?.runJavaScript
+          ?.call('performSearch("$query");');
+    };
   }
 
   @override
@@ -208,7 +252,7 @@ class _SafePdfViewerState extends State<SafePdfViewer> {
       _initController();
     }
     if (widget.file.path != oldWidget.file.path) {
-      _initViewer();
+      _loadPdfData();
     }
   }
 
@@ -217,152 +261,124 @@ class _SafePdfViewerState extends State<SafePdfViewer> {
     if (_createdInternalController) {
       _externalSafePdfViewerController.dispose();
     }
-    _internalPdfViewerController.dispose();
-
-    // Clean up temp file
-    final tempFile = _currentFile;
-    if (tempFile != null && tempFile.path != widget.file.path) {
-      _deleteFileSilently(tempFile);
-    }
     super.dispose();
   }
 
-  void _deleteFileSilently(File file) {
-    Future.microtask(() async {
-      try {
-        if (await file.exists()) {
-          await file.delete();
-        }
-      } catch (_) {
-        // ignore
-      }
-    });
-  }
-
-  Future<void> _initViewer() async {
-    final fileToLoad = widget.file;
-
+  Future<void> _loadPdfData() async {
+    debugPrint('[SafePdfViewer] _loadPdfData started for ${widget.file.path}');
     setState(() {
+      _isLoading = true;
       _hasError = false;
       _errorMessage = '';
-      _isLoadingPages = true;
-      _needsRestorePosition = false;
-      _currentFile = null;
+      _isWebviewReady = false;
     });
 
     try {
-      final pdfService = PdfService();
-      final count = await pdfService.getPageCount(fileToLoad);
-
-      if (!mounted || widget.file.path != fileToLoad.path) return;
-
-      _totalPageCount = count;
-      _externalSafePdfViewerController._totalPageCount = count;
-      _externalSafePdfViewerController._overridePageCount = count;
-
-      if (count > 50) {
-        // Initial window: pages 1 to 50
-        final pageNumbers = List<int>.generate(50, (i) => i + 1);
-        final fileName = 'first50_${fileToLoad.path.split(Platform.pathSeparator).last}';
-        final tempFile = await pdfService.extractPages(
-          fileToLoad,
-          pageNumbers,
-          outputName: fileName,
-        );
-
-        if (!mounted || widget.file.path != fileToLoad.path) return;
-
-        setState(() {
-          _currentFile = tempFile;
-          _currentMaxLoadedPage = 50;
-          _externalSafePdfViewerController._currentMaxLoadedPage = 50;
-          _isLoadingPages = false;
-        });
-      } else {
-        setState(() {
-          _currentFile = fileToLoad;
-          _currentMaxLoadedPage = count;
-          _externalSafePdfViewerController._currentMaxLoadedPage = count;
-          _isLoadingPages = false;
-        });
+      final bytes = await widget.file.readAsBytes();
+      debugPrint('[SafePdfViewer] Read ${bytes.length} bytes from file.');
+      final base64String = base64Encode(bytes);
+      debugPrint('[SafePdfViewer] Base64 PDF size: ${base64String.length} chars.');
+      if (!mounted) return;
+      setState(() {
+        _base64Data = base64String;
+      });
+      _trySendPdfToJs();
+    } catch (e) {
+      debugPrint('[SafePdfViewer] Error reading PDF: $e');
+      if (!mounted) return;
+      setState(() {
+        _hasError = true;
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+      if (widget.onDocumentLoadFailed != null) {
+        widget.onDocumentLoadFailed!(PdfDocumentLoadFailedDetails(
+          e.toString(),
+          'Failed to read local file bytes.',
+        ));
       }
-    } catch (e) {
-      if (!mounted || widget.file.path != fileToLoad.path) return;
-      // Fallback
-      setState(() {
-        _currentFile = fileToLoad;
-        _currentMaxLoadedPage = 50;
-        _externalSafePdfViewerController._currentMaxLoadedPage = 50;
-        _isLoadingPages = false;
-      });
     }
   }
 
-  Future<void> _handleLoadPageRequested(int targetPage) async {
-    if (!mounted || _isLoadingPages || _currentFile == null) return;
-    if (targetPage <= _currentMaxLoadedPage || targetPage > _totalPageCount) return;
+  void _trySendPdfToJs() {
+    debugPrint('[SafePdfViewer] _trySendPdfToJs: base64Loaded=${_base64Data != null}, webviewReady=$_isWebviewReady');
+    if (_base64Data != null && _isWebviewReady) {
+      debugPrint('[SafePdfViewer] Executing JS loadPdfFromBase64...');
+      _externalSafePdfViewerController._webViewController?.runJavaScript
+          ?.call('loadPdfFromBase64("$_base64Data");');
+    }
+  }
 
-    final nextMax = ((targetPage + 49) ~/ 50) * 50;
-    final targetMax = nextMax > _totalPageCount ? _totalPageCount : nextMax;
-
-    _savedZoomLevel = _internalPdfViewerController.zoomLevel;
-    _savedScrollOffset = _internalPdfViewerController.scrollOffset;
-    _savedPageNumber = _internalPdfViewerController.pageNumber;
-    _needsRestorePosition = true;
-
-    setState(() {
-      _isLoadingPages = true;
-    });
-
+  void _handleMessage(String messageJson) {
+    debugPrint('[SafePdfViewer] _handleMessage: $messageJson');
     try {
-      final pdfService = PdfService();
-      final pageNumbers = List<int>.generate(targetMax, (i) => i + 1);
-      final fileName = 'pages_1_to_${targetMax}_${widget.file.path.split(Platform.pathSeparator).last}';
-      final tempFile = await pdfService.extractPages(
-        widget.file,
-        pageNumbers,
-        outputName: fileName,
-      );
-
-      if (!mounted) return;
-
-      final oldTempFile = _currentFile;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        setState(() {
-          _currentFile = tempFile;
-          _currentMaxLoadedPage = targetMax;
-          _externalSafePdfViewerController._currentMaxLoadedPage = targetMax;
-        });
-        if (oldTempFile != null && oldTempFile.path != widget.file.path) {
-          _deleteFileSilently(oldTempFile);
-        }
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isLoadingPages = false;
-      });
-    }
-  }
-
-  void _restorePosition() {
-    _needsRestorePosition = false;
-    if (_savedZoomLevel > 1.0) {
-      _internalPdfViewerController.zoomLevel = _savedZoomLevel;
-    }
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (mounted) {
-        if (_savedScrollOffset != Offset.zero) {
-          _internalPdfViewerController.jumpTo(
-            xOffset: _savedScrollOffset.dx,
-            yOffset: _savedScrollOffset.dy,
+      var data = jsonDecode(messageJson);
+      if (data is String) {
+        data = jsonDecode(data);
+      }
+      final type = data['type'];
+      switch (type) {
+        case 'ready':
+          setState(() {
+            _isWebviewReady = true;
+          });
+          _trySendPdfToJs();
+          break;
+        case 'loaded':
+          final count = data['pageCount'] as int;
+          debugPrint('[SafePdfViewer] PDF loaded successfully. Total pages: $count');
+          _externalSafePdfViewerController._updatePageCount(count);
+          setState(() {
+            _isLoading = false;
+          });
+          if (widget.onDocumentLoaded != null) {
+            widget.onDocumentLoaded!(PdfDocumentLoadedDetails(PdfDocument()));
+          }
+          break;
+        case 'pageChanged':
+          final pageNum = data['pageNumber'] as int;
+          final oldPageNum = _externalSafePdfViewerController._currentPageNumber;
+          if (pageNum != oldPageNum) {
+            _externalSafePdfViewerController._updatePageNumber(pageNum);
+            if (widget.onPageChanged != null) {
+              widget.onPageChanged!(PdfPageChangedDetails(
+                pageNum,
+                oldPageNum,
+                pageNum == 1,
+                pageNum == _externalSafePdfViewerController.pageCount,
+              ));
+            }
+          }
+          break;
+        case 'searchResult':
+          final hasResult = data['hasResult'] as bool;
+          final currentInstanceIndex = data['currentInstanceIndex'] as int;
+          final totalInstanceCount = data['totalInstanceCount'] as int;
+          _externalSafePdfViewerController._activeSearchResult?.update(
+            hasResult: hasResult,
+            currentInstanceIndex: currentInstanceIndex,
+            totalInstanceCount: totalInstanceCount,
           );
-        } else if (_savedPageNumber > 1) {
-          _internalPdfViewerController.jumpToPage(_savedPageNumber);
-        }
+          break;
+        case 'error':
+          final msg = data['message'] as String;
+          debugPrint('[SafePdfViewer] JS Error: $msg');
+          setState(() {
+            _hasError = true;
+            _errorMessage = msg;
+            _isLoading = false;
+          });
+          if (widget.onDocumentLoadFailed != null) {
+            widget.onDocumentLoadFailed!(PdfDocumentLoadFailedDetails(
+              msg,
+              'Error in WebView PDF rendering.',
+            ));
+          }
+          break;
       }
-    });
+    } catch (e) {
+      debugPrint('[SafePdfViewer] Exception in _handleMessage: $e');
+    }
   }
 
   @override
@@ -401,132 +417,483 @@ class _SafePdfViewerState extends State<SafePdfViewer> {
       );
     }
 
-    final pdfViewerWidget = _currentFile == null
-        ? const SizedBox()
-        : SfPdfViewerTheme(
-            data: SfPdfViewerThemeData(
-              backgroundColor: const Color(0xFF0B0F19),
-            ),
-            child: SfPdfViewer.file(
-              _currentFile!,
-              key: ValueKey(widget.file.path),
-              controller: _internalPdfViewerController,
-              canShowScrollHead: widget.canShowScrollHead,
-              canShowScrollStatus: widget.canShowScrollStatus,
-              maxZoomLevel: widget.maxZoomLevel,
-              enableDoubleTapZooming: widget.enableDoubleTapZooming,
-              onZoomLevelChanged: widget.onZoomLevelChanged,
-              canShowPageLoadingIndicator: false,
-              onDocumentLoaded: (details) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) {
-                    setState(() {
-                      _isLoadingPages = false;
-                    });
-                    if (_needsRestorePosition) {
-                      _restorePosition();
-                    }
-                  }
-                });
-                if (widget.onDocumentLoaded != null) {
-                  widget.onDocumentLoaded!(details);
-                }
-              },
-              onDocumentLoadFailed: (details) {
-                setState(() {
-                  _hasError = true;
-                  _errorMessage = details.description;
-                  _isLoadingPages = false;
-                });
-                if (widget.onDocumentLoadFailed != null) {
-                  widget.onDocumentLoadFailed!(details);
-                }
-              },
-              onPageChanged: (details) {
-                setState(() {
-                  _currentPage = details.newPageNumber;
-                });
-                if (widget.onPageChanged != null) {
-                  widget.onPageChanged!(details);
-                }
-              },
-            ),
-          );
-
-    final showLoadMoreButton = _currentFile != null &&
-        !_isLoadingPages &&
-        _currentMaxLoadedPage < _totalPageCount &&
-        _currentPage == _currentMaxLoadedPage;
-
-    final remainingPages = _totalPageCount - _currentMaxLoadedPage;
-    final pagesToLoadNext = remainingPages > 50 ? 50 : remainingPages;
-
-    return Stack(
-      children: [
-        pdfViewerWidget,
-        if (showLoadMoreButton)
-          Positioned(
-            left: 20,
-            right: 20,
-            bottom: 20,
-            child: Center(
-              child: Card(
-                elevation: 8,
-                color: const Color(0xFF1E293B).withOpacity(0.95),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: AppTheme.duoBlue.withOpacity(0.4), width: 1.5),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Showing $_currentMaxLoadedPage of $_totalPageCount pages',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.duoBlue,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () {
-                          _handleLoadPageRequested(_currentMaxLoadedPage + 1);
-                        },
-                        icon: const Icon(LucideIcons.download, size: 16),
-                        label: Text(
-                          'Load Next $pagesToLoadNext Pages',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        if (_isLoadingPages)
-          Positioned.fill(
-            child: Container(
-              color: const Color(0xFF0B0F19).withOpacity(0.7),
-              child: const Center(
-                child: CircularProgressIndicator(
-                  color: AppTheme.duoBlue,
-                ),
-              ),
-            ),
-          ),
-      ],
+    return PlatformWebView(
+      html: _htmlTemplate,
+      onMessage: _handleMessage,
+      onJsError: (err) {
+        debugPrint('[SafePdfViewer] PlatformWebView.onJsError: $err');
+        setState(() {
+          _hasError = true;
+          _errorMessage = err;
+          _isLoading = false;
+        });
+        if (widget.onDocumentLoadFailed != null) {
+          widget.onDocumentLoadFailed!(PdfDocumentLoadFailedDetails(
+            err,
+            'JavaScript error in WebView.',
+          ));
+        }
+      },
+      onControllerCreated: (controller) {
+        debugPrint('[SafePdfViewer] PlatformWebView.onControllerCreated');
+        _externalSafePdfViewerController._webViewController = controller;
+        _trySendPdfToJs();
+      },
     );
   }
 }
+
+const String _htmlTemplate = """<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
+  <script>
+    window.onerror = function(message, source, lineno, colno, error) {
+      var errStr = message + " (" + source + ":" + lineno + ")";
+      if (window.DuoErrorChannel) {
+        if (typeof window.DuoErrorChannel.postMessage === 'function') {
+          window.DuoErrorChannel.postMessage(errStr);
+        } else if (typeof window.DuoErrorChannel === 'function') {
+          window.DuoErrorChannel(errStr);
+        }
+      } else {
+        if (window.DuoMessageChannel) {
+          var msg = JSON.stringify({type: 'error', message: errStr});
+          if (typeof window.DuoMessageChannel.postMessage === 'function') {
+            window.DuoMessageChannel.postMessage(msg);
+          } else if (typeof window.DuoMessageChannel === 'function') {
+            window.DuoMessageChannel(msg);
+          }
+        }
+      }
+      return false;
+    };
+  </script>
+  <script>
+    window.addEventListener('error', function(e) {
+      if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK')) {
+        var errStr = "Failed to load resource: " + (e.target.src || e.target.href);
+        if (window.DuoErrorChannel) {
+          if (typeof window.DuoErrorChannel.postMessage === 'function') {
+            window.DuoErrorChannel.postMessage(errStr);
+          } else if (typeof window.DuoErrorChannel === 'function') {
+            window.DuoErrorChannel(errStr);
+          }
+        } else {
+          if (window.DuoMessageChannel) {
+            var msg = JSON.stringify({type: 'error', message: errStr});
+            if (typeof window.DuoMessageChannel.postMessage === 'function') {
+              window.DuoMessageChannel.postMessage(msg);
+            } else if (typeof window.DuoMessageChannel === 'function') {
+              window.DuoMessageChannel(msg);
+            }
+          }
+        }
+      }
+    }, true);
+  </script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #0b0f19;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
+      overflow-y: auto;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    #pdf-container {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      padding: 20px 0;
+      box-sizing: border-box;
+    }
+    .page-wrapper {
+      position: relative;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      background-color: #1e293b;
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      width: 90vw;
+      max-width: 800px;
+    }
+    .page-wrapper:hover {
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+    }
+    canvas {
+      display: block;
+      max-width: 100%;
+      height: auto !important;
+      animation: fadeIn 0.4s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .loading-placeholder {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .spinner {
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top: 3px solid #3b82f6;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 12px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+  <div id="pdf-container"></div>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    
+    var pdfDoc = null;
+    var container = document.getElementById('pdf-container');
+    var pages = [];
+    var currentScale = 1.5;
+    var observer = null;
+    var trackingObserver = null;
+    
+    var searchInstances = [];
+    var currentSearchIndex = -1;
+
+    function postDuoMessage(msg) {
+      if (window.DuoMessageChannel) {
+        if (typeof window.DuoMessageChannel.postMessage === 'function') {
+          window.DuoMessageChannel.postMessage(msg);
+        } else if (typeof window.DuoMessageChannel === 'function') {
+          window.DuoMessageChannel(msg);
+        }
+      }
+    }
+
+    function postDuoError(err) {
+      if (window.DuoErrorChannel) {
+        if (typeof window.DuoErrorChannel.postMessage === 'function') {
+          window.DuoErrorChannel.postMessage(err);
+        } else if (typeof window.DuoErrorChannel === 'function') {
+          window.DuoErrorChannel(err);
+        }
+      } else {
+        postDuoMessage(JSON.stringify({type: 'error', message: err}));
+      }
+    }
+
+    function checkReady() {
+      if (window.DuoMessageChannel) {
+        postDuoMessage(JSON.stringify({type: 'ready'}));
+      } else {
+        setTimeout(checkReady, 50);
+      }
+    }
+
+    window.onload = function() {
+      checkReady();
+    };
+
+    function loadPdfFromBase64(base64Data) {
+      try {
+        if (observer) observer.disconnect();
+        if (trackingObserver) trackingObserver.disconnect();
+        
+        container.innerHTML = '';
+        pages = [];
+        searchInstances = [];
+        currentSearchIndex = -1;
+        
+        var binaryString = atob(base64Data);
+        var len = binaryString.length;
+        var bytes = new Uint8Array(len);
+        for (var i = 0; i < len; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        var loadingTask = pdfjsLib.getDocument({data: bytes});
+        loadingTask.promise.then(function(pdf) {
+          pdfDoc = pdf;
+          
+          postDuoMessage(JSON.stringify({
+            type: 'loaded',
+            pageCount: pdf.numPages
+          }));
+          
+          pdf.getPage(1).then(function(firstPage) {
+            var viewport = firstPage.getViewport({scale: 1.0});
+            var aspectRatio = viewport.height / viewport.width;
+            
+            for (var i = 1; i <= pdf.numPages; i++) {
+              createPagePlaceholder(i, aspectRatio);
+            }
+            
+            setupObservers();
+          });
+        }, function(error) {
+          postDuoError(error.message);
+        });
+      } catch (err) {
+        postDuoError(err.message);
+      }
+    }
+
+    function createPagePlaceholder(pageNum, aspectRatio) {
+      var wrapper = document.createElement('div');
+      wrapper.id = 'page-wrapper-' + pageNum;
+      wrapper.className = 'page-wrapper';
+      wrapper.setAttribute('data-page-number', pageNum);
+      
+      var width = Math.min(window.innerWidth * 0.9, 800);
+      wrapper.style.height = (width * aspectRatio) + 'px';
+      
+      var placeholder = document.createElement('div');
+      placeholder.className = 'loading-placeholder';
+      
+      var spinner = document.createElement('div');
+      spinner.className = 'spinner';
+      placeholder.appendChild(spinner);
+      
+      var text = document.createElement('div');
+      text.innerText = 'Page ' + pageNum;
+      placeholder.appendChild(text);
+      
+      wrapper.appendChild(placeholder);
+      container.appendChild(wrapper);
+      
+      pages[pageNum] = {
+        rendered: false,
+        rendering: false,
+        wrapper: wrapper,
+        placeholder: placeholder,
+        canvas: null,
+        aspectRatio: aspectRatio
+      };
+    }
+
+    function renderPage(pageNum) {
+      if (!pdfDoc) return;
+      var pageInfo = pages[pageNum];
+      if (!pageInfo || pageInfo.rendered || pageInfo.rendering) return;
+      
+      pageInfo.rendering = true;
+      
+      pdfDoc.getPage(pageNum).then(function(page) {
+        var viewport = page.getViewport({scale: currentScale});
+        
+        if (pageInfo.placeholder && pageInfo.placeholder.parentNode) {
+          pageInfo.placeholder.parentNode.removeChild(pageInfo.placeholder);
+          pageInfo.placeholder = null;
+        }
+        
+        var canvas = document.createElement('canvas');
+        var context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        
+        var ratio = viewport.height / viewport.width;
+        pageInfo.aspectRatio = ratio;
+        pageInfo.wrapper.style.height = (pageInfo.wrapper.clientWidth * ratio) + 'px';
+        
+        pageInfo.wrapper.appendChild(canvas);
+        pageInfo.canvas = canvas;
+        
+        var renderContext = {
+          canvasContext: context,
+          viewport: viewport
+        };
+        
+        page.render(renderContext).promise.then(function() {
+          pageInfo.rendered = true;
+          pageInfo.rendering = false;
+        });
+      });
+    }
+
+    function setupObservers() {
+      var renderOptions = {
+        root: null,
+        rootMargin: '600px 0px',
+        threshold: 0.01
+      };
+      
+      observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            var pageNum = parseInt(entry.target.getAttribute('data-page-number'));
+            renderPage(pageNum);
+          }
+        });
+      }, renderOptions);
+      
+      var trackingOptions = {
+        root: null,
+        rootMargin: '-45% 0px -45% 0px',
+        threshold: 0
+      };
+      
+      trackingObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            var pageNum = parseInt(entry.target.getAttribute('data-page-number'));
+            postDuoMessage(JSON.stringify({
+              type: 'pageChanged',
+              pageNumber: pageNum
+            }));
+          }
+        });
+      }, trackingOptions);
+      
+      for (var i = 1; i <= pdfDoc.numPages; i++) {
+        if (pages[i]) {
+          observer.observe(pages[i].wrapper);
+          trackingObserver.observe(pages[i].wrapper);
+        }
+      }
+    }
+
+    function jumpToPage(pageNum) {
+      var pageInfo = pages[pageNum];
+      if (pageInfo && pageInfo.wrapper) {
+        pageInfo.wrapper.scrollIntoView({behavior: 'smooth', block: 'start'});
+        renderPage(pageNum);
+      }
+    }
+
+    function setZoom(zoomFactor) {
+      currentScale = 1.5 * zoomFactor;
+      for (var i = 1; i <= pages.length; i++) {
+        var pageInfo = pages[i];
+        if (pageInfo) {
+          var width = Math.min(window.innerWidth * 0.9, 800);
+          pageInfo.wrapper.style.height = (width * pageInfo.aspectRatio) + 'px';
+          
+          if (pageInfo.rendered) {
+            if (pageInfo.canvas && pageInfo.canvas.parentNode) {
+              pageInfo.canvas.parentNode.removeChild(pageInfo.canvas);
+            }
+            pageInfo.rendered = false;
+            pageInfo.rendering = false;
+            renderPage(i);
+          }
+        }
+      }
+    }
+
+    function scrollToOffset(x, y) {
+      if (y > 500000) {
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      } else if (y === 0 && x === 0) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        window.scrollTo({ left: x, top: y, behavior: 'smooth' });
+      }
+    }
+
+    function performSearch(query) {
+      searchInstances = [];
+      currentSearchIndex = -1;
+      if (!pdfDoc || !query) {
+        reportSearchResults();
+        return;
+      }
+      
+      var queryLower = query.toLowerCase();
+      var promises = [];
+      
+      for (var i = 1; i <= pdfDoc.numPages; i++) {
+        (function(pageNum) {
+          promises.push(
+            pdfDoc.getPage(pageNum).then(function(page) {
+              return page.getTextContent().then(function(textContent) {
+                var pageText = textContent.items.map(function(item) { return item.str; }).join(' ');
+                var idx = 0;
+                while (true) {
+                  idx = pageText.toLowerCase().indexOf(queryLower, idx);
+                  if (idx === -1) break;
+                  searchInstances.push({
+                    pageNum: pageNum,
+                    index: idx
+                  });
+                  idx += queryLower.length;
+                }
+              });
+            })
+          );
+        })(i);
+      }
+      
+      Promise.all(promises).then(function() {
+        searchInstances.sort(function(a, b) {
+          if (a.pageNum !== b.pageNum) return a.pageNum - b.pageNum;
+          return a.index - b.index;
+        });
+        
+        if (searchInstances.length > 0) {
+          currentSearchIndex = 0;
+          jumpToSearchInstance(0);
+        }
+        reportSearchResults();
+      });
+    }
+
+    function jumpToSearchInstance(index) {
+      if (index < 0 || index >= searchInstances.length) return;
+      var instance = searchInstances[index];
+      jumpToPage(instance.pageNum);
+    }
+
+    function nextSearchInstance() {
+      if (searchInstances.length === 0) return;
+      currentSearchIndex = (currentSearchIndex + 1) % searchInstances.length;
+      jumpToSearchInstance(currentSearchIndex);
+      reportSearchResults();
+    }
+
+    function prevSearchInstance() {
+      if (searchInstances.length === 0) return;
+      currentSearchIndex = (currentSearchIndex - 1 + searchInstances.length) % searchInstances.length;
+      jumpToSearchInstance(currentSearchIndex);
+      reportSearchResults();
+    }
+
+    function clearSearch() {
+      searchInstances = [];
+      currentSearchIndex = -1;
+      reportSearchResults();
+    }
+
+    function reportSearchResults() {
+      postDuoMessage(JSON.stringify({
+        type: 'searchResult',
+        hasResult: searchInstances.length > 0,
+        currentInstanceIndex: currentSearchIndex + 1,
+        totalInstanceCount: searchInstances.length
+      }));
+    }
+  </script>
+</body>
+</html>
+""";

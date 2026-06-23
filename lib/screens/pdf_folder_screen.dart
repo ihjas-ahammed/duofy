@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:file_picker/file_picker.dart';
 import '../widgets/safe_pdf_viewer.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
@@ -110,11 +111,28 @@ class _PdfFolderScreenState extends State<PdfFolderScreen> {
   Future<void> _sharePdf(PdfFileMeta meta) async {
     try {
       final safeName = "${widget.linkedBook?.title ?? 'Course'} - ${meta.unitName}".replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
-      final tempFile = File('${widget.directory.path}/$safeName.pdf');
       
-      await meta.file.copy(tempFile.path);
-      await Share.shareXFiles([XFile(tempFile.path)], text: 'Check out this course unit: ${meta.unitName}');
-      await tempFile.delete(); // cleanup
+      if (Platform.isLinux) {
+        final savePath = await FilePicker.platform.saveFile(
+          dialogTitle: 'Save Course Unit PDF',
+          fileName: '$safeName.pdf',
+          type: FileType.custom,
+          allowedExtensions: ['pdf'],
+        );
+        if (savePath != null) {
+          await meta.file.copy(savePath);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Saved successfully to $savePath')),
+            );
+          }
+        }
+      } else {
+        final tempFile = File('${widget.directory.path}/$safeName.pdf');
+        await meta.file.copy(tempFile.path);
+        await Share.shareXFiles([XFile(tempFile.path)], text: 'Check out this course unit: ${meta.unitName}');
+        await tempFile.delete(); // cleanup
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error sharing: $e')));
     }

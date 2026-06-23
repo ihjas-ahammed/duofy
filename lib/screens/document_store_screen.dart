@@ -297,7 +297,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
     }
   }
 
-  Future<void> _downloadAndView(B2Object b2Obj) async {
+  Future<void> _downloadAndView(B2Object b2Obj, {bool forceRedownload = false}) async {
     if (_isActionLoading) return;
 
     try {
@@ -306,7 +306,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
       final localFile = File('${cacheDir.path}/${b2Obj.key}');
 
       // If already cached locally, open directly
-      if (await localFile.exists()) {
+      if (!forceRedownload && await localFile.exists()) {
         // Just in case, check if thumbnail exists locally, if not generate it
         final thumbFile = File('${cacheDir.path}/${b2Obj.key}.thumb.jpg');
         if (!await thumbFile.exists()) {
@@ -917,6 +917,19 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                               tooltip: isCached ? 'Open & View' : 'Download',
                               onPressed: () => _downloadAndView(file),
                             ),
+                            // Redownload / Retry
+                            if (isCached)
+                              IconButton(
+                                icon: const Icon(
+                                  LucideIcons.refreshCw,
+                                  color: Colors.white70,
+                                  size: 16,
+                                ),
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.all(6),
+                                tooltip: 'Redownload (Force Fetch)',
+                                onPressed: () => _downloadAndView(file, forceRedownload: true),
+                              ),
                             // Delete
                             IconButton(
                               icon: const Icon(
@@ -1054,9 +1067,34 @@ class B2PdfViewerScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(LucideIcons.share2),
-            tooltip: 'Share Document',
-            onPressed: () {
-              Share.shareXFiles([XFile(file.path)], text: filename);
+            tooltip: Platform.isLinux ? 'Save Document As' : 'Share Document',
+            onPressed: () async {
+              if (Platform.isLinux) {
+                final savePath = await FilePicker.platform.saveFile(
+                  dialogTitle: 'Save PDF Document',
+                  fileName: filename,
+                  type: FileType.custom,
+                  allowedExtensions: ['pdf'],
+                );
+                if (savePath != null) {
+                  try {
+                    await file.copy(savePath);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Saved successfully to $savePath')),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error saving file: $e'), backgroundColor: AppTheme.duoRed),
+                      );
+                    }
+                  }
+                }
+              } else {
+                Share.shareXFiles([XFile(file.path)], text: filename);
+              }
             },
           ),
         ],

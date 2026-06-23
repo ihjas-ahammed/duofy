@@ -921,12 +921,22 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
         ],
       ),
       actions: [
-        if (_errorMessage.isNotEmpty)
+        if (_errorMessage.isNotEmpty) ...[
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _errorMessage = '';
+                _progress = 0.0;
+              });
+              _startDownload();
+            },
+            child: const Text('Retry', style: TextStyle(color: AppTheme.duoGreen, fontWeight: FontWeight.bold)),
+          ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(null),
             child: const Text('Close', style: TextStyle(color: Colors.white70)),
-          )
-        else
+          ),
+        ] else
           TextButton(
             onPressed: () {
               setState(() {

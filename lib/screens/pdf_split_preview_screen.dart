@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import '../widgets/safe_pdf_viewer.dart';
 import '../models/app_models.dart';
 import '../services/generation_manager.dart';
 import '../theme/app_theme.dart';
@@ -26,7 +26,7 @@ class PdfSplitPreviewScreen extends StatefulWidget {
 }
 
 class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
-  final PdfViewerController _pdfViewerController = PdfViewerController();
+  final SafePdfViewerController _pdfViewerController = SafePdfViewerController();
   
   late List<Module> _modules;
   int _selectedFileIndex = 0;
@@ -661,8 +661,8 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                 child: Stack(
                   children: [
                     if (_isCurrentFilePdf) ...[
-                      SfPdfViewer.file(
-                        widget.originalPdf[_selectedFileIndex],
+                      SafePdfViewer(
+                        file: widget.originalPdf[_selectedFileIndex],
                         key: ValueKey(_selectedFileIndex),
                         controller: _pdfViewerController,
                         canShowScrollHead: false,

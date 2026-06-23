@@ -162,19 +162,26 @@ class B2Service {
     }
 
     var uploadedBytes = 0;
+    final List<Future<void> Function()> uploadTasks = [];
     for (var i = 0; i < parts.length; i++) {
-      // If there's only 1 part (small file), B2 key is b2Key.
-      // If there are multiple parts, key is b2Key.part_000, b2Key.part_001, etc.
+      final index = i;
       final partKey = (parts.length == 1)
           ? b2Key
-          : '$b2Key.part_${i.toString().padLeft(3, '0')}';
+          : '$b2Key.part_${index.toString().padLeft(3, '0')}';
       
-      await _uploadPartDirect(partKey, parts[i]);
-      uploadedBytes += parts[i].length;
-      if (onProgress != null) {
-        onProgress(uploadedBytes / bytes.length);
-      }
+      uploadTasks.add(() async {
+        await _uploadPartDirect(partKey, parts[index]);
+        uploadedBytes += parts[index].length;
+        if (onProgress != null) {
+          onProgress(uploadedBytes / bytes.length);
+        }
+      });
     }
+
+    await _runWithConcurrencyLimit<void>(
+      concurrency: 4,
+      tasks: uploadTasks,
+    );
 
     final docId = mainFilename.replaceAll('/', '_');
     
@@ -230,18 +237,30 @@ class B2Service {
     }
 
     // Split file: download all parts and combine
-    final List<int> combinedBytes = [];
     var downloadedBytes = 0;
+    final List<Future<Uint8List> Function()> downloadTasks = [];
 
     for (var i = 0; i < partsCount; i++) {
-      final partKey = '$b2Key.part_${i.toString().padLeft(3, '0')}';
-      
-      final partBytes = await _downloadPartDirect(partKey);
-      combinedBytes.addAll(partBytes);
-      downloadedBytes += partBytes.length;
-      if (onProgress != null && totalSize > 0) {
-        onProgress(downloadedBytes / totalSize);
-      }
+      final index = i;
+      final partKey = '$b2Key.part_${index.toString().padLeft(3, '0')}';
+      downloadTasks.add(() async {
+        final partBytes = await _downloadPartDirect(partKey);
+        downloadedBytes += partBytes.length;
+        if (onProgress != null && totalSize > 0) {
+          onProgress(downloadedBytes / totalSize);
+        }
+        return partBytes;
+      });
+    }
+
+    final List<Uint8List> partsBytes = await _runWithConcurrencyLimit<Uint8List>(
+      concurrency: 4,
+      tasks: downloadTasks,
+    );
+
+    final List<int> combinedBytes = [];
+    for (final part in partsBytes) {
+      combinedBytes.addAll(part);
     }
 
     return Uint8List.fromList(combinedBytes);
@@ -280,14 +299,23 @@ class B2Service {
         print('[B2Service] Failed to delete file $b2Key: $e');
       }
     } else {
+      final List<Future<void> Function()> deleteTasks = [];
       for (var i = 0; i < partsCount; i++) {
-        final partKey = '$b2Key.part_${i.toString().padLeft(3, '0')}';
-        try {
-          await _deletePartDirect(partKey);
-        } catch (e) {
-          print('[B2Service] Failed to delete part $partKey: $e');
-        }
+        final index = i;
+        final partKey = '$b2Key.part_${index.toString().padLeft(3, '0')}';
+        deleteTasks.add(() async {
+          try {
+            await _deletePartDirect(partKey);
+          } catch (e) {
+            print('[B2Service] Failed to delete part $partKey: $e');
+          }
+        });
       }
+
+      await _runWithConcurrencyLimit<void>(
+        concurrency: 4,
+        tasks: deleteTasks,
+      );
     }
 
     final thumbKey = '$b2Key.thumb.jpg';
@@ -298,6 +326,42 @@ class B2Service {
     if (docSnap.exists) {
       await FbFirestore.instance.collection('document_store').doc(docId).delete();
     }
+  }
+
+  /// Runs tasks concurrently with a limit.
+  Future<List<T>> _runWithConcurrencyLimit<T>({
+    required int concurrency,
+    required List<Future<T> Function()> tasks,
+  }) async {
+    final List<T?> results = List.filled(tasks.length, null);
+    int nextTaskIndex = 0;
+    Object? firstError;
+    StackTrace? firstStackTrace;
+
+    Future<void> runWorker() async {
+      while (nextTaskIndex < tasks.length && firstError == null) {
+        final currentTaskIndex = nextTaskIndex++;
+        try {
+          results[currentTaskIndex] = await tasks[currentTaskIndex]();
+        } catch (e, st) {
+          firstError ??= e;
+          firstStackTrace ??= st;
+        }
+      }
+    }
+
+    final List<Future<void>> workers = [];
+    for (int i = 0; i < concurrency && i < tasks.length; i++) {
+      workers.add(runWorker());
+    }
+
+    await Future.wait(workers);
+
+    if (firstError != null) {
+      Error.throwWithStackTrace(firstError as Object, firstStackTrace!);
+    }
+
+    return results.cast<T>();
   }
 
   /// Computes the AWS Signature Version 4 for B2 S3 API request signing.

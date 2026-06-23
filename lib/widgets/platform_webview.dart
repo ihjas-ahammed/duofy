@@ -21,11 +21,24 @@ import 'web_webview_stub.dart' if (dart.library.html) 'web_webview_helper.dart';
 /// All backends drop in wherever the app previously embedded a WebView.
 /// Callers pass the raw HTML string and the widget owns the controller, any
 /// data-URL encoding, and the resize lifecycle.
+class PlatformWebViewController {
+  final void Function(String js)? runJavaScript;
+  PlatformWebViewController({this.runJavaScript});
+}
+
 class PlatformWebView extends StatefulWidget {
   final String html;
   final ValueChanged<String>? onJsError;
+  final ValueChanged<String>? onMessage;
+  final void Function(PlatformWebViewController)? onControllerCreated;
 
-  const PlatformWebView({super.key, required this.html, this.onJsError});
+  const PlatformWebView({
+    super.key,
+    required this.html,
+    this.onJsError,
+    this.onMessage,
+    this.onControllerCreated,
+  });
 
   @override
   State<PlatformWebView> createState() => _PlatformWebViewState();
@@ -73,7 +86,17 @@ class _PlatformWebViewState extends State<PlatformWebView> {
             widget.onJsError?.call(message.message);
           },
         )
+        ..addJavaScriptChannel(
+          'DuoMessageChannel',
+          onMessageReceived: (wf.JavaScriptMessage message) {
+            widget.onMessage?.call(message.message);
+          },
+        )
         ..loadHtmlString(widget.html);
+      
+      widget.onControllerCreated?.call(PlatformWebViewController(
+        runJavaScript: (js) => _wfController?.runJavaScript(js),
+      ));
     }
   }
 
@@ -87,14 +110,31 @@ class _PlatformWebViewState extends State<PlatformWebView> {
       }
       await c.setBackgroundColor(const Color(0x00000000));
       await c.setPopupWindowPolicy(ww.WebviewPopupWindowPolicy.deny);
-      // Bridge the page's `window.DuoErrorChannel.postMessage(...)` calls onto
-      // WebView2's native message pipe so onJsError fires the same way it does
+      // Bridge the page's `window.DuoErrorChannel.postMessage(...)` and
+      // `window.DuoMessageChannel.postMessage(...)` calls onto
+      // WebView2's native message pipe so they fire the same way they do
       // on the webview_flutter/webview_cef backends.
       await c.addScriptToExecuteOnDocumentCreated(
-        'window.DuoErrorChannel = { postMessage: function (m) { window.chrome.webview.postMessage(String(m)); } };',
+        'window.DuoErrorChannel = { postMessage: function (m) { window.chrome.webview.postMessage(JSON.stringify({channel: "error", message: String(m)})); } };'
+        'window.DuoMessageChannel = { postMessage: function (m) { window.chrome.webview.postMessage(JSON.stringify({channel: "message", message: String(m)})); } };',
       );
       _winMsgSub = c.webMessage.listen((msg) {
-        if (mounted) widget.onJsError?.call(msg.toString());
+        if (mounted) {
+          final str = msg.toString();
+          if (str.startsWith('{')) {
+            try {
+              final data = jsonDecode(str);
+              if (data['channel'] == 'message') {
+                widget.onMessage?.call(data['message']);
+                return;
+              } else if (data['channel'] == 'error') {
+                widget.onJsError?.call(data['message']);
+                return;
+              }
+            } catch (_) {}
+          }
+          widget.onJsError?.call(str);
+        }
       });
       await c.loadStringContent(widget.html);
       if (!mounted) {
@@ -105,6 +145,9 @@ class _PlatformWebViewState extends State<PlatformWebView> {
         _winController = c;
         _winReady = true;
       });
+      widget.onControllerCreated?.call(PlatformWebViewController(
+        runJavaScript: (js) => _winController?.executeScript(js),
+      ));
     } else {
       await _winController!.loadStringContent(widget.html);
     }
@@ -114,37 +157,70 @@ class _PlatformWebViewState extends State<PlatformWebView> {
     // First-use init of the global manager. Safe to call repeatedly because
     // the manager is a singleton and `initialize()` is guarded internally.
     await PlatformWebViewBootstrap.ensureInitialized();
-    final dataUrl =
-        'data:text/html;charset=utf-8;base64,${base64.encode(utf8.encode(widget.html))}';
+    
+    // Write HTML content to a temporary file to bypass opaque data URI security restrictions
+    final tempDir = Directory.systemTemp;
+    final tempFile = File('${tempDir.path}/duofy_webview_${widget.html.hashCode}.html');
+    if (!await tempFile.exists()) {
+      await tempFile.writeAsString(widget.html);
+    }
+    final fileUrl = 'file://${tempFile.path}';
+    debugPrint('[PlatformWebView] CEF fileUrl: $fileUrl');
+
     if (_wcController == null) {
       final c = wc.WebviewManager().createWebView();
-      await c.initialize(dataUrl);
+      
+      // Register listener to inject JS channels on every V8 context change (navigation)
+      c.setWebviewListener(wc.WebviewEventsListener(
+        onUrlChanged: (url) {
+          if (!c.value) {
+            debugPrint('[PlatformWebView] CEF onUrlChanged: $url (ignored, browser not ready yet)');
+            return;
+          }
+          debugPrint('[PlatformWebView] CEF onUrlChanged: $url. Injected channels.');
+          c.setJavaScriptChannels({
+            wc.JavascriptChannel(
+              name: 'DuoErrorChannel',
+              onMessageReceived: (wc.JavascriptMessage message) {
+                debugPrint('[PlatformWebView] CEF DuoErrorChannel: ${message.message}');
+                if (mounted) widget.onJsError?.call(message.message);
+              },
+            ),
+            wc.JavascriptChannel(
+              name: 'DuoMessageChannel',
+              onMessageReceived: (wc.JavascriptMessage message) {
+                debugPrint('[PlatformWebView] CEF DuoMessageChannel: ${message.message}');
+                if (mounted) widget.onMessage?.call(message.message);
+              },
+            ),
+          });
+        },
+        onLoadEnd: (controller, url) {
+          debugPrint('[PlatformWebView] CEF onLoadEnd: $url');
+        },
+      ));
+
+      await c.initialize('about:blank');
       if (!mounted) {
         c.dispose();
         return;
       }
-      c.setJavaScriptChannels({
-        wc.JavascriptChannel(
-          name: 'DuoErrorChannel',
-          onMessageReceived: (wc.JavascriptMessage message) {
-            if (mounted) widget.onJsError?.call(message.message);
-          },
-        ),
-      });
+
       setState(() {
         _wcController = c;
         _wcReady = true;
       });
+      widget.onControllerCreated?.call(PlatformWebViewController(
+        runJavaScript: (js) {
+          debugPrint('[PlatformWebView] CEF runJavaScript length: ${js.length}');
+          _wcController?.executeJavaScript(js);
+        },
+      ));
+      debugPrint('[PlatformWebView] Loading fileUrl...');
+      await _wcController!.loadUrl(fileUrl);
     } else {
-      _wcController!.setJavaScriptChannels({
-        wc.JavascriptChannel(
-          name: 'DuoErrorChannel',
-          onMessageReceived: (wc.JavascriptMessage message) {
-            if (mounted) widget.onJsError?.call(message.message);
-          },
-        ),
-      });
-      await _wcController!.loadUrl(dataUrl);
+      debugPrint('[PlatformWebView] Loading updated fileUrl...');
+      await _wcController!.loadUrl(fileUrl);
     }
   }
 
