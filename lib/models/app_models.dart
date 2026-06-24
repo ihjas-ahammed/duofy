@@ -1118,3 +1118,41 @@ class QuizOption {
         explanation: explanation ?? this.explanation,
       );
 }
+
+class CourseFolder {
+  final String id;
+  final String name;
+  final List<String> bookIds;
+
+  CourseFolder({
+    required this.id,
+    required this.name,
+    required this.bookIds,
+  });
+
+  factory CourseFolder.fromJson(Map<String, dynamic> json) {
+    return CourseFolder(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      bookIds: List<String>.from(json['bookIds'] as List? ?? []),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'bookIds': bookIds,
+  };
+
+  CourseFolder copyWith({
+    String? id,
+    String? name,
+    List<String>? bookIds,
+  }) {
+    return CourseFolder(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      bookIds: bookIds ?? this.bookIds,
+    );
+  }
+}

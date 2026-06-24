@@ -206,6 +206,19 @@ class _CourseQuestionnaireScreenState extends State<CourseQuestionnaireScreen> {
             ),
             const SizedBox(height: 32),
             DuoButton(
+              text: 'Retry Generating Assessment',
+              onPressed: () {
+                setState(() {
+                  _isLoadingAiQuestions = true;
+                  _errorMessage = null;
+                });
+                _generateDiagnosticQuestions();
+              },
+              color: AppTheme.duoBlue,
+              shadowColor: AppTheme.duoBlueDark,
+            ),
+            const SizedBox(height: 12),
+            DuoButton(
               text: 'Start Default Generation',
               onPressed: _submit,
               color: AppTheme.duoGreen,

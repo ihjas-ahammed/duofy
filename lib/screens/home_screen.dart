@@ -12,7 +12,6 @@ import '../services/generation_manager.dart';
 import '../services/learning_sync.dart';
 import 'bookmarks_screen.dart';
 import '../theme/app_theme.dart';
-import '../widgets/compact_book_card.dart';
 import '../widgets/compact_book_list_item.dart';
 import '../widgets/generating_book_card.dart';
 import '../widgets/responsive_center.dart';
@@ -30,6 +29,7 @@ import 'metacognition_setup_screen.dart';
 import '../widgets/analytics_view.dart';
 import 'document_store_screen.dart';
 import '../widgets/glassy_nav_bar.dart';
+import '../utils/toast_utils.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -47,6 +47,9 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedTabIndex = 0;
 
   bool _isListView = true;
+
+  List<CourseFolder> folders = [];
+  String? _selectedFolderId;
 
   final TextEditingController _librarySearchController = TextEditingController();
   final TextEditingController _publishedSearchController = TextEditingController();
@@ -210,6 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // 1. Fetch Local Cache immediately
     final fetched = await _db.fetchBooks(forceRefresh: false);
     final globals = await _db.fetchGlobalBooks(useCacheOnly: true);
+    final fetchedFolders = await _db.fetchFolders();
     
     Map<String, double> prog = {};
     for (var b in fetched) {
@@ -226,6 +230,7 @@ class _HomeScreenState extends State<HomeScreen> {
           globalBooks = globals;
         }
         progressMap = prog;
+        folders = fetchedFolders;
         isLoading = false;
       });
     }
@@ -255,10 +260,15 @@ class _HomeScreenState extends State<HomeScreen> {
           print("[HomeScreen] fetchGlobalBooks error: $e");
           return <Book>[];
         }),
+        _db.fetchFolders().catchError((e) {
+          print("[HomeScreen] fetchFolders error: $e");
+          return <CourseFolder>[];
+        }),
       ]);
 
       final fetched = results[1] as List<Book>;
       final globals = results[2] as List<Book>;
+      final fetchedFolders = results[3] as List<CourseFolder>;
 
       Map<String, double> prog = {};
       for (var b in fetched) {
@@ -273,6 +283,7 @@ class _HomeScreenState extends State<HomeScreen> {
           books = fetched;
           globalBooks = globals;
           progressMap = prog;
+          folders = fetchedFolders;
         });
       }
     } catch (e) {
@@ -327,11 +338,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       IconButton(
-        icon: Icon(_isListView ? LucideIcons.layoutGrid : LucideIcons.list, size: 26),
-        tooltip: _isListView ? 'Switch to Grid View' : 'Switch to List View',
-        onPressed: _toggleListView,
-      ),
-      IconButton(
         icon: const Icon(LucideIcons.bookmark, size: 26),
         tooltip: 'Bookmarks',
         onPressed: () {
@@ -360,44 +366,55 @@ class _HomeScreenState extends State<HomeScreen> {
     required TextEditingController controller,
     required String value,
     required String hintText,
+    Widget? trailing,
   }) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.04),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.08), width: 1.2),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: [
-            const Icon(LucideIcons.search, color: Colors.white54, size: 20),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextField(
-                controller: controller,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
-                textInputAction: TextInputAction.search,
-                onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
-                decoration: InputDecoration(
-                  hintText: hintText,
-                  hintStyle: const TextStyle(color: Colors.white30),
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.04),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withOpacity(0.08), width: 1.2),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  const Icon(LucideIcons.search, color: Colors.white54, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: controller,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      textInputAction: TextInputAction.search,
+                      onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
+                      decoration: InputDecoration(
+                        hintText: hintText,
+                        hintStyle: const TextStyle(color: Colors.white30),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  if (value.isNotEmpty)
+                    GestureDetector(
+                      onTap: () {
+                        controller.clear();
+                      },
+                      child: const Icon(LucideIcons.x, color: Colors.white54, size: 18),
+                    ),
+                ],
               ),
             ),
-            if (value.isNotEmpty)
-              GestureDetector(
-                onTap: () {
-                  controller.clear();
-                },
-                child: const Icon(LucideIcons.x, color: Colors.white54, size: 18),
-              ),
+          ),
+          if (trailing != null) ...[
+            const SizedBox(width: 12),
+            trailing,
           ],
-        ),
+        ],
       ),
     );
   }
@@ -524,6 +541,17 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
 
+    final List<Book> displayedBooks;
+    if (_selectedFolderId != null) {
+      final currentFolder = folders.firstWhere(
+        (f) => f.id == _selectedFolderId,
+        orElse: () => CourseFolder(id: '', name: '', bookIds: []),
+      );
+      displayedBooks = books.where((b) => currentFolder.bookIds.contains(b.id)).toList();
+    } else {
+      displayedBooks = books.where((b) => !folders.any((f) => f.bookIds.contains(b.id))).toList();
+    }
+
     return ResponsiveCenter(
       child: RefreshIndicator(
         color: AppTheme.duoBlue,
@@ -541,9 +569,95 @@ class _HomeScreenState extends State<HomeScreen> {
               elevation: 0,
               centerTitle: false,
               titleSpacing: 24,
-              title: const Text(
-                'Your Library',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.white),
+              title: DragTarget<Book>(
+                onWillAcceptWithDetails: (details) {
+                  final book = details.data;
+                  return folders.any((f) => f.bookIds.contains(book.id));
+                },
+                onAcceptWithDetails: (details) async {
+                  final book = details.data;
+                  for (var i = 0; i < folders.length; i++) {
+                    folders[i].bookIds.remove(book.id);
+                  }
+                  await _db.saveFolders(folders);
+                  setState(() {});
+                  showToast(context, 'Removed "${book.title}" from folder');
+                },
+                builder: (context, candidateData, rejectedData) {
+                  final isHovered = candidateData.isNotEmpty;
+                  final folderName = _selectedFolderId != null 
+                      ? folders.firstWhere((f) => f.id == _selectedFolderId, orElse: () => folders.first).name
+                      : null;
+                  
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isHovered ? AppTheme.duoRed.withOpacity(0.15) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isHovered ? AppTheme.duoRed : Colors.transparent,
+                        width: 1.2,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_selectedFolderId != null) ...[
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedFolderId = null;
+                              });
+                            },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                Icon(LucideIcons.chevronLeft, size: 18, color: AppTheme.duoBlue),
+                                Text(
+                                  'Library',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    color: AppTheme.duoBlue,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 4),
+                            child: Text(
+                              '/',
+                              style: TextStyle(fontSize: 14, color: Colors.white30),
+                            ),
+                          ),
+                          Flexible(
+                            child: Text(
+                              folderName ?? '',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: Colors.white,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ] else ...[
+                          const Text(
+                            'Your Library',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                },
               ),
               actions: _buildAppBarActions(),
             ),
@@ -552,8 +666,26 @@ class _HomeScreenState extends State<HomeScreen> {
                 controller: _librarySearchController,
                 value: _librarySearchQuery,
                 hintText: 'Search your courses...',
+                trailing: _selectedFolderId == null
+                    ? IconButton(
+                        icon: const Icon(LucideIcons.folderPlus, color: Colors.white, size: 24),
+                        onPressed: _showCreateFolderDialog,
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white.withOpacity(0.04),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(color: Colors.white.withOpacity(0.08), width: 1.2),
+                          ),
+                          padding: const EdgeInsets.all(12),
+                        ),
+                      )
+                    : null,
               ),
             ),
+            if (!isSearching && _selectedFolderId == null && folders.isNotEmpty)
+              SliverToBoxAdapter(
+                child: _buildFoldersList(),
+              ),
             if (!isSearching && activeTasks.isNotEmpty && !kIsWeb)
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -584,13 +716,19 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             if (!isSearching)
               SliverToBoxAdapter(
-                child: books.isEmpty && activeTasks.isEmpty
+                child: (displayedBooks.isEmpty && activeTasks.isEmpty && (_selectedFolderId != null || folders.isEmpty))
                     ? Container(
                         height: 180,
                         margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                         decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(24)),
                         alignment: Alignment.center,
-                        child: const Text('No courses found.\nTap + to create one!', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                        child: Text(
+                          _selectedFolderId != null
+                              ? 'This folder is empty.\nGo back and drag courses here!'
+                              : 'No courses found.\nTap + to create one!',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.white54, fontWeight: FontWeight.bold),
+                        ),
                       )
                     : const SizedBox.shrink(),
               ),
@@ -627,92 +765,44 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-            if (!isSearching && books.isNotEmpty)
-              _isListView
-                  ? SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final book = books[index];
-                            return Dismissible(
-                              key: Key(book.id),
-                              direction: DismissDirection.endToStart,
-                              background: Container(
-                                alignment: Alignment.center,
-                                margin: const EdgeInsets.symmetric(vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: Colors.red.shade900.withOpacity(0.8),
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: const Icon(LucideIcons.trash2, color: Colors.white, size: 20),
-                              ),
-                              confirmDismiss: (direction) async {
-                                return await _deleteLocalBook(book);
-                              },
-                              child: CompactBookListItem(
-                                book: book,
-                                progress: progressMap[book.id] ?? 0.0,
-                                onTap: () {
-                                  Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
-                                    .then((_) => _loadAllData(force: false));
-                                },
-                                onLongPress: () => _showBookLongPressMenu(book),
-                              ),
-                            );
-                          },
-                          childCount: books.length,
+            if (!isSearching && displayedBooks.isNotEmpty)
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final book = displayedBooks[index];
+                      return Dismissible(
+                        key: Key(book.id),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          alignment: Alignment.center,
+                          margin: const EdgeInsets.symmetric(vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade900.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Icon(LucideIcons.trash2, color: Colors.white, size: 20),
                         ),
-                      ),
-                    )
-                  : SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      sliver: SliverGrid(
-                        gridDelegate: screenWidth < 600
-                            ? const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,
-                                mainAxisSpacing: 10,
-                                crossAxisSpacing: 10,
-                                childAspectRatio: 0.78,
-                              )
-                            : const SliverGridDelegateWithMaxCrossAxisExtent(
-                                maxCrossAxisExtent: 120,
-                                mainAxisSpacing: 12,
-                                crossAxisSpacing: 12,
-                                childAspectRatio: 0.78,
-                              ),
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final book = books[index];
-                            return Dismissible(
-                              key: Key(book.id),
-                              direction: DismissDirection.endToStart,
-                              background: Container(
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  color: Colors.red.shade900.withOpacity(0.8),
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: const Icon(LucideIcons.trash2, color: Colors.white, size: 20),
-                              ),
-                              confirmDismiss: (direction) async {
-                                return await _deleteLocalBook(book);
-                              },
-                              child: CompactBookCard(
-                                book: book,
-                                progress: progressMap[book.id] ?? 0.0,
-                                onTap: () {
-                                  Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
-                                    .then((_) => _loadAllData(force: false));
-                                },
-                                onLongPress: () => _showBookLongPressMenu(book),
-                              ),
-                            );
+                        confirmDismiss: (direction) async {
+                          return await _deleteLocalBook(book);
+                        },
+                        child: CompactBookListItem(
+                          book: book,
+                          progress: progressMap[book.id] ?? 0.0,
+                          onTap: () {
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
+                              .then((_) => _loadAllData(force: false));
                           },
-                          childCount: books.length,
+                          onLongPress: () => _showBookLongPressMenu(book),
+                          dragHandle: _buildDragHandle(book),
                         ),
-                      ),
-                    ),
+                      );
+                    },
+                    childCount: displayedBooks.length,
+                  ),
+                ),
+              ),
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
         ),
@@ -804,20 +894,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (filteredGlobals.isNotEmpty)
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                sliver: SliverGrid(
-                  gridDelegate: screenWidth < 600
-                      ? const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          mainAxisSpacing: 10,
-                          crossAxisSpacing: 10,
-                          childAspectRatio: 0.78,
-                        )
-                      : const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 120,
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
-                          childAspectRatio: 0.78,
-                        ),
+                sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
                       final book = filteredGlobals[index];
@@ -831,6 +908,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         direction: canDelete ? DismissDirection.endToStart : DismissDirection.none,
                         background: Container(
                           alignment: Alignment.center,
+                          margin: const EdgeInsets.symmetric(vertical: 6),
                           decoration: BoxDecoration(
                             color: Colors.red.shade900.withOpacity(0.8),
                             borderRadius: BorderRadius.circular(16),
@@ -860,7 +938,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           }
                           return false;
                         },
-                        child: CompactBookCard(
+                        child: CompactBookListItem(
                           book: book,
                           progress: progressMap[book.id] ?? 0.0,
                           onTap: () {
@@ -1195,6 +1273,43 @@ class _HomeScreenState extends State<HomeScreen> {
                           _resetBookProgress(book);
                         },
                       ),
+                      if (folders.any((f) => f.bookIds.contains(book.id))) ...[
+                        _buildMenuItem(
+                          icon: LucideIcons.folderClosed,
+                          title: 'Move to another Folder',
+                          subtitle: 'Move course to a different folder',
+                          iconColor: AppTheme.duoBlue,
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            _showMoveBookToFolderDialog(book);
+                          },
+                        ),
+                        _buildMenuItem(
+                          icon: LucideIcons.folderOpen,
+                          title: 'Remove from Folder',
+                          subtitle: 'Move course back to root library',
+                          iconColor: AppTheme.duoOrange,
+                          onTap: () async {
+                            Navigator.pop(ctx);
+                            for (var f in folders) {
+                              f.bookIds.remove(book.id);
+                            }
+                            await _db.saveFolders(folders);
+                            _loadAllData(force: false);
+                            showToast(context, 'Removed "${book.title}" from folder');
+                          },
+                        ),
+                      ] else
+                        _buildMenuItem(
+                          icon: LucideIcons.folderClosed,
+                          title: 'Move to Folder',
+                          subtitle: 'Group this course inside a folder',
+                          iconColor: AppTheme.duoBlue,
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            _showMoveBookToFolderDialog(book);
+                          },
+                        ),
                       _buildMenuItem(
                         icon: LucideIcons.trash2,
                         title: 'Delete Course',
@@ -1570,6 +1685,400 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  double _getFolderProgress(CourseFolder folder) {
+    if (folder.bookIds.isEmpty) return 0.0;
+    double total = 0.0;
+    int count = 0;
+    for (final bookId in folder.bookIds) {
+      if (progressMap.containsKey(bookId)) {
+        total += progressMap[bookId]!;
+        count++;
+      }
+    }
+    return count > 0 ? total / count : 0.0;
+  }
+
+  void _showCreateFolderDialog() {
+    final textController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('New Folder', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: textController,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: 'Folder Name',
+            hintStyle: TextStyle(color: Colors.white38),
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.duoBlue)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () async {
+              final name = textController.text.trim();
+              if (name.isNotEmpty) {
+                final newFolder = CourseFolder(
+                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  name: name,
+                  bookIds: [],
+                );
+                folders.add(newFolder);
+                await _db.saveFolders(folders);
+                setState(() {});
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Create', style: TextStyle(color: AppTheme.duoGreen, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFolderOptions(CourseFolder folder) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.7),
+              border: Border.all(color: Colors.white.withOpacity(0.08)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            padding: const EdgeInsets.all(24),
+            child: SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    folder.name,
+                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildMenuItem(
+                    icon: LucideIcons.edit3,
+                    title: 'Rename Folder',
+                    subtitle: 'Change the name of this folder',
+                    iconColor: AppTheme.duoBlue,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _showRenameFolderDialog(folder);
+                    },
+                  ),
+                  _buildMenuItem(
+                    icon: LucideIcons.trash2,
+                    title: 'Delete Folder',
+                    subtitle: 'Delete folder and move all courses to root',
+                    iconColor: AppTheme.duoRed,
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (alertCtx) => AlertDialog(
+                          backgroundColor: AppTheme.surface,
+                          title: const Text('Delete Folder?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          content: const Text('Are you sure you want to delete this folder? The courses inside will not be deleted.', style: TextStyle(color: Colors.white70)),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(alertCtx, false), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+                            TextButton(
+                              onPressed: () => Navigator.pop(alertCtx, true),
+                              child: const Text('Delete', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirm == true) {
+                        folders.removeWhere((f) => f.id == folder.id);
+                        if (_selectedFolderId == folder.id) {
+                          _selectedFolderId = null;
+                        }
+                        await _db.saveFolders(folders);
+                        setState(() {});
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showRenameFolderDialog(CourseFolder folder) {
+    final textController = TextEditingController(text: folder.name);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text('Rename Folder', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: textController,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: 'Folder Name',
+            hintStyle: TextStyle(color: Colors.white38),
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.duoBlue)),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(
+            onPressed: () async {
+              final newName = textController.text.trim();
+              if (newName.isNotEmpty) {
+                final idx = folders.indexWhere((f) => f.id == folder.id);
+                if (idx != -1) {
+                  folders[idx] = folder.copyWith(name: newName);
+                  await _db.saveFolders(folders);
+                  setState(() {});
+                }
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Save', style: TextStyle(color: AppTheme.duoGreen, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFoldersList() {
+    if (folders.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 12),
+      child: SizedBox(
+        height: 110,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          itemCount: folders.length,
+          itemBuilder: (context, index) {
+            final folder = folders[index];
+            final progress = _getFolderProgress(folder);
+            return _buildFolderCard(folder, progress);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFolderCard(CourseFolder folder, double progress) {
+    return DragTarget<Book>(
+      onWillAcceptWithDetails: (details) {
+        return !folder.bookIds.contains(details.data.id);
+      },
+      onAcceptWithDetails: (details) async {
+        final book = details.data;
+        for (var i = 0; i < folders.length; i++) {
+          folders[i].bookIds.remove(book.id);
+        }
+        folder.bookIds.add(book.id);
+        await _db.saveFolders(folders);
+        setState(() {});
+        
+        showToast(context, 'Moved "${book.title}" to folder "${folder.name}"');
+      },
+      builder: (context, candidateData, rejectedData) {
+        final isHovered = candidateData.isNotEmpty;
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              _selectedFolderId = folder.id;
+            });
+          },
+          onLongPress: () => _showFolderOptions(folder),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 100,
+            margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isHovered 
+                  ? AppTheme.duoBlue.withOpacity(0.15) 
+                  : Colors.white.withOpacity(0.04),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isHovered 
+                    ? AppTheme.duoBlue 
+                    : Colors.white.withOpacity(0.08), 
+                width: 1.2,
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: CircularProgressIndicator(
+                        value: progress,
+                        strokeWidth: 3.5,
+                        backgroundColor: Colors.white.withOpacity(0.05),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          progress == 1.0 ? AppTheme.duoGreen : AppTheme.duoBlue,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      LucideIcons.folderClosed,
+                      color: progress == 1.0 ? AppTheme.duoGreen : Colors.white70,
+                      size: 20,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  folder.name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  folder.bookIds.length == 1 
+                      ? '1 course' 
+                      : '${folder.bookIds.length} courses',
+                  style: const TextStyle(
+                    color: Colors.white38,
+                    fontSize: 8,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDragHandle(Book book) {
+    return Draggable<Book>(
+      data: book,
+      feedback: Material(
+        color: Colors.transparent,
+        child: Opacity(
+          opacity: 0.8,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppTheme.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.duoBlue, width: 1.2),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(LucideIcons.bookOpen, color: AppTheme.duoBlue, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  book.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    decoration: TextDecoration.none,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      childWhenDragging: const SizedBox.shrink(),
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Icon(
+          LucideIcons.gripVertical,
+          color: Colors.white.withOpacity(0.3),
+          size: 20,
+        ),
+      ),
+    );
+  }
+
+  void _showMoveBookToFolderDialog(Book book) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Move to Folder', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: folders.isEmpty
+            ? const Text('No folders created yet. Create a folder first!', style: TextStyle(color: Colors.white70))
+            : SizedBox(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: folders.length,
+                  itemBuilder: (context, idx) {
+                    final folder = folders[idx];
+                    final isAlreadyIn = folder.bookIds.contains(book.id);
+                    return ListTile(
+                      title: Text(folder.name, style: const TextStyle(color: Colors.white)),
+                      trailing: isAlreadyIn 
+                          ? const Icon(LucideIcons.check, color: AppTheme.duoGreen) 
+                          : null,
+                      onTap: () async {
+                        Navigator.pop(ctx);
+                        for (var f in folders) {
+                          f.bookIds.remove(book.id);
+                        }
+                        folder.bookIds.add(book.id);
+                        await _db.saveFolders(folders);
+                        _loadAllData(force: false);
+                        
+                        showToast(context, 'Moved "${book.title}" to folder "${folder.name}"');
+                      },
+                    );
+                  },
+                ),
+              ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+          ),
+          if (folders.isEmpty)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _showCreateFolderDialog();
+              },
+              child: const Text('New Folder', style: TextStyle(color: AppTheme.duoGreen, fontWeight: FontWeight.bold)),
+            ),
+        ],
       ),
     );
   }

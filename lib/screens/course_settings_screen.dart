@@ -36,7 +36,9 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
   @override
   void initState() {
     super.initState();
-    final formatsSource = widget.section?.lessonFormats ?? widget.book.lessonFormats;
+    final formatsSource = (widget.section?.lessonFormats != null && widget.section!.lessonFormats!.isNotEmpty)
+        ? widget.section!.lessonFormats!
+        : widget.book.lessonFormats;
     _formats = List.of(formatsSource);
     _defaultFormatId = widget.book.defaultFormatId;
     if (_formats.isEmpty) {

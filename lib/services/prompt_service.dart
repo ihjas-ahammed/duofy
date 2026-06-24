@@ -398,6 +398,7 @@ TEXTBOOK WRITING STYLE & COMPREHENSIVENESS (STRICTEST PRIORITY):
 $latexGuide
 
 CRITICAL SCHEMA & MICRO-LEARNING RULES:
+0. STRICT SLIDE TYPE ADHERENCE (CRITICAL RULE): You MUST strictly match the exact slide type specified in the lesson plan/description. If a slide is planned as a "numerical" slide, you MUST generate a slide of "type": "numerical", NOT a "theory" slide. If a slide is planned as a "fill_in_blank" slide, you MUST generate a slide of "type": "fill_in_blank", NOT a "theory" slide. If a slide is planned as a "quiz" slide, you MUST generate a slide of "type": "quiz", NOT a "theory" slide. NEVER replace, collapse, or substitute interactive slide types (quiz, fill_in_blank, one_word, numerical, step_by_step, proof) with "theory" slides under any circumstances. Every slide's JSON type MUST perfectly match the requested type.
 1. "theory" slides: `content` MUST be a few sentences explaining a concept DIRECTLY. Use Markdown. NEVER use storytelling, narrative framings, characters, or imagined scenarios — present facts and definitions plainly.
 2. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
 3. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word. Include an array of 3 `blankDistractors` (wrong words) for the user to choose from.
@@ -447,6 +448,7 @@ ALREADY-COVERED CONTENT (from previously generated units in this section — do 
 $latexGuide
 
 CRITICAL SCHEMA & MICRO-LEARNING RULES:
+0. STRICT SLIDE TYPE ADHERENCE (CRITICAL RULE): You MUST strictly match the exact slide type specified in the lesson plan/description. If a slide is planned as a "numerical" slide, you MUST generate a slide of "type": "numerical", NOT a "theory" slide. If a slide is planned as a "fill_in_blank" slide, you MUST generate a slide of "type": "fill_in_blank", NOT a "theory" slide. If a slide is planned as a "quiz" slide, you MUST generate a slide of "type": "quiz", NOT a "theory" slide. NEVER replace, collapse, or substitute interactive slide types (quiz, fill_in_blank, one_word, numerical, step_by_step, proof) with "theory" slides under any circumstances. Every slide's JSON type MUST perfectly match the requested type.
 1. "theory" slides: `content` MUST be a few sentences explaining a concept DIRECTLY. Use Markdown. NEVER use storytelling, narrative framings, characters, or imagined scenarios — present facts and definitions plainly.
 2. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
 3. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word. Include an array of 3 `blankDistractors` (wrong words) for the user to choose from.
@@ -495,6 +497,7 @@ TEXTBOOK WRITING STYLE & COMPREHENSIVENESS (STRICTEST PRIORITY):
 $latexGuide
 
 CRITICAL SCHEMA & MICRO-LEARNING RULES:
+0. STRICT SLIDE TYPE ADHERENCE (CRITICAL RULE): You MUST strictly match the exact slide type specified in the lesson plan/description. If a slide is planned as a "numerical" slide, you MUST generate a slide of "type": "numerical", NOT a "theory" slide. If a slide is planned as a "fill_in_blank" slide, you MUST generate a slide of "type": "fill_in_blank", NOT a "theory" slide. If a slide is planned as a "quiz" slide, you MUST generate a slide of "type": "quiz", NOT a "theory" slide. NEVER replace, collapse, or substitute interactive slide types (quiz, fill_in_blank, one_word, numerical, step_by_step, proof) with "theory" slides under any circumstances. Every slide's JSON type MUST perfectly match the requested type.
 1. "theory" slides: `content` MUST be a few sentences explaining a concept DIRECTLY. Use Markdown. NEVER use storytelling, narrative framings, characters, or imagined scenarios.
 2. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
 3. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word. Include an array of 3 `blankDistractors`.
@@ -534,6 +537,7 @@ TEXTBOOK WRITING STYLE & COMPREHENSIVENESS (STRICTEST PRIORITY):
 $latexGuide
 
 CRITICAL SCHEMA & MICRO-LEARNING RULES:
+0. STRICT SLIDE TYPE ADHERENCE (CRITICAL RULE): You MUST strictly match the exact slide type specified in the lesson plan/description. If a slide is planned as a "numerical" slide, you MUST generate a slide of "type": "numerical", NOT a "theory" slide. If a slide is planned as a "fill_in_blank" slide, you MUST generate a slide of "type": "fill_in_blank", NOT a "theory" slide. If a slide is planned as a "quiz" slide, you MUST generate a slide of "type": "quiz", NOT a "theory" slide. NEVER replace, collapse, or substitute interactive slide types (quiz, fill_in_blank, one_word, numerical, step_by_step, proof) with "theory" slides under any circumstances. Every slide's JSON type MUST perfectly match the requested type.
 1. "theory" slides: `content` MUST be a few sentences explaining a concept DIRECTLY. Use Markdown. NEVER use storytelling, narrative framings, characters, or imagined scenarios.
 2. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Provide exactly 4 `options`. Make sure exactly one option has `isCorrect: true`.
 3. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word. Include an array of 3 `blankDistractors`.

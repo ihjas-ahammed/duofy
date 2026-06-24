@@ -551,4 +551,27 @@ class DatabaseService {
       print("[DatabaseService] Error deleting global book: $e");
     });
   }
+
+  Future<List<CourseFolder>> fetchFolders() async {
+    final prefs = await SharedPreferences.getInstance();
+    final u = uid;
+    final key = 'user_folders_$u';
+    final jsonStr = prefs.getString(key);
+    if (jsonStr == null) return [];
+    try {
+      final List decoded = jsonDecode(jsonStr);
+      return decoded.map((e) => CourseFolder.fromJson(Map<String, dynamic>.from(e))).toList();
+    } catch (e) {
+      print("[DatabaseService] Error parsing folders: $e");
+      return [];
+    }
+  }
+
+  Future<void> saveFolders(List<CourseFolder> folders) async {
+    final prefs = await SharedPreferences.getInstance();
+    final u = uid;
+    final key = 'user_folders_$u';
+    final jsonStr = jsonEncode(folders.map((f) => f.toJson()).toList());
+    await prefs.setString(key, jsonStr);
+  }
 }

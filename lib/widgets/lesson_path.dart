@@ -218,6 +218,7 @@ class _LessonPathState extends State<LessonPath> {
         task: widget.sectionManifestStatus,
         sectionColor: color,
         initialInstructions: widget.section.customInstructions ?? widget.book.customInstructions,
+        topHeader: widget.topHeader,
         onPlan: widget.onPlanManifest,
       );
     }
@@ -231,6 +232,7 @@ class _LessonPathState extends State<LessonPath> {
         section: widget.section,
         formats: widget.book.formatsForSection(widget.section),
         sectionColor: color,
+        topHeader: widget.topHeader,
         onConfirm: widget.onConfirmFormats,
         onEditFormats: widget.onEditFormats,
         onResetFormats: widget.onResetFormats,
@@ -690,6 +692,7 @@ class _SectionManifestPanel extends StatefulWidget {
   final UnitGenTask? task;
   final Color sectionColor;
   final String? initialInstructions;
+  final Widget? topHeader;
   final void Function(String? instructions, List<String>? selectedQuestions, bool saveGlobally)? onPlan;
 
   const _SectionManifestPanel({
@@ -698,6 +701,7 @@ class _SectionManifestPanel extends StatefulWidget {
     required this.task,
     required this.sectionColor,
     required this.initialInstructions,
+    this.topHeader,
     required this.onPlan,
   });
 
@@ -755,6 +759,10 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (widget.topHeader != null) ...[
+                widget.topHeader!,
+                const SizedBox(height: 16),
+              ],
               Container(
                 width: 72,
                 height: 72,
@@ -880,6 +888,7 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
   final Section section;
   final List<LessonFormat> formats;
   final Color sectionColor;
+  final Widget? topHeader;
   final void Function(List<Unit> confirmedUnits)? onConfirm;
   final VoidCallback? onEditFormats;
   final VoidCallback? onResetFormats;
@@ -888,6 +897,7 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
     required this.section,
     required this.formats,
     required this.sectionColor,
+    this.topHeader,
     required this.onConfirm,
     this.onEditFormats,
     this.onResetFormats,
@@ -907,6 +917,10 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (topHeader != null) ...[
+                topHeader!,
+                const SizedBox(height: 16),
+              ],
               Container(
                 width: 64,
                 height: 64,

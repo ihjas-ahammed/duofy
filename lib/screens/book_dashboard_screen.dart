@@ -1391,10 +1391,82 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   widget.onBookUpdated(widget.book);
                 },
               ),
+            if (section.units.isNotEmpty || section.unitsGenerated)
+              _MenuActionItem(
+                icon: LucideIcons.rotateCcw,
+                title: 'Reset Section Plan',
+                subtitle: 'Delete generated units, lessons, and custom formats',
+                iconColor: AppTheme.duoRed,
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await _confirmAndResetSectionPlan(modIdx, secIdx);
+                },
+              ),
           ],
         );
       },
     );
+  }
+
+  Future<void> _confirmAndResetSectionPlan(int modIdx, int secIdx) async {
+    final section = widget.book.modules[modIdx].sections[secIdx];
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text('Reset Section Plan?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: Text(
+          'This will permanently delete all units, lessons, and custom lesson formats for "${section.title}". Any progress in these lessons will be cleared. This action cannot be undone.',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Reset', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      // 1. Clear completed lessons/progress for this section
+      await ProgressService.clearSectionProgress(section, widget.book.id);
+
+      // 2. Clear units, unit flags, and custom formats
+      final modules = List<Module>.from(widget.book.modules);
+      final sections = List<Section>.from(modules[modIdx].sections);
+      sections[secIdx] = sections[secIdx].copyWith(
+        units: [],
+        unitsGenerated: false,
+        unitFormatsConfirmed: false,
+        lessonFormats: [],
+      );
+      modules[modIdx] = modules[modIdx].copyWith(sections: sections);
+      final newBook = widget.book.copyWith(modules: modules);
+
+      // 3. Save and notify
+      await DatabaseService().saveGeneratedBook(newBook);
+      await _loadProgress(); // Reload local completedLessons set
+      widget.onBookUpdated(newBook);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Section "${section.title}" reset successfully.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to reset section: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _promptGenerateOrScheduleSection(int modIdx, int secIdx, {required bool isScheduled}) async {

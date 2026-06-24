@@ -230,15 +230,13 @@ class _AnalyticsViewState extends State<AnalyticsView> {
         // Determine max XP in graph to scale height
         final maxXP = graphData.map((d) => d['xp'] as int).fold<int>(20, (max, xp) => xp > max ? xp : max);
 
-        return Scaffold(
-          backgroundColor: Colors.transparent,
-          body: RefreshIndicator(
-            color: AppTheme.duoBlue,
-            onRefresh: () async {
-              setState(() {
-                _loadData();
-              });
-            },
+        return RefreshIndicator(
+          color: AppTheme.duoBlue,
+          onRefresh: () async {
+            setState(() {
+              _loadData();
+            });
+          },
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -301,6 +299,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                     crossAxisCount: 2,
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
+                    padding: EdgeInsets.zero,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                     childAspectRatio: 1.4,
@@ -619,9 +618,8 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                 ],
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
     );
   }
 

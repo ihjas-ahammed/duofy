@@ -10,6 +10,7 @@ class CompactBookListItem extends StatelessWidget {
   final double progress;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
+  final Widget? dragHandle;
 
   const CompactBookListItem({
     super.key,
@@ -17,6 +18,7 @@ class CompactBookListItem extends StatelessWidget {
     required this.progress,
     required this.onTap,
     this.onLongPress,
+    this.dragHandle,
   });
 
   String _getMostUsedIcon(Book book) {
@@ -155,12 +157,13 @@ class CompactBookListItem extends StatelessWidget {
                 ),
                 const SizedBox(width: 14),
                 
-                // 3. Trailing Arrow
-                Icon(
-                  LucideIcons.chevronRight,
-                  color: Colors.white.withOpacity(0.2),
-                  size: 20,
-                ),
+                // 3. Trailing Arrow or Drag Handle
+                dragHandle ??
+                    Icon(
+                      LucideIcons.chevronRight,
+                      color: Colors.white.withOpacity(0.2),
+                      size: 20,
+                    ),
               ],
             ),
           ),

@@ -104,6 +104,32 @@ class PdfService {
         out.dispose();
         await file.writeAsBytes(bytes);
         return file;
+      } catch (innerErr) {
+        print('[PdfService] Main isolate Syncfusion open failed ($innerErr). Proceeding with pure raster fallback using pdfx...');
+        try {
+          final out = sync_pdf.PdfDocument();
+          for (final p in pageNumbers) {
+            final imgBytes = await _renderPageToImage(sourcePdf, p);
+            if (imgBytes != null) {
+              out.pageSettings.margins.all = 0;
+              final newPage = out.pages.add();
+              final sync_pdf.PdfImage img = sync_pdf.PdfBitmap(imgBytes);
+              newPage.graphics.drawImage(img, Rect.fromLTWH(0, 0, newPage.size.width, newPage.size.height));
+            }
+          }
+          if (out.pages.count == 0) {
+            out.dispose();
+            throw Exception('extractPages raster fallback: none of the requested pages could be rendered.');
+          }
+          final file = File('$tmpPath/$name');
+          final bytes = await out.save();
+          out.dispose();
+          await file.writeAsBytes(bytes);
+          return file;
+        } catch (rasterErr) {
+          print('[PdfService] Raster fallback failed: $rasterErr. Returning original source PDF as final fallback...');
+          return sourcePdf;
+        }
       } finally {
         doc?.dispose();
       }
@@ -111,15 +137,16 @@ class PdfService {
   }
 
   Future<String> extractTextFromPdfBytes(Uint8List bytes) async {
-    final doc = sync_pdf.PdfDocument(inputBytes: bytes);
+    sync_pdf.PdfDocument? doc;
     try {
+      doc = sync_pdf.PdfDocument(inputBytes: bytes);
       final extractor = sync_pdf.PdfTextExtractor(doc);
       return extractor.extractText();
     } catch (e) {
       print('PdfService extractText error: $e');
       return '';
     } finally {
-      doc.dispose();
+      doc?.dispose();
     }
   }
 
@@ -205,14 +232,27 @@ class PdfService {
   /// Helper to get the total page count of a PDF document.
   Future<int> getPageCount(File pdfFile) async {
     final path = pdfFile.path;
-    return await Isolate.run(() async {
-      final file = File(path);
-      final bytes = await file.readAsBytes();
-      final doc = sync_pdf.PdfDocument(inputBytes: bytes);
-      final count = doc.pages.count;
-      doc.dispose();
-      return count;
-    });
+    try {
+      return await Isolate.run(() async {
+        final file = File(path);
+        final bytes = await file.readAsBytes();
+        final doc = sync_pdf.PdfDocument(inputBytes: bytes);
+        final count = doc.pages.count;
+        doc.dispose();
+        return count;
+      });
+    } catch (e) {
+      print('[PdfService] Isolate getPageCount failed: $e. Falling back to pdfx...');
+      try {
+        final doc = await pdfx.PdfDocument.openFile(pdfFile.path);
+        final count = doc.pagesCount;
+        await doc.close();
+        return count;
+      } catch (err) {
+        print('[PdfService] Fallback getPageCount failed: $err');
+        rethrow;
+      }
+    }
   }
 
   /// Generates a PDF containing placeholder (blank) pages for the entire document,
@@ -285,6 +325,39 @@ class PdfService {
         final bytes = await out.save();
         await file.writeAsBytes(bytes);
         return file;
+      } catch (innerErr) {
+        print('[PdfService] Main isolate generatePlaceholderPdf failed ($innerErr). Falling back to pure raster rendering using pdfx...');
+        sync_pdf.PdfDocument? rasterOut;
+        try {
+          final pdfxDoc = await pdfx.PdfDocument.openFile(sourcePdf.path);
+          final count = pdfxDoc.pagesCount;
+          final pagesToPopulateSet = pagesToPopulate.toSet();
+          
+          rasterOut = sync_pdf.PdfDocument();
+          for (int i = 0; i < count; i++) {
+            rasterOut.pageSettings.size = sync_pdf.PdfPageSize.a4;
+            rasterOut.pageSettings.margins.all = 0;
+            final newPage = rasterOut.pages.add();
+            
+            if (pagesToPopulateSet.contains(i + 1)) {
+              final imgBytes = await _renderPageToImage(sourcePdf, i + 1);
+              if (imgBytes != null) {
+                final sync_pdf.PdfImage img = sync_pdf.PdfBitmap(imgBytes);
+                newPage.graphics.drawImage(img, Rect.fromLTWH(0, 0, newPage.size.width, newPage.size.height));
+              }
+            }
+          }
+          await pdfxDoc.close();
+          final file = File('$tmpPath/$name');
+          final bytes = await rasterOut.save();
+          await file.writeAsBytes(bytes);
+          return file;
+        } catch (rasterErr) {
+          print('[PdfService] Raster fallback for generatePlaceholderPdf failed: $rasterErr. Returning original source PDF as final fallback...');
+          return sourcePdf;
+        } finally {
+          rasterOut?.dispose();
+        }
       } finally {
         doc?.dispose();
         out?.dispose();

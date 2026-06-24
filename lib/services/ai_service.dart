@@ -23,8 +23,8 @@ class AiService {
   /// rate-limit errors trigger the "add your own key" dialog.
   bool _usingDefaultKey = false;
 
-  /// Cached fallback key fetched from Firestore so we only read once.
-  static String? _cachedDefaultKey;
+  /// Cached fallback keys fetched from Firestore so we only read once.
+  static List<String>? _cachedDefaultKeys;
 
   Future<void> _checkPause() async {
     while (activeCanvasRegensCount > 0) {
@@ -45,10 +45,10 @@ class AiService {
     }
     if (keys.isNotEmpty) return keys;
 
-    // --- Fallback: shared default key from Firestore ---
-    if (_cachedDefaultKey != null && _cachedDefaultKey!.isNotEmpty) {
+    // --- Fallback: shared default keys from Firestore ---
+    if (_cachedDefaultKeys != null && _cachedDefaultKeys!.isNotEmpty) {
       _usingDefaultKey = true;
-      return [_cachedDefaultKey!];
+      return _cachedDefaultKeys!;
     }
     try {
       final doc = await FbFirestore.instance
@@ -57,18 +57,32 @@ class AiService {
           .get();
       if (doc.exists) {
         final data = doc.data();
-        final defaultKey = data?['GENAI'] as String?;
-        if (defaultKey != null && defaultKey.trim().isNotEmpty) {
-          _cachedDefaultKey = defaultKey.trim();
+        final genaiData = data?['GENAI'];
+        List<String> defaultKeys = [];
+        if (genaiData is List) {
+          defaultKeys = genaiData
+              .map((e) => e?.toString().trim() ?? '')
+              .where((e) => e.isNotEmpty)
+              .toList();
+        } else if (genaiData is String) {
+          final trimmed = genaiData.trim();
+          if (trimmed.isNotEmpty) {
+            defaultKeys = [trimmed];
+          }
+        }
+        if (defaultKeys.isNotEmpty) {
+          _cachedDefaultKeys = defaultKeys;
           _usingDefaultKey = true;
-          return [_cachedDefaultKey!];
+          return _cachedDefaultKeys!;
         }
       }
     } catch (e) {
-      debugPrint('[AiService] Failed to fetch default API key from Firestore: $e');
+      debugPrint('[AiService] Failed to fetch default API keys from Firestore: $e');
     }
     throw Exception('No API Keys configured. Go to Settings to add your Gemini API key.');
   }
+
+  Future<List<String>> getKeys({String? forcedApiKey}) => _getKeys(forcedApiKey: forcedApiKey);
 
   /// Returns true when the error looks like a rate-limit / quota error.
   bool _isRateLimitError(Object e) {

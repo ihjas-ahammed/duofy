@@ -649,6 +649,56 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
       body: ResponsiveCenter(
         child: Column(
           children: [
+            if (widget.originalPdf.isNotEmpty)
+              Container(
+                margin: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.04),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white.withOpacity(0.08)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(LucideIcons.fileText, color: AppTheme.duoBlue, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: widget.originalPdf.length > 1
+                          ? DropdownButtonHideUnderline(
+                              child: DropdownButton<int>(
+                                value: _selectedFileIndex,
+                                dropdownColor: AppTheme.surface,
+                                icon: const Icon(LucideIcons.chevronDown, size: 14, color: Colors.white70),
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                                isExpanded: true,
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    setState(() {
+                                      _selectedFileIndex = val;
+                                    });
+                                  }
+                                },
+                                items: List.generate(widget.originalPdf.length, (index) {
+                                  final filename = widget.originalPdf[index].path.split(RegExp(r'[/\\]')).last;
+                                  return DropdownMenuItem<int>(
+                                    value: index,
+                                    child: Text('File ${index + 1}: $filename', style: const TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis),
+                                  );
+                                }),
+                              ),
+                            )
+                          : Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Text(
+                                widget.originalPdf.first.path.split(RegExp(r'[/\\]')).last,
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
+              ),
             Expanded(
               flex: 2,
               child: Container(
@@ -715,59 +765,27 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                         ),
                       ),
                     
-                    if (widget.originalPdf.length > 1)
-                      Positioned(
-                        top: 12,
-                        left: 12,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppTheme.surface.withOpacity(0.9),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.white24),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<int>(
-                              value: _selectedFileIndex,
-                              dropdownColor: AppTheme.surface,
-                              icon: const Icon(LucideIcons.chevronDown, size: 14, color: Colors.white70),
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
-                              onChanged: (val) {
-                                if (val != null) {
-                                  setState(() {
-                                    _selectedFileIndex = val;
-                                  });
-                                }
-                              },
-                              items: List.generate(widget.originalPdf.length, (index) {
-                                final filename = widget.originalPdf[index].path.split(RegExp(r'[/\\]')).last;
-                                return DropdownMenuItem<int>(
-                                  value: index,
-                                  child: Text('File ${index + 1}: $filename', style: const TextStyle(fontSize: 11)),
-                                );
-                              }),
-                            ),
-                          ),
-                        ),
-                      ),
-
                     Positioned(
                       bottom: 12,
                       right: 12,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: AppTheme.surface.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white24),
+                          color: Colors.black.withOpacity(0.25),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(_isCurrentFilePdf ? LucideIcons.fileText : LucideIcons.image, size: 14, color: Colors.white54),
-                            const SizedBox(width: 8),
+                            Icon(
+                              _isCurrentFilePdf ? LucideIcons.fileText : LucideIcons.image, 
+                              size: 11, 
+                              color: Colors.white38,
+                            ),
+                            const SizedBox(width: 4),
                             Text(
                               _isCurrentFilePdf ? 'Use Viewer to find exact page #' : 'File ${_selectedFileIndex + 1} of ${widget.originalPdf.length}', 
-                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)
+                              style: const TextStyle(fontSize: 9, color: Colors.white54),
                             ),
                           ],
                         ),

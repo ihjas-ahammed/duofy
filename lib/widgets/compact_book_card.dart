@@ -9,6 +9,7 @@ class CompactBookCard extends StatelessWidget {
   final double progress;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
+  final Widget? dragHandle;
 
   const CompactBookCard({
     super.key,
@@ -16,6 +17,7 @@ class CompactBookCard extends StatelessWidget {
     required this.progress,
     required this.onTap,
     this.onLongPress,
+    this.dragHandle,
   });
 
   String _getMostUsedIcon(Book book) {
@@ -88,51 +90,61 @@ class CompactBookCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: mostUsedColor.withOpacity(0.22), width: 1.2),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+            child: Stack(
               children: [
-                // Top: Seamless Icon (Expanded to consume extra height when resizing)
-                Expanded(
-                  child: Container(
-                    alignment: Alignment.center,
-                    child: Icon(
-                      displayIcon,
-                      color: mostUsedColor,
-                      size: iconSize,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Top: Seamless Icon (Expanded to consume extra height when resizing)
+                    Expanded(
+                      child: Container(
+                        alignment: Alignment.center,
+                        child: Icon(
+                          displayIcon,
+                          color: mostUsedColor,
+                          size: iconSize,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                
-                // Middle: Text with tight, constant padding (no Expanded)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                  child: Text(
-                    book.title,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold, 
-                      fontSize: fontSize, 
-                      color: Colors.white.withOpacity(0.9),
-                      height: 1.15,
+                    
+                    // Middle: Text with tight, constant padding (no Expanded)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      child: Text(
+                        book.title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold, 
+                          fontSize: fontSize, 
+                          color: Colors.white.withOpacity(0.9),
+                          height: 1.15,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                
-                // Bottom: Slim Progress Bar
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 2, 8, 8),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(1.5),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      backgroundColor: mostUsedColor.withOpacity(0.12),
-                      color: mostUsedColor,
-                      minHeight: 3.5,
+                    
+                    // Bottom: Slim Progress Bar
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 2, 8, 8),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(1.5),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          backgroundColor: mostUsedColor.withOpacity(0.12),
+                          color: mostUsedColor,
+                          minHeight: 3.5,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
+                if (dragHandle != null)
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: dragHandle!,
+                  ),
               ],
             ),
           ),

@@ -355,10 +355,11 @@ class GenerationManager extends ChangeNotifier {
       }
       
       // Fetch available keys
-      List<String> keys = prefs.getStringList('gemini_api_keys_list') ?? [];
-      if (keys.isEmpty) {
-        final keysString = prefs.getString('gemini_api_keys') ?? '';
-        keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      List<String> keys = [];
+      try {
+        keys = await _aiService.getKeys();
+      } catch (e) {
+        print('[GenerationManager] Error fetching API keys: $e');
       }
       
       // Execute all 'canvas_regen' tasks immediately
@@ -986,7 +987,7 @@ class GenerationManager extends ChangeNotifier {
       final modules = List<Module>.from(baseBook.modules);
       final sections = List<Section>.from(modules[modIdx].sections);
 
-      final List<LessonFormat> updatedSectionFormats = List.from(sections[secIdx].lessonFormats ?? baseBook.lessonFormats);
+      final List<LessonFormat> updatedSectionFormats = [];
       for (final nf in newFormats) {
         final alreadyExists = updatedSectionFormats.any((lf) =>
             lf.id == nf.id || lf.name.toLowerCase() == nf.name.toLowerCase());

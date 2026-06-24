@@ -175,97 +175,43 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
         final firstPdf = _selectedFiles.first;
         final filename = firstPdf.path.split(RegExp(r'[\\/]')).last;
 
-        final hasBookmarks = await pdfService.hasBookmarks(firstPdf);
-        bool useBookmarks = false;
-        if (hasBookmarks && mounted) {
-          useBookmarks = await showDialog<bool>(
-            context: context,
-            barrierDismissible: false,
-            builder: (ctx) => AlertDialog(
-              backgroundColor: AppTheme.surface,
-              title: const Text('PDF Bookmarks Detected', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              content: const Text(
-                'This PDF contains table-of-contents bookmarks. Would you like to use them for indexing/structure instead of scanning via AI?',
-                style: TextStyle(color: Colors.white70),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(false),
-                  child: const Text('No, scan via AI', style: TextStyle(color: Colors.white54)),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(true),
-                  child: const Text('Yes, use bookmarks', style: TextStyle(color: AppTheme.duoGreen)),
-                ),
-              ],
+        final customPrompt = _customPromptController.text.trim();
+        final presetTitle = _titleController.text.trim().isEmpty ? null : _titleController.text.trim();
+        if (_mode == GenerationMode.handout) {
+          _showHandoutPrompt(_selectedFiles, presetTitle ?? filename);
+        } else if (_indexMode == IndexMode.manual || _indexMode == IndexMode.chapters) {
+          Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => IndexPickerScreen(
+              sourcePdf: firstPdf,
+              filename: presetTitle ?? filename,
+              syllabusFiles: finalSyllabusFiles,
+              isCourse: _mode == GenerationMode.course,
+              allSourcePdfs: _selectedFiles,
+              currentPdfIndex: 0,
+              collectedIndexPages: const [],
+              collectedChapter1StartPages: const [],
+              isAutoMode: false,
+              isHandout: _mode == GenerationMode.handout,
+              indexMode: _indexMode,
+              customIndexingPrompt: customPrompt.isNotEmpty ? customPrompt : null,
             ),
-          ) ?? false;
-        }
-
-        if (useBookmarks && mounted) {
-          final bookmarks = await pdfService.extractBookmarks(firstPdf);
-          var mappedBook = pdfService.mapBookmarksToBook(bookmarks, filename, firstPdf);
-          final sourceList = _selectedFiles;
-          
-          final presetTitle = _titleController.text.trim();
-          if (presetTitle.isNotEmpty) {
-            mappedBook = mappedBook.copyWith(title: presetTitle);
-          }
-          await GenerationManager.instance.startBookGenerationFromBookmarks(
-            sourceList,
-            presetTitle.isNotEmpty ? presetTitle : filename,
-            mappedBook,
-          );
-          
-          final task = GenerationManager.instance.activeTasks.last;
-          if (mounted) {
-            Navigator.of(context).pushReplacement(MaterialPageRoute(
-              builder: (_) => PdfSplitPreviewScreen(
-                taskId: task.id,
-                originalPdf: sourceList,
-                skeletonBook: mappedBook,
-              ),
-            ));
-          }
+          ));
         } else {
-          final customPrompt = _customPromptController.text.trim();
-          final presetTitle = _titleController.text.trim().isEmpty ? null : _titleController.text.trim();
-          if (_mode == GenerationMode.handout) {
-            _showHandoutPrompt(_selectedFiles, presetTitle ?? filename);
-          } else if (_indexMode == IndexMode.manual || _indexMode == IndexMode.chapters) {
-            Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => IndexPickerScreen(
-                sourcePdf: firstPdf,
-                filename: presetTitle ?? filename,
-                syllabusFiles: finalSyllabusFiles,
-                isCourse: _mode == GenerationMode.course,
-                allSourcePdfs: _selectedFiles,
-                currentPdfIndex: 0,
-                collectedIndexPages: const [],
-                collectedChapter1StartPages: const [],
-                isAutoMode: false,
-                isHandout: _mode == GenerationMode.handout,
-                indexMode: _indexMode,
-                customIndexingPrompt: customPrompt.isNotEmpty ? customPrompt : null,
-              ),
-            ));
-          } else {
-            Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => AutoIndexScreen(
-                sourcePdf: firstPdf,
-                filename: presetTitle ?? filename,
-                syllabusFiles: finalSyllabusFiles,
-                isCourse: _mode == GenerationMode.course,
-                allSourcePdfs: _selectedFiles,
-                currentPdfIndex: 0,
-                collectedIndexPages: const [],
-                collectedChapter1StartPages: const [],
-                isAutoMode: true,
-                isHandout: _mode == GenerationMode.handout,
-                customIndexingPrompt: customPrompt.isNotEmpty ? customPrompt : null,
-              ),
-            ));
-          }
+          Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => AutoIndexScreen(
+              sourcePdf: firstPdf,
+              filename: presetTitle ?? filename,
+              syllabusFiles: finalSyllabusFiles,
+              isCourse: _mode == GenerationMode.course,
+              allSourcePdfs: _selectedFiles,
+              currentPdfIndex: 0,
+              collectedIndexPages: const [],
+              collectedChapter1StartPages: const [],
+              isAutoMode: true,
+              isHandout: _mode == GenerationMode.handout,
+              customIndexingPrompt: customPrompt.isNotEmpty ? customPrompt : null,
+            ),
+          ));
         }
       } catch (e) {
         if (mounted) {
