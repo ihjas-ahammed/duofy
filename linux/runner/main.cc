@@ -3,6 +3,9 @@
 #include <cstdlib>
 
 int main(int argc, char** argv) {
+  // Fix keyboard input blocking issues with certain input methods (IBus / Fcitx) in Flutter on Linux.
+  setenv("GTK_IM_MODULE", "xim", 1);
+
   // initCEFProcesses calls CefExecuteProcess; for CEF subprocesses (renderer,
   // GPU, zygote) it exits immediately — they never reach g_application_run.
   initCEFProcesses(argc, argv);

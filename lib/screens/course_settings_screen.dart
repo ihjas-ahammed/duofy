@@ -480,6 +480,10 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
     switch (type) {
       case 'theory':
         return LucideIcons.bookOpen;
+      case 'concept_pieces':
+        return LucideIcons.gitCommit;
+      case 'descriptive':
+        return LucideIcons.text;
       case 'quiz':
         return LucideIcons.list;
       case 'fill_in_blank':

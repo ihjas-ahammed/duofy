@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -18,6 +19,10 @@ import '../widgets/slide_views/fill_in_blank_view.dart';
 import '../widgets/slide_views/numerical_view.dart';
 import '../widgets/slide_views/one_word_view.dart';
 import '../widgets/slide_views/interactive_proof_view.dart';
+import '../widgets/slide_views/theory_view.dart';
+import '../widgets/slide_views/concept_pieces_view.dart';
+import '../widgets/slide_views/descriptive_view.dart';
+import '../widgets/slide_views/custom_html_view.dart';
 import '../widgets/lesson_assistant_chat.dart';
 import 'lesson_complete_screen.dart';
 
@@ -196,47 +201,71 @@ class _LessonScreenState extends State<LessonScreen> {
     _refreshFromCache();
   }
 
-  /// Reads the freshest book snapshot from the cache and updates [_lesson]
-  /// with the latest copy at our indices. Cheap — `getBookFromCache` is an
-  /// in-memory map lookup in DatabaseService.
   Future<void> _refreshFromCache() async {
     if (!_canRegenerateCanvas) return;
     try {
       final fresh = await DatabaseService().getBookFromCache(widget.book!.id);
       if (fresh == null || !mounted) return;
-      final lesson = fresh
-          .modules[widget.modIdx!]
-          .sections[widget.secIdx!]
-          .units[widget.unitIdx!]
-          .lessons[widget.lessonIdx!];
-      // Only setState if the slides identity or the canvas svg actually
-      // changed, to avoid rebuilds on every notifier tick.
-      if (lesson.canvasSvg != _lesson.canvasSvg ||
-          identical(lesson.slides, _lesson.slides) == false) {
-        setState(() {
-          _lesson = lesson;
-          _failedCanvasIds.remove(lesson.id);
-          // Refresh the queue so each Slide object reflects the latest
-          // canvasSvg / content. Length and order remain stable because
-          // we're looking up the same lesson in the same book.
-          _slideQueue = List.of(_lesson.slides);
-          // The queue may have grown earlier (wrong-answer repeats are
-          // appended) and _currentIndex advanced into that region. Rebuilding
-          // from the base slides shrinks it, so clamp the cursor back into
-          // range to avoid a RangeError on the next build.
-          if (_currentIndex >= _slideQueue.length) {
-            _currentIndex = _slideQueue.isEmpty ? 0 : _slideQueue.length - 1;
+      
+      Lesson? lesson;
+      final mIdx = widget.modIdx!;
+      final sIdx = widget.secIdx!;
+      final uIdx = widget.unitIdx!;
+      final lIdx = widget.lessonIdx!;
+
+      if (mIdx < fresh.modules.length) {
+        final mod = fresh.modules[mIdx];
+        if (sIdx < mod.sections.length) {
+          final sec = mod.sections[sIdx];
+          if (uIdx < sec.units.length) {
+            final un = sec.units[uIdx];
+            if (lIdx < un.lessons.length) {
+              lesson = un.lessons[lIdx];
+            }
           }
-        });
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            _triggerBackgroundCanvasGeneration();
-          }
-        });
+        }
       }
+
+      if (lesson == null) {
+        // Fallback search by ID
+        for (final mod in fresh.modules) {
+          for (final sec in mod.sections) {
+            for (final un in sec.units) {
+              for (final les in un.lessons) {
+                if (les.id == _lesson.id) {
+                  lesson = les;
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (lesson == null) return;
+
+      setState(() {
+        _lesson = lesson!;
+        _failedCanvasIds.remove(lesson.id);
+        
+        // Update elements in _slideQueue in-place to reflect updated slide contents
+        final freshSlidesMap = {for (var s in lesson.slides) s.id: s};
+        for (int i = 0; i < _slideQueue.length; i++) {
+          final currentSlide = _slideQueue[i];
+          final freshSlide = freshSlidesMap[currentSlide.id];
+          if (freshSlide != null) {
+            _slideQueue[i] = freshSlide;
+          }
+        }
+      });
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _triggerBackgroundCanvasGeneration();
+        }
+      });
     } catch (_) {
-      // Indices may be stale (book regenerated). Ignore — we keep showing
-      // the snapshot we were constructed with.
+      // Ignore
     }
   }
 
@@ -244,7 +273,7 @@ class _LessonScreenState extends State<LessonScreen> {
     _slideQueue = List.of(_lesson.slides);
 
     for (var slide in _slideQueue) {
-      if (['quiz', 'fill_in_blank', 'one_word', 'numerical', 'proof', 'step_by_step'].contains(slide.type)) {
+      if (['quiz', 'fill_in_blank', 'one_word', 'numerical', 'proof', 'step_by_step', 'descriptive', 'custom_html'].contains(slide.type)) {
         _totalInteractive++;
       }
     }
@@ -418,7 +447,7 @@ class _LessonScreenState extends State<LessonScreen> {
   }
 
   bool _isCustomBottomBar(Slide slide) {
-    return slide.type == 'proof' || slide.type == 'step_by_step';
+    return slide.type == 'proof' || slide.type == 'step_by_step' || slide.type == 'descriptive' || slide.type == 'custom_html';
   }
 
   String _getCorrectAnswerText(Slide slide) {
@@ -468,43 +497,107 @@ class _LessonScreenState extends State<LessonScreen> {
   /// the GenerationManager broadcasts the updated book.
   Future<void> _promptRegenerateSlide(Slide slide) async {
     final noteCtrl = TextEditingController();
+
+    final slideTypes = {
+      'theory': 'Theory Conceptual',
+      'concept_pieces': 'Concept Pieces (Connected)',
+      'quiz': 'Multiple Choice Quiz',
+      'fill_in_blank': 'Fill In The Blank',
+      'one_word': 'One Word Recall',
+      'numerical': 'Numerical Calculation',
+      'proof': 'Step-by-Step Proof',
+      'descriptive': 'Descriptive Response',
+      'custom_html': 'Custom HTML Page',
+    };
+
+    String selectedType = slide.type;
+    if (!slideTypes.containsKey(selectedType)) {
+      if (selectedType == 'theory_group') {
+        selectedType = 'theory';
+      } else if (selectedType == 'step_by_step') {
+        selectedType = 'proof';
+      } else {
+        selectedType = 'theory';
+      }
+    }
+
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Regenerate this slide?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'The AI will rewrite this slide using the source material. Optionally tell it what to change.',
-              style: TextStyle(color: Colors.white70, fontSize: 13),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: noteCtrl,
-              maxLines: 2,
-              autofocus: true,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Optional note — e.g. "make it simpler"',
-                hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
-                filled: true,
-                fillColor: Colors.black26,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              backgroundColor: AppTheme.surface,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              title: const Text('Regenerate this slide?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'The AI will rewrite this slide using the source material. Optionally tell it what to change.',
+                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: noteCtrl,
+                    maxLines: 2,
+                    autofocus: true,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Optional note — e.g. "make it simpler"',
+                      hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+                      filled: true,
+                      fillColor: Colors.black26,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Slide Type:',
+                    style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<String>(
+                    dropdownColor: AppTheme.surface,
+                    value: selectedType,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.black26,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    items: slideTypes.entries.map((entry) {
+                      return DropdownMenuItem<String>(
+                        value: entry.key,
+                        child: Text(entry.value),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setStateDialog(() {
+                          selectedType = val;
+                        });
+                      }
+                    },
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Regenerate', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Regenerate', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
 
     final note = noteCtrl.text.trim();
@@ -514,15 +607,56 @@ class _LessonScreenState extends State<LessonScreen> {
     final slideIdx = _lesson.slides.indexWhere((s) => s.id == slide.id);
     if (slideIdx < 0) return;
 
-    await GenerationManager.instance.regenerateSlide(
-      book: widget.book!,
-      modIdx: widget.modIdx!,
-      secIdx: widget.secIdx!,
-      unitIdx: widget.unitIdx!,
-      lessonIdx: widget.lessonIdx!,
-      slideIdx: slideIdx,
-      note: note.isEmpty ? null : note,
+    // Show a loading dialog immediately
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: AppTheme.duoBlue),
+            SizedBox(height: 16),
+            Text(
+              'Regenerating slide...',
+              style: TextStyle(color: Colors.white, fontSize: 14, decoration: TextDecoration.none),
+            ),
+          ],
+        ),
+      ),
     );
+
+    final size = MediaQuery.of(context).size;
+    final screenSizeInfo = 'Screen Width: ${size.width.toStringAsFixed(0)}px, Screen Height: ${size.height.toStringAsFixed(0)}px';
+
+    try {
+      await GenerationManager.instance.regenerateSlide(
+        book: widget.book!,
+        modIdx: widget.modIdx!,
+        secIdx: widget.secIdx!,
+        unitIdx: widget.unitIdx!,
+        lessonIdx: widget.lessonIdx!,
+        slideIdx: slideIdx,
+        note: note.isEmpty ? null : note,
+        targetType: selectedType,
+        screenSizeInfo: screenSizeInfo,
+      );
+
+      if (mounted) {
+        Navigator.of(context).pop(); // pop the loading dialog
+      }
+      await _refreshFromCache();
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop(); // pop the loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error regenerating slide: $e'),
+            backgroundColor: AppTheme.duoRed,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _promptDeleteSlide(Slide slide) async {
@@ -594,7 +728,7 @@ class _LessonScreenState extends State<LessonScreen> {
         for (var unit in sec.units) {
           for (var lesson in unit.lessons) {
             for (var slide in lesson.slides) {
-              if (slide.type == 'theory') {
+              if (slide.type == 'theory' || slide.type == 'concept_pieces') {
                 notesParts.add('**${slide.title}**\n${slide.content}');
               }
             }
@@ -608,7 +742,7 @@ class _LessonScreenState extends State<LessonScreen> {
 
     if (sectionNotes.isEmpty) {
       sectionNotes = _lesson.slides
-          .where((s) => s.type == 'theory')
+          .where((s) => s.type == 'theory' || s.type == 'concept_pieces')
           .map((s) => '**${s.title}**\n${s.content}')
           .join('\n\n');
     }
@@ -739,6 +873,33 @@ class _LessonScreenState extends State<LessonScreen> {
 
   Widget _buildSlideContent(Slide slide, Widget? bottomBar) {
     switch (slide.type) {
+      case 'descriptive':
+        return DescriptiveView(
+          slide: slide,
+          lessonCanvas: _buildLessonCanvas(),
+          onComplete: () {
+            HapticFeedback.heavyImpact();
+            setState(() {
+              _isCorrect = true;
+              _answered = true;
+              _correctAttempts++;
+            });
+            _nextSlide();
+          },
+        );
+      case 'custom_html':
+        return CustomHtmlView(
+          slide: slide,
+          onComplete: () {
+            HapticFeedback.heavyImpact();
+            setState(() {
+              _isCorrect = true;
+              _answered = true;
+              _correctAttempts++;
+            });
+            _nextSlide();
+          },
+        );
       case 'step_by_step':
       case 'proof':
         final slideIdx = _lesson.slides.indexWhere((s) => identical(s, slide));
@@ -804,123 +965,25 @@ class _LessonScreenState extends State<LessonScreen> {
           onChanged: (val) => setState(() => _wordInput = val),
           bottomBar: bottomBar,
         );
+      case 'concept_pieces':
+        final hasConceptCanvas = (_lesson.canvasPrompt?.trim().isNotEmpty ?? false) && !_failedCanvasIds.contains(_lesson.id);
+        return ConceptPiecesView(
+          slide: slide,
+          lessonCanvas: _buildLessonCanvas(),
+          bottomBar: bottomBar,
+          hasCanvas: hasConceptCanvas,
+          lessonTitle: _lesson.title,
+        );
       case 'theory':
       case 'theory_group':
       default:
-        final hasCanvas = (_lesson.canvasPrompt?.trim().isNotEmpty ?? false) && !_failedCanvasIds.contains(_lesson.id);
-        // Wrap theory content matching LessonView.tsx default renderer (glass panel)
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-          child: CustomScrollView(
-             physics: const BouncingScrollPhysics(),
-             slivers: [
-               SliverToBoxAdapter(
-                 child: Column(
-                    children: [
-                       // Lesson-level canvas stacked above the theory text
-                       _buildLessonCanvas(),
-    
-                       if (!hasCanvas)
-                         Padding(
-                           padding: const EdgeInsets.only(bottom: 16.0, top: 16.0),
-                           child: Text(
-                             _lesson.title,
-                             style: const TextStyle(
-                               fontSize: 28,
-                               fontWeight: FontWeight.w900,
-                               color: Colors.white,
-                               letterSpacing: -0.5,
-                             ),
-                             textAlign: TextAlign.center,
-                           ),
-                         ),
-    
-                       if (!hasCanvas && slide.title.isNotEmpty && slide.title.toLowerCase() != _lesson.title.toLowerCase())
-                         Padding(
-                            padding: const EdgeInsets.only(bottom: 24.0, top: 16.0),
-                            child: Text(
-                              slide.title,
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                letterSpacing: -0.5,
-                              ),
-                              textAlign: TextAlign.center,
-                            )
-                         ),
-                       Container(
-                         width: double.infinity,
-                         padding: const EdgeInsets.all(24),
-                         decoration: AppTheme.glassDecoration.copyWith(
-                            borderRadius: hasCanvas
-                                ? const BorderRadius.vertical(bottom: Radius.circular(24))
-                                : BorderRadius.circular(24),
-                            color: Colors.black.withOpacity(0.4),
-                            border: hasCanvas
-                                ? Border(
-                                    left: BorderSide(color: Colors.white.withOpacity(0.1)),
-                                    right: BorderSide(color: Colors.white.withOpacity(0.1)),
-                                    bottom: BorderSide(color: Colors.white.withOpacity(0.1)),
-                                  )
-                                : null,
-                         ),
-                         child: Builder(
-                           builder: (context) {
-                             final lines = slide.content.split('\n');
-                             return Column(
-                               crossAxisAlignment: CrossAxisAlignment.start,
-                               mainAxisSize: MainAxisSize.min,
-                               children: [
-                                 if (hasCanvas && slide.title.isNotEmpty)
-                                   Padding(
-                                     padding: const EdgeInsets.only(bottom: 16.0),
-                                     child: Center(
-                                       child: Text(
-                                         slide.title,
-                                         style: const TextStyle(
-                                           fontSize: 24,
-                                           fontWeight: FontWeight.w900,
-                                           color: Colors.white,
-                                           letterSpacing: -0.5,
-                                         ),
-                                         textAlign: TextAlign.center,
-                                       ),
-                                     ),
-                                   ),
-                                 ...lines.map((line) {
-                                   if (line.isEmpty) {
-                                     return const SizedBox(height: 8);
-                                   }
-                                   return Padding(
-                                     padding: const EdgeInsets.symmetric(vertical: 4.0),
-                                     child: MathMarkdown(
-                                       data: line,
-                                       textStyle: const TextStyle(fontSize: 16, color: Colors.white),
-                                     ),
-                                   );
-                                 }),
-                               ],
-                             );
-                           }
-                         ),
-                       ),
-                    ]
-                 ),
-               ),
-               if (bottomBar != null)
-                 SliverFillRemaining(
-                   hasScrollBody: false,
-                   child: Column(
-                     mainAxisAlignment: MainAxisAlignment.end,
-                     children: [
-                       const SizedBox(height: 24),
-                       bottomBar,
-                     ],
-                   ),
-                 ),
-             ],
-          ),
+        final hasTheoryCanvas = (_lesson.canvasPrompt?.trim().isNotEmpty ?? false) && !_failedCanvasIds.contains(_lesson.id);
+        return TheoryView(
+          slide: slide,
+          lessonCanvas: _buildLessonCanvas(),
+          bottomBar: bottomBar,
+          hasCanvas: hasTheoryCanvas,
+          lessonTitle: _lesson.title,
         );
     }
   }
@@ -1077,16 +1140,18 @@ class _LessonScreenState extends State<LessonScreen> {
                           hintStyle: TextStyle(color: Colors.white24),
                         ),
                       )
-                    : GestureDetector(
-                        behavior: HitTestBehavior.translucent,
-                        onDoubleTap: () {
-                          setState(() {
-                            _editController.text = slide.content;
-                            _isEditingMode = true;
-                          });
-                        },
-                        child: _buildSlideContent(slide, bottomBar),
-                      ),
+                    : (['descriptive', 'one_word', 'numerical', 'fill_in_blank', 'custom_html'].contains(slide.type)
+                        ? _buildSlideContent(slide, bottomBar)
+                        : GestureDetector(
+                            behavior: HitTestBehavior.translucent,
+                            onDoubleTap: () {
+                              setState(() {
+                                _editController.text = slide.content;
+                                _isEditingMode = true;
+                              });
+                            },
+                            child: _buildSlideContent(slide, bottomBar),
+                          )),
               )
             ),
             

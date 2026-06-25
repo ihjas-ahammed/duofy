@@ -732,25 +732,36 @@ class GenerationManager extends ChangeNotifier {
     required Book bookContext,
     String? chunkPath,
     String? note,
+    String? targetType,
+    String? screenSizeInfo,
   }) async {
-    final task = AiTask(
-      id: 'slide_${DateTime.now().millisecondsSinceEpoch}_${slide.id}',
-      title: 'Regenerate Slide text',
-      bookId: bookContext.id,
-      type: 'slide_regen',
-      generateGraphics: false,
-      isScheduled: false,
-      params: {
-        'slide': slide.toJson(),
-        'lesson': lesson.toJson(),
-        'bookContext': bookContext.toJson(),
-        'chunkPath': chunkPath,
-        'note': note,
-      },
-    );
-    _enqueueTaskObject(task);
-    final result = await task.completer.future;
-    return result as Slide?;
+    Slide? result;
+    try {
+      _pauseAllOtherTasks();
+      
+      final task = AiTask(
+        id: 'slide_${DateTime.now().millisecondsSinceEpoch}_${slide.id}',
+        title: 'Regenerate Slide text',
+        bookId: bookContext.id,
+        type: 'slide_regen',
+        generateGraphics: false,
+        isScheduled: false,
+        params: {
+          'slide': slide.toJson(),
+          'lesson': lesson.toJson(),
+          'bookContext': bookContext.toJson(),
+          'chunkPath': chunkPath,
+          'note': note,
+          'targetType': targetType,
+          'screenSizeInfo': screenSizeInfo,
+        },
+      );
+      _enqueueTaskObject(task, highPriority: true);
+      result = await task.completer.future as Slide?;
+    } finally {
+      _resumeAllPausedTasks();
+    }
+    return result;
   }
 
   // ---------------------------------------------------------------------------
@@ -828,6 +839,8 @@ class GenerationManager extends ChangeNotifier {
     final bookContextJson = task.params['bookContext'] as Map<String, dynamic>;
     final chunkPath = task.params['chunkPath'] as String?;
     final note = task.params['note'] as String?;
+    final targetType = task.params['targetType'] as String?;
+    final screenSizeInfo = task.params['screenSizeInfo'] as String?;
     
     final result = await _aiService.regenerateSlide(
       slide: Slide.fromJson(slideJson),
@@ -836,6 +849,8 @@ class GenerationManager extends ChangeNotifier {
       chunkPath: chunkPath,
       note: note,
       forcedApiKey: apiKey,
+      targetType: targetType,
+      screenSizeInfo: screenSizeInfo,
     );
     task.completer.complete(result);
   }
@@ -1357,6 +1372,8 @@ class GenerationManager extends ChangeNotifier {
     final format = LessonFormat.fromJson(formatJson);
     final String lessonId = task.params['lessonId'] as String;
 
+    final String? screenSizeInfo = task.params['screenSizeInfo'] as String?;
+
     final notifId = ('custom_gen_$lessonId').hashCode;
     await NotificationService.showProgress(notifId, 'Creating custom lesson', 'Preparing...', indeterminate: true);
 
@@ -1393,10 +1410,13 @@ class GenerationManager extends ChangeNotifier {
           totalSlides: totalSlides,
           bookContext: ctxBook,
           forcedApiKey: apiKey,
+          screenSizeInfo: screenSizeInfo,
         );
 
         if (slide != null) {
-          generatedSlides.add(slide);
+          final uniqueSlideId = '$lessonId-s${i + 1}';
+          final updatedSlide = slide.copyWith(id: uniqueSlideId);
+          generatedSlides.add(updatedSlide);
           
           final base = (await _dbService.getBookFromCache(book.id)) ?? book;
           final mods = List<Module>.from(base.modules);
@@ -1436,6 +1456,7 @@ class GenerationManager extends ChangeNotifier {
     required List<File> selectedFiles,
     required LessonFormat format,
     required String lessonId,
+    String? screenSizeInfo,
   }) async {
     _enqueue(
       title: 'Generate Custom Lesson',
@@ -1455,6 +1476,7 @@ class GenerationManager extends ChangeNotifier {
         'filePaths': selectedFiles.map((f) => f.path).toList(),
         'format': format.toJson(),
         'lessonId': lessonId,
+        'screenSizeInfo': screenSizeInfo,
       },
     );
   }
@@ -1726,6 +1748,7 @@ class GenerationManager extends ChangeNotifier {
   final Set<String> activeCanvasRegens = {};
   final Set<String> activeSlideRegens = {};
   final Set<String> activeLessonRegens = {};
+  final List<AiTask> _pausedTasks = [];
 
   Future<void> startSectionUnitManifest(
     Book book,
@@ -2006,34 +2029,86 @@ class GenerationManager extends ChangeNotifier {
     required int lessonIdx,
     required int slideIdx,
     String? note,
+    String? targetType,
+    String? screenSizeInfo,
   }) async {
+    final base = (await _dbService.getBookFromCache(book.id)) ?? book;
+
     final lesson = book.modules[modIdx].sections[secIdx].units[unitIdx].lessons[lessonIdx];
     final slide = lesson.slides[slideIdx];
+
+    int targetModIdx = -1;
+    int targetSecIdx = -1;
+    int targetUnitIdx = -1;
+    int targetLessonIdx = -1;
+
+    for (int m = 0; m < base.modules.length; m++) {
+      final mod = base.modules[m];
+      for (int s = 0; s < mod.sections.length; s++) {
+        final sec = mod.sections[s];
+        for (int u = 0; u < sec.units.length; u++) {
+          final un = sec.units[u];
+          for (int l = 0; l < un.lessons.length; l++) {
+            if (un.lessons[l].id == lesson.id) {
+              targetModIdx = m;
+              targetSecIdx = s;
+              targetUnitIdx = u;
+              targetLessonIdx = l;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    if (targetModIdx == -1 || targetSecIdx == -1 || targetUnitIdx == -1 || targetLessonIdx == -1) {
+      targetModIdx = modIdx;
+      targetSecIdx = secIdx;
+      targetUnitIdx = unitIdx;
+      targetLessonIdx = lessonIdx;
+    }
+
+    final freshLesson = base.modules[targetModIdx].sections[targetSecIdx].units[targetUnitIdx].lessons[targetLessonIdx];
+
     if (activeSlideRegens.contains(slide.id)) return;
     activeSlideRegens.add(slide.id);
     notifyListeners();
+
     try {
-      final String? chunkPath = book.modules[modIdx].sections[secIdx].units[unitIdx].pdfPath ??
-          book.modules[modIdx].sections[secIdx].pdfPath;
+      final String? chunkPath = base.modules[targetModIdx].sections[targetSecIdx].units[targetUnitIdx].pdfPath ??
+          base.modules[targetModIdx].sections[targetSecIdx].pdfPath;
+
       final fresh = await regenerateSlideTask(
         slide: slide,
-        lesson: lesson,
-        bookContext: book,
+        lesson: freshLesson,
+        bookContext: base,
         chunkPath: chunkPath,
         note: note,
+        targetType: targetType,
+        screenSizeInfo: screenSizeInfo,
       );
-      if (fresh == null) return;
-      final base = (await _dbService.getBookFromCache(book.id)) ?? book;
+
+      if (fresh == null) {
+        throw Exception('Failed to regenerate slide: empty response from AI.');
+      }
+
       final mods = List<Module>.from(base.modules);
-      final secs = List<Section>.from(mods[modIdx].sections);
-      final uns = List<Unit>.from(secs[secIdx].units);
-      final lessons = List<Lesson>.from(uns[unitIdx].lessons);
-      final slides = List<Slide>.from(lessons[lessonIdx].slides);
-      slides[slideIdx] = fresh;
-      lessons[lessonIdx] = lessons[lessonIdx].copyWith(slides: slides);
-      uns[unitIdx] = uns[unitIdx].copyWith(lessons: lessons);
-      secs[secIdx] = secs[secIdx].copyWith(units: uns);
-      mods[modIdx] = mods[modIdx].copyWith(sections: secs);
+      final secs = List<Section>.from(mods[targetModIdx].sections);
+      final uns = List<Unit>.from(secs[targetSecIdx].units);
+      final lessons = List<Lesson>.from(uns[targetUnitIdx].lessons);
+      final slides = List<Slide>.from(lessons[targetLessonIdx].slides);
+
+      int targetSlideIdx = slides.indexWhere((s) => s.id == slide.id);
+      if (targetSlideIdx == -1) {
+        targetSlideIdx = slideIdx;
+      }
+
+      slides[targetSlideIdx] = fresh;
+      lessons[targetLessonIdx] = lessons[targetLessonIdx].copyWith(slides: slides);
+      uns[targetUnitIdx] = uns[targetUnitIdx].copyWith(lessons: lessons);
+      secs[targetSecIdx] = secs[targetSecIdx].copyWith(units: uns);
+      mods[targetModIdx] = mods[targetModIdx].copyWith(sections: secs);
+
       final newBook = base.copyWith(modules: mods);
       await _dbService.saveGeneratedBook(newBook);
       _bookUpdateController.add(newBook);
@@ -2166,6 +2241,51 @@ class GenerationManager extends ChangeNotifier {
     } catch (e) {
       print('[GenerationManager] Error cancelling notification: $e');
     }
+  }
+
+  void _pauseAllOtherTasks() {
+    final otherTasks = queue
+        .where((t) => t.type != 'slide_regen' && (t.status == 'running' || t.status == 'queued'))
+        .toList();
+
+    for (final t in otherTasks) {
+      t.status = 'failed';
+      t.errorMessage = 'Paused for priority slide regeneration.';
+      t.statusMessage = 'Paused';
+      if (!t.completer.isCompleted) {
+        t.completer.completeError(Exception('Paused for priority task'));
+      }
+      _clearTaskNotification(t);
+      _pausedTasks.add(t);
+    }
+    
+    queue.removeWhere((t) => t.type != 'slide_regen' && (t.status == 'running' || t.status == 'queued'));
+    
+    _syncActiveMapsWithQueue();
+    notifyListeners();
+    _saveQueueToPrefs();
+  }
+
+  void _resumeAllPausedTasks() {
+    if (_pausedTasks.isEmpty) return;
+    for (final t in _pausedTasks) {
+      final newTask = AiTask(
+        id: t.id,
+        title: t.title,
+        bookId: t.bookId,
+        moduleId: t.moduleId,
+        sectionId: t.sectionId,
+        unitId: t.unitId,
+        type: t.type,
+        generateGraphics: t.generateGraphics,
+        isScheduled: t.isScheduled,
+        status: 'queued',
+        statusMessage: 'Queued',
+        params: t.params,
+      );
+      _enqueueTaskObject(newTask);
+    }
+    _pausedTasks.clear();
   }
 
   void cancelQueuedTask(String id) {

@@ -84,6 +84,11 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
           }
           if (allRestored) {
             _successMessage = "All PDF reference chunks successfully restored!";
+            Future.delayed(const Duration(milliseconds: 300), () {
+              if (mounted) {
+                Navigator.of(context).pop();
+              }
+            });
           }
         }
         _isRestoring = hasActiveRunningTask;

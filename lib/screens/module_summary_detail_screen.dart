@@ -18,7 +18,7 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
       for (var unit in section.units) {
         for (var lesson in unit.lessons) {
           for (var slide in lesson.slides) {
-            if (slide.type == 'theory') {
+            if (slide.type == 'theory' || slide.type == 'concept_pieces') {
               moduleTheorySlides.add(slide);
             }
           }

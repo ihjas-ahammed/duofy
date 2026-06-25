@@ -1475,10 +1475,23 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
           final acceptedFormat = (claimedFormat != null && validFormatIds.contains(claimedFormat))
               ? claimedFormat
               : bookContext.defaultFormatId;
+          int slideIdx = 1;
+          final Set<String> seenSuffixes = {};
+          final updatedSlides = lesson.slides.map((s) {
+            var suffix = s.id.split('-').last.trim();
+            if (suffix.isEmpty || suffix == '%slide_id%' || suffix == 'null' || suffix == s.id || seenSuffixes.contains(suffix)) {
+              suffix = 's${slideIdx++}';
+              while (seenSuffixes.contains(suffix)) {
+                suffix = 's${slideIdx++}';
+              }
+            }
+            seenSuffixes.add(suffix);
+            return s.copyWith(id: '$uniqueLessonId-$suffix');
+          }).toList();
           return lesson.copyWith(
             id: uniqueLessonId,
             formatId: acceptedFormat,
-            slides: lesson.slides.map((s) => s.copyWith(id: '$uniqueLessonId-${s.id}')).toList(),
+            slides: updatedSlides,
           );
         } catch (e) {
           lastErr = e;
@@ -1561,13 +1574,16 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     }
     if (fresh == null) return null;
 
-    // Preserve the original lesson id so the unit's lesson order stays stable.
+    int slideIdx = 1;
     fresh = fresh.copyWith(
       id: lesson.id,
       formatId: targetFormatId,
       slides: fresh.slides.map((s) {
         // Rewrite slide ids so they're rooted on the kept lesson id.
-        final tail = s.id.split('-').last;
+        var tail = s.id.split('-').last;
+        if (tail.isEmpty || tail == s.id) {
+          tail = 's${slideIdx++}';
+        }
         return s.copyWith(id: '${lesson.id}-$tail');
       }).toList(),
     );
@@ -1582,10 +1598,6 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     return fresh;
   }
 
-  /// Regenerates a single [slide] inside [lesson], optionally steered by a
-  /// free-text [note]. Re-uses the source [chunkPath] (the section/unit PDF)
-  /// for grounding. Returns a fresh [Slide] of the same type and id, or null
-  /// when every model/key combination fails (caller keeps the old slide).
   Future<Slide?> regenerateSlide({
     required Slide slide,
     required Lesson lesson,
@@ -1593,6 +1605,8 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     String? chunkPath,
     String? note,
     String? forcedApiKey,
+    String? targetType,
+    String? screenSizeInfo,
   }) async {
     await _checkPause();
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
@@ -1609,15 +1623,19 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     final noteLine = (note?.trim().isNotEmpty ?? false)
         ? 'USER STEERING NOTE FOR THIS REGENERATION: ${note!.trim()}\n'
         : '';
+    final sizeCtx = screenSizeInfo != null && screenSizeInfo.isNotEmpty
+        ? screenSizeInfo
+        : 'not specified (make it responsive to standard mobile/desktop screen sizes)';
     final prompt = PromptService.singleSlideJson
         .replaceAll('%system_prompt%', bookContext.systemPrompt ?? 'You are an expert tutor.')
         .replaceAll('%custom_instructions%', PromptService.instructionsBlock(bookContext.customInstructions))
         .replaceAll('%lesson_title%', lesson.title)
         .replaceAll('%unit_title%', lesson.title)
-        .replaceAll('%slide_type%', slide.type)
+        .replaceAll('%slide_type%', targetType ?? slide.type)
         .replaceAll('%slide_content%', jsonEncode(slide.toJson()))
         .replaceAll('%slide_id%', slide.id)
-        .replaceAll('%regen_note%', noteLine);
+        .replaceAll('%regen_note%', noteLine)
+        .replaceAll('%screen_size_info%', sizeCtx);
 
     // Attach the source chunk when we still have it on disk — improves
     // accuracy — but regeneration must still work without it.
@@ -1648,7 +1666,7 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
           final fresh = Slide.fromJson(jsonMap);
           // Preserve the slide's identity and type; the model only supplies
           // the new content/options. Keep any existing diagram SVG.
-          return fresh.copyWith(id: slide.id, type: slide.type, canvasSvg: slide.canvasSvg);
+          return fresh.copyWith(id: slide.id, type: targetType ?? slide.type, canvasSvg: slide.canvasSvg);
         } catch (e) {
           lastErr = e;
         }
@@ -1656,8 +1674,9 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     }
     if (lastErr != null) {
       print('[AiService] Slide regen exhausted all models. Last: ${_cleanErrMsg(lastErr)}');
+      throw lastErr is Exception ? lastErr : Exception(_cleanErrMsg(lastErr));
     }
-    return null;
+    throw Exception('Failed to regenerate slide: AI returned an empty response.');
   }
 
   /// Asks the AI to break a section\'s PDF chunk into a list of units
@@ -2265,6 +2284,7 @@ Do not include any explanation or other text.
     required int totalSlides,
     required Book bookContext,
     String? forcedApiKey,
+    String? screenSizeInfo,
   }) async {
     await _checkPause();
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
@@ -2274,6 +2294,9 @@ Do not include any explanation or other text.
         ? 'No slides generated yet.' 
         : 'Slides generated so far: ' + jsonEncode(slidesSoFar.map((s) => s.toJson()).toList());
 
+    final sizeCtx = screenSizeInfo != null && screenSizeInfo.isNotEmpty
+        ? screenSizeInfo
+        : 'not specified (make it responsive to standard mobile/desktop screen sizes)';
     final prompt = PromptService.customSlideJson
         .replaceAll('%lesson_title%', lessonTitle)
         .replaceAll('%unit_title%', unitTitle)
@@ -2283,7 +2306,8 @@ Do not include any explanation or other text.
         .replaceAll('%slides_so_far%', neighborContext)
         .replaceAll('%slide_index%', '$slideIndex')
         .replaceAll('%total_slides%', '$totalSlides')
-        .replaceAll('%slide_id%', '${lessonTitle.replaceAll(RegExp(r'\s+'), '_').toLowerCase()}_s$slideIndex');
+        .replaceAll('%slide_id%', '${lessonTitle.replaceAll(RegExp(r'\s+'), '_').toLowerCase()}_s$slideIndex')
+        .replaceAll('%screen_size_info%', sizeCtx);
 
     final fileParts = await _buildFileParts(attachedFiles);
     final parts = <Part>[TextPart(prompt), ...fileParts];
@@ -2365,6 +2389,136 @@ Do not include any explanation or other text.
         AiEstimator.onUnregisterActiveRequest?.call(targetId);
       }
     }
+  }
+
+  Future<List<String>> analyzePrerequisites({
+    required Unit targetUnit,
+    required Book targetBook,
+    required List<Book> allBooks,
+    String? forcedApiKey,
+  }) async {
+    final List<String> availableStrings = [];
+    for (final book in allBooks) {
+      for (final module in book.modules) {
+        for (final section in module.sections) {
+          for (final unit in section.units) {
+            if (book.id == targetBook.id && unit.id == targetUnit.id) {
+              continue;
+            }
+            final String uniqueId = '${book.id}::${module.id}::${section.id}::${unit.id}';
+            availableStrings.add('- Book: "${book.title}", Module: "${module.title}", Section: "${section.title}", Unit: "${unit.title}" (ID: $uniqueId)');
+          }
+        }
+      }
+    }
+
+    if (availableStrings.isEmpty) return [];
+
+    final buffer = StringBuffer();
+    for (final s in availableStrings) {
+      buffer.writeln(s);
+    }
+
+    final prompt = """
+You are an educational planner. Identify which of the available units are direct prerequisites (must-know concepts) for the target unit.
+Only return units that are genuinely necessary to understand the target concept.
+
+Target Unit:
+- Book/Course: "${targetBook.title}"
+- Unit Title: "${targetUnit.title}"
+- Description: "${targetUnit.description}"
+
+Available Units in Other Courses:
+${buffer.toString()}
+
+Return a JSON array of the IDs of the matched units.
+Example output:
+["book1::mod1::sec1::unit1", "book2::mod3::sec2::unit4"]
+If there are no prerequisites, return an empty array: [].
+Do not output markdown code fences, comments, or any extra text. Just the plain JSON array.
+""";
+
+    final keys = await _getKeys(forcedApiKey: forcedApiKey);
+    final liteModels = await _getLiteModels();
+    
+    for (final modelName in liteModels) {
+      for (final apiKey in keys) {
+        try {
+          final model = GenerativeModel(model: modelName, apiKey: apiKey);
+          final response = await model.generateContent([Content.text(prompt)])
+              .timeout(const Duration(seconds: 30));
+          final text = response.text?.trim() ?? '';
+          if (text.isEmpty) continue;
+          
+          final cleanText = text.replaceAll('```json', '').replaceAll('```', '').trim();
+          final List<dynamic> decoded = jsonDecode(cleanText);
+          return decoded.cast<String>();
+        } catch (e) {
+          print('[AiService] analyzePrerequisites error: $e');
+        }
+      }
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>> analyzeDescriptiveAnswer({
+    required String question,
+    required String userAnswer,
+    required List<File> attachedPhotos,
+    String? forcedApiKey,
+  }) async {
+    await _checkPause();
+    final keys = await _getKeys(forcedApiKey: forcedApiKey);
+    final liteModels = await _getLiteModels();
+
+    final prompt = '''You are an expert grading assistant.
+Below is a descriptive question from a lesson, followed by the user's answer (which may consist of text and optional uploaded images/photos).
+Analyze the user's answer and determine if it is correct. Be constructive but accurate.
+
+QUESTION:
+$question
+
+USER ANSWER (TEXT):
+$userAnswer
+
+Determine if the user's answer correctly answers the question.
+If the user also provided photos/images, they are attached to this request. Use them to evaluate the correctness of the answer.
+
+Return ONLY a JSON object matching this schema:
+{
+  "isCorrect": true, // or false
+  "feedback": "Constructive explanation of why it is correct or incorrect, pointing out any gaps or errors."
+}''';
+
+    final fileParts = await _buildFileParts(attachedPhotos);
+    final parts = <Part>[TextPart(prompt), ...fileParts];
+
+    Exception? lastException;
+    for (var modelName in liteModels) {
+      for (var apiKey in keys) {
+        try {
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: apiKey,
+            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+          );
+
+          final response = await _retryTransient(
+            () => model.generateContent([Content.multi(parts)])
+                .timeout(const Duration(seconds: 25)),
+            onRetry: (a, e) => print('[AiService] Descriptive analysis transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+          );
+
+          if (response.text != null) {
+            final jsonMap = _cleanAndDecodeJson(response.text!);
+            return Map<String, dynamic>.from(jsonMap);
+          }
+        } catch (e) {
+          lastException = Exception('Descriptive analysis failed ($modelName): ${_cleanErrMsg(e)}');
+        }
+      }
+    }
+    throw lastException ?? Exception('Failed to analyze descriptive answer.');
   }
 }
 

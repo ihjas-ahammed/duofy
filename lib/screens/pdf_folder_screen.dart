@@ -62,17 +62,53 @@ class _PdfFolderScreenState extends State<PdfFolderScreen> {
 
       for (var file in pdfs) {
         final unitIdRaw = file.path.split('/').last.replaceAll('.pdf', '');
-        String mappedUnitName = "Unknown Unit ($unitIdRaw)";
+        String mappedUnitName = "";
 
         if (widget.linkedBook != null) {
+          bool found = false;
           for (var m in widget.linkedBook!.modules) {
             for (var s in m.sections) {
+              if (s.id == unitIdRaw) {
+                mappedUnitName = s.title;
+                found = true;
+                break;
+              }
               for (var u in s.units) {
                 if (u.id == unitIdRaw) {
                   mappedUnitName = u.title;
+                  found = true;
+                  break;
+                }
+              }
+              if (found) break;
+            }
+            if (found) break;
+          }
+
+          // If not found by ID directly, try parsing index coordinates (mX-sY) from filename
+          if (!found) {
+            final secMatch = RegExp(r'^m(\d+)-s(\d+)$').firstMatch(unitIdRaw);
+            if (secMatch != null) {
+              final modIdx = int.parse(secMatch.group(1)!) - 1;
+              final secIdx = int.parse(secMatch.group(2)!) - 1;
+              if (modIdx >= 0 && modIdx < widget.linkedBook!.modules.length) {
+                final module = widget.linkedBook!.modules[modIdx];
+                if (secIdx >= 0 && secIdx < module.sections.length) {
+                  mappedUnitName = module.sections[secIdx].title;
+                  found = true;
                 }
               }
             }
+          }
+        }
+
+        if (mappedUnitName.isEmpty) {
+          final regExp = RegExp(r'^m(\d+)-s(\d+)$');
+          final match = regExp.firstMatch(unitIdRaw);
+          if (match != null) {
+            mappedUnitName = "Module ${match.group(1)} Section ${match.group(2)}";
+          } else {
+            mappedUnitName = "Unknown Unit ($unitIdRaw)";
           }
         }
 

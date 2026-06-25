@@ -35,12 +35,14 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   /// The module currently open on the Path tab. Shared with the PYQ tab so the
   /// QP extractor operates on (and shows) only the current module.
   late final ValueNotifier<int> _activeModule;
+  late final ValueNotifier<int> _activeSection;
 
   @override
   void initState() {
     super.initState();
     _currentBook = widget.book;
     _activeModule = ValueNotifier<int>(widget.initialModuleIdx ?? 0);
+    _activeSection = ValueNotifier<int>(0);
 
     _bookUpdateSub = GenerationManager.instance.bookUpdates.listen((updatedBook) {
       if (updatedBook.id == _currentBook.id && mounted) {
@@ -63,6 +65,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   void dispose() {
     _bookUpdateSub.cancel();
     _activeModule.dispose();
+    _activeSection.dispose();
     super.dispose();
   }
 
@@ -264,6 +267,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
         book: _currentBook,
         onBookUpdated: _onBookUpdated,
         activeModule: _activeModule,
+        activeSection: _activeSection,
       ),
       PracticeScreen(book: _currentBook),
       AnalyticsView(courseId: _currentBook.id),
@@ -279,7 +283,11 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
           }
         },
       ),
-      SummaryScreen(book: _currentBook),
+      SummaryScreen(
+        book: _currentBook,
+        activeModule: _activeModule,
+        activeSection: _activeSection,
+      ),
     ];
 
     final user = FbAuth.instance.currentUser;

@@ -13,6 +13,7 @@ import '../widgets/slide_views/numerical_view.dart';
 import '../widgets/slide_views/one_word_view.dart';
 import '../widgets/slide_views/interactive_proof_view.dart';
 import '../widgets/slide_views/pyq_one_word_view.dart';
+import '../widgets/slide_views/descriptive_view.dart';
 import '../services/ai_service.dart';
 import '../services/progress_service.dart';
 import 'pyq_complete_screen.dart';
@@ -413,7 +414,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     if (widget.practiceType == 'pyq' && type == 'one_word') {
       return true; // Render a custom bottom bar for PYQ one-word slides
     }
-    return type == 'proof' || type == 'step_by_step';
+    return type == 'proof' || type == 'step_by_step' || type == 'descriptive';
   }
 
   String _getCorrectAnswerText(Slide slide) {
@@ -465,6 +466,18 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
         isAnswered: _answered,
         isCorrect: _isCorrect,
         onChanged: (val) => setState(() => _wordInput = val),
+      );
+    } else if (slide.type == 'descriptive') {
+      return DescriptiveView(
+        slide: slide,
+        onComplete: () {
+          HapticFeedback.heavyImpact();
+          setState(() {
+            _isCorrect = true;
+            _answered = true;
+          });
+          _processNext();
+        },
       );
     } else if (slide.type == 'proof' || slide.type == 'step_by_step') {
       return InteractiveProofView(

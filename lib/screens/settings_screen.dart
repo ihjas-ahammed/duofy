@@ -15,6 +15,7 @@ import '../widgets/sync_conflict_dialog.dart';
 import '../models/app_models.dart';
 import 'pdf_browser_screen.dart';
 import 'metacognition_setup_screen.dart';
+import 'ai_queue_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -715,6 +716,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildAiQueueCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AiQueueScreen()),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.duoBlue.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(LucideIcons.cpu, color: AppTheme.duoBlue, size: 20),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'AI Request Queue',
+                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Monitor active, queued, and scheduled lesson generation tasks.',
+                        style: TextStyle(color: Colors.white54, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(LucideIcons.chevronRight, color: Colors.white30, size: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   String _formatTimeOfDay(TimeOfDay time) {
     final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
     final period = time.period == DayPeriod.am ? 'AM' : 'PM';
@@ -1085,6 +1141,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildScheduleCard(),
             const SizedBox(height: 16),
             _buildPauseGenerationCard(),
+            const SizedBox(height: 16),
+            _buildAiQueueCard(),
 
             const SizedBox(height: 32),
             const Text('Live Chat Assistant', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),

@@ -183,14 +183,36 @@ class _PlatformWebViewState extends State<PlatformWebView> {
               name: 'DuoErrorChannel',
               onMessageReceived: (wc.JavascriptMessage message) {
                 debugPrint('[PlatformWebView] CEF DuoErrorChannel: ${message.message}');
-                if (mounted) widget.onJsError?.call(message.message);
+                String msg = message.message;
+                try {
+                  final decoded = jsonDecode(msg);
+                  if (decoded is String) {
+                    msg = decoded;
+                  }
+                } catch (_) {
+                  if (msg.startsWith('"') && msg.endsWith('"') && msg.length >= 2) {
+                    msg = msg.substring(1, msg.length - 1);
+                  }
+                }
+                if (mounted) widget.onJsError?.call(msg);
               },
             ),
             wc.JavascriptChannel(
               name: 'DuoMessageChannel',
               onMessageReceived: (wc.JavascriptMessage message) {
                 debugPrint('[PlatformWebView] CEF DuoMessageChannel: ${message.message}');
-                if (mounted) widget.onMessage?.call(message.message);
+                String msg = message.message;
+                try {
+                  final decoded = jsonDecode(msg);
+                  if (decoded is String) {
+                    msg = decoded;
+                  }
+                } catch (_) {
+                  if (msg.startsWith('"') && msg.endsWith('"') && msg.length >= 2) {
+                    msg = msg.substring(1, msg.length - 1);
+                  }
+                }
+                if (mounted) widget.onMessage?.call(msg);
               },
             ),
           });

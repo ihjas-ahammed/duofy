@@ -320,6 +320,21 @@ class DuoFyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       home: const AuthGate(),
+      shortcuts: <ShortcutActivator, Intent>{
+        ...WidgetsApp.defaultShortcuts,
+        const SingleActivator(LogicalKeyboardKey.escape): const PopIntent(),
+      },
+      actions: <Type, Action<Intent>>{
+        ...WidgetsApp.defaultActions,
+        PopIntent: CallbackAction<PopIntent>(
+          onInvoke: (PopIntent intent) {
+            if (navigatorKey.currentState?.canPop() ?? false) {
+              navigatorKey.currentState?.maybePop();
+            }
+            return null;
+          },
+        ),
+      },
       onGenerateRoute: (settings) {
         final name = settings.name ?? '';
         if (name == '/' || name.isEmpty) {
@@ -333,26 +348,6 @@ class DuoFyApp extends StatelessWidget {
           );
         }
         return null;
-      },
-      builder: (context, child) {
-        return Shortcuts(
-          shortcuts: <ShortcutActivator, Intent>{
-            const SingleActivator(LogicalKeyboardKey.escape): const PopIntent(),
-          },
-          child: Actions(
-            actions: <Type, Action<Intent>>{
-              PopIntent: CallbackAction<PopIntent>(
-                onInvoke: (PopIntent intent) {
-                  if (navigatorKey.currentState?.canPop() ?? false) {
-                    navigatorKey.currentState?.maybePop();
-                  }
-                  return null;
-                },
-              ),
-            },
-            child: child!,
-          ),
-        );
       },
     );
   }

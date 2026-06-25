@@ -31,8 +31,15 @@ class YoutubeVideo {
 
 class SummaryScreen extends StatefulWidget {
   final Book book;
+  final ValueNotifier<int>? activeModule;
+  final ValueNotifier<int>? activeSection;
 
-  const SummaryScreen({super.key, required this.book});
+  const SummaryScreen({
+    super.key,
+    required this.book,
+    this.activeModule,
+    this.activeSection,
+  });
 
   @override
   State<SummaryScreen> createState() => _SummaryScreenState();
@@ -54,27 +61,67 @@ class _SummaryScreenState extends State<SummaryScreen> {
   void initState() {
     super.initState();
     _loadPreferences();
+    widget.activeModule?.addListener(_onActiveModuleOrSectionChanged);
+    widget.activeSection?.addListener(_onActiveModuleOrSectionChanged);
   }
 
   @override
   void didUpdateWidget(SummaryScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _loadPreferences();
+    if (oldWidget.activeModule != widget.activeModule) {
+      oldWidget.activeModule?.removeListener(_onActiveModuleOrSectionChanged);
+      widget.activeModule?.addListener(_onActiveModuleOrSectionChanged);
+    }
+    if (oldWidget.activeSection != widget.activeSection) {
+      oldWidget.activeSection?.removeListener(_onActiveModuleOrSectionChanged);
+      widget.activeSection?.addListener(_onActiveModuleOrSectionChanged);
+    }
+    _onActiveModuleOrSectionChanged();
   }
 
   @override
   void dispose() {
+    widget.activeModule?.removeListener(_onActiveModuleOrSectionChanged);
+    widget.activeSection?.removeListener(_onActiveModuleOrSectionChanged);
     for (final controller in _searchControllers.values) {
       controller.dispose();
     }
     super.dispose();
   }
 
+  void _onActiveModuleOrSectionChanged() {
+    final modIdx = widget.activeModule?.value ?? _activeModuleIdx;
+    final secIdx = widget.activeSection?.value ?? _activeSectionIdx;
+    _updateActiveSection(modIdx, secIdx);
+  }
+
+  void _updateActiveSection(int modIdx, int secIdx) {
+    if (modIdx >= 0 && modIdx < widget.book.modules.length) {
+      final module = widget.book.modules[modIdx];
+      if (secIdx >= 0 && secIdx < module.sections.length) {
+        final section = module.sections[secIdx];
+        for (final unit in section.units) {
+          if (!_searchControllers.containsKey(unit.id)) {
+            _searchControllers[unit.id] = TextEditingController(
+              text: "${widget.book.title} ${unit.title} class lecture",
+            );
+          }
+        }
+      }
+    }
+    if (mounted) {
+      setState(() {
+        _activeModuleIdx = modIdx;
+        _activeSectionIdx = secIdx;
+      });
+    }
+  }
+
   Future<void> _loadPreferences() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final modIdx = prefs.getInt('last_mod_idx_${widget.book.id}') ?? 0;
-      final secIdx = prefs.getInt('last_sec_idx_${widget.book.id}') ?? 0;
+      final modIdx = widget.activeModule?.value ?? (prefs.getInt('last_mod_idx_${widget.book.id}') ?? 0);
+      final secIdx = widget.activeSection?.value ?? (prefs.getInt('last_sec_idx_${widget.book.id}') ?? 0);
       
       // Initialize text controllers for units in the current section
       if (modIdx >= 0 && modIdx < widget.book.modules.length) {

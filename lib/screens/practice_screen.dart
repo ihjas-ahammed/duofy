@@ -67,6 +67,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
     _PracticeMode('fill_in_blank', 'Fill in Blanks', 'Recall terms', LucideIcons.type, AppTheme.duoRed),
     _PracticeMode('one_word', 'One Word', 'Type the term', LucideIcons.pencil, AppTheme.duoViolet),
     _PracticeMode('numerical', 'Numericals', 'Calculate values', LucideIcons.calculator, AppTheme.duoGreen),
+    _PracticeMode('descriptive', 'Descriptive', 'Paragraph & Photos', LucideIcons.text, AppTheme.duoBlue),
   ];
 
   @override
@@ -164,6 +165,8 @@ class _PracticeScreenState extends State<PracticeScreen> {
         return slideType == 'one_word';
       case 'numerical':
         return slideType == 'numerical';
+      case 'descriptive':
+        return slideType == 'descriptive';
     }
     return false;
   }

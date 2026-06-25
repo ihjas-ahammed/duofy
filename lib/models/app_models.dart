@@ -52,11 +52,14 @@ class SlideTemplate {
 
   static List<SlideTemplate> get defaultTemplate => [
     SlideTemplate(type: 'theory', condition: 'Always', description: 'The original factual theory and core concepts presented directly, with no storytelling, narrative framing, or example-based scenarios.'),
+    SlideTemplate(type: 'concept_pieces', condition: 'Always', description: 'A conceptual breakdown showing a complex or long concept split into a series of short, connected, easy-to-read sentences or bullet-points.'),
     SlideTemplate(type: 'proof', condition: 'Only if a mathematical, physical, or logical proof is being taught.', description: 'Interactive step-by-step logic proof.'),
     SlideTemplate(type: 'fill_in_blank', condition: 'Always', description: 'Recall key terms with a fill-in-the-blank question.'),
     SlideTemplate(type: 'one_word', condition: 'Always', description: 'Recall a single key term by typing it as a one-word answer (no options shown).'),
     SlideTemplate(type: 'numerical', condition: 'Only if the topic involves a calculation or a quantitative value the learner can compute.', description: 'A problem whose answer is a number the learner types in.'),
     SlideTemplate(type: 'quiz', condition: 'Always', description: 'A multiple-choice question testing understanding.'),
+    SlideTemplate(type: 'descriptive', condition: 'Always', description: 'A question requiring a paragraph explanation and optional photo upload, reviewed by AI.'),
+    SlideTemplate(type: 'custom_html', condition: 'Only when custom interactive elements, custom simulators, or unique game/HTML mechanics are needed.', description: 'An interactive custom slide written in HTML and Javascript. Can contain buttons, text inputs, canvases, sliders, and logic. Calls DuoMessageChannel.postMessage("complete") when completed.'),
   ];
 }
 
@@ -134,6 +137,209 @@ class LessonFormat {
             SlideTemplate(type: 'theory', condition: 'Always', description: 'State the theorem/result and the intuition for why it holds in 1-2 sentences.'),
             SlideTemplate(type: 'proof', condition: 'Always', description: 'Full interactive step-by-step proof.'),
             SlideTemplate(type: 'fill_in_blank', condition: 'Always', description: 'Recall the key inequality, identity or definition that powered the proof.'),
+          ],
+        ),
+        LessonFormat(
+          id: 'interleaved-practice',
+          name: 'Interleaved Practice',
+          description: 'A mix of different problem types to avoid illusion of competence and force the brain to recognize patterns.',
+          slides: [
+            SlideTemplate(type: 'theory', condition: 'Always', description: 'Brief introduction to the set of problems and why they are mixed.'),
+            SlideTemplate(type: 'quiz', condition: 'Always', description: 'A question applying concept A.'),
+            SlideTemplate(type: 'quiz', condition: 'Always', description: 'A question applying a completely different concept B.'),
+            SlideTemplate(type: 'quiz', condition: 'Always', description: 'Another question applying concept A or C.'),
+          ],
+        ),
+        LessonFormat(
+          id: 'active-retrieval',
+          name: 'Active Retrieval',
+          description: 'Testing purely from memory. No theory first. Forces the learner to recall information they should already know.',
+          slides: [
+            SlideTemplate(type: 'fill_in_blank', condition: 'Always', description: 'Recall a core definition or rule from memory.'),
+            SlideTemplate(type: 'one_word', condition: 'Always', description: 'Recall a key term without hints.'),
+            SlideTemplate(type: 'quiz', condition: 'Always', description: 'A deeper conceptual question testing understanding, not just memory.'),
+          ],
+        ),
+        LessonFormat(
+          id: 'elaboration',
+          name: 'Elaboration',
+          description: 'Explaining concepts in detail, connecting them to prior knowledge.',
+          slides: [
+            SlideTemplate(type: 'theory', condition: 'Always', description: 'Present a complex concept and relate it to a simpler, known concept.'),
+            SlideTemplate(type: 'concept_pieces', condition: 'Always', description: 'Break down the connections step-by-step.'),
+            SlideTemplate(type: 'quiz', condition: 'Always', description: 'Test if the learner understands the relationship between the new and old concepts.'),
+          ],
+        ),
+        LessonFormat(
+          id: 'chunking-focus',
+          name: 'Chunking Focus',
+          description: 'Breaking down a large, intimidating concept into tiny, digestible pieces (chunks) before assembling them.',
+          slides: [
+            SlideTemplate(type: 'concept_pieces', condition: 'Always', description: 'Introduce the pieces of the chunk individually.'),
+            SlideTemplate(type: 'fill_in_blank', condition: 'Always', description: 'Test recall on one specific piece of the chunk.'),
+            SlideTemplate(type: 'theory', condition: 'Always', description: 'Show how the pieces connect together into the final "chunk".'),
+            SlideTemplate(type: 'quiz', condition: 'Always', description: 'Test understanding of the fully assembled chunk.'),
+          ],
+        ),
+        LessonFormat(
+          id: 'spaced-review',
+          name: 'Spaced Review',
+          description: 'A format dedicated to reviewing past material while lightly introducing a new hook.',
+          slides: [
+            SlideTemplate(type: 'quiz', condition: 'Always', description: 'A question from a previous topic.'),
+            SlideTemplate(type: 'numerical', condition: 'If applicable', description: 'A calculation from a previous topic.'),
+            SlideTemplate(type: 'theory', condition: 'Always', description: 'A brief introduction to today\'s new topic connecting it to the reviewed material.'),
+          ],
+        ),
+        LessonFormat(
+          id: 'concrete-examples',
+          name: 'Concrete Examples',
+          description: 'Real-world grounding of abstract, theoretical ideas.',
+          slides: [
+            SlideTemplate(type: 'theory', condition: 'Always', description: 'State the abstract rule or theorem.'),
+            SlideTemplate(type: 'concept_pieces', condition: 'Always', description: 'Provide 2-3 specific, real-world concrete examples of the rule in action.'),
+            SlideTemplate(type: 'quiz', condition: 'Always', description: 'Ask the learner to identify whether a new real-world scenario fits the rule.'),
+          ],
+        ),
+        LessonFormat(
+          id: 'feynman-technique',
+          name: 'Feynman Technique',
+          description: 'Teaching a concept using extremely simple language, as if to a child, avoiding jargon.',
+          slides: [
+            SlideTemplate(type: 'theory', condition: 'Always', description: 'Explain the core idea using zero technical jargon.'),
+            SlideTemplate(type: 'concept_pieces', condition: 'Always', description: 'Break down why it works using an intuitive analogy.'),
+            SlideTemplate(type: 'fill_in_blank', condition: 'Always', description: 'Check understanding of the simple analogy.'),
+          ],
+        ),
+        LessonFormat(
+          id: 'contrasting-cases',
+          name: 'Contrasting Cases',
+          description: 'Comparing two similar but distinct concepts to highlight their key differences.',
+          slides: [
+            SlideTemplate(type: 'theory', condition: 'Always', description: 'Introduce Concept A and Concept B side-by-side.'),
+            SlideTemplate(type: 'concept_pieces', condition: 'Always', description: 'Highlight exactly what makes them different (the boundary condition).'),
+            SlideTemplate(type: 'quiz', condition: 'Always', description: 'Present a scenario and ask if it is Concept A or Concept B.'),
+          ],
+        ),
+        LessonFormat(
+          id: 'error-analysis',
+          name: 'Error Analysis',
+          description: 'Identifying mistakes in a flawed solution or misconception.',
+          slides: [
+            SlideTemplate(type: 'theory', condition: 'Always', description: 'Present a common misconception or a flawed step-by-step solution.'),
+            SlideTemplate(type: 'quiz', condition: 'Always', description: 'Ask the learner to identify EXACTLY where the mistake happened.'),
+            SlideTemplate(type: 'theory', condition: 'Always', description: 'Explain the correct reasoning and why the mistake is common.'),
+          ],
+        ),
+        LessonFormat(
+          id: 'rule-abstraction',
+          name: 'Rule Abstraction',
+          description: 'Deriving a general rule from several specific examples (inductive learning).',
+          slides: [
+            SlideTemplate(type: 'concept_pieces', condition: 'Always', description: 'Show 3 different examples that all share a hidden underlying pattern.'),
+            SlideTemplate(type: 'quiz', condition: 'Always', description: 'Ask the learner to guess the underlying rule or pattern.'),
+            SlideTemplate(type: 'theory', condition: 'Always', description: 'Formally state the abstracted rule.'),
+          ],
+        ),
+        LessonFormat(
+          id: 'low-stakes-testing',
+          name: 'Low-Stakes Testing',
+          description: 'Rapid-fire easy questions to build fluency and confidence.',
+          slides: [
+            SlideTemplate(type: 'one_word', condition: 'Always', description: 'Fast recall question 1.'),
+            SlideTemplate(type: 'one_word', condition: 'Always', description: 'Fast recall question 2.'),
+            SlideTemplate(type: 'fill_in_blank', condition: 'Always', description: 'Fast recall question 3.'),
+            SlideTemplate(type: 'quiz', condition: 'Always', description: 'A slightly harder conceptual question.'),
+          ],
+        ),
+        LessonFormat(
+          id: 'desirable-difficulty',
+          name: 'Desirable Difficulty',
+          description: 'A deliberately hard problem without immediate hints, forcing deep cognitive effort.',
+          slides: [
+            SlideTemplate(type: 'theory', condition: 'Always', description: 'Set up a challenging problem that requires synthesizing multiple ideas.'),
+            SlideTemplate(type: 'numerical', condition: 'If a number is expected', description: 'The hard problem itself.'),
+            SlideTemplate(type: 'step_by_step', condition: 'Always', description: 'Break down the solution after they have attempted it.'),
+          ],
+        ),
+        LessonFormat(
+          id: 'generation-effect',
+          name: 'Generation Effect',
+          description: 'Attempting to solve or guess an answer before being taught the material.',
+          slides: [
+            SlideTemplate(type: 'quiz', condition: 'Always', description: 'Ask an intuitive question about a topic they haven\'t learned yet.'),
+            SlideTemplate(type: 'theory', condition: 'Always', description: 'Explain the actual theory, showing whether their intuition was right.'),
+            SlideTemplate(type: 'concept_pieces', condition: 'Always', description: 'Formalize the new knowledge.'),
+          ],
+        ),
+        LessonFormat(
+          id: 'analogical-transfer',
+          name: 'Analogical Transfer',
+          description: 'Applying a solution from one context to a totally different, unfamiliar context.',
+          slides: [
+            SlideTemplate(type: 'theory', condition: 'Always', description: 'Remind the learner of a known solution in Context X.'),
+            SlideTemplate(type: 'theory', condition: 'Always', description: 'Introduce a seemingly different problem in Context Y.'),
+            SlideTemplate(type: 'quiz', condition: 'Always', description: 'Ask them to apply the mechanism from X to solve Y.'),
+          ],
+        ),
+        LessonFormat(
+          id: 'metacognition-check',
+          name: 'Metacognition Check',
+          description: 'Evaluating one\'s own understanding and mental models.',
+          slides: [
+            SlideTemplate(type: 'theory', condition: 'Always', description: 'Summarize a complex topic briefly.'),
+            SlideTemplate(type: 'quiz', condition: 'Always', description: 'A highly tricky distractor question that tests deep understanding versus surface illusion of competence.'),
+            SlideTemplate(type: 'theory', condition: 'Always', description: 'Explain why the tricky distractor catches people off guard.'),
+          ],
+        ),
+        LessonFormat(
+          id: 'synthesis-challenge',
+          name: 'Synthesis Challenge',
+          description: 'Combining multiple previously learned concepts into one grand problem.',
+          slides: [
+            SlideTemplate(type: 'theory', condition: 'Always', description: 'State the grand challenge that requires 2+ concepts.'),
+            SlideTemplate(type: 'step_by_step', condition: 'Always', description: 'Walk through the multi-stage synthesis.'),
+            SlideTemplate(type: 'numerical', condition: 'If applicable', description: 'Final calculation of the synthesized problem.'),
+          ],
+        ),
+        LessonFormat(
+          id: 'priming-preview',
+          name: 'Priming Preview',
+          description: 'A brief, lightweight preview of advanced topics without expecting mastery yet.',
+          slides: [
+            SlideTemplate(type: 'theory', condition: 'Always', description: 'Show a glimpse of a future, more advanced topic.'),
+            SlideTemplate(type: 'concept_pieces', condition: 'Always', description: 'Point out what makes it interesting or useful.'),
+            SlideTemplate(type: 'one_word', condition: 'Always', description: 'A very basic vocabulary check on the new concept name.'),
+          ],
+        ),
+        LessonFormat(
+          id: 'visual-dual-coding',
+          name: 'Visual Dual-Coding',
+          description: 'Relies heavily on visual or structural layout to pair with text.',
+          slides: [
+            SlideTemplate(type: 'custom_html', condition: 'Always', description: 'An interactive or highly visual representation of the concept.'),
+            SlideTemplate(type: 'theory', condition: 'Always', description: 'Textual explanation linking to what they just saw.'),
+            SlideTemplate(type: 'quiz', condition: 'Always', description: 'Test understanding of the visual relationship.'),
+          ],
+        ),
+        LessonFormat(
+          id: 'deliberate-practice',
+          name: 'Deliberate Practice',
+          description: 'Targeted practice on a specific sub-skill with immediate feedback.',
+          slides: [
+            SlideTemplate(type: 'theory', condition: 'Always', description: 'Isolate the specific sub-skill being practiced.'),
+            SlideTemplate(type: 'step_by_step', condition: 'Always', description: 'Walk through executing this single sub-skill.'),
+            SlideTemplate(type: 'quiz', condition: 'Always', description: 'A rapid check to ensure the sub-skill is mastered.'),
+          ],
+        ),
+        LessonFormat(
+          id: 'first-principles',
+          name: 'First Principles',
+          description: 'Breaking a complex problem down to its most fundamental, undeniable truths.',
+          slides: [
+            SlideTemplate(type: 'theory', condition: 'Always', description: 'Strip away the complexity and state the absolute fundamental truth (first principle).'),
+            SlideTemplate(type: 'concept_pieces', condition: 'Always', description: 'Build the complex idea back up logically from the first principle.'),
+            SlideTemplate(type: 'quiz', condition: 'Always', description: 'Test if the logic connecting the principle to the conclusion holds.'),
           ],
         ),
       ];
@@ -820,12 +1026,32 @@ class Lesson {
   });
 
   factory Lesson.fromJson(Map<String, dynamic> json) {
+    final lessonId = _str(json['id']);
+    final rawSlides = (json['slides'] as List?)?.map((s) => Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [];
+    
+    final Set<String> seenIds = {};
+    int slideIdx = 1;
+    final slides = rawSlides.map((s) {
+      var sId = s.id.trim();
+      if (sId.isEmpty || sId == '%slide_id%' || sId == 'null' || seenIds.contains(sId)) {
+        sId = 's${slideIdx++}';
+        var candidate = '$lessonId-$sId';
+        while (seenIds.contains(candidate)) {
+          sId = 's${slideIdx++}';
+          candidate = '$lessonId-$sId';
+        }
+        sId = candidate;
+      }
+      seenIds.add(sId);
+      return s.copyWith(id: sId);
+    }).toList();
+
     return Lesson(
-      id: _str(json['id']),
+      id: lessonId,
       title: _str(json['title']),
       description: _str(json['description']),
       icon: _str(json['icon'], 'BookOpen'),
-      slides: (json['slides'] as List?)?.map((s) => Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
+      slides: slides,
       formatId: _strOpt(json['formatId']),
       canvasPrompt: _strOpt(json['canvasPrompt']),
       canvasSvg: _strOpt(json['canvasSvg']),

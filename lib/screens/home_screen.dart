@@ -43,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Book> books = [];
   List<Book> globalBooks = [];
   Map<String, double> progressMap = {};
+  List<String> _completedLessons = [];
   bool isLoading = true;
   int _selectedTabIndex = 0;
 
@@ -214,6 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final fetched = await _db.fetchBooks(forceRefresh: false);
     final globals = await _db.fetchGlobalBooks(useCacheOnly: true);
     final fetchedFolders = await _db.fetchFolders();
+    final completed = await ProgressService.getCompletedLessons();
     
     Map<String, double> prog = {};
     for (var b in fetched) {
@@ -230,6 +232,7 @@ class _HomeScreenState extends State<HomeScreen> {
           globalBooks = globals;
         }
         progressMap = prog;
+        _completedLessons = completed;
         folders = fetchedFolders;
         isLoading = false;
       });
@@ -264,11 +267,16 @@ class _HomeScreenState extends State<HomeScreen> {
           print("[HomeScreen] fetchFolders error: $e");
           return <CourseFolder>[];
         }),
+        ProgressService.getCompletedLessons().catchError((e) {
+          print("[HomeScreen] getCompletedLessons error: $e");
+          return <String>[];
+        }),
       ]);
 
       final fetched = results[1] as List<Book>;
       final globals = results[2] as List<Book>;
       final fetchedFolders = results[3] as List<CourseFolder>;
+      final completed = results[4] as List<String>;
 
       Map<String, double> prog = {};
       for (var b in fetched) {
@@ -283,6 +291,7 @@ class _HomeScreenState extends State<HomeScreen> {
           books = fetched;
           globalBooks = globals;
           progressMap = prog;
+          _completedLessons = completed;
           folders = fetchedFolders;
         });
       }
@@ -344,13 +353,6 @@ class _HomeScreenState extends State<HomeScreen> {
           Navigator.push(context, MaterialPageRoute(builder: (_) => const BookmarksScreen()));
         },
       ),
-      if (!kIsWeb)
-        IconButton(
-          icon: const Icon(LucideIcons.cpu, size: 28),
-          onPressed: () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const AiQueueScreen()));
-          },
-        ),
       IconButton(
         padding: const EdgeInsets.only(right: 16),
         icon: const Icon(LucideIcons.userCircle, size: 28),
@@ -1529,6 +1531,34 @@ class _HomeScreenState extends State<HomeScreen> {
     Color color;
     String typeLabel;
 
+    final bool isLessonOrSlide = result.type == 'lesson' || result.type == 'slide';
+    bool isOpen = true;
+    bool isCompleted = false;
+
+    if (isLessonOrSlide && result.lesson != null) {
+      isCompleted = _completedLessons.contains(result.lesson!.id);
+      bool isUnlocked = false;
+      if (result.lessonIdx != null && result.book != null && result.modIdx != null && result.secIdx != null && result.unitIdx != null) {
+        if (result.modIdx! >= 0 && result.modIdx! < result.book.modules.length) {
+          final module = result.book.modules[result.modIdx!];
+          if (result.secIdx! >= 0 && result.secIdx! < module.sections.length) {
+            final section = module.sections[result.secIdx!];
+            if (result.unitIdx! >= 0 && result.unitIdx! < section.units.length) {
+              final unit = section.units[result.unitIdx!];
+              final idx = result.lessonIdx!;
+              if (idx == 0) {
+                isUnlocked = true;
+              } else if (idx > 0 && idx < unit.lessons.length) {
+                final prevLesson = unit.lessons[idx - 1];
+                isUnlocked = _completedLessons.contains(prevLesson.id);
+              }
+            }
+          }
+        }
+      }
+      isOpen = isCompleted || isUnlocked;
+    }
+
     switch (result.type) {
       case 'book':
         icon = LucideIcons.book;
@@ -1551,15 +1581,27 @@ class _HomeScreenState extends State<HomeScreen> {
         typeLabel = 'Unit';
         break;
       case 'lesson':
-        icon = LucideIcons.bookOpen;
-        color = AppTheme.duoGreen;
-        typeLabel = 'Lesson';
+        icon = isCompleted 
+            ? LucideIcons.checkCircle2 
+            : (!isOpen ? LucideIcons.lock : LucideIcons.bookOpen);
+        color = isCompleted 
+            ? AppTheme.duoGreen 
+            : (!isOpen ? Colors.white38 : AppTheme.duoGreen);
+        typeLabel = isCompleted 
+            ? 'Lesson (Completed)' 
+            : (!isOpen ? 'Lesson (Locked)' : 'Lesson');
         break;
       case 'slide':
       default:
-        icon = LucideIcons.fileText;
-        color = Colors.white70;
-        typeLabel = 'Lesson Text';
+        icon = isCompleted 
+            ? LucideIcons.checkCircle2 
+            : (!isOpen ? LucideIcons.lock : LucideIcons.fileText);
+        color = isCompleted 
+            ? AppTheme.duoGreen 
+            : (!isOpen ? Colors.white38 : Colors.white70);
+        typeLabel = isCompleted 
+            ? 'Lesson Text (Completed)' 
+            : (!isOpen ? 'Lesson Text (Locked)' : 'Lesson Text');
         break;
     }
 
@@ -1569,7 +1611,27 @@ class _HomeScreenState extends State<HomeScreen> {
         color: Colors.transparent,
         child: InkWell(
           onTap: () async {
-            if (result.type == 'lesson' || result.type == 'slide') {
+            if (isLessonOrSlide) {
+              if (!isOpen) {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    backgroundColor: AppTheme.surface,
+                    title: const Text('Lesson Locked', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    content: const Text(
+                      'Finish the previous lessons in this unit to unlock this one.',
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('OK', style: TextStyle(color: AppTheme.duoBlue)),
+                      ),
+                    ],
+                  ),
+                );
+                return;
+              }
               if (result.lesson != null) {
                 Navigator.push(
                   context,
@@ -1867,20 +1929,22 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildFoldersList() {
     if (folders.isEmpty) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.only(top: 8, bottom: 12),
-      child: SizedBox(
-        height: 110,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 18),
-          itemCount: folders.length,
-          itemBuilder: (context, index) {
-            final folder = folders[index];
-            final progress = _getFolderProgress(folder);
-            return _buildFolderCard(folder, progress);
-          },
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 110,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          childAspectRatio: 100 / 106,
         ),
+        itemCount: folders.length,
+        itemBuilder: (context, index) {
+          final folder = folders[index];
+          final progress = _getFolderProgress(folder);
+          return _buildFolderCard(folder, progress);
+        },
       ),
     );
   }
@@ -1912,9 +1976,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onLongPress: () => _showFolderOptions(folder),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            width: 100,
-            margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
             decoration: BoxDecoration(
               color: isHovered 
                   ? AppTheme.duoBlue.withOpacity(0.15) 

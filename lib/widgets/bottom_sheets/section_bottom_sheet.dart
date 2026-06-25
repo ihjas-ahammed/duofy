@@ -57,11 +57,10 @@ class _SectionBottomSheetState extends State<SectionBottomSheet> {
 
     final index = widget.activeSectionIdx;
     if (index > 0 && _scrollController.hasClients) {
-      double targetOffset = 48.0; // Height offset before the first card (title + top padding)
+      double targetOffset = 40.0; // Height offset before the first card (title + top padding)
       for (int i = 0; i < index; i++) {
         final sec = sections[i];
-        // Approximate heights: card padding + contents + spacing
-        final cardHeight = sec.description.isNotEmpty ? 138.0 : 110.0;
+        final cardHeight = sec.description.isNotEmpty ? 82.0 : 64.0;
         targetOffset += cardHeight;
       }
 
@@ -100,7 +99,7 @@ class _SectionBottomSheetState extends State<SectionBottomSheet> {
               children: [
                 // Drag handle
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     border: Border(
                       bottom: BorderSide(color: Colors.white.withOpacity(0.05)),
@@ -109,7 +108,7 @@ class _SectionBottomSheetState extends State<SectionBottomSheet> {
                   child: Center(
                     child: Container(
                       width: 48,
-                      height: 6,
+                      height: 5,
                       decoration: BoxDecoration(
                         color: const Color(0xFF475569),
                         borderRadius: BorderRadius.circular(9999),
@@ -121,18 +120,18 @@ class _SectionBottomSheetState extends State<SectionBottomSheet> {
                   child: SingleChildScrollView(
                     controller: _scrollController,
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const Padding(
-                          padding: EdgeInsets.only(bottom: 24),
+                          padding: EdgeInsets.only(bottom: 12),
                           child: Text(
                             'Sections',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 24,
+                              fontSize: 18,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
@@ -153,7 +152,7 @@ class _SectionBottomSheetState extends State<SectionBottomSheet> {
                                     widget.onSectionLongPress!(widget.activeModuleIdx, i);
                                   },
                           ),
-                          if (i != sections.length - 1) const SizedBox(height: 16),
+                          if (i != sections.length - 1) const SizedBox(height: 8),
                         ],
                       ],
                     ),
@@ -166,22 +165,22 @@ class _SectionBottomSheetState extends State<SectionBottomSheet> {
                       top: BorderSide(color: Colors.white.withOpacity(0.05)),
                     ),
                   ),
-                  padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + media.padding.bottom),
+                  padding: EdgeInsets.fromLTRB(16, 8, 16, 8 + media.padding.bottom),
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: () => Navigator.of(context).maybePop(),
                       borderRadius: BorderRadius.circular(12),
                       child: const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
+                        padding: EdgeInsets.symmetric(vertical: 8),
                         child: Center(
                           child: Text(
                             'CLOSE',
                             style: TextStyle(
                               color: Color(0xFF94A3B8),
                               fontWeight: FontWeight.w900,
-                              fontSize: 13,
-                              letterSpacing: 1.4,
+                              fontSize: 12,
+                              letterSpacing: 1.2,
                             ),
                           ),
                         ),
@@ -222,20 +221,20 @@ class _SectionCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         onLongPress: onLongPress,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
             color: isActive ? color.withOpacity(0.2) :  Colors.white.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
             border: Border(
-              top: BorderSide(color: Colors.white.withOpacity(0.1), width: 2),
-              left: BorderSide(color: Colors.white.withOpacity(0.1), width: 2),
-              right: BorderSide(color: Colors.white.withOpacity( 0.1), width: 2),
-              bottom: BorderSide(color: Colors.white.withOpacity(0.1), width: 4),
+              top: BorderSide(color: Colors.white.withOpacity(0.1), width: 1.5),
+              left: BorderSide(color: Colors.white.withOpacity(0.1), width: 1.5),
+              right: BorderSide(color: Colors.white.withOpacity(0.1), width: 1.5),
+              bottom: BorderSide(color: Colors.white.withOpacity(0.1), width: 3),
             ),
           ),
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -250,28 +249,28 @@ class _SectionCard extends StatelessWidget {
                           style: TextStyle(
                             color: isActive ? Colors.white : const Color(0xFFCBD5E1),
                             fontWeight: FontWeight.w800,
-                            fontSize: 17,
+                            fontSize: 14,
                           ),
                         ),
                         if (section.description.isNotEmpty) ...[
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 2),
                           Text(
                             section.description,
                             style: TextStyle(
                               color: isActive ? Colors.white.withOpacity(0.8) : const Color(0xFF64748B),
                               fontWeight: FontWeight.w600,
-                              fontSize: 13,
+                              fontSize: 11,
                             ),
-                            maxLines: 2,
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color: isActive
                           ? Colors.white.withOpacity(0.1)
@@ -280,14 +279,14 @@ class _SectionCard extends StatelessWidget {
                     ),
                     child: Icon(
                       LucideIcons.chevronRight,
-                      size: 22,
+                      size: 16,
                       color: isActive ? Colors.white : const Color(0xFF64748B),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
-              MiniProgressBar(percentage: progress, height: 6, showText: false),
+              const SizedBox(height: 10),
+              MiniProgressBar(percentage: progress, height: 4, showText: false),
             ],
           ),
         ),

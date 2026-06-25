@@ -20,6 +20,7 @@ import '../widgets/bottom_sheets/section_bottom_sheet.dart';
 import '../widgets/selectors/module_selector.dart';
 import '../widgets/lesson_path.dart';
 import '../services/global_state.dart';
+import 'main_layout_screen.dart';
 
 class BookDashboardScreen extends StatefulWidget {
   final Book book;
@@ -28,12 +29,14 @@ class BookDashboardScreen extends StatefulWidget {
   /// module the user is viewing here. Kept in sync whenever the active module
   /// changes.
   final ValueNotifier<int>? activeModule;
+  final ValueNotifier<int>? activeSection;
 
   const BookDashboardScreen({
     super.key,
     required this.book,
     required this.onBookUpdated,
     this.activeModule,
+    this.activeSection,
   });
 
   @override
@@ -56,6 +59,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     // Publish the initial module so the PYQ tab is scoped correctly even before
     // the user switches modules (_loadLastResumed updates it asynchronously).
     widget.activeModule?.value = _activeModuleIdx;
+    widget.activeSection?.value = _activeSectionIdx;
     // Refresh completion state whenever progress changes anywhere (a lesson/
     // unit/section/module marked finished or cleared, or a cloud sync merge),
     // so the lesson path always reflects the latest status.
@@ -83,6 +87,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                 _activeSectionIdx = secIdx;
               });
               widget.activeModule?.value = _activeModuleIdx;
+              widget.activeSection?.value = _activeSectionIdx;
             }
           }
         }
@@ -443,12 +448,20 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       modules: widget.book.modules,
       activeModuleIdx: _activeModuleIdx,
       completedLessons: _completedLessons,
-      onSelect: (idx) {
+      onSelect: (idx) async {
         setState(() {
           _activeModuleIdx = idx;
           _activeSectionIdx = 0;
         });
         widget.activeModule?.value = _activeModuleIdx;
+        widget.activeSection?.value = 0;
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setInt('last_mod_idx_${widget.book.id}', _activeModuleIdx);
+          await prefs.setInt('last_sec_idx_${widget.book.id}', _activeSectionIdx);
+        } catch (e) {
+          print('Error saving last resumed position: $e');
+        }
       },
       onModuleLongPress: (idx) {
         _showModuleLongPressMenu(idx);
@@ -468,12 +481,20 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
           activeModuleIdx: _activeModuleIdx,
           activeSectionIdx: _activeSectionIdx,
           completedLessons: _completedLessons,
-          onSelect: (modIdx, secIdx) {
+          onSelect: (modIdx, secIdx) async {
             setState(() {
               _activeModuleIdx = modIdx;
               _activeSectionIdx = secIdx;
             });
             widget.activeModule?.value = _activeModuleIdx;
+            widget.activeSection?.value = _activeSectionIdx;
+            try {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setInt('last_mod_idx_${widget.book.id}', _activeModuleIdx);
+              await prefs.setInt('last_sec_idx_${widget.book.id}', _activeSectionIdx);
+            } catch (e) {
+              print('Error saving last resumed position: $e');
+            }
           },
           onSectionLongPress: (modIdx, secIdx) {
             _showSectionLongPressMenu(modIdx, secIdx);
@@ -958,10 +979,17 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     );
   }
 
-  void _showUnitLongPressMenu(int modIdx, int secIdx, int unitIdx, Unit unit) {
+  void _showUnitLongPressMenu(int modIdx, int secIdx, int unitIdx, Unit unit) async {
+    final prefs = await SharedPreferences.getInstance();
+    final cacheKey = 'prereqs_of_unit_${widget.book.id}_${unit.id}';
+    final hasCache = prefs.containsKey(cacheKey);
+    final cachedList = prefs.getStringList(cacheKey) ?? [];
+
     int totalLessons = unit.lessons.length;
     int completedCount = unit.lessons.where((l) => _completedLessons.contains(l.id)).length;
     int incompleteCount = totalLessons - completedCount;
+
+    if (!mounted) return;
 
     showModalBottomSheet(
       context: context,
@@ -974,6 +1002,20 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
           icon: LucideIcons.bookmark,
           color: AppTheme.duoViolet,
           items: [
+            _MenuActionItem(
+              icon: hasCache ? LucideIcons.gitMerge : LucideIcons.search,
+              title: hasCache ? 'View Dependencies' : 'Search Dependencies',
+              subtitle: hasCache ? 'Show prerequisite units to study first' : 'Scan all courses for prerequisites',
+              iconColor: AppTheme.duoViolet,
+              onTap: () {
+                Navigator.pop(ctx);
+                if (hasCache) {
+                  _showPrerequisitesDialog(unit, cachedList);
+                } else {
+                  _runDependencySearch(unit);
+                }
+              },
+            ),
             _MenuActionItem(
               icon: LucideIcons.plusCircle,
               title: 'Create Lesson',
@@ -1300,6 +1342,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     await DatabaseService().saveGeneratedBook(newBook);
     widget.onBookUpdated(newBook);
 
+    final size = MediaQuery.of(context).size;
+    final screenSizeInfo = 'Screen Width: ${size.width.toStringAsFixed(0)}px, Screen Height: ${size.height.toStringAsFixed(0)}px';
+
     await GenerationManager.instance.startCustomLessonGeneration(
       book: newBook,
       modIdx: modIdx,
@@ -1309,6 +1354,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       selectedFiles: files,
       format: format,
       lessonId: customLessonId,
+      screenSizeInfo: screenSizeInfo,
     );
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1848,6 +1894,341 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       );
     }
   }
+
+  void _runDependencySearch(Unit unit) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: const Row(
+          children: [
+            CircularProgressIndicator(color: AppTheme.duoBlue),
+            SizedBox(width: 20),
+            Expanded(
+              child: Text(
+                'Searching for dependencies across all courses...',
+                style: TextStyle(color: Colors.white, fontSize: 14),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final List<Book> books = await DatabaseService().fetchBooks(forceRefresh: false);
+      final List<String> result = await AiService().analyzePrerequisites(
+        targetUnit: unit,
+        targetBook: widget.book,
+        allBooks: books,
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList('prereqs_of_unit_${widget.book.id}_${unit.id}', result);
+
+      if (mounted) {
+        Navigator.pop(context); // Dismiss loading dialog
+        _showPrerequisitesDialog(unit, result);
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Dismiss loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error finding prerequisites: $e'), backgroundColor: AppTheme.duoRed),
+        );
+      }
+    }
+  }
+
+  void _showPrerequisitesDialog(Unit unit, List<String> uniqueIds) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue)),
+    );
+
+    final List<UnitPrerequisite> prereqs = await _getPrerequisitesFromIds(uniqueIds);
+    
+    if (mounted) {
+      Navigator.pop(context); // dismiss spinner
+    }
+
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: AppTheme.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Text(
+            'Prerequisites for "${unit.title}"',
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          content: prereqs.isEmpty
+              ? const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(LucideIcons.checkCircle, color: AppTheme.duoGreen, size: 40),
+                    SizedBox(height: 12),
+                    Text(
+                      'No prerequisites found! You\'re ready to start this unit.',
+                      style: TextStyle(color: Colors.white70, fontSize: 13),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                )
+              : SizedBox(
+                  width: double.maxFinite,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 12.0),
+                        child: Text(
+                          'Tap on a prerequisite to navigate to that unit.',
+                          style: TextStyle(color: Colors.white54, fontSize: 12, fontStyle: FontStyle.italic),
+                        ),
+                      ),
+                      Flexible(
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: prereqs.length,
+                          itemBuilder: (context, idx) {
+                            final p = prereqs[idx];
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () {
+                                    Navigator.pop(ctx);
+                                    _navigateToPrerequisite(p);
+                                  },
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.04),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(color: Colors.white.withOpacity(0.08)),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                p.unitTitle,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                '${p.bookTitle} / ${p.moduleTitle} / ${p.sectionTitle}',
+                                                style: const TextStyle(color: Colors.white54, fontSize: 10),
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: ClipRRect(
+                                                      borderRadius: BorderRadius.circular(4),
+                                                      child: LinearProgressIndicator(
+                                                        value: p.completionRate,
+                                                        backgroundColor: Colors.white.withOpacity(0.08),
+                                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                                          p.completionRate >= 1.0
+                                                              ? AppTheme.duoGreen
+                                                              : AppTheme.duoBlue,
+                                                        ),
+                                                        minHeight: 6,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Text(
+                                                    '${(p.completionRate * 100).toInt()}% (${p.completedLessonsCount}/${p.totalLessonsCount})',
+                                                    style: TextStyle(
+                                                      color: p.completionRate >= 1.0
+                                                          ? AppTheme.duoGreen
+                                                          : Colors.white70,
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        const Icon(
+                                          LucideIcons.chevronRight,
+                                          color: Colors.white30,
+                                          size: 16,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _runDependencySearch(unit); // Re-scan
+              },
+              child: const Text('Re-scan', style: TextStyle(color: AppTheme.duoOrange, fontWeight: FontWeight.bold)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Close', style: TextStyle(color: Colors.white54)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _navigateToPrerequisite(UnitPrerequisite p) async {
+    if (p.bookId == widget.book.id) {
+      int? foundModIdx;
+      int? foundSecIdx;
+      for (int m = 0; m < widget.book.modules.length; m++) {
+        final mod = widget.book.modules[m];
+        if (mod.id == p.moduleId) {
+          for (int s = 0; s < mod.sections.length; s++) {
+            if (mod.sections[s].id == p.sectionId) {
+              foundModIdx = m;
+              foundSecIdx = s;
+              break;
+            }
+          }
+        }
+        if (foundModIdx != null) break;
+      }
+
+      if (foundModIdx != null && foundSecIdx != null) {
+        setState(() {
+          _activeModuleIdx = foundModIdx!;
+          _activeSectionIdx = foundSecIdx!;
+        });
+        widget.activeModule?.value = _activeModuleIdx;
+        widget.activeSection?.value = _activeSectionIdx;
+        
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setInt('last_mod_idx_${widget.book.id}', _activeModuleIdx);
+          await prefs.setInt('last_sec_idx_${widget.book.id}', _activeSectionIdx);
+        } catch (e) {
+          print('Error saving last resumed position: $e');
+        }
+      }
+    } else {
+      try {
+        final List<Book> books = await DatabaseService().fetchBooks(forceRefresh: false);
+        Book? targetBook;
+        for (final b in books) {
+          if (b.id == p.bookId) {
+            targetBook = b;
+            break;
+          }
+        }
+
+        if (targetBook != null) {
+          int targetModIdx = 0;
+          int targetSecIdx = 0;
+          for (int m = 0; m < targetBook.modules.length; m++) {
+            final mod = targetBook.modules[m];
+            if (mod.id == p.moduleId) {
+              targetModIdx = m;
+              for (int s = 0; s < mod.sections.length; s++) {
+                if (mod.sections[s].id == p.sectionId) {
+                  targetSecIdx = s;
+                  break;
+                }
+              }
+              break;
+            }
+          }
+
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setInt('last_mod_idx_${targetBook.id}', targetModIdx);
+          await prefs.setInt('last_sec_idx_${targetBook.id}', targetSecIdx);
+
+          if (mounted) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => MainLayoutScreen(
+                  book: targetBook!,
+                  initialModuleIdx: targetModIdx,
+                ),
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        print('Error navigating to different course prerequisite: $e');
+      }
+    }
+  }
+
+  Future<List<UnitPrerequisite>> _getPrerequisitesFromIds(List<String> ids) async {
+    final List<Book> books = await DatabaseService().fetchBooks(forceRefresh: false);
+    final List<UnitPrerequisite> results = [];
+    
+    for (final id in ids) {
+      final parts = id.split('::');
+      if (parts.length != 4) continue;
+      final bookId = parts[0];
+      final moduleId = parts[1];
+      final sectionId = parts[2];
+      final unitId = parts[3];
+      
+      try {
+        final book = books.firstWhere((b) => b.id == bookId);
+        final module = book.modules.firstWhere((m) => m.id == moduleId);
+        final section = module.sections.firstWhere((s) => s.id == sectionId);
+        final unit = section.units.firstWhere((u) => u.id == unitId);
+        
+        final totalCount = unit.lessons.length;
+        final completedCount = unit.lessons.where((l) => _completedLessons.contains(l.id)).length;
+        final double completionRate = totalCount > 0 ? (completedCount / totalCount) : 0.0;
+
+        results.add(UnitPrerequisite(
+          bookId: bookId,
+          bookTitle: book.title,
+          moduleId: moduleId,
+          moduleTitle: module.title,
+          sectionId: sectionId,
+          sectionTitle: section.title,
+          unitId: unitId,
+          unitTitle: unit.title,
+          completionRate: completionRate,
+          completedLessonsCount: completedCount,
+          totalLessonsCount: totalCount,
+        ));
+      } catch (_) {
+        // Book/module/section/unit might have been modified/deleted
+      }
+    }
+    return results;
+  }
 }
 
 class _MenuActionItem {
@@ -1885,4 +2266,32 @@ class _IconHeaderButton extends StatelessWidget {
       ),
     );
   }
+}
+
+class UnitPrerequisite {
+  final String bookId;
+  final String bookTitle;
+  final String moduleId;
+  final String moduleTitle;
+  final String sectionId;
+  final String sectionTitle;
+  final String unitId;
+  final String unitTitle;
+  final double completionRate;
+  final int completedLessonsCount;
+  final int totalLessonsCount;
+
+  UnitPrerequisite({
+    required this.bookId,
+    required this.bookTitle,
+    required this.moduleId,
+    required this.moduleTitle,
+    required this.sectionId,
+    required this.sectionTitle,
+    required this.unitId,
+    required this.unitTitle,
+    required this.completionRate,
+    required this.completedLessonsCount,
+    required this.totalLessonsCount,
+  });
 }
