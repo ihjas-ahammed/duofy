@@ -463,9 +463,11 @@ class DatabaseService {
     await _deleteBookFile(uid, id);
 
     if (await isCloudEnabled()) {
-      _userBooks.doc(id).delete().catchError((e) {
+      try {
+        await _userBooks.doc(id).delete();
+      } catch (e) {
         print("[DatabaseService] Cloud delete failed: $e");
-      });
+      }
     }
   }
 
@@ -545,11 +547,12 @@ class DatabaseService {
 
   Future<void> deleteGlobalBook(String id) async {
     if (!await isCloudEnabled()) return;
-    _globalBooks.doc(id).delete().then((_) {
+    try {
+      await _globalBooks.doc(id).delete();
       print("[DatabaseService] Admin deleted global book: $id");
-    }).catchError((e) {
+    } catch (e) {
       print("[DatabaseService] Error deleting global book: $e");
-    });
+    }
   }
 
   Future<List<CourseFolder>> fetchFolders() async {

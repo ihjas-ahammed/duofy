@@ -345,15 +345,19 @@ class _SummaryScreenState extends State<SummaryScreen> {
     try {
       if (Platform.isAndroid) {
         final appUri = Uri.parse('vnd.youtube:${video.id}');
-        if (await canLaunchUrl(appUri)) {
-          await launchUrl(appUri);
-          return;
+        try {
+          if (await canLaunchUrl(appUri)) {
+            await launchUrl(appUri);
+            return;
+          }
+        } catch (_) {
+          // Fall back to browser if checking/launching YouTube app fails
         }
       }
       
-      if (await canLaunchUrl(uri)) {
+      try {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
+      } catch (e) {
         throw Exception('Could not launch browser for URL: $videoUrl');
       }
     } catch (e) {

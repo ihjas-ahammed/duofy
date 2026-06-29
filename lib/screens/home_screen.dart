@@ -312,6 +312,9 @@ class _HomeScreenState extends State<HomeScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx, true);
+              setState(() {
+                books.removeWhere((b) => b.id == book.id);
+              });
               await ProgressService.clearBookProgress(book);
               await _db.deleteBook(book.id);
               _loadAllData(force: true);
@@ -934,6 +937,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           );
                           if (confirm == true) {
+                            setState(() {
+                              globalBooks.removeWhere((b) => b.id == book.id);
+                            });
                             await _db.deleteGlobalBook(book.id);
                             _loadAllData(force: true);
                             return true;
@@ -1071,6 +1077,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             );
                             if (confirm == true) {
+                              setState(() {
+                                globalBooks.removeWhere((b) => b.id == book.id);
+                              });
                               await _db.deleteGlobalBook(book.id);
                               _loadAllData(force: true);
                             }
@@ -1929,9 +1938,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildFoldersList() {
     if (folders.isEmpty) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
       child: GridView.builder(
         shrinkWrap: true,
+        padding: EdgeInsets.zero,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: 110,
