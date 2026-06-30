@@ -20,6 +20,7 @@ import '../widgets/bottom_sheets/section_bottom_sheet.dart';
 import '../widgets/selectors/module_selector.dart';
 import '../widgets/lesson_path.dart';
 import '../services/global_state.dart';
+import '../widgets/quick_review_sheet.dart';
 import 'main_layout_screen.dart';
 
 class BookDashboardScreen extends StatefulWidget {
@@ -439,6 +440,25 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
           style: const TextStyle(color: Colors.white),
         ),
       ),
+    );
+  }
+
+  void _openQuickReview() {
+    final mIdx = _activeModuleIdx.clamp(0, widget.book.modules.length - 1);
+    final activeMod = widget.book.modules[mIdx];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return QuickReviewSheet(
+          book: widget.book,
+          modIdx: mIdx,
+          module: activeMod,
+          onBookUpdated: widget.onBookUpdated,
+        );
+      },
     );
   }
 
@@ -878,6 +898,14 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                 )
                               else
                                 const Expanded(child: SizedBox.shrink()),
+                              const SizedBox(width: 8),
+
+                              // Quick Review Button
+                              _IconHeaderButton(
+                                onTap: _openQuickReview,
+                                child: const Icon(LucideIcons.sparkles, color: AppTheme.duoGreen, size: 22),
+                              ),
+
                               const SizedBox(width: 8),
 
                               // XP chip

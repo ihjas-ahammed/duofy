@@ -18,6 +18,7 @@ import '../widgets/responsive_center.dart';
 import '../widgets/sync_conflict_dialog.dart';
 import 'package:flutter/foundation.dart';
 import 'main_layout_screen.dart';
+import 'module_selection_screen.dart';
 import 'settings_screen.dart';
 import 'generate_book_screen.dart';
 import 'pdf_split_preview_screen.dart';
@@ -796,7 +797,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           book: book,
                           progress: progressMap[book.id] ?? 0.0,
                           onTap: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => ModuleSelectionScreen(book: book)))
                               .then((_) => _loadAllData(force: false));
                           },
                           onLongPress: () => _showBookLongPressMenu(book),
@@ -953,7 +954,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             if (kIsWeb) {
                               Navigator.pushNamed(context, '/${book.id}').then((_) => _loadAllData(force: false));
                             } else {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => MainLayoutScreen(book: book)))
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => ModuleSelectionScreen(book: book)))
                                 .then((_) => _loadAllData(force: false));
                             }
                           },

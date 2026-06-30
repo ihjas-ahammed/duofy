@@ -19,8 +19,14 @@ import '../widgets/glassy_nav_bar.dart';
 class MainLayoutScreen extends StatefulWidget {
   final Book book;
   final int? initialModuleIdx;
+  final int? initialSectionIdx;
 
-  const MainLayoutScreen({super.key, required this.book, this.initialModuleIdx});
+  const MainLayoutScreen({
+    super.key,
+    required this.book,
+    this.initialModuleIdx,
+    this.initialSectionIdx,
+  });
 
   @override
   State<MainLayoutScreen> createState() => _MainLayoutScreenState();
@@ -42,7 +48,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     super.initState();
     _currentBook = widget.book;
     _activeModule = ValueNotifier<int>(widget.initialModuleIdx ?? 0);
-    _activeSection = ValueNotifier<int>(0);
+    _activeSection = ValueNotifier<int>(widget.initialSectionIdx ?? 0);
 
     _bookUpdateSub = GenerationManager.instance.bookUpdates.listen((updatedBook) {
       if (updatedBook.id == _currentBook.id && mounted) {

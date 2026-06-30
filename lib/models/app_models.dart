@@ -729,12 +729,35 @@ class QuestionPaper {
   }
 }
 
+class QuickReviewItem {
+  final String statement;
+  final String relatedLessonTitle;
+
+  QuickReviewItem({
+    required this.statement,
+    required this.relatedLessonTitle,
+  });
+
+  factory QuickReviewItem.fromJson(Map<String, dynamic> json) {
+    return QuickReviewItem(
+      statement: _str(json['statement']),
+      relatedLessonTitle: _str(json['relatedLessonTitle'] ?? json['relatedLesson'] ?? ''),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'statement': statement,
+    'relatedLessonTitle': relatedLessonTitle,
+  };
+}
+
 class Module {
   final String id;
   final String title;
   final String description;
   final List<Section> sections;
   final List<Slide> practiceQuestions;
+  final List<QuickReviewItem>? quickReview;
 
   Module({
     required this.id, 
@@ -742,6 +765,7 @@ class Module {
     required this.description, 
     required this.sections,
     required this.practiceQuestions,
+    this.quickReview,
   });
 
   factory Module.fromJson(Map<String, dynamic> json) {
@@ -751,6 +775,7 @@ class Module {
       description: _str(json['description']),
       sections: (json['sections'] as List?)?.map((s) => Section.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
       practiceQuestions: (json['practiceQuestions'] as List?)?.map((s) => Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
+      quickReview: (json['quickReview'] as List?)?.map((r) => QuickReviewItem.fromJson(r is Map ? Map<String, dynamic>.from(r) : {})).toList(),
     );
   }
 
@@ -760,6 +785,7 @@ class Module {
     'description': description,
     'sections': sections.map((s) => s.toJson()).toList(),
     'practiceQuestions': practiceQuestions.map((s) => s.toJson()).toList(),
+    if (quickReview != null) 'quickReview': quickReview!.map((r) => r.toJson()).toList(),
   };
 
   Module copyWith({
@@ -768,6 +794,7 @@ class Module {
     String? description,
     List<Section>? sections,
     List<Slide>? practiceQuestions,
+    List<QuickReviewItem>? quickReview,
   }) {
     return Module(
       id: id ?? this.id,
@@ -775,6 +802,7 @@ class Module {
       description: description ?? this.description,
       sections: sections ?? this.sections,
       practiceQuestions: practiceQuestions ?? this.practiceQuestions,
+      quickReview: quickReview ?? this.quickReview,
     );
   }
 }

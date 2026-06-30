@@ -2745,6 +2745,146 @@ Respond strictly in JSON format:
     }
     return null;
   }
+
+  Future<List<QuickReviewItem>> generateQuickReviewForModule(
+    Module module, {
+    String? forcedApiKey,
+  }) async {
+    await _checkPause();
+    final keys = await _getKeys(forcedApiKey: forcedApiKey);
+    final modelsToTry = await _getLiteModels();
+
+    // Extract text from sections
+    String textContent = '';
+    for (final sec in module.sections) {
+      if (sec.pdfPath != null && File(sec.pdfPath!).existsSync()) {
+        try {
+          final text = await PdfService().extractTextFromPdf(File(sec.pdfPath!));
+          if (text.trim().isNotEmpty) {
+            textContent += '\n\n--- SECTION: ${sec.title} ---\n$text';
+          }
+        } catch (e) {
+          print('Error extracting text for section ${sec.title}: $e');
+        }
+      }
+    }
+
+    // Fallback if no text extracted
+    if (textContent.trim().isEmpty) {
+      textContent = 'Module Title: ${module.title}\nDescription: ${module.description}\n';
+      for (final sec in module.sections) {
+        textContent += '\nSection: ${sec.title}\nDescription: ${sec.description}\n';
+        for (final unit in sec.units) {
+          textContent += ' - Unit: ${unit.title}\n';
+          for (final lesson in unit.lessons) {
+            textContent += '   - Lesson: ${lesson.title}\n';
+          }
+        }
+      }
+    }
+
+    // Limit text size to avoid exceeding context window (e.g. max ~120k chars)
+    if (textContent.length > 120000) {
+      textContent = textContent.substring(0, 120000) + '... [truncated]';
+    }
+
+    final prompt = '''You are an expert academic assistant.
+Your task is to generate a comprehensive "Quick Review" sheet for a study module.
+Based on the textbook/course content provided below, extract a list of key theory statements, definitions, laws, principles, and equations.
+
+CRITICAL RULES:
+1. INCLUDE KEY EQUATIONS: Always include the mathematical equations associated with the concepts. Format them in LaTeX (e.g., using \$...\$ or \$\$...\$\$).
+2. EXCLUDE PROOFS: Do NOT include long proofs, derivations, derivations steps, or exercises.
+3. CONCISE STATEMENTS: Keep each statement clear, factual, and concise (1-3 sentences).
+4. ASSIGN RELATED LESSON TITLE: For each statement, specify the title of the most relevant lesson/subtopic from the module (e.g., "First Law of Thermodynamics"). This will help map the statement back to the lesson.
+
+CONTENT:
+$textContent
+
+Return ONLY a JSON array of objects matching this exact schema:
+[
+  {
+    "statement": "The First Law of Thermodynamics states that the change in internal energy of a system is equal to the heat added minus the work done: \$\\Delta U = Q - W\$.",
+    "relatedLessonTitle": "First Law of Thermodynamics"
+  }
+]
+''';
+
+    for (var key in keys) {
+      for (var modelName in modelsToTry) {
+        try {
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: key,
+            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+          );
+          final response = await _retryTransient(
+            () => model.generateContent([Content.text(prompt)]).timeout(const Duration(seconds: 45)),
+            onRetry: (a, e) => print('[AiService] Quick review generation attempt $a: $e'),
+          );
+          if (response.text != null) {
+            final decoded = jsonDecode(_cleanJsonText(response.text!));
+            if (decoded is List) {
+              return decoded.map((item) => QuickReviewItem.fromJson(Map<String, dynamic>.from(item))).toList();
+            }
+          }
+        } catch (e) {
+          print('[AiService] generateQuickReviewForModule error with $modelName: $e');
+        }
+      }
+    }
+    return [];
+  }
+
+  Future<String> explainQuickReviewStatement(
+    String statement,
+    String contextInfo, {
+    String? forcedApiKey,
+  }) async {
+    await _checkPause();
+    final keys = await _getKeys(forcedApiKey: forcedApiKey);
+    final modelsToTry = await _getLiteModels();
+
+    final prompt = '''You are an expert tutor.
+Explain the following concept/statement in detail.
+Provide a clear, intuitive explanation in 2-3 paragraphs.
+Explain any equations, variables, physical/mathematical meaning, and a real-world application if relevant.
+Use clean markdown formatting. Format equations in LaTeX (e.g. using \$...\$ or \$\$...\$\$).
+
+STATEMENT TO EXPLAIN:
+$statement
+
+CONTEXT/TOPIC:
+$contextInfo
+
+Return ONLY the markdown explanation.
+''';
+
+    for (var key in keys) {
+      for (var modelName in modelsToTry) {
+        try {
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: key,
+          );
+          final response = await _retryTransient(
+            () => model.generateContent([Content.text(prompt)]).timeout(const Duration(seconds: 25)),
+            onRetry: (a, e) => print('[AiService] Statement explanation attempt $a: $e'),
+          );
+          if (response.text != null) {
+            return response.text!.trim();
+          }
+        } catch (e) {
+          print('[AiService] explainQuickReviewStatement error with $modelName: $e');
+        }
+      }
+    }
+    return 'Failed to generate explanation. Please check your internet connection and API keys.';
+  }
+
+  String _cleanJsonText(String text) {
+    return text.replaceAll('```json', '').replaceAll('```', '').trim();
+  }
 }
 
 class UnitManifestResult {
