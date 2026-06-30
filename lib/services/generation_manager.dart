@@ -1548,13 +1548,28 @@ class GenerationManager extends ChangeNotifier {
         if (isHandout) {
           await startBackgroundSplitAndSave(taskId, sourceFiles, skeletonBook);
         } else {
-          task.skeletonBook = skeletonBook;
-          task.state = BookGenState.review;
-          task.statusMessage = 'Action Required: Review Splits';
-          notifyListeners();
+          final prefs = await SharedPreferences.getInstance();
+          final autoVerify = prefs.getBool('auto_verify_mappings') ?? true;
+          
+          bool verificationPassed = false;
+          if (autoVerify) {
+            task.statusMessage = 'Verifying page mappings with AI...';
+            notifyListeners();
+            verificationPassed = await _verifyMappingsWithAi(sourceFiles, skeletonBook);
+          }
+          
+          if (verificationPassed) {
+            print('[GenerationManager] AI mapping verification passed. Proceeding automatically...');
+            await startBackgroundSplitAndSave(taskId, sourceFiles, skeletonBook);
+          } else {
+            task.skeletonBook = skeletonBook;
+            task.state = BookGenState.review;
+            task.statusMessage = 'Action Required: Review Splits';
+            notifyListeners();
 
-          await NotificationService.cancel(notifId);
-          await NotificationService.showActionable(notifId, "Course Skeleton Ready", "Tap to review page splits.", "review_split|$taskId");
+            await NotificationService.cancel(notifId);
+            await NotificationService.showActionable(notifId, "Course Skeleton Ready", "Tap to review page splits.", "review_split|$taskId");
+          }
         }
       }
     } catch (e) {
@@ -1638,6 +1653,13 @@ class GenerationManager extends ChangeNotifier {
       
       _bookUpdateController.add(finalBook);
       onBookGenerated?.call();
+
+      // Trigger automatic Module 1 generation if configured
+      final prefs = await SharedPreferences.getInstance();
+      final autoGenModule1 = prefs.getBool('auto_generate_module_1') ?? true;
+      if (autoGenModule1) {
+        autoGenerateModule1Contents(finalBook);
+      }
 
       await NotificationService.cancel(notifId);
       await NotificationService.showActionable(notifId, "Course Created!", "Your book is ready.", "open_home|");
@@ -2403,5 +2425,113 @@ class GenerationManager extends ChangeNotifier {
     activeTasks.add(task);
     _syncActiveMapsWithQueue();
     notifyListeners();
+  }
+
+  Future<bool> _verifyMappingsWithAi(List<File> sourceFiles, Book skeletonBook, {String? apiKey}) async {
+    try {
+      final List<Section> sectionsToVerify = [];
+      for (final module in skeletonBook.modules) {
+        for (final section in module.sections) {
+          if (section.startPage != null && section.startPage! >= 1) {
+            sectionsToVerify.add(section);
+            if (sectionsToVerify.length >= 3) break;
+          }
+        }
+        if (sectionsToVerify.length >= 3) break;
+      }
+      
+      if (sectionsToVerify.isEmpty) return true;
+      
+      int matches = 0;
+      for (final section in sectionsToVerify) {
+        final fileIdx = section.bookIndex ?? 0;
+        if (fileIdx < 0 || fileIdx >= sourceFiles.length) continue;
+        
+        final file = sourceFiles[fileIdx];
+        final pageText = await _pdfService.extractPageText(file, section.startPage! - 1);
+        if (pageText.trim().isEmpty) {
+          matches++;
+          continue;
+        }
+        
+        final isMatch = await _aiService.verifySectionMapping(
+          pageText,
+          section.startPage!,
+          section.title,
+          section.description,
+          apiKey: apiKey,
+        );
+        
+        if (isMatch) {
+          matches++;
+        }
+      }
+      
+      return matches >= sectionsToVerify.length;
+    } catch (e) {
+      print('Error during AI mapping verification: $e');
+      return false;
+    }
+  }
+
+  Future<void> autoGenerateModule1Contents(Book book) async {
+    if (book.modules.isEmpty || book.modules.first.sections.isEmpty) return;
+    
+    final firstSection = book.modules.first.sections.first;
+    
+    final task = AiTask(
+      id: 'manifest_${DateTime.now().millisecondsSinceEpoch}_${firstSection.id}',
+      title: 'Plan Manifest: ${firstSection.title}',
+      bookId: book.id,
+      moduleId: book.modules.first.id,
+      sectionId: firstSection.id,
+      type: 'manifest',
+      generateGraphics: true,
+      isScheduled: false,
+      params: {
+        'modIdx': 0,
+        'secIdx': 0,
+        'instructions': null,
+        'saveGlobally': false,
+      },
+    );
+    
+    _enqueueTaskObject(task);
+    
+    try {
+      await task.completer.future;
+      
+      final updatedBook = await _dbService.getBookFromCache(book.id);
+      if (updatedBook != null &&
+          updatedBook.modules.isNotEmpty &&
+          updatedBook.modules.first.sections.isNotEmpty) {
+        
+        final updatedFirstSec = updatedBook.modules.first.sections.first;
+        if (updatedFirstSec.units.isNotEmpty) {
+          final firstUnit = updatedFirstSec.units.first;
+          await startUnitGeneration(
+            firstUnit,
+            updatedBook,
+            0,
+            0,
+            0,
+            generateGraphics: true,
+            isScheduled: false,
+          );
+        }
+      }
+    } catch (e) {
+      print('Error auto-generating first unit manifest: $e');
+    }
+    
+    for (int i = 1; i < book.modules.first.sections.length; i++) {
+      startSectionUnitManifest(
+        book,
+        0,
+        i,
+        instructions: null,
+        isScheduled: false,
+      );
+    }
   }
 }

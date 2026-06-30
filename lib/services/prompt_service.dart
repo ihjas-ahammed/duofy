@@ -267,6 +267,8 @@ Return ONLY valid JSON matching this exact structure:
 TASK: Identify the subtopics/sections from the SYLLABUS that belong to this chapter. 
 Assign absolute page ranges in the reference textbook for each subtopic/section.
 The page ranges must be contiguous, in order, and stay strictly within the chapter's range [%chapter_start%, %chapter_end%].
+- BY DEFAULT, NEVER NEGLECT EXAMPLE AND EXERCISE QUESTIONS, OR PROBLEMS SECTIONS.
+- OF THE END OF THE CHAPTER, IF THERE IS A PROBLEMS OR EXERCISES SECTION, YOU MUST INCLUDE AND USE IT AS A DEDICATED SECTION. If not explicitly detailed, allocate the final pages of the chapter (i.e. the page difference/range from the last regular section to %chapter_end%) for this problems section.
 
 %custom_instructions%
 $_offsetBlock
@@ -298,6 +300,8 @@ TASK: From the TOC, list the numbered sub-topics / sections that belong ONLY to 
 2. Do NOT merge two sub-topics into one entry — keep them separate so each gets its own page range.
 3. If this chapter lists no sub-topics, return a SINGLE section that spans the whole chapter.
 4. Keep ranges contiguous and inside [%chapter_start%, %chapter_end%]: end each section one page before the next begins; the last section ends at %chapter_end%.
+5. BY DEFAULT, NEVER NEGLECT EXAMPLE AND EXERCISE QUESTIONS, OR PROBLEMS SECTIONS.
+6. OF THE END OF THE CHAPTER, IF THERE IS A PROBLEMS OR EXERCISES SECTION, YOU MUST INCLUDE AND USE IT AS A DEDICATED SECTION (e.g. "Chapter X Problems" or "Exercises"). If it's not explicitly named/detailed with page numbers in the TOC, use AI to infer and search the last pages of the chapter (i.e. the page difference/range between the last mapped content section and the end of the chapter %chapter_end%) and map it as a section.
 
 For each section provide "title", "description", a "color" (one of: duo-blue, duo-green, duo-violet, duo-orange, duo-red), and absolute "startPage"/"endPage".
 
@@ -362,6 +366,8 @@ CRITICAL RULES:
 1. Cover the entire content of the attached PDF. Do not skip topics.
 2. Each unit should be roughly self-contained and digestible in one short study session.
 3. For custom formats, the slide `type` must be one of: "theory", "quiz", "fill_in_blank", "one_word", "numerical", "proof", "step_by_step", "descriptive", "custom_html".
+4. BY DEFAULT, NEVER NEGLECT EXAMPLE AND EXERCISE QUESTIONS.
+5. IF THE SECTION CONTAINS EXERCISE/PRACTICE QUESTIONS (often at the end of the section/chapter, e.g. in math/science textbooks), you MUST create a dedicated unit specifically for these exercises (e.g., "Practice Exercises"). This exercises unit must be structured such that the exercises are treated as individual lessons (taking them one by one/problem-by-problem) to ensure comprehensive, hands-on practice.
 
 Return ONLY valid JSON matching this exact structure:
 {
@@ -412,6 +418,7 @@ CRITICAL DUOLINGO-STYLE MICRO-LEARNING RULES:
 %formats_layout%
 For the chosen format, evaluate its slide templates. You can include a slide multiple times (e.g. more than one of the same kind) if needed for the topic, or only once, as long as its condition logically applies.
 3. NO STORY MODE: never frame content as a story, scenario, anecdote, or narrative ("Imagine you are...", "Sara walks into a shop...", etc.). Present theory and concepts directly and factually.
+4. EXAMPLES AND EXERCISE QUESTIONS: BY DEFAULT, NEVER NEGLECT EXAMPLE AND EXERCISES QUESTIONS. If this unit represents or contains exercise questions/practice problems, you MUST take/plan them as individual lessons, one by one (i.e. one lesson per exercise question/problem), rather than grouping them into a single lesson or omitting them.
 ''';
 
   static final String json = '''SYSTEM PROMPT:
@@ -444,6 +451,7 @@ CRITICAL SCHEMA & MICRO-LEARNING RULES:
 10. Diagrams are OPTIONAL. If and only if a lesson genuinely needs/benefits from a visual diagram or illustration to explain the concept (such as geometry, physics forces, circuits, coordinate graphs, structure diagrams), provide a 'canvasPrompt' containing a 1-2 sentence description of the diagram. If the lesson is purely textual, conceptual, or algebraic, and does not require a visual aid, set 'canvasPrompt' to null. Do NOT force a diagram for every lesson.
 11. For "proof" and "step_by_step" slides ONLY: include a `canvasPrompt` on the slide itself if and only if the proof or worked example genuinely needs a figure to follow (geometry, circuits, triangles, graphs, free-body diagrams, etc.). If the proof is purely algebraic and no figure adds value, omit `canvasPrompt` on the slide.
 12. Each lesson MUST specify a `formatId` corresponding to the lesson format type it follows (e.g., "theory", "example", or "proof" based on the available formats).
+13. BY DEFAULT, NEVER NEGLECT EXAMPLE AND EXERCISES QUESTIONS. Worked examples and exercise questions from the textbook chunk must be preserved in the generated lessons. For units consisting of exercises or practice problems, ensure they are translated into interactive lessons one by one, where each problem is a lesson or slide of type "numerical", "quiz", "proof", or "step_by_step" so the user solves them individually.
 
 YOU MUST RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
 {
@@ -496,6 +504,7 @@ CRITICAL SCHEMA & MICRO-LEARNING RULES:
 10. Diagrams are OPTIONAL. If and only if a lesson genuinely needs/benefits from a visual diagram or illustration to explain the concept (such as geometry, physics forces, circuits, coordinate graphs, structure diagrams), provide a 'canvasPrompt' containing a 1-2 sentence description of the diagram. If the lesson is purely textual, conceptual, or algebraic, and does not require a visual aid, set 'canvasPrompt' to null. Do NOT force a diagram for every lesson.
 11. For "proof" and "step_by_step" slides ONLY: include a `canvasPrompt` on the slide itself if and only if the proof / worked example genuinely needs a figure (geometry, circuits, triangles, graphs, free-body diagrams). Omit on purely algebraic slides.
 12. Specify the `formatId` corresponding to the lesson format type this lesson follows (e.g., "theory", "example", or "proof" based on the available formats).
+13. BY DEFAULT, NEVER NEGLECT EXAMPLE AND EXERCISES QUESTIONS. Worked examples and exercise questions from the textbook chunk must be preserved in the generated lessons. For units consisting of exercises or practice problems, ensure they are translated into interactive lessons one by one, where each problem is a lesson or slide of type "numerical", "quiz", "proof", or "step_by_step" so the user solves them individually.
 
 RETURN ONLY VALID JSON FOR THIS ONE LESSON (no wrapping array, no other keys):
 {

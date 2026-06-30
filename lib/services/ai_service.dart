@@ -2520,6 +2520,231 @@ Return ONLY a JSON object matching this schema:
     }
     throw lastException ?? Exception('Failed to analyze descriptive answer.');
   }
+
+  Future<List<Map<String, String>>?> extractSyllabusBooks(String syllabusText, {String? forcedApiKey}) async {
+    final keys = await _getKeys(forcedApiKey: forcedApiKey);
+    final modelsToTry = await _getLiteModels();
+    
+    String truncatedText = syllabusText;
+    if (truncatedText.length > 30000) {
+      truncatedText = truncatedText.substring(0, 30000);
+    }
+    
+    final prompt = '''
+Analyze the following text extracted from a syllabus.
+Identify all reference books, textbooks, or reading materials mentioned in the course syllabus.
+Look for titles and authors, even if they are only partially mentioned (e.g. only title or only author).
+Be generous in extracting any book recommendations.
+
+Return strictly in JSON format as a list of objects under the key "books":
+{
+  "books": [
+    {"title": "Book Title", "authors": "Author name(s)"}
+  ]
+}
+If no books are found, return:
+{
+  "books": []
+}
+
+Syllabus text:
+$truncatedText
+''';
+
+    for (var key in keys) {
+      for (var modelName in modelsToTry) {
+        try {
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: key,
+            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+          );
+          final response = await _retryTransient(
+            () => model.generateContent([Content.text(prompt)]).timeout(const Duration(minutes: 2)),
+            onRetry: (a, e) => print('[AiService] Syllabus book extraction attempt $a: ${_cleanErrMsg(e)}'),
+          );
+
+          if (response.text != null) {
+            print('[AiService] Syllabus book extraction response: ${response.text}');
+            final jsonMap = _cleanAndDecodeJson(response.text!);
+            List? booksList;
+            if (jsonMap['books'] is List) {
+              booksList = jsonMap['books'] as List;
+            } else {
+              for (final val in jsonMap.values) {
+                if (val is List && val.isNotEmpty && val.first is Map) {
+                  booksList = val;
+                  break;
+                }
+              }
+            }
+
+            if (booksList != null) {
+              return booksList.map((e) {
+                final map = Map<String, dynamic>.from(e as Map);
+                return {
+                  'title': map['title']?.toString() ?? '',
+                  'authors': map['authors']?.toString() ?? '',
+                };
+              }).toList();
+            }
+          }
+        } catch (e) {
+          print('[AiService] extractSyllabusBooks failed with $modelName: $e');
+        }
+      }
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> verifyPageRole(String pageText, int pageNumber, {String? apiKey}) async {
+    final keys = await _getKeys(forcedApiKey: apiKey);
+    final modelsToTry = await _getLiteModels();
+    
+    final prompt = '''
+Analyze the following text from page $pageNumber of a textbook.
+Determine if this page is:
+1. Part of the Table of Contents (Contents / TOC).
+2. The exact page where the content of Chapter 1 (or the first main content chapter) starts.
+
+Respond strictly in JSON format:
+{
+  "isContentsPage": true/false,
+  "isChapter1Start": true/false
+}
+
+Page Text:
+$pageText
+''';
+
+    for (var key in keys) {
+      for (var modelName in modelsToTry) {
+        try {
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: key,
+            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+          );
+          final response = await _retryTransient(
+            () => model.generateContent([Content.text(prompt)]).timeout(const Duration(seconds: 30)),
+            onRetry: (a, e) => print('[AiService] Page role verification attempt $a: $e'),
+          );
+          if (response.text != null) {
+            return _cleanAndDecodeJson(response.text!);
+          }
+        } catch (e) {
+          print('[AiService] verifyPageRole error with $modelName: $e');
+        }
+      }
+    }
+    return null;
+  }
+
+  Future<bool> verifySectionMapping(String pageText, int pageNumber, String sectionTitle, String sectionDescription, {String? apiKey}) async {
+    final keys = await _getKeys(forcedApiKey: apiKey);
+    final modelsToTry = await _getLiteModels();
+    
+    final prompt = '''
+Analyze the text of page $pageNumber from the textbook.
+We want to verify if this page corresponds to the start of the following section:
+Section Title: "$sectionTitle"
+Section Description: "$sectionDescription"
+
+Answer with a JSON object:
+{
+  "isMatch": true/false
+}
+Set "isMatch" to true if this page indeed discusses, introduces, or contains the start of this section's topic. Set to false if it does not.
+
+Page Text:
+$pageText
+''';
+
+    for (var key in keys) {
+      for (var modelName in modelsToTry) {
+        try {
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: key,
+            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+          );
+          final response = await _retryTransient(
+            () => model.generateContent([Content.text(prompt)]).timeout(const Duration(seconds: 30)),
+            onRetry: (a, e) => print('[AiService] Section mapping verification attempt $a: $e'),
+          );
+          if (response.text != null) {
+            final decoded = _cleanAndDecodeJson(response.text!);
+            return decoded['isMatch'] == true;
+          }
+        } catch (e) {
+          print('[AiService] verifySectionMapping error with $modelName: $e');
+        }
+      }
+    }
+    return false;
+  }
+
+  Future<int?> matchSyllabusBookToMarketplace({
+    required String syllabusBookTitle,
+    required String syllabusBookAuthors,
+    required List<Map<String, String>> candidateBooks,
+    String? apiKey,
+  }) async {
+    if (candidateBooks.isEmpty) return null;
+    
+    final keys = await _getKeys(forcedApiKey: apiKey);
+    final modelsToTry = await _getLiteModels();
+    
+    final candidateListString = candidateBooks.asMap().entries.map((e) {
+      return 'Index: ${e.key} | Title: "${e.value['title']}" | Author: "${e.value['author']}"';
+    }).join('\n');
+    
+    final prompt = '''
+We are trying to match a reference book mentioned in a syllabus to a textbook in our database.
+Target Syllabus Book:
+Title: "$syllabusBookTitle"
+Authors: "$syllabusBookAuthors"
+
+Database Candidate Books:
+$candidateListString
+
+Identify which database candidate book is the correct match for our target syllabus book.
+Look past minor typos, spelling variations, formatting differences, extra tags, edition numbers, or trailing symbols (e.g. "Mathematical ANlysis&29198271" is a match for "Mathematical Analysis").
+If a matching book is found, return the Index number of that candidate.
+If no book in the candidate list is a match, return -1.
+
+Respond strictly in JSON format:
+{
+  "matchIndex": [Index number or -1]
+}
+''';
+
+    for (var key in keys) {
+      for (var modelName in modelsToTry) {
+        try {
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: key,
+            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+          );
+          final response = await _retryTransient(
+            () => model.generateContent([Content.text(prompt)]).timeout(const Duration(seconds: 25)),
+            onRetry: (a, e) => print('[AiService] Syllabus book matching attempt $a: $e'),
+          );
+          if (response.text != null) {
+            final decoded = _cleanAndDecodeJson(response.text!);
+            final idx = decoded['matchIndex'];
+            if (idx is int && idx >= 0 && idx < candidateBooks.length) {
+              return idx;
+            }
+          }
+        } catch (e) {
+          print('[AiService] matchSyllabusBookToMarketplace error with $modelName: $e');
+        }
+      }
+    }
+    return null;
+  }
 }
 
 class UnitManifestResult {

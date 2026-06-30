@@ -476,7 +476,7 @@ class DatabaseService {
   // ---------------------------------------------------------------------------
   String get _globalCacheKey => 'cached_global_books';
 
-  Future<List<Book>> fetchGlobalBooks({bool useCacheOnly = false}) async {
+  Future<List<Book>> fetchGlobalBooks({bool useCacheOnly = false, bool forceNetwork = false}) async {
     final prefs = await SharedPreferences.getInstance();
 
     final cachedStr = prefs.getString(_globalCacheKey);
@@ -491,8 +491,8 @@ class DatabaseService {
     }
 
     if (useCacheOnly && cachedGlobals.isNotEmpty) return cachedGlobals;
-    // Community browsing needs the network; respect the local-first toggle.
-    if (!await isCloudEnabled()) return cachedGlobals;
+    // Community browsing needs the network; respect the local-first toggle unless forced.
+    if (!forceNetwork && !await isCloudEnabled()) return cachedGlobals;
 
     try {
       final snapshot = await _globalBooks.get().timeout(const Duration(seconds: 30));

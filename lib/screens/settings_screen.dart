@@ -16,6 +16,7 @@ import '../models/app_models.dart';
 import 'pdf_browser_screen.dart';
 import 'metacognition_setup_screen.dart';
 import 'ai_queue_screen.dart';
+import 'experiments_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -46,6 +47,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isSyncing = false;
   bool _isLoading = true;
   bool _generationPaused = false;
+  bool _autoFetchBooks = true;
+  bool _autoVerifyMappings = true;
+  bool _autoGenerateModule1 = true;
   int? _lastSyncTime;
   final GlobalKey<StringListManagerState> _keysManagerKey = GlobalKey<StringListManagerState>();
   final DatabaseService _db = DatabaseService();
@@ -158,6 +162,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _scheduleEnd = TimeOfDay(hour: endHour, minute: endMinute);
     _lastSyncTime = prefs.getInt('last_db_sync_time');
     _customPromptController.text = prefs.getString('custom_live_chat_prompt') ?? '';
+    _autoFetchBooks = prefs.getBool('auto_fetch_books') ?? true;
+    _autoVerifyMappings = prefs.getBool('auto_verify_mappings') ?? true;
+    _autoGenerateModule1 = prefs.getBool('auto_generate_module_1') ?? true;
 
     final String? profileStr = prefs.getString('user_writing_style_profile');
     if (profileStr != null) {
@@ -239,6 +246,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setInt('schedule_end_minute', _scheduleEnd.minute);
     await prefs.setString('custom_live_chat_prompt', _customPromptController.text.trim());
     await prefs.setBool('generation_paused', _generationPaused);
+    await prefs.setBool('auto_fetch_books', _autoFetchBooks);
+    await prefs.setBool('auto_verify_mappings', _autoVerifyMappings);
+    await prefs.setBool('auto_generate_module_1', _autoGenerateModule1);
     await GenerationManager.instance.setPaused(_generationPaused);
     await _db.setCloudEnabled(_cloudSync);
 
@@ -716,6 +726,121 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildAutomationCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(LucideIcons.cpu, color: AppTheme.duoBlue, size: 28),
+              SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  'Automation Settings',
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Auto-fetch Reference Books',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Extract mentioned books from syllabus and download them from the marketplace automatically.',
+                      style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Switch(
+                value: _autoFetchBooks,
+                activeColor: AppTheme.duoBlue,
+                onChanged: (v) {
+                  setState(() => _autoFetchBooks = v);
+                },
+              ),
+            ],
+          ),
+          const Divider(color: Colors.white10, height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'AI Mapping Verification',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Verify page ranges automatically using AI and proceed without manual confirmation.',
+                      style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Switch(
+                value: _autoVerifyMappings,
+                activeColor: AppTheme.duoBlue,
+                onChanged: (v) {
+                  setState(() => _autoVerifyMappings = v);
+                },
+              ),
+            ],
+          ),
+          const Divider(color: Colors.white10, height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Auto-generate Module 1',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Create outlines for Module 1 sections and auto-generate the first unit with diagrams.',
+                      style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Switch(
+                value: _autoGenerateModule1,
+                activeColor: AppTheme.duoBlue,
+                onChanged: (v) {
+                  setState(() => _autoGenerateModule1 = v);
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAiQueueCard() {
     return Container(
       decoration: BoxDecoration(
@@ -770,6 +895,62 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
+
+  Widget _buildExperimentsCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ExperimentsScreen()),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.duoViolet.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(LucideIcons.flaskConical, color: AppTheme.duoViolet, size: 20),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Experiments / Slide Testing',
+                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Load slide presets or paste custom slide JSON to test rendering live.',
+                        style: TextStyle(color: Colors.white54, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(LucideIcons.chevronRight, color: Colors.white30, size: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
 
   String _formatTimeOfDay(TimeOfDay time) {
     final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
@@ -1142,7 +1323,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 16),
             _buildPauseGenerationCard(),
             const SizedBox(height: 16),
+            _buildAutomationCard(),
+            const SizedBox(height: 16),
             _buildAiQueueCard(),
+            const SizedBox(height: 16),
+            _buildExperimentsCard(),
 
             const SizedBox(height: 32),
             const Text('Live Chat Assistant', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),

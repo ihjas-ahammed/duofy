@@ -52,6 +52,10 @@ class _SummaryScreenState extends State<SummaryScreen> {
 
   // Track search text controllers for each unit
   final Map<String, TextEditingController> _searchControllers = {};
+  final TextEditingController _sectionSearchController = TextEditingController();
+  List<YoutubeVideo>? _sectionVideos;
+  bool _loadingSectionVideos = false;
+  String? _errorSectionVideos;
 
   int _activeModuleIdx = 0;
   int _activeSectionIdx = 0;
@@ -86,6 +90,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
     for (final controller in _searchControllers.values) {
       controller.dispose();
     }
+    _sectionSearchController.dispose();
     super.dispose();
   }
 
@@ -100,6 +105,8 @@ class _SummaryScreenState extends State<SummaryScreen> {
       final module = widget.book.modules[modIdx];
       if (secIdx >= 0 && secIdx < module.sections.length) {
         final section = module.sections[secIdx];
+        _sectionSearchController.text = "${widget.book.title} ${section.title} class lecture";
+        _sectionVideos = null;
         for (final unit in section.units) {
           if (!_searchControllers.containsKey(unit.id)) {
             _searchControllers[unit.id] = TextEditingController(
@@ -128,6 +135,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
         final module = widget.book.modules[modIdx];
         if (secIdx >= 0 && secIdx < module.sections.length) {
           final section = module.sections[secIdx];
+          _sectionSearchController.text = "${widget.book.title} ${section.title} class lecture";
           for (final unit in section.units) {
             if (!_searchControllers.containsKey(unit.id)) {
               _searchControllers[unit.id] = TextEditingController(
@@ -184,6 +192,37 @@ class _SummaryScreenState extends State<SummaryScreen> {
         setState(() {
           _errorUnits[unitId] = e.toString();
           _loadingUnits[unitId] = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _searchVideosForSection(Section section) async {
+    final query = _sectionSearchController.text.trim();
+    if (query.isEmpty) return;
+
+    if (mounted) {
+      setState(() {
+        _loadingSectionVideos = true;
+        _errorSectionVideos = null;
+      });
+    }
+
+    try {
+      final videos = await _searchYouTube(query);
+      _sortVideosByPriority(videos);
+      
+      if (mounted) {
+        setState(() {
+          _sectionVideos = videos;
+          _loadingSectionVideos = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorSectionVideos = e.toString();
+          _loadingSectionVideos = false;
         });
       }
     }
@@ -476,6 +515,111 @@ class _SummaryScreenState extends State<SummaryScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Section Video Class Finder
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: AppTheme.glassDecoration,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(LucideIcons.playCircle, color: AppTheme.duoBlue, size: 22),
+                            SizedBox(width: 8),
+                            Text(
+                              'Section Video Class Finder',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: Colors.white.withOpacity(0.08)),
+                                ),
+                                child: TextField(
+                                  controller: _sectionSearchController,
+                                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                                  decoration: const InputDecoration(
+                                    border: InputBorder.none,
+                                    hintText: 'Search section videos...',
+                                    hintStyle: TextStyle(color: Colors.white30, fontSize: 12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.duoBlue,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                minimumSize: const Size(0, 42),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                elevation: 0,
+                              ),
+                              onPressed: _loadingSectionVideos ? null : () => _searchVideosForSection(currentSection!),
+                              child: _loadingSectionVideos
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    )
+                                  : const Icon(LucideIcons.search, size: 16),
+                            ),
+                          ],
+                        ),
+                        if (_loadingSectionVideos)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 20.0),
+                            child: Center(
+                              child: Text(
+                                'Searching YouTube...',
+                                style: TextStyle(color: Colors.white30, fontSize: 12),
+                              ),
+                            ),
+                          )
+                        else if (_errorSectionVideos != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16.0),
+                            child: Text(
+                              'Error: $_errorSectionVideos',
+                              style: const TextStyle(color: AppTheme.duoRed, fontSize: 11),
+                              textAlign: TextAlign.center,
+                            ),
+                          )
+                        else if (_sectionVideos != null && _sectionVideos!.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          const Divider(color: Colors.white10, height: 1),
+                          const SizedBox(height: 12),
+                          ..._sectionVideos!.map((video) => _buildVideoCard(context, video)),
+                        ] else if (_sectionVideos != null)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 16.0),
+                            child: Text(
+                              'No lectures found for this section.',
+                              style: TextStyle(color: Colors.white30, fontSize: 11),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
                       ],
                     ),
                   ),

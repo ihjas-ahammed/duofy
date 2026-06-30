@@ -897,6 +897,21 @@ class PdfService {
 
     return null;
   }
+
+  /// Extracts text from a specific 0-based page index of a PDF file.
+  Future<String> extractPageText(File pdfFile, int pageIndex) async {
+    sync_pdf.PdfDocument? doc;
+    try {
+      doc = sync_pdf.PdfDocument(inputBytes: await pdfFile.readAsBytes());
+      final extractor = sync_pdf.PdfTextExtractor(doc);
+      return extractor.extractText(startPageIndex: pageIndex, endPageIndex: pageIndex);
+    } catch (e) {
+      print('PdfService extractPageText error for page index $pageIndex: $e');
+      return '';
+    } finally {
+      doc?.dispose();
+    }
+  }
 }
 
 class PdfBookmarkNode {

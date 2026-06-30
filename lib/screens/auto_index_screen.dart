@@ -4,6 +4,7 @@ import '../theme/app_theme.dart';
 import '../services/auto_index_service.dart';
 import '../widgets/responsive_center.dart';
 import 'index_picker_screen.dart';
+import 'course_questionnaire_screen.dart';
 
 class AutoIndexScreen extends StatefulWidget {
   final File sourcePdf;
@@ -72,23 +73,47 @@ class _AutoIndexScreenState extends State<AutoIndexScreen> {
             _status = 'Could not automatically find the index or chapter 1. Please go back and use Manual mode.';
           });
         } else {
-          Navigator.of(context).pushReplacement(MaterialPageRoute(
-            builder: (_) => IndexPickerScreen(
-              sourcePdf: widget.sourcePdf,
-              filename: widget.filename,
-              syllabusFiles: widget.syllabusFiles,
-              isCourse: widget.isCourse,
-              initialIndexPages: result.indexPages,
-              initialChapter1Page: result.chapter1StartPage,
-              allSourcePdfs: widget.allSourcePdfs,
-              currentPdfIndex: widget.currentPdfIndex,
-              collectedIndexPages: widget.collectedIndexPages,
-              collectedChapter1StartPages: widget.collectedChapter1StartPages,
-              isAutoMode: widget.isAutoMode,
-              isHandout: widget.isHandout,
-              customIndexingPrompt: widget.customIndexingPrompt,
-            ),
-          ));
+          final currentPagesList = List<List<int>>.from(widget.collectedIndexPages ?? []);
+          final currentCh1List = List<int>.from(widget.collectedChapter1StartPages ?? []);
+          currentPagesList.add(result.indexPages);
+          currentCh1List.add(result.chapter1StartPage!);
+
+          final sourcePdfs = widget.allSourcePdfs ?? [widget.sourcePdf];
+          final nextIdx = widget.currentPdfIndex + 1;
+
+          if (nextIdx < sourcePdfs.length) {
+            final nextPdf = sourcePdfs[nextIdx];
+            final nextFilename = nextPdf.path.split(RegExp(r'[\\/]')).last;
+
+            Navigator.of(context).pushReplacement(MaterialPageRoute(
+              builder: (_) => AutoIndexScreen(
+                sourcePdf: nextPdf,
+                filename: nextFilename,
+                syllabusFiles: widget.syllabusFiles,
+                isCourse: widget.isCourse,
+                allSourcePdfs: sourcePdfs,
+                currentPdfIndex: nextIdx,
+                collectedIndexPages: currentPagesList,
+                collectedChapter1StartPages: currentCh1List,
+                isAutoMode: true,
+                isHandout: widget.isHandout,
+                customIndexingPrompt: widget.customIndexingPrompt,
+              ),
+            ));
+          } else {
+            Navigator.of(context).pushReplacement(MaterialPageRoute(
+              builder: (_) => CourseQuestionnaireScreen(
+                sourcePdfs: sourcePdfs,
+                filename: widget.filename,
+                syllabusFiles: widget.syllabusFiles,
+                isCourse: widget.isCourse,
+                allIndexPages: currentPagesList,
+                allChapter1StartPages: currentCh1List,
+                isHandout: widget.isHandout,
+                customIndexingPrompt: widget.customIndexingPrompt,
+              ),
+            ));
+          }
         }
       }
     } catch (e) {

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/file_selection_list.dart';
@@ -14,6 +15,9 @@ import '../services/pdf_service.dart';
 import 'package:path_provider/path_provider.dart';
 import '../services/b2_service.dart';
 import 'document_store_screen.dart';
+import '../services/ai_service.dart';
+import '../services/database_service.dart';
+import '../models/app_models.dart';
 
 enum GenerationMode { book, handout, course }
 enum IndexMode { auto, manual, chapters }
@@ -32,6 +36,23 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
   final List<File> _syllabusFiles = [];
   final TextEditingController _customPromptController = TextEditingController();
   final TextEditingController _titleController = TextEditingController();
+  bool _autoFetchBooks = true;
+  bool _isScanningSyllabus = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _autoFetchBooks = prefs.getBool('auto_fetch_books') ?? true;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -48,14 +69,19 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
     );
 
     if (result != null) {
+      final newFiles = result.paths.where((p) => p != null).map((p) => File(p!)).toList();
       setState(() {
-        final newFiles = result.paths.where((p) => p != null).map((p) => File(p!)).toList();
         if (forSyllabus) {
           _syllabusFiles.addAll(newFiles);
         } else {
           _selectedFiles.addAll(newFiles);
         }
       });
+      if (forSyllabus) {
+        for (final f in newFiles) {
+          _scanSyllabusForBooks(f);
+        }
+      }
     }
   }
 
@@ -111,6 +137,9 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
           _selectedFiles.add(file);
         }
       });
+      if (forSyllabus) {
+        _scanSyllabusForBooks(file);
+      }
       return;
     }
 
@@ -129,7 +158,555 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
           _selectedFiles.add(downloadedFile);
         }
       });
+      if (forSyllabus) {
+        _scanSyllabusForBooks(downloadedFile);
+      }
     }
+  }
+
+  Future<void> _scanSyllabusForBooks(File file) async {
+    if (!_autoFetchBooks) {
+      print('[SyllabusScan] Auto-fetch disabled, skipping scan.');
+      return;
+    }
+    print('[SyllabusScan] Starting syllabus scan for file: ${file.path}');
+    setState(() {
+      _isScanningSyllabus = true;
+    });
+
+    try {
+      final text = await PdfService().extractTextFromPdf(file);
+      if (text.trim().isEmpty) {
+        print('[SyllabusScan] PDF text extraction returned empty text.');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Syllabus PDF has no extractable text. Scanned PDFs are not supported for auto-fetching books.'),
+            ),
+          );
+        }
+        return;
+      }
+
+      print('[SyllabusScan] Extracted ${text.length} characters of text. Invoking AI extraction...');
+      final extractedBooks = await AiService().extractSyllabusBooks(text);
+      if (extractedBooks == null) {
+        print('[SyllabusScan] AI syllabus book extraction returned null.');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to analyze syllabus textbook mentions using AI.'),
+            ),
+          );
+        }
+        return;
+      }
+      
+      if (extractedBooks.isEmpty) {
+        print('[SyllabusScan] AI found zero textbook mentions in syllabus.');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Syllabus scanned. AI did not identify any textbook or reference book mentions.'),
+            ),
+          );
+        }
+        return;
+      }
+
+      print('[SyllabusScan] AI identified ${extractedBooks.length} books: $extractedBooks');
+      
+      final b2 = B2Service.instance;
+      List<B2Object> b2Objects = [];
+      try {
+        if (await b2.isConfigured()) {
+          b2Objects = await b2.listObjects();
+        }
+      } catch (e) {
+        print('[SyllabusScan] Error listing B2 objects: $e');
+      }
+
+      final globalBooks = await DatabaseService().fetchGlobalBooks(useCacheOnly: false, forceNetwork: true);
+      print('[SyllabusScan] Fetched ${globalBooks.length} global books from marketplace.');
+      
+      if (mounted) {
+        // Resolve matches using two-stage matching in parallel
+        final futures = extractedBooks.map((extBook) async {
+          final title = extBook['title'] ?? '';
+          final authors = extBook['authors'] ?? '';
+          if (title.isEmpty) return null;
+
+          print('[SyllabusScan] Resolving AI match for title: "$title"');
+          
+          // 1. Search in B2 objects first
+          B2Object? matchedB2Obj;
+          for (final obj in b2Objects) {
+            final filename = obj.key.split('/').last;
+            if (_isSyllabusBookMatch(title, authors, filename, '')) {
+              matchedB2Obj = obj;
+              break;
+            }
+          }
+          
+          // 2. Search in Marketplace if no direct B2 match
+          Book? matchedBook;
+          if (matchedB2Obj == null) {
+            matchedBook = await _matchBookUsingAi(title, authors, globalBooks);
+          }
+
+          return {
+            'title': title,
+            'authors': authors,
+            'matchedBook': matchedBook,
+            'matchedB2Object': matchedB2Obj,
+          };
+        });
+
+        final List<Map<String, dynamic>?> results = await Future.wait(futures);
+        final List<Map<String, dynamic>> resolvedItems = results.whereType<Map<String, dynamic>>().toList();
+
+        _showSyllabusBooksDialog(resolvedItems);
+      }
+    } catch (e) {
+      print('[SyllabusScan] Error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error scanning syllabus: $e'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isScanningSyllabus = false;
+        });
+      }
+    }
+  }
+
+  Future<Book?> _matchBookUsingAi(String qTitle, String qAuthors, List<Book> globalBooks) async {
+    // 1. Direct offline match first to save API calls
+    for (final gb in globalBooks) {
+      if (_isSyllabusBookMatch(qTitle, qAuthors, gb.title, gb.authorName ?? '')) {
+        return gb;
+      }
+    }
+    
+    // 2. Offline match failed, gather candidates using first word of the query title
+    final words = qTitle.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), ' ').split(' ').where((w) => w.trim().length > 3).toList();
+    if (words.isEmpty) return null;
+    
+    final firstKeyword = words.first;
+    final List<Book> candidates = [];
+    for (final gb in globalBooks) {
+      if (gb.title.toLowerCase().contains(firstKeyword)) {
+        candidates.add(gb);
+      }
+    }
+    
+    if (candidates.isEmpty) return null;
+    
+    // 3. Match using Lite model
+    final matchIndex = await AiService().matchSyllabusBookToMarketplace(
+      syllabusBookTitle: qTitle,
+      syllabusBookAuthors: qAuthors,
+      candidateBooks: candidates.map((c) => {'id': c.id, 'title': c.title, 'author': c.authorName ?? ''}).toList(),
+    );
+    
+    if (matchIndex != null && matchIndex >= 0 && matchIndex < candidates.length) {
+      return candidates[matchIndex];
+    }
+    
+    return null;
+  }
+
+  void _showSyllabusBooksDialog(List<Map<String, dynamic>> itemsList) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+          child: StatefulBuilder(
+            builder: (context, setDialogState) {
+              final currentMatchedCount = itemsList.where((item) => item['matchedBook'] != null || item['matchedB2Object'] != null).length;
+              
+              return Container(
+                constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppTheme.background,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.white12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.5),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    )
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(LucideIcons.bookOpen, color: AppTheme.duoGreen, size: 28),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Syllabus Reference Books',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(LucideIcons.x, color: Colors.white54, size: 24),
+                          onPressed: () => Navigator.of(ctx).pop(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'AI identified the following reference books from your syllabus. Tap "AI Search" to perform a deep semantic search against the Marketplace or B2 Store.',
+                      style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13, height: 1.4),
+                    ),
+                    const SizedBox(height: 20),
+                    Expanded(
+                      child: ListView.separated(
+                        itemCount: itemsList.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final item = itemsList[index];
+                          final title = item['title'] as String;
+                          final authors = item['authors'] as String;
+                          final Book? matchedBook = item['matchedBook'] as Book?;
+                          final B2Object? matchedB2Object = item['matchedB2Object'] as B2Object?;
+                          final isAvailable = matchedBook != null || matchedB2Object != null;
+                          final isSearching = item['isSearching'] == true;
+
+                          return Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.04),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.white10),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(LucideIcons.book, color: Colors.white38, size: 22),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        title,
+                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      if (authors.isNotEmpty) ...[
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'By $authors',
+                                          style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                InkWell(
+                                  onTap: (isAvailable || isSearching) ? null : () async {
+                                    setDialogState(() {
+                                      item['isSearching'] = true;
+                                    });
+                                    
+                                    try {
+                                      final globalBooks = await DatabaseService().fetchGlobalBooks(useCacheOnly: false, forceNetwork: true);
+                                      final searchResult = await _deepSearchBookUsingAiAndB2(title, authors, globalBooks);
+                                      if (searchResult != null) {
+                                        setDialogState(() {
+                                          item['matchedBook'] = searchResult['matchedBook'];
+                                          item['matchedB2Object'] = searchResult['matchedB2Object'];
+                                        });
+                                      } else {
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('No semantic matches found in Marketplace or B2 Store.'),
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    } catch (e) {
+                                      print('Deep search error: $e');
+                                    } finally {
+                                      setDialogState(() {
+                                        item['isSearching'] = false;
+                                      });
+                                    }
+                                  },
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: isAvailable
+                                          ? AppTheme.duoGreen.withOpacity(0.1)
+                                          : isSearching
+                                              ? Colors.white.withOpacity(0.02)
+                                              : Colors.white.withOpacity(0.05),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: isAvailable
+                                            ? AppTheme.duoGreen.withOpacity(0.3)
+                                            : Colors.white10,
+                                      ),
+                                    ),
+                                    child: isSearching
+                                        ? const SizedBox(
+                                            width: 14,
+                                            height: 14,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.duoBlue),
+                                            ),
+                                          )
+                                        : Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                isAvailable ? LucideIcons.checkCircle : LucideIcons.search,
+                                                color: isAvailable ? AppTheme.duoGreen : Colors.white54,
+                                                size: 14,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                isAvailable ? 'Available' : 'AI Search',
+                                                style: TextStyle(
+                                                  color: isAvailable ? AppTheme.duoGreen : Colors.white70,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 10,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    if (currentMatchedCount > 0)
+                      DuoButton(
+                        text: 'Auto-fetch $currentMatchedCount Reference Book(s)',
+                        color: AppTheme.duoGreen,
+                        shadowColor: AppTheme.duoGreenDark,
+                        onPressed: () async {
+                          final navigator = Navigator.of(ctx);
+                          final scaffoldMessenger = ScaffoldMessenger.of(context);
+                          
+                          // Pre-show a downloading notification
+                          scaffoldMessenger.showSnackBar(
+                            const SnackBar(
+                              content: Text('Downloading and adding selected reference books to selection...'),
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
+
+                          for (final item in itemsList) {
+                            final Book? mb = item['matchedBook'] as Book?;
+                            final B2Object? b2Obj = item['matchedB2Object'] as B2Object?;
+                            
+                            if (mb != null) {
+                              await DatabaseService().saveGeneratedBook(mb);
+                              await _downloadAndSelectBookPdf(mb);
+                            } else if (b2Obj != null) {
+                              await _downloadAndSelectB2ObjectPdf(b2Obj);
+                            }
+                          }
+                          
+                          navigator.pop();
+                          scaffoldMessenger.showSnackBar(
+                            SnackBar(
+                              backgroundColor: AppTheme.duoGreen,
+                              content: const Text(
+                                'Successfully resolved and added books to selection.',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          );
+                        },
+                      )
+                    else
+                      DuoButton(
+                        text: 'Close',
+                        color: Colors.white10,
+                        shadowColor: Colors.black26,
+                        onPressed: () => Navigator.of(ctx).pop(),
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Future<Map<String, dynamic>?> _deepSearchBookUsingAiAndB2(String qTitle, String qAuthors, List<Book> globalBooks) async {
+    // 1. Search B2 first
+    final b2 = B2Service.instance;
+    if (await b2.isConfigured()) {
+      try {
+        final b2Objects = await b2.listObjects();
+        for (final obj in b2Objects) {
+          final filename = obj.key.split('/').last;
+          if (_isSyllabusBookMatch(qTitle, qAuthors, filename, '')) {
+            return {'matchedB2Object': obj, 'matchedBook': null};
+          }
+        }
+      } catch (e) {
+        print('B2 list error: $e');
+      }
+    }
+    
+    // 2. Search Marketplace
+    final resolvedBook = await _deepSearchBookUsingAi(qTitle, qAuthors, globalBooks);
+    if (resolvedBook != null) {
+      return {'matchedBook': resolvedBook, 'matchedB2Object': null};
+    }
+    
+    return null;
+  }
+
+  Future<Book?> _deepSearchBookUsingAi(String qTitle, String qAuthors, List<Book> globalBooks) async {
+    final words = qTitle.toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]'), ' ')
+        .split(' ')
+        .where((w) => w.trim().length > 3)
+        .toSet();
+        
+    if (words.isEmpty) return null;
+    
+    final List<Book> candidates = [];
+    for (final gb in globalBooks) {
+      final gbTitleLower = gb.title.toLowerCase();
+      bool hasWordOverlap = false;
+      for (final w in words) {
+        if (gbTitleLower.contains(w)) {
+          hasWordOverlap = true;
+          break;
+        }
+      }
+      if (hasWordOverlap) {
+        candidates.add(gb);
+      }
+    }
+    
+    if (candidates.isEmpty) return null;
+    
+    final limitedCandidates = candidates.take(15).toList();
+    
+    final matchIndex = await AiService().matchSyllabusBookToMarketplace(
+      syllabusBookTitle: qTitle,
+      syllabusBookAuthors: qAuthors,
+      candidateBooks: limitedCandidates.map((c) => {'id': c.id, 'title': c.title, 'author': c.authorName ?? ''}).toList(),
+    );
+    
+    if (matchIndex != null && matchIndex >= 0 && matchIndex < limitedCandidates.length) {
+      return limitedCandidates[matchIndex];
+    }
+    
+    return null;
+  }
+
+  Future<void> _downloadAndSelectBookPdf(Book mb) async {
+    try {
+      final b2 = B2Service.instance;
+      if (!await b2.isConfigured()) return;
+      
+      final objects = await b2.listObjects();
+      B2Object? matchedObj;
+      for (final obj in objects) {
+        final filename = obj.key.split('/').last;
+        if (_isSyllabusBookMatch(mb.title, mb.authorName ?? '', filename, '')) {
+          matchedObj = obj;
+          break;
+        }
+      }
+      
+      if (matchedObj != null) {
+        await _downloadAndSelectB2ObjectPdf(matchedObj);
+      } else {
+        print('[SyllabusScan] No matching PDF found in B2 for community book: ${mb.title}');
+      }
+    } catch (e) {
+      print('[SyllabusScan] Error auto-selecting B2 PDF: $e');
+    }
+  }
+
+  Future<void> _downloadAndSelectB2ObjectPdf(B2Object obj) async {
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final cacheDir = Directory('${appDir.path}/b2_cache');
+      final file = File('${cacheDir.path}/${obj.key}');
+      
+      if (file.existsSync()) {
+        setState(() {
+          if (!_selectedFiles.any((f) => f.path == file.path)) {
+            _selectedFiles.add(file);
+          }
+        });
+      } else {
+        final bytes = await B2Service.instance.downloadObject(obj.key);
+        if (bytes != null) {
+          if (!await file.parent.exists()) {
+            await file.parent.create(recursive: true);
+          }
+          await file.writeAsBytes(bytes);
+          setState(() {
+            if (!_selectedFiles.any((f) => f.path == file.path)) {
+              _selectedFiles.add(file);
+            }
+          });
+        }
+      }
+    } catch (e) {
+      print('[SyllabusScan] Error downloading B2 object PDF: $e');
+    }
+  }
+
+  bool _isSyllabusBookMatch(String qTitle, String qAuthors, String tTitle, String tAuthors) {
+    final qt = qTitle.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), ' ').trim();
+    final tt = tTitle.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), ' ').trim();
+    
+    if (qt.isEmpty || tt.isEmpty) return false;
+    
+    // 1. Direct containment check
+    if (qt.contains(tt) || tt.contains(qt)) {
+      return true;
+    }
+    
+    // 2. Fallback to word-overlap ratio
+    final qw = qt.split(' ').where((w) => w.trim().length > 3).toSet();
+    final tw = tt.split(' ').where((w) => w.trim().length > 3).toSet();
+    
+    if (qw.isEmpty || tw.isEmpty) return false;
+    
+    final intersection = qw.intersection(tw);
+    final double matchRatio = intersection.length / qw.length;
+    final double targetRatio = intersection.length / tw.length;
+    return matchRatio >= 0.5 || targetRatio >= 0.5;
   }
 
   void _generate() {
@@ -166,7 +743,6 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
 
     Future.microtask(() async {
       try {
-        final pdfService = PdfService();
         final List<File> finalSyllabusFiles = _syllabusFiles;
 
         if (!mounted) return;
@@ -400,13 +976,51 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                     const SizedBox(height: 24),
                     
                     if (_mode == GenerationMode.course) ...[
-                      const Text('SYLLABUS (PDF)', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                      Row(
+                        children: [
+                          const Text('SYLLABUS (PDF)', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                          const SizedBox(width: 8),
+                          if (_isScanningSyllabus)
+                            const SizedBox(
+                              width: 12,
+                              height: 12,
+                              child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(AppTheme.duoGreen)),
+                            ),
+                        ],
+                      ),
                       const SizedBox(height: 12),
                       FileSelectionList(
                         files: _syllabusFiles,
                         onAddMore: () => _pickFiles(true),
                         onSelectFromStore: () => _selectFromStore(true),
                         onRemove: (idx) => setState(() => _syllabusFiles.removeAt(idx)),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: Checkbox(
+                              value: _autoFetchBooks,
+                              activeColor: AppTheme.duoGreen,
+                              onChanged: (val) async {
+                                setState(() {
+                                  _autoFetchBooks = val ?? true;
+                                });
+                                final prefs = await SharedPreferences.getInstance();
+                                await prefs.setBool('auto_fetch_books', _autoFetchBooks);
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'Auto-fetch mentioned reference books from Marketplace',
+                              style: TextStyle(color: Colors.white70, fontSize: 12),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 24),
                       const Text('REFERENCE BOOKS (PDF)', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
