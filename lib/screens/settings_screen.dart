@@ -46,7 +46,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _cloudSync = false;
   bool _isSyncing = false;
   bool _isLoading = true;
-  bool _generationPaused = false;
   bool _autoFetchBooks = true;
   bool _autoVerifyMappings = true;
   bool _autoGenerateModule1 = true;
@@ -90,7 +89,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
 
     _cloudSync = await _db.isCloudEnabled();
-    _generationPaused = prefs.getBool('generation_paused') ?? false;
 
     List<String> keys = prefs.getStringList('gemini_api_keys_list') ?? [];
     if (keys.isEmpty) {
@@ -245,11 +243,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setInt('schedule_end_hour', _scheduleEnd.hour);
     await prefs.setInt('schedule_end_minute', _scheduleEnd.minute);
     await prefs.setString('custom_live_chat_prompt', _customPromptController.text.trim());
-    await prefs.setBool('generation_paused', _generationPaused);
     await prefs.setBool('auto_fetch_books', _autoFetchBooks);
     await prefs.setBool('auto_verify_mappings', _autoVerifyMappings);
     await prefs.setBool('auto_generate_module_1', _autoGenerateModule1);
-    await GenerationManager.instance.setPaused(_generationPaused);
     await _db.setCloudEnabled(_cloudSync);
 
     // Mirror the head of each list back into the legacy scalar key so other
@@ -681,45 +677,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 },
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPauseGenerationCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _generationPaused ? AppTheme.duoRed.withOpacity(0.5) : Colors.white12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(_generationPaused ? LucideIcons.pauseCircle : LucideIcons.playCircle,
-                  color: _generationPaused ? AppTheme.duoRed : AppTheme.duoGreen, size: 28),
-              const SizedBox(width: 16),
-              const Expanded(
-                child: Text('Pause AI Generation',
-                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white)),
-              ),
-              Switch(
-                value: _generationPaused,
-                activeColor: AppTheme.duoRed,
-                onChanged: (v) {
-                  setState(() => _generationPaused = v);
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'When turned on, any queued or scheduled lesson generations will be temporarily paused. Unpause to resume generating lessons.',
-            style: TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
           ),
         ],
       ),
@@ -1320,8 +1277,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildConcurrencyCard(),
             const SizedBox(height: 16),
             _buildScheduleCard(),
-            const SizedBox(height: 16),
-            _buildPauseGenerationCard(),
             const SizedBox(height: 16),
             _buildAutomationCard(),
             const SizedBox(height: 16),

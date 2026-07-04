@@ -105,7 +105,6 @@ class _HomeScreenState extends State<HomeScreen> {
         showGlobalErrorAlert(startupError!, null);
         startupError = null;
       }
-      _checkInterruptedTasks();
       _checkMetacognitionProfile();
     });
   }
@@ -123,68 +122,6 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
   }
-
-  void _checkInterruptedTasks() {
-    final manager = GenerationManager.instance;
-    if (manager.hasInterruptedTasks) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: AppTheme.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Row(
-            children: [
-              Icon(LucideIcons.alertTriangle, color: Colors.orangeAccent, size: 28),
-              SizedBox(width: 10),
-              Text("Resume Generation?", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          content: const Text(
-            "The app was closed or killed while generating lessons. Would you like to resume your pending lesson generation tasks now?",
-            style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                manager.clearInterruptedTasksFlag();
-                manager.cancelAllTasks();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Pending generation tasks cancelled.")),
-                );
-              },
-              child: const Text("Cancel Tasks", style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                manager.clearInterruptedTasksFlag();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Tasks kept paused in queue. You can resume them from settings.")),
-                );
-              },
-              child: const Text("Keep Paused", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(ctx);
-                manager.clearInterruptedTasksFlag();
-                await manager.setPaused(false);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Resuming lesson generation...")),
-                  );
-                }
-              },
-              child: const Text("Resume", style: TextStyle(color: AppTheme.duoGreen, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
 
   @override
   void dispose() {

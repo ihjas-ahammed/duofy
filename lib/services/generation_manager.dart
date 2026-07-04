@@ -98,28 +98,8 @@ class GenerationManager extends ChangeNotifier {
   final List<AiTask> queue = [];
   Timer? _queueTimer;
   bool _isProcessing = false;
-  bool _isPaused = false;
-  bool _hasInterruptedTasks = false;
 
-  bool get isPaused => _isPaused;
-  bool get hasInterruptedTasks => _hasInterruptedTasks;
 
-  void clearInterruptedTasksFlag() {
-    _hasInterruptedTasks = false;
-    notifyListeners();
-  }
-
-  Future<void> setPaused(bool paused) async {
-    if (_isPaused == paused) return;
-    _isPaused = paused;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('generation_paused', paused);
-    notifyListeners();
-    if (!paused) {
-      _processQueue();
-    }
-  }
-  
   final PdfService _pdfService = PdfService();
   final DatabaseService _dbService = DatabaseService();
   final AiService _aiService = AiService();
@@ -193,35 +173,23 @@ class GenerationManager extends ChangeNotifier {
     await _cacheModels();
     try {
       final prefs = await SharedPreferences.getInstance();
-      _isPaused = prefs.getBool('generation_paused') ?? false;
       final jsonStr = prefs.getString('ai_generation_queue');
       if (jsonStr != null && jsonStr.isNotEmpty) {
         final List decoded = jsonDecode(jsonStr);
         queue.clear();
         queue.addAll(decoded.map((e) => AiTask.fromJson(Map<String, dynamic>.from(e))));
-        
-        // Convert running to queued if interrupted
-        bool hadInterruptedTasks = false;
+
+        // Convert running to queued if interrupted; they auto-resume.
         for (final t in queue) {
           if (t.status == 'running') {
             t.status = 'queued';
             t.statusMessage = 'Queued (interrupted)';
-            hadInterruptedTasks = true;
           }
         }
-        
-        _hasInterruptedTasks = hadInterruptedTasks;
-        if (hadInterruptedTasks) {
-          _isPaused = true;
-          await prefs.setBool('generation_paused', true);
-        }
-        
+
         _syncActiveMapsWithQueue();
         notifyListeners();
-        
-        if (!_isPaused) {
-          _processQueue();
-        }
+        _processQueue();
       }
     } catch (e) {
       print('[GenerationManager] Error loading queue: $e');
@@ -322,14 +290,7 @@ class GenerationManager extends ChangeNotifier {
   Future<void> _processQueue() async {
     if (_isProcessing) return;
     await _cacheModels();
-    
-    // Check if generation is paused
-    final prefs = await SharedPreferences.getInstance();
-    final paused = prefs.getBool('generation_paused') ?? false;
-    if (paused) {
-      return;
-    }
-    
+
     _isProcessing = true;
     
     try {

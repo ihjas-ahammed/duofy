@@ -106,14 +106,6 @@ class UnitHeader extends StatelessWidget {
                                       label: status ?? 'Loading...',
                                     ),
                                   ),
-                                  if (status == 'Queued' || status == 'queued') ...[
-                                    const SizedBox(width: 12),
-                                    _ResumeIconButton(
-                                      onPressed: () {
-                                        GenerationManager.instance.setPaused(false);
-                                      },
-                                    ),
-                                  ],
                                 ],
                               ))
                         : (unit.lessons.isNotEmpty
