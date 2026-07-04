@@ -5,6 +5,7 @@ import '../services/auto_index_service.dart';
 import '../widgets/responsive_center.dart';
 import 'index_picker_screen.dart';
 import 'course_questionnaire_screen.dart';
+import 'generate_book_screen.dart' show IndexMode;
 
 class AutoIndexScreen extends StatefulWidget {
   final File sourcePdf;
@@ -43,7 +44,6 @@ class AutoIndexScreen extends StatefulWidget {
 class _AutoIndexScreenState extends State<AutoIndexScreen> {
   String _status = 'Starting...';
   double _progress = 0.0;
-  bool _hasError = false;
 
   @override
   void initState() {
@@ -68,10 +68,11 @@ class _AutoIndexScreenState extends State<AutoIndexScreen> {
 
       if (mounted) {
         if (result.indexPages.isEmpty || result.chapter1StartPage == null) {
-          setState(() {
-            _hasError = true;
-            _status = 'Could not automatically find the index or chapter 1. Please go back and use Manual mode.';
-          });
+          _fallbackToManual(
+            initialIndexPages:
+                result.indexPages.isNotEmpty ? result.indexPages : null,
+            initialChapter1Page: result.chapter1StartPage,
+          );
         } else {
           final currentPagesList = List<List<int>>.from(widget.collectedIndexPages ?? []);
           final currentCh1List = List<int>.from(widget.collectedChapter1StartPages ?? []);
@@ -117,13 +118,40 @@ class _AutoIndexScreenState extends State<AutoIndexScreen> {
         }
       }
     } catch (e) {
+      print('[AutoIndexScreen] Auto-index failed: $e');
       if (mounted) {
-        setState(() {
-          _hasError = true;
-          _status = 'Error: ${e.toString()}';
-        });
+        _fallbackToManual();
       }
     }
+  }
+
+  /// Auto-detection failed for this PDF: hand over to the manual picker,
+  /// pre-filled with any partial results. Subsequent PDFs in the chain
+  /// still go through auto-detection first (isAutoMode stays true).
+  void _fallbackToManual({List<int>? initialIndexPages, int? initialChapter1Page}) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(
+          'Auto-detect couldn\'t index "${widget.filename}". Please mark the index pages manually.'),
+      duration: const Duration(seconds: 5),
+    ));
+    Navigator.of(context).pushReplacement(MaterialPageRoute(
+      builder: (_) => IndexPickerScreen(
+        sourcePdf: widget.sourcePdf,
+        filename: widget.filename,
+        syllabusFiles: widget.syllabusFiles,
+        isCourse: widget.isCourse,
+        initialIndexPages: initialIndexPages,
+        initialChapter1Page: initialChapter1Page,
+        allSourcePdfs: widget.allSourcePdfs,
+        currentPdfIndex: widget.currentPdfIndex,
+        collectedIndexPages: widget.collectedIndexPages,
+        collectedChapter1StartPages: widget.collectedChapter1StartPages,
+        isAutoMode: true,
+        isHandout: widget.isHandout,
+        indexMode: IndexMode.manual,
+        customIndexingPrompt: widget.customIndexingPrompt,
+      ),
+    ));
   }
 
   @override
@@ -139,25 +167,13 @@ class _AutoIndexScreenState extends State<AutoIndexScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (!_hasError) ...[
-                const CircularProgressIndicator(color: AppTheme.duoGreen),
-                const SizedBox(height: 24),
-                Text(_status, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
-                const SizedBox(height: 12),
-                LinearProgressIndicator(value: _progress, backgroundColor: Colors.white12, color: AppTheme.duoGreen),
-                const SizedBox(height: 24),
-                const Text('AI is scanning the textbook to locate the table of contents and chapter starts. This saves you from scrolling!', style: TextStyle(color: Colors.white54, fontSize: 13), textAlign: TextAlign.center),
-              ] else ...[
-                const Icon(Icons.error_outline, color: AppTheme.duoRed, size: 48),
-                const SizedBox(height: 24),
-                Text(_status, style: const TextStyle(color: AppTheme.duoRed, fontSize: 14), textAlign: TextAlign.center),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.surface),
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Go Back', style: TextStyle(color: Colors.white)),
-                ),
-              ],
+              const CircularProgressIndicator(color: AppTheme.duoGreen),
+              const SizedBox(height: 24),
+              Text(_status, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+              const SizedBox(height: 12),
+              LinearProgressIndicator(value: _progress, backgroundColor: Colors.white12, color: AppTheme.duoGreen),
+              const SizedBox(height: 24),
+              const Text('AI is scanning the textbook to locate the table of contents and chapter starts. This saves you from scrolling!', style: TextStyle(color: Colors.white54, fontSize: 13), textAlign: TextAlign.center),
             ],
           ),
         ),
