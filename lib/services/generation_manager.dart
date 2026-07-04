@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
+import '../main.dart' show scaffoldMessengerKey;
 import '../models/app_models.dart';
 import '../models/ai_task.dart';
 import 'pdf_service.dart';
@@ -162,6 +163,22 @@ class GenerationManager extends ChangeNotifier {
   // ---------------------------------------------------------------------------
   // Persisted Queue Management
   // ---------------------------------------------------------------------------
+  /// Surface a task failure as a toast. Must never throw — a missing
+  /// messenger (e.g. during startup) is silently ignored.
+  void _notifyTaskFailure(AiTask task) {
+    try {
+      final messenger = scaffoldMessengerKey.currentState;
+      if (messenger == null) return;
+      var reason = task.errorMessage ?? 'Unknown error';
+      if (reason.length > 120) reason = '${reason.substring(0, 120)}…';
+      messenger.showSnackBar(SnackBar(
+        content: Text('AI task failed: ${task.title}\n$reason'),
+        backgroundColor: const Color(0xFFB00020),
+        duration: const Duration(seconds: 5),
+      ));
+    } catch (_) {}
+  }
+
   Future<void> _saveQueueToPrefs() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -372,6 +389,7 @@ class GenerationManager extends ChangeNotifier {
             t.errorMessage = 'No API Keys configured. Please add keys in Settings.';
             t.endTime = DateTime.now();
             t.completer.completeError(Exception('No API Keys configured.'));
+            _notifyTaskFailure(t);
           }
         } else {
           for (final task in canvasRegens) {
@@ -408,6 +426,7 @@ class GenerationManager extends ChangeNotifier {
           t.errorMessage = 'No API Keys configured. Please add keys in Settings.';
           t.endTime = DateTime.now();
           t.completer.completeError(Exception('No API Keys configured.'));
+          _notifyTaskFailure(t);
         }
         _syncActiveMapsWithQueue();
         notifyListeners();
@@ -588,6 +607,7 @@ class GenerationManager extends ChangeNotifier {
       task.errorMessage = e.toString();
       task.endTime = DateTime.now();
       task.completer.completeError(e);
+      _notifyTaskFailure(task);
     } finally {
       if (isCanvasRegen) {
         AiService.activeCanvasRegensCount = (AiService.activeCanvasRegensCount - 1).clamp(0, 9999);

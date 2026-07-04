@@ -16,6 +16,9 @@ import 'package:flutter/foundation.dart';
 // Global Navigation Key to handle routing from notifications anywhere
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+// Global messenger so services (e.g. GenerationManager) can toast without a context
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
 String? startupError;
 bool _isGlobalErrorDialogOpen = false;
 
@@ -316,6 +319,7 @@ class DuoFyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: navigatorKey,
+      scaffoldMessengerKey: scaffoldMessengerKey,
       title: 'DuoFY',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
