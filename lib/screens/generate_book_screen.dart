@@ -7,7 +7,6 @@ import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/file_selection_list.dart';
 import '../widgets/responsive_center.dart';
-import 'index_picker_screen.dart';
 import 'auto_index_screen.dart';
 import 'pdf_split_preview_screen.dart';
 import '../services/generation_manager.dart';
@@ -31,7 +30,6 @@ class GenerateBookScreen extends StatefulWidget {
 
 class _GenerateBookScreenState extends State<GenerateBookScreen> {
   GenerationMode _mode = GenerationMode.book;
-  IndexMode _indexMode = IndexMode.auto;
   final List<File> _selectedFiles = [];
   final List<File> _syllabusFiles = [];
   final TextEditingController _customPromptController = TextEditingController();
@@ -755,23 +753,6 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
         final presetTitle = _titleController.text.trim().isEmpty ? null : _titleController.text.trim();
         if (_mode == GenerationMode.handout) {
           _showHandoutPrompt(_selectedFiles, presetTitle ?? filename);
-        } else if (_indexMode == IndexMode.manual || _indexMode == IndexMode.chapters) {
-          Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => IndexPickerScreen(
-              sourcePdf: firstPdf,
-              filename: presetTitle ?? filename,
-              syllabusFiles: finalSyllabusFiles,
-              isCourse: _mode == GenerationMode.course,
-              allSourcePdfs: _selectedFiles,
-              currentPdfIndex: 0,
-              collectedIndexPages: const [],
-              collectedChapter1StartPages: const [],
-              isAutoMode: false,
-              isHandout: _mode == GenerationMode.handout,
-              indexMode: _indexMode,
-              customIndexingPrompt: customPrompt.isNotEmpty ? customPrompt : null,
-            ),
-          ));
         } else {
           Navigator.of(context).push(MaterialPageRoute(
             builder: (_) => AutoIndexScreen(
@@ -862,11 +843,6 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
             _mode = mode;
             _selectedFiles.clear();
             _syllabusFiles.clear();
-            if (mode == GenerationMode.handout) {
-              _indexMode = IndexMode.chapters;
-            } else {
-              _indexMode = IndexMode.auto;
-            }
           });
         },
         child: Container(
@@ -885,54 +861,6 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildIndexModeSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SizedBox(height: 24),
-        const Text('INDEXING METHOD', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: RadioListTile<IndexMode>(
-                value: IndexMode.auto,
-                groupValue: _indexMode,
-                onChanged: (v) => setState(() => _indexMode = v!),
-                title: const Text('Auto-Detect', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
-                subtitle: const Text('AI finds TOC', style: TextStyle(fontSize: 11, color: Colors.white54)),
-                activeColor: AppTheme.duoGreen,
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-            Expanded(
-              child: RadioListTile<IndexMode>(
-                value: IndexMode.manual,
-                groupValue: _indexMode,
-                onChanged: (v) => setState(() => _indexMode = v!),
-                title: const Text('Manual', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
-                subtitle: const Text('You pick TOC', style: TextStyle(fontSize: 11, color: Colors.white54)),
-                activeColor: AppTheme.duoGreen,
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-            Expanded(
-              child: RadioListTile<IndexMode>(
-                value: IndexMode.chapters,
-                groupValue: _indexMode,
-                onChanged: (v) => setState(() => _indexMode = v!),
-                title: const Text('Chapters', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
-                subtitle: const Text('You pick starts', style: TextStyle(fontSize: 11, color: Colors.white54)),
-                activeColor: AppTheme.duoGreen,
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-          ],
-        ),
-      ],
     );
   }
 
@@ -1038,7 +966,6 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                       onRemove: (idx) => setState(() => _selectedFiles.removeAt(idx)),
                     ),
 
-                    _buildIndexModeSelector(),
                     const SizedBox(height: 24),
                     const Text('CUSTOM INDEXING INSTRUCTIONS (OPTIONAL)', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
                     const SizedBox(height: 12),
