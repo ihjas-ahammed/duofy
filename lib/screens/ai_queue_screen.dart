@@ -275,9 +275,27 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
               ],
               if (isQueued && task.isScheduled) ...[
                 const SizedBox(height: 8),
-                const Text(
-                  'Waiting for auto-schedule hours...',
-                  style: TextStyle(color: Colors.white38, fontSize: 10, fontStyle: FontStyle.italic),
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Waiting for auto-schedule hours...',
+                        style: TextStyle(color: Colors.white38, fontSize: 10, fontStyle: FontStyle.italic),
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: () => GenerationManager.instance.runTaskNow(task.id),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppTheme.duoGreen,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      icon: const Icon(LucideIcons.play, size: 12),
+                      label: const Text('Run now',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
+                    ),
+                  ],
                 ),
               ],
               if (task.status == 'failed' && task.errorMessage != null) ...[

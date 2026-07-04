@@ -10,7 +10,7 @@ class AiTask {
   
   final String type; // 'book_skeleton', 'unit', 'manifest', 'qp', 'pyq', 'lesson_regen', 'slide_regen', 'canvas_regen', 'section', 'module', 'book_content'
   final bool generateGraphics;
-  final bool isScheduled;
+  bool isScheduled;
   
   String status; // 'queued', 'running', 'completed', 'failed'
   String statusMessage;

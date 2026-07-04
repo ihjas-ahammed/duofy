@@ -143,6 +143,23 @@ class GenerationManager extends ChangeNotifier {
   // ---------------------------------------------------------------------------
   // Persisted Queue Management
   // ---------------------------------------------------------------------------
+  /// Quick-run: promote a scheduled queued task to run immediately.
+  void runTaskNow(String taskId) {
+    AiTask? task;
+    for (final t in queue) {
+      if (t.id == taskId && t.status == 'queued') {
+        task = t;
+        break;
+      }
+    }
+    if (task == null || !task.isScheduled) return;
+    task.isScheduled = false;
+    task.statusMessage = 'Queued';
+    _saveQueueToPrefs();
+    notifyListeners();
+    _processQueue();
+  }
+
   /// Surface a task failure as a toast. Must never throw — a missing
   /// messenger (e.g. during startup) is silently ignored.
   void _notifyTaskFailure(AiTask task) {
