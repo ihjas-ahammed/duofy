@@ -2640,6 +2640,57 @@ $pageText
     return null;
   }
 
+  /// Final cleanup pass over an auto-detected index result. Returns
+  /// `{'indexPages': List, 'chapter1StartPage': int}` or null on failure.
+  /// Callers must sanity-check the reply; a null return is non-fatal.
+  Future<Map<String, dynamic>?> optimizeIndexResult(
+      String tocText, List<int> indexPages, int? chapter1StartPage, int pageCount,
+      {String? apiKey}) async {
+    final keys = await _getKeys(forcedApiKey: apiKey);
+    final modelsToTry = await _getLiteModels();
+
+    final prompt = '''
+A textbook PDF has $pageCount pages. Automatic analysis detected:
+- Table of contents on absolute PDF pages: $indexPages
+- Chapter 1 content starting on absolute PDF page: $chapter1StartPage
+
+Below is the extracted text of the detected table-of-contents pages. Verify and, if needed, correct the detection:
+- Remove pages that are clearly not part of the table of contents.
+- chapter1StartPage must be AFTER the last table-of-contents page and within 1..$pageCount.
+
+Respond strictly in JSON format:
+{
+  "indexPages": [list of ints],
+  "chapter1StartPage": int
+}
+
+Table of contents text:
+$tocText
+''';
+
+    for (var key in keys) {
+      for (var modelName in modelsToTry) {
+        try {
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: key,
+            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+          );
+          final response = await _retryTransient(
+            () => model.generateContent([Content.text(prompt)]).timeout(const Duration(seconds: 30)),
+            onRetry: (a, e) => print('[AiService] optimizeIndexResult attempt $a: $e'),
+          );
+          if (response.text != null) {
+            return _cleanAndDecodeJson(response.text!);
+          }
+        } catch (e) {
+          print('[AiService] optimizeIndexResult error with $modelName: $e');
+        }
+      }
+    }
+    return null;
+  }
+
   Future<bool> verifySectionMapping(String pageText, int pageNumber, String sectionTitle, String sectionDescription, {String? apiKey}) async {
     final keys = await _getKeys(forcedApiKey: apiKey);
     final modelsToTry = await _getLiteModels();
