@@ -4,7 +4,6 @@ import 'package:syncfusion_flutter_pdf/pdf.dart' as sync_pdf;
 import 'auto_index_pipeline.dart';
 import 'pdf_service.dart';
 import 'ai_service.dart';
-import 'generation_manager.dart';
 
 export 'auto_index_pipeline.dart' show AutoIndexResult;
 
@@ -31,8 +30,6 @@ class AutoIndexService {
       verifyPage: (text, page) => _aiService.verifyPageRole(text, page),
       extractLinkDestinations: (tocPages) =>
           _extractLinkDestinations(sourcePdf, tocPages),
-      chunkScanFallback: (progress) =>
-          _chunkScan(sourcePdf, pageCount, scanLimit, progress),
       optimize: (tocText, pages, ch1) =>
           _aiService.optimizeIndexResult(tocText, pages, ch1, pageCount),
     );
@@ -111,54 +108,4 @@ class AutoIndexService {
     }
   }
 
-  /// Pre-existing AI chunk scan: slice the PDF into 10-page mini-PDFs and
-  /// ask the AI to locate the TOC and Chapter 1 in each.
-  Future<AutoIndexResult> _chunkScan(File sourcePdf, int pageCount,
-      int scanLimit, ProgressCallback onProgress) async {
-    final found = <int>[];
-    int? ch1;
-    const chunkSize = 10;
-    final chunks = (scanLimit / chunkSize).ceil();
-
-    for (int i = 0; i < chunks; i++) {
-      if (found.isNotEmpty && ch1 != null) break;
-
-      final startPage = i * chunkSize + 1;
-      int endPage = (i + 1) * chunkSize;
-      if (endPage > pageCount) endPage = pageCount;
-      if (startPage > pageCount) break;
-
-      onProgress('Scanning pages $startPage to $endPage with AI…',
-          (i + 1) / chunks);
-
-      try {
-        final chunkPages =
-            List.generate(endPage - startPage + 1, (idx) => startPage + idx);
-        final chunkPdf = await _pdfService.extractPages(sourcePdf, chunkPages);
-        final jsonMap = await GenerationManager.instance
-            .startIndexScanTask(chunkPdf, startPage, endPage);
-
-        if (jsonMap != null) {
-          if (jsonMap['indexPages'] is List) {
-            for (var p in jsonMap['indexPages']) {
-              if (p is int && p >= 1 && p <= pageCount) found.add(p);
-            }
-          }
-          final v = jsonMap['chapter1StartPage'];
-          if (v is int && v >= 1 && v <= pageCount) ch1 ??= v;
-        }
-
-        if (chunkPdf.existsSync()) {
-          chunkPdf.deleteSync();
-        }
-      } catch (e) {
-        print('[AutoIndexService] Error scanning chunk $i: $e');
-      }
-    }
-
-    return AutoIndexResult(
-      indexPages: found.toSet().toList()..sort(),
-      chapter1StartPage: ch1,
-    );
-  }
 }

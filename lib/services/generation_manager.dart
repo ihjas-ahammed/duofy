@@ -488,9 +488,6 @@ class GenerationManager extends ChangeNotifier {
         case 'book_skeleton':
           await _runBookSkeletonForTask(task, apiKey);
           break;
-        case 'index_scan':
-          await _runIndexScanForTask(task, apiKey);
-          break;
         case 'unit':
           final bookId = task.bookId;
           final modIdx = task.params['modIdx'] as int;
@@ -688,25 +685,6 @@ class GenerationManager extends ChangeNotifier {
     return result as Book?;
   }
 
-  Future<Map<String, dynamic>?> startIndexScanTask(File chunkPdf, int startPage, int endPage) async {
-    final task = AiTask(
-      id: 'index_scan_${DateTime.now().millisecondsSinceEpoch}_$startPage',
-      title: 'Scan Index pages $startPage-$endPage',
-      bookId: 'new_book',
-      type: 'index_scan',
-      generateGraphics: false,
-      isScheduled: false,
-      params: {
-        'pdfPath': chunkPdf.path,
-        'startPage': startPage,
-        'endPage': endPage,
-      },
-    );
-    _enqueueTaskObject(task);
-    final result = await task.completer.future;
-    return result as Map<String, dynamic>?;
-  }
-
   Future<String?> generateCanvasArtTask(String canvasPrompt, {String contextText = '', String? errorContext}) async {
     final task = AiTask(
       id: 'canvas_${DateTime.now().millisecondsSinceEpoch}_${canvasPrompt.hashCode}',
@@ -812,15 +790,6 @@ class GenerationManager extends ChangeNotifier {
       },
       forcedApiKey: apiKey,
     );
-    task.completer.complete(result);
-  }
-
-  Future<void> _runIndexScanForTask(AiTask task, String apiKey) async {
-    final pdfPath = task.params['pdfPath'] as String;
-    final startPage = task.params['startPage'] as int;
-    final endPage = task.params['endPage'] as int;
-    
-    final result = await _aiService.scanIndexChunk(File(pdfPath), startPage, endPage, forcedApiKey: apiKey);
     task.completer.complete(result);
   }
 

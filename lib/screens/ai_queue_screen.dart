@@ -109,8 +109,6 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
         return LucideIcons.refreshCw;
       case 'canvas_regen':
         return LucideIcons.image;
-      case 'index_scan':
-        return LucideIcons.search;
       default:
         return LucideIcons.bot;
     }

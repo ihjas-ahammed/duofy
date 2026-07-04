@@ -39,13 +39,10 @@ void noProgress(String s, double p) {}
 /// Builds a pipeline whose collaborators are recorded fakes.
 class Harness {
   bool linksCalled = false;
-  bool chunkCalled = false;
   final List<int> verifiedPages = [];
 
   Map<String, dynamic>? Function(int page)? verifyAnswers;
   List<int> linkDestinations = const [];
-  AutoIndexResult chunkResult =
-      AutoIndexResult(indexPages: const [], chapter1StartPage: null);
   Map<String, dynamic>? optimizeResult;
 
   late final AutoIndexPipeline pipeline = AutoIndexPipeline(
@@ -56,10 +53,6 @@ class Harness {
     extractLinkDestinations: (tocPages) async {
       linksCalled = true;
       return linkDestinations;
-    },
-    chunkScanFallback: (onProgress) async {
-      chunkCalled = true;
-      return chunkResult;
     },
     optimize: (tocText, indexPages, ch1) async => optimizeResult,
   );
@@ -79,7 +72,6 @@ void main() {
     expect(result.indexPages, [3]);
     expect(result.chapter1StartPage, 5);
     expect(h.linksCalled, isFalse);
-    expect(h.chunkCalled, isFalse);
   });
 
   test('multi-page TOC expands to adjacent candidate pages', () async {
@@ -97,24 +89,22 @@ void main() {
     expect(result.chapter1StartPage, 5);
   });
 
-  test('scanned PDF (mostly empty text) goes straight to chunk scan', () async {
-    final h = Harness()
-      ..chunkResult = AutoIndexResult(indexPages: [2], chapter1StartPage: 4);
+  test('scanned PDF (mostly empty text) returns empty result', () async {
+    final h = Harness();
     final result = await h.pipeline.run(['', '', '', '', ''], 5, noProgress);
 
-    expect(h.chunkCalled, isTrue);
     expect(h.verifiedPages, isEmpty);
-    expect(result.indexPages, [2]);
-    expect(result.chapter1StartPage, 4);
+    expect(result.indexPages, isEmpty);
+    expect(result.chapter1StartPage, isNull);
   });
 
-  test('no TOC anywhere falls back to chunk scan', () async {
+  test('no TOC anywhere returns empty result', () async {
     final h = Harness();
     final result =
         await h.pipeline.run([cover, preface, chapter1Page], 3, noProgress);
 
-    expect(h.chunkCalled, isTrue);
     expect(result.indexPages, isEmpty);
+    expect(result.chapter1StartPage, isNull);
   });
 
   test('TOC without page numbers uses link destinations for chapter 1',
@@ -130,7 +120,6 @@ void main() {
     // Destination 1 is before the TOC and filtered out; 4 wins.
     expect(result.chapter1StartPage, 4);
     expect(result.indexPages, [2]);
-    expect(h.chunkCalled, isFalse);
   });
 
   test('valid optimize result replaces the heuristic result', () async {
@@ -168,16 +157,14 @@ void main() {
     expect(result.chapter1StartPage, 5);
   });
 
-  test('TOC found but no chapter 1 -> chunk scan supplies chapter 1', () async {
+  test('TOC found but no chapter 1 returns partial result', () async {
     final h = Harness()
       ..verifyAnswers =
-          ((page) => {'isContentsPage': page == 3, 'isChapter1Start': false})
-      ..chunkResult = AutoIndexResult(indexPages: const [], chapter1StartPage: 5);
+          ((page) => {'isContentsPage': page == 3, 'isChapter1Start': false});
     final result = await h.pipeline
         .run([cover, '', tocWithNumbers, preface, chapter1Page], 5, noProgress);
 
-    expect(h.chunkCalled, isTrue);
     expect(result.indexPages, [3]);
-    expect(result.chapter1StartPage, 5);
+    expect(result.chapter1StartPage, isNull);
   });
 }

@@ -8,7 +8,7 @@ class AiTask {
   final String? sectionId;
   final String? unitId;
   
-  final String type; // 'book_skeleton', 'index_scan', 'unit', 'manifest', 'qp', 'pyq', 'lesson_regen', 'slide_regen', 'canvas_regen', 'section', 'module', 'book_content'
+  final String type; // 'book_skeleton', 'unit', 'manifest', 'qp', 'pyq', 'lesson_regen', 'slide_regen', 'canvas_regen', 'section', 'module', 'book_content'
   final bool generateGraphics;
   final bool isScheduled;
   

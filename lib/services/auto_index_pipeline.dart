@@ -16,7 +16,8 @@ typedef ProgressCallback = void Function(String status, double progress);
 ///
 /// Stages: scanned-PDF short-circuit -> offline TocMatcher candidates ->
 /// lite-AI confirm + expand -> chapter-1 via printed numbers / links /
-/// text scan -> AI chunk-scan fallback -> AI optimization pass.
+/// text scan -> AI optimization pass. Incomplete results are returned
+/// as-is; the caller falls back to the manual picker.
 class AutoIndexPipeline {
   /// Lite-model page check; returns
   /// {'isContentsPage': bool, 'isChapter1Start': bool} or null.
@@ -27,10 +28,6 @@ class AutoIndexPipeline {
   /// pages plus document outline/bookmark entries.
   final Future<List<int>> Function(List<int> tocPages) extractLinkDestinations;
 
-  /// Existing AI chunk scan over the raw PDF.
-  final Future<AutoIndexResult> Function(ProgressCallback onProgress)
-      chunkScanFallback;
-
   /// Lite-model cleanup pass; returns
   /// `{'indexPages': List<int>, 'chapter1StartPage': int}` or null.
   final Future<Map<String, dynamic>?> Function(
@@ -39,7 +36,6 @@ class AutoIndexPipeline {
   AutoIndexPipeline({
     required this.verifyPage,
     required this.extractLinkDestinations,
-    required this.chunkScanFallback,
     required this.optimize,
   });
 
@@ -54,8 +50,8 @@ class AutoIndexPipeline {
     final scanned = pageTexts.length;
     final emptyCount = pageTexts.where((t) => t.trim().isEmpty).length;
     if (scanned == 0 || emptyCount / scanned >= 0.8) {
-      onProgress('No embedded text found (scanned PDF?). Scanning with AI…', 0.3);
-      return _finish(await chunkScanFallback(onProgress), pageTexts, pageCount);
+      onProgress('No embedded text found (scanned PDF?).', 0.3);
+      return AutoIndexResult(indexPages: const [], chapter1StartPage: null);
     }
 
     // Stage 2: offline heuristic TOC candidates.
@@ -85,8 +81,8 @@ class AutoIndexPipeline {
     }
 
     if (tocPages.isEmpty) {
-      onProgress('No table of contents found. Scanning with AI…', 0.5);
-      return _finish(await chunkScanFallback(onProgress), pageTexts, pageCount);
+      onProgress('No table of contents found.', 0.5);
+      return AutoIndexResult(indexPages: const [], chapter1StartPage: null);
     }
 
     // Stage 4: chapter-1 resolution.
@@ -104,16 +100,6 @@ class AutoIndexPipeline {
     }
 
     if (ch1 == null) {
-      // Stage 5: last automatic resort before the manual picker.
-      onProgress('Could not locate Chapter 1. Scanning with AI…', 0.85);
-      final fb = await chunkScanFallback(onProgress);
-      if (fb.chapter1StartPage != null) {
-        return _finish(
-            AutoIndexResult(
-                indexPages: tocPages, chapter1StartPage: fb.chapter1StartPage),
-            pageTexts,
-            pageCount);
-      }
       return AutoIndexResult(indexPages: tocPages, chapter1StartPage: null);
     }
 
