@@ -1,0 +1,442 @@
+{
+  "/home/ihjas/Documents/GitHub/duofy/lib/firebase_options.dart": {
+    "mtime": 1779952652.3557975,
+    "ast_hash": "be76e1f9a6fc6be8724182af46be4e2f",
+    "semantic_hash": "be76e1f9a6fc6be8724182af46be4e2f"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/main.dart": {
+    "mtime": 1780983050.2866366,
+    "ast_hash": "901649e41c2512783573ab388b3ce6bb",
+    "semantic_hash": "901649e41c2512783573ab388b3ce6bb"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/models/ai_task.dart": {
+    "mtime": 1780405404.826113,
+    "ast_hash": "8b3e2a58b429f2b47ae741f480a37b95",
+    "semantic_hash": "8b3e2a58b429f2b47ae741f480a37b95"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/models/app_models.dart": {
+    "mtime": 1780980845.2679799,
+    "ast_hash": "fb33b51952e492c343670c88c4f74c45",
+    "semantic_hash": "fb33b51952e492c343670c88c4f74c45"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/main_layout_screen.dart": {
+    "mtime": 1780980845.2699797,
+    "ast_hash": "fdff3f618475d9b94b2738c8347dfa53",
+    "semantic_hash": "fdff3f618475d9b94b2738c8347dfa53"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/index_picker_screen.dart": {
+    "mtime": 1781102469.6787286,
+    "ast_hash": "0f9da03080b3f8953b7094f2cd523104",
+    "semantic_hash": "0f9da03080b3f8953b7094f2cd523104"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/book_dashboard_screen.dart": {
+    "mtime": 1781103754.1949546,
+    "ast_hash": "60c0112955bd3f198bee83005ae51af2",
+    "semantic_hash": "60c0112955bd3f198bee83005ae51af2"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/practice_session_screen.dart": {
+    "mtime": 1780980845.2699797,
+    "ast_hash": "40173df6c9a26fadb870e9968c0a2e97",
+    "semantic_hash": "40173df6c9a26fadb870e9968c0a2e97"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/auth_screen.dart": {
+    "mtime": 1780576885.1826508,
+    "ast_hash": "22f3ee820b34fe705ea79c6c2ecdf8f7",
+    "semantic_hash": "22f3ee820b34fe705ea79c6c2ecdf8f7"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/exam_screen.dart": {
+    "mtime": 1780405404.8287015,
+    "ast_hash": "8772f9cfbf7eb308edfb18a0e8d4d154",
+    "semantic_hash": "8772f9cfbf7eb308edfb18a0e8d4d154"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/home_screen.dart": {
+    "mtime": 1781011185.2835178,
+    "ast_hash": "2dc6531b581df06142eaa686b7160e57",
+    "semantic_hash": "2dc6531b581df06142eaa686b7160e57"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/pyq_tab_screen.dart": {
+    "mtime": 1780576885.1906538,
+    "ast_hash": "2f988b685bbad639ea26bb0bd349a668",
+    "semantic_hash": "2f988b685bbad639ea26bb0bd349a668"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/settings_screen.dart": {
+    "mtime": 1781012846.4144177,
+    "ast_hash": "cb39e208e12ba0f88ed08ac7b4da93a3",
+    "semantic_hash": "cb39e208e12ba0f88ed08ac7b4da93a3"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/bookmarks_screen.dart": {
+    "mtime": 1780576885.1836512,
+    "ast_hash": "ce018a5e448509c4bb495c8163b25b63",
+    "semantic_hash": "ce018a5e448509c4bb495c8163b25b63"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/qp_detail_screen.dart": {
+    "mtime": 1780405404.8326948,
+    "ast_hash": "c114f71fb5ecc3fb289cbe30e999e74c",
+    "semantic_hash": "c114f71fb5ecc3fb289cbe30e999e74c"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/lesson_screen.dart": {
+    "mtime": 1781139847.513662,
+    "ast_hash": "cd2e8e4a3f5f639e55783dfe1abebb78",
+    "semantic_hash": "cd2e8e4a3f5f639e55783dfe1abebb78"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/generate_qp_screen.dart": {
+    "mtime": 1780405404.8287015,
+    "ast_hash": "fae63efa4540a4dfdd2b627ccae73d68",
+    "semantic_hash": "fae63efa4540a4dfdd2b627ccae73d68"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/auto_index_screen.dart": {
+    "mtime": 1780980845.2679799,
+    "ast_hash": "fc45adfbd28d72fb923931f49f87a046",
+    "semantic_hash": "fc45adfbd28d72fb923931f49f87a046"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/pyq_complete_screen.dart": {
+    "mtime": 1780405404.8326948,
+    "ast_hash": "bc949200d75dc311a86bbcf3c0df367d",
+    "semantic_hash": "bc949200d75dc311a86bbcf3c0df367d"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/practice_screen.dart": {
+    "mtime": 1780576885.1906538,
+    "ast_hash": "7e986f78906237b08fe9153c8c137d9f",
+    "semantic_hash": "7e986f78906237b08fe9153c8c137d9f"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/ai_queue_screen.dart": {
+    "mtime": 1781102664.4923282,
+    "ast_hash": "ee5ff36cb4ea947773c5ad6ed823ba80",
+    "semantic_hash": "ee5ff36cb4ea947773c5ad6ed823ba80"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/pdf_folder_screen.dart": {
+    "mtime": 1781102503.2004178,
+    "ast_hash": "d435e0a159c5d90d9b971ca3e5c490fd",
+    "semantic_hash": "d435e0a159c5d90d9b971ca3e5c490fd"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/course_settings_screen.dart": {
+    "mtime": 1780576885.185652,
+    "ast_hash": "73a57f50691bc6f1dcf47b5b951fdaff",
+    "semantic_hash": "73a57f50691bc6f1dcf47b5b951fdaff"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/pdf_browser_screen.dart": {
+    "mtime": 1780576885.1886532,
+    "ast_hash": "903b46ee753f1a8b162d5ecb1ee2d1f0",
+    "semantic_hash": "903b46ee753f1a8b162d5ecb1ee2d1f0"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/generate_book_screen.dart": {
+    "mtime": 1781101689.577006,
+    "ast_hash": "f2dfb8899e6e215829411ec45ab84b8b",
+    "semantic_hash": "f2dfb8899e6e215829411ec45ab84b8b"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/course_edit_structure_screen.dart": {
+    "mtime": 1781102549.9967442,
+    "ast_hash": "1376974d5c34ae0dfa91239e9bd1a33f",
+    "semantic_hash": "1376974d5c34ae0dfa91239e9bd1a33f"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/pdf_split_preview_screen.dart": {
+    "mtime": 1781102479.7903228,
+    "ast_hash": "9a445d541d3f2cf716d63d9bfe615354",
+    "semantic_hash": "9a445d541d3f2cf716d63d9bfe615354"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/book_route_loader_screen.dart": {
+    "mtime": 1780494593.9372509,
+    "ast_hash": "320616a222a855af1dd22e80b6516c7b",
+    "semantic_hash": "320616a222a855af1dd22e80b6516c7b"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/auth_gate.dart": {
+    "mtime": 1780576885.1826508,
+    "ast_hash": "77e9bcbc46f14fad8e086f607f083873",
+    "semantic_hash": "77e9bcbc46f14fad8e086f607f083873"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/lesson_complete_screen.dart": {
+    "mtime": 1780980845.2689798,
+    "ast_hash": "73897d1b804885b0c0062554cd45d99a",
+    "semantic_hash": "73897d1b804885b0c0062554cd45d99a"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/module_summary_detail_screen.dart": {
+    "mtime": 1780405404.8306983,
+    "ast_hash": "a5fadd1d1792c2d227e16856619e5874",
+    "semantic_hash": "a5fadd1d1792c2d227e16856619e5874"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/summary_screen.dart": {
+    "mtime": 1780405404.8326948,
+    "ast_hash": "a0f7be7c08b5c5cba5acd920dcd5bc05",
+    "semantic_hash": "a0f7be7c08b5c5cba5acd920dcd5bc05"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/source_pdf_upload_screen.dart": {
+    "mtime": 1781104304.05658,
+    "ast_hash": "952837e99c4a7623896ed9f6116c4894",
+    "semantic_hash": "952837e99c4a7623896ed9f6116c4894"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/screens/course_questionnaire_screen.dart": {
+    "mtime": 1780980845.2679799,
+    "ast_hash": "b5b463799e51d0d581442b2726aad999",
+    "semantic_hash": "b5b463799e51d0d581442b2726aad999"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/compact_book_card.dart": {
+    "mtime": 1780990082.4256368,
+    "ast_hash": "cdb5ddf85a402ae97c0effa767acc70d",
+    "semantic_hash": "cdb5ddf85a402ae97c0effa767acc70d"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/missing_files_banner.dart": {
+    "mtime": 1780405404.836688,
+    "ast_hash": "9eb7963485ecdddce2586976626107a4",
+    "semantic_hash": "9eb7963485ecdddce2586976626107a4"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/generating_book_card.dart": {
+    "mtime": 1781102651.5176713,
+    "ast_hash": "7aceb69c548c98a2e7b209b813079dcb",
+    "semantic_hash": "7aceb69c548c98a2e7b209b813079dcb"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/sync_conflict_dialog.dart": {
+    "mtime": 1780494593.945251,
+    "ast_hash": "0d19ddc5a0d1fc1aadad6c799aaac35d",
+    "semantic_hash": "0d19ddc5a0d1fc1aadad6c799aaac35d"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/canvas_art_view.dart": {
+    "mtime": 1781138768.107675,
+    "ast_hash": "8d2c387894ad2d96af4655a6b368cbe0",
+    "semantic_hash": "8d2c387894ad2d96af4655a6b368cbe0"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/responsive_center.dart": {
+    "mtime": 1780980845.2729795,
+    "ast_hash": "6f8bcfb9f410d2e749e2edb40e0ce1c1",
+    "semantic_hash": "6f8bcfb9f410d2e749e2edb40e0ce1c1"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/safe_pdf_viewer.dart": {
+    "mtime": 1781102497.679627,
+    "ast_hash": "df811064190d6da561707529d8af65be",
+    "semantic_hash": "df811064190d6da561707529d8af65be"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/community_book_card.dart": {
+    "mtime": 1780576885.1976566,
+    "ast_hash": "57d7baf9744b5abd52f94f964365c2c7",
+    "semantic_hash": "57d7baf9744b5abd52f94f964365c2c7"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/string_list_manager.dart": {
+    "mtime": 1779951405.0475483,
+    "ast_hash": "f5ee374e294e3e99f49289dd090992b4",
+    "semantic_hash": "f5ee374e294e3e99f49289dd090992b4"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/file_selection_list.dart": {
+    "mtime": 1780576885.1976566,
+    "ast_hash": "430e8797e32eb3ea6846e14e6ca94449",
+    "semantic_hash": "430e8797e32eb3ea6846e14e6ca94449"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/lesson_path.dart": {
+    "mtime": 1781012482.8880525,
+    "ast_hash": "07fcd468e570e0171aa3b47fb71002dd",
+    "semantic_hash": "07fcd468e570e0171aa3b47fb71002dd"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/real_progress_bar.dart": {
+    "mtime": 1779951405.0435472,
+    "ast_hash": "5a54d99c05d8af66ffb1a8aba811db80",
+    "semantic_hash": "5a54d99c05d8af66ffb1a8aba811db80"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/qp_card.dart": {
+    "mtime": 1779951405.0435472,
+    "ast_hash": "1a8f9a45056cd41b829a09872a29f001",
+    "semantic_hash": "1a8f9a45056cd41b829a09872a29f001"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/web_webview_stub.dart": {
+    "mtime": 1780576885.2006578,
+    "ast_hash": "7f49ca5e2ee9b74049c90686d980a371",
+    "semantic_hash": "7f49ca5e2ee9b74049c90686d980a371"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/duo_button.dart": {
+    "mtime": 1779951405.0420303,
+    "ast_hash": "9780e1995cd71894d8e1b29177b60f23",
+    "semantic_hash": "9780e1995cd71894d8e1b29177b60f23"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/math_markdown.dart": {
+    "mtime": 1780405404.836688,
+    "ast_hash": "6f3e848cdae89abc775f438f5a6600e5",
+    "semantic_hash": "6f3e848cdae89abc775f438f5a6600e5"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/lesson_assistant_chat.dart": {
+    "mtime": 1780980845.2729795,
+    "ast_hash": "a7e7e336c426018eaab08fee26a02307",
+    "semantic_hash": "a7e7e336c426018eaab08fee26a02307"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/mini_progress_bar.dart": {
+    "mtime": 1779951405.0425467,
+    "ast_hash": "bdf6bf7611d3af641b955ac7cbe9db00",
+    "semantic_hash": "bdf6bf7611d3af641b955ac7cbe9db00"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/platform_webview.dart": {
+    "mtime": 1780576885.1996574,
+    "ast_hash": "a7cbbbb4a5fd02ef8452bb9bf63f8749",
+    "semantic_hash": "a7cbbbb4a5fd02ef8452bb9bf63f8749"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/lesson_accordion.dart": {
+    "mtime": 1780994845.6998265,
+    "ast_hash": "bd1baa0bfad082f53227e9dc45d790ef",
+    "semantic_hash": "bd1baa0bfad082f53227e9dc45d790ef"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/web_webview_helper.dart": {
+    "mtime": 1780576885.2006578,
+    "ast_hash": "a0bb5d8d98fb1ea360f8202e11195c46",
+    "semantic_hash": "a0bb5d8d98fb1ea360f8202e11195c46"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/book_card.dart": {
+    "mtime": 1779951405.0405462,
+    "ast_hash": "3b3c9ca25ad880013c3cbc115639f2f5",
+    "semantic_hash": "3b3c9ca25ad880013c3cbc115639f2f5"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/lesson_node.dart": {
+    "mtime": 1781012494.7878747,
+    "ast_hash": "72ffbb3ced0f898fcc195165a2d4f92d",
+    "semantic_hash": "72ffbb3ced0f898fcc195165a2d4f92d"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/canvas_html_view.dart": {
+    "mtime": 1781137900.623696,
+    "ast_hash": "f9aa98a5f9ac9dcb8488dc711f4f15bc",
+    "semantic_hash": "f9aa98a5f9ac9dcb8488dc711f4f15bc"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/unit_header.dart": {
+    "mtime": 1781012007.8336296,
+    "ast_hash": "f92c1ab9e2697e82873438a2cf2bc819",
+    "semantic_hash": "f92c1ab9e2697e82873438a2cf2bc819"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/slide_views/step_by_step_view.dart": {
+    "mtime": 1779951405.0475483,
+    "ast_hash": "b58c7633151b691d52235765e0e0c183",
+    "semantic_hash": "b58c7633151b691d52235765e0e0c183"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/slide_views/one_word_view.dart": {
+    "mtime": 1781139060.2006161,
+    "ast_hash": "72ce62cd1729718c12b0cb12bcdb01b6",
+    "semantic_hash": "72ce62cd1729718c12b0cb12bcdb01b6"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/slide_views/numerical_view.dart": {
+    "mtime": 1781139053.7326486,
+    "ast_hash": "b1e2b563bbfb8ed4246e5ca086d082ec",
+    "semantic_hash": "b1e2b563bbfb8ed4246e5ca086d082ec"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/slide_views/interactive_webview.dart": {
+    "mtime": 1779952895.736074,
+    "ast_hash": "18a9291c82de1174329114c7c747d7b2",
+    "semantic_hash": "18a9291c82de1174329114c7c747d7b2"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/slide_views/interactive_proof_view.dart": {
+    "mtime": 1779972785.3623276,
+    "ast_hash": "0a72bfc77d01e17b1b55df4253f9c6d8",
+    "semantic_hash": "0a72bfc77d01e17b1b55df4253f9c6d8"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/slide_views/fill_in_blank_view.dart": {
+    "mtime": 1781139461.7744434,
+    "ast_hash": "1d65506788910094662b4616c62a45b7",
+    "semantic_hash": "1d65506788910094662b4616c62a45b7"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/slide_views/theory_view.dart": {
+    "mtime": 1779951405.0475483,
+    "ast_hash": "ba55ed451ff4d1c0972e1e58b86777f9",
+    "semantic_hash": "ba55ed451ff4d1c0972e1e58b86777f9"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/slide_views/pyq_one_word_view.dart": {
+    "mtime": 1780405404.8376863,
+    "ast_hash": "0ffe4be6649cd455cc32ba025546d0f8",
+    "semantic_hash": "0ffe4be6649cd455cc32ba025546d0f8"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/slide_views/quiz_view.dart": {
+    "mtime": 1781139044.5876107,
+    "ast_hash": "c11e20f239a30b7130f5499a46e4d7da",
+    "semantic_hash": "c11e20f239a30b7130f5499a46e4d7da"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/bottom_sheets/section_bottom_sheet.dart": {
+    "mtime": 1780405404.8356895,
+    "ast_hash": "3e9c81abccba501af5ff4360e5dc4d4c",
+    "semantic_hash": "3e9c81abccba501af5ff4360e5dc4d4c"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/selectors/module_selector.dart": {
+    "mtime": 1780405404.836688,
+    "ast_hash": "ac9405e90ec0240b38ee7635ec15e440",
+    "semantic_hash": "ac9405e90ec0240b38ee7635ec15e440"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/widgets/selectors/section_selector.dart": {
+    "mtime": 1779951405.0448585,
+    "ast_hash": "60e816350a6f9a51ec4cc57182029493",
+    "semantic_hash": "60e816350a6f9a51ec4cc57182029493"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/data/mock_books.dart": {
+    "mtime": 1779951405.0335443,
+    "ast_hash": "b6525142d239a41b8f5d653bfd3344fb",
+    "semantic_hash": "b6525142d239a41b8f5d653bfd3344fb"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/services/generation_manager.dart": {
+    "mtime": 1780996104.6376057,
+    "ast_hash": "90658cc5b40acc8982ea175b78256112",
+    "semantic_hash": "90658cc5b40acc8982ea175b78256112"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/services/ai_service.dart": {
+    "mtime": 1780996143.4961302,
+    "ast_hash": "43364d6988ba3a26be3778a00593d877",
+    "semantic_hash": "43364d6988ba3a26be3778a00593d877"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/services/prompt_service.dart": {
+    "mtime": 1780995938.633822,
+    "ast_hash": "b0d8d160415f7154a860de9bf5dd08ee",
+    "semantic_hash": "b0d8d160415f7154a860de9bf5dd08ee"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/services/notification_service.dart": {
+    "mtime": 1780993504.7399163,
+    "ast_hash": "531b4efd7db4bb51189d8a064e6526be",
+    "semantic_hash": "531b4efd7db4bb51189d8a064e6526be"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/services/bookmark_service.dart": {
+    "mtime": 1780576885.193655,
+    "ast_hash": "8aa32efa6caed326f0b3facdc9fa2e9f",
+    "semantic_hash": "8aa32efa6caed326f0b3facdc9fa2e9f"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/services/pdf_service.dart": {
+    "mtime": 1781103303.3112693,
+    "ast_hash": "2fab09d9d8763a588a4cc1cc00cbf0f3",
+    "semantic_hash": "2fab09d9d8763a588a4cc1cc00cbf0f3"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/services/learning_sync.dart": {
+    "mtime": 1780982656.9404128,
+    "ast_hash": "4795a374ada4ae3fd09d36ce40489af1",
+    "semantic_hash": "4795a374ada4ae3fd09d36ce40489af1"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/services/global_state.dart": {
+    "mtime": 1780982668.005754,
+    "ast_hash": "873c75099823af3f05a57061db4ca133",
+    "semantic_hash": "873c75099823af3f05a57061db4ca133"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/services/auto_index_service.dart": {
+    "mtime": 1780405404.833693,
+    "ast_hash": "7de92ea6eb1895122c3efbe6f8f41d95",
+    "semantic_hash": "7de92ea6eb1895122c3efbe6f8f41d95"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/services/database_service.dart": {
+    "mtime": 1781011130.548845,
+    "ast_hash": "36838b4a249a762c34971f2e33f8b788",
+    "semantic_hash": "36838b4a249a762c34971f2e33f8b788"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/services/progress_service.dart": {
+    "mtime": 1780982664.667652,
+    "ast_hash": "2795aeb86663fb434a535c1fd5840fe5",
+    "semantic_hash": "2795aeb86663fb434a535c1fd5840fe5"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/services/fb/fb_core.dart": {
+    "mtime": 1780157013.633635,
+    "ast_hash": "9c9e83ac772fe5097122be2908bd7a94",
+    "semantic_hash": "9c9e83ac772fe5097122be2908bd7a94"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/services/fb/fb_auth.dart": {
+    "mtime": 1779953633.478849,
+    "ast_hash": "0122a89c604eeac4e82b787a9322b7b9",
+    "semantic_hash": "0122a89c604eeac4e82b787a9322b7b9"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/services/fb/fb_firestore.dart": {
+    "mtime": 1780980845.2709796,
+    "ast_hash": "fc70b2e46041f1fba6861ba954e6d483",
+    "semantic_hash": "fc70b2e46041f1fba6861ba954e6d483"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/theme/app_theme.dart": {
+    "mtime": 1779951405.0405462,
+    "ast_hash": "f307df5c5d194540b9cc38046c3bac00",
+    "semantic_hash": "f307df5c5d194540b9cc38046c3bac00"
+  },
+  "/home/ihjas/Documents/GitHub/duofy/lib/utils/progress_utils.dart": {
+    "mtime": 1779951405.0405462,
+    "ast_hash": "65eec5b5d38e8fdcbbfed9b736feac5c",
+    "semantic_hash": "65eec5b5d38e8fdcbbfed9b736feac5c"
+  }
+}
