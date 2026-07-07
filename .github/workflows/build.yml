@@ -10,9 +10,73 @@ on:
   workflow_dispatch:
 
 jobs:
+  quality:
+    name: Analyze and Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.44.1'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze (errors only)
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Run tests
+        run: flutter test
+
+  web:
+    name: Build Web (and deploy on main)
+    runs-on: ubuntu-latest
+    needs: quality
+    timeout-minutes: 30
+    env:
+      HAS_FIREBASE_SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.44.1'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build release web app
+        run: flutter build web --release
+
+      # Deploys to Firebase Hosting (project duofy-database) when the
+      # FIREBASE_SERVICE_ACCOUNT secret is configured. PRs get preview
+      # channels; pushes to main go live. Without the secret this step is
+      # skipped so the workflow still gates the web build itself.
+      - name: Deploy to Firebase Hosting
+        if: ${{ github.event_name != 'pull_request' && env.HAS_FIREBASE_SA == 'true' }}
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: duofy-database
+          channelId: live
+
   build:
     name: Build Release Windows Executable and Android APK
     runs-on: windows-latest
+    needs: quality
     timeout-minutes: 60
 
     permissions:
@@ -77,6 +141,7 @@ jobs:
           ls -lh builds/
 
       - name: Commit and push builds to repository
+        if: ${{ github.event_name != 'pull_request' }}
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
