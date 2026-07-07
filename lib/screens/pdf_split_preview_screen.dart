@@ -247,7 +247,196 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
     });
   }
 
-  void _commitSplits() {
+  /// The (id, label) pairs of every editable row, in display order — sections
+  /// in the new flow, units in the old flow.
+  List<(String, String)> _editableRows() {
+    final rows = <(String, String)>[];
+    for (var m = 0; m < _modules.length; m++) {
+      final module = _modules[m];
+      for (var s = 0; s < module.sections.length; s++) {
+        final section = module.sections[s];
+        if (_isSectionLevel) {
+          rows.add((section.id, 'M${m + 1}·S${s + 1} "${_titleControllers[section.id]?.text ?? section.title}"'));
+        } else {
+          for (final unit in section.units) {
+            rows.add((unit.id, 'M${m + 1}·S${s + 1} "${_titleControllers[unit.id]?.text ?? unit.title}"'));
+          }
+        }
+      }
+    }
+    return rows;
+  }
+
+  /// Checks the entered ranges for inversions, missing bounds, overlaps and
+  /// gaps (per source file) so bad ranges no longer slip through to the
+  /// splitter unnoticed.
+  List<String> _validationIssues() {
+    final issues = <String>[];
+    final lastEndByFile = <int, (int, String)>{};
+    for (final (id, label) in _editableRows()) {
+      final start = int.tryParse(_startPageControllers[id]?.text.trim() ?? '');
+      final end = int.tryParse(_endPageControllers[id]?.text.trim() ?? '');
+      final fileIdx = _bookIndices[id] ?? 0;
+      if (start == null && end == null) {
+        issues.add('$label has no page range — it will get no PDF content.');
+        continue;
+      }
+      if (start == null || end == null) {
+        issues.add('$label is missing its ${start == null ? 'start' : 'end'} page.');
+        continue;
+      }
+      if (start < 1) issues.add('$label starts before page 1.');
+      if (end < start) issues.add('$label has an inverted range ($start–$end).');
+      final prev = lastEndByFile[fileIdx];
+      if (prev != null) {
+        final (prevEnd, prevLabel) = prev;
+        if (start <= prevEnd) {
+          issues.add('$label (p.$start) overlaps $prevLabel (ends p.$prevEnd).');
+        } else if (start > prevEnd + 1) {
+          issues.add('Pages ${prevEnd + 1}–${start - 1} are not covered (between $prevLabel and $label).');
+        }
+      }
+      if (end >= start) lastEndByFile[fileIdx] = (end, label);
+    }
+    return issues;
+  }
+
+  /// Adds [delta] pages to every filled start/end field (rows of the
+  /// currently selected file when there are several sources). This is the
+  /// one-tap fix for a uniformly shifted TOC mapping.
+  void _shiftAllPages(int delta) {
+    if (delta == 0) return;
+    setState(() {
+      for (final (id, _) in _editableRows()) {
+        if (widget.originalPdf.length > 1 && (_bookIndices[id] ?? 0) != _selectedFileIndex) {
+          continue;
+        }
+        for (final ctrl in [_startPageControllers[id], _endPageControllers[id]]) {
+          final v = int.tryParse(ctrl?.text.trim() ?? '');
+          if (ctrl != null && v != null) {
+            ctrl.text = '${(v + delta) < 1 ? 1 : v + delta}';
+          }
+        }
+      }
+    });
+  }
+
+  Future<void> _showShiftDialog() async {
+    int delta = 0;
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: AppTheme.surface,
+          title: const Text('Shift All Pages', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                widget.originalPdf.length > 1
+                    ? 'Moves every range of File ${_selectedFileIndex + 1} by the same amount. Use when all pages are consistently early or late.'
+                    : 'Moves every range by the same amount. Use when all pages are consistently early or late.',
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(LucideIcons.minusCircle, color: AppTheme.duoRed),
+                    onPressed: () => setDialogState(() => delta--),
+                  ),
+                  Container(
+                    width: 72,
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.06),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      delta > 0 ? '+$delta' : '$delta',
+                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: Colors.white),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(LucideIcons.plusCircle, color: AppTheme.duoGreen),
+                    onPressed: () => setDialogState(() => delta++),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                _shiftAllPages(delta);
+              },
+              child: const Text('Apply', style: TextStyle(color: AppTheme.duoGreen, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _commitSplits({bool force = false}) {
+    if (!force) {
+      final issues = _validationIssues();
+      if (issues.isNotEmpty) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: AppTheme.surface,
+            title: const Text('Check These Ranges', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+            content: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 320),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final issue in issues.take(12))
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(LucideIcons.alertTriangle, color: AppTheme.duoOrange, size: 14),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text(issue, style: const TextStyle(color: Colors.white70, fontSize: 12))),
+                          ],
+                        ),
+                      ),
+                    if (issues.length > 12)
+                      Text('…and ${issues.length - 12} more.', style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Go Back & Fix', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  _commitSplits(force: true);
+                },
+                child: const Text('Split Anyway', style: TextStyle(color: AppTheme.duoOrange)),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+    }
     List<Module> finalModules = [];
 
     for (var m = 0; m < _modules.length; m++) {
@@ -289,7 +478,8 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
       finalModules.add(module.copyWith(sections: finalSections));
     }
 
-    final offsetBook = widget.skeletonBook.copyWith(modules: finalModules);
+    // The user has personally reviewed the ranges on this screen.
+    final offsetBook = widget.skeletonBook.copyWith(modules: finalModules, mappingVerified: true);
 
     GenerationManager.instance.startBackgroundSplitAndSave(widget.taskId, widget.originalPdf, offsetBook);
     Navigator.pop(context);
@@ -611,6 +801,11 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
       appBar: AppBar(
         title: const Text('Review Page Splits', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
         actions: [
+          IconButton(
+            icon: const Icon(LucideIcons.arrowUpDown, color: AppTheme.duoBlue),
+            tooltip: 'Shift all pages ±N',
+            onPressed: _showShiftDialog,
+          ),
           IconButton(
             icon: const Icon(LucideIcons.trash2, color: AppTheme.duoRed),
             tooltip: 'Cancel course generation',

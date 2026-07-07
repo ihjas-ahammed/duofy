@@ -377,6 +377,14 @@ class Book {
   final List<String> plannerQuestions;
   final List<String> selectedQuestions;
   final String bloomLevel;
+  /// The printed→absolute page offset that was applied when this book's
+  /// skeleton was resolved (see PageMapping). Stored for diagnostics and for
+  /// the "repair page alignment" tool; old books simply have null.
+  final int? pageOffset;
+  /// True once the deterministic mapping verifier (or the user, via the
+  /// split-review screen) has confirmed that section pages line up with the
+  /// source PDF.
+  final bool mappingVerified;
 
   static const List<String> defaultPlannerQuestions = [
     'Include core conceptual theory and definitions',
@@ -406,6 +414,8 @@ class Book {
     this.plannerQuestions = defaultPlannerQuestions,
     this.selectedQuestions = const [],
     this.bloomLevel = 'Remembering / Understanding',
+    this.pageOffset,
+    this.mappingVerified = false,
   });
 
   factory Book.fromJson(Map<String, dynamic> json) {
@@ -466,6 +476,8 @@ class Book {
       plannerQuestions: plannerQuestions,
       selectedQuestions: selectedQuestions,
       bloomLevel: _str(json['bloomLevel'], 'Remembering / Understanding'),
+      pageOffset: json['pageOffset'] is num ? (json['pageOffset'] as num).toInt() : int.tryParse(_str(json['pageOffset'])),
+      mappingVerified: _bool(json['mappingVerified'], false),
     );
   }
 
@@ -488,6 +500,8 @@ class Book {
     'plannerQuestions': plannerQuestions,
     'selectedQuestions': selectedQuestions,
     'bloomLevel': bloomLevel,
+    if (pageOffset != null) 'pageOffset': pageOffset,
+    if (mappingVerified) 'mappingVerified': mappingVerified,
   };
 
   List<LessonFormat> formatsForSection(Section section) {
@@ -532,6 +546,8 @@ class Book {
     List<String>? plannerQuestions,
     List<String>? selectedQuestions,
     String? bloomLevel,
+    int? pageOffset,
+    bool? mappingVerified,
   }) {
     return Book(
       id: id ?? this.id,
@@ -552,6 +568,8 @@ class Book {
       plannerQuestions: plannerQuestions ?? this.plannerQuestions,
       selectedQuestions: selectedQuestions ?? this.selectedQuestions,
       bloomLevel: bloomLevel ?? this.bloomLevel,
+      pageOffset: pageOffset ?? this.pageOffset,
+      mappingVerified: mappingVerified ?? this.mappingVerified,
     );
   }
 
@@ -834,6 +852,12 @@ class Section {
   final int? bookIndex;
   final List<String>? selectedQuestions;
   final List<LessonFormat>? lessonFormats;
+  /// Set when the PDF splitter could not produce this section's chunk (bad
+  /// range, corrupt pages, ...). A non-null value means [pdfPath] is absent
+  /// ON PURPOSE and the UI should offer a repair instead of silently showing
+  /// nothing — this replaces the old fallback that copied the ENTIRE source
+  /// PDF in as the chunk.
+  final String? chunkError;
 
   Section({
     required this.id,
@@ -851,6 +875,7 @@ class Section {
     this.bookIndex,
     this.selectedQuestions,
     this.lessonFormats,
+    this.chunkError,
   });
 
   factory Section.fromJson(Map<String, dynamic> json) {
@@ -872,6 +897,7 @@ class Section {
       lessonFormats: (json['lessonFormats'] as List?)
           ?.map((f) => LessonFormat.fromJson(f is Map ? Map<String, dynamic>.from(f) : {}))
           .toList(),
+      chunkError: _strOpt(json['chunkError']),
     );
   }
 
@@ -891,6 +917,7 @@ class Section {
     if (bookIndex != null) 'bookIndex': bookIndex,
     if (selectedQuestions != null) 'selectedQuestions': selectedQuestions,
     if (lessonFormats != null) 'lessonFormats': lessonFormats!.map((f) => f.toJson()).toList(),
+    if (chunkError != null) 'chunkError': chunkError,
   };
 
   /// True for skeletons that carry their own page-range and PDF chunk and
@@ -923,6 +950,8 @@ class Section {
     int? bookIndex,
     List<String>? selectedQuestions,
     List<LessonFormat>? lessonFormats,
+    String? chunkError,
+    bool clearChunkError = false,
   }) {
     return Section(
       id: id ?? this.id,
@@ -940,6 +969,7 @@ class Section {
       bookIndex: bookIndex ?? this.bookIndex,
       selectedQuestions: selectedQuestions ?? this.selectedQuestions,
       lessonFormats: lessonFormats ?? this.lessonFormats,
+      chunkError: clearChunkError ? null : (chunkError ?? this.chunkError),
     );
   }
 }

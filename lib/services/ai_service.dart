@@ -10,6 +10,7 @@ import 'package:pdfx/pdfx.dart' as pdfx;
 import '../models/app_models.dart';
 import '../main.dart' show showRateLimitDialog;
 import 'prompt_service.dart';
+import 'page_mapping.dart';
 import 'pdf_service.dart';
 import 'database_service.dart';
 import 'fb/fb_firestore.dart';
@@ -648,12 +649,13 @@ Important Rules:
     final modelsToTry = await _getLiteModels();
     final instructionsBlock = PromptService.instructionsBlock(customInstructions);
     
-    // Create the labels for files
+    // Create the labels for files. Deliberately no absolute-page hints here:
+    // the model must report printed TOC numbers verbatim (PageMapping does
+    // the printed→absolute conversion in code).
     final List<String> fileLabels = [];
     for (int i = 0; i < indexFiles.length; i++) {
       final name = indexFiles[i].path.split(RegExp(r'[\\/]')).last;
-      final ch1 = i < chapter1AbsolutePages.length ? chapter1AbsolutePages[i] : 1;
-      fileLabels.add('\n--- INDEX FOR BOOK $i: "$name" (Chapter 1 absolute page starts at page $ch1) ---\n');
+      fileLabels.add('\n--- INDEX FOR BOOK $i: "$name" ---\n');
     }
     
     final fileParts = await _buildFileParts(indexFiles, fileLabels: fileLabels);
@@ -863,26 +865,6 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     onProgress?.call('Mapping chapters…', null);
     final bool isCourse = syllabusFiles.isNotEmpty;
     final promptTemplate = isCourse ? PromptService.syllabusChapterList : PromptService.chapterList;
-    
-    // Customize the offset block dynamically if we have multiple books!
-    String offsetBlock = '';
-    if (indexFiles.length == 1) {
-      final ch1 = chapter1AbsolutePages.isNotEmpty ? chapter1AbsolutePages.first : 1;
-      offsetBlock = '''OFFSET CORRECTION:
-- Page numbers in the table of contents refer to printed page numbers.
-- The PDF viewer uses absolute page numbers (1-based, starting from page 1 of the file).
-- Chapter 1 starts on absolute PDF page $ch1.
-- Use this start page to compute the correct absolute PDF page for all chapters in the TOC. For example, if Chapter 1 is listed as printed page "1" but actually starts on absolute page $ch1, then printed page "10" is absolute page (10 - 1) + $ch1 = 9 + $ch1.''';
-    } else {
-      final buffer = StringBuffer();
-      buffer.writeln('OFFSET CORRECTION FOR EACH BOOK:');
-      for (int i = 0; i < indexFiles.length; i++) {
-        final ch1 = i < chapter1AbsolutePages.length ? chapter1AbsolutePages[i] : 1;
-        buffer.writeln('- Book $i: Chapter 1 starts on absolute PDF page $ch1.');
-        buffer.writeln('  For Book $i, if Chapter 1 is listed as printed page "1" but starts on absolute page $ch1, then printed page "10" is absolute page (10 - 1) + $ch1 = 9 + $ch1.');
-      }
-      offsetBlock = buffer.toString();
-    }
 
     String multiBookInstruction = '';
     if (indexFiles.length > 1) {
@@ -896,20 +878,13 @@ IMPORTANT: We are using MULTIPLE reference textbooks. Here is the list of books 
 $bookDescriptions
 
 You must map each chapter/module to its corresponding book.
-In the returned JSON, for every chapter object in the "chapters" array, you MUST include a "bookIndex" field (0-based integer, e.g. 0 for Book 0, 1 for Book 1, etc.) indicating which textbook contains this chapter, and "startPage" / "endPage" must refer to pages within that specific textbook.
+In the returned JSON, for every chapter object in the "chapters" array, you MUST include a "bookIndex" field (0-based integer, e.g. 0 for Book 0, 1 for Book 1, etc.) indicating which textbook contains this chapter, and "printedStartPage" must be the page number as printed in THAT textbook's own table of contents.
 ''';
     }
 
-    var chapterPrompt = promptTemplate
+    final chapterPrompt = promptTemplate
         .replaceAll('%filename%', filename)
         .replaceAll('%custom_instructions%', '$instructionsBlock\n$multiBookInstruction');
-    
-    // Replace the default offset block with our custom one
-    chapterPrompt = chapterPrompt.replaceAll(PromptService.offsetBlock, offsetBlock);
-    
-    // Safe fallback for '%chapter1_abs_page%' placeholder just in case
-    final firstCh1 = chapter1AbsolutePages.isNotEmpty ? chapter1AbsolutePages.first : 1;
-    chapterPrompt = chapterPrompt.replaceAll('%chapter1_abs_page%', '$firstCh1');
 
     Map<String, dynamic>? meta;
     Exception? lastException;
@@ -945,34 +920,67 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
       throw Exception('The model returned no chapters for this table of contents.');
     }
 
-    // Normalize: stable ids + parsed page bounds.
+    // Normalize: stable ids + the printed TOC number the model read out.
+    // `printedStartPage` is the new contract; `startPage` is accepted as a
+    // fallback for models that ignore the rename (its value still follows
+    // whatever the prompt asked for, i.e. printed numbers).
     final chapters = <Map<String, dynamic>>[];
     for (var i = 0; i < rawChapters.length; i++) {
       final c = rawChapters[i] is Map ? Map<String, dynamic>.from(rawChapters[i]) : <String, dynamic>{};
       final cid = (c['id']?.toString().trim().isNotEmpty ?? false) ? c['id'].toString() : 'm${i + 1}';
+      final rawBookIdx = _asInt(c['bookIndex']) ?? 0;
       chapters.add({
         'id': cid,
         'title': c['title']?.toString() ?? 'Chapter ${i + 1}',
         'description': c['description']?.toString() ?? '',
-        'startPage': _asInt(c['startPage']),
-        'endPage': _asInt(c['endPage']),
-        'bookIndex': _asInt(c['bookIndex']) ?? 0,
+        'printedStart': _asInt(c['printedStartPage'] ?? c['startPage']),
+        'bookIndex': (rawBookIdx >= 0 && rawBookIdx < indexFiles.length) ? rawBookIdx : 0,
       });
     }
-    // Resolve bounds left-to-right: a missing/invalid endPage falls back to the
-    // page before the next chapter starts, so every section call has a range.
+
+    // Resolve absolute page ranges per source book IN CODE — the model never
+    // does offset arithmetic anymore, so the offset can no longer be applied
+    // twice, skipped, or hallucinated. The anchor is the model's own
+    // first-chapter printed number vs the user-confirmed absolute start of
+    // chapter 1, so a model that (wrongly) emitted absolute numbers
+    // self-corrects to offset 0.
+    final byBook = <int, List<int>>{};
     for (var i = 0; i < chapters.length; i++) {
-      int? start = chapters[i]['startPage'] as int?;
-      final int currentBookIdx = chapters[i]['bookIndex'] as int? ?? 0;
-      final int currentBookCh1 = currentBookIdx < chapter1AbsolutePages.length ? chapter1AbsolutePages[currentBookIdx] : 1;
-      start ??= (i == 0 ? currentBookCh1 : null);
-      int? end = chapters[i]['endPage'] as int?;
-      final nextStart = i + 1 < chapters.length ? chapters[i + 1]['startPage'] as int? : null;
-      if (end == null || (start != null && end < start)) {
-        end = nextStart != null ? nextStart - 1 : (start != null ? start + 9 : null);
+      byBook.putIfAbsent(chapters[i]['bookIndex'] as int, () => []).add(i);
+    }
+    for (final entry in byBook.entries) {
+      final bookIdx = entry.key;
+      final idxs = entry.value;
+      final ch1Abs = bookIdx < chapter1AbsolutePages.length ? chapter1AbsolutePages[bookIdx] : 1;
+      final printedStarts = [for (final i in idxs) chapters[i]['printedStart'] as int?];
+      final ch1Printed = printedStarts.firstWhere((p) => p != null, orElse: () => 1) ?? 1;
+      final offset = PageMapping.computeOffset(chapter1AbsPage: ch1Abs, chapter1PrintedPage: ch1Printed);
+      int totalPages = 0;
+      if (sourceFiles != null && bookIdx < sourceFiles.length) {
+        try {
+          totalPages = await PdfService().getPageCount(sourceFiles[bookIdx]);
+        } catch (e) {
+          print('[AiService] getPageCount failed for book $bookIdx: ${_cleanErrMsg(e)}');
+        }
       }
-      chapters[i]['startPage'] = start;
-      chapters[i]['endPage'] = end;
+      if (totalPages <= 0) {
+        // No source page count available: leave generous room past the last
+        // chapter; the splitter clamps to the real page count anyway.
+        var maxPrinted = ch1Printed;
+        for (final p in printedStarts) {
+          if (p != null && p > maxPrinted) maxPrinted = p;
+        }
+        totalPages = maxPrinted + offset + 30;
+      }
+      final resolved = PageMapping.resolveChapterRanges(printedStarts, offset: offset, totalPages: totalPages);
+      for (var k = 0; k < idxs.length; k++) {
+        chapters[idxs[k]]['startPage'] = resolved.ranges[k].start;
+        chapters[idxs[k]]['endPage'] = resolved.ranges[k].end;
+        chapters[idxs[k]]['pageOffset'] = offset;
+      }
+      for (final note in resolved.corrections) {
+        print('[AiService] Page mapping (book $bookIdx): $note');
+      }
     }
 
     // ---- Stage 2: sections per chapter (real progress, bounded concurrency) -
@@ -993,7 +1001,6 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
         
         final int bookIdx = ch['bookIndex'] as int? ?? 0;
         final File specificIndexFile = (bookIdx >= 0 && bookIdx < indexFiles.length) ? indexFiles[bookIdx] : indexFiles.first;
-        final int specificChapter1Page = bookIdx < chapter1AbsolutePages.length ? chapter1AbsolutePages[bookIdx] : 1;
         final name = specificIndexFile.path.split(RegExp(r'[\\/]')).last;
         final specificFileParts = await _buildFileParts([specificIndexFile], fileLabels: ['\n--- INDEX FOR BOOK $bookIdx: "$name" ---\n']);
 
@@ -1002,7 +1009,7 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
           secs = await _generateSectionsForChapter(
             chapter: ch,
             filename: name,
-            chapter1AbsolutePage: specificChapter1Page,
+            pageOffset: ch['pageOffset'] as int? ?? 0,
             instructionsBlock: instructionsBlock,
             fileParts: specificFileParts,
             models: modelsToTry,
@@ -1042,6 +1049,8 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
       'description': meta['description']?.toString() ?? 'Auto-generated course',
       'icon': meta['icon']?.toString() ?? 'Book',
       if (meta['systemPrompt'] != null) 'systemPrompt': meta['systemPrompt'],
+      if (chapters.isNotEmpty && chapters.first['pageOffset'] != null)
+        'pageOffset': chapters.first['pageOffset'],
       'modules': [
         for (var i = 0; i < chapterCount; i++)
           {
@@ -1063,14 +1072,18 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
   }
 
   /// Stage-2 helper: details the sections of ONE [chapter] via
-  /// [PromptService.sectionList], bounded to that chapter's page range.
+  /// [PromptService.sectionList]. The prompt speaks the TOC's language —
+  /// PRINTED page numbers (the chapter's bounds are converted back via
+  /// [pageOffset]) — and the model's printed answers are converted to
+  /// absolute pages and normalized in code by [PageMapping], so no offset
+  /// arithmetic ever happens inside the model.
   /// Returns normalized section JSON maps (chapter-scoped ids), or null when
   /// every model/key combination fails so the caller can fall back to a
   /// single whole-chapter section rather than lose the chapter.
   Future<List<Map<String, dynamic>>?> _generateSectionsForChapter({
     required Map<String, dynamic> chapter,
     required String filename,
-    required int chapter1AbsolutePage,
+    required int pageOffset,
     required String instructionsBlock,
     required List<Part> fileParts,
     required List<String> models,
@@ -1079,13 +1092,14 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     List<Part> syllabusParts = const [],
   }) async {
     final promptTemplate = isCourse ? PromptService.syllabusSectionList : PromptService.sectionList;
+    final int? chStart = chapter['startPage'] as int?;
+    final int? chEnd = chapter['endPage'] as int?;
     final prompt = promptTemplate
         .replaceAll('%filename%', filename)
-        .replaceAll('%chapter1_abs_page%', '$chapter1AbsolutePage')
         .replaceAll('%custom_instructions%', instructionsBlock)
         .replaceAll('%chapter_title%', chapter['title']?.toString() ?? '')
-        .replaceAll('%chapter_start%', (chapter['startPage'])?.toString() ?? '?')
-        .replaceAll('%chapter_end%', (chapter['endPage'])?.toString() ?? '?');
+        .replaceAll('%chapter_start%', chStart != null ? '${chStart - pageOffset}' : '?')
+        .replaceAll('%chapter_end%', chEnd != null ? '${chEnd - pageOffset}' : '?');
 
     final parts = <Part>[TextPart(prompt), ...syllabusParts, ...fileParts];
     Object? lastErr;
@@ -1107,6 +1121,7 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
           final rawSecs = jsonMap['sections'] as List?;
           if (rawSecs == null || rawSecs.isEmpty) continue;
           final out = <Map<String, dynamic>>[];
+          final rawBounds = <({int? start, int? end})>[];
           for (var j = 0; j < rawSecs.length; j++) {
             final s = rawSecs[j] is Map ? Map<String, dynamic>.from(rawSecs[j]) : <String, dynamic>{};
             final sid = (s['id']?.toString().trim().isNotEmpty ?? false) ? s['id'].toString() : 's${j + 1}';
@@ -1115,11 +1130,33 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
               'title': s['title']?.toString() ?? 'Section ${j + 1}',
               'description': s['description']?.toString() ?? '',
               'color': s['color']?.toString() ?? 'duo-blue',
-              if (_asInt(s['startPage']) != null) 'startPage': _asInt(s['startPage']),
-              if (_asInt(s['endPage']) != null) 'endPage': _asInt(s['endPage']),
             });
+            rawBounds.add((
+              start: _asInt(s['printedStartPage'] ?? s['startPage']),
+              end: _asInt(s['printedEndPage'] ?? s['endPage']),
+            ));
           }
-          if (out.isNotEmpty) return out;
+          if (out.isNotEmpty) {
+            if (chStart != null && chEnd != null) {
+              // Printed→absolute conversion + normalization in code: keep TOC
+              // order, clamp inside the chapter, derive contiguous ends (the
+              // last section always runs to the chapter end).
+              final resolved = PageMapping.resolveSectionRanges(
+                rawBounds,
+                chapterStart: chStart,
+                chapterEnd: chEnd,
+                offset: pageOffset,
+              );
+              for (var j = 0; j < out.length; j++) {
+                out[j]['startPage'] = resolved.ranges[j].start;
+                out[j]['endPage'] = resolved.ranges[j].end;
+              }
+              for (final note in resolved.corrections) {
+                print('[AiService] Sections (${chapter['id']}): $note');
+              }
+            }
+            return out;
+          }
         } catch (e) {
           lastErr = e;
         }

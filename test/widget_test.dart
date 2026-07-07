@@ -1,30 +1,34 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// Smoke tests for self-contained widgets (no Firebase / plugin dependencies).
+// The old template "counter" test pumped the full app, which needs Firebase
+// initialization, and had been failing since the app outgrew the template.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:duofy/main.dart';
+import 'package:duofy/widgets/duo_button.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const DuoFyApp());
+  testWidgets('DuoButton renders its label and fires onPressed', (tester) async {
+    var taps = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: DuoButton(
+              text: 'Continue',
+              color: Colors.green,
+              shadowColor: Colors.greenAccent,
+              onPressed: () => taps++,
+            ),
+          ),
+        ),
+      ),
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('CONTINUE'), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    await tester.tap(find.text('CONTINUE'));
+    await tester.pump(const Duration(milliseconds: 150));
+    expect(taps, 1);
   });
 }

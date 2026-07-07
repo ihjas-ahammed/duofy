@@ -15,6 +15,7 @@ import 'course_settings_screen.dart';
 import 'course_edit_structure_screen.dart';
 import '../widgets/analytics_view.dart';
 import '../widgets/glassy_nav_bar.dart';
+import '../widgets/repair_alignment_dialog.dart';
 
 class MainLayoutScreen extends StatefulWidget {
   final Book book;
@@ -154,6 +155,15 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                         _onBookUpdated(freshest);
                       }
                     });
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(LucideIcons.arrowUpDown, color: AppTheme.duoOrange),
+                  title: const Text('Repair Page Alignment', style: TextStyle(color: Colors.white)),
+                  subtitle: const Text('Check section↔page mapping against the source PDF and shift all pages if needed', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    showRepairAlignmentFlow(this.context, _currentBook);
                   },
                 ),
                 const SizedBox(height: 16),

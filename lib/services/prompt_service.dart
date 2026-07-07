@@ -119,15 +119,17 @@ LATEX / MARKDOWN-MATH GUIDE (READ CAREFULLY — most generation errors come from
    "interactiveCanvasHtml": "<div style=\\"color: white; font-family: sans-serif; text-align: center; height: 100%; display: flex; flex-direction: column; justify-content: center;\\"><h3>Bubble Sort Interactive</h3><div style=\\"display:flex; justify-content:center; gap:8px; margin:20px 0;\\" id=\\"bars\\"></div><button id=\\"step\\" style=\\"background:#58cc02; border:none; padding:8px 16px; color:white; border-radius:8px; font-weight:bold;\\">Step Sort</button><script>let arr = [5, 3, 8, 1]; function render() { const parent = document.getElementById(\\"bars\\"); parent.innerHTML = \\"\\"; arr.forEach(x => { let bar = document.createElement(\\"div\\"); bar.style.width = \\"30px\\"; bar.style.height = (x*20)+\\"px\\"; bar.style.background = \\"#1cb0f6\\"; parent.appendChild(bar); }); } document.getElementById(\\"step\\").onclick = () => { let swapped = false; for(let i=0; i<arr.length-1; i++) { if(arr[i] > arr[i+1]) { let tmp = arr[i]; arr[i] = arr[i+1]; arr[i+1] = tmp; swapped = true; break; } } render(); if(!swapped) { DuoMessageChannel.postMessage(\\"complete\\"); } }; render();</script></div>"
 ''';
 
-  /// Shared offset-correction block reused by both skeleton-stage prompts so
-  /// the model converts the TOC's printed page numbers into absolute PDF page
-  /// numbers identically in each call.
-  static const String _offsetBlock = '''OFFSET CORRECTION (CRITICAL):
-The TOC lists the textbook's printed page numbers. We need ABSOLUTE PDF page numbers (1-based, where the first page of the whole source PDF is 1).
-The user has told us that Chapter 1 actually starts on absolute PDF page %chapter1_abs_page%. That means: when the TOC says "printed page 1" you must output absolute page %chapter1_abs_page%. The offset to add to every printed page number is therefore (%chapter1_abs_page% - 1).
-Apply this offset to EVERY startPage and endPage you output. Never emit printed/TOC page numbers verbatim.''';
-
-  static const String offsetBlock = _offsetBlock;
+  /// Shared page-number contract for every skeleton-stage prompt: the model
+  /// reports numbers EXACTLY as printed in the TOC and never performs offset
+  /// arithmetic — printed→absolute conversion happens deterministically in
+  /// code (see PageMapping), which is the fix for the old contents→pages
+  /// drift where a lite model applied (or skipped, or double-applied) the
+  /// offset unpredictably.
+  static const String _printedPagesBlock = '''PAGE NUMBERS (CRITICAL):
+Report page numbers EXACTLY as printed in the table of contents. Do NOT convert, offset, renumber, or adjust them in any way — our software converts printed numbers into PDF positions afterwards.
+- For each entry output "printedStartPage": the page number the TOC prints where that entry begins.
+- If the TOC shows no page number for an entry, OMIT the field entirely (never guess a number).
+- Do NOT output "endPage" — end pages are computed automatically from the next entry.''';
 
   /// Stage 1 of the batched TOC flow: enumerate ONLY the top-level chapters.
   ///
@@ -138,15 +140,14 @@ Apply this offset to EVERY startPage and endPage you output. Never emit printed/
   /// per-chapter [sectionList] call fills in subtopics afterwards.
   static const String chapterList = '''You are an expert curriculum designer. The attached PDF contains ONLY the table of contents / index pages of a textbook named "%filename%".
 %custom_instructions%
-$_offsetBlock
+$_printedPagesBlock
 
 TASK: List EVERY top-level chapter (the main numbered entries / parts) in the TOC, in order. Do NOT break them into sub-topics yet. COMPLETENESS IS CRITICAL — do not skip, merge, or combine chapters; if the TOC lists 14 chapters you must return 14 chapter objects.
 
 For each chapter provide:
 - "title": the chapter heading exactly as printed (keep its number, e.g. "Chapter 3: Thermodynamics").
 - "description": a one-line summary of the chapter.
-- "startPage": the ABSOLUTE PDF page where the chapter begins (apply the offset above).
-- "endPage": the ABSOLUTE PDF page where the chapter ends — one page before the next chapter begins (for the final chapter, its last content page per the TOC).
+- "printedStartPage": the page number printed in the TOC where the chapter begins (verbatim; omit if the TOC shows none).
 
 Also generate, for the whole course:
 - a professional `title` (from the TOC content or filename),
@@ -161,7 +162,7 @@ Return ONLY valid JSON matching this exact structure:
   "description": "Auto-generated book overview",
   "systemPrompt": "You are an expert tutor...",
   "chapters": [
-    { "id": "m1", "title": "Chapter 1: Title", "description": "...", "startPage": 12, "endPage": 34 }
+    { "id": "m1", "title": "Chapter 1: Title", "description": "...", "printedStartPage": 1 }
   ]
 }''';
 
@@ -231,18 +232,17 @@ Return ONLY valid JSON matching this exact structure:
   static const String syllabusChapterList = '''You are an expert curriculum designer. We are designing a structured study course based on the attached SYLLABUS.
 The reference textbook named "%filename%" has its table of contents / index pages attached.
 
-TASK: Generate the top-level modules/chapters for this course. 
-These modules/chapters MUST align with the syllabus. 
-For each module/chapter, identify the corresponding content in the textbook's table of contents and assign the starting and ending page range in the reference textbook.
+TASK: Generate the top-level modules/chapters for this course.
+These modules/chapters MUST align with the syllabus.
+For each module/chapter, identify the corresponding content in the textbook's table of contents and report where it starts, using the page number printed in the TOC.
 
 %custom_instructions%
-$_offsetBlock
+$_printedPagesBlock
 
 For each chapter provide:
 - "title": the chapter heading (e.g. "Chapter 1: Title" or matching the syllabus module title).
 - "description": a one-line summary.
-- "startPage": the ABSOLUTE PDF page in the reference textbook where the chapter's content begins.
-- "endPage": the ABSOLUTE PDF page where it ends (typically before the next chapter starts).
+- "printedStartPage": the page number printed in the reference textbook's TOC where this chapter's content begins (verbatim; omit if not shown).
 
 Also generate, for the whole course:
 - a professional `title` (matching the syllabus),
@@ -257,28 +257,28 @@ Return ONLY valid JSON matching this exact structure:
   "description": "Short overview of the syllabus-based course",
   "systemPrompt": "You are an expert tutor...",
   "chapters": [
-    { "id": "m1", "title": "Module/Chapter Title", "description": "...", "startPage": 12, "endPage": 34 }
+    { "id": "m1", "title": "Module/Chapter Title", "description": "...", "printedStartPage": 12 }
   ]
 }''';
 
   /// Stage 2 of the syllabus-based course flow: detail sections for a chapter based on the syllabus.
-  static const String syllabusSectionList = '''You are an expert curriculum designer. We are detailing sections for the chapter "%chapter_title%" (pages %chapter_start% to %chapter_end% in reference textbook "%filename%") based on the attached SYLLABUS.
+  static const String syllabusSectionList = '''You are an expert curriculum designer. We are detailing sections for the chapter "%chapter_title%" (printed pages %chapter_start% to %chapter_end% in reference textbook "%filename%") based on the attached SYLLABUS.
 
-TASK: Identify the subtopics/sections from the SYLLABUS that belong to this chapter. 
-Assign absolute page ranges in the reference textbook for each subtopic/section.
-The page ranges must be contiguous, in order, and stay strictly within the chapter's range [%chapter_start%, %chapter_end%].
+TASK: Identify the subtopics/sections from the SYLLABUS that belong to this chapter.
+For each subtopic/section, report where it starts in the reference textbook using the page number printed in the textbook's TOC.
+The starts must be in reading order and stay within the chapter's printed range [%chapter_start%, %chapter_end%].
 - BY DEFAULT, NEVER NEGLECT EXAMPLE AND EXERCISE QUESTIONS, OR PROBLEMS SECTIONS.
-- OF THE END OF THE CHAPTER, IF THERE IS A PROBLEMS OR EXERCISES SECTION, YOU MUST INCLUDE AND USE IT AS A DEDICATED SECTION. If not explicitly detailed, allocate the final pages of the chapter (i.e. the page difference/range from the last regular section to %chapter_end%) for this problems section.
+- IF THE CHAPTER ENDS WITH A PROBLEMS OR EXERCISES SECTION, YOU MUST INCLUDE IT AS ITS OWN FINAL SECTION (with its printed page number if the TOC shows one; omit the number if it does not).
 
 %custom_instructions%
-$_offsetBlock
+$_printedPagesBlock
 
-For each section provide "title", "description", a "color" (one of: duo-blue, duo-green, duo-violet, duo-orange, duo-red), and absolute "startPage"/"endPage" within the reference textbook.
+For each section provide "title", "description", a "color" (one of: duo-blue, duo-green, duo-violet, duo-orange, duo-red), and "printedStartPage".
 
 Return ONLY valid JSON matching this exact structure (no "units" array):
 {
   "sections": [
-    { "id": "s1", "title": "Section Title", "description": "...", "color": "duo-blue", "startPage": 12, "endPage": 18 }
+    { "id": "s1", "title": "Section Title", "description": "...", "color": "duo-blue", "printedStartPage": 12 }
   ]
 }''';
 
@@ -289,26 +289,26 @@ Return ONLY valid JSON matching this exact structure (no "units" array):
   /// inside the chapter (no bleeding into neighbours, no merging subtopics).
   static const String sectionList = '''You are an expert curriculum designer. The attached PDF contains ONLY the table of contents / index pages of the textbook "%filename%".
 %custom_instructions%
-$_offsetBlock
+$_printedPagesBlock
 
 We are now detailing exactly ONE chapter:
 - Chapter: "%chapter_title%"
-- This chapter spans ABSOLUTE PDF pages %chapter_start% to %chapter_end% (inclusive).
+- In the TOC this chapter covers printed pages %chapter_start% to %chapter_end% (inclusive).
 
 TASK: From the TOC, list the numbered sub-topics / sections that belong ONLY to this chapter (e.g. "3.1 ...", "3.2 ..."). Rules:
 1. Do NOT include sub-topics from any other chapter.
 2. Do NOT merge two sub-topics into one entry — keep them separate so each gets its own page range.
-3. If this chapter lists no sub-topics, return a SINGLE section that spans the whole chapter.
-4. Keep ranges contiguous and inside [%chapter_start%, %chapter_end%]: end each section one page before the next begins; the last section ends at %chapter_end%.
+3. If this chapter lists no sub-topics, return a SINGLE section for the whole chapter.
+4. List sections in reading order; every "printedStartPage" must lie within [%chapter_start%, %chapter_end%] exactly as the TOC prints it.
 5. BY DEFAULT, NEVER NEGLECT EXAMPLE AND EXERCISE QUESTIONS, OR PROBLEMS SECTIONS.
-6. OF THE END OF THE CHAPTER, IF THERE IS A PROBLEMS OR EXERCISES SECTION, YOU MUST INCLUDE AND USE IT AS A DEDICATED SECTION (e.g. "Chapter X Problems" or "Exercises"). If it's not explicitly named/detailed with page numbers in the TOC, use AI to infer and search the last pages of the chapter (i.e. the page difference/range between the last mapped content section and the end of the chapter %chapter_end%) and map it as a section.
+6. IF THE CHAPTER ENDS WITH A PROBLEMS OR EXERCISES SECTION (e.g. "Chapter X Problems", "Exercises"), YOU MUST INCLUDE IT AS ITS OWN FINAL SECTION — with its printed page number when the TOC shows one, or with the field omitted when it does not (the trailing pages are then allocated to it automatically).
 
-For each section provide "title", "description", a "color" (one of: duo-blue, duo-green, duo-violet, duo-orange, duo-red), and absolute "startPage"/"endPage".
+For each section provide "title", "description", a "color" (one of: duo-blue, duo-green, duo-violet, duo-orange, duo-red), and "printedStartPage".
 
 Return ONLY valid JSON matching this exact structure (no "units" array):
 {
   "sections": [
-    { "id": "s1", "title": "3.1 Subtopic Title", "description": "...", "color": "duo-blue", "startPage": 12, "endPage": 18 }
+    { "id": "s1", "title": "3.1 Subtopic Title", "description": "...", "color": "duo-blue", "printedStartPage": 12 }
   ]
 }''';
 

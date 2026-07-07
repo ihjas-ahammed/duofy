@@ -12,6 +12,7 @@ import '../models/ai_task.dart';
 import 'pdf_service.dart';
 import 'database_service.dart';
 import 'ai_service.dart';
+import 'mapping_verifier.dart';
 import 'notification_service.dart';
 import 'progress_service.dart';
 import 'ai_estimator.dart';
@@ -1517,19 +1518,42 @@ class GenerationManager extends ChangeNotifier {
         } else {
           final prefs = await SharedPreferences.getInstance();
           final autoVerify = prefs.getBool('auto_verify_mappings') ?? true;
-          
+
+          Book bookToSplit = skeletonBook;
           bool verificationPassed = false;
           if (autoVerify) {
-            task.statusMessage = 'Verifying page mappings with AI...';
+            task.statusMessage = 'Verifying page mappings...';
             notifyListeners();
-            verificationPassed = await _verifyMappingsWithAi(sourceFiles, skeletonBook);
+            void onStatus(String s) {
+              task.statusMessage = s;
+              notifyListeners();
+            }
+            try {
+              final verifier = MappingVerifier(pdfService: _pdfService, aiService: _aiService);
+              var report = await verifier.verify(sourceFiles, bookToSplit, onStatus: onStatus);
+              if (!report.pass && report.suggestedShift != null) {
+                final shift = report.suggestedShift!;
+                onStatus('Auto-correcting a ${shift > 0 ? '+$shift' : '$shift'} page shift…');
+                final shifted = MappingVerifier.applyGlobalShift(bookToSplit, shift);
+                report = await verifier.verify(sourceFiles, shifted, onStatus: onStatus);
+                if (report.pass) bookToSplit = shifted;
+              }
+              verificationPassed = report.pass;
+              print('[GenerationManager] ${report.describe()}');
+            } catch (e) {
+              // Verification is advisory: an internal failure routes to manual
+              // review instead of silently passing or blocking.
+              print('[GenerationManager] Mapping verification errored: $e');
+              verificationPassed = false;
+            }
           }
-          
+
           if (verificationPassed) {
-            print('[GenerationManager] AI mapping verification passed. Proceeding automatically...');
-            await startBackgroundSplitAndSave(taskId, sourceFiles, skeletonBook);
+            print('[GenerationManager] Mapping verification passed. Proceeding automatically...');
+            await startBackgroundSplitAndSave(
+                taskId, sourceFiles, bookToSplit.copyWith(mappingVerified: true));
           } else {
-            task.skeletonBook = skeletonBook;
+            task.skeletonBook = bookToSplit;
             task.state = BookGenState.review;
             task.statusMessage = 'Action Required: Review Splits';
             notifyListeners();
@@ -2394,51 +2418,24 @@ class GenerationManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> _verifyMappingsWithAi(List<File> sourceFiles, Book skeletonBook, {String? apiKey}) async {
-    try {
-      final List<Section> sectionsToVerify = [];
-      for (final module in skeletonBook.modules) {
-        for (final section in module.sections) {
-          if (section.startPage != null && section.startPage! >= 1) {
-            sectionsToVerify.add(section);
-            if (sectionsToVerify.length >= 3) break;
-          }
-        }
-        if (sectionsToVerify.length >= 3) break;
-      }
-      
-      if (sectionsToVerify.isEmpty) return true;
-      
-      int matches = 0;
-      for (final section in sectionsToVerify) {
-        final fileIdx = section.bookIndex ?? 0;
-        if (fileIdx < 0 || fileIdx >= sourceFiles.length) continue;
-        
-        final file = sourceFiles[fileIdx];
-        final pageText = await _pdfService.extractPageText(file, section.startPage! - 1);
-        if (pageText.trim().isEmpty) {
-          matches++;
-          continue;
-        }
-        
-        final isMatch = await _aiService.verifySectionMapping(
-          pageText,
-          section.startPage!,
-          section.title,
-          section.description,
-          apiKey: apiKey,
-        );
-        
-        if (isMatch) {
-          matches++;
-        }
-      }
-      
-      return matches >= sectionsToVerify.length;
-    } catch (e) {
-      print('Error during AI mapping verification: $e');
-      return false;
-    }
+  /// Runs the deterministic mapping verifier against [book]'s current page
+  /// ranges. Used by the "Repair page alignment" tool in course settings.
+  Future<MappingReport> checkPageAlignment(
+    Book book,
+    List<File> sourceFiles, {
+    void Function(String status)? onStatus,
+  }) {
+    final verifier = MappingVerifier(pdfService: _pdfService, aiService: _aiService);
+    return verifier.verify(sourceFiles, book, onStatus: onStatus);
+  }
+
+  /// Shifts every mapped page range of [book] by [shift] pages, then
+  /// re-splits the source PDFs (preserving generated lessons) and saves.
+  Future<void> repairPageAlignment(Book book, List<File> sourceFiles, int shift) async {
+    if (shift == 0) return;
+    final shifted =
+        MappingVerifier.applyGlobalShift(book, shift).copyWith(mappingVerified: true);
+    await restoreBookFiles(shifted, sourceFiles);
   }
 
   Future<void> autoGenerateModule1Contents(Book book) async {

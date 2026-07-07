@@ -9,6 +9,7 @@ import 'package:syncfusion_flutter_pdf/pdf.dart' as sync_pdf;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdfx/pdfx.dart' as pdfx;
 import '../models/app_models.dart';
+import 'page_mapping.dart';
 
 class PdfService {
   /// Extracts the given 1-based page numbers from [sourcePdf] into a new
@@ -387,6 +388,11 @@ class PdfService {
     final bookDir = Directory(bookDirPath);
     if (!await bookDir.exists()) await bookDir.create(recursive: true);
 
+    // Gap-fill missing bounds in modules that carry page ranges, so a section
+    // the AI left unbounded between two mapped neighbours no longer silently
+    // loses its PDF.
+    book = _fillMissingSectionBounds(book);
+
     int totalChunks = 0;
     for (var m in book.modules) {
       for (var s in m.sections) {
@@ -425,6 +431,10 @@ class PdfService {
           }
 
           if (end >= doc.pages.count) end = doc.pages.count - 1;
+          if (start >= doc.pages.count || start > end) {
+            throw Exception(
+                'page range $startPage–$endPage is outside the source PDF (${doc.pages.count} pages)');
+          }
           final chunkDoc = sync_pdf.PdfDocument();
           for (int i = start; i <= end; i++) {
             final loaded = doc.pages[i];
@@ -462,12 +472,11 @@ class PdfService {
           await file.writeAsBytes(bytes);
           chunkDoc.dispose();
         } catch (outerErr) {
-          print('[PdfService] Chunking failed for $id ($startPage-$endPage) due to Syncfusion cast error and unsupported raster rendering on this platform: $outerErr. Falling back to copying full original PDF...');
-          try {
-            await currentFile.copy(file.path);
-          } catch (copyErr) {
-            print('[PdfService] Failed to copy fallback full original PDF: $copyErr');
-          }
+          // No silent full-PDF fallback anymore: copying the ENTIRE source in
+          // as this section's chunk was a huge hidden mapping error. Callers
+          // record the failure on Section.chunkError and the UI offers repair.
+          print('[PdfService] Chunking failed for $id ($startPage-$endPage): $outerErr');
+          rethrow;
         }
       } else {
         // Fallback if the file is an image
@@ -494,8 +503,24 @@ class PdfService {
         if (section.startPage != null && section.endPage != null) {
           currentChunk++;
           onProgress("Chunking section $currentChunk of $totalChunks...", totalChunks == 0 ? 1.0 : currentChunk / totalChunks);
-          final path = await writeChunk(section.id, section.startPage!, section.endPage!, section.bookIndex ?? 0);
-          updatedSections.add(section.copyWith(pdfPath: path));
+          try {
+            final path = await writeChunk(section.id, section.startPage!, section.endPage!, section.bookIndex ?? 0);
+            updatedSections.add(section.copyWith(pdfPath: path, clearChunkError: true));
+          } catch (e) {
+            final reason = e.toString().replaceFirst('Exception: ', '');
+            print('[PdfService] Section "${section.title}" chunk failed: $reason');
+            updatedSections.add(section.copyWith(
+                chunkError: 'Could not split pages ${section.startPage}–${section.endPage}: $reason'));
+          }
+          continue;
+        }
+
+        // Half-mapped section in a paged module: record instead of the old
+        // silent skip that left the section with no PDF at all.
+        if (section.startPage != null || section.endPage != null) {
+          updatedSections.add(section.copyWith(
+              chunkError:
+                  'Missing page range (${section.startPage ?? '?'}–${section.endPage ?? '?'}) — edit the course structure or repair page alignment.'));
           continue;
         }
 
@@ -505,7 +530,15 @@ class PdfService {
           if (unit.startPage != null && unit.endPage != null) {
             currentChunk++;
             onProgress("Chunking unit $currentChunk of $totalChunks...", totalChunks == 0 ? 1.0 : currentChunk / totalChunks);
-            final path = await writeChunk(unit.id, unit.startPage!, unit.endPage!, unit.bookIndex ?? 0);
+            String? path;
+            try {
+              path = await writeChunk(unit.id, unit.startPage!, unit.endPage!, unit.bookIndex ?? 0);
+            } catch (e) {
+              // Keep the unit un-chunked; regenerating or repairing re-splits.
+              print('[PdfService] Unit "${unit.title}" chunk failed: $e');
+              updatedUnits.add(unit);
+              continue;
+            }
             if (preserveLessons) {
               updatedUnits.add(unit.copyWith(pdfPath: path));
             } else {
@@ -530,6 +563,32 @@ class PdfService {
     }
 
     return book.copyWith(modules: updatedModules);
+  }
+
+  /// Fills missing section bounds from mapped neighbours in modules that
+  /// carry page ranges (see [PageMapping.fillMissingSectionBounds]).
+  /// Modules with no page data at all (old-flow) pass through untouched.
+  Book _fillMissingSectionBounds(Book book) {
+    final modules = book.modules.map((m) {
+      final hasAnyPages = m.sections.any((s) => s.startPage != null && s.endPage != null);
+      final hasGaps = m.sections.any((s) => s.startPage == null || s.endPage == null);
+      if (!hasAnyPages || !hasGaps) return m;
+      final filled = PageMapping.fillMissingSectionBounds([
+        for (final s in m.sections) (start: s.startPage, end: s.endPage),
+      ]);
+      final sections = <Section>[];
+      for (var i = 0; i < m.sections.length; i++) {
+        final s = m.sections[i];
+        if (s.startPage == filled[i].start && s.endPage == filled[i].end) {
+          sections.add(s);
+        } else {
+          print('[PdfService] Gap-filled section "${s.title}" to ${filled[i].start}-${filled[i].end}');
+          sections.add(s.copyWith(startPage: filled[i].start, endPage: filled[i].end));
+        }
+      }
+      return m.copyWith(sections: sections);
+    }).toList();
+    return book.copyWith(modules: modules);
   }
 
   Future<bool> hasBookmarks(File pdfFile) async {
@@ -910,6 +969,51 @@ class PdfService {
       return '';
     } finally {
       doc?.dispose();
+    }
+  }
+
+  /// Extracts text for several 0-based page indices in a single document
+  /// open ([extractPageText] re-opens the file per call, far too slow for
+  /// the mapping verifier's sampling and shift scans). Invalid or failing
+  /// indices map to ''.
+  Future<Map<int, String>> extractPagesText(File pdfFile, Set<int> pageIndices) async {
+    if (pageIndices.isEmpty) return {};
+    final path = pdfFile.path;
+    final indices = pageIndices.toList()..sort();
+
+    Map<int, String> run() {
+      final out = <int, String>{};
+      sync_pdf.PdfDocument? doc;
+      try {
+        doc = sync_pdf.PdfDocument(inputBytes: File(path).readAsBytesSync());
+        final extractor = sync_pdf.PdfTextExtractor(doc);
+        for (final idx in indices) {
+          if (idx < 0 || idx >= doc.pages.count) {
+            out[idx] = '';
+            continue;
+          }
+          try {
+            out[idx] = extractor.extractText(startPageIndex: idx, endPageIndex: idx);
+          } catch (_) {
+            out[idx] = '';
+          }
+        }
+      } catch (e) {
+        print('[PdfService] extractPagesText failed: $e');
+        for (final idx in indices) {
+          out.putIfAbsent(idx, () => '');
+        }
+      } finally {
+        doc?.dispose();
+      }
+      return out;
+    }
+
+    try {
+      return await Isolate.run(run);
+    } catch (e) {
+      print('[PdfService] Isolate extractPagesText failed: $e. Running on main isolate...');
+      return run();
     }
   }
 }

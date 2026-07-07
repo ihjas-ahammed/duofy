@@ -542,29 +542,32 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
         ),
       );
     } else {
-      _showMissingPdfDialog();
+      _showMissingPdfDialog(sec);
     }
   }
 
-  void _showMissingPdfDialog() {
+  void _showMissingPdfDialog([Section? sec]) {
+    final chunkError = sec?.chunkError;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppTheme.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(LucideIcons.fileWarning, color: AppTheme.duoOrange, size: 28),
-            SizedBox(width: 12),
+            const Icon(LucideIcons.fileWarning, color: AppTheme.duoOrange, size: 28),
+            const SizedBox(width: 12),
             Text(
-              'Missing Reference PDF',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+              chunkError != null ? 'Section PDF Failed' : 'Missing Reference PDF',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
             ),
           ],
         ),
-        content: const Text(
-          'The source PDF file for this section is missing on this device. Would you like to select and restore the source PDF(s) to view it?',
-          style: TextStyle(color: Colors.white70, fontSize: 14),
+        content: Text(
+          chunkError != null
+              ? 'This section\'s PDF could not be created: $chunkError\n\nRestore the source PDF(s) to re-split, or use "Repair Page Alignment" in course settings if pages look shifted.'
+              : 'The source PDF file for this section is missing on this device. Would you like to select and restore the source PDF(s) to view it?',
+          style: const TextStyle(color: Colors.white70, fontSize: 14),
         ),
         actions: [
           TextButton(
