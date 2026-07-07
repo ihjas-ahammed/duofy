@@ -1,4 +1,4 @@
-import 'dart:io';
+import '../platform/io_shim.dart';
 import 'dart:async';
 import 'package:syncfusion_flutter_pdf/pdf.dart' as sync_pdf;
 import 'auto_index_pipeline.dart';

@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'dart:io';
+import '../../platform/io_shim.dart';
+import '../../platform/file_image_shim.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -260,7 +261,7 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(color: Colors.white24),
                                       image: DecorationImage(
-                                        image: FileImage(_attachedPhotos[idx]),
+                                        image: fileImageProvider(_attachedPhotos[idx]),
                                         fit: BoxFit.cover,
                                       ),
                                     ),

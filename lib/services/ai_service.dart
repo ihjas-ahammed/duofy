@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import '../platform/io_shim.dart';
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';

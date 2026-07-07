@@ -1,4 +1,4 @@
-import 'dart:io';
+import '../platform/io_shim.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../models/app_models.dart';

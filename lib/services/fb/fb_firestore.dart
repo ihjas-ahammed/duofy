@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as cf;
-import 'package:firedart/firedart.dart' as fd;
-import 'package:grpc/grpc.dart';
 import 'fb_core.dart';
+import 'fd_backend.dart' if (dart.library.html) 'fd_backend_stub.dart' as fdb;
 
 /// Snapshot of a single document; mirrors the relevant parts of both
 /// `cloud_firestore`'s `DocumentSnapshot` and firedart's `Document`.
@@ -33,7 +32,7 @@ abstract class FbCollectionRef {
 
 abstract class FbFirestore {
   static final FbFirestore instance =
-      useFiredart ? _FdFirestore() : _CfFirestore();
+      useFiredart ? fdb.FdFirestoreBackend() : _CfFirestore();
   FbCollectionRef collection(String path);
 }
 
@@ -79,55 +78,5 @@ class _CfDoc implements FbDocRef {
   FbCollectionRef collection(String id) => _CfCollection(_ref.collection(id));
 }
 
-// ---------------------------------------------------------------------------
-// firedart backend (Linux desktop)
-// ---------------------------------------------------------------------------
-
-class _FdFirestore implements FbFirestore {
-  @override
-  FbCollectionRef collection(String path) =>
-      _FdCollection(fd.Firestore.instance.collection(path));
-}
-
-class _FdCollection implements FbCollectionRef {
-  final fd.CollectionReference _ref;
-  _FdCollection(this._ref);
-  @override
-  FbDocRef doc(String id) => _FdDoc(_ref.document(id));
-  @override
-  Future<FbQuerySnapshot> get() async {
-    final List<FbDocSnapshot> docs = [];
-    var page = await _ref.get();
-    docs.addAll(page.map((d) => FbDocSnapshot(id: d.id, exists: true, data: d.map)));
-    while (page.hasNextPage) {
-      page = await _ref.get(nextPageToken: page.nextPageToken);
-      docs.addAll(page.map((d) => FbDocSnapshot(id: d.id, exists: true, data: d.map)));
-    }
-    return FbQuerySnapshot(docs);
-  }
-}
-
-class _FdDoc implements FbDocRef {
-  final fd.DocumentReference _ref;
-  _FdDoc(this._ref);
-  @override
-  String get id => _ref.id;
-  @override
-  Future<void> set(Map<String, dynamic> data) => _ref.set(data);
-  @override
-  Future<FbDocSnapshot> get() async {
-    try {
-      final d = await _ref.get();
-      return FbDocSnapshot(id: d.id, exists: true, data: d.map);
-    } on GrpcError catch (e) {
-      if (e.code == StatusCode.notFound) {
-        return FbDocSnapshot(id: _ref.id, exists: false);
-      }
-      rethrow;
-    }
-  }
-  @override
-  Future<void> delete() => _ref.delete();
-  @override
-  FbCollectionRef collection(String id) => _FdCollection(_ref.collection(id));
-}
+// The firedart backend (Linux/Windows desktop) lives in fd_backend.dart,
+// conditionally imported above so web builds never see firedart/grpc.

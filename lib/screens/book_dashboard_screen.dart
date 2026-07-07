@@ -1,4 +1,4 @@
-import 'dart:io';
+import '../platform/io_shim.dart';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';

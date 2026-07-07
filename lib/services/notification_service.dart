@@ -15,6 +15,9 @@ class NotificationService {
   static const int dailyReminderId = 777001;
 
   static Future<void> init() async {
+    // No notification backend on web; every show/schedule call is also
+    // individually guarded or try/caught.
+    if (kIsWeb) return;
     // Timezone database for exact-time scheduling (daily reminder).
     try {
       tz_data.initializeTimeZones();

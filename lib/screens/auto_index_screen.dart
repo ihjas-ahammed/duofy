@@ -1,4 +1,4 @@
-import 'dart:io';
+import '../platform/io_shim.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../services/auto_index_service.dart';

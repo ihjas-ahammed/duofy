@@ -1,4 +1,4 @@
-import 'dart:io';
+import '../platform/io_shim.dart';
 import 'dart:math' as math;
 
 import '../models/app_models.dart';

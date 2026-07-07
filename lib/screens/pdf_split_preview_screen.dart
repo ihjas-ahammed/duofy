@@ -1,4 +1,5 @@
-import 'dart:io';
+import '../platform/io_shim.dart';
+import '../platform/file_image_shim.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../widgets/safe_pdf_viewer.dart';
@@ -953,8 +954,8 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                     ]
                     else
                       Center(
-                        child: Image.file(
-                          widget.originalPdf[_selectedFileIndex],
+                        child: Image(
+                          image: fileImageProvider(widget.originalPdf[_selectedFileIndex]),
                           key: ValueKey(_selectedFileIndex),
                           fit: BoxFit.contain,
                         ),

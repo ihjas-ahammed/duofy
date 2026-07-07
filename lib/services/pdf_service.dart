@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:io';
-import 'dart:isolate';
+import '../platform/io_shim.dart';
+import '../platform/isolate_shim.dart';
 import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
@@ -28,7 +28,7 @@ class PdfService {
     final name = outputName ?? 'index_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
     try {
-      return await Isolate.run(() async {
+      return await isolateRun(() async {
         sync_pdf.PdfDocument? doc;
         try {
           final file = File(sourcePath);
@@ -234,7 +234,7 @@ class PdfService {
   Future<int> getPageCount(File pdfFile) async {
     final path = pdfFile.path;
     try {
-      return await Isolate.run(() async {
+      return await isolateRun(() async {
         final file = File(path);
         final bytes = await file.readAsBytes();
         final doc = sync_pdf.PdfDocument(inputBytes: bytes);
@@ -266,7 +266,7 @@ class PdfService {
     final name = outputName ?? 'window_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
     try {
-      return await Isolate.run(() async {
+      return await isolateRun(() async {
         sync_pdf.PdfDocument? doc;
         sync_pdf.PdfDocument? out;
         try {
@@ -1010,7 +1010,7 @@ class PdfService {
     }
 
     try {
-      return await Isolate.run(run);
+      return await isolateRun(run);
     } catch (e) {
       print('[PdfService] Isolate extractPagesText failed: $e. Running on main isolate...');
       return run();
