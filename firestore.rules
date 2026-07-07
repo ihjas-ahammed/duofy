@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Shared runtime credentials (Gemini keys, B2 document store).
+    // Readable only by signed-in users; never writable from clients —
+    // edit the document in the Firebase console and rotate keys there.
+    // Document shape: secrets/apikeys { GENAI: [..], B2_KEY_ID, B2_APP_KEY,
+    // B2_BUCKET, B2_REGION }
+    match /secrets/{doc} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Per-user data: cloud book backups, learning progress, settings.
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Community-published courses: publicly browsable (guest mode works),
+    // writable by their author, legacy author-less books, or the admin.
+    match /global_books/{bookId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null
+        && (!('authorId' in resource.data)
+            || resource.data.authorId == null
+            || resource.data.authorId == request.auth.uid
+            || request.auth.token.email == 'ihjas.one@gmail.com');
+    }
+
+    // Document-store metadata (B2-backed community PDFs): requires sign-in,
+    // matching the auth-gated B2 credentials needed to actually fetch files.
+    match /document_store/{docId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Everything else is denied.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

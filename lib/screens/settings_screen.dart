@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../services/fb/fb_auth.dart';
 import '../services/global_state.dart';
 import '../services/database_service.dart';
+import '../services/secrets_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/string_list_manager.dart';
@@ -1308,6 +1309,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onPressed: () async {
                     Navigator.pop(context);
                     await FbAuth.instance.signOut();
+                    SecretsService.instance.clear();
                     GlobalState.isGuestNotifier.value = false;
                     GlobalState.xpNotifier.value = 0;
                   },

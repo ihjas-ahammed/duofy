@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'fb/fb_firestore.dart';
+import 'secrets_service.dart';
 
 class B2Object {
   final String key;
@@ -62,37 +63,37 @@ class B2Service {
   B2Service._privateConstructor();
   static final B2Service instance = B2Service._privateConstructor();
 
-  // Define placeholders for shared credentials
-  static const String defaultKeyId = '00384db7dd2f3390000000001';
-  static const String defaultApplicationKey = 'K003EUCIHsnIRRoLkgDu7mXM4mSttW8';
-  static const String defaultBucketName = 'duofyug';
-  static const String defaultRegion = 'eu-central-003';
-
-  /// Resolves the current credentials to use: checks SharedPreferences first,
-  /// falling back to the hardcoded constants.
+  /// Resolves the current credentials: the user's own (SharedPreferences)
+  /// first, then the shared ones fetched at runtime from Firestore
+  /// (SecretsService — auth-gated, never compiled into the binary). Returns
+  /// empty credentials (isValid == false) when neither is available, which
+  /// the document-store UI surfaces as "not configured".
   Future<B2Credentials> getCredentials() async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     final keyId = prefs.getString('b2_key_id')?.trim();
     final appKey = prefs.getString('b2_application_key')?.trim();
     final bucket = prefs.getString('b2_bucket_name')?.trim();
     final region = prefs.getString('b2_region')?.trim();
 
-    return B2Credentials(
-      keyId: (keyId != null && keyId.isNotEmpty) ? keyId : defaultKeyId,
-      applicationKey: (appKey != null && appKey.isNotEmpty) ? appKey : defaultApplicationKey,
-      bucketName: (bucket != null && bucket.isNotEmpty) ? bucket : defaultBucketName,
-      region: (region != null && region.isNotEmpty) ? region : defaultRegion,
+    final own = B2Credentials(
+      keyId: keyId ?? '',
+      applicationKey: appKey ?? '',
+      bucketName: bucket ?? '',
+      region: region ?? '',
     );
+    if (own.isValid) return own;
+
+    final shared = await SecretsService.instance.b2Credentials();
+    if (shared != null) return shared;
+
+    return B2Credentials(keyId: '', applicationKey: '', bucketName: '', region: '');
   }
 
   /// Helper to check if credentials are configured
   Future<bool> isConfigured() async {
     final creds = await getCredentials();
-    return creds.isValid &&
-        creds.keyId != 'YOUR_KEY_ID' &&
-        creds.applicationKey != 'YOUR_APPLICATION_KEY' &&
-        creds.bucketName != 'YOUR_BUCKET_NAME';
+    return creds.isValid;
   }
 
   /// Lists objects in the bucket (reads from Firestore metadata).
