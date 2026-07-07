@@ -1,5 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:timezone/data/latest_all.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 import '../main.dart';
 import '../services/generation_manager.dart';
 import '../screens/pdf_split_preview_screen.dart';
@@ -7,7 +11,18 @@ import '../screens/pdf_split_preview_screen.dart';
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
 
+  /// Fixed id for the daily study reminder so re-scheduling replaces it.
+  static const int dailyReminderId = 777001;
+
   static Future<void> init() async {
+    // Timezone database for exact-time scheduling (daily reminder).
+    try {
+      tz_data.initializeTimeZones();
+      final localTz = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(localTz.identifier));
+    } catch (e) {
+      debugPrint('[NotificationService] Timezone init failed (reminders fall back to UTC): $e');
+    }
     // Requires an app icon at android/app/src/main/res/mipmap/ic_launcher.png
     const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const DarwinInitializationSettings iosSettings = DarwinInitializationSettings();
@@ -134,4 +149,45 @@ class NotificationService {
       debugPrint('[NotificationService] Error cancelling notification: $e');
     }
   }
+
+  /// Schedules (or replaces) the repeating daily study reminder at [time].
+  /// No-op on web. Uses inexact scheduling so no special Android alarm
+  /// permission is needed.
+  static Future<void> scheduleDailyReminder(TimeOfDay time) async {
+    if (kIsWeb) return;
+    try {
+      final now = tz.TZDateTime.now(tz.local);
+      var next = tz.TZDateTime(
+          tz.local, now.year, now.month, now.day, time.hour, time.minute);
+      if (!next.isAfter(now)) next = next.add(const Duration(days: 1));
+
+      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+        'reminder_channel',
+        'Daily Reminder',
+        channelDescription: 'Daily study reminder to keep your streak alive',
+        importance: Importance.high,
+        priority: Priority.high,
+      );
+      const NotificationDetails details = NotificationDetails(
+        android: androidDetails,
+        linux: LinuxNotificationDetails(),
+        iOS: DarwinNotificationDetails(),
+        macOS: DarwinNotificationDetails(),
+      );
+      await _plugin.zonedSchedule(
+        id: dailyReminderId,
+        title: 'Time to learn 🔥',
+        body: 'A quick lesson keeps your streak alive. Jump back in!',
+        scheduledDate: next,
+        notificationDetails: details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.time,
+        payload: 'open_home|',
+      );
+    } catch (e) {
+      debugPrint('[NotificationService] Failed to schedule daily reminder: $e');
+    }
+  }
+
+  static Future<void> cancelDailyReminder() => cancel(dailyReminderId);
 }

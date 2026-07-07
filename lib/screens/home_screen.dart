@@ -13,7 +13,9 @@ import '../services/learning_sync.dart';
 import 'bookmarks_screen.dart';
 import '../theme/app_theme.dart';
 import '../widgets/compact_book_list_item.dart';
+import '../widgets/duo_button.dart';
 import '../widgets/generating_book_card.dart';
+import '../widgets/next_up_card.dart';
 import '../widgets/responsive_center.dart';
 import '../widgets/sync_conflict_dialog.dart';
 import 'package:flutter/foundation.dart';
@@ -26,7 +28,6 @@ import 'course_edit_structure_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/global_state.dart';
 import '../main.dart';
-import 'metacognition_setup_screen.dart';
 import '../widgets/analytics_view.dart';
 import 'document_store_screen.dart';
 import '../widgets/glassy_nav_bar.dart';
@@ -105,22 +106,10 @@ class _HomeScreenState extends State<HomeScreen> {
         showGlobalErrorAlert(startupError!, null);
         startupError = null;
       }
-      _checkMetacognitionProfile();
+      // The writing-style survey is no longer forced on first launch — the
+      // onboarding walkthrough handles first-run, and the survey lives on as
+      // an optional Settings → Personalization card.
     });
-  }
-
-  Future<void> _checkMetacognitionProfile() async {
-    final prefs = await SharedPreferences.getInstance();
-    final profile = prefs.getString('user_writing_style_profile');
-    if (profile == null) {
-      if (mounted) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => const MetacognitionSetupScreen(),
-          ),
-        );
-      }
-    }
   }
 
   @override
@@ -625,6 +614,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     : null,
               ),
             ),
+            if (!isSearching && _selectedFolderId == null && books.isNotEmpty)
+              SliverToBoxAdapter(
+                child: NextUpCard(
+                  books: books,
+                  onReturn: () => _loadAllData(force: false),
+                ),
+              ),
             if (!isSearching && _selectedFolderId == null && folders.isNotEmpty)
               SliverToBoxAdapter(
                 child: _buildFoldersList(),
@@ -660,19 +656,19 @@ class _HomeScreenState extends State<HomeScreen> {
             if (!isSearching)
               SliverToBoxAdapter(
                 child: (displayedBooks.isEmpty && activeTasks.isEmpty && (_selectedFolderId != null || folders.isEmpty))
-                    ? Container(
-                        height: 180,
-                        margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(24)),
-                        alignment: Alignment.center,
-                        child: Text(
-                          _selectedFolderId != null
-                              ? 'This folder is empty.\nGo back and drag courses here!'
-                              : 'No courses found.\nTap + to create one!',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(color: Colors.white54, fontWeight: FontWeight.bold),
-                        ),
-                      )
+                    ? (_selectedFolderId != null
+                        ? Container(
+                            height: 180,
+                            margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(24)),
+                            alignment: Alignment.center,
+                            child: const Text(
+                              'This folder is empty.\nGo back and drag courses here!',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold),
+                            ),
+                          )
+                        : _buildFirstCourseCta())
                     : const SizedBox.shrink(),
               ),
             if (isSearching)
@@ -749,6 +745,65 @@ class _HomeScreenState extends State<HomeScreen> {
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Guided empty state for a brand-new library: one obvious action instead
+  /// of a bare "tap +" hint.
+  Widget _buildFirstCourseCta() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.all(24),
+      decoration: AppTheme.glassDecoration,
+      child: Column(
+        children: [
+          Container(
+            width: 88,
+            height: 88,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppTheme.duoGreen.withOpacity(0.12),
+              border: Border.all(color: AppTheme.duoGreen.withOpacity(0.4), width: 2),
+            ),
+            child: const Icon(LucideIcons.sparkles, color: AppTheme.duoGreen, size: 40),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Create your first course',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Pick any PDF — a textbook, notes, or a handout — and the AI turns it into an interactive lesson path.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white60, fontSize: 13, height: 1.4),
+          ),
+          const SizedBox(height: 20),
+          if (!kIsWeb)
+            SizedBox(
+              width: double.infinity,
+              child: DuoButton(
+                text: 'Upload a PDF',
+                color: AppTheme.duoGreen,
+                shadowColor: AppTheme.duoGreenDark,
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const GenerateBookScreen()),
+                  ).then((_) => _loadAllData(force: false));
+                },
+              ),
+            ),
+          TextButton.icon(
+            onPressed: () => setState(() => _selectedTabIndex = 2),
+            icon: const Icon(LucideIcons.globe, size: 16, color: AppTheme.duoBlue),
+            label: const Text(
+              'Or browse community courses',
+              style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+          ),
+        ],
       ),
     );
   }

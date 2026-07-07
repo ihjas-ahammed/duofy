@@ -264,6 +264,31 @@ void main() async {
       );
     });
 
+    // First-run walkthrough gate + migration. Anyone who used the app before
+    // this feature existed is detected by traces the old flows always left
+    // (the forced writing-style survey wrote a profile even on skip; or their
+    // own API keys / guest flag) — they skip onboarding and keep the power
+    // features visible (advanced mode on).
+    final hasOnboarded = prefs.getBool('onboarding_complete') ?? false;
+    if (!hasOnboarded) {
+      final isExistingUser = prefs.getString('user_writing_style_profile') != null ||
+          (prefs.getStringList('gemini_api_keys_list')?.isNotEmpty ?? false) ||
+          (prefs.getBool('is_guest_mode') ?? false);
+      if (isExistingUser) {
+        await prefs.setBool('onboarding_complete', true);
+        if (!prefs.containsKey('advanced_mode')) {
+          await prefs.setBool('advanced_mode', true);
+        }
+      }
+    }
+    GlobalState.onboardingCompleteNotifier.value = prefs.getBool('onboarding_complete') ?? false;
+    GlobalState.advancedModeNotifier.value = prefs.getBool('advanced_mode') ?? false;
+    GlobalState.advancedModeNotifier.addListener(() {
+      SharedPreferences.getInstance().then(
+        (p) => p.setBool('advanced_mode', GlobalState.advancedModeNotifier.value),
+      );
+    });
+
     // One-time cleanup: older builds auto-saved `gemini-1.5-flash` into the
     // generic models list / legacy scalar key whenever settings opened with
     // nothing configured. That model is no longer routable on the Gemini

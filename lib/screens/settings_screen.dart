@@ -9,6 +9,7 @@ import '../services/global_state.dart';
 import '../services/database_service.dart';
 import '../services/secrets_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/daily_goal_card.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/string_list_manager.dart';
 import '../widgets/responsive_center.dart';
@@ -1192,22 +1193,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
 
-            SizedBox(
-              width: double.infinity,
-              child: DuoButton(
-                text: 'PDF Browser',
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const PdfBrowserScreen()));
-                },
-                color: AppTheme.duoViolet,
-                shadowColor: AppTheme.duoVioletDark,
-              ),
-            ),
+            const Text('Learning', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            const Text('Set a daily XP goal and an optional study reminder.',
+                style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 16),
+            const DailyGoalCard(),
             const SizedBox(height: 32),
 
-            const Text('Metacognitive Personalization', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const Text('Personalization', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
-            const Text('Personalize the generated course content and pedagogical tone to your writing style.',
+            const Text('Optional: tune the generated content to your writing and learning style.',
                 style: TextStyle(color: Colors.white54, fontSize: 12)),
             const SizedBox(height: 16),
             _buildMetacognitionCard(),
@@ -1234,63 +1230,95 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 32),
 
-            const Text('AI Model Assignments', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 8),
-            const Text('Select specialized models for text, graphics, and light-weight tasks.', style: TextStyle(color: Colors.white54, fontSize: 12)),
-            const SizedBox(height: 16),
-
-            _buildModelSlotCard(
-              title: 'Primary - Text',
-              subtitle: 'Generates final interactive lessons & quizzes.',
-              slotName: 'Primary - Text',
-              icon: LucideIcons.fileText,
+            // ---- Advanced mode gate: everything below is power-user tooling.
+            Container(
+              decoration: AppTheme.glassDecoration,
+              child: SwitchListTile(
+                value: GlobalState.advancedModeNotifier.value,
+                activeColor: AppTheme.duoViolet,
+                title: const Text('Advanced mode',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                subtitle: const Text(
+                  'Model ladders, concurrency, automation, experiments, and per-node generation menus.',
+                  style: TextStyle(color: Colors.white54, fontSize: 11),
+                ),
+                onChanged: (v) => setState(() => GlobalState.advancedModeNotifier.value = v),
+              ),
             ),
-            const SizedBox(height: 16),
-
-            _buildModelSlotCard(
-              title: 'Primary - Graphics',
-              subtitle: 'Generates canvas diagrams for lessons & proofs.',
-              slotName: 'Primary - Graphics',
-              icon: LucideIcons.image,
-            ),
-            const SizedBox(height: 16),
-
-            _buildModelSlotCard(
-              title: 'Lite',
-              subtitle: 'Creates skeletons and maps lesson plan lists.',
-              slotName: 'Lite',
-              icon: LucideIcons.zap,
-            ),
-            const SizedBox(height: 16),
-
-            _buildModelSlotCard(
-              title: 'Live',
-              subtitle: 'Real-time live model for chat & voice assistance.',
-              slotName: 'Live',
-              icon: LucideIcons.mic,
-            ),
-
             const SizedBox(height: 32),
-            const Text('Generation', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 8),
-            const Text('How many lessons to generate at once. Higher is faster but uses more bandwidth and may hit rate limits.', style: TextStyle(color: Colors.white54, fontSize: 12)),
-            const SizedBox(height: 16),
-            _buildConcurrencyCard(),
-            const SizedBox(height: 16),
-            _buildScheduleCard(),
-            const SizedBox(height: 16),
-            _buildAutomationCard(),
-            const SizedBox(height: 16),
-            _buildAiQueueCard(),
-            const SizedBox(height: 16),
-            _buildExperimentsCard(),
 
-            const SizedBox(height: 32),
-            const Text('Live Chat Assistant', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 8),
-            const Text('Customize the behavior and system instructions for the real-time AI helper.', style: TextStyle(color: Colors.white54, fontSize: 12)),
-            const SizedBox(height: 16),
-            _buildLiveChatPromptCard(),
+            if (GlobalState.advancedModeNotifier.value) ...[
+              SizedBox(
+                width: double.infinity,
+                child: DuoButton(
+                  text: 'PDF Browser',
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const PdfBrowserScreen()));
+                  },
+                  color: AppTheme.duoViolet,
+                  shadowColor: AppTheme.duoVioletDark,
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              const Text('AI Model Assignments', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 8),
+              const Text('Select specialized models for text, graphics, and light-weight tasks.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              const SizedBox(height: 16),
+
+              _buildModelSlotCard(
+                title: 'Primary - Text',
+                subtitle: 'Generates final interactive lessons & quizzes.',
+                slotName: 'Primary - Text',
+                icon: LucideIcons.fileText,
+              ),
+              const SizedBox(height: 16),
+
+              _buildModelSlotCard(
+                title: 'Primary - Graphics',
+                subtitle: 'Generates canvas diagrams for lessons & proofs.',
+                slotName: 'Primary - Graphics',
+                icon: LucideIcons.image,
+              ),
+              const SizedBox(height: 16),
+
+              _buildModelSlotCard(
+                title: 'Lite',
+                subtitle: 'Creates skeletons and maps lesson plan lists.',
+                slotName: 'Lite',
+                icon: LucideIcons.zap,
+              ),
+              const SizedBox(height: 16),
+
+              _buildModelSlotCard(
+                title: 'Live',
+                subtitle: 'Real-time live model for chat & voice assistance.',
+                slotName: 'Live',
+                icon: LucideIcons.mic,
+              ),
+
+              const SizedBox(height: 32),
+              const Text('Generation', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 8),
+              const Text('How many lessons to generate at once. Higher is faster but uses more bandwidth and may hit rate limits.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              const SizedBox(height: 16),
+              _buildConcurrencyCard(),
+              const SizedBox(height: 16),
+              _buildScheduleCard(),
+              const SizedBox(height: 16),
+              _buildAutomationCard(),
+              const SizedBox(height: 16),
+              _buildAiQueueCard(),
+              const SizedBox(height: 16),
+              _buildExperimentsCard(),
+
+              const SizedBox(height: 32),
+              const Text('Live Chat Assistant', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 8),
+              const Text('Customize the behavior and system instructions for the real-time AI helper.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              const SizedBox(height: 16),
+              _buildLiveChatPromptCard(),
+            ],
 
             const SizedBox(height: 48),
             DuoButton(

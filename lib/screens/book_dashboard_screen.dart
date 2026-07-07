@@ -20,6 +20,7 @@ import '../widgets/bottom_sheets/section_bottom_sheet.dart';
 import '../widgets/selectors/module_selector.dart';
 import '../widgets/lesson_path.dart';
 import '../services/global_state.dart';
+import '../widgets/coach_mark.dart';
 import '../widgets/quick_review_sheet.dart';
 import 'main_layout_screen.dart';
 
@@ -51,6 +52,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
   int _activeModuleIdx = 0;
   int _activeSectionIdx = 0;
 
+  final GlobalKey _coachModuleKey = GlobalKey();
+  final GlobalKey _coachSectionKey = GlobalKey();
+  final GlobalKey _coachReviewKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
@@ -65,6 +70,34 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     // unit/section/module marked finished or cleared, or a cloud sync merge),
     // so the lesson path always reflects the latest status.
     GlobalState.progressNotifier.addListener(_loadProgress);
+
+    // First-visit tour of the path header (runs once; see CoachMarkController).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (!mounted) return;
+        CoachMarkController.maybeShow(
+          context,
+          prefsKey: 'coach_marks_dashboard_done',
+          marks: [
+            CoachMark(
+              targetKey: _coachModuleKey,
+              title: 'Switch modules',
+              body: 'Your course is split into modules (chapters). Tap here to jump between them.',
+            ),
+            CoachMark(
+              targetKey: _coachSectionKey,
+              title: 'Pick a section',
+              body: 'Each module has sections. The lesson path below always shows the selected section — tap a node to start learning.',
+            ),
+            CoachMark(
+              targetKey: _coachReviewKey,
+              title: 'Quick review',
+              body: 'Short on time? Get the key statements and formulas of this module in one tap.',
+            ),
+          ],
+        );
+      });
+    });
   }
 
   @override
@@ -401,24 +434,25 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
               ),
             ],
           ),
-          PopupMenuButton<Map<String, dynamic>>(
-            onSelected: (val) => Navigator.pop(ctx, val),
-            style: TextButton.styleFrom(foregroundColor: AppTheme.duoViolet),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Text('Schedule', style: TextStyle(fontWeight: FontWeight.bold)),
+          if (GlobalState.advancedModeNotifier.value)
+            PopupMenuButton<Map<String, dynamic>>(
+              onSelected: (val) => Navigator.pop(ctx, val),
+              style: TextButton.styleFrom(foregroundColor: AppTheme.duoViolet),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Text('Schedule', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: {'scheduled': true, 'graphics': false},
+                  child: Text('Text only'),
+                ),
+                const PopupMenuItem(
+                  value: {'scheduled': true, 'graphics': true},
+                  child: Text('With diagrams'),
+                ),
+              ],
             ),
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: {'scheduled': true, 'graphics': false},
-                child: Text('Text only'),
-              ),
-              const PopupMenuItem(
-                value: {'scheduled': true, 'graphics': true},
-                child: Text('With diagrams'),
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -836,6 +870,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                             children: [
                               // Module book icon with chevron badge
                               _IconHeaderButton(
+                                key: _coachModuleKey,
                                 onTap: _openModuleSelector,
                                 child: Stack(
                                   clipBehavior: Clip.none,
@@ -863,6 +898,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                               if (activeSec != null)
                                 Expanded(
                                   child: Material(
+                                    key: _coachSectionKey,
                                     color: Colors.transparent,
                                     child: InkWell(
                                       onTap: _openSectionSelector,
@@ -905,6 +941,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
 
                               // Quick Review Button
                               _IconHeaderButton(
+                                key: _coachReviewKey,
                                 onTap: _openQuickReview,
                                 child: const Icon(LucideIcons.sparkles, color: AppTheme.duoGreen, size: 22),
                               ),
@@ -994,16 +1031,17 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   widget.onBookUpdated(widget.book);
                 },
               ),
-            _MenuActionItem(
-              icon: LucideIcons.refreshCw,
-              title: 'Regenerate Lesson',
-              subtitle: 'Re-generate lesson from PDF chunk',
-              iconColor: AppTheme.duoOrange,
-              onTap: () {
-                Navigator.pop(ctx);
-                _promptRegenerateLesson(modIdx, secIdx, unitIdx, lessonIdx, lesson);
-              },
-            ),
+            if (GlobalState.advancedModeNotifier.value)
+              _MenuActionItem(
+                icon: LucideIcons.refreshCw,
+                title: 'Regenerate Lesson',
+                subtitle: 'Re-generate lesson from PDF chunk',
+                iconColor: AppTheme.duoOrange,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _promptRegenerateLesson(modIdx, secIdx, unitIdx, lessonIdx, lesson);
+                },
+              ),
           ],
         );
       },
@@ -1033,30 +1071,32 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
           icon: LucideIcons.bookmark,
           color: AppTheme.duoViolet,
           items: [
-            _MenuActionItem(
-              icon: hasCache ? LucideIcons.gitMerge : LucideIcons.search,
-              title: hasCache ? 'View Dependencies' : 'Search Dependencies',
-              subtitle: hasCache ? 'Show prerequisite units to study first' : 'Scan all courses for prerequisites',
-              iconColor: AppTheme.duoViolet,
-              onTap: () {
-                Navigator.pop(ctx);
-                if (hasCache) {
-                  _showPrerequisitesDialog(unit, cachedList);
-                } else {
-                  _runDependencySearch(unit);
-                }
-              },
-            ),
-            _MenuActionItem(
-              icon: LucideIcons.plusCircle,
-              title: 'Create Lesson',
-              subtitle: 'Manually create a custom lesson under this unit',
-              iconColor: AppTheme.duoBlue,
-              onTap: () {
-                Navigator.pop(ctx);
-                _showCreateCustomLessonDialog(modIdx, secIdx, unitIdx, unit);
-              },
-            ),
+            if (GlobalState.advancedModeNotifier.value)
+              _MenuActionItem(
+                icon: hasCache ? LucideIcons.gitMerge : LucideIcons.search,
+                title: hasCache ? 'View Dependencies' : 'Search Dependencies',
+                subtitle: hasCache ? 'Show prerequisite units to study first' : 'Scan all courses for prerequisites',
+                iconColor: AppTheme.duoViolet,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  if (hasCache) {
+                    _showPrerequisitesDialog(unit, cachedList);
+                  } else {
+                    _runDependencySearch(unit);
+                  }
+                },
+              ),
+            if (GlobalState.advancedModeNotifier.value)
+              _MenuActionItem(
+                icon: LucideIcons.plusCircle,
+                title: 'Create Lesson',
+                subtitle: 'Manually create a custom lesson under this unit',
+                iconColor: AppTheme.duoBlue,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showCreateCustomLessonDialog(modIdx, secIdx, unitIdx, unit);
+                },
+              ),
             if (incompleteCount > 0)
               _MenuActionItem(
                 icon: LucideIcons.checkCircle,
@@ -1083,7 +1123,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   widget.onBookUpdated(widget.book);
                 },
               ),
-            if (unit.isGenerated && unit.lessons.isNotEmpty)
+            if (GlobalState.advancedModeNotifier.value && unit.isGenerated && unit.lessons.isNotEmpty)
               _MenuActionItem(
                 icon: LucideIcons.refreshCcw,
                 title: 'Delete Unit',
@@ -1432,16 +1472,17 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                 _promptGenerateOrScheduleSection(modIdx, secIdx, isScheduled: false);
               },
             ),
-            _MenuActionItem(
-              icon: LucideIcons.calendar,
-              title: 'Schedule Generation',
-              subtitle: 'Queue for auto schedule hours',
-              iconColor: AppTheme.duoViolet,
-              onTap: () {
-                Navigator.pop(ctx);
-                _promptGenerateOrScheduleSection(modIdx, secIdx, isScheduled: true);
-              },
-            ),
+            if (GlobalState.advancedModeNotifier.value)
+              _MenuActionItem(
+                icon: LucideIcons.calendar,
+                title: 'Schedule Generation',
+                subtitle: 'Queue for auto schedule hours',
+                iconColor: AppTheme.duoViolet,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _promptGenerateOrScheduleSection(modIdx, secIdx, isScheduled: true);
+                },
+              ),
             if (incompleteCount > 0)
               _MenuActionItem(
                 icon: LucideIcons.checkCircle,
@@ -1468,7 +1509,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   widget.onBookUpdated(widget.book);
                 },
               ),
-            if (section.units.isNotEmpty || section.unitsGenerated)
+            if (GlobalState.advancedModeNotifier.value && (section.units.isNotEmpty || section.unitsGenerated))
               _MenuActionItem(
                 icon: LucideIcons.rotateCcw,
                 title: 'Reset Section Plan',
@@ -1627,16 +1668,17 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                 _promptGenerateOrScheduleModule(modIdx, isScheduled: false);
               },
             ),
-            _MenuActionItem(
-              icon: LucideIcons.calendar,
-              title: 'Schedule Module Generation',
-              subtitle: 'Queue for auto schedule hours',
-              iconColor: AppTheme.duoViolet,
-              onTap: () {
-                Navigator.pop(ctx);
-                _promptGenerateOrScheduleModule(modIdx, isScheduled: true);
-              },
-            ),
+            if (GlobalState.advancedModeNotifier.value)
+              _MenuActionItem(
+                icon: LucideIcons.calendar,
+                title: 'Schedule Module Generation',
+                subtitle: 'Queue for auto schedule hours',
+                iconColor: AppTheme.duoViolet,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _promptGenerateOrScheduleModule(modIdx, isScheduled: true);
+                },
+              ),
             if (incompleteCount > 0)
               _MenuActionItem(
                 icon: LucideIcons.checkCircle,
@@ -2281,7 +2323,7 @@ class _MenuActionItem {
 class _IconHeaderButton extends StatelessWidget {
   final Widget child;
   final VoidCallback onTap;
-  const _IconHeaderButton({required this.child, required this.onTap});
+  const _IconHeaderButton({super.key, required this.child, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

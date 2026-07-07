@@ -4,12 +4,23 @@ import '../services/fb/fb_auth.dart';
 import '../services/global_state.dart';
 import 'home_screen.dart';
 import 'auth_screen.dart';
+import 'onboarding/onboarding_screen.dart';
 
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
   @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: GlobalState.onboardingCompleteNotifier,
+      builder: (context, onboarded, _) {
+        if (!onboarded) return const OnboardingScreen();
+        return _buildAuthFlow(context);
+      },
+    );
+  }
+
+  Widget _buildAuthFlow(BuildContext context) {
     return ValueListenableBuilder<bool>(
       valueListenable: GlobalState.forceShowAuthScreen,
       builder: (context, forceAuth, _) {

@@ -26,6 +26,23 @@ class GlobalState {
   // Indicator to force displaying the login screen even on Web
   static final ValueNotifier<bool> forceShowAuthScreen = ValueNotifier<bool>(false);
 
+  /// Whether the first-run walkthrough has been completed. Hydrated in
+  /// main.dart (existing users are migrated to true there); AuthGate shows
+  /// OnboardingScreen while this is false.
+  static final ValueNotifier<bool> onboardingCompleteNotifier = ValueNotifier<bool>(true);
+
+  /// Power-user mode: reveals per-node generate/schedule menus, model
+  /// ladders, concurrency, automation and experiments. Off by default for
+  /// new users; migrated existing users keep it on (set in main.dart).
+  /// Persisted by the listener installed in main.dart.
+  static final ValueNotifier<bool> advancedModeNotifier = ValueNotifier<bool>(false);
+
+  static Future<void> completeOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('onboarding_complete', true);
+    onboardingCompleteNotifier.value = true;
+  }
+
   static Future<void> addXp(int amount, String courseId) async {
     final prefs = await SharedPreferences.getInstance();
     final uid = FbAuth.instance.currentUser?.uid ?? 'guest';

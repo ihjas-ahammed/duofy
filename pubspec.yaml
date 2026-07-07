@@ -74,6 +74,8 @@ dependencies:
   # `flutter.plugin.platforms` block in packages/webview_cef/pubspec.yaml.
   webview_windows: ^0.4.0
   url_launcher: ^6.3.2
+  timezone: ^0.11.1
+  flutter_timezone: ^5.1.0
 
 dev_dependencies:
   flutter_test:
