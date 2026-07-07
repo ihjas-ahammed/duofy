@@ -15,13 +15,13 @@
     "semantic_hash": ""
   },
   "lib/models/app_models.dart": {
-    "mtime": 1782826755.9903963,
-    "ast_hash": "23e480ea3e628f796a2c017bf332048a",
+    "mtime": 1783399007.5999608,
+    "ast_hash": "c4ef615879dcb4c2b421f4135e153892",
     "semantic_hash": ""
   },
   "lib/screens/main_layout_screen.dart": {
-    "mtime": 1782827244.8356986,
-    "ast_hash": "8bc45d7777966d51b3c775ed819123ba",
+    "mtime": 1783399726.4442334,
+    "ast_hash": "c45317c317433f0ebadcf915116ba40b",
     "semantic_hash": ""
   },
   "lib/screens/index_picker_screen.dart": {
@@ -30,8 +30,8 @@
     "semantic_hash": ""
   },
   "lib/screens/book_dashboard_screen.dart": {
-    "mtime": 1782826979.7201955,
-    "ast_hash": "382fe4a0a78b4ae5485a36933bbbcb7f",
+    "mtime": 1783399772.9709058,
+    "ast_hash": "c91ccef93f941b5065710a42a10dbf2c",
     "semantic_hash": ""
   },
   "lib/screens/practice_session_screen.dart": {
@@ -130,8 +130,8 @@
     "semantic_hash": ""
   },
   "lib/screens/pdf_split_preview_screen.dart": {
-    "mtime": 1782303505.0148492,
-    "ast_hash": "99bc6667cfb46b2609741ce6ad00d908",
+    "mtime": 1783399639.5890324,
+    "ast_hash": "db0631a1c48a86308a88360b04c526f2",
     "semantic_hash": ""
   },
   "lib/screens/book_route_loader_screen.dart": {
@@ -360,18 +360,18 @@
     "semantic_hash": "b6525142d239a41b8f5d653bfd3344fb"
   },
   "lib/services/generation_manager.dart": {
-    "mtime": 1783183057.3154483,
-    "ast_hash": "84c8f2e3ed6bad15d92d95678b2f61ff",
+    "mtime": 1783399214.7506506,
+    "ast_hash": "3fd3d88d7599a33a182a6fc54a935e2a",
     "semantic_hash": ""
   },
   "lib/services/ai_service.dart": {
-    "mtime": 1783181461.7848547,
-    "ast_hash": "dcc15598a04ebe14d29e072839ea1c4b",
+    "mtime": 1783398951.083024,
+    "ast_hash": "8f9f82fa3814c4f17066619f027312a9",
     "semantic_hash": ""
   },
   "lib/services/prompt_service.dart": {
-    "mtime": 1782826301.6831079,
-    "ast_hash": "a1c0ae24fc207f35e04602728e8c5909",
+    "mtime": 1783398799.3108907,
+    "ast_hash": "cf560b28bfa792f90230e141066c3663",
     "semantic_hash": ""
   },
   "lib/services/notification_service.dart": {
@@ -385,8 +385,8 @@
     "semantic_hash": "8aa32efa6caed326f0b3facdc9fa2e9f"
   },
   "lib/services/pdf_service.dart": {
-    "mtime": 1782822340.577755,
-    "ast_hash": "d2c4abe7ee2fff742467bc86ececa7e6",
+    "mtime": 1783399311.1163623,
+    "ast_hash": "07257befafe6fe3b47c8b193516bcd4a",
     "semantic_hash": ""
   },
   "lib/services/learning_sync.dart": {
@@ -5690,8 +5690,8 @@
     "semantic_hash": ""
   },
   "test/widget_test.dart": {
-    "mtime": 1779951405.0535498,
-    "ast_hash": "62a05d49d23d04e6a3861111d9d456e2",
+    "mtime": 1783399835.7168405,
+    "ast_hash": "917f7a5b38ab1a9d77b07323a63389ac",
     "semantic_hash": ""
   },
   "update.py": {
@@ -6100,8 +6100,8 @@
     "semantic_hash": ""
   },
   "pubspec.yaml": {
-    "mtime": 1782827626.2696733,
-    "ast_hash": "fc7fb99f9012c6188e7ebad10f59a996",
+    "mtime": 1783183531.2014582,
+    "ast_hash": "e87967678f2481ee57d12b98728a4059",
     "semantic_hash": ""
   },
   "update.md": {
@@ -6462,6 +6462,31 @@
   "docs/superpowers/specs/2026-07-04-ai-queue-cleanup-design.md": {
     "mtime": 1783182582.9978123,
     "ast_hash": "34203fd0d4a0e07b95c8f882fbdbb2d9",
+    "semantic_hash": ""
+  },
+  "lib/services/mapping_verifier.dart": {
+    "mtime": 1783399542.4407861,
+    "ast_hash": "a9de69b89e65d5fcdb285700882bc120",
+    "semantic_hash": ""
+  },
+  "lib/services/page_mapping.dart": {
+    "mtime": 1783383155.1189456,
+    "ast_hash": "f9eafee51cec0833338b6b7267173483",
+    "semantic_hash": ""
+  },
+  "lib/widgets/repair_alignment_dialog.dart": {
+    "mtime": 1783399720.3051462,
+    "ast_hash": "92d3c665949dbd32ef72142640297d36",
+    "semantic_hash": ""
+  },
+  "test/mapping_verifier_test.dart": {
+    "mtime": 1783399548.5048606,
+    "ast_hash": "5e6bc9b22db330118629e37560fe0d84",
+    "semantic_hash": ""
+  },
+  "test/page_mapping_test.dart": {
+    "mtime": 1783383181.3138766,
+    "ast_hash": "b3230efdee3c3ad6a82d73b25af86cbb",
     "semantic_hash": ""
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
+import '../widgets/smart_review_card.dart';
 import 'practice_session_screen.dart';
 
 /// One generated unit, flattened out of the module/section tree so the range
@@ -372,6 +373,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                 style: TextStyle(color: Colors.white54, fontSize: 14, height: 1.4),
               ),
             ),
+            const SmartReviewCard(margin: EdgeInsets.only(bottom: 16)),
             _buildScopeSelector(),
             const SizedBox(height: 8),
             const Padding(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import '../services/metacognition_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 
@@ -8,7 +9,12 @@ class LessonCompleteScreen extends StatefulWidget {
   final int xpEarned;
   final int accuracy;
   final int timeSpentSeconds;
-  final bool isPractice; 
+  final bool isPractice;
+
+  /// When both are set, a one-tap reflection row is shown; the answer feeds
+  /// the per-module difficulty signal used by future generation.
+  final String? bookId;
+  final String? moduleId;
 
   const LessonCompleteScreen({
     super.key,
@@ -16,6 +22,8 @@ class LessonCompleteScreen extends StatefulWidget {
     required this.accuracy,
     required this.timeSpentSeconds,
     this.isPractice = false,
+    this.bookId,
+    this.moduleId,
   });
 
   @override
@@ -25,6 +33,9 @@ class LessonCompleteScreen extends StatefulWidget {
 class _LessonCompleteScreenState extends State<LessonCompleteScreen> with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   late Animation<double> _scaleAnim;
+
+  /// Which reflection chip was tapped (null until then).
+  String? _reflection;
 
   @override
   void initState() {
@@ -125,6 +136,78 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
         ),
       );
 
+  /// One-tap "How did that feel?" row. Entirely optional — Continue works
+  /// without it — but each tap tunes the module's future difficulty.
+  Widget get _reflectionRow {
+    if (widget.bookId == null || widget.moduleId == null) {
+      return const SizedBox.shrink();
+    }
+
+    Widget chip(String value, IconData icon, String label, Color color) {
+      final selected = _reflection == value;
+      return Expanded(
+        child: GestureDetector(
+          onTap: _reflection != null
+              ? null
+              : () {
+                  setState(() => _reflection = value);
+                  MetacognitionService.recordReflection(
+                      widget.bookId!, widget.moduleId!, value);
+                  HapticFeedback.selectionClick();
+                },
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 200),
+            opacity: _reflection == null || selected ? 1 : 0.35,
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: selected ? color.withOpacity(0.18) : Colors.white.withOpacity(0.04),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: selected ? color : Colors.white10),
+              ),
+              child: Column(
+                children: [
+                  Icon(icon, size: 18, color: selected ? color : Colors.white54),
+                  const SizedBox(height: 4),
+                  Text(label,
+                      style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          color: selected ? color : Colors.white54)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return _staggered(
+      0.55,
+      Column(
+        children: [
+          Text(
+            _reflection == null ? 'HOW DID THAT FEEL?' : 'THANKS — FUTURE LESSONS WILL ADAPT',
+            style: const TextStyle(
+                color: Colors.white38,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.4),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              chip('easy', LucideIcons.feather, 'TOO EASY', AppTheme.duoBlue),
+              chip('right', LucideIcons.smile, 'JUST RIGHT', AppTheme.duoGreen),
+              chip('confusing', LucideIcons.cloudFog, 'CONFUSING', AppTheme.duoOrange),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.sizeOf(context).width >= 900;
@@ -172,7 +255,9 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
                     ],
                   ),
                 ),
-                const SizedBox(height: 44),
+                const SizedBox(height: 32),
+                _reflectionRow,
+                const SizedBox(height: 32),
                 SizedBox(width: 280, child: _continueButton),
               ],
             ),
@@ -210,6 +295,8 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
             ),
           ),
           const Spacer(),
+          _reflectionRow,
+          const SizedBox(height: 20),
           _continueButton,
         ],
       ),

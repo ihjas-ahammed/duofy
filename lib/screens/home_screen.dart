@@ -16,6 +16,7 @@ import '../widgets/compact_book_list_item.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/generating_book_card.dart';
 import '../widgets/next_up_card.dart';
+import '../widgets/smart_review_card.dart';
 import '../widgets/responsive_center.dart';
 import '../widgets/sync_conflict_dialog.dart';
 import 'package:flutter/foundation.dart';
@@ -621,6 +622,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   onReturn: () => _loadAllData(force: false),
                 ),
               ),
+            if (!isSearching && _selectedFolderId == null)
+              const SliverToBoxAdapter(child: SmartReviewCard()),
             if (!isSearching && _selectedFolderId == null && folders.isNotEmpty)
               SliverToBoxAdapter(
                 child: _buildFoldersList(),

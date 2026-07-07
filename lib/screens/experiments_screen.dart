@@ -16,6 +16,10 @@ import '../widgets/slide_views/numerical_view.dart';
 import '../widgets/slide_views/quiz_view.dart';
 import '../widgets/slide_views/descriptive_view.dart';
 import '../widgets/slide_views/custom_html_view.dart';
+import '../widgets/slide_views/matching_view.dart';
+import '../widgets/slide_views/ordering_view.dart';
+import '../widgets/slide_views/error_spotting_view.dart';
+import '../widgets/slide_views/flashcard_view.dart';
 
 class ExperimentsScreen extends StatefulWidget {
   const ExperimentsScreen({super.key});
@@ -34,6 +38,9 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
   String _blankInput = '';
   String _wordInput = '';
   String _numericInput = '';
+  Map<String, String> _matchingAssignments = {};
+  List<String> _orderingCurrent = [];
+  int? _errorSelection;
 
   final Map<String, Map<String, dynamic>> _presets = {
     'theory': {
@@ -136,6 +143,49 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
         }
       ]
     },
+    'matching': {
+      "id": "preset_matching",
+      "type": "matching",
+      "title": "Match the Quantities",
+      "content": "Match each physical quantity with its SI unit.",
+      "matchPairs": [
+        {"left": "Force", "right": "newton"},
+        {"left": "Energy", "right": "joule"},
+        {"left": "Power", "right": "watt"},
+        {"left": "Pressure", "right": "pascal"}
+      ]
+    },
+    'ordering': {
+      "id": "preset_ordering",
+      "type": "ordering",
+      "title": "Order of Operations",
+      "content": "Arrange the steps for solving \$2(x + 3) = 14\$ in the correct order.",
+      "orderItems": [
+        "Divide both sides by 2 to get \$x + 3 = 7\$",
+        "Subtract 3 from both sides",
+        "Conclude \$x = 4\$"
+      ]
+    },
+    'error_spotting': {
+      "id": "preset_error_spotting",
+      "type": "error_spotting",
+      "title": "Find the Mistake",
+      "content": "This solution of \$x^2 - 4 = 0\$ contains one wrong step. Tap it.",
+      "proofSteps": [
+        "Start with \$x^2 - 4 = 0\$",
+        "Factor: \$(x-2)(x+2) = 0\$",
+        "So \$x - 2 = 0\$ or \$x + 2 = 0\$",
+        "Therefore \$x = 2\$ is the only solution"
+      ],
+      "errorIndex": 3
+    },
+    'flashcard': {
+      "id": "preset_flashcard",
+      "type": "flashcard",
+      "title": "Recall Check",
+      "content": "State the formula for the area of a circle.",
+      "blankAnswer": "\$A = \\\\pi r^2\$"
+    },
     'descriptive': {
       "id": "preset_descriptive",
       "type": "descriptive",
@@ -192,6 +242,9 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
     _blankInput = '';
     _wordInput = '';
     _numericInput = '';
+    _matchingAssignments = {};
+    _orderingCurrent = [];
+    _errorSelection = null;
   }
 
   void _checkAnswer() {
@@ -213,6 +266,24 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
       if (val != null && slide.numericAnswer != null) {
         correct = (val - slide.numericAnswer!).abs() <= (slide.numericTolerance ?? 0.01);
       }
+    } else if (slide.type == 'matching') {
+      final pairs = slide.matchPairs ?? [];
+      correct = pairs.isNotEmpty &&
+          _matchingAssignments.length == pairs.length &&
+          pairs.every((p) => _matchingAssignments[p.left] == p.right);
+    } else if (slide.type == 'ordering') {
+      final target = slide.orderItems ?? [];
+      correct = target.isNotEmpty && _orderingCurrent.length == target.length;
+      if (correct) {
+        for (var i = 0; i < target.length; i++) {
+          if (_orderingCurrent[i] != target[i]) {
+            correct = false;
+            break;
+          }
+        }
+      }
+    } else if (slide.type == 'error_spotting') {
+      correct = _errorSelection != null && _errorSelection == slide.errorIndex;
     }
 
     if (correct) {
@@ -234,11 +305,17 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
     if (slide.type == 'fill_in_blank') return _blankInput.trim().isNotEmpty;
     if (slide.type == 'one_word') return _wordInput.trim().isNotEmpty;
     if (slide.type == 'numerical') return _numericInput.trim().isNotEmpty;
+    if (slide.type == 'matching') {
+      return _matchingAssignments.isNotEmpty &&
+          _matchingAssignments.length == (slide.matchPairs?.length ?? 0);
+    }
+    if (slide.type == 'ordering') return _orderingCurrent.isNotEmpty;
+    if (slide.type == 'error_spotting') return _errorSelection != null;
     return true;
   }
 
   bool _isCustomBottomBar(Slide slide) {
-    return slide.type == 'proof' || slide.type == 'step_by_step' || slide.type == 'descriptive' || slide.type == 'custom_html';
+    return slide.type == 'proof' || slide.type == 'step_by_step' || slide.type == 'descriptive' || slide.type == 'custom_html' || slide.type == 'flashcard';
   }
 
   String _getCorrectAnswerText(Slide slide) {
@@ -249,11 +326,23 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
     if (slide.type == 'fill_in_blank') return slide.blankAnswer ?? '';
     if (slide.type == 'one_word') return slide.blankAnswer ?? '';
     if (slide.type == 'numerical') return slide.numericAnswer?.toString() ?? '';
+    if (slide.type == 'matching') {
+      return (slide.matchPairs ?? []).map((p) => '${p.left} → ${p.right}').join('\n\n');
+    }
+    if (slide.type == 'ordering') {
+      final items = slide.orderItems ?? [];
+      return [for (var i = 0; i < items.length; i++) '${i + 1}. ${items[i]}'].join('\n\n');
+    }
+    if (slide.type == 'error_spotting') {
+      final steps = slide.proofSteps ?? [];
+      final idx = slide.errorIndex ?? -1;
+      return (idx >= 0 && idx < steps.length) ? 'Step ${idx + 1}: ${steps[idx]}' : '';
+    }
     return '';
   }
 
   Widget _buildActionBottomBar(Slide slide) {
-    final isInteractive = ['quiz', 'fill_in_blank', 'one_word', 'numerical'].contains(slide.type);
+    final isInteractive = ['quiz', 'fill_in_blank', 'one_word', 'numerical', 'matching', 'ordering', 'error_spotting'].contains(slide.type);
     final feedbackColor = _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed;
 
     return Container(
@@ -362,6 +451,42 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Proof/Step slide completed!')),
             );
+          },
+        );
+      case 'matching':
+        return MatchingView(
+          slide: slide,
+          isAnswered: _answered,
+          isCorrect: _isCorrect,
+          onChanged: (assignments) => setState(() => _matchingAssignments = assignments),
+          bottomBar: bottomBar,
+        );
+      case 'ordering':
+        return OrderingView(
+          slide: slide,
+          isAnswered: _answered,
+          isCorrect: _isCorrect,
+          onChanged: (order) => setState(() => _orderingCurrent = order),
+          bottomBar: bottomBar,
+        );
+      case 'error_spotting':
+        return ErrorSpottingView(
+          slide: slide,
+          selectedIndex: _errorSelection,
+          isAnswered: _answered,
+          isCorrect: _isCorrect,
+          onSelect: (i) => setState(() => _errorSelection = i),
+          bottomBar: bottomBar,
+        );
+      case 'flashcard':
+        return FlashcardView(
+          slide: slide,
+          onSelfGrade: (remembered) {
+            HapticFeedback.heavyImpact();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(remembered ? 'Marked as remembered!' : 'Marked for review!')),
+            );
+            setState(_resetSlideState);
           },
         );
       case 'quiz':

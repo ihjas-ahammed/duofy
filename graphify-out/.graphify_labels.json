@@ -671,5 +671,10 @@
   "669": "print_unittest.cc",
   "670": "FlatTupleElemBase<FlatTuple<T...>, I>",
   "671": "_FlMethodCodecClass",
-  "672": "dialog_test.cc"
+  "672": "dialog_test.cc",
+  "673": "GetErrorString",
+  "674": "CheckedDowncastToActualType",
+  "675": "GetTestCasePatternHolder",
+  "676": "GetType",
+  "677": "Rect"
 }

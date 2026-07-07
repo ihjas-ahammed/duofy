@@ -12,6 +12,7 @@ import '../main.dart' show showRateLimitDialog;
 import 'prompt_service.dart';
 import 'page_mapping.dart';
 import 'pdf_service.dart';
+import 'personalization_service.dart';
 import 'secrets_service.dart';
 import 'database_service.dart';
 import 'fb/fb_firestore.dart';
@@ -493,51 +494,6 @@ Return JSON format:
       }
     }
     return null;
-  }
-
-  String compileMetacognitiveSystemPrompt({
-    required String baseSystemPrompt,
-    required String bloomLevel,
-    required String? writingStyleProfileJson,
-  }) {
-    final buffer = StringBuffer();
-    
-    buffer.writeln('# Core Directives');
-    buffer.writeln('## Pedagogical Role');
-    buffer.writeln('Act as an expert metacognitive tutor utilizing the "best possible version" paradigm.');
-    buffer.writeln('You are a professional ghostwriter and editor who adopts the learner\'s unique voice but polishes it to professional publication standards.');
-    buffer.writeln('The base instructional persona is: $baseSystemPrompt');
-    
-    buffer.writeln('\n## Cognitive State Constraint');
-    String bloomDirective = '';
-    switch (bloomLevel) {
-      case 'Remembering / Understanding':
-        bloomDirective = 'Prioritize foundational definitions. Utilize highly descriptive analogies. Break complex concepts into granular, step-by-step sequential logic. Provide immediate, simple examples.';
-        break;
-      case 'Applying / Analyzing':
-        bloomDirective = 'Minimize basic definitions. Present material through case studies. Require the user to categorize information. Highlight relationships between variables within the text.';
-        break;
-      case 'Evaluating / Creating':
-        bloomDirective = 'Adopt a Socratic questioning tone. Present contradictory evidence from the text for review. Prompt the user to synthesize new hypotheses based on the chapter\'s data.';
-        break;
-      default:
-        bloomDirective = 'Prioritize foundational definitions. Utilize highly descriptive analogies. Break complex concepts into granular, step-by-step sequential logic. Provide immediate, simple examples.';
-    }
-    buffer.writeln('Current Bloom\'s Taxonomy level: $bloomLevel');
-    buffer.writeln('Pedagogical Directive: $bloomDirective');
-    
-    if (writingStyleProfileJson != null && writingStyleProfileJson.trim().isNotEmpty) {
-      buffer.writeln('\n## Stylometric Blueprint');
-      buffer.writeln('Strictly adapt to the user\'s writing style mapped in the following profile, but enhanced to its best possible academic version:');
-      buffer.writeln(writingStyleProfileJson);
-    }
-    
-    buffer.writeln('\n## Formatting Rules (Immutable Constraints)');
-    buffer.writeln('- Mathematical Invariance: NEVER alter, rewrite, or modify any text contained within \$ or \$\$ delimiters, or LaTeX environments such as \\begin{equation}.');
-    buffer.writeln('- Structural Fidelity: Maintain the exact Markdown heading hierarchy (H1, H2, H3) of the source text. Do not remove or flatten sections.');
-    buffer.writeln('- Data Preservation: Do not summarize or alter data points within Markdown tables. Rewrite surrounding prose only.');
-    
-    return buffer.toString();
   }
 
   Future<Map<String, dynamic>?> scanIndexChunk(File chunkPdf, int startPage, int endPage, {String? forcedApiKey}) async {
@@ -1212,12 +1168,11 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
         .replaceAll('%custom_instructions%', instructionsBlock)
         .replaceAll('%neighbor_context%', neighborContext);
 
-    final prefs = await SharedPreferences.getInstance();
-    final String? writingStyleProfileJson = prefs.getString('user_writing_style_profile');
-    final compiledMetacognitiveSystemPrompt = compileMetacognitiveSystemPrompt(
+    final compiledMetacognitiveSystemPrompt = await PersonalizationService.compileSystemPrompt(
       baseSystemPrompt: bookContext.systemPrompt ?? 'You are an expert tutor.',
       bloomLevel: bookContext.bloomLevel,
-      writingStyleProfileJson: writingStyleProfileJson,
+      book: bookContext,
+      unitId: unit.id,
     );
 
     final planFileParts = await _buildFileParts([chunkFile]);
@@ -1431,12 +1386,11 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     required List<String> textModels,
     required List<String> keys,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? writingStyleProfileJson = prefs.getString('user_writing_style_profile');
-    final compiledMetacognitiveSystemPrompt = compileMetacognitiveSystemPrompt(
+    final compiledMetacognitiveSystemPrompt = await PersonalizationService.compileSystemPrompt(
       baseSystemPrompt: bookContext.systemPrompt ?? 'You are an expert tutor.',
       bloomLevel: bookContext.bloomLevel,
-      writingStyleProfileJson: writingStyleProfileJson,
+      book: bookContext,
+      unitId: unit.id,
     );
 
     final prompt = PromptService.singleLessonJson
@@ -1619,12 +1573,10 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final textModels = await _getPrimaryTextModels();
 
-    final prefs = await SharedPreferences.getInstance();
-    final String? writingStyleProfileJson = prefs.getString('user_writing_style_profile');
-    final compiledMetacognitiveSystemPrompt = compileMetacognitiveSystemPrompt(
+    final compiledMetacognitiveSystemPrompt = await PersonalizationService.compileSystemPrompt(
       baseSystemPrompt: bookContext.systemPrompt ?? 'You are an expert tutor.',
       bloomLevel: bookContext.bloomLevel,
-      writingStyleProfileJson: writingStyleProfileJson,
+      book: bookContext,
     );
 
     final noteLine = (note?.trim().isNotEmpty ?? false)

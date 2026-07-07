@@ -4,6 +4,7 @@ import '../services/progress_service.dart';
 import '../services/database_service.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
+import 'calibration_card.dart';
 
 class AnalyticsView extends StatefulWidget {
   final String? courseId;
@@ -335,6 +336,8 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                     ],
                   ),
                   const SizedBox(height: 16),
+
+                  const CalibrationCard(),
 
                   // Last 7 Days XP Graph Card
                   AppTheme.applyGlassBlur(

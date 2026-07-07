@@ -10,6 +10,7 @@ import '../services/generation_manager.dart';
 import '../services/global_state.dart';
 import '../services/progress_service.dart';
 import '../services/bookmark_service.dart';
+import '../services/metacognition_service.dart';
 import '../widgets/canvas_art_view.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/math_markdown.dart';
@@ -23,6 +24,10 @@ import '../widgets/slide_views/theory_view.dart';
 import '../widgets/slide_views/concept_pieces_view.dart';
 import '../widgets/slide_views/descriptive_view.dart';
 import '../widgets/slide_views/custom_html_view.dart';
+import '../widgets/slide_views/matching_view.dart';
+import '../widgets/slide_views/ordering_view.dart';
+import '../widgets/slide_views/error_spotting_view.dart';
+import '../widgets/slide_views/flashcard_view.dart';
 import '../widgets/lesson_assistant_chat.dart';
 import 'lesson_complete_screen.dart';
 
@@ -78,6 +83,18 @@ class _LessonScreenState extends State<LessonScreen> {
   String _blankInput = '';
   String _numericInput = '';
   String _wordInput = '';
+  Map<String, String> _matchingAssignments = {};
+  List<String> _orderingCurrent = [];
+  int? _errorSelection;
+
+  /// Self-rated confidence (MetacognitionService constants) for the current
+  /// slide, chosen before checking. Null = not rated (rating is optional).
+  int? _confidence;
+
+  /// Slides whose FIRST attempt was already logged to the metacognition
+  /// service — wrong answers requeue slides, and only the first attempt may
+  /// count for calibration and review scheduling.
+  final Set<String> _attemptedSlideIds = {};
 
   bool _isEditingMode = false;
   bool _isBookmarked = false;
@@ -273,7 +290,7 @@ class _LessonScreenState extends State<LessonScreen> {
     _slideQueue = List.of(_lesson.slides);
 
     for (var slide in _slideQueue) {
-      if (['quiz', 'fill_in_blank', 'one_word', 'numerical', 'proof', 'step_by_step', 'descriptive', 'custom_html'].contains(slide.type)) {
+      if (['quiz', 'fill_in_blank', 'one_word', 'numerical', 'proof', 'step_by_step', 'descriptive', 'custom_html', 'matching', 'ordering', 'error_spotting', 'flashcard'].contains(slide.type)) {
         _totalInteractive++;
       }
     }
@@ -289,6 +306,10 @@ class _LessonScreenState extends State<LessonScreen> {
         _blankInput = '';
         _numericInput = '';
         _wordInput = '';
+        _matchingAssignments = {};
+        _orderingCurrent = [];
+        _errorSelection = null;
+        _confidence = null;
       });
     } else {
       _finishLesson();
@@ -369,11 +390,18 @@ class _LessonScreenState extends State<LessonScreen> {
     
     if (mounted) {
       Navigator.pushReplacement(
-        context, 
+        context,
         MaterialPageRoute(builder: (_) => LessonCompleteScreen(
           xpEarned: xpEarned,
           accuracy: accuracy,
           timeSpentSeconds: timeSpent,
+          bookId: widget.book?.id,
+          moduleId: (widget.book != null &&
+                  widget.modIdx != null &&
+                  widget.modIdx! >= 0 &&
+                  widget.modIdx! < widget.book!.modules.length)
+              ? widget.book!.modules[widget.modIdx!].id
+              : null,
         ))
       );
     }
@@ -413,7 +441,27 @@ class _LessonScreenState extends State<LessonScreen> {
       if (val != null && slide.numericAnswer != null) {
         correct = (val - slide.numericAnswer!).abs() <= (slide.numericTolerance ?? 0.01);
       }
+    } else if (slide.type == 'matching') {
+      final pairs = slide.matchPairs ?? [];
+      correct = pairs.isNotEmpty &&
+          _matchingAssignments.length == pairs.length &&
+          pairs.every((p) => _matchingAssignments[p.left] == p.right);
+    } else if (slide.type == 'ordering') {
+      final target = slide.orderItems ?? [];
+      correct = target.isNotEmpty && _orderingCurrent.length == target.length;
+      if (correct) {
+        for (var i = 0; i < target.length; i++) {
+          if (_orderingCurrent[i] != target[i]) {
+            correct = false;
+            break;
+          }
+        }
+      }
+    } else if (slide.type == 'error_spotting') {
+      correct = _errorSelection != null && _errorSelection == slide.errorIndex;
     }
+
+    _recordFirstAttempt(slide, correct);
 
     if (correct) {
       HapticFeedback.heavyImpact();
@@ -438,16 +486,37 @@ class _LessonScreenState extends State<LessonScreen> {
     });
   }
 
+  /// Logs the FIRST attempt at [slide] to the metacognition service (wrong
+  /// answers requeue slides — repeats never count for calibration or review
+  /// scheduling).
+  void _recordFirstAttempt(Slide slide, bool correct) {
+    if (_attemptedSlideIds.contains(slide.id)) return;
+    _attemptedSlideIds.add(slide.id);
+    MetacognitionService.recordAnswer(
+      slide: slide,
+      lessonId: widget.lesson.id,
+      bookId: widget.book?.id ?? 'unknown_course',
+      correct: correct,
+      confidence: _confidence,
+    );
+  }
+
   bool _canCheck(Slide slide) {
     if (slide.type == 'quiz') return _selectedQuizOption != null;
     if (slide.type == 'fill_in_blank') return _blankInput.trim().isNotEmpty;
     if (slide.type == 'one_word') return _wordInput.trim().isNotEmpty;
     if (slide.type == 'numerical') return _numericInput.trim().isNotEmpty;
+    if (slide.type == 'matching') {
+      return _matchingAssignments.length == (slide.matchPairs?.length ?? 0) &&
+          _matchingAssignments.isNotEmpty;
+    }
+    if (slide.type == 'ordering') return _orderingCurrent.isNotEmpty;
+    if (slide.type == 'error_spotting') return _errorSelection != null;
     return true;
   }
 
   bool _isCustomBottomBar(Slide slide) {
-    return slide.type == 'proof' || slide.type == 'step_by_step' || slide.type == 'descriptive' || slide.type == 'custom_html';
+    return slide.type == 'proof' || slide.type == 'step_by_step' || slide.type == 'descriptive' || slide.type == 'custom_html' || slide.type == 'flashcard';
   }
 
   String _getCorrectAnswerText(Slide slide) {
@@ -458,6 +527,18 @@ class _LessonScreenState extends State<LessonScreen> {
     if (slide.type == 'fill_in_blank') return slide.blankAnswer ?? '';
     if (slide.type == 'one_word') return slide.blankAnswer ?? '';
     if (slide.type == 'numerical') return slide.numericAnswer?.toString() ?? '';
+    if (slide.type == 'matching') {
+      return (slide.matchPairs ?? []).map((p) => '${p.left} → ${p.right}').join('\n\n');
+    }
+    if (slide.type == 'ordering') {
+      final items = slide.orderItems ?? [];
+      return [for (var i = 0; i < items.length; i++) '${i + 1}. ${items[i]}'].join('\n\n');
+    }
+    if (slide.type == 'error_spotting') {
+      final steps = slide.proofSteps ?? [];
+      final idx = slide.errorIndex ?? -1;
+      return (idx >= 0 && idx < steps.length) ? 'Step ${idx + 1}: ${steps[idx]}' : '';
+    }
     return '';
   }
 
@@ -789,8 +870,55 @@ class _LessonScreenState extends State<LessonScreen> {
     }
   }
 
+  /// Compact optional confidence selector shown above CHECK. Rating is the
+  /// heart of the metacognitive loop: it feeds calibration stats and decides
+  /// whether a correct-but-guessed answer still enters the review queue.
+  Widget _buildConfidenceRow() {
+    Widget chip(int value, IconData icon, String label) {
+      final selected = _confidence == value;
+      return Expanded(
+        child: GestureDetector(
+          onTap: () => setState(() => _confidence = selected ? null : value),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: selected ? AppTheme.duoBlue.withOpacity(0.18) : Colors.white.withOpacity(0.03),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: selected ? AppTheme.duoBlue : Colors.white10),
+            ),
+            child: Column(
+              children: [
+                Icon(icon, size: 16, color: selected ? AppTheme.duoBlue : Colors.white38),
+                const SizedBox(height: 2),
+                Text(label,
+                    style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.6,
+                        color: selected ? AppTheme.duoBlue : Colors.white38)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          chip(MetacognitionService.confidenceGuessing, LucideIcons.dices, 'GUESSING'),
+          chip(MetacognitionService.confidenceUnsure, LucideIcons.helpCircle, 'UNSURE'),
+          chip(MetacognitionService.confidenceConfident, LucideIcons.checkCircle2, 'SURE'),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActionBottomBar(Slide slide) {
-    final isInteractive = ['quiz', 'fill_in_blank', 'one_word', 'numerical'].contains(slide.type);
+    final isInteractive = ['quiz', 'fill_in_blank', 'one_word', 'numerical', 'matching', 'ordering', 'error_spotting'].contains(slide.type);
     final feedbackColor = _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -846,6 +974,7 @@ class _LessonScreenState extends State<LessonScreen> {
                   )
                 : const SizedBox.shrink(key: ValueKey('empty_feedback')),
           ),
+          if (isInteractive && !_answered) _buildConfidenceRow(),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
             child: isInteractive && !_answered
@@ -879,6 +1008,7 @@ class _LessonScreenState extends State<LessonScreen> {
           lessonCanvas: _buildLessonCanvas(),
           onComplete: () {
             HapticFeedback.heavyImpact();
+            _recordFirstAttempt(slide, true);
             setState(() {
               _isCorrect = true;
               _answered = true;
@@ -892,6 +1022,7 @@ class _LessonScreenState extends State<LessonScreen> {
           slide: slide,
           onComplete: () {
             HapticFeedback.heavyImpact();
+            _recordFirstAttempt(slide, true);
             setState(() {
               _isCorrect = true;
               _answered = true;
@@ -964,6 +1095,57 @@ class _LessonScreenState extends State<LessonScreen> {
           isCorrect: _isCorrect,
           onChanged: (val) => setState(() => _wordInput = val),
           bottomBar: bottomBar,
+        );
+      case 'matching':
+        return MatchingView(
+          slide: slide,
+          isAnswered: _answered,
+          isCorrect: _isCorrect,
+          onChanged: (assignments) => setState(() => _matchingAssignments = assignments),
+          bottomBar: bottomBar,
+        );
+      case 'ordering':
+        return OrderingView(
+          slide: slide,
+          isAnswered: _answered,
+          isCorrect: _isCorrect,
+          onChanged: (order) => setState(() => _orderingCurrent = order),
+          bottomBar: bottomBar,
+        );
+      case 'error_spotting':
+        return ErrorSpottingView(
+          slide: slide,
+          selectedIndex: _errorSelection,
+          isAnswered: _answered,
+          isCorrect: _isCorrect,
+          onSelect: (i) => setState(() => _errorSelection = i),
+          bottomBar: bottomBar,
+        );
+      case 'flashcard':
+        return FlashcardView(
+          slide: slide,
+          onSelfGrade: (remembered) {
+            _recordFirstAttempt(slide, remembered);
+            if (remembered) {
+              HapticFeedback.heavyImpact();
+              setState(() {
+                _isCorrect = true;
+                _answered = true;
+                _correctAttempts++;
+              });
+            } else {
+              HapticFeedback.vibrate();
+              final fails = (_failCounts[slide.id] ?? 0) + 1;
+              _failCounts[slide.id] = fails;
+              _totalInteractive++;
+              if (fails < 2) _slideQueue.add(slide);
+              setState(() {
+                _isCorrect = false;
+                _answered = true;
+              });
+            }
+            _nextSlide();
+          },
         );
       case 'concept_pieces':
         final hasConceptCanvas = (_lesson.canvasPrompt?.trim().isNotEmpty ?? false) && !_failedCanvasIds.contains(_lesson.id);

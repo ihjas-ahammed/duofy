@@ -11,6 +11,7 @@ import '../services/secrets_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/daily_goal_card.dart';
 import '../widgets/duo_button.dart';
+import '../widgets/learner_profile_card.dart';
 import '../widgets/string_list_manager.dart';
 import '../widgets/responsive_center.dart';
 import '../widgets/sync_conflict_dialog.dart';
@@ -1205,6 +1206,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 8),
             const Text('Optional: tune the generated content to your writing and learning style.',
                 style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 16),
+            const LearnerProfileCard(),
             const SizedBox(height: 16),
             _buildMetacognitionCard(),
             const SizedBox(height: 32),

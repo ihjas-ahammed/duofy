@@ -119,6 +119,76 @@ LATEX / MARKDOWN-MATH GUIDE (READ CAREFULLY — most generation errors come from
    "interactiveCanvasHtml": "<div style=\\"color: white; font-family: sans-serif; text-align: center; height: 100%; display: flex; flex-direction: column; justify-content: center;\\"><h3>Bubble Sort Interactive</h3><div style=\\"display:flex; justify-content:center; gap:8px; margin:20px 0;\\" id=\\"bars\\"></div><button id=\\"step\\" style=\\"background:#58cc02; border:none; padding:8px 16px; color:white; border-radius:8px; font-weight:bold;\\">Step Sort</button><script>let arr = [5, 3, 8, 1]; function render() { const parent = document.getElementById(\\"bars\\"); parent.innerHTML = \\"\\"; arr.forEach(x => { let bar = document.createElement(\\"div\\"); bar.style.width = \\"30px\\"; bar.style.height = (x*20)+\\"px\\"; bar.style.background = \\"#1cb0f6\\"; parent.appendChild(bar); }); } document.getElementById(\\"step\\").onclick = () => { let swapped = false; for(let i=0; i<arr.length-1; i++) { if(arr[i] > arr[i+1]) { let tmp = arr[i]; arr[i] = arr[i+1]; arr[i+1] = tmp; swapped = true; break; } } render(); if(!swapped) { DuoMessageChannel.postMessage(\\"complete\\"); } }; render();</script></div>"
 ''';
 
+  /// Joins rules with automatic numbering so the list can never drift or
+  /// duplicate (the old hand-numbered copies had two different rules both
+  /// labelled "9." after years of edits).
+  static String _numbered(List<String> rules) =>
+      [for (var i = 0; i < rules.length; i++) '${i + 1}. ${rules[i]}'].join('\n');
+
+  /// Per-type schema rules shared by every lesson/slide JSON prompt. One
+  /// source of truth: edit here and all four generation prompts stay in sync.
+  static final List<String> _coreSlideRules = [
+    'STRICT SLIDE TYPE ADHERENCE (CRITICAL RULE): You MUST strictly match the exact slide type specified in the lesson plan/description. If a slide is planned as a "numerical" slide, you MUST generate a slide of "type": "numerical", NOT a "theory" slide — and likewise for every other type. NEVER replace, collapse, or substitute interactive or specific slide types with "theory" slides under any circumstances. Every slide\'s JSON type MUST perfectly match the requested type.',
+    '"theory" slides: `content` MUST be a few sentences (at most ~120 words) explaining ONE concept DIRECTLY. Use Markdown. NEVER use storytelling, narrative framings, characters, or imagined scenarios — present facts and definitions plainly. Split longer material across multiple slides.',
+    '"concept_pieces" slides: `content` MUST be a series of short conceptual sentences or key statements separated by newlines (`\\n`), forming a logical flow where each piece is easy to read and digest. Do NOT write single massive paragraphs.',
+    '"quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Provide exactly 4 `options`. Keep the text in `options` very brief (1-5 words max), do NOT use paragraph-like options. Make sure exactly one option has `isCorrect: true`, and give every option a one-line `explanation`.',
+    '"fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word. Include an array of 3 `blankDistractors` (wrong words) for the user to choose from.',
+    '"one_word" slides: `content` is a question whose answer is a SINGLE word or very short term — do NOT put a `___` blank in it. `blankAnswer` is that exact word/term; the learner types it freely, so do NOT provide `options` or `blankDistractors`. Only use questions that have one unambiguous answer.',
+    '"numerical" slides: `content` is a problem whose answer is a NUMBER the learner computes and types. `numericAnswer` is that answer as a plain number (no units, no commas). `numericTolerance` is the allowed absolute error (0.01 for precise answers, larger when scaled to the magnitude). Do NOT provide `options`. State any required units inside `content`, never in the answer. Do NOT include any hints, notes, or text in `content` that reveal or suggest the correct numeric answer.',
+    '"step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).',
+    '"matching" slides: `content` is a one-line instruction (e.g. "Match each quantity with its unit."). `matchPairs` is an array of 3-6 `{"left": "...", "right": "..."}` objects where each right item belongs to exactly one left item. Keep both sides short (1-6 words). Use for term↔definition, symbol↔meaning, cause↔effect.',
+    '"ordering" slides: `content` is a one-line instruction. `orderItems` is an array of 3-6 short strings listed in the CORRECT order — the app shuffles them for the learner. Use for procedures, derivation steps, chronological sequences, algorithms.',
+    '"error_spotting" slides: `content` states the problem being solved. `proofSteps` is an array of 3-6 short solution steps of which EXACTLY ONE contains a plausible conceptual mistake; `errorIndex` is the 0-based index of that flawed step. The mistake must be instructive (a real misconception), never a typo.',
+    '"flashcard" slides: `content` is a recall prompt ("State the formula for…", "What is …?"); `blankAnswer` is the complete answer revealed on the back. Use for definitions, formulas, and key facts worth memorizing. No options.',
+    'LaTeX formatting must follow the LATEX GUIDE above (double-escaped, correct delimiters, no inline-on-its-own-line, and NO LaTeX in fill_in_blank/one_word content or answers).',
+  ];
+
+  /// Rules appended only to whole-lesson prompts (plan-following generation),
+  /// where icons, diagrams, formats and exercise fidelity apply.
+  static final List<String> _lessonLevelRules = [
+    _iconRule,
+    'Diagrams are OPTIONAL. If and only if a lesson genuinely needs/benefits from a visual diagram (geometry, physics forces, circuits, coordinate graphs, structure diagrams), provide a `canvasPrompt` containing a 1-2 sentence description of the diagram. If the lesson is purely textual, conceptual, or algebraic, set `canvasPrompt` to null. Do NOT force a diagram for every lesson.',
+    'For "proof" and "step_by_step" slides ONLY: include a `canvasPrompt` on the slide itself if and only if the proof or worked example genuinely needs a figure to follow (geometry, circuits, triangles, graphs, free-body diagrams). Omit it on purely algebraic slides.',
+    'Each lesson MUST specify a `formatId` corresponding to the lesson format it follows (based on the available formats).',
+    'BY DEFAULT, NEVER NEGLECT EXAMPLE AND EXERCISE QUESTIONS. Worked examples and exercise questions from the textbook chunk must be preserved in the generated lessons. For units consisting of exercises or practice problems, translate them into interactive lessons one by one, where each problem is a lesson or slide of type "numerical", "quiz", "proof", or "step_by_step" so the user solves them individually.',
+  ];
+
+  /// The numbered rule block for whole-lesson JSON prompts.
+  static final String lessonRulesBlock =
+      _numbered([..._coreSlideRules, '"custom_html" slides: $_customHtmlGuide', ..._lessonLevelRules]);
+
+  /// The numbered rule block for single-slide prompts (regenerate / custom).
+  static final String slideRulesBlock =
+      _numbered([..._coreSlideRules, '"custom_html" slides: $_customHtmlGuide']);
+
+  /// Learning-science guidance applied when planning and generating lessons.
+  /// Schema rules say WHAT each type looks like; this says HOW to teach.
+  static const String pedagogyBlock = '''
+PEDAGOGY (HOW TO TEACH — apply these while following the schema rules):
+- OBJECTIVES FIRST: begin each lesson with a short "theory" slide stating, in 1-3 bullet lines, what the learner will be able to do afterwards.
+- RETRIEVAL PRACTICE: at least one third of each lesson's slides must make the learner PRODUCE an answer (quiz, fill_in_blank, one_word, numerical, matching, ordering, error_spotting, flashcard) — reading alone does not build memory.
+- WORKED EXAMPLE → FADED PRACTICE: teach procedures by first walking a fully worked example (proof/step_by_step), then a partially completed one the learner finishes, then a problem they solve alone (numerical/quiz).
+- INTERLEAVING: vary slide types instead of long same-type runs, and let later questions briefly revisit earlier concepts of THIS unit.
+- ONE IDEA PER SLIDE: never pack multiple new concepts into a single slide; add a slide instead.
+- MATCH THE ASSESSMENT TO THE SKILL: memorize → flashcard/one_word; discriminate → quiz/matching; sequence → ordering; evaluate → error_spotting; compute → numerical; construct → proof/step_by_step.''';
+
+  /// JSON return-schema examples per slide type, shared by the single-slide
+  /// prompts so new types are always documented alongside the old ones.
+  static const String slideSchemaExamples = '''
+- "theory": {"id": "%slide_id%", "type": "theory", "title": "Title", "content": "..."}
+- "concept_pieces": {"id": "%slide_id%", "type": "concept_pieces", "title": "Title", "content": "Statement 1\\nStatement 2\\nStatement 3"}
+- "quiz": {"id": "%slide_id%", "type": "quiz", "title": "Title", "content": "...", "options": [{"id": "opt1", "text": "Option A", "isCorrect": true, "explanation": "..."}, ...]}
+- "fill_in_blank": {"id": "%slide_id%", "type": "fill_in_blank", "title": "Title", "content": "... ___ ...", "blankAnswer": "word", "blankDistractors": ["wrong1", "wrong2", "wrong3"]}
+- "one_word": {"id": "%slide_id%", "type": "one_word", "title": "Title", "content": "...", "blankAnswer": "word"}
+- "numerical": {"id": "%slide_id%", "type": "numerical", "title": "Title", "content": "...", "numericAnswer": 12.3, "numericTolerance": 0.01}
+- "proof" / "step_by_step": {"id": "%slide_id%", "type": "proof", "title": "Title", "content": "...", "interactiveSteps": [{"prompt": "...", "options": [...]}, {"stepText": "..."}]}
+- "matching": {"id": "%slide_id%", "type": "matching", "title": "Title", "content": "Match each item.", "matchPairs": [{"left": "Force", "right": "newton"}, {"left": "Energy", "right": "joule"}]}
+- "ordering": {"id": "%slide_id%", "type": "ordering", "title": "Title", "content": "Arrange the steps.", "orderItems": ["First step", "Second step", "Third step"]}
+- "error_spotting": {"id": "%slide_id%", "type": "error_spotting", "title": "Title", "content": "This solution has one mistake.", "proofSteps": ["Step 1 ...", "Step 2 ...", "Step 3 ..."], "errorIndex": 1}
+- "flashcard": {"id": "%slide_id%", "type": "flashcard", "title": "Title", "content": "State the formula for ...", "blankAnswer": "The formula ..."}
+- "descriptive": {"id": "%slide_id%", "type": "descriptive", "title": "Title", "content": "Question asking for paragraph/upload response"}
+- "custom_html": {"id": "%slide_id%", "type": "custom_html", "title": "Title", "content": "Markdown instructions", "interactiveCanvasHtml": "HTML code"}''';
+
   /// Shared page-number contract for every skeleton-stage prompt: the model
   /// reports numbers EXACTLY as printed in the TOC and never performs offset
   /// arithmetic — printed→absolute conversion happens deterministically in
@@ -412,6 +482,8 @@ OUTPUT FORMAT (STRICT):
 - Then list each lesson, starting each one on its own line with: "Lesson <i>: <title>" (i is the 1-based index).
 - Under each "Lesson i:" heading, describe the content, the slide types to use, and the order.
 
+$pedagogyBlock
+
 CRITICAL DUOLINGO-STYLE MICRO-LEARNING RULES:
 1. MAXIMIZE the number of lessons. Break concepts down into extremely bite-sized pieces.
 2. For EACH lesson, choose the most appropriate format from the available formats:
@@ -419,6 +491,7 @@ CRITICAL DUOLINGO-STYLE MICRO-LEARNING RULES:
 For the chosen format, evaluate its slide templates. You can include a slide multiple times (e.g. more than one of the same kind) if needed for the topic, or only once, as long as its condition logically applies.
 3. NO STORY MODE: never frame content as a story, scenario, anecdote, or narrative ("Imagine you are...", "Sara walks into a shop...", etc.). Present theory and concepts directly and factually.
 4. EXAMPLES AND EXERCISE QUESTIONS: BY DEFAULT, NEVER NEGLECT EXAMPLE AND EXERCISES QUESTIONS. If this unit represents or contains exercise questions/practice problems, you MUST take/plan them as individual lessons, one by one (i.e. one lesson per exercise question/problem), rather than grouping them into a single lesson or omitting them.
+5. AVAILABLE SLIDE TYPES you may plan with (respect each format's own templates first): theory, concept_pieces, quiz, fill_in_blank, one_word, numerical, proof, step_by_step, matching, ordering, error_spotting, flashcard, descriptive, custom_html. Prefer matching for term↔definition sets, ordering for procedures, error_spotting to probe misconceptions after a worked example, and flashcard for must-memorize facts and formulas.
 ''';
 
   static final String json = '''SYSTEM PROMPT:
@@ -436,22 +509,10 @@ TEXTBOOK WRITING STYLE & COMPREHENSIVENESS (STRICTEST PRIORITY):
 
 $latexGuide
 
+$pedagogyBlock
+
 CRITICAL SCHEMA & MICRO-LEARNING RULES:
-0. STRICT SLIDE TYPE ADHERENCE (CRITICAL RULE): You MUST strictly match the exact slide type specified in the lesson plan/description. If a slide is planned as a "numerical" slide, you MUST generate a slide of "type": "numerical", NOT a "theory" slide. If a slide is planned as a "fill_in_blank" slide, you MUST generate a slide of "type": "fill_in_blank", NOT a "theory" slide. If a slide is planned as a "quiz" slide, you MUST generate a slide of "type": "quiz", NOT a "theory" slide. If a slide is planned as a "concept_pieces" slide, you MUST generate a slide of "type": "concept_pieces", NOT a "theory" slide. NEVER replace, collapse, or substitute interactive or specific slide types with "theory" slides under any circumstances. Every slide's JSON type MUST perfectly match the requested type.
-1. "theory" slides: `content` MUST be a few sentences explaining a concept DIRECTLY. Use Markdown. NEVER use storytelling, narrative framings, characters, or imagined scenarios — present facts and definitions plainly.
-2. "concept_pieces" slides: `content` MUST be a series of short conceptual sentences or key statements separated by newlines (`\n`), forming a logical flow where each piece is easy to read and digest. Do NOT write single massive paragraphs.
-3. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Provide exactly 4 `options`. Keep the text in `options` very brief (1-5 words max), do NOT use paragraph-like options. Make sure exactly one option has `isCorrect: true`.
-4. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word. Include an array of 3 `blankDistractors` (wrong words) for the user to choose from.
-5. "one_word" slides: `content` is a question whose answer is a SINGLE word or very short term — do NOT put a `___` blank in it. `blankAnswer` is that exact word/term; the learner types it freely, so do NOT provide `options` or `blankDistractors`. Only use questions that have one unambiguous answer.
-6. "numerical" slides: `content` is a problem whose answer is a NUMBER the learner computes and types. `numericAnswer` is that answer as a plain number (no units, no commas, no thousands separators). `numericTolerance` is the allowed absolute error (use 0.01 for precise answers, or a larger value scaled to the magnitude). Do NOT provide `options`. State any required units inside `content`, never in the answer. Do NOT include any hints, notes, or text in `content` that reveal or suggest the correct numeric answer.
-7. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
-8. LaTeX formatting must follow the LATEX GUIDE above (double-escaped, correct delimiters, no inline-on-its-own-line).
-9. "custom_html" slides: $_customHtmlGuide
-9. $_iconRule
-10. Diagrams are OPTIONAL. If and only if a lesson genuinely needs/benefits from a visual diagram or illustration to explain the concept (such as geometry, physics forces, circuits, coordinate graphs, structure diagrams), provide a 'canvasPrompt' containing a 1-2 sentence description of the diagram. If the lesson is purely textual, conceptual, or algebraic, and does not require a visual aid, set 'canvasPrompt' to null. Do NOT force a diagram for every lesson.
-11. For "proof" and "step_by_step" slides ONLY: include a `canvasPrompt` on the slide itself if and only if the proof or worked example genuinely needs a figure to follow (geometry, circuits, triangles, graphs, free-body diagrams, etc.). If the proof is purely algebraic and no figure adds value, omit `canvasPrompt` on the slide.
-12. Each lesson MUST specify a `formatId` corresponding to the lesson format type it follows (e.g., "theory", "example", or "proof" based on the available formats).
-13. BY DEFAULT, NEVER NEGLECT EXAMPLE AND EXERCISES QUESTIONS. Worked examples and exercise questions from the textbook chunk must be preserved in the generated lessons. For units consisting of exercises or practice problems, ensure they are translated into interactive lessons one by one, where each problem is a lesson or slide of type "numerical", "quiz", "proof", or "step_by_step" so the user solves them individually.
+$lessonRulesBlock
 
 YOU MUST RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
 {
@@ -489,22 +550,10 @@ ALREADY-COVERED CONTENT (from previously generated units in this section — do 
 
 $latexGuide
 
+$pedagogyBlock
+
 CRITICAL SCHEMA & MICRO-LEARNING RULES:
-0. STRICT SLIDE TYPE ADHERENCE (CRITICAL RULE): You MUST strictly match the exact slide type specified in the lesson plan/description. If a slide is planned as a "numerical" slide, you MUST generate a slide of "type": "numerical", NOT a "theory" slide. If a slide is planned as a "fill_in_blank" slide, you MUST generate a slide of "type": "fill_in_blank", NOT a "theory" slide. If a slide is planned as a "quiz" slide, you MUST generate a slide of "type": "quiz", NOT a "theory" slide. If a slide is planned as a "concept_pieces" slide, you MUST generate a slide of "type": "concept_pieces", NOT a "theory" slide. NEVER replace, collapse, or substitute interactive or specific slide types with "theory" slides under any circumstances. Every slide's JSON type MUST perfectly match the requested type.
-1. "theory" slides: `content` MUST be a few sentences explaining a concept DIRECTLY. Use Markdown. NEVER use storytelling, narrative framings, characters, or imagined scenarios — present facts and definitions plainly.
-2. "concept_pieces" slides: `content` MUST be a series of short conceptual sentences or key statements separated by newlines (`\n`), forming a logical flow where each piece is easy to read and digest. Do NOT write single massive paragraphs.
-3. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Provide exactly 4 `options`. Keep the text in `options` very brief (1-5 words max), do NOT use paragraph-like options. Make sure exactly one option has `isCorrect: true`.
-4. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word. Include an array of 3 `blankDistractors` (wrong words) for the user to choose from.
-5. "one_word" slides: `content` is a question whose answer is a SINGLE word or very short term — no `___` blank. `blankAnswer` is that exact word/term; the learner types it freely, so do NOT provide `options` or `blankDistractors`. Only use questions with one unambiguous answer.
-6. "numerical" slides: `content` is a problem whose answer is a NUMBER the learner computes and types. `numericAnswer` is that answer as a plain number (no units, no commas). `numericTolerance` is the allowed absolute error (0.01 for precise answers, larger when scaled to the magnitude). Do NOT provide `options`. State any units inside `content`. Do NOT include any hints, notes, or text in `content` that reveal or suggest the correct numeric answer.
-7. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).
-8. LaTeX formatting must follow the LATEX GUIDE above (double-escaped, correct delimiters, no inline-on-its-own-line).
-9. "custom_html" slides: $_customHtmlGuide
-9. $_iconRule
-10. Diagrams are OPTIONAL. If and only if a lesson genuinely needs/benefits from a visual diagram or illustration to explain the concept (such as geometry, physics forces, circuits, coordinate graphs, structure diagrams), provide a 'canvasPrompt' containing a 1-2 sentence description of the diagram. If the lesson is purely textual, conceptual, or algebraic, and does not require a visual aid, set 'canvasPrompt' to null. Do NOT force a diagram for every lesson.
-11. For "proof" and "step_by_step" slides ONLY: include a `canvasPrompt` on the slide itself if and only if the proof / worked example genuinely needs a figure (geometry, circuits, triangles, graphs, free-body diagrams). Omit on purely algebraic slides.
-12. Specify the `formatId` corresponding to the lesson format type this lesson follows (e.g., "theory", "example", or "proof" based on the available formats).
-13. BY DEFAULT, NEVER NEGLECT EXAMPLE AND EXERCISES QUESTIONS. Worked examples and exercise questions from the textbook chunk must be preserved in the generated lessons. For units consisting of exercises or practice problems, ensure they are translated into interactive lessons one by one, where each problem is a lesson or slide of type "numerical", "quiz", "proof", or "step_by_step" so the user solves them individually.
+$lessonRulesBlock
 
 RETURN ONLY VALID JSON FOR THIS ONE LESSON (no wrapping array, no other keys):
 {
@@ -542,29 +591,12 @@ TEXTBOOK WRITING STYLE & COMPREHENSIVENESS (STRICTEST PRIORITY):
 $latexGuide
 
 CRITICAL SCHEMA & MICRO-LEARNING RULES:
-0. STRICT SLIDE TYPE ADHERENCE (CRITICAL RULE): You MUST strictly match the exact slide type specified in the lesson plan/description. If a slide is planned as a "numerical" slide, you MUST generate a slide of "type": "numerical", NOT a "theory" slide. If a slide is planned as a "fill_in_blank" slide, you MUST generate a slide of "type": "fill_in_blank", NOT a "theory" slide. If a slide is planned as a "quiz" slide, you MUST generate a slide of "type": "quiz", NOT a "theory" slide. If a slide is planned as a "concept_pieces" slide, you MUST generate a slide of "type": "concept_pieces", NOT a "theory" slide. NEVER replace, collapse, or substitute interactive or specific slide types with "theory" slides under any circumstances. Every slide's JSON type MUST perfectly match the requested type.
-1. "theory" slides: `content` MUST be a few sentences explaining a concept DIRECTLY. Use Markdown. NEVER use storytelling, narrative framings, characters, or imagined scenarios.
-2. "concept_pieces" slides: `content` MUST be a series of short conceptual sentences or key statements separated by newlines (`\n`), forming a logical flow where each piece is easy to read and digest. Do NOT write single massive paragraphs.
-3. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Provide exactly 4 `options`. Keep the text in `options` very brief (1-5 words max), do NOT use paragraph-like options. Make sure exactly one option has `isCorrect: true`.
-4. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word. Include an array of 3 `blankDistractors`.
-5. "one_word" slides: `content` is a question with a SINGLE-word answer (no `___`). `blankAnswer` is that exact word; no `options` or `blankDistractors`.
-6. "numerical" slides: `content` is a problem with a numeric answer. `numericAnswer` is that plain number (no units); `numericTolerance` is the allowed absolute error (0.01 default). No `options`. Do NOT include any hints, notes, or text in `content` that reveal or suggest the correct numeric answer.
-7. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array of stages; a step can be static (`stepText` only) or a question (`prompt` and `options`). Include a `canvasPrompt` only if a figure is genuinely needed.
-8. LaTeX must follow the LATEX GUIDE above (double-escaped, correct delimiters, no inline-on-its-own-line).
-9. "custom_html" slides: $_customHtmlGuide
+$slideRulesBlock
 
 RETURN ONLY VALID JSON FOR THIS ONE SLIDE (no wrapping array, no other keys). Make sure to include all fields required for the slide type matching the schema of the current slide:
-- "theory": {"id": "%slide_id%", "type": "theory", "title": "Title", "content": "..."}
-- "concept_pieces": {"id": "%slide_id%", "type": "concept_pieces", "title": "Title", "content": "Statement 1\nStatement 2\nStatement 3"}
-- "quiz": {"id": "%slide_id%", "type": "quiz", "title": "Title", "content": "...", "options": [{"id": "opt1", "text": "Option A", "isCorrect": true, "explanation": "..."}, ...]}
-- "fill_in_blank": {"id": "%slide_id%", "type": "fill_in_blank", "title": "Title", "content": "... ___ ...", "blankAnswer": "word", "blankDistractors": ["wrong1", "wrong2", "wrong3"]}
-- "one_word": {"id": "%slide_id%", "type": "one_word", "title": "Title", "content": "...", "blankAnswer": "word"}
-- "numerical": {"id": "%slide_id%", "type": "numerical", "title": "Title", "content": "...", "numericAnswer": 12.3, "numericTolerance": 0.01}
-- "proof" / "step_by_step": {"id": "%slide_id%", "type": "proof", "title": "Title", "content": "...", "interactiveSteps": [{"prompt": "...", "options": [...]}, {"stepText": "..."}]}
-- "descriptive": {"id": "%slide_id%", "type": "descriptive", "title": "Title", "content": "Question asking for paragraph/upload response"}
-- "custom_html": {"id": "%slide_id%", "type": "custom_html", "title": "Title", "content": "Markdown instructions", "interactiveCanvasHtml": "HTML code"}''';
+$slideSchemaExamples''';
 
-  static const String customSlideJson = '''You are an expert tutor.
+  static final String customSlideJson = '''You are an expert tutor.
 TASK:
 You are generating slide index %slide_index% out of %total_slides% for a custom lesson titled "%lesson_title%" (part of the unit "%unit_title%").
 
@@ -587,27 +619,10 @@ TEXTBOOK WRITING STYLE & COMPREHENSIVENESS (STRICTEST PRIORITY):
 $latexGuide
 
 CRITICAL SCHEMA & MICRO-LEARNING RULES:
-0. STRICT SLIDE TYPE ADHERENCE (CRITICAL RULE): You MUST strictly match the exact slide type specified in the lesson plan/description. If a slide is planned as a "numerical" slide, you MUST generate a slide of "type": "numerical", NOT a "theory" slide. If a slide is planned as a "fill_in_blank" slide, you MUST generate a slide of "type": "fill_in_blank", NOT a "theory" slide. If a slide is planned as a "quiz" slide, you MUST generate a slide of "type": "quiz", NOT a "theory" slide. If a slide is planned as a "concept_pieces" slide, you MUST generate a slide of "type": "concept_pieces", NOT a "theory" slide. NEVER replace, collapse, or substitute interactive or specific slide types with "theory" slides under any circumstances. Every slide's JSON type MUST perfectly match the requested type.
-1. "theory" slides: `content` MUST be a few sentences explaining a concept DIRECTLY. Use Markdown. NEVER use storytelling, narrative framings, characters, or imagined scenarios.
-2. "concept_pieces" slides: `content` MUST be a series of short conceptual sentences or key statements separated by newlines (`\n`), forming a logical flow where each piece is easy to read and digest. Do NOT write single massive paragraphs.
-3. "quiz" slides: `content` MUST CONTAIN THE ACTUAL QUESTION TEXT. Provide exactly 4 `options`. Keep the text in `options` very brief (1-5 words max), do NOT use paragraph-like options. Make sure exactly one option has `isCorrect: true`.
-4. "fill_in_blank" slides: `content` MUST contain the question with exactly three underscores (`___`). `blankAnswer` is the exact word. Include an array of 3 `blankDistractors`.
-5. "one_word" slides: `content` is a question with a SINGLE-word answer (no `___`). `blankAnswer` is that exact word; no `options` or `blankDistractors`.
-6. "numerical" slides: `content` is a problem with a numeric answer. `numericAnswer` is that plain number (no units); `numericTolerance` is the allowed absolute error (0.01 default). No `options`. Do NOT include any hints, notes, or text in `content` that reveal or suggest the correct numeric answer.
-7. "step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array of stages; a step can be static (`stepText` only) or a question (`prompt` and `options`). Include a `canvasPrompt` only if a figure is genuinely needed.
-8. LaTeX must follow the LATEX GUIDE above (double-escaped, correct delimiters, no inline-on-its-own-line).
-9. "custom_html" slides: $_customHtmlGuide
+$slideRulesBlock
 
 RETURN ONLY VALID JSON FOR THIS ONE SLIDE (no wrapping array, no other keys). Make sure to include all fields required for the slide type matching the schema:
-- "theory": {"id": "%slide_id%", "type": "theory", "title": "Title", "content": "..."}
-- "concept_pieces": {"id": "%slide_id%", "type": "concept_pieces", "title": "Title", "content": "Statement 1\nStatement 2\nStatement 3"}
-- "quiz": {"id": "%slide_id%", "type": "quiz", "title": "Title", "content": "...", "options": [{"id": "opt1", "text": "Option A", "isCorrect": true, "explanation": "..."}, ...]}
-- "fill_in_blank": {"id": "%slide_id%", "type": "fill_in_blank", "title": "Title", "content": "... ___ ...", "blankAnswer": "word", "blankDistractors": ["wrong1", "wrong2", "wrong3"]}
-- "one_word": {"id": "%slide_id%", "type": "one_word", "title": "Title", "content": "...", "blankAnswer": "word"}
-- "numerical": {"id": "%slide_id%", "type": "numerical", "title": "Title", "content": "...", "numericAnswer": 12.3, "numericTolerance": 0.01}
-- "proof" / "step_by_step": {"id": "%slide_id%", "type": "proof", "title": "Title", "content": "...", "interactiveSteps": [{"prompt": "...", "options": [...]}, {"stepText": "..."}]}
-- "descriptive": {"id": "%slide_id%", "type": "descriptive", "title": "Title", "content": "Question asking for paragraph/upload response"}
-- "custom_html": {"id": "%slide_id%", "type": "custom_html", "title": "Title", "content": "Markdown instructions", "interactiveCanvasHtml": "HTML code"}''';
+$slideSchemaExamples''';
 
   /// Stage-2 prompt: feeds a single `canvasPrompt` (produced by the text
   /// model) into the graphics model and asks it for a JavaScript program

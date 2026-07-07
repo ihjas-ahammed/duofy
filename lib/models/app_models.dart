@@ -58,6 +58,10 @@ class SlideTemplate {
     SlideTemplate(type: 'one_word', condition: 'Always', description: 'Recall a single key term by typing it as a one-word answer (no options shown).'),
     SlideTemplate(type: 'numerical', condition: 'Only if the topic involves a calculation or a quantitative value the learner can compute.', description: 'A problem whose answer is a number the learner types in.'),
     SlideTemplate(type: 'quiz', condition: 'Always', description: 'A multiple-choice question testing understanding.'),
+    SlideTemplate(type: 'matching', condition: 'Only when the topic has 3+ natural pairs (term↔definition, symbol↔meaning, quantity↔unit).', description: 'Match items in the left column to their partners on the right.'),
+    SlideTemplate(type: 'ordering', condition: 'Only when the topic is a procedure, derivation, or sequence with a strict order.', description: 'Drag shuffled steps into the correct sequence.'),
+    SlideTemplate(type: 'error_spotting', condition: 'Only after a worked example or proof, to probe a common misconception.', description: 'A worked solution with exactly one flawed step the learner must find.'),
+    SlideTemplate(type: 'flashcard', condition: 'Only for facts, definitions, or formulas the learner must memorize verbatim.', description: 'Recall-then-flip card with honest self-grading; misses enter spaced review.'),
     SlideTemplate(type: 'descriptive', condition: 'Always', description: 'A question requiring a paragraph explanation and optional photo upload, reviewed by AI.'),
     SlideTemplate(type: 'custom_html', condition: 'Only when custom interactive elements, custom simulators, or unique game/HTML mechanics are needed.', description: 'An interactive custom slide written in HTML and Javascript. Can contain buttons, text inputs, canvases, sliders, and logic. Calls DuoMessageChannel.postMessage("complete") when completed.'),
   ];
@@ -1219,6 +1223,13 @@ class Slide {
   /// (produced by the AI). Null on lessons slides and legacy data.
   final String? source;
 
+  /// `matching` slides: the correct left↔right pairs (shuffled at render).
+  final List<MatchPair>? matchPairs;
+  /// `ordering` slides: the items in their CORRECT order (shuffled at render).
+  final List<String>? orderItems;
+  /// `error_spotting` slides: index into [proofSteps] of the flawed step.
+  final int? errorIndex;
+
   Slide({
     required this.id,
     required this.type,
@@ -1235,6 +1246,9 @@ class Slide {
     this.canvasPrompt,
     this.canvasSvg,
     this.source,
+    this.matchPairs,
+    this.orderItems,
+    this.errorIndex,
   });
 
   factory Slide.fromJson(Map<String, dynamic> json) {
@@ -1294,6 +1308,12 @@ class Slide {
       canvasPrompt: _strOpt(json['canvasPrompt']),
       canvasSvg: _strOpt(json['canvasSvg']),
       source: _strOpt(json['source']),
+      matchPairs: (json['matchPairs'] as List?)
+          ?.map((p) => MatchPair.fromJson(p is Map ? Map<String, dynamic>.from(p) : {}))
+          .where((p) => p.left.isNotEmpty && p.right.isNotEmpty)
+          .toList(),
+      orderItems: (json['orderItems'] as List?)?.map((s) => _str(s)).where((s) => s.isNotEmpty).toList(),
+      errorIndex: json['errorIndex'] is num ? (json['errorIndex'] as num).toInt() : int.tryParse(_str(json['errorIndex'])),
     );
   }
 
@@ -1313,6 +1333,9 @@ class Slide {
     if (canvasPrompt != null) 'canvasPrompt': canvasPrompt,
     if (canvasSvg != null) 'canvasSvg': canvasSvg,
     if (source != null) 'source': source,
+    if (matchPairs != null) 'matchPairs': matchPairs!.map((p) => p.toJson()).toList(),
+    if (orderItems != null) 'orderItems': orderItems,
+    if (errorIndex != null) 'errorIndex': errorIndex,
   };
 
   Slide copyWith({
@@ -1331,6 +1354,9 @@ class Slide {
     String? canvasPrompt,
     String? canvasSvg,
     String? source,
+    List<MatchPair>? matchPairs,
+    List<String>? orderItems,
+    int? errorIndex,
   }) {
     return Slide(
       id: id ?? this.id,
@@ -1348,8 +1374,26 @@ class Slide {
       canvasPrompt: canvasPrompt ?? this.canvasPrompt,
       canvasSvg: canvasSvg ?? this.canvasSvg,
       source: source ?? this.source,
+      matchPairs: matchPairs ?? this.matchPairs,
+      orderItems: orderItems ?? this.orderItems,
+      errorIndex: errorIndex ?? this.errorIndex,
     );
   }
+}
+
+/// One correct left↔right pairing of a `matching` slide.
+class MatchPair {
+  final String left;
+  final String right;
+
+  MatchPair({required this.left, required this.right});
+
+  factory MatchPair.fromJson(Map<String, dynamic> json) => MatchPair(
+        left: _str(json['left'] ?? json['term'] ?? json['question']),
+        right: _str(json['right'] ?? json['definition'] ?? json['answer']),
+      );
+
+  Map<String, dynamic> toJson() => {'left': left, 'right': right};
 }
 
 class QuizOption {
