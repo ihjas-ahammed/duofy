@@ -676,5 +676,13 @@
   "674": "CheckedDowncastToActualType",
   "675": "GetTestCasePatternHolder",
   "676": "GetType",
-  "677": "Rect"
+  "677": "Rect",
+  "678": "FunctorTraits<R (Receiver::*)(Args...) const>",
+  "679": "FunctorTraits<R(__stdcall*)(Args...)>",
+  "680": "root_window.cc",
+  "681": "CefRefPtr",
+  "682": "dialog_test.cc",
+  "683": ".OnRequestComplete",
+  "684": "R",
+  "685": "resource.h"
 }

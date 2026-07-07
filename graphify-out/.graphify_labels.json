@@ -684,5 +684,11 @@
   "682": "dialog_test.cc",
   "683": ".OnRequestComplete",
   "684": "R",
-  "685": "resource.h"
+  "685": "resource.h",
+  "686": "cef_atomic_flag.cc",
+  "687": "GetCertificateInformation",
+  "688": "_BlankBuilder",
+  "689": "_BlankSyntax",
+  "690": "_FlMethodCodecClass",
+  "691": "CefDoMessageLoopWork"
 }

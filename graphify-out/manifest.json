@@ -5680,8 +5680,8 @@
     "semantic_hash": ""
   },
   "test/pdfx_test.dart": {
-    "mtime": 1781535499.587316,
-    "ast_hash": "a9f8824af5b74d3df1071b116558d572",
+    "mtime": 1783431407.7103326,
+    "ast_hash": "b4ab4811d73f39d9e481b27118f98310",
     "semantic_hash": ""
   },
   "test/toc_matcher_test.dart": {
@@ -5770,8 +5770,8 @@
     "semantic_hash": ""
   },
   ".github/workflows/build.yml": {
-    "mtime": 1783421182.1856797,
-    "ast_hash": "99ac0906dfc95fb22c3e100d248e0037",
+    "mtime": 1783431403.2991338,
+    "ast_hash": "b4f1a3a7a002e5e045fab6d5e94e7082",
     "semantic_hash": ""
   },
   "AGENTS.md": {
