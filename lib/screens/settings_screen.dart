@@ -30,13 +30,14 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   List<String> _keys = [];
+  String _selectedCategory = 'general';
   List<String> _models = [];
   // Each slot is now an ordered list — the first model is tried first, the
   // next is the fallback, and so on. Empty list means "use the built-in
   // default" but the UI keeps at least one entry to avoid that state.
-  List<String> _modelPrimaryText = ['gemini-flash-lite-latest', 'gemma-4-31b-it'];
-  List<String> _modelPrimaryGraphics = ['gemini-flash-latest','gemini-2.5-flash','gemma-4-26b-a4b-it'];
-  List<String> _modelLite = ['gemini-flash-lite-latest','gemma-4-31b-it'];
+  List<String> _modelPrimaryText = ['gemini-flash-lite-latest', 'gemini-2.5-flash-lite', 'gemma-4-26b-a4b-it', 'gemma-4-31b-it'];
+  List<String> _modelPrimaryGraphics = ['gemini-3.5-flash', 'gemini-3-flash-preview', 'gemini-2.5-flash', 'gemma-4-31b-it'];
+  List<String> _modelLite = ['gemini-flash-lite-latest', 'gemini-3.1-flash-lite', 'gemini-3.1-flash-lite-preview', 'gemini-2.5-flash-lite', 'gemma-4-26b-a4b-it', 'gemini-2.0-flash-lite'];
   List<String> _modelLive = ['gemini-3.1-flash-live-preview'];
   /// How many lesson requests to fire in parallel during generation.
   /// 'auto' lets the app pick from the device's capacity; otherwise a fixed
@@ -72,20 +73,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
-  /// Reads a per-slot model list, falling back to the legacy scalar key for
-  /// users coming from an older install. Always returns a non-empty list
-  /// (uses the supplied [defaultModel] when nothing is stored).
+  /// (uses the supplied default list when nothing is stored).
   Future<List<String>> _loadModelList(
     SharedPreferences prefs,
     String listKey,
     String legacyScalarKey,
-    String defaultModel,
+    List<String> defaultList,
   ) async {
     final list = prefs.getStringList(listKey) ?? [];
     if (list.isNotEmpty) return list;
     final scalar = prefs.getString(legacyScalarKey);
     if (scalar != null && scalar.trim().isNotEmpty) return [scalar.trim()];
-    return [defaultModel];
+    return defaultList;
   }
 
   Future<void> _loadSettings() async {
@@ -101,15 +100,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     // Legacy generic-models list. No UI binds to it anymore — the three
     // slots (Text / Graphics / Lite) own their own fallback ladders. We
-    // still round-trip whatever the user previously had so we don\'t lose
+    // still round-trip whatever the user previously had so we don't lose
     // it, but we no longer inject a hardcoded default (which used to be
     // gemini-1.5-flash and silently poisoned the ladder).
     List<String> models = prefs.getStringList('gemini_models_list') ?? [];
 
-    List<String> primaryText = await _loadModelList(prefs, 'model_primary_text_list', 'model_primary_text', 'gemini-flash-lite-latest');
-    List<String> primaryGraphics = await _loadModelList(prefs, 'model_primary_graphics_list', 'model_primary_graphics', 'gemini-3.5-flash');
-    List<String> lite = await _loadModelList(prefs, 'model_lite_list', 'model_lite', 'gemini-flash-lite-latest');
-    List<String> live = await _loadModelList(prefs, 'model_live_list', 'model_live', 'gemini-3.1-flash-live-preview');
+    List<String> primaryText = await _loadModelList(prefs, 'model_primary_text_list', 'model_primary_text', const ['gemini-flash-lite-latest', 'gemini-2.5-flash-lite', 'gemma-4-26b-a4b-it', 'gemma-4-31b-it']);
+    List<String> primaryGraphics = await _loadModelList(prefs, 'model_primary_graphics_list', 'model_primary_graphics', const ['gemini-3.5-flash', 'gemini-3-flash-preview', 'gemini-2.5-flash', 'gemma-4-31b-it']);
+    List<String> lite = await _loadModelList(prefs, 'model_lite_list', 'model_lite', const ['gemini-flash-lite-latest', 'gemini-3.1-flash-lite', 'gemini-3.1-flash-lite-preview', 'gemini-2.5-flash-lite', 'gemma-4-26b-a4b-it', 'gemini-2.0-flash-lite']);
+    List<String> live = await _loadModelList(prefs, 'model_live_list', 'model_live', const ['gemini-3.1-flash-live-preview']);
 
     // Hydrate from Firestore if local is empty.
     if (keys.isEmpty || models.isEmpty) {
@@ -296,7 +295,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (name.startsWith('models/')) name = name.substring(7);
       if (name.contains('gemini') || name.contains('gemma')) fetchedModels.add(name);
     }
-    for (final id in const ['gemma4', 'gemini-3.5-flash', 'gemini-3.1-flash-live-preview', 'gemini-flash-lite-latest', 'gemma-4-31b-it', 'gemma-4-26b-a4b-it']) {
+    for (final id in const [
+      'gemma4',
+      'gemini-3.5-flash',
+      'gemini-3-flash-preview',
+      'gemini-2.5-flash',
+      'gemini-3.1-flash-live-preview',
+      'gemini-flash-lite-latest',
+      'gemini-3.1-flash-lite',
+      'gemini-3.1-flash-lite-preview',
+      'gemini-2.5-flash-lite',
+      'gemini-2.0-flash-lite',
+      'gemma-4-31b-it',
+      'gemma-4-26b-a4b-it'
+    ]) {
       if (!fetchedModels.contains(id)) fetchedModels.add(id);
     }
     fetchedModels.sort((a, b) {
@@ -1157,6 +1169,120 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
     }
 
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isDesktop = screenWidth >= 900;
+
+    if (isDesktop) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF0B0F19),
+        appBar: AppBar(
+          title: const Text('Settings', style: TextStyle(fontWeight: FontWeight.w900)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        body: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left sidebar: categories & profile
+            Container(
+              width: 300,
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Profile Header Card
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    margin: const EdgeInsets.only(bottom: 24),
+                    decoration: AppTheme.glassDecoration,
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 24,
+                          backgroundColor: AppTheme.duoBlue,
+                          child: Text(
+                            user?.displayName?.isNotEmpty == true ? user!.displayName![0].toUpperCase() : 'U', 
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.white)
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(user?.displayName ?? 'Guest User', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Colors.white, overflow: TextOverflow.ellipsis)),
+                              Text(user?.email ?? 'Not logged in', style: const TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, fontSize: 10, overflow: TextOverflow.ellipsis)),
+                            ],
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+
+                  // Categories list
+                  _buildCategoryMenuItem('general', LucideIcons.settings, 'General & Goals'),
+                  const SizedBox(height: 8),
+                  _buildCategoryMenuItem('profile', LucideIcons.user, 'Profile & Style'),
+                  const SizedBox(height: 8),
+                  _buildCategoryMenuItem('advanced', LucideIcons.cpu, 'Advanced Config'),
+
+                  const Spacer(),
+
+                  // Bottom action buttons (Save, Sign Out)
+                  DuoButton(
+                    text: 'Save Settings',
+                    onPressed: _saveSettings,
+                    color: AppTheme.duoGreen,
+                    shadowColor: AppTheme.duoGreenDark,
+                  ),
+                  const SizedBox(height: 12),
+                  if (user != null)
+                    DuoButton(
+                      text: 'Sign Out',
+                      onPressed: () async {
+                        Navigator.pop(context);
+                        await FbAuth.instance.signOut();
+                        SecretsService.instance.clear();
+                        GlobalState.isGuestNotifier.value = false;
+                        GlobalState.xpNotifier.value = 0;
+                      },
+                      color: AppTheme.duoRed,
+                      shadowColor: AppTheme.duoRedDark,
+                      isOutline: true,
+                    )
+                  else
+                    DuoButton(
+                      text: 'Sign In / Log In',
+                      onPressed: () {
+                        GlobalState.isGuestNotifier.value = false;
+                        GlobalState.forceShowAuthScreen.value = true;
+                        Navigator.pop(context);
+                      },
+                      color: AppTheme.duoBlue,
+                      shadowColor: AppTheme.duoBlueDark,
+                    ),
+                ],
+              ),
+            ),
+            Container(width: 1, color: Colors.white.withOpacity(0.08)),
+
+            // Right side: scrollable contents of selected category
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Center(
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 720),
+                    child: _buildCategoryContent(),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Settings', style: TextStyle(fontWeight: FontWeight.w900))),
       body: ResponsiveCenter(
@@ -1369,5 +1495,206 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildCategoryMenuItem(String category, IconData icon, String label) {
+    final bool isSelected = _selectedCategory == category;
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedCategory = category;
+        });
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.duoBlue.withOpacity(0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? AppTheme.duoBlue.withOpacity(0.3) : Colors.transparent,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? AppTheme.duoBlue : Colors.white60,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Nunito',
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: isSelected ? AppTheme.duoBlue : Colors.white70,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryContent() {
+    if (_selectedCategory == 'general') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Learning Goal', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 8),
+          const Text('Set a daily XP goal and an optional study reminder.',
+              style: TextStyle(color: Colors.white54, fontSize: 12)),
+          const SizedBox(height: 16),
+          const DailyGoalCard(),
+          const SizedBox(height: 32),
+
+          const Text('Storage & Sync', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 8),
+          const Text('Courses are saved on this device first. Cloud sync is optional.',
+              style: TextStyle(color: Colors.white54, fontSize: 12)),
+          const SizedBox(height: 16),
+          _buildCloudSyncCard(),
+          const SizedBox(height: 32),
+
+          const Text('API Keys', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 8),
+          const Text('Add multiple keys to fall back automatically if rate-limited.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+          const SizedBox(height: 16),
+          StringListManager(
+            key: _keysManagerKey,
+            initialItems: _keys,
+            hintText: 'Enter Gemini API Key',
+            itemIcon: LucideIcons.key,
+            onChanged: (newKeys) => setState(() => _keys = newKeys),
+          ),
+        ],
+      );
+    } else if (_selectedCategory == 'profile') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Personalization', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 8),
+          const Text('Optional: tune the generated content to your writing and learning style.',
+              style: TextStyle(color: Colors.white54, fontSize: 12)),
+          const SizedBox(height: 16),
+          const LearnerProfileCard(),
+          const SizedBox(height: 16),
+          _buildMetacognitionCard(),
+          const SizedBox(height: 32),
+
+          const Text('Live Chat Assistant', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 8),
+          const Text('Customize the behavior and system instructions for the real-time AI helper.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+          const SizedBox(height: 16),
+          _buildLiveChatPromptCard(),
+        ],
+      );
+    } else {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Advanced Options', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 8),
+          const Text('Enable Advanced Mode to configure AI models, concurrency settings, and execute experiments.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+          const SizedBox(height: 16),
+          Container(
+            decoration: AppTheme.glassDecoration,
+            child: SwitchListTile(
+              value: GlobalState.advancedModeNotifier.value,
+              activeColor: AppTheme.duoViolet,
+              title: const Text('Advanced mode',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+              subtitle: const Text(
+                'Model ladders, concurrency, automation, experiments, and per-node generation menus.',
+                style: TextStyle(color: Colors.white54, fontSize: 11),
+              ),
+              onChanged: (v) => setState(() => GlobalState.advancedModeNotifier.value = v),
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          if (GlobalState.advancedModeNotifier.value) ...[
+            SizedBox(
+              width: double.infinity,
+              child: DuoButton(
+                text: 'PDF Browser',
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const PdfBrowserScreen()));
+                },
+                color: AppTheme.duoViolet,
+                shadowColor: AppTheme.duoVioletDark,
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            const Text('AI Model Assignments', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            const Text('Select specialized models for text, graphics, and light-weight tasks.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 16),
+
+            _buildModelSlotCard(
+              title: 'Primary - Text',
+              subtitle: 'Generates final interactive lessons & quizzes.',
+              slotName: 'Primary - Text',
+              icon: LucideIcons.fileText,
+            ),
+            const SizedBox(height: 16),
+
+            _buildModelSlotCard(
+              title: 'Primary - Graphics',
+              subtitle: 'Generates canvas diagrams for lessons & proofs.',
+              slotName: 'Primary - Graphics',
+              icon: LucideIcons.image,
+            ),
+            const SizedBox(height: 16),
+
+            _buildModelSlotCard(
+              title: 'Lite',
+              subtitle: 'Creates skeletons and maps lesson plan lists.',
+              slotName: 'Lite',
+              icon: LucideIcons.zap,
+            ),
+            const SizedBox(height: 16),
+
+            _buildModelSlotCard(
+              title: 'Live',
+              subtitle: 'Real-time live model for chat & voice assistance.',
+              slotName: 'Live',
+              icon: LucideIcons.mic,
+            ),
+
+            const SizedBox(height: 32),
+            const Text('Generation Settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            const Text('How many lessons to generate at once, task queueing, schedule settings, and automated rules.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 16),
+            _buildConcurrencyCard(),
+            const SizedBox(height: 16),
+            _buildScheduleCard(),
+            const SizedBox(height: 16),
+            _buildAutomationCard(),
+            const SizedBox(height: 16),
+            _buildAiQueueCard(),
+            const SizedBox(height: 16),
+            _buildExperimentsCard(),
+          ] else
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: AppTheme.glassDecoration,
+              alignment: Alignment.center,
+              child: const Text(
+                'Please enable Advanced Mode above to unlock model slot configurations and scheduling details.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white38, fontSize: 12),
+              ),
+            ),
+        ],
+      );
+    }
   }
 }

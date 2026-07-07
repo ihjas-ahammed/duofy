@@ -50,8 +50,8 @@
     "semantic_hash": ""
   },
   "lib/screens/home_screen.dart": {
-    "mtime": 1783420473.5955553,
-    "ast_hash": "f1af07e763290891ea5b95a4a65edc71",
+    "mtime": 1783434192.8561108,
+    "ast_hash": "cec219adccf5028a0dca1da76ec67869",
     "semantic_hash": ""
   },
   "lib/screens/pyq_tab_screen.dart": {
@@ -60,8 +60,8 @@
     "semantic_hash": ""
   },
   "lib/screens/settings_screen.dart": {
-    "mtime": 1783420473.6206055,
-    "ast_hash": "f9456293f16c9c53a796833519de6eb9",
+    "mtime": 1783433996.7566936,
+    "ast_hash": "16ab79cf07098f67bdd0fa6629eb3c67",
     "semantic_hash": ""
   },
   "lib/screens/bookmarks_screen.dart": {
@@ -125,8 +125,8 @@
     "semantic_hash": ""
   },
   "lib/screens/course_edit_structure_screen.dart": {
-    "mtime": 1783420473.5855362,
-    "ast_hash": "eb82b5c7e26c7d38989b38d3b10aef6c",
+    "mtime": 1783434760.2407706,
+    "ast_hash": "d2168edffa2616edc3db827c3a6de153",
     "semantic_hash": ""
   },
   "lib/screens/pdf_split_preview_screen.dart": {
@@ -360,13 +360,13 @@
     "semantic_hash": "b6525142d239a41b8f5d653bfd3344fb"
   },
   "lib/services/generation_manager.dart": {
-    "mtime": 1783420473.6361167,
-    "ast_hash": "cb3f2c9fcda11f28855b886f6c719198",
+    "mtime": 1783436463.9211164,
+    "ast_hash": "a45df97cc77e021e2ee04788e7c51d64",
     "semantic_hash": ""
   },
   "lib/services/ai_service.dart": {
-    "mtime": 1783420473.625394,
-    "ast_hash": "93a164cab923a9a9467a755b21a996b9",
+    "mtime": 1783436737.1757526,
+    "ast_hash": "159d0b169ae1535f7ae0a6a651a83c53",
     "semantic_hash": ""
   },
   "lib/services/prompt_service.dart": {
@@ -385,7 +385,7 @@
     "semantic_hash": "8aa32efa6caed326f0b3facdc9fa2e9f"
   },
   "lib/services/pdf_service.dart": {
-    "mtime": 1783420498.9644313,
+    "mtime": 1783436736.766774,
     "ast_hash": "60bbee88d62006a96a2802ea1ac27f28",
     "semantic_hash": ""
   },
@@ -400,13 +400,13 @@
     "semantic_hash": ""
   },
   "lib/services/auto_index_service.dart": {
-    "mtime": 1783420473.6280065,
-    "ast_hash": "353b6a0bba6caa678cfbb193dcd62475",
+    "mtime": 1783437051.0962842,
+    "ast_hash": "c1d059c7749a4fe80c1cd35471aaeef3",
     "semantic_hash": ""
   },
   "lib/services/database_service.dart": {
-    "mtime": 1783420473.6349983,
-    "ast_hash": "94ba8c891a82640efcbed2c5476d8aad",
+    "mtime": 1783432977.082962,
+    "ast_hash": "44958fb7a797ae266f8e19cf941e6740",
     "semantic_hash": ""
   },
   "lib/services/progress_service.dart": {
@@ -560,8 +560,8 @@
     "semantic_hash": ""
   },
   "lib/screens/experiments_screen.dart": {
-    "mtime": 1783420473.5916574,
-    "ast_hash": "f7aade113bf2c7082a7b195437d026aa",
+    "mtime": 1783433129.3540902,
+    "ast_hash": "d3be05d88261ce27405cd368caaffd21",
     "semantic_hash": ""
   },
   "lib/screens/metacognition_setup_screen.dart": {
@@ -5680,8 +5680,8 @@
     "semantic_hash": ""
   },
   "test/pdfx_test.dart": {
-    "mtime": 1781535499.587316,
-    "ast_hash": "a9f8824af5b74d3df1071b116558d572",
+    "mtime": 1783431407.7103326,
+    "ast_hash": "b4ab4811d73f39d9e481b27118f98310",
     "semantic_hash": ""
   },
   "test/toc_matcher_test.dart": {
@@ -5767,11 +5767,6 @@
   ".github/copilot-instructions.md": {
     "mtime": 1783177376.851673,
     "ast_hash": "ec2dc0dc7bef63488889f34de2f5584d",
-    "semantic_hash": ""
-  },
-  ".github/workflows/build.yml": {
-    "mtime": 1783421182.1856797,
-    "ast_hash": "99ac0906dfc95fb22c3e100d248e0037",
     "semantic_hash": ""
   },
   "AGENTS.md": {
@@ -6530,8 +6525,8 @@
     "semantic_hash": ""
   },
   "lib/widgets/next_up_card.dart": {
-    "mtime": 1783420473.6831298,
-    "ast_hash": "e39739b8e4ac31f930c0f3eac4a3835a",
+    "mtime": 1783435518.1283393,
+    "ast_hash": "ce15c5fc23639914bc4059822a4a0674",
     "semantic_hash": ""
   },
   "lib/widgets/slide_views/error_spotting_view.dart": {
@@ -6637,6 +6632,16 @@
   "CHANGELOG.md": {
     "mtime": 1783421219.3630714,
     "ast_hash": "0dbba4aceb17b9aa1d95deaf18ccb5d1",
+    "semantic_hash": ""
+  },
+  ".github/workflows/android.yml": {
+    "mtime": 1783432327.8366106,
+    "ast_hash": "d00eb779e165954d9ca21516b0855705",
+    "semantic_hash": ""
+  },
+  ".github/workflows/windows.yml": {
+    "mtime": 1783432332.2627113,
+    "ast_hash": "130d170a91a2718eef79dd4bd38163d6",
     "semantic_hash": ""
   }
 }

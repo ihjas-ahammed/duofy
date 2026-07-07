@@ -1615,7 +1615,7 @@ class GenerationManager extends ChangeNotifier {
       if (task.syllabusFiles.isNotEmpty) {
         try {
           final dir = await getApplicationDocumentsDirectory();
-          final bookDirPath = '${dir.path}/books/${completeBook.id}';
+          final bookDirPath = '${dir.path}/books/${finalBook.id}';
           final bookDir = Directory(bookDirPath);
           if (!await bookDir.exists()) {
             await bookDir.create(recursive: true);
@@ -1630,7 +1630,7 @@ class GenerationManager extends ChangeNotifier {
             final ext = finalSyllabusFile.path.split('.').last;
             final targetPath = '$bookDirPath/syllabus.$ext';
             await finalSyllabusFile.copy(targetPath);
-            finalBook = completeBook.copyWith(syllabusPath: targetPath);
+            finalBook = finalBook.copyWith(syllabusPath: targetPath);
           }
         } catch (e) {
           print('Error automatically saving syllabus file: $e');

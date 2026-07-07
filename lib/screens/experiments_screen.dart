@@ -32,15 +32,6 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
   final TextEditingController _jsonController = TextEditingController();
   Slide? _currentSlide;
   String? _jsonError;
-  bool _answered = false;
-  bool _isCorrect = false;
-  String? _selectedQuizOption;
-  String _blankInput = '';
-  String _wordInput = '';
-  String _numericInput = '';
-  Map<String, String> _matchingAssignments = {};
-  List<String> _orderingCurrent = [];
-  int? _errorSelection;
 
   final Map<String, Map<String, dynamic>> _presets = {
     'theory': {
@@ -86,7 +77,7 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
       "id": "preset_numerical",
       "type": "numerical",
       "title": "Calculus Calculation",
-      "content": "Evaluate the definite integral \$\\int_0^2 3x^2 \\, dx\$.",
+      "content": "Evaluate the definite integral \$:\\int_0^2 3x^2 \\, dx\$.",
       "numericAnswer": 8.0,
       "numericTolerance": 0.01
     },
@@ -226,13 +217,187 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
       setState(() {
         _currentSlide = slide;
         _jsonError = null;
-        _resetSlideState();
       });
     } catch (e) {
       setState(() {
         _jsonError = e.toString();
       });
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0B0F19),
+      appBar: AppBar(
+        title: const Text('Slide Testing Experiments', style: TextStyle(fontWeight: FontWeight.w900)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: SingleChildScrollView(
+        child: ResponsiveCenter(
+          maxWidth: ResponsiveMaxWidth.form,
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white10),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text('Select Built-in Preset:', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, fontSize: 12)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _presets.keys.map((key) {
+                        final isSelected = _currentSlide?.type == key;
+                        return ChoiceChip(
+                          label: Text(key, style: TextStyle(color: isSelected ? Colors.white : Colors.white70, fontWeight: FontWeight.bold, fontSize: 11)),
+                          selected: isSelected,
+                          selectedColor: AppTheme.duoBlue,
+                          backgroundColor: Colors.black26,
+                          checkmarkColor: Colors.white,
+                          onSelected: (val) {
+                            if (val) _loadPreset(key);
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Slide JSON Template:', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, fontSize: 12)),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _jsonController,
+                      maxLines: 12,
+                      minLines: 6,
+                      style: const TextStyle(fontFamily: 'monospace', fontSize: 11, color: Colors.white70),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.black38,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.white10),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppTheme.duoBlue),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (_currentSlide != null && _jsonError == null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.duoGreen.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppTheme.duoGreen.withOpacity(0.3)),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(LucideIcons.checkCircle2, color: AppTheme.duoGreen, size: 18),
+                              SizedBox(width: 8),
+                              Text('Slide JSON is valid and ready!', style: TextStyle(color: AppTheme.duoGreen, fontWeight: FontWeight.bold, fontSize: 13)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    if (_jsonError != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.duoRed.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppTheme.duoRed.withOpacity(0.3)),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(LucideIcons.alertCircle, color: AppTheme.duoRed, size: 18),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text('JSON Error: $_jsonError', style: const TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold, fontSize: 13)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DuoButton(
+                            text: 'PARSE JSON',
+                            onPressed: () => _parseAndSetSlide(_jsonController.text),
+                            color: AppTheme.duoBlue,
+                            shadowColor: AppTheme.duoBlueDark,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DuoButton(
+                            text: 'LAUNCH PREVIEW',
+                            onPressed: _currentSlide == null || _jsonError != null
+                                ? () {}
+                                : () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ExperimentPreviewScreen(slide: _currentSlide!),
+                                      ),
+                                    );
+                                  },
+                            color: _currentSlide != null && _jsonError == null ? AppTheme.duoGreen : const Color(0xFF334155),
+                            shadowColor: _currentSlide != null && _jsonError == null ? AppTheme.duoGreenDark : const Color(0xFF1E293B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class ExperimentPreviewScreen extends StatefulWidget {
+  final Slide slide;
+  const ExperimentPreviewScreen({super.key, required this.slide});
+
+  @override
+  State<ExperimentPreviewScreen> createState() => _ExperimentPreviewScreenState();
+}
+
+class _ExperimentPreviewScreenState extends State<ExperimentPreviewScreen> {
+  late Slide _activeSlide;
+  bool _answered = false;
+  bool _isCorrect = false;
+  String? _selectedQuizOption;
+  String _blankInput = '';
+  String _wordInput = '';
+  String _numericInput = '';
+  Map<String, String> _matchingAssignments = {};
+  List<String> _orderingCurrent = [];
+  int? _errorSelection;
+
+  @override
+  void initState() {
+    super.initState();
+    _activeSlide = widget.slide;
+    _resetSlideState();
   }
 
   void _resetSlideState() {
@@ -248,31 +413,29 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
   }
 
   void _checkAnswer() {
-    if (_currentSlide == null) return;
-    final slide = _currentSlide!;
     bool correct = false;
 
-    if (slide.type == 'quiz') {
-      final opt = slide.options?.firstWhere((o) => o.id == _selectedQuizOption, orElse: () => slide.options!.first);
+    if (_activeSlide.type == 'quiz') {
+      final opt = _activeSlide.options?.firstWhere((o) => o.id == _selectedQuizOption, orElse: () => _activeSlide.options!.first);
       correct = opt?.isCorrect ?? false;
-    } else if (slide.type == 'fill_in_blank') {
-      final answers = (slide.blankAnswer ?? '').split(',').map((s) => s.trim().toLowerCase());
+    } else if (_activeSlide.type == 'fill_in_blank') {
+      final answers = (_activeSlide.blankAnswer ?? '').split(',').map((s) => s.trim().toLowerCase());
       final input = _blankInput.trim().toLowerCase();
       correct = answers.contains(input);
-    } else if (slide.type == 'one_word') {
-      correct = _wordInput.trim().toLowerCase() == (slide.blankAnswer ?? '').trim().toLowerCase().replaceAll(r'\', '');
-    } else if (slide.type == 'numerical') {
+    } else if (_activeSlide.type == 'one_word') {
+      correct = _wordInput.trim().toLowerCase() == (_activeSlide.blankAnswer ?? '').trim().toLowerCase().replaceAll(r'\', '');
+    } else if (_activeSlide.type == 'numerical') {
       final val = double.tryParse(_numericInput);
-      if (val != null && slide.numericAnswer != null) {
-        correct = (val - slide.numericAnswer!).abs() <= (slide.numericTolerance ?? 0.01);
+      if (val != null && _activeSlide.numericAnswer != null) {
+        correct = (val - _activeSlide.numericAnswer!).abs() <= (_activeSlide.numericTolerance ?? 0.01);
       }
-    } else if (slide.type == 'matching') {
-      final pairs = slide.matchPairs ?? [];
+    } else if (_activeSlide.type == 'matching') {
+      final pairs = _activeSlide.matchPairs ?? [];
       correct = pairs.isNotEmpty &&
           _matchingAssignments.length == pairs.length &&
           pairs.every((p) => _matchingAssignments[p.left] == p.right);
-    } else if (slide.type == 'ordering') {
-      final target = slide.orderItems ?? [];
+    } else if (_activeSlide.type == 'ordering') {
+      final target = _activeSlide.orderItems ?? [];
       correct = target.isNotEmpty && _orderingCurrent.length == target.length;
       if (correct) {
         for (var i = 0; i < target.length; i++) {
@@ -282,8 +445,8 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
           }
         }
       }
-    } else if (slide.type == 'error_spotting') {
-      correct = _errorSelection != null && _errorSelection == slide.errorIndex;
+    } else if (_activeSlide.type == 'error_spotting') {
+      correct = _errorSelection != null && _errorSelection == _activeSlide.errorIndex;
     }
 
     if (correct) {
@@ -299,18 +462,16 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
   }
 
   bool _canCheck() {
-    if (_currentSlide == null) return false;
-    final slide = _currentSlide!;
-    if (slide.type == 'quiz') return _selectedQuizOption != null;
-    if (slide.type == 'fill_in_blank') return _blankInput.trim().isNotEmpty;
-    if (slide.type == 'one_word') return _wordInput.trim().isNotEmpty;
-    if (slide.type == 'numerical') return _numericInput.trim().isNotEmpty;
-    if (slide.type == 'matching') {
+    if (_activeSlide.type == 'quiz') return _selectedQuizOption != null;
+    if (_activeSlide.type == 'fill_in_blank') return _blankInput.trim().isNotEmpty;
+    if (_activeSlide.type == 'one_word') return _wordInput.trim().isNotEmpty;
+    if (_activeSlide.type == 'numerical') return _numericInput.trim().isNotEmpty;
+    if (_activeSlide.type == 'matching') {
       return _matchingAssignments.isNotEmpty &&
-          _matchingAssignments.length == (slide.matchPairs?.length ?? 0);
+          _matchingAssignments.length == (_activeSlide.matchPairs?.length ?? 0);
     }
-    if (slide.type == 'ordering') return _orderingCurrent.isNotEmpty;
-    if (slide.type == 'error_spotting') return _errorSelection != null;
+    if (_activeSlide.type == 'ordering') return _orderingCurrent.isNotEmpty;
+    if (_activeSlide.type == 'error_spotting') return _errorSelection != null;
     return true;
   }
 
@@ -495,7 +656,7 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
           selectedOptionId: _selectedQuizOption,
           isAnswered: _answered,
           onSelect: (id) => setState(() => _selectedQuizOption = id),
-          onUpdateSlide: (s) => setState(() => _currentSlide = s),
+          onUpdateSlide: (s) => setState(() => _activeSlide = s),
           bottomBar: bottomBar,
         );
       case 'fill_in_blank':
@@ -545,111 +706,31 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final slide = _currentSlide;
-    final hasCustomBar = slide != null && _isCustomBottomBar(slide);
-    final bottomBar = (slide != null && !hasCustomBar) ? _buildActionBottomBar(slide) : null;
+    final hasCustomBar = _isCustomBottomBar(_activeSlide);
+    final bottomBar = !hasCustomBar ? _buildActionBottomBar(_activeSlide) : null;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F19),
       appBar: AppBar(
-        title: const Text('Slide Testing Experiments', style: TextStyle(fontWeight: FontWeight.w900)),
+        title: Text('${_activeSlide.title.isNotEmpty ? _activeSlide.title : "Slide"} Preview', style: const TextStyle(fontWeight: FontWeight.w900)),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: ResponsiveCenter(
-        maxWidth: ResponsiveMaxWidth.form,
-        child: Column(
-          children: [
-            // Preset selectors & Text editor in a header panel
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white10),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text('Select Built-in Preset:', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, fontSize: 12)),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _presets.keys.map((key) {
-                      final isSelected = _currentSlide?.type == key;
-                      return ChoiceChip(
-                        label: Text(key, style: TextStyle(color: isSelected ? Colors.white : Colors.white70, fontWeight: FontWeight.bold, fontSize: 11)),
-                        selected: isSelected,
-                        selectedColor: AppTheme.duoBlue,
-                        backgroundColor: Colors.black26,
-                        checkmarkColor: Colors.white,
-                        onSelected: (val) {
-                          if (val) _loadPreset(key);
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('Slide JSON Template:', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, fontSize: 12)),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _jsonController,
-                    maxLines: 8,
-                    minLines: 4,
-                    style: const TextStyle(fontFamily: 'monospace', fontSize: 11, color: Colors.white70),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.black38,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.white10),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppTheme.duoBlue),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  if (_jsonError != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Text('Error: $_jsonError', style: const TextStyle(color: AppTheme.duoRed, fontSize: 12, fontWeight: FontWeight.bold)),
-                    ),
-                  DuoButton(
-                    text: 'Render Custom Slide',
-                    onPressed: () => _parseAndSetSlide(_jsonController.text),
-                    color: AppTheme.duoBlue,
-                    shadowColor: AppTheme.duoBlueDark,
-                  ),
-                ],
-              ),
+      body: SafeArea(
+        child: ResponsiveCenter(
+          maxWidth: ResponsiveMaxWidth.form,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: _buildSlideContent(_activeSlide, bottomBar),
+                ),
+                const SizedBox(height: 16),
+              ],
             ),
-            const Divider(color: Colors.white10, height: 24),
-            // Live Preview of Slide
-            Expanded(
-              child: slide == null
-                  ? const Center(child: Text('No slide loaded', style: TextStyle(color: Colors.white38)))
-                  : Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.only(bottom: 12),
-                            child: Text('LIVE PREVIEW:', style: TextStyle(color: AppTheme.duoGreen, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.1)),
-                          ),
-                          Expanded(
-                            child: _buildSlideContent(slide, bottomBar),
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                      ),
-                    ),
-            ),
-          ],
+          ),
         ),
       ),
     );

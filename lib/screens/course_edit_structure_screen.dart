@@ -328,6 +328,87 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
     }
   }
 
+  void _showShiftOffsetDialog() {
+    final TextEditingController shiftController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppTheme.surface,
+          title: const Text('Shift All Page Numbers', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Enter the offset to shift all start and end pages. Use a positive number to increase, or a negative number to decrease.',
+                style: TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: shiftController,
+                keyboardType: const TextInputType.numberWithOptions(signed: true),
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  labelText: 'Offset amount (e.g. 5, -2)',
+                  labelStyle: const TextStyle(color: Colors.white54),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            ),
+            TextButton(
+              onPressed: () {
+                final shift = int.tryParse(shiftController.text) ?? 0;
+                if (shift != 0) {
+                  _applyShiftOffset(shift);
+                }
+                Navigator.pop(context);
+              },
+              child: const Text('Apply', style: TextStyle(color: AppTheme.duoBlue)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _applyShiftOffset(int shift) {
+    setState(() {
+      for (final module in _modules) {
+        for (final section in module.sections) {
+          final sPageStr = _startPageControllers[section.id]?.text ?? '';
+          final ePageStr = _endPageControllers[section.id]?.text ?? '';
+          if (sPageStr.isNotEmpty) {
+            final val = int.tryParse(sPageStr);
+            if (val != null) _startPageControllers[section.id]!.text = (val + shift).toString();
+          }
+          if (ePageStr.isNotEmpty) {
+            final val = int.tryParse(ePageStr);
+            if (val != null) _endPageControllers[section.id]!.text = (val + shift).toString();
+          }
+          for (final unit in section.units) {
+            final usPageStr = _startPageControllers[unit.id]?.text ?? '';
+            final uePageStr = _endPageControllers[unit.id]?.text ?? '';
+            if (usPageStr.isNotEmpty) {
+              final val = int.tryParse(usPageStr);
+              if (val != null) _startPageControllers[unit.id]!.text = (val + shift).toString();
+            }
+            if (uePageStr.isNotEmpty) {
+              final val = int.tryParse(uePageStr);
+              if (val != null) _endPageControllers[unit.id]!.text = (val + shift).toString();
+            }
+          }
+        }
+      }
+    });
+  }
+
   Widget _buildEditorRow({
     required String itemId,
     required String title,
@@ -593,6 +674,17 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
               ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              icon: const Icon(LucideIcons.arrowUpDown, size: 16, color: Colors.white70),
+              label: const Text('Shift All Page Numbers (Offset)', style: TextStyle(color: Colors.white)),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              onPressed: _showShiftOffsetDialog,
             ),
           ],
         ),

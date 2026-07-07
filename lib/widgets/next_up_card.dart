@@ -3,7 +3,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/app_models.dart';
-import '../screens/lesson_screen.dart';
+import '../screens/main_layout_screen.dart';
 import '../services/global_state.dart';
 import '../services/next_up_service.dart';
 import '../theme/app_theme.dart';
@@ -45,17 +45,21 @@ class NextUpCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(24, 4, 24, 8),
             child: InkWell(
               borderRadius: BorderRadius.circular(20),
-              onTap: () {
+              onTap: () async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setString('last_lesson_id_${n.book.id}', n.lesson.id);
+                await prefs.setInt('last_mod_idx_${n.book.id}', n.modIdx);
+                await prefs.setInt('last_sec_idx_${n.book.id}', n.secIdx);
+                
+                if (!context.mounted) return;
+                
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => LessonScreen(
-                      lesson: n.lesson,
+                    builder: (_) => MainLayoutScreen(
                       book: n.book,
-                      modIdx: n.modIdx,
-                      secIdx: n.secIdx,
-                      unitIdx: n.unitIdx,
-                      lessonIdx: n.lessonIdx,
+                      initialModuleIdx: n.modIdx,
+                      initialSectionIdx: n.secIdx,
                     ),
                   ),
                 ).then((_) => onReturn?.call());

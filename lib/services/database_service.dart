@@ -219,9 +219,17 @@ class DatabaseService {
     final dir = await _booksDir(forUid);
     final target = _bookFile(dir, book.id);
     final tmp = File('${target.path}.tmp');
-    await tmp.writeAsString(jsonEncode(book.toJson()), flush: true);
-    if (await target.exists()) await target.delete();
-    await tmp.rename(target.path);
+    try {
+      await tmp.writeAsString(jsonEncode(book.toJson()), flush: true);
+      if (await target.exists()) await target.delete();
+      await tmp.rename(target.path);
+    } catch (e) {
+      print("[DatabaseService] _writeBookFile atomic write failed: $e. Falling back to direct write...");
+      await target.writeAsString(jsonEncode(book.toJson()), flush: true);
+      try {
+        if (await tmp.exists()) await tmp.delete();
+      } catch (_) {}
+    }
   }
 
   Future<void> _deleteBookFile(String forUid, String id) async {

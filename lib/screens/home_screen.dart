@@ -1107,25 +1107,57 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isDesktop = screenWidth >= 900;
+
     return AnimatedBuilder(
       animation: GenerationManager.instance,
       builder: (context, child) {
         final activeTasks = GenerationManager.instance.activeTasks;
 
+        if (isLoading) {
+          return const Scaffold(
+            backgroundColor: AppTheme.background,
+            body: Center(child: CircularProgressIndicator(color: AppTheme.duoBlue)),
+          );
+        }
+
+        if (isDesktop) {
+          return Scaffold(
+            backgroundColor: AppTheme.background,
+            body: Row(
+              children: [
+                // Desktop Left Sidebar (Navigation)
+                _buildDesktopSidebar(),
+                Container(width: 1, color: Colors.white.withOpacity(0.08)),
+                // Desktop Main Content
+                Expanded(
+                  child: IndexedStack(
+                    index: _selectedTabIndex,
+                    children: [
+                      _buildDesktopLibraryTab(activeTasks, screenWidth),
+                      _buildAnalyticsTab(screenWidth),
+                      _buildPublishedTab(screenWidth),
+                      const DocumentStoreScreen(),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
         return Scaffold(
           extendBody: true,
           backgroundColor: AppTheme.background,
-          body: isLoading
-              ? const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue))
-              : IndexedStack(
-                  index: _selectedTabIndex,
-                  children: [
-                    _buildLibraryTab(activeTasks, screenWidth),
-                    _buildAnalyticsTab(screenWidth),
-                    _buildPublishedTab(screenWidth),
-                    const DocumentStoreScreen(),
-                  ],
-                ),
+          body: IndexedStack(
+            index: _selectedTabIndex,
+            children: [
+              _buildLibraryTab(activeTasks, screenWidth),
+              _buildAnalyticsTab(screenWidth),
+              _buildPublishedTab(screenWidth),
+              const DocumentStoreScreen(),
+            ],
+          ),
           bottomNavigationBar: GlassyNavBar(
             currentIndex: _selectedTabIndex,
             blur: 6.0,
@@ -1161,6 +1193,620 @@ class _HomeScreenState extends State<HomeScreen> {
               : null,
         );
       },
+    );
+  }
+
+  Widget _buildDesktopSidebar() {
+    final user = FbAuth.instance.currentUser;
+    return Container(
+      width: 280,
+      color: Colors.black.withOpacity(0.4),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Branding Header
+          Row(
+            children: const [
+              Icon(LucideIcons.bookOpen, size: 30, color: AppTheme.duoBlue),
+              SizedBox(width: 12),
+              Text(
+                'DuoFY',
+                style: TextStyle(
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  fontSize: 20,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 40),
+          
+          // Navigation Links
+          _buildSidebarNavItem(0, LucideIcons.bookOpen, 'Your Library'),
+          const SizedBox(height: 8),
+          _buildSidebarNavItem(1, LucideIcons.barChart2, 'Analytics'),
+          const SizedBox(height: 8),
+          _buildSidebarNavItem(2, LucideIcons.globe, 'Published'),
+          const SizedBox(height: 8),
+          _buildSidebarNavItem(3, LucideIcons.hardDrive, 'Doc Store'),
+          
+          const Spacer(),
+          
+          // User profile at bottom if logged in
+          if (user != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.03),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withOpacity(0.05)),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor: AppTheme.duoBlue,
+                    child: Text(
+                      user?.displayName?.isNotEmpty == true ? user!.displayName![0].toUpperCase() : 'U', 
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.white)
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(user?.displayName ?? 'User', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13, overflow: TextOverflow.ellipsis)),
+                        Text(user?.email ?? '', style: const TextStyle(color: Colors.white30, fontSize: 10, overflow: TextOverflow.ellipsis)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+          _buildSidebarActionButton(
+            icon: LucideIcons.settings,
+            label: 'Settings',
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()))
+                .then((_) => _loadAllData(force: false));
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebarNavItem(int index, IconData icon, String label) {
+    final isActive = _selectedTabIndex == index;
+    return InkWell(
+      onTap: () => setState(() => _selectedTabIndex = index),
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: isActive ? AppTheme.duoGreen.withOpacity(0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isActive ? AppTheme.duoGreen : Colors.white60,
+              size: 24,
+            ),
+            const SizedBox(width: 16),
+            Text(
+              label.toUpperCase(),
+              style: TextStyle(
+                fontFamily: 'Nunito',
+                fontWeight: FontWeight.w900,
+                fontSize: 14,
+                letterSpacing: 0.8,
+                color: isActive ? AppTheme.duoGreen : Colors.white70,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSidebarActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: Colors.white70,
+              size: 24,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                label.toUpperCase(),
+                style: const TextStyle(
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w900,
+                  fontSize: 14,
+                  letterSpacing: 0.8,
+                  color: Colors.white70,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopLibraryTab(List<GenerationTask> activeTasks, double screenWidth) {
+    final query = _librarySearchQuery.toLowerCase().trim();
+    final isSearching = query.isNotEmpty;
+
+    final List<SearchResultItem> searchResults = [];
+    if (isSearching) {
+      outerLoop:
+      for (final book in books) {
+        if (book.title.toLowerCase().contains(query) ||
+            book.description.toLowerCase().contains(query)) {
+          searchResults.add(SearchResultItem(
+            book: book,
+            type: 'book',
+            title: book.title,
+            context: 'Course',
+          ));
+          if (searchResults.length >= 50) break outerLoop;
+        }
+
+        for (int modIdx = 0; modIdx < book.modules.length; modIdx++) {
+          final module = book.modules[modIdx];
+          if (module.title.toLowerCase().contains(query) ||
+              module.description.toLowerCase().contains(query)) {
+            searchResults.add(SearchResultItem(
+              book: book,
+              type: 'module',
+              title: module.title,
+              context: '${book.title} • Module ${modIdx + 1}',
+              modIdx: modIdx,
+            ));
+            if (searchResults.length >= 50) break outerLoop;
+          }
+
+          for (int secIdx = 0; secIdx < module.sections.length; secIdx++) {
+            final section = module.sections[secIdx];
+            if (section.title.toLowerCase().contains(query) ||
+                section.description.toLowerCase().contains(query)) {
+              searchResults.add(SearchResultItem(
+                book: book,
+                type: 'section',
+                title: section.title,
+                context: '${book.title} • ${module.title}',
+                modIdx: modIdx,
+                secIdx: secIdx,
+              ));
+              if (searchResults.length >= 50) break outerLoop;
+            }
+
+            for (int unitIdx = 0; unitIdx < section.units.length; unitIdx++) {
+              final unit = section.units[unitIdx];
+              if (unit.title.toLowerCase().contains(query) ||
+                  unit.description.toLowerCase().contains(query)) {
+                searchResults.add(SearchResultItem(
+                  book: book,
+                  type: 'unit',
+                  title: unit.title,
+                  context: '${book.title} • ${section.title}',
+                  modIdx: modIdx,
+                  secIdx: secIdx,
+                  unitIdx: unitIdx,
+                ));
+                if (searchResults.length >= 50) break outerLoop;
+              }
+
+              for (int lessonIdx = 0; lessonIdx < unit.lessons.length; lessonIdx++) {
+                final lesson = unit.lessons[lessonIdx];
+                if (lesson.title.toLowerCase().contains(query) ||
+                    lesson.description.toLowerCase().contains(query)) {
+                  searchResults.add(SearchResultItem(
+                    book: book,
+                    type: 'lesson',
+                    title: lesson.title,
+                    context: '${book.title} • ${unit.title}',
+                    modIdx: modIdx,
+                    secIdx: secIdx,
+                    unitIdx: unitIdx,
+                    lessonIdx: lessonIdx,
+                    lesson: lesson,
+                  ));
+                  if (searchResults.length >= 50) break outerLoop;
+                }
+
+                for (int slideIdx = 0; slideIdx < lesson.slides.length; slideIdx++) {
+                  final slide = lesson.slides[slideIdx];
+                  final inContent = slide.content.toLowerCase().contains(query);
+                  final inTitle = slide.title.toLowerCase().contains(query);
+                  final inAnswer = slide.blankAnswer?.toLowerCase().contains(query) ?? false;
+
+                  if (inContent || inTitle || inAnswer) {
+                    String snippet = '';
+                    if (inContent) {
+                      snippet = _extractSnippet(slide.content, query);
+                    } else if (inAnswer) {
+                      snippet = 'Answer: ${slide.blankAnswer}';
+                    } else {
+                      snippet = slide.content;
+                      if (snippet.length > 100) snippet = '${snippet.substring(0, 100)}...';
+                    }
+
+                    searchResults.add(SearchResultItem(
+                      book: book,
+                      type: 'slide',
+                      title: slide.title.isNotEmpty ? slide.title : 'Theory Slide',
+                      context: '${book.title} • ${lesson.title}',
+                      snippet: snippet,
+                      modIdx: modIdx,
+                      secIdx: secIdx,
+                      unitIdx: unitIdx,
+                      lessonIdx: lessonIdx,
+                      lesson: lesson,
+                      slideId: slide.id,
+                    ));
+                    if (searchResults.length >= 50) break outerLoop;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    final List<Book> displayedBooks;
+    if (_selectedFolderId != null) {
+      final currentFolder = folders.firstWhere(
+        (f) => f.id == _selectedFolderId,
+        orElse: () => CourseFolder(id: '', name: '', bookIds: []),
+      );
+      displayedBooks = books.where((b) => currentFolder.bookIds.contains(b.id)).toList();
+    } else {
+      displayedBooks = books.where((b) => !folders.any((f) => f.bookIds.contains(b.id))).toList();
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Left Column (Smart Review, Next Up, Folders)
+        if (!isSearching && _selectedFolderId == null)
+          Container(
+            width: 350,
+            padding: const EdgeInsets.only(top: 24, left: 24, right: 12),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SmartReviewCard(),
+                  const SizedBox(height: 20),
+                  if (books.isNotEmpty) ...[
+                    NextUpCard(
+                      books: books,
+                      onReturn: () => _loadAllData(force: false),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                  if (folders.isNotEmpty) ...[
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      child: Text('FOLDERS', style: TextStyle(color: Colors.white30, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.0)),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildFoldersList(),
+                  ],
+                ],
+              ),
+            ),
+          ),
+
+        // Right Column (Main content, grid layout of courses)
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header actions row
+              Padding(
+                padding: const EdgeInsets.only(top: 24, left: 24, right: 24),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: DragTarget<Book>(
+                        onWillAcceptWithDetails: (details) {
+                          final book = details.data;
+                          return folders.any((f) => f.bookIds.contains(book.id));
+                        },
+                        onAcceptWithDetails: (details) async {
+                          final book = details.data;
+                          for (var i = 0; i < folders.length; i++) {
+                            folders[i].bookIds.remove(book.id);
+                          }
+                          await _db.saveFolders(folders);
+                          setState(() {});
+                          showToast(context, 'Removed "${book.title}" from folder');
+                        },
+                        builder: (context, candidateData, rejectedData) {
+                          final isHovered = candidateData.isNotEmpty;
+                          final folderName = _selectedFolderId != null 
+                              ? folders.firstWhere((f) => f.id == _selectedFolderId, orElse: () => folders.first).name
+                              : null;
+                          
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isHovered ? AppTheme.duoRed.withOpacity(0.15) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isHovered ? AppTheme.duoRed : Colors.transparent,
+                                width: 1.2,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (_selectedFolderId != null) ...[
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedFolderId = null;
+                                      });
+                                    },
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: const [
+                                        Icon(LucideIcons.chevronLeft, size: 18, color: AppTheme.duoBlue),
+                                        Text(
+                                          'Library',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                            color: AppTheme.duoBlue,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 4),
+                                    child: Text(
+                                      '/',
+                                      style: TextStyle(fontSize: 14, color: Colors.white30),
+                                    ),
+                                  ),
+                                  Flexible(
+                                    child: Text(
+                                      folderName ?? '',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: Colors.white,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ] else ...[
+                                  const Text(
+                                    'Your Library',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 22,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    if (!kIsWeb)
+                      SizedBox(
+                        width: 180,
+                        child: DuoButton(
+                          text: 'CREATE COURSE',
+                          color: AppTheme.duoGreen,
+                          shadowColor: AppTheme.duoGreenDark,
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const GenerateBookScreen()),
+                            ).then((_) => _loadAllData(force: false));
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              // Search Bar
+              _buildSearchBar(
+                controller: _librarySearchController,
+                value: _librarySearchQuery,
+                hintText: 'Search your courses...',
+                trailing: _selectedFolderId == null
+                    ? IconButton(
+                        icon: const Icon(LucideIcons.folderPlus, color: Colors.white, size: 24),
+                        onPressed: _showCreateFolderDialog,
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white.withOpacity(0.04),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(color: Colors.white.withOpacity(0.08), width: 1.2),
+                          ),
+                          padding: const EdgeInsets.all(12),
+                        ),
+                      )
+                    : null,
+              ),
+
+              // Library contents
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (isSearching) ...[
+                        if (searchResults.isEmpty)
+                          Container(
+                            height: 200,
+                            alignment: Alignment.center,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: const [
+                                Icon(LucideIcons.search, color: Colors.white24, size: 40),
+                                SizedBox(height: 16),
+                                Text(
+                                  'No matching courses or content found.',
+                                  style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          )
+                        else
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: searchResults.length,
+                            itemBuilder: (context, index) {
+                              final result = searchResults[index];
+                              return _buildSearchResultCard(context, result, query);
+                            },
+                          ),
+                      ] else ...[
+                        if (activeTasks.isNotEmpty && !kIsWeb) ...[
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: 12),
+                            child: Text('GENERATING COURSES', style: TextStyle(color: Colors.white30, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.0)),
+                          ),
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: activeTasks.length,
+                            itemBuilder: (context, index) {
+                              final task = activeTasks[index];
+                              return GeneratingBookCard(
+                                task: task,
+                                onTap: () {
+                                  if (task.state == BookGenState.review && task.skeletonBook != null) {
+                                    Navigator.push(context, MaterialPageRoute(
+                                      builder: (_) => PdfSplitPreviewScreen(
+                                        taskId: task.id,
+                                        originalPdf: task.sourceFiles,
+                                        skeletonBook: task.skeletonBook!,
+                                      )
+                                    )).then((_) => _loadAllData(force: false));
+                                  } else if (task.state == BookGenState.error) {
+                                    GenerationManager.instance.dismissTask(task.id);
+                                  }
+                                }
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                        if (displayedBooks.isEmpty && activeTasks.isEmpty && (_selectedFolderId != null || folders.isEmpty))
+                          (_selectedFolderId != null
+                              ? Container(
+                                  height: 180,
+                                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(24)),
+                                  alignment: Alignment.center,
+                                  child: const Text(
+                                    'This folder is empty.\nGo back and drag courses here!',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold),
+                                  ),
+                                )
+                              : _buildFirstCourseCta())
+                        else ...[
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: 12),
+                            child: Text('COURSES', style: TextStyle(color: Colors.white30, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.0)),
+                          ),
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final int columns = (constraints.maxWidth / 320).floor().clamp(1, 3);
+                              return GridView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: columns,
+                                  crossAxisSpacing: 16,
+                                  mainAxisSpacing: 16,
+                                  mainAxisExtent: 110,
+                                ),
+                                itemCount: displayedBooks.length,
+                                itemBuilder: (context, index) {
+                                  final book = displayedBooks[index];
+                                  return Dismissible(
+                                    key: Key(book.id),
+                                    direction: DismissDirection.endToStart,
+                                    background: Container(
+                                      alignment: Alignment.center,
+                                      margin: const EdgeInsets.symmetric(vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.shade900.withOpacity(0.8),
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      child: const Icon(LucideIcons.trash2, color: Colors.white, size: 20),
+                                    ),
+                                    confirmDismiss: (direction) async {
+                                      return await _deleteLocalBook(book);
+                                    },
+                                    child: CompactBookListItem(
+                                      book: book,
+                                      progress: progressMap[book.id] ?? 0.0,
+                                      onTap: () {
+                                        Navigator.push(context, MaterialPageRoute(builder: (_) => ModuleSelectionScreen(book: book)))
+                                          .then((_) => _loadAllData(force: false));
+                                      },
+                                      onLongPress: () => _showBookLongPressMenu(book),
+                                      dragHandle: _buildDragHandle(book),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        ],
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -1943,7 +2589,7 @@ class _HomeScreenState extends State<HomeScreen> {
           maxCrossAxisExtent: 110,
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
-          childAspectRatio: 100 / 106,
+          childAspectRatio: 100 / 112,
         ),
         itemCount: folders.length,
         itemBuilder: (context, index) {

@@ -21,20 +21,53 @@ class AutoIndexService {
     void Function(String status, double progress) onProgress,
   ) async {
     final pageCount = await _pdfService.getPageCount(sourcePdf);
-    final int scanLimit = pageCount.clamp(0, maxPagesToScan);
-
-    onProgress('Extracting textbook text…', 0.05);
-    final pageTexts = await _extractPageTexts(sourcePdf, scanLimit, onProgress);
-
-    final pipeline = AutoIndexPipeline(
-      verifyPage: (text, page) => _aiService.verifyPageRole(text, page),
-      extractLinkDestinations: (tocPages) =>
-          _extractLinkDestinations(sourcePdf, tocPages),
-      optimize: (tocText, pages, ch1) =>
-          _aiService.optimizeIndexResult(tocText, pages, ch1, pageCount),
-    );
-
-    return pipeline.run(pageTexts, pageCount, onProgress);
+    
+    int startPage = 1;
+    List<int> indexPages = [];
+    int? chapter1StartPage;
+    
+    while (startPage <= pageCount && startPage <= 120) {
+      int endPage = startPage + 29;
+      if (endPage > pageCount) endPage = pageCount;
+      
+      final currentProgress = startPage / 120.0;
+      onProgress('Scanning pages $startPage–$endPage for index…', currentProgress);
+      
+      try {
+        final chunkFile = await _pdfService.extractPages(
+          sourcePdf,
+          List.generate(endPage - startPage + 1, (i) => startPage + i),
+          outputName: 'temp_chunk_${startPage}_$endPage.pdf',
+        );
+        
+        final res = await _aiService.scanIndexChunk(chunkFile, startPage, endPage);
+        
+        try {
+          await chunkFile.delete();
+        } catch (_) {}
+        
+        if (res != null) {
+          final List? idx = res['indexPages'] as List?;
+          if (idx != null && idx.isNotEmpty && indexPages.isEmpty) {
+            indexPages = idx.map((e) => (e as num).toInt()).toList();
+          }
+          final ch1 = res['chapter1StartPage'];
+          if (ch1 is num && chapter1StartPage == null) {
+            chapter1StartPage = ch1.toInt();
+          }
+        }
+      } catch (e) {
+        print('[AutoIndexService] Error scanning chunk $startPage–$endPage: $e');
+      }
+      
+      if (indexPages.isNotEmpty && chapter1StartPage != null) {
+        break;
+      }
+      
+      startPage += 30;
+    }
+    
+    return AutoIndexResult(indexPages: indexPages, chapter1StartPage: chapter1StartPage);
   }
 
   /// Embedded-text extraction of the first [scanLimit] pages. Pages that

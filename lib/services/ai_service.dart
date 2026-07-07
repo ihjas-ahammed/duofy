@@ -69,26 +69,26 @@ class AiService {
   /// the legacy single-string key when the new list key is empty so older
   /// installs keep working without migration. The returned list is never
   /// empty — the caller can safely iterate it as a model-fallback ladder.
-  Future<List<String>> _getModelsForSlot(String slotKey, String legacyKey, String fallback) async {
+  Future<List<String>> _getModelsForSlot(String slotKey, String legacyKey, List<String> fallbackList) async {
     final prefs = await SharedPreferences.getInstance();
     final list = prefs.getStringList(slotKey) ?? [];
     if (list.isNotEmpty) return list;
     final legacy = prefs.getString(legacyKey);
     if (legacy != null && legacy.trim().isNotEmpty) return [legacy.trim()];
-    return [fallback];
+    return fallbackList;
   }
 
   Future<List<String>> _getPrimaryTextModels() =>
-      _getModelsForSlot('model_primary_text_list', 'model_primary_text', 'gemini-flash-lite-latest');
+      _getModelsForSlot('model_primary_text_list', 'model_primary_text', const ['gemini-flash-lite-latest', 'gemini-2.5-flash-lite', 'gemma-4-26b-a4b-it', 'gemma-4-31b-it']);
 
   Future<List<String>> _getPrimaryGraphicsModels() =>
-      _getModelsForSlot('model_primary_graphics_list', 'model_primary_graphics', 'gemini-3.5-flash');
+      _getModelsForSlot('model_primary_graphics_list', 'model_primary_graphics', const ['gemini-3.5-flash', 'gemini-3-flash-preview', 'gemini-2.5-flash', 'gemma-4-31b-it']);
 
   Future<List<String>> _getLiteModels() =>
-      _getModelsForSlot('model_lite_list', 'model_lite', 'gemini-flash-lite-latest');
+      _getModelsForSlot('model_lite_list', 'model_lite', const ['gemini-flash-lite-latest', 'gemini-3.1-flash-lite', 'gemini-3.1-flash-lite-preview', 'gemini-2.5-flash-lite', 'gemma-4-26b-a4b-it', 'gemini-2.0-flash-lite']);
 
   Future<List<String>> _getLiveModels() =>
-      _getModelsForSlot('model_live_list', 'model_live', 'gemini-3.1-flash-live-preview');
+      _getModelsForSlot('model_live_list', 'model_live', const ['gemini-3.1-flash-live-preview']);
 
   Future<String> getLiveModelName() async {
     final list = await _getLiveModels();
@@ -248,6 +248,38 @@ class AiService {
       return '$category — upstream returned an HTML error page (model unavailable).';
     }
     return '$category: $s';
+  }
+
+  Future<int> getSuggestedShift(String promptText) async {
+    final keys = await _getKeys();
+    final modelsToTry = await _getLiteModels();
+    Map<String, dynamic>? map;
+    for (final modelName in modelsToTry) {
+      for (final apiKey in keys) {
+        try {
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: apiKey,
+            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+          );
+          final resp = await _retryTransient(
+            () => model.generateContent([Content.text(promptText)]).timeout(const Duration(minutes: 1)),
+            onRetry: (a, e) => print('[AiService] Offset crosscheck transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+          );
+          if (resp.text != null) {
+            map = _cleanAndDecodeJson(resp.text!);
+            break;
+          }
+        } catch (e) {
+          print('[AiService] Offset crosscheck failed on $modelName: ${_cleanErrMsg(e)}');
+        }
+      }
+      if (map != null) break;
+    }
+    if (map != null && map['suggestedShift'] is num) {
+      return (map['suggestedShift'] as num).toInt();
+    }
+    return 0;
   }
 
   /// Wraps an async call with bounded exponential backoff for transient errors.
@@ -909,6 +941,8 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
       }
     }
 
+    // Stage 1.5 (AI crosscheck) has been moved to GenerationManager after splitting.
+    
     // ---- Stage 2: sections per chapter (real progress, bounded concurrency) -
     final int chapterCount = chapters.length;
     onProgress?.call('Mapping sections (0/$chapterCount)…', 0);
