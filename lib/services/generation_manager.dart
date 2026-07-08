@@ -16,6 +16,7 @@ import 'mapping_verifier.dart';
 import 'notification_service.dart';
 import 'progress_service.dart';
 import 'ai_estimator.dart';
+import 'auto_index_service.dart';
 
 enum BookGenState { extracting, review, chunking, saving, error }
 
@@ -758,14 +759,75 @@ class GenerationManager extends ChangeNotifier {
         ? chapterStartsRaw.map((list) => List<int>.from(list as List)).toList()
         : null;
 
-    final indexFiles = indexFilesPaths.map((p) => File(p)).toList();
+    List<File> indexFiles = indexFilesPaths.map((p) => File(p)).toList();
     final syllabusFiles = syllabusFilesPaths.map((p) => File(p)).toList();
     final sourceFiles = sourceFilesPaths.map((p) => File(p)).toList();
-    
+    List<int> ch1Pages = chapter1AbsolutePages;
+
+    if (indexFiles.isEmpty && !isHandout) {
+      final autoIndexService = AutoIndexService();
+      final backgroundIndexFiles = <File>[];
+      final backgroundCh1Pages = <int>[];
+
+      void updateProgress(String status, double progress) {
+        task.statusMessage = status;
+        task.progress = progress;
+        
+        final parentTaskId = task.params['parentTaskId'] as String?;
+        if (parentTaskId != null) {
+          final parentIdx = activeTasks.indexWhere((t) => t.id == parentTaskId);
+          if (parentIdx != -1) {
+            activeTasks[parentIdx].statusMessage = status;
+            activeTasks[parentIdx].progress = progress;
+          }
+        }
+        
+        _syncActiveMapsWithQueue();
+        notifyListeners();
+      }
+
+      for (int i = 0; i < sourceFiles.length; i++) {
+        final pdfFile = sourceFiles[i];
+        final pdfName = pdfFile.path.split(RegExp(r'[\\/]')).last;
+        
+        updateProgress('Scanning $pdfName for index...', 0.05 + 0.15 * (i / sourceFiles.length));
+        
+        final result = await autoIndexService.findIndexAndChapter1(
+          pdfFile,
+          (status, progress) {
+            updateProgress('$status ($pdfName)', 0.05 + 0.15 * ((i + progress) / sourceFiles.length));
+          },
+        );
+
+        int ch1 = result.chapter1StartPage ?? 1;
+        List<int> idxPages = result.indexPages;
+
+        if (idxPages.isEmpty) {
+          final pdfPageCount = await _pdfService.getPageCount(pdfFile);
+          final endPage = pdfPageCount > 30 ? 30 : pdfPageCount;
+          idxPages = List.generate(endPage, (idx) => idx + 1);
+          ch1 = endPage + 1;
+          if (ch1 > pdfPageCount) ch1 = pdfPageCount;
+        }
+
+        backgroundCh1Pages.add(ch1);
+        
+        final indexPdf = await _pdfService.extractPages(
+          pdfFile,
+          idxPages,
+          outputName: 'index_$pdfName',
+        );
+        backgroundIndexFiles.add(indexPdf);
+      }
+      
+      indexFiles = backgroundIndexFiles;
+      ch1Pages = backgroundCh1Pages;
+    }
+
     final result = await _aiService.generateBookSkeleton(
       indexFiles,
       filename,
-      chapter1AbsolutePages: chapter1AbsolutePages,
+      chapter1AbsolutePages: ch1Pages,
       customInstructions: customInstructions,
       syllabusFiles: syllabusFiles,
       isHandout: isHandout,
@@ -1455,8 +1517,8 @@ class GenerationManager extends ChangeNotifier {
   Future<void> startBookGeneration(
     List<File> sourceFiles,
     String filename, {
-    required List<File> indexFiles,
-    required List<int> chapter1AbsolutePages,
+    List<File> indexFiles = const [],
+    List<int> chapter1AbsolutePages = const [],
     String? customInstructions,
     List<File> syllabusFiles = const [],
     bool isHandout = false,

@@ -31,10 +31,12 @@ class MatchingView extends StatefulWidget {
 }
 
 class _MatchingViewState extends State<MatchingView> {
-  late final List<String> _lefts;
-  late final List<String> _rights; // shuffled
+  late List<String> _lefts;
+  late List<String> _rights; // shuffled
   final Map<String, String> _assigned = {}; // left -> right
   String? _selectedLeft;
+  late Widget _titleWidget;
+  late Map<String, Widget> _chipWidgets;
 
   static const List<Color> _pairColors = [
     AppTheme.duoBlue,
@@ -48,10 +50,49 @@ class _MatchingViewState extends State<MatchingView> {
   @override
   void initState() {
     super.initState();
+    _initSlide();
+  }
+
+  @override
+  void didUpdateWidget(covariant MatchingView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.slide.id != widget.slide.id) {
+      _initSlide();
+    }
+  }
+
+  void _initSlide() {
+    _assigned.clear();
+    _selectedLeft = null;
     final pairs = widget.slide.matchPairs ?? [];
     _lefts = [for (final p in pairs) p.left];
     _rights = [for (final p in pairs) p.right]
       ..shuffle(math.Random(widget.slide.id.hashCode));
+
+    _titleWidget = MathMarkdown(
+      key: ValueKey('title_${widget.slide.id}'),
+      data: widget.slide.content.isNotEmpty
+          ? widget.slide.content
+          : 'Match each item with its pair.',
+      textStyle: const TextStyle(
+          fontSize: 17, color: Colors.white, fontWeight: FontWeight.bold),
+    );
+
+    _chipWidgets = {};
+    for (final p in pairs) {
+      _chipWidgets[p.left] = MathMarkdown(
+        key: ValueKey('left_${widget.slide.id}_${p.left}'),
+        data: p.left,
+        textStyle: const TextStyle(
+            fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
+      );
+      _chipWidgets[p.right] = MathMarkdown(
+        key: ValueKey('right_${widget.slide.id}_${p.right}'),
+        data: p.right,
+        textStyle: const TextStyle(
+            fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
+      );
+    }
   }
 
   Color _pairColor(String left) =>
@@ -116,11 +157,7 @@ class _MatchingViewState extends State<MatchingView> {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: border, width: 2),
         ),
-        child: MathMarkdown(
-          data: text,
-          textStyle: const TextStyle(
-              fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
-        ),
+        child: _chipWidgets[text] ?? const SizedBox.shrink(),
       ),
     );
   }
@@ -139,13 +176,7 @@ class _MatchingViewState extends State<MatchingView> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: AppTheme.glassDecoration,
-                  child: MathMarkdown(
-                    data: widget.slide.content.isNotEmpty
-                        ? widget.slide.content
-                        : 'Match each item with its pair.',
-                    textStyle: const TextStyle(
-                        fontSize: 17, color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
+                  child: _titleWidget,
                 ),
                 const SizedBox(height: 20),
                 Row(

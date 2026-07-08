@@ -712,20 +712,11 @@ class _SectionManifestPanel extends StatefulWidget {
 class _SectionManifestPanelState extends State<_SectionManifestPanel> {
   late final TextEditingController _ctrl;
   bool _saveGlobally = false;
-  final Set<String> _selectedChips = {};
 
   @override
   void initState() {
     super.initState();
     _ctrl = TextEditingController(text: widget.initialInstructions ?? '');
-
-    final available = widget.book.plannerQuestions;
-    final initialSelections = widget.section.selectedQuestions ?? widget.book.selectedQuestions;
-    if (initialSelections.isNotEmpty) {
-      _selectedChips.addAll(initialSelections);
-    } else {
-      _selectedChips.addAll(available.take(2));
-    }
   }
 
   @override
@@ -738,7 +729,7 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
     final text = _ctrl.text.trim();
     widget.onPlan?.call(
       text.isEmpty ? null : text,
-      _selectedChips.toList(),
+      null,
       _saveGlobally,
     );
   }
@@ -806,29 +797,43 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
                 const SizedBox(height: 24),
                 const Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('Objectives & Focus',
+                  child: Text('Target Cognitive Level',
                       style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13)),
                 ),
                 const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: widget.book.plannerQuestions.map((chip) {
-                    final isSelected = _selectedChips.contains(chip);
-                    return ChoiceChip(
-                      label: Text(chip, style: TextStyle(color: isSelected ? Colors.white : Colors.white54, fontSize: 12)),
-                      selected: isSelected,
-                      selectedColor: sectionColor.withOpacity(0.5),
-                      backgroundColor: Colors.white.withOpacity(0.04),
-                      side: BorderSide(color: isSelected ? sectionColor : Colors.white12),
-                      onSelected: (val) {
-                        setState(() {
-                          if (val) _selectedChips.add(chip);
-                          else _selectedChips.remove(chip);
-                        });
-                      },
-                    );
-                  }).toList(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.04),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.psychology, color: sectionColor, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.book.bloomLevel,
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              widget.book.bloomLevel == 'Remembering / Understanding'
+                                  ? 'Focuses on core concepts, definitions, and simple retention checks.'
+                                  : widget.book.bloomLevel == 'Applying / Analyzing'
+                                      ? 'Focuses on applications, calculations, and analytical patterns.'
+                                      : 'Focuses on complex derivations, error spotting, and critiques.',
+                              style: const TextStyle(color: Colors.white54, fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 24),
                 const Align(

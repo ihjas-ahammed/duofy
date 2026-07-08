@@ -7,7 +7,6 @@ import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/file_selection_list.dart';
 import '../widgets/responsive_center.dart';
-import 'auto_index_screen.dart';
 import 'pdf_split_preview_screen.dart';
 import '../services/generation_manager.dart';
 import '../services/pdf_service.dart';
@@ -19,7 +18,6 @@ import '../services/database_service.dart';
 import '../models/app_models.dart';
 
 enum GenerationMode { book, handout, course }
-enum IndexMode { auto, manual, chapters }
 
 class GenerateBookScreen extends StatefulWidget {
   const GenerateBookScreen({super.key});
@@ -754,21 +752,18 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
         if (_mode == GenerationMode.handout) {
           _showHandoutPrompt(_selectedFiles, presetTitle ?? filename);
         } else {
-          Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => AutoIndexScreen(
-              sourcePdf: firstPdf,
-              filename: presetTitle ?? filename,
-              syllabusFiles: finalSyllabusFiles,
-              isCourse: _mode == GenerationMode.course,
-              allSourcePdfs: _selectedFiles,
-              currentPdfIndex: 0,
-              collectedIndexPages: const [],
-              collectedChapter1StartPages: const [],
-              isAutoMode: true,
-              isHandout: _mode == GenerationMode.handout,
-              customIndexingPrompt: customPrompt.isNotEmpty ? customPrompt : null,
-            ),
-          ));
+          GenerationManager.instance.startBookGeneration(
+            _selectedFiles,
+            presetTitle ?? filename,
+            indexFiles: const [],
+            chapter1AbsolutePages: const [],
+            customInstructions: customPrompt.isNotEmpty ? customPrompt : null,
+            syllabusFiles: finalSyllabusFiles,
+            isHandout: false,
+          );
+          if (mounted) {
+            Navigator.of(context).pop();
+          }
         }
       } catch (e) {
         if (mounted) {

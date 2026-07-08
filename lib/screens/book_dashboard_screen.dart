@@ -32,6 +32,8 @@ class BookDashboardScreen extends StatefulWidget {
   /// changes.
   final ValueNotifier<int>? activeModule;
   final ValueNotifier<int>? activeSection;
+  final int? initialModuleIdx;
+  final int? initialSectionIdx;
 
   const BookDashboardScreen({
     super.key,
@@ -39,6 +41,8 @@ class BookDashboardScreen extends StatefulWidget {
     required this.onBookUpdated,
     this.activeModule,
     this.activeSection,
+    this.initialModuleIdx,
+    this.initialSectionIdx,
   });
 
   @override
@@ -59,6 +63,8 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
   @override
   void initState() {
     super.initState();
+    _activeModuleIdx = widget.initialModuleIdx ?? 0;
+    _activeSectionIdx = widget.initialSectionIdx ?? 0;
     _loadProgress();
     _checkMissingFiles();
     _loadLastResumed();
@@ -107,6 +113,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
   }
 
   Future<void> _loadLastResumed() async {
+    if (widget.initialModuleIdx != null || widget.initialSectionIdx != null) {
+      return;
+    }
     try {
       final prefs = await SharedPreferences.getInstance();
       final modIdx = prefs.getInt('last_mod_idx_${widget.book.id}');

@@ -284,6 +284,8 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
         onBookUpdated: _onBookUpdated,
         activeModule: _activeModule,
         activeSection: _activeSection,
+        initialModuleIdx: widget.initialModuleIdx,
+        initialSectionIdx: widget.initialSectionIdx,
       ),
       PracticeScreen(book: _currentBook),
       AnalyticsView(courseId: _currentBook.id),

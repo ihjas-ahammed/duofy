@@ -389,67 +389,7 @@ class AiService {
     return null;
   }
 
-  Future<List<String>?> generateCourseQuestions({
-    required File sourcePdf,
-    required int chapter1StartPage,
-    String? forcedApiKey,
-  }) async {
-    final keys = await _getKeys(forcedApiKey: forcedApiKey);
-    final modelsToTry = await _getLiteModels();
-    
-    // Read preface: pages 1 to chapter1StartPage - 1
-    if (chapter1StartPage <= 1) return null;
-    int endPage = chapter1StartPage - 1;
-    if (endPage > 30) endPage = 30; // cap to 30 pages of preface to save tokens
-    
-    final chunkPages = List.generate(endPage, (i) => i + 1);
-    final pdfChunk = await PdfService().extractPages(sourcePdf, chunkPages);
-    final pdfBytes = await pdfChunk.readAsBytes();
 
-    final prompt = '''
-Analyze the attached preface/guide pages of this textbook.
-Identify 3-4 custom learning options or pedagogical style preferences specific to the content/goals of this textbook (for example: "Include mathematical proofs and derivations", "Include real-world case studies", "Include code implementations", "Focus on hardware design").
-Keep each option short, clear, and objective (under 10 words each). Do NOT write them as questions, but as objective preferences starting with "Include" or "Focus on".
-
-Return JSON format:
-{
-  "choices": [
-    "Include real-world case studies",
-    "Include mathematical proofs and derivations"
-  ]
-}
-''';
-
-    for (var key in keys) {
-      for (var modelName in modelsToTry) {
-        try {
-          final model = GenerativeModel(
-            model: modelName,
-            apiKey: key,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
-          );
-          final response = await _retryTransient(
-            () => model.generateContent([
-              Content.multi([TextPart(prompt), DataPart('application/pdf', pdfBytes)])
-            ]).timeout(const Duration(minutes: 2)),
-            onRetry: (a, e) => print('[AiService] Questions transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
-          );
-
-          if (response.text != null) {
-            final jsonMap = _cleanAndDecodeJson(response.text!);
-            if (jsonMap['choices'] is List) {
-              return (jsonMap['choices'] as List).map((e) => e.toString()).toList();
-            } else if (jsonMap['questions'] is List) {
-              return (jsonMap['questions'] as List).map((e) => e.toString()).toList();
-            }
-          }
-        } catch (e) {
-          print('[AiService] generateCourseQuestions ($modelName) failed: ${_cleanErrMsg(e)}');
-        }
-      }
-    }
-    return null;
-  }
 
   Future<Map<String, dynamic>?> extractWritingStyleProfile({
     required List<String> answers,
@@ -483,50 +423,7 @@ Return JSON format:
     return null;
   }
 
-  Future<Map<String, dynamic>?> generateCognitiveDiagnosticQuestions({
-    File? syllabusPdf,
-    File? sourcePdf,
-    List<int>? indexPages,
-    String? forcedApiKey,
-  }) async {
-    final keys = await _getKeys(forcedApiKey: forcedApiKey);
-    final modelsToTry = await _getLiteModels();
-    
-    Uint8List pdfBytes;
-    if (syllabusPdf != null && syllabusPdf.existsSync()) {
-      pdfBytes = await syllabusPdf.readAsBytes();
-    } else if (sourcePdf != null && indexPages != null && indexPages.isNotEmpty) {
-      final pdfChunk = await PdfService().extractPages(sourcePdf, indexPages);
-      pdfBytes = await pdfChunk.readAsBytes();
-    } else {
-      return null;
-    }
-    
-    final prompt = PromptService.generateDiagnosticQuestionsPrompt;
-    
-    for (var key in keys) {
-      for (var modelName in modelsToTry) {
-        try {
-          final model = GenerativeModel(
-            model: modelName,
-            apiKey: key,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
-          );
-          final response = await _retryTransient(
-            () => model.generateContent([
-              Content.multi([TextPart(prompt), DataPart('application/pdf', pdfBytes)])
-            ]).timeout(const Duration(minutes: 2)),
-          );
-          if (response.text != null) {
-            return _cleanAndDecodeJson(response.text!);
-          }
-        } catch (e) {
-          print('[AiService] generateCognitiveDiagnosticQuestions ($modelName) failed: ${_cleanErrMsg(e)}');
-        }
-      }
-    }
-    return null;
-  }
+
 
   Future<Map<String, dynamic>?> scanIndexChunk(File chunkPdf, int startPage, int endPage, {String? forcedApiKey}) async {
     await _checkPause();
@@ -2043,7 +1940,7 @@ Do not include any explanation or other text.
         .replaceAll('%section_title%', section.title)
         .replaceAll('%section_description%', section.description)
         .replaceAll('%format_catalog%', formatCatalog)
-        .replaceAll('%planner_choices%', PromptService.plannerChoicesBlock(section.selectedQuestions ?? bookContext.selectedQuestions))
+        .replaceAll('%bloom_level%', bookContext.bloomLevel)
         .replaceAll('%custom_instructions%', PromptService.instructionsBlock(customInstructions));
 
     final parts = <Part>[TextPart(hydratedPrompt), ...await _buildFileParts([chunkFile])];

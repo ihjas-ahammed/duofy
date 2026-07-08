@@ -396,10 +396,10 @@ Return ONLY valid JSON matching this exact structure (no "units" array):
 Section title: "%section_title%"
 Section description: "%section_description%"
 
-Analyze the pedagogical needs of the attached PDF content. Generate 1-4 custom lesson formats tailored specifically to the material (e.g., "Theory Focus" for conceptual parts, "Worked Example" for problem solving, "Derivation/Proof Walkthrough" for mathematical content, or specialized formats like "Lab Experiment Analysis", "Case Study Walkthrough", etc.).
+Analyze the pedagogical needs of the attached PDF content. Generate up to 10 custom lesson formats tailored specifically to the material (e.g., "Theory Focus" for conceptual parts, "Worked Example" for problem solving, "Derivation/Proof Walkthrough" for mathematical content, or specialized formats like "Lab Experiment Analysis", "Case Study Walkthrough", etc.).
 
 Each format should have a descriptive name, a pedagogical description of when the AI should select it, and a list of slide templates. Each slide template must define:
-- `type`: one of "theory", "quiz", "fill_in_blank", "one_word", "numerical", "proof", "step_by_step", "descriptive", "custom_html"
+- `type`: one of "theory", "concept_pieces", "quiz", "fill_in_blank", "one_word", "numerical", "proof", "step_by_step", "matching", "ordering", "error_spotting", "flashcard", "descriptive", "custom_html"
 - `condition`: optional condition when to show it
 - `description`: description of slide structure
 
@@ -424,18 +424,22 @@ Return ONLY valid JSON matching this exact structure (do NOT wrap in markdown co
 Section title: "%section_title%"
 Section description: "%section_description%"
 
-OBJECTIVES & FOCUS:
-%planner_choices%
+TARGET COGNITIVE LEVEL (BLOOM'S TAXONOMY):
+%bloom_level%
 
 %custom_instructions%
 TASK:
 1. Break this section into a small number of pedagogical units (typically 2-5). Each unit groups a few closely related lessons. Do NOT generate lesson slides here — just the unit metadata.
-2. Analyze the unique pedagogical needs of the PDF content. If the existing lesson formats (%format_catalog%) are not optimal or sufficient for teaching this content, CREATE 1-3 new custom lesson formats tailored specifically to the material (e.g., an "Experimental Analysis" format for lab data, or "Derivation Focus" for math/physics). Each new format should define a name, description, and list of slide templates (type, condition, description).
+   - Adjust the units to match the TARGET COGNITIVE LEVEL:
+     - For "Remembering / Understanding": focus on core conceptual explanations, definitions, key terminology, and simple quizzes.
+     - For "Applying / Analyzing": focus on worked examples, real-world applications, code/logic walkthroughs, and step-by-step procedures.
+     - For "Evaluating / Creating": focus on complex proofs/derivations, error-spotting, evaluating alternative approaches, and challenging multi-step problems.
+2. Analyze the unique pedagogical needs of the PDF content. If the existing lesson formats (%format_catalog%) are not optimal or sufficient for teaching this content, CREATE up to 10 new custom lesson formats tailored specifically to the material (e.g., an "Experimental Analysis" format for lab data, or "Derivation Focus" for math/physics). Each new format should define a name, description, and list of slide templates (type, condition, description).
 
 CRITICAL RULES:
 1. Cover the entire content of the attached PDF. Do not skip topics.
 2. Each unit should be roughly self-contained and digestible in one short study session.
-3. For custom formats, the slide `type` must be one of: "theory", "quiz", "fill_in_blank", "one_word", "numerical", "proof", "step_by_step", "descriptive", "custom_html".
+3. For custom formats, the slide `type` must be one of: "theory", "concept_pieces", "quiz", "fill_in_blank", "one_word", "numerical", "proof", "step_by_step", "matching", "ordering", "error_spotting", "flashcard", "descriptive", "custom_html".
 4. BY DEFAULT, NEVER NEGLECT EXAMPLE AND EXERCISE QUESTIONS.
 5. IF THE SECTION CONTAINS EXERCISE/PRACTICE QUESTIONS (often at the end of the section/chapter, e.g. in math/science textbooks), you MUST create a dedicated unit specifically for these exercises (e.g., "Practice Exercises"). This exercises unit must be structured such that the exercises are treated as individual lessons (taking them one by one/problem-by-problem) to ensure comprehensive, hands-on practice.
 
@@ -959,34 +963,4 @@ Return ONLY valid JSON matching this schema:
   "transitional_mechanics": ["List of favorite transition/function words found, e.g. 'furthermore', 'however', 'consequently'"],
   "tone_and_register": "informal" | "formal" | "objective" | "casual"
 }
-''';
-
-  static const String generateDiagnosticQuestionsPrompt = '''You are an expert educator and psychometrician.
-Analyze the attached table of contents or syllabus content.
-Generate exactly 5 multiple-choice questions (MCQs) designed to evaluate a student's prior knowledge and conceptual readiness on these topics.
-
-Each question must target a specific concept, formula, or term from the syllabus/TOC.
-The questions must span different levels of cognitive depth:
-- Question 1 & 2: Remembering/Understanding (evaluating definitions/basic concepts)
-- Question 3 & 4: Applying/Analyzing (evaluating application of rules/relational logic)
-- Question 5: Evaluating/Creating (evaluating synthesis of concepts/hypothetical scenarios)
-
-For each question, provide:
-1. Clear question text.
-2. Exactly 4 distinct options (one correct, three plausible distractors).
-3. The 0-based index of the correct option.
-4. The estimated Bloom's Taxonomy level ("Remembering/Understanding", "Applying/Analyzing", "Evaluating/Creating").
-
-Return ONLY valid JSON matching this schema:
-{
-  "questions": [
-    {
-      "question": "Question text...",
-      "options": ["Option 0", "Option 1", "Option 2", "Option 3"],
-      "correctIndex": 0,
-      "bloomLevel": "Remembering/Understanding"
-    }
-  ]
-}
-''';
-}
+''';}
