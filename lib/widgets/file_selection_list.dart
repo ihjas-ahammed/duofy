@@ -58,6 +58,7 @@ class FileSelectionList extends StatelessWidget {
                             children: [
                               Icon(LucideIcons.cloud, size: 14, color: AppTheme.duoViolet),
                               SizedBox(width: 4),
+                              Text('Cloud', style: TextStyle(color: AppTheme.duoViolet, fontSize: 10, fontWeight: FontWeight.bold)),
                               ],
                           ),
                         ),

@@ -61,6 +61,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
   bool _isLiveMode = true;
   bool _isRecording = false;
   bool _voiceOutputEnabled = true;
+  bool _isDisposed = false;
 
   final List<ChatMessage> _messages = [];
   final AudioRecorder _recorder = AudioRecorder();
@@ -101,6 +102,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
 
   @override
   void dispose() {
+    _isDisposed = true;
     _webSocket?.close();
     _recorder.dispose();
     _audioPlayer.dispose();
@@ -138,6 +140,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
 
   Future<void> _connectWebSocket() async {
     if (_webSocket != null) return;
+    if (!mounted || _isDisposed) return;
     setState(() {
       _isConnecting = true;
     });
@@ -161,6 +164,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
         return;
       }
 
+      if (!mounted || _isDisposed) return;
       setState(() {
         _isConnected = true;
         _isConnecting = false;
@@ -223,6 +227,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
         _webSocket = null;
       });
       _addSystemMessage("Live Connection failed: $e. Falling back to REST model.");
+      if (!mounted || _isDisposed) return;
       setState(() {
         _isLiveMode = false;
       });
@@ -257,6 +262,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                           json['output_audio_transcription'];
       if (transcriptObj != null && transcriptObj['text'] != null) {
         final text = transcriptObj['text'].toString();
+        if (!mounted || _isDisposed) return;
         setState(() {
           _currentLiveResponseText += text;
           if (_messages.isNotEmpty && _messages.last.sender == MessageSender.assistant && _messages.last.isStreaming) {
@@ -283,6 +289,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                             content['output_audio_transcription'];
         if (nestedTranscriptObj != null && nestedTranscriptObj['text'] != null) {
           final text = nestedTranscriptObj['text'].toString();
+          if (!mounted || _isDisposed) return;
           setState(() {
             _currentLiveResponseText += text;
             if (_messages.isNotEmpty && _messages.last.sender == MessageSender.assistant && _messages.last.isStreaming) {
@@ -303,6 +310,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
           for (var part in modelTurn['parts']) {
             if (part['text'] != null) {
               final text = part['text'].toString();
+              if (!mounted || _isDisposed) return;
               setState(() {
                 _currentLiveResponseText += text;
                 if (_messages.isNotEmpty && _messages.last.sender == MessageSender.assistant && _messages.last.isStreaming) {
@@ -329,6 +337,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
         }
         final turnComplete = content['turnComplete'] ?? content['turn_complete'];
         if (turnComplete == true) {
+          if (!mounted || _isDisposed) return;
           setState(() {
             if (_messages.isNotEmpty && _messages.last.isStreaming) {
               _messages.last.isStreaming = false;
@@ -475,6 +484,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
           ),
           path: path,
         );
+        if (!mounted || _isDisposed) return;
         setState(() {
           _isRecording = true;
         });
@@ -491,6 +501,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
     if (kIsWeb) return;
     try {
       final path = await _recorder.stop();
+      if (!mounted || _isDisposed) return;
       setState(() {
         _isRecording = false;
       });
@@ -506,6 +517,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
   }
 
   Future<void> _sendVoiceMessage(Uint8List voiceBytes) async {
+    if (!mounted || _isDisposed) return;
     setState(() {
       _messages.add(ChatMessage(
         sender: MessageSender.user,
@@ -545,6 +557,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
 
   Future<void> _sendTextMessage(String text) async {
     if (text.trim().isEmpty) return;
+    if (!mounted || _isDisposed) return;
     setState(() {
       _messages.add(ChatMessage(
         sender: MessageSender.user,
@@ -577,6 +590,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
   }
 
   Future<void> _sendNormalModelMessage(String text, [Uint8List? voiceBytes]) async {
+    if (!mounted || _isDisposed) return;
     setState(() {
       _messages.add(ChatMessage(
         sender: MessageSender.assistant,
@@ -638,6 +652,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
       final response = await model.generateContent(contents);
       final reply = response.text ?? "No response was generated by the model.";
 
+      if (!mounted || _isDisposed) return;
       setState(() {
         if (_messages.isNotEmpty && _messages.last.isStreaming) {
           _messages.removeLast();
@@ -653,6 +668,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
         await _flutterTts.speak(reply);
       }
     } catch (e) {
+      if (!mounted || _isDisposed) return;
       setState(() {
         if (_messages.isNotEmpty && _messages.last.isStreaming) {
           _messages.removeLast();
@@ -760,6 +776,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                         ),
                         tooltip: _isLiveMode ? "Switch to REST Model" : "Switch to Live Model",
                         onPressed: () {
+                          if (!mounted || _isDisposed) return;
                           setState(() {
                             _isLiveMode = !_isLiveMode;
                           });
@@ -781,6 +798,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                         ),
                         tooltip: _voiceOutputEnabled ? "Mute Voice Output" : "Enable Voice Output",
                         onPressed: () {
+                          if (!mounted || _isDisposed) return;
                           setState(() {
                             _voiceOutputEnabled = !_voiceOutputEnabled;
                           });
