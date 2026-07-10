@@ -39,9 +39,9 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
         moduleTheorySlides.length;
 
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: context.colors.background,
       appBar: AppBar(
-        backgroundColor: AppTheme.background.withOpacity(0.9),
+        backgroundColor: context.colors.background.withOpacity(0.9),
         flexibleSpace: ClipRRect(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -67,7 +67,7 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 24),
                 child: Container(
                   padding: const EdgeInsets.all(20),
-                  decoration: AppTheme.glassDecoration,
+                  decoration: AppTheme.glassOf(context),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -89,9 +89,9 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
                       const SizedBox(height: 12),
                       Text(
                         module.description,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
-                          color: Colors.white,
+                          color: context.colors.textPrimary,
                           height: 1.5,
                         ),
                       ),
@@ -130,7 +130,7 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(16),
-                  decoration: AppTheme.glassDecoration,
+                  decoration: AppTheme.glassOf(context),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -145,10 +145,10 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
                           children: [
                             Text(
                               sec.title,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
-                                color: Colors.white,
+                                color: context.colors.textPrimary,
                               ),
                             ),
                             if (sec.description.isNotEmpty)
@@ -156,9 +156,9 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
                                 padding: const EdgeInsets.only(top: 4),
                                 child: Text(
                                   sec.description,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.white54,
+                                    color: context.colors.textFaint,
                                   ),
                                 ),
                               ),
@@ -196,7 +196,7 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
               return Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(16),
-                decoration: AppTheme.glassDecoration,
+                decoration: AppTheme.glassOf(context),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -219,9 +219,9 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     MathMarkdown(
                       data: slide.content,
-                      textStyle: const TextStyle(
+                      textStyle: TextStyle(
                         fontSize: 14,
-                        color: Colors.white,
+                        color: context.colors.textPrimary,
                         height: 1.5,
                       ),
                     ),

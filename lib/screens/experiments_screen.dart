@@ -228,7 +228,7 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0F19),
+      backgroundColor: context.colors.background,
       appBar: AppBar(
         title: const Text('Slide Testing Experiments', style: TextStyle(fontWeight: FontWeight.w900)),
         backgroundColor: Colors.transparent,
@@ -243,14 +243,14 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
                 margin: const EdgeInsets.all(16),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
+                  color: context.colors.surfaceAlt,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white10),
+                  border: Border.all(color: context.colors.outline),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text('Select Built-in Preset:', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, fontSize: 12)),
+                    Text('Select Built-in Preset:', style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold, fontSize: 12)),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
@@ -258,11 +258,11 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
                       children: _presets.keys.map((key) {
                         final isSelected = _currentSlide?.type == key;
                         return ChoiceChip(
-                          label: Text(key, style: TextStyle(color: isSelected ? Colors.white : Colors.white70, fontWeight: FontWeight.bold, fontSize: 11)),
+                          label: Text(key, style: TextStyle(color: isSelected ? context.colors.textPrimary : context.colors.textSecondary, fontWeight: FontWeight.bold, fontSize: 11)),
                           selected: isSelected,
                           selectedColor: AppTheme.duoBlue,
-                          backgroundColor: Colors.black26,
-                          checkmarkColor: Colors.white,
+                          backgroundColor: context.colors.surfaceAlt,
+                          checkmarkColor: context.colors.textPrimary,
                           onSelected: (val) {
                             if (val) _loadPreset(key);
                           },
@@ -270,19 +270,19 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
                       }).toList(),
                     ),
                     const SizedBox(height: 16),
-                    const Text('Slide JSON Template:', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, fontSize: 12)),
+                    Text('Slide JSON Template:', style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold, fontSize: 12)),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _jsonController,
                       maxLines: 12,
                       minLines: 6,
-                      style: const TextStyle(fontFamily: 'monospace', fontSize: 11, color: Colors.white70),
+                      style: TextStyle(fontFamily: 'monospace', fontSize: 11, color: context.colors.textSecondary),
                       decoration: InputDecoration(
                         filled: true,
-                        fillColor: Colors.black38,
+                        fillColor: context.colors.surfaceAlt,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.white10),
+                          borderSide: BorderSide(color: context.colors.outline),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -711,7 +711,7 @@ class _ExperimentPreviewScreenState extends State<ExperimentPreviewScreen> {
     final bottomBar = !hasCustomBar ? _buildActionBottomBar(_activeSlide) : null;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0F19),
+      backgroundColor: context.colors.background,
       appBar: AppBar(
         title: Text('${_activeSlide.title.isNotEmpty ? _activeSlide.title : "Slide"} Preview', style: const TextStyle(fontWeight: FontWeight.w900)),
         backgroundColor: Colors.transparent,

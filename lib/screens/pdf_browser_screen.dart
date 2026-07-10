@@ -105,11 +105,11 @@ class _PdfBrowserScreenState extends State<PdfBrowserScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Delete Folder?', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: context.colors.surface,
+        title: Text('Delete Folder?', style: TextStyle(fontWeight: FontWeight.bold, color: context.colors.textPrimary)),
         content: Text('Are you sure you want to delete ${meta.linkedBook?.title ?? 'this orphan folder'} and all its downloaded PDFs?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
@@ -145,7 +145,7 @@ class _PdfBrowserScreenState extends State<PdfBrowserScreen> {
         child: _isLoading
           ? const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue))
           : _folders.isEmpty
-              ? const Center(child: Text('No downloaded course folders found.', style: TextStyle(color: Colors.white54)))
+              ? Center(child: Text('No downloaded course folders found.', style: TextStyle(color: context.colors.textFaint)))
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: _folders.length,
@@ -155,8 +155,8 @@ class _PdfBrowserScreenState extends State<PdfBrowserScreen> {
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
-                      decoration: AppTheme.glassDecoration.copyWith(
-                        border: Border.all(color: isOrphan ? AppTheme.duoOrange.withOpacity(0.4) : Colors.white12)
+                      decoration: AppTheme.glassOf(context).copyWith(
+                        border: Border.all(color: isOrphan ? AppTheme.duoOrange.withOpacity(0.4) : context.colors.outline)
                       ),
                       child: Material(
                         color: Colors.transparent,
@@ -182,7 +182,7 @@ class _PdfBrowserScreenState extends State<PdfBrowserScreen> {
                             style: TextStyle(
                               fontWeight: FontWeight.w900, 
                               fontSize: 16, 
-                              color: isOrphan ? AppTheme.duoOrange : Colors.white
+                              color: isOrphan ? AppTheme.duoOrange : context.colors.textPrimary
                             )
                           ),
                           subtitle: Padding(
@@ -190,13 +190,13 @@ class _PdfBrowserScreenState extends State<PdfBrowserScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(meta.folderId, style: const TextStyle(fontSize: 10, color: Colors.white38)),
+                                Text(meta.folderId, style: TextStyle(fontSize: 10, color: context.colors.textFaint)),
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
-                                    Text('${meta.fileCount} items', style: const TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.bold)),
+                                    Text('${meta.fileCount} items', style: TextStyle(fontSize: 12, color: context.colors.textSecondary, fontWeight: FontWeight.bold)),
                                     const SizedBox(width: 12),
-                                    Text('${meta.sizeMb.toStringAsFixed(2)} MB', style: const TextStyle(fontSize: 12, color: Colors.white54)),
+                                    Text('${meta.sizeMb.toStringAsFixed(2)} MB', style: TextStyle(fontSize: 12, color: context.colors.textFaint)),
                                   ],
                                 ),
                               ],

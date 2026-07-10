@@ -34,13 +34,13 @@ class ExamScreen extends StatelessWidget {
                 title: const Text('Exams', style: TextStyle(fontWeight: FontWeight.w900)),
                 automaticallyImplyLeading: false,
                 floating: true,
-                backgroundColor: AppTheme.background,
+                backgroundColor: context.colors.background,
               ),
               
-              const SliverPadding(
-                padding: EdgeInsets.only(top: 16, left: 24, bottom: 8),
+              SliverPadding(
+                padding: const EdgeInsets.only(top: 16, left: 24, bottom: 8),
                 sliver: SliverToBoxAdapter(
-                  child: Text('Past Exam Papers', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white)),
+                  child: Text('Past Exam Papers', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: context.colors.textPrimary)),
                 ),
               ),
 
@@ -49,7 +49,7 @@ class ExamScreen extends StatelessWidget {
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                     padding: const EdgeInsets.all(16),
-                    decoration: AppTheme.glassDecoration.copyWith(
+                    decoration: AppTheme.glassOf(context).copyWith(
                       border: Border.all(color: qpTask.isError ? AppTheme.duoRed : AppTheme.duoBlue, width: 2)
                     ),
                     child: Row(
@@ -65,14 +65,14 @@ class ExamScreen extends StatelessWidget {
                         Expanded(
                           child: Text(
                             qpTask.status, 
-                            style: TextStyle(fontWeight: FontWeight.bold, color: qpTask.isError ? AppTheme.duoRed : Colors.white),
+                            style: TextStyle(fontWeight: FontWeight.bold, color: qpTask.isError ? AppTheme.duoRed : context.colors.textPrimary),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           )
                         ),
                         if (qpTask.isError)
                           IconButton(
-                            icon: const Icon(LucideIcons.x, color: Colors.white54),
+                            icon: Icon(LucideIcons.x, color: context.colors.textFaint),
                             onPressed: () => GenerationManager.instance.clearQpError(book.id),
                           )
                       ],
@@ -86,16 +86,16 @@ class ExamScreen extends StatelessWidget {
                     margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
+                      color: context.colors.surfaceAlt,
                       borderRadius: BorderRadius.circular(20)
                     ),
                     child: Column(
                       children: [
                         Icon(LucideIcons.fileQuestion, size: 40, color: AppTheme.duoBlue.withOpacity(0.5)),
                         const SizedBox(height: 16),
-                        const Text('No Past Papers', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white54)),
+                        Text('No Past Papers', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: context.colors.textFaint)),
                         const SizedBox(height: 8),
-                        const Text('Upload past exams to solve interactively.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Colors.white38)),
+                        Text('Upload past exams to solve interactively.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: context.colors.textFaint)),
                       ],
                     ),
                   ),
@@ -125,8 +125,8 @@ class ExamScreen extends StatelessWidget {
             child: FloatingActionButton.extended(
               heroTag: 'exam_fab',
               backgroundColor: AppTheme.duoBlue,
-              icon: const Icon(LucideIcons.plus, color: Colors.white),
-              label: const Text('Add Paper', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
+              icon: Icon(LucideIcons.plus, color: context.colors.textPrimary),
+              label: Text('Add Paper', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w900)),
               onPressed: () {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => GenerateQpScreen(book: book)));
               },
