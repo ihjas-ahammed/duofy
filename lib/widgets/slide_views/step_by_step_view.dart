@@ -32,8 +32,8 @@ class _StepByStepViewState extends State<StepByStepView> {
           children: [
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: AppTheme.glassDecoration,
-              child: MathMarkdown(data: widget.slide.content, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+              decoration: AppTheme.glassOf(context),
+              child: MathMarkdown(data: widget.slide.content, textStyle: TextStyle(fontSize: 18, color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 32),
             DuoButton(

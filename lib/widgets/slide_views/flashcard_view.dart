@@ -59,7 +59,7 @@ class _FlashcardViewState extends State<FlashcardView> {
                           decoration: BoxDecoration(
                             color: showBack
                                 ? AppTheme.duoGreen.withOpacity(0.08)
-                                : Colors.white.withOpacity(0.05),
+                                : context.colors.surfaceAlt,
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
                               color: showBack
@@ -74,7 +74,7 @@ class _FlashcardViewState extends State<FlashcardView> {
                               Text(
                                 showBack ? 'ANSWER' : 'RECALL, THEN TAP TO FLIP',
                                 style: TextStyle(
-                                  color: showBack ? AppTheme.duoGreen : Colors.white38,
+                                  color: showBack ? AppTheme.duoGreen : context.colors.textFaint,
                                   fontWeight: FontWeight.w900,
                                   fontSize: 10,
                                   letterSpacing: 1.5,
@@ -85,15 +85,15 @@ class _FlashcardViewState extends State<FlashcardView> {
                                 data: showBack
                                     ? (widget.slide.blankAnswer ?? '')
                                     : widget.slide.content,
-                                textStyle: const TextStyle(
+                                textStyle: TextStyle(
                                     fontSize: 19,
-                                    color: Colors.white,
+                                    color: context.colors.textPrimary,
                                     fontWeight: FontWeight.bold),
                               ),
                               if (!showBack) ...[
                                 const SizedBox(height: 20),
-                                const Icon(LucideIcons.refreshCw,
-                                    color: Colors.white24, size: 18),
+                                 Icon(LucideIcons.refreshCw,
+                                    color: context.colors.textFaint, size: 18),
                               ],
                             ],
                           ),

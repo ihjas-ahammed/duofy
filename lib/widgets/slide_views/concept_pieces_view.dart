@@ -42,10 +42,10 @@ class ConceptPiecesView extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 16.0, top: 16.0),
                     child: Text(
                       lessonTitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w900,
-                        color: Colors.white,
+                        color: context.colors.textPrimary,
                         letterSpacing: -0.5,
                       ),
                       textAlign: TextAlign.center,
@@ -56,10 +56,10 @@ class ConceptPiecesView extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 24.0, top: 16.0),
                     child: Text(
                       slide.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w900,
-                        color: Colors.white,
+                        color: context.colors.textPrimary,
                         letterSpacing: -0.5,
                       ),
                       textAlign: TextAlign.center,
@@ -123,8 +123,8 @@ class ConceptPiecesView extends StatelessWidget {
                                 child: Text(
                                   '${idx + 1}',
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: context.colors.textPrimary,
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
                                     height: 1.0,
@@ -147,9 +147,9 @@ class ConceptPiecesView extends StatelessWidget {
                                     ),
                                     child: MathMarkdown(
                                       data: s.endsWith('.') ? s : '$s.',
-                                      textStyle: const TextStyle(
+                                      textStyle: TextStyle(
                                         fontSize: 14.5,
-                                        color: Colors.white,
+                                        color: context.colors.textPrimary,
                                         height: 1.45,
                                       ),
                                     ),

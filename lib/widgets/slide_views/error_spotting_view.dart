@@ -42,7 +42,7 @@ class ErrorSpottingView extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.all(20),
-                  decoration: AppTheme.glassDecoration,
+                  decoration: AppTheme.glassOf(context),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -63,8 +63,8 @@ class ErrorSpottingView extends StatelessWidget {
                         data: slide.content.isNotEmpty
                             ? slide.content
                             : 'One of these steps is wrong. Tap it.',
-                        textStyle: const TextStyle(
-                            fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+                        textStyle: TextStyle(
+                            fontSize: 16, color: context.colors.textPrimary, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -72,7 +72,7 @@ class ErrorSpottingView extends StatelessWidget {
                 const SizedBox(height: 16),
                 for (var i = 0; i < steps.length; i++)
                   Builder(builder: (context) {
-                    Color border = Colors.white12;
+                    Color border = context.colors.outline;
                     if (isAnswered) {
                       if (i == slide.errorIndex) {
                         border = AppTheme.duoGreen; // the actual flaw, revealed
@@ -89,7 +89,7 @@ class ErrorSpottingView extends StatelessWidget {
                         margin: const EdgeInsets.only(bottom: 10),
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.04),
+                          color: context.colors.surfaceAlt,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: border, width: 2),
                         ),
@@ -97,17 +97,17 @@ class ErrorSpottingView extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('${i + 1}.',
-                                style: const TextStyle(
-                                    color: Colors.white38,
+                                style: TextStyle(
+                                    color: context.colors.textFaint,
                                     fontWeight: FontWeight.w900,
                                     fontSize: 14)),
                             const SizedBox(width: 10),
                             Expanded(
                               child: MathMarkdown(
                                 data: steps[i],
-                                textStyle: const TextStyle(
+                                textStyle: TextStyle(
                                     fontSize: 14,
-                                    color: Colors.white,
+                                    color: context.colors.textPrimary,
                                     fontWeight: FontWeight.w600),
                               ),
                             ),
