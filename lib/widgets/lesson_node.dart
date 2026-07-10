@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../utils/progress_utils.dart';
+import '../theme/app_theme.dart';
 
 /// Maps a string icon identifier (e.g. coming from AI-generated lesson JSON)
 /// to a concrete [IconData]. Falls back to [LucideIcons.bookOpen] when the
@@ -313,7 +314,7 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget> with SingleTickerPr
       iconColor = const Color(0xFF64748B);
     } else {
       bgColor = sectionColor;
-      iconColor = Colors.white;
+      iconColor = context.colors.textPrimary;
     }
 
     final Color highlightColor = widget.isLocked
@@ -499,7 +500,7 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget> with SingleTickerPr
                                   border: Border.all(color: const Color(0xFF16A34A), width: 1.5),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.35),
+                                      color: context.colors.shadow,
                                       blurRadius: 4,
                                       offset: const Offset(0, 1.5),
                                     ),
@@ -574,12 +575,12 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget> with SingleTickerPr
                           height: 44,
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.03),
-                            border: Border.all(color: Colors.white.withOpacity(0.08)),
+                            color: context.colors.surfaceAlt,
+                            border: Border.all(color: context.colors.outline),
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
+                                color: context.colors.shadow,
                                 blurRadius: 30,
                                 offset: const Offset(0, 4),
                               ),
