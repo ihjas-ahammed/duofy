@@ -88,12 +88,12 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: AppTheme.surface,
-          title: const Text('No Lessons in This Module', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          backgroundColor: context.colors.surface,
+          title: Text('No Lessons in This Module', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
           content: Text(
             'We can only extract questions for sections that have generated lessons. '
             'Generate lessons in "${currentModule.title}" first, or switch to a module that has them on the Path tab.',
-            style: const TextStyle(color: Colors.white70),
+            style: TextStyle(color: context.colors.textSecondary),
           ),
           actions: [
             TextButton(
@@ -134,47 +134,47 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
     final result = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Verify & Edit Question', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: context.colors.surface,
+        title: Text('Verify & Edit Question', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text('Question Title', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+              Text('Question Title', style: TextStyle(color: context.colors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               TextField(
                 controller: titleCtrl,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: context.colors.textPrimary),
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: Colors.black26,
+                  fillColor: context.colors.surfaceAlt,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
               const SizedBox(height: 16),
-              const Text('Question Content', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+              Text('Question Content', style: TextStyle(color: context.colors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               TextField(
                 controller: contentCtrl,
                 maxLines: null,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: context.colors.textPrimary),
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: Colors.black26,
+                  fillColor: context.colors.surfaceAlt,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
               const SizedBox(height: 16),
               if (slide.type == 'one_word') ...[
-                const Text('Correct Answer', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                Text('Correct Answer', style: TextStyle(color: context.colors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 TextField(
                   controller: answerCtrl,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: context.colors.textPrimary),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: Colors.black26,
+                    fillColor: context.colors.surfaceAlt,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
@@ -185,7 +185,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -232,11 +232,11 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Delete Question?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: const Text('This will permanently delete this question from this section.', style: TextStyle(color: Colors.white70)),
+        backgroundColor: context.colors.surface,
+        title: Text('Delete Question?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        content: Text('This will permanently delete this question from this section.', style: TextStyle(color: context.colors.textSecondary)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Delete', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
@@ -315,7 +315,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                     child: Container(
                       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                       padding: const EdgeInsets.all(16),
-                      decoration: AppTheme.glassDecoration.copyWith(
+                      decoration: AppTheme.glassOf(context).copyWith(
                         border: Border.all(color: pyqTask.isError ? AppTheme.duoRed : AppTheme.duoBlue, width: 2)
                       ),
                       child: Row(
@@ -331,14 +331,14 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                           Expanded(
                             child: Text(
                               pyqTask.status, 
-                              style: TextStyle(fontWeight: FontWeight.bold, color: pyqTask.isError ? AppTheme.duoRed : Colors.white),
+                              style: TextStyle(fontWeight: FontWeight.bold, color: pyqTask.isError ? AppTheme.duoRed : context.colors.textPrimary),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             )
                           ),
                           if (pyqTask.isError)
                             IconButton(
-                              icon: const Icon(LucideIcons.x, color: Colors.white54),
+                              icon: Icon(LucideIcons.x, color: context.colors.textFaint),
                               onPressed: () => GenerationManager.instance.clearPyqError(widget.book.id),
                             )
                         ],
@@ -352,9 +352,9 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Text(
+                        Text(
                           'Upload Previous Year Question Papers',
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white),
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: context.colors.textPrimary),
                         ),
                         const SizedBox(height: 8),
                         if (currentModule != null)
@@ -381,9 +381,9 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                               ],
                             ),
                           ),
-                        const Text(
+                        Text(
                           'Select PDF papers or image snapshots. The AI extracts questions for the current module (chosen on the Path tab), splits them across its sections with generated lessons, and solves them interactively. Questions can then be solved in the Practice Arena.',
-                          style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
+                          style: TextStyle(color: context.colors.textFaint, fontSize: 13, height: 1.5),
                         ),
                         const SizedBox(height: 24),
                         FileSelectionList(
@@ -392,18 +392,18 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                           onRemove: (idx) => setState(() => _selectedFiles.removeAt(idx)),
                         ),
                         const SizedBox(height: 24),
-                        const Text('Custom Prompt / Generation Instructions', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white, fontSize: 14)),
+                        Text('Custom Prompt / Generation Instructions', style: TextStyle(fontWeight: FontWeight.w900, color: context.colors.textPrimary, fontSize: 14)),
                         const SizedBox(height: 8),
                         Container(
-                          decoration: AppTheme.glassDecoration,
+                          decoration: AppTheme.glassOf(context),
                           child: TextField(
                             controller: _customPromptCtrl,
                             maxLines: 4,
                             minLines: 2,
-                            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: context.colors.textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
                             decoration: InputDecoration(
                               hintText: "e.g. Focus on multiple choice questions, explain formula derivations.",
-                              hintStyle: const TextStyle(color: Colors.white38, fontSize: 13, fontWeight: FontWeight.normal),
+                              hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 13, fontWeight: FontWeight.normal),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                               contentPadding: const EdgeInsets.all(16),
                             ),
@@ -421,19 +421,19 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                   ),
                 ),
 
-                const SliverPadding(
-                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                   sliver: SliverToBoxAdapter(
-                    child: Divider(color: Colors.white12, thickness: 1),
+                    child: Divider(color: context.colors.outline, thickness: 1),
                   ),
                 ),
 
-                const SliverPadding(
-                  padding: EdgeInsets.only(left: 24, top: 16, bottom: 8),
+                SliverPadding(
+                  padding: const EdgeInsets.only(left: 24, top: 16, bottom: 8),
                   sliver: SliverToBoxAdapter(
                     child: Text(
                       'VERIFY EXTRACTED QUESTIONS',
-                      style: TextStyle(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.5),
+                      style: TextStyle(color: context.colors.textFaint, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.5),
                     ),
                   ),
                 ),
@@ -444,22 +444,22 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                       margin: const EdgeInsets.all(24),
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.02),
+                        color: context.colors.surfaceAlt,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white12),
+                        border: Border.all(color: context.colors.outline),
                       ),
                       child: Column(
                         children: [
-                          Icon(LucideIcons.fileSearch, size: 40, color: Colors.white24),
+                          Icon(LucideIcons.fileSearch, size: 40, color: context.colors.textFaint),
                           const SizedBox(height: 12),
-                          const Text(
+                          Text(
                             'No extracted questions yet',
-                            style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 4),
-                          const Text(
+                          Text(
                             'Upload a PDF or image paper above to get started.',
-                            style: TextStyle(color: Colors.white38, fontSize: 12),
+                            style: TextStyle(color: context.colors.textFaint, fontSize: 12),
                           ),
                         ],
                       ),
@@ -476,9 +476,9 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                           return Container(
                             margin: const EdgeInsets.only(bottom: 12),
                             decoration: BoxDecoration(
-                              color: AppTheme.surface,
+                              color: context.colors.surface,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.white.withOpacity(0.08)),
+                              border: Border.all(color: context.colors.outline),
                             ),
                             child: Column(
                               children: [
@@ -489,15 +489,15 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                                   child: ListTile(
                                     title: Text(
                                       section.title,
-                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                      style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
                                     ),
                                     subtitle: Text(
                                       '${section.pyqQuestions.length} questions extracted',
-                                      style: const TextStyle(color: Colors.white38, fontSize: 12),
+                                      style: TextStyle(color: context.colors.textFaint, fontSize: 12),
                                     ),
                                     trailing: Icon(
                                       isExpanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
-                                      color: Colors.white54,
+                                      color: context.colors.textFaint,
                                     ),
                                     onTap: () {
                                       setState(() {
@@ -507,7 +507,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                                   ),
                                 ),
                                 if (isExpanded) ...[
-                                  const Divider(color: Colors.white10, height: 1),
+                                  Divider(color: context.colors.outline, height: 1),
                                   ListView.builder(
                                     shrinkWrap: true,
                                     physics: const NeverScrollableScrollPhysics(),
@@ -517,7 +517,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                                       return Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                         decoration: BoxDecoration(
-                                          border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.05))),
+                                          border: Border(bottom: BorderSide(color: context.colors.outline)),
                                         ),
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -543,7 +543,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                                                 _buildSourceTag(slide.source),
                                                 const Spacer(),
                                                 IconButton(
-                                                  icon: const Icon(LucideIcons.edit3, size: 16, color: Colors.white60),
+                                                  icon: Icon(LucideIcons.edit3, size: 16, color: context.colors.textFaint),
                                                   onPressed: () => _editQuestion(section, qIdx, slide),
                                                 ),
                                                 IconButton(
@@ -555,19 +555,19 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                                             const SizedBox(height: 8),
                                             Text(
                                               slide.title,
-                                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                              style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
                                             ),
                                             const SizedBox(height: 4),
                                             MathMarkdown(
                                               data: slide.content,
-                                              textStyle: const TextStyle(color: Colors.white70, fontSize: 13),
+                                              textStyle: TextStyle(color: context.colors.textSecondary, fontSize: 13),
                                             ),
                                             if (slide.type == 'one_word' && slide.blankAnswer != null) ...[
                                               const SizedBox(height: 8),
                                               RichText(
                                                 text: TextSpan(
                                                   children: [
-                                                    const TextSpan(text: 'Reference Answer: ', style: TextStyle(color: Colors.white38, fontSize: 12)),
+                                                    TextSpan(text: 'Reference Answer: ', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
                                                     TextSpan(
                                                       text: slide.blankAnswer,
                                                       style: const TextStyle(color: AppTheme.duoGreen, fontWeight: FontWeight.bold, fontSize: 12),
