@@ -106,14 +106,17 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
     bool foundAny = false;
     for (final module in widget.book.modules) {
       for (final section in module.sections) {
-        if ((section.bookIndex ?? 0) == bookIdx) {
+        // Knowledge-only sections were never mapped to a source PDF, so they
+        // can't be "missing" one.
+        if (section.hasSourceMapping && (section.bookIndex ?? 0) == bookIdx) {
           foundAny = true;
           if (section.pdfPath == null || !File(section.pdfPath!).existsSync()) {
             return false;
           }
         }
         for (final unit in section.units) {
-          if ((unit.bookIndex ?? 0) == bookIdx) {
+          final unitMapped = unit.pdfPath != null || unit.startPage != null;
+          if (unitMapped && (unit.bookIndex ?? 0) == bookIdx) {
             foundAny = true;
             if (unit.pdfPath == null || !File(unit.pdfPath!).existsSync()) {
               return false;
@@ -124,19 +127,27 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
     }
     // For single-file fallback
     if (!foundAny && bookIdx == 0) {
+      bool anyMapped = false;
       for (final module in widget.book.modules) {
         for (final section in module.sections) {
-          if (section.pdfPath == null || !File(section.pdfPath!).existsSync()) {
-            return false;
+          if (section.hasSourceMapping) {
+            anyMapped = true;
+            if (section.pdfPath == null ||
+                !File(section.pdfPath!).existsSync()) {
+              return false;
+            }
           }
           for (final unit in section.units) {
-            if (unit.pdfPath == null || !File(unit.pdfPath!).existsSync()) {
-              return false;
+            if (unit.pdfPath != null || unit.startPage != null) {
+              anyMapped = true;
+              if (unit.pdfPath == null || !File(unit.pdfPath!).existsSync()) {
+                return false;
+              }
             }
           }
         }
       }
-      return true;
+      return anyMapped;
     }
     return foundAny;
   }

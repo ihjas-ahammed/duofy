@@ -34,7 +34,11 @@ class SlideTemplate {
   final String condition;
   final String description;
 
-  SlideTemplate({required this.type, required this.condition, required this.description});
+  SlideTemplate({
+    required this.type,
+    required this.condition,
+    required this.description,
+  });
 
   factory SlideTemplate.fromJson(Map<String, dynamic> json) {
     return SlideTemplate(
@@ -51,19 +55,86 @@ class SlideTemplate {
   };
 
   static List<SlideTemplate> get defaultTemplate => [
-    SlideTemplate(type: 'theory', condition: 'Always', description: 'The original factual theory and core concepts presented directly, with no storytelling, narrative framing, or example-based scenarios.'),
-    SlideTemplate(type: 'concept_pieces', condition: 'Always', description: 'A conceptual breakdown showing a complex or long concept split into a series of short, connected, easy-to-read sentences or bullet-points.'),
-    SlideTemplate(type: 'proof', condition: 'Only if a mathematical, physical, or logical proof is being taught.', description: 'Interactive step-by-step logic proof.'),
-    SlideTemplate(type: 'fill_in_blank', condition: 'Always', description: 'Recall key terms with a fill-in-the-blank question.'),
-    SlideTemplate(type: 'one_word', condition: 'Always', description: 'Recall a single key term by typing it as a one-word answer (no options shown).'),
-    SlideTemplate(type: 'numerical', condition: 'Only if the topic involves a calculation or a quantitative value the learner can compute.', description: 'A problem whose answer is a number the learner types in.'),
-    SlideTemplate(type: 'quiz', condition: 'Always', description: 'A multiple-choice question testing understanding.'),
-    SlideTemplate(type: 'matching', condition: 'Only when the topic has 3+ natural pairs (term↔definition, symbol↔meaning, quantity↔unit).', description: 'Match items in the left column to their partners on the right.'),
-    SlideTemplate(type: 'ordering', condition: 'Only when the topic is a procedure, derivation, or sequence with a strict order.', description: 'Drag shuffled steps into the correct sequence.'),
-    SlideTemplate(type: 'error_spotting', condition: 'Only after a worked example or proof, to probe a common misconception.', description: 'A worked solution with exactly one flawed step the learner must find.'),
-    SlideTemplate(type: 'flashcard', condition: 'Only for facts, definitions, or formulas the learner must memorize verbatim.', description: 'Recall-then-flip card with honest self-grading; misses enter spaced review.'),
-    SlideTemplate(type: 'descriptive', condition: 'Always', description: 'A question requiring a paragraph explanation and optional photo upload, reviewed by AI.'),
-    SlideTemplate(type: 'custom_html', condition: 'Only when custom interactive elements, custom simulators, or unique game/HTML mechanics are needed.', description: 'An interactive custom slide written in HTML and Javascript. Can contain buttons, text inputs, canvases, sliders, and logic. Calls DuoMessageChannel.postMessage("complete") when completed.'),
+    SlideTemplate(
+      type: 'theory',
+      condition: 'Always',
+      description:
+          'The original factual theory and core concepts presented directly, with no storytelling, narrative framing, or example-based scenarios.',
+    ),
+    SlideTemplate(
+      type: 'concept_pieces',
+      condition: 'Always',
+      description:
+          'A conceptual breakdown showing a complex or long concept split into a series of short, connected, easy-to-read sentences or bullet-points.',
+    ),
+    SlideTemplate(
+      type: 'proof',
+      condition:
+          'Only if a mathematical, physical, or logical proof is being taught.',
+      description: 'Interactive step-by-step logic proof.',
+    ),
+    SlideTemplate(
+      type: 'fill_in_blank',
+      condition: 'Always',
+      description: 'Recall key terms with a fill-in-the-blank question.',
+    ),
+    SlideTemplate(
+      type: 'one_word',
+      condition: 'Always',
+      description:
+          'Recall a single key term by typing it as a one-word answer (no options shown).',
+    ),
+    SlideTemplate(
+      type: 'numerical',
+      condition:
+          'Only if the topic involves a calculation or a quantitative value the learner can compute.',
+      description: 'A problem whose answer is a number the learner types in.',
+    ),
+    SlideTemplate(
+      type: 'quiz',
+      condition: 'Always',
+      description: 'A multiple-choice question testing understanding.',
+    ),
+    SlideTemplate(
+      type: 'matching',
+      condition:
+          'Only when the topic has 3+ natural pairs (term↔definition, symbol↔meaning, quantity↔unit).',
+      description:
+          'Match items in the left column to their partners on the right.',
+    ),
+    SlideTemplate(
+      type: 'ordering',
+      condition:
+          'Only when the topic is a procedure, derivation, or sequence with a strict order.',
+      description: 'Drag shuffled steps into the correct sequence.',
+    ),
+    SlideTemplate(
+      type: 'error_spotting',
+      condition:
+          'Only after a worked example or proof, to probe a common misconception.',
+      description:
+          'A worked solution with exactly one flawed step the learner must find.',
+    ),
+    SlideTemplate(
+      type: 'flashcard',
+      condition:
+          'Only for facts, definitions, or formulas the learner must memorize verbatim.',
+      description:
+          'Recall-then-flip card with honest self-grading; misses enter spaced review.',
+    ),
+    SlideTemplate(
+      type: 'descriptive',
+      condition: 'Always',
+      description:
+          'A question requiring a paragraph explanation and optional photo upload, reviewed by AI.',
+    ),
+    SlideTemplate(
+      type: 'custom_html',
+      condition:
+          'Only when custom interactive elements, custom simulators, or unique game/HTML mechanics are needed.',
+      description:
+          'An interactive custom slide written in HTML and Javascript. Can contain buttons, text inputs, canvases, sliders, and logic. Calls DuoMessageChannel.postMessage("complete") when completed.',
+    ),
   ];
 }
 
@@ -90,263 +161,600 @@ class LessonFormat {
       id: _str(json['id']),
       name: _str(json['name'], 'Format'),
       description: _str(json['description']),
-      slides: (json['slides'] as List?)
-              ?.map((s) => SlideTemplate.fromJson(s is Map ? Map<String, dynamic>.from(s) : {}))
+      slides:
+          (json['slides'] as List?)
+              ?.map(
+                (s) => SlideTemplate.fromJson(
+                  s is Map ? Map<String, dynamic>.from(s) : {},
+                ),
+              )
               .toList() ??
           SlideTemplate.defaultTemplate,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'description': description,
-        'slides': slides.map((s) => s.toJson()).toList(),
-      };
+    'id': id,
+    'name': name,
+    'description': description,
+    'slides': slides.map((s) => s.toJson()).toList(),
+  };
 
-  LessonFormat copyWith({String? id, String? name, String? description, List<SlideTemplate>? slides}) =>
-      LessonFormat(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        description: description ?? this.description,
-        slides: slides ?? this.slides,
-      );
+  LessonFormat copyWith({
+    String? id,
+    String? name,
+    String? description,
+    List<SlideTemplate>? slides,
+  }) => LessonFormat(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    description: description ?? this.description,
+    slides: slides ?? this.slides,
+  );
 
   /// The starter pack a new book gets when the user hasn\'t configured
   /// anything yet. Three commonly-needed formats covering general theory,
   /// worked examples, and proofs. Settings can add/edit/remove freely.
   static List<LessonFormat> get defaultFormats => [
-        LessonFormat(
-          id: 'default',
-          name: 'Theory',
-          description: 'Standard theory lesson: definitions, explanation, recall checks, quiz.',
-          slides: SlideTemplate.defaultTemplate,
+    LessonFormat(
+      id: 'default',
+      name: 'Theory',
+      description:
+          'Standard theory lesson: definitions, explanation, recall checks, quiz.',
+      slides: SlideTemplate.defaultTemplate,
+    ),
+    LessonFormat(
+      id: 'worked-example',
+      name: 'Worked Example',
+      description: 'A single solved problem broken into interactive steps.',
+      slides: [
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description:
+              'Restate the problem and the technique being used in 1-2 sentences.',
         ),
-        LessonFormat(
-          id: 'worked-example',
-          name: 'Worked Example',
-          description: 'A single solved problem broken into interactive steps.',
-          slides: [
-            SlideTemplate(type: 'theory', condition: 'Always', description: 'Restate the problem and the technique being used in 1-2 sentences.'),
-            SlideTemplate(type: 'step_by_step', condition: 'Always', description: 'Solve the example as an interactive multi-step walkthrough where the learner picks the next step.'),
-            SlideTemplate(type: 'numerical', condition: 'Only if the example produces a numeric result.', description: 'A follow-up problem where the learner computes and types the numeric answer.'),
-            SlideTemplate(type: 'quiz', condition: 'Always', description: 'A multiple-choice follow-up applying the same technique to a near-identical problem.'),
-          ],
+        SlideTemplate(
+          type: 'step_by_step',
+          condition: 'Always',
+          description:
+              'Solve the example as an interactive multi-step walkthrough where the learner picks the next step.',
         ),
-        LessonFormat(
-          id: 'proof-walkthrough',
-          name: 'Proof Walkthrough',
-          description: 'Step-by-step derivation of a theorem or formula.',
-          slides: [
-            SlideTemplate(type: 'theory', condition: 'Always', description: 'State the theorem/result and the intuition for why it holds in 1-2 sentences.'),
-            SlideTemplate(type: 'proof', condition: 'Always', description: 'Full interactive step-by-step proof.'),
-            SlideTemplate(type: 'fill_in_blank', condition: 'Always', description: 'Recall the key inequality, identity or definition that powered the proof.'),
-          ],
+        SlideTemplate(
+          type: 'numerical',
+          condition: 'Only if the example produces a numeric result.',
+          description:
+              'A follow-up problem where the learner computes and types the numeric answer.',
         ),
-        LessonFormat(
-          id: 'interleaved-practice',
-          name: 'Interleaved Practice',
-          description: 'A mix of different problem types to avoid illusion of competence and force the brain to recognize patterns.',
-          slides: [
-            SlideTemplate(type: 'theory', condition: 'Always', description: 'Brief introduction to the set of problems and why they are mixed.'),
-            SlideTemplate(type: 'quiz', condition: 'Always', description: 'A question applying concept A.'),
-            SlideTemplate(type: 'quiz', condition: 'Always', description: 'A question applying a completely different concept B.'),
-            SlideTemplate(type: 'quiz', condition: 'Always', description: 'Another question applying concept A or C.'),
-          ],
+        SlideTemplate(
+          type: 'quiz',
+          condition: 'Always',
+          description:
+              'A multiple-choice follow-up applying the same technique to a near-identical problem.',
         ),
-        LessonFormat(
-          id: 'active-retrieval',
-          name: 'Active Retrieval',
-          description: 'Testing purely from memory. No theory first. Forces the learner to recall information they should already know.',
-          slides: [
-            SlideTemplate(type: 'fill_in_blank', condition: 'Always', description: 'Recall a core definition or rule from memory.'),
-            SlideTemplate(type: 'one_word', condition: 'Always', description: 'Recall a key term without hints.'),
-            SlideTemplate(type: 'quiz', condition: 'Always', description: 'A deeper conceptual question testing understanding, not just memory.'),
-          ],
+      ],
+    ),
+    LessonFormat(
+      id: 'proof-walkthrough',
+      name: 'Proof Walkthrough',
+      description: 'Step-by-step derivation of a theorem or formula.',
+      slides: [
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description:
+              'State the theorem/result and the intuition for why it holds in 1-2 sentences.',
         ),
-        LessonFormat(
-          id: 'elaboration',
-          name: 'Elaboration',
-          description: 'Explaining concepts in detail, connecting them to prior knowledge.',
-          slides: [
-            SlideTemplate(type: 'theory', condition: 'Always', description: 'Present a complex concept and relate it to a simpler, known concept.'),
-            SlideTemplate(type: 'concept_pieces', condition: 'Always', description: 'Break down the connections step-by-step.'),
-            SlideTemplate(type: 'quiz', condition: 'Always', description: 'Test if the learner understands the relationship between the new and old concepts.'),
-          ],
+        SlideTemplate(
+          type: 'proof',
+          condition: 'Always',
+          description: 'Full interactive step-by-step proof.',
         ),
-        LessonFormat(
-          id: 'chunking-focus',
-          name: 'Chunking Focus',
-          description: 'Breaking down a large, intimidating concept into tiny, digestible pieces (chunks) before assembling them.',
-          slides: [
-            SlideTemplate(type: 'concept_pieces', condition: 'Always', description: 'Introduce the pieces of the chunk individually.'),
-            SlideTemplate(type: 'fill_in_blank', condition: 'Always', description: 'Test recall on one specific piece of the chunk.'),
-            SlideTemplate(type: 'theory', condition: 'Always', description: 'Show how the pieces connect together into the final "chunk".'),
-            SlideTemplate(type: 'quiz', condition: 'Always', description: 'Test understanding of the fully assembled chunk.'),
-          ],
+        SlideTemplate(
+          type: 'fill_in_blank',
+          condition: 'Always',
+          description:
+              'Recall the key inequality, identity or definition that powered the proof.',
         ),
-        LessonFormat(
-          id: 'spaced-review',
-          name: 'Spaced Review',
-          description: 'A format dedicated to reviewing past material while lightly introducing a new hook.',
-          slides: [
-            SlideTemplate(type: 'quiz', condition: 'Always', description: 'A question from a previous topic.'),
-            SlideTemplate(type: 'numerical', condition: 'If applicable', description: 'A calculation from a previous topic.'),
-            SlideTemplate(type: 'theory', condition: 'Always', description: 'A brief introduction to today\'s new topic connecting it to the reviewed material.'),
-          ],
+      ],
+    ),
+    LessonFormat(
+      id: 'interleaved-practice',
+      name: 'Interleaved Practice',
+      description:
+          'A mix of different problem types to avoid illusion of competence and force the brain to recognize patterns.',
+      slides: [
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description:
+              'Brief introduction to the set of problems and why they are mixed.',
         ),
-        LessonFormat(
-          id: 'concrete-examples',
-          name: 'Concrete Examples',
-          description: 'Real-world grounding of abstract, theoretical ideas.',
-          slides: [
-            SlideTemplate(type: 'theory', condition: 'Always', description: 'State the abstract rule or theorem.'),
-            SlideTemplate(type: 'concept_pieces', condition: 'Always', description: 'Provide 2-3 specific, real-world concrete examples of the rule in action.'),
-            SlideTemplate(type: 'quiz', condition: 'Always', description: 'Ask the learner to identify whether a new real-world scenario fits the rule.'),
-          ],
+        SlideTemplate(
+          type: 'quiz',
+          condition: 'Always',
+          description: 'A question applying concept A.',
         ),
-        LessonFormat(
-          id: 'feynman-technique',
-          name: 'Feynman Technique',
-          description: 'Teaching a concept using extremely simple language, as if to a child, avoiding jargon.',
-          slides: [
-            SlideTemplate(type: 'theory', condition: 'Always', description: 'Explain the core idea using zero technical jargon.'),
-            SlideTemplate(type: 'concept_pieces', condition: 'Always', description: 'Break down why it works using an intuitive analogy.'),
-            SlideTemplate(type: 'fill_in_blank', condition: 'Always', description: 'Check understanding of the simple analogy.'),
-          ],
+        SlideTemplate(
+          type: 'quiz',
+          condition: 'Always',
+          description: 'A question applying a completely different concept B.',
         ),
-        LessonFormat(
-          id: 'contrasting-cases',
-          name: 'Contrasting Cases',
-          description: 'Comparing two similar but distinct concepts to highlight their key differences.',
-          slides: [
-            SlideTemplate(type: 'theory', condition: 'Always', description: 'Introduce Concept A and Concept B side-by-side.'),
-            SlideTemplate(type: 'concept_pieces', condition: 'Always', description: 'Highlight exactly what makes them different (the boundary condition).'),
-            SlideTemplate(type: 'quiz', condition: 'Always', description: 'Present a scenario and ask if it is Concept A or Concept B.'),
-          ],
+        SlideTemplate(
+          type: 'quiz',
+          condition: 'Always',
+          description: 'Another question applying concept A or C.',
         ),
-        LessonFormat(
-          id: 'error-analysis',
-          name: 'Error Analysis',
-          description: 'Identifying mistakes in a flawed solution or misconception.',
-          slides: [
-            SlideTemplate(type: 'theory', condition: 'Always', description: 'Present a common misconception or a flawed step-by-step solution.'),
-            SlideTemplate(type: 'quiz', condition: 'Always', description: 'Ask the learner to identify EXACTLY where the mistake happened.'),
-            SlideTemplate(type: 'theory', condition: 'Always', description: 'Explain the correct reasoning and why the mistake is common.'),
-          ],
+      ],
+    ),
+    LessonFormat(
+      id: 'active-retrieval',
+      name: 'Active Retrieval',
+      description:
+          'Testing purely from memory. No theory first. Forces the learner to recall information they should already know.',
+      slides: [
+        SlideTemplate(
+          type: 'fill_in_blank',
+          condition: 'Always',
+          description: 'Recall a core definition or rule from memory.',
         ),
-        LessonFormat(
-          id: 'rule-abstraction',
-          name: 'Rule Abstraction',
-          description: 'Deriving a general rule from several specific examples (inductive learning).',
-          slides: [
-            SlideTemplate(type: 'concept_pieces', condition: 'Always', description: 'Show 3 different examples that all share a hidden underlying pattern.'),
-            SlideTemplate(type: 'quiz', condition: 'Always', description: 'Ask the learner to guess the underlying rule or pattern.'),
-            SlideTemplate(type: 'theory', condition: 'Always', description: 'Formally state the abstracted rule.'),
-          ],
+        SlideTemplate(
+          type: 'one_word',
+          condition: 'Always',
+          description: 'Recall a key term without hints.',
         ),
-        LessonFormat(
-          id: 'low-stakes-testing',
-          name: 'Low-Stakes Testing',
-          description: 'Rapid-fire easy questions to build fluency and confidence.',
-          slides: [
-            SlideTemplate(type: 'one_word', condition: 'Always', description: 'Fast recall question 1.'),
-            SlideTemplate(type: 'one_word', condition: 'Always', description: 'Fast recall question 2.'),
-            SlideTemplate(type: 'fill_in_blank', condition: 'Always', description: 'Fast recall question 3.'),
-            SlideTemplate(type: 'quiz', condition: 'Always', description: 'A slightly harder conceptual question.'),
-          ],
+        SlideTemplate(
+          type: 'quiz',
+          condition: 'Always',
+          description:
+              'A deeper conceptual question testing understanding, not just memory.',
         ),
-        LessonFormat(
-          id: 'desirable-difficulty',
-          name: 'Desirable Difficulty',
-          description: 'A deliberately hard problem without immediate hints, forcing deep cognitive effort.',
-          slides: [
-            SlideTemplate(type: 'theory', condition: 'Always', description: 'Set up a challenging problem that requires synthesizing multiple ideas.'),
-            SlideTemplate(type: 'numerical', condition: 'If a number is expected', description: 'The hard problem itself.'),
-            SlideTemplate(type: 'step_by_step', condition: 'Always', description: 'Break down the solution after they have attempted it.'),
-          ],
+      ],
+    ),
+    LessonFormat(
+      id: 'elaboration',
+      name: 'Elaboration',
+      description:
+          'Explaining concepts in detail, connecting them to prior knowledge.',
+      slides: [
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description:
+              'Present a complex concept and relate it to a simpler, known concept.',
         ),
-        LessonFormat(
-          id: 'generation-effect',
-          name: 'Generation Effect',
-          description: 'Attempting to solve or guess an answer before being taught the material.',
-          slides: [
-            SlideTemplate(type: 'quiz', condition: 'Always', description: 'Ask an intuitive question about a topic they haven\'t learned yet.'),
-            SlideTemplate(type: 'theory', condition: 'Always', description: 'Explain the actual theory, showing whether their intuition was right.'),
-            SlideTemplate(type: 'concept_pieces', condition: 'Always', description: 'Formalize the new knowledge.'),
-          ],
+        SlideTemplate(
+          type: 'concept_pieces',
+          condition: 'Always',
+          description: 'Break down the connections step-by-step.',
         ),
-        LessonFormat(
-          id: 'analogical-transfer',
-          name: 'Analogical Transfer',
-          description: 'Applying a solution from one context to a totally different, unfamiliar context.',
-          slides: [
-            SlideTemplate(type: 'theory', condition: 'Always', description: 'Remind the learner of a known solution in Context X.'),
-            SlideTemplate(type: 'theory', condition: 'Always', description: 'Introduce a seemingly different problem in Context Y.'),
-            SlideTemplate(type: 'quiz', condition: 'Always', description: 'Ask them to apply the mechanism from X to solve Y.'),
-          ],
+        SlideTemplate(
+          type: 'quiz',
+          condition: 'Always',
+          description:
+              'Test if the learner understands the relationship between the new and old concepts.',
         ),
-        LessonFormat(
-          id: 'metacognition-check',
-          name: 'Metacognition Check',
-          description: 'Evaluating one\'s own understanding and mental models.',
-          slides: [
-            SlideTemplate(type: 'theory', condition: 'Always', description: 'Summarize a complex topic briefly.'),
-            SlideTemplate(type: 'quiz', condition: 'Always', description: 'A highly tricky distractor question that tests deep understanding versus surface illusion of competence.'),
-            SlideTemplate(type: 'theory', condition: 'Always', description: 'Explain why the tricky distractor catches people off guard.'),
-          ],
+      ],
+    ),
+    LessonFormat(
+      id: 'chunking-focus',
+      name: 'Chunking Focus',
+      description:
+          'Breaking down a large, intimidating concept into tiny, digestible pieces (chunks) before assembling them.',
+      slides: [
+        SlideTemplate(
+          type: 'concept_pieces',
+          condition: 'Always',
+          description: 'Introduce the pieces of the chunk individually.',
         ),
-        LessonFormat(
-          id: 'synthesis-challenge',
-          name: 'Synthesis Challenge',
-          description: 'Combining multiple previously learned concepts into one grand problem.',
-          slides: [
-            SlideTemplate(type: 'theory', condition: 'Always', description: 'State the grand challenge that requires 2+ concepts.'),
-            SlideTemplate(type: 'step_by_step', condition: 'Always', description: 'Walk through the multi-stage synthesis.'),
-            SlideTemplate(type: 'numerical', condition: 'If applicable', description: 'Final calculation of the synthesized problem.'),
-          ],
+        SlideTemplate(
+          type: 'fill_in_blank',
+          condition: 'Always',
+          description: 'Test recall on one specific piece of the chunk.',
         ),
-        LessonFormat(
-          id: 'priming-preview',
-          name: 'Priming Preview',
-          description: 'A brief, lightweight preview of advanced topics without expecting mastery yet.',
-          slides: [
-            SlideTemplate(type: 'theory', condition: 'Always', description: 'Show a glimpse of a future, more advanced topic.'),
-            SlideTemplate(type: 'concept_pieces', condition: 'Always', description: 'Point out what makes it interesting or useful.'),
-            SlideTemplate(type: 'one_word', condition: 'Always', description: 'A very basic vocabulary check on the new concept name.'),
-          ],
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description:
+              'Show how the pieces connect together into the final "chunk".',
         ),
-        LessonFormat(
-          id: 'visual-dual-coding',
-          name: 'Visual Dual-Coding',
-          description: 'Relies heavily on visual or structural layout to pair with text.',
-          slides: [
-            SlideTemplate(type: 'custom_html', condition: 'Always', description: 'An interactive or highly visual representation of the concept.'),
-            SlideTemplate(type: 'theory', condition: 'Always', description: 'Textual explanation linking to what they just saw.'),
-            SlideTemplate(type: 'quiz', condition: 'Always', description: 'Test understanding of the visual relationship.'),
-          ],
+        SlideTemplate(
+          type: 'quiz',
+          condition: 'Always',
+          description: 'Test understanding of the fully assembled chunk.',
         ),
-        LessonFormat(
-          id: 'deliberate-practice',
-          name: 'Deliberate Practice',
-          description: 'Targeted practice on a specific sub-skill with immediate feedback.',
-          slides: [
-            SlideTemplate(type: 'theory', condition: 'Always', description: 'Isolate the specific sub-skill being practiced.'),
-            SlideTemplate(type: 'step_by_step', condition: 'Always', description: 'Walk through executing this single sub-skill.'),
-            SlideTemplate(type: 'quiz', condition: 'Always', description: 'A rapid check to ensure the sub-skill is mastered.'),
-          ],
+      ],
+    ),
+    LessonFormat(
+      id: 'spaced-review',
+      name: 'Spaced Review',
+      description:
+          'A format dedicated to reviewing past material while lightly introducing a new hook.',
+      slides: [
+        SlideTemplate(
+          type: 'quiz',
+          condition: 'Always',
+          description: 'A question from a previous topic.',
         ),
-        LessonFormat(
-          id: 'first-principles',
-          name: 'First Principles',
-          description: 'Breaking a complex problem down to its most fundamental, undeniable truths.',
-          slides: [
-            SlideTemplate(type: 'theory', condition: 'Always', description: 'Strip away the complexity and state the absolute fundamental truth (first principle).'),
-            SlideTemplate(type: 'concept_pieces', condition: 'Always', description: 'Build the complex idea back up logically from the first principle.'),
-            SlideTemplate(type: 'quiz', condition: 'Always', description: 'Test if the logic connecting the principle to the conclusion holds.'),
-          ],
+        SlideTemplate(
+          type: 'numerical',
+          condition: 'If applicable',
+          description: 'A calculation from a previous topic.',
         ),
-      ];
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description:
+              'A brief introduction to today\'s new topic connecting it to the reviewed material.',
+        ),
+      ],
+    ),
+    LessonFormat(
+      id: 'concrete-examples',
+      name: 'Concrete Examples',
+      description: 'Real-world grounding of abstract, theoretical ideas.',
+      slides: [
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description: 'State the abstract rule or theorem.',
+        ),
+        SlideTemplate(
+          type: 'concept_pieces',
+          condition: 'Always',
+          description:
+              'Provide 2-3 specific, real-world concrete examples of the rule in action.',
+        ),
+        SlideTemplate(
+          type: 'quiz',
+          condition: 'Always',
+          description:
+              'Ask the learner to identify whether a new real-world scenario fits the rule.',
+        ),
+      ],
+    ),
+    LessonFormat(
+      id: 'feynman-technique',
+      name: 'Feynman Technique',
+      description:
+          'Teaching a concept using extremely simple language, as if to a child, avoiding jargon.',
+      slides: [
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description: 'Explain the core idea using zero technical jargon.',
+        ),
+        SlideTemplate(
+          type: 'concept_pieces',
+          condition: 'Always',
+          description: 'Break down why it works using an intuitive analogy.',
+        ),
+        SlideTemplate(
+          type: 'fill_in_blank',
+          condition: 'Always',
+          description: 'Check understanding of the simple analogy.',
+        ),
+      ],
+    ),
+    LessonFormat(
+      id: 'contrasting-cases',
+      name: 'Contrasting Cases',
+      description:
+          'Comparing two similar but distinct concepts to highlight their key differences.',
+      slides: [
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description: 'Introduce Concept A and Concept B side-by-side.',
+        ),
+        SlideTemplate(
+          type: 'concept_pieces',
+          condition: 'Always',
+          description:
+              'Highlight exactly what makes them different (the boundary condition).',
+        ),
+        SlideTemplate(
+          type: 'quiz',
+          condition: 'Always',
+          description:
+              'Present a scenario and ask if it is Concept A or Concept B.',
+        ),
+      ],
+    ),
+    LessonFormat(
+      id: 'error-analysis',
+      name: 'Error Analysis',
+      description:
+          'Identifying mistakes in a flawed solution or misconception.',
+      slides: [
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description:
+              'Present a common misconception or a flawed step-by-step solution.',
+        ),
+        SlideTemplate(
+          type: 'quiz',
+          condition: 'Always',
+          description:
+              'Ask the learner to identify EXACTLY where the mistake happened.',
+        ),
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description:
+              'Explain the correct reasoning and why the mistake is common.',
+        ),
+      ],
+    ),
+    LessonFormat(
+      id: 'rule-abstraction',
+      name: 'Rule Abstraction',
+      description:
+          'Deriving a general rule from several specific examples (inductive learning).',
+      slides: [
+        SlideTemplate(
+          type: 'concept_pieces',
+          condition: 'Always',
+          description:
+              'Show 3 different examples that all share a hidden underlying pattern.',
+        ),
+        SlideTemplate(
+          type: 'quiz',
+          condition: 'Always',
+          description:
+              'Ask the learner to guess the underlying rule or pattern.',
+        ),
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description: 'Formally state the abstracted rule.',
+        ),
+      ],
+    ),
+    LessonFormat(
+      id: 'low-stakes-testing',
+      name: 'Low-Stakes Testing',
+      description: 'Rapid-fire easy questions to build fluency and confidence.',
+      slides: [
+        SlideTemplate(
+          type: 'one_word',
+          condition: 'Always',
+          description: 'Fast recall question 1.',
+        ),
+        SlideTemplate(
+          type: 'one_word',
+          condition: 'Always',
+          description: 'Fast recall question 2.',
+        ),
+        SlideTemplate(
+          type: 'fill_in_blank',
+          condition: 'Always',
+          description: 'Fast recall question 3.',
+        ),
+        SlideTemplate(
+          type: 'quiz',
+          condition: 'Always',
+          description: 'A slightly harder conceptual question.',
+        ),
+      ],
+    ),
+    LessonFormat(
+      id: 'desirable-difficulty',
+      name: 'Desirable Difficulty',
+      description:
+          'A deliberately hard problem without immediate hints, forcing deep cognitive effort.',
+      slides: [
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description:
+              'Set up a challenging problem that requires synthesizing multiple ideas.',
+        ),
+        SlideTemplate(
+          type: 'numerical',
+          condition: 'If a number is expected',
+          description: 'The hard problem itself.',
+        ),
+        SlideTemplate(
+          type: 'step_by_step',
+          condition: 'Always',
+          description: 'Break down the solution after they have attempted it.',
+        ),
+      ],
+    ),
+    LessonFormat(
+      id: 'generation-effect',
+      name: 'Generation Effect',
+      description:
+          'Attempting to solve or guess an answer before being taught the material.',
+      slides: [
+        SlideTemplate(
+          type: 'quiz',
+          condition: 'Always',
+          description:
+              'Ask an intuitive question about a topic they haven\'t learned yet.',
+        ),
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description:
+              'Explain the actual theory, showing whether their intuition was right.',
+        ),
+        SlideTemplate(
+          type: 'concept_pieces',
+          condition: 'Always',
+          description: 'Formalize the new knowledge.',
+        ),
+      ],
+    ),
+    LessonFormat(
+      id: 'analogical-transfer',
+      name: 'Analogical Transfer',
+      description:
+          'Applying a solution from one context to a totally different, unfamiliar context.',
+      slides: [
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description: 'Remind the learner of a known solution in Context X.',
+        ),
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description: 'Introduce a seemingly different problem in Context Y.',
+        ),
+        SlideTemplate(
+          type: 'quiz',
+          condition: 'Always',
+          description: 'Ask them to apply the mechanism from X to solve Y.',
+        ),
+      ],
+    ),
+    LessonFormat(
+      id: 'metacognition-check',
+      name: 'Metacognition Check',
+      description: 'Evaluating one\'s own understanding and mental models.',
+      slides: [
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description: 'Summarize a complex topic briefly.',
+        ),
+        SlideTemplate(
+          type: 'quiz',
+          condition: 'Always',
+          description:
+              'A highly tricky distractor question that tests deep understanding versus surface illusion of competence.',
+        ),
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description:
+              'Explain why the tricky distractor catches people off guard.',
+        ),
+      ],
+    ),
+    LessonFormat(
+      id: 'synthesis-challenge',
+      name: 'Synthesis Challenge',
+      description:
+          'Combining multiple previously learned concepts into one grand problem.',
+      slides: [
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description: 'State the grand challenge that requires 2+ concepts.',
+        ),
+        SlideTemplate(
+          type: 'step_by_step',
+          condition: 'Always',
+          description: 'Walk through the multi-stage synthesis.',
+        ),
+        SlideTemplate(
+          type: 'numerical',
+          condition: 'If applicable',
+          description: 'Final calculation of the synthesized problem.',
+        ),
+      ],
+    ),
+    LessonFormat(
+      id: 'priming-preview',
+      name: 'Priming Preview',
+      description:
+          'A brief, lightweight preview of advanced topics without expecting mastery yet.',
+      slides: [
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description: 'Show a glimpse of a future, more advanced topic.',
+        ),
+        SlideTemplate(
+          type: 'concept_pieces',
+          condition: 'Always',
+          description: 'Point out what makes it interesting or useful.',
+        ),
+        SlideTemplate(
+          type: 'one_word',
+          condition: 'Always',
+          description: 'A very basic vocabulary check on the new concept name.',
+        ),
+      ],
+    ),
+    LessonFormat(
+      id: 'visual-dual-coding',
+      name: 'Visual Dual-Coding',
+      description:
+          'Relies heavily on visual or structural layout to pair with text.',
+      slides: [
+        SlideTemplate(
+          type: 'custom_html',
+          condition: 'Always',
+          description:
+              'An interactive or highly visual representation of the concept.',
+        ),
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description: 'Textual explanation linking to what they just saw.',
+        ),
+        SlideTemplate(
+          type: 'quiz',
+          condition: 'Always',
+          description: 'Test understanding of the visual relationship.',
+        ),
+      ],
+    ),
+    LessonFormat(
+      id: 'deliberate-practice',
+      name: 'Deliberate Practice',
+      description:
+          'Targeted practice on a specific sub-skill with immediate feedback.',
+      slides: [
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description: 'Isolate the specific sub-skill being practiced.',
+        ),
+        SlideTemplate(
+          type: 'step_by_step',
+          condition: 'Always',
+          description: 'Walk through executing this single sub-skill.',
+        ),
+        SlideTemplate(
+          type: 'quiz',
+          condition: 'Always',
+          description: 'A rapid check to ensure the sub-skill is mastered.',
+        ),
+      ],
+    ),
+    LessonFormat(
+      id: 'first-principles',
+      name: 'First Principles',
+      description:
+          'Breaking a complex problem down to its most fundamental, undeniable truths.',
+      slides: [
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description:
+              'Strip away the complexity and state the absolute fundamental truth (first principle).',
+        ),
+        SlideTemplate(
+          type: 'concept_pieces',
+          condition: 'Always',
+          description:
+              'Build the complex idea back up logically from the first principle.',
+        ),
+        SlideTemplate(
+          type: 'quiz',
+          condition: 'Always',
+          description:
+              'Test if the logic connecting the principle to the conclusion holds.',
+        ),
+      ],
+    ),
+  ];
 }
 
 class Book {
@@ -355,6 +763,7 @@ class Book {
   final String description;
   final String icon;
   final String? systemPrompt;
+
   /// Free-text instructions the user supplies at book-creation time. Unlike
   /// [systemPrompt] (which the AI generates), this is verbatim user guidance
   /// (e.g. "focus on exam-style worked examples", "keep theory minimal").
@@ -367,6 +776,7 @@ class Book {
   final bool isGlobal;
   final List<Module> modules;
   final List<QuestionPaper> questionPapers;
+
   /// Named collections of slide templates. A book carries several so that
   /// different units (theory vs. example vs. proof) can be generated with
   /// different pedagogical structures. Always non-empty after parsing — an
@@ -374,6 +784,7 @@ class Book {
   /// format on read, and books missing both fields fall back to
   /// [LessonFormat.defaultFormats].
   final List<LessonFormat> lessonFormats;
+
   /// Id of the format used when a unit has no explicit `formatId` assigned.
   /// Always points to a real entry in [lessonFormats] after migration.
   final String defaultFormatId;
@@ -381,10 +792,12 @@ class Book {
   final List<String> plannerQuestions;
   final List<String> selectedQuestions;
   final String bloomLevel;
+
   /// The printed→absolute page offset that was applied when this book's
   /// skeleton was resolved (see PageMapping). Stored for diagnostics and for
   /// the "repair page alignment" tool; old books simply have null.
   final int? pageOffset;
+
   /// True once the deterministic mapping verifier (or the user, via the
   /// split-review screen) has confirmed that section pages line up with the
   /// source PDF.
@@ -434,17 +847,33 @@ class Book {
     final formatsJson = json['lessonFormats'] as List?;
     if (formatsJson != null && formatsJson.isNotEmpty) {
       formats = formatsJson
-          .map((f) => LessonFormat.fromJson(f is Map ? Map<String, dynamic>.from(f) : {}))
+          .map(
+            (f) => LessonFormat.fromJson(
+              f is Map ? Map<String, dynamic>.from(f) : {},
+            ),
+          )
           .toList();
       final claimedDefault = _strOpt(json['defaultFormatId']);
-      defaultId = (claimedDefault != null && formats.any((f) => f.id == claimedDefault))
+      defaultId =
+          (claimedDefault != null && formats.any((f) => f.id == claimedDefault))
           ? claimedDefault
           : formats.first.id;
     } else if (json['lessonTemplate'] is List) {
       final slides = (json['lessonTemplate'] as List)
-          .map((t) => SlideTemplate.fromJson(t is Map ? Map<String, dynamic>.from(t) : {}))
+          .map(
+            (t) => SlideTemplate.fromJson(
+              t is Map ? Map<String, dynamic>.from(t) : {},
+            ),
+          )
           .toList();
-      formats = [LessonFormat(id: 'default', name: 'Default', description: 'Migrated from previous single-template setup.', slides: slides)];
+      formats = [
+        LessonFormat(
+          id: 'default',
+          name: 'Default',
+          description: 'Migrated from previous single-template setup.',
+          slides: slides,
+        ),
+      ];
       defaultId = 'default';
     } else {
       formats = LessonFormat.defaultFormats;
@@ -468,19 +897,39 @@ class Book {
       icon: _str(json['icon'], 'Book'),
       systemPrompt: _strOpt(json['systemPrompt']),
       customInstructions: _strOpt(json['customInstructions']),
-      updatedAt: json['updatedAt'] is num ? (json['updatedAt'] as num).toInt() : int.tryParse(_str(json['updatedAt'])),
+      updatedAt: json['updatedAt'] is num
+          ? (json['updatedAt'] as num).toInt()
+          : int.tryParse(_str(json['updatedAt'])),
       authorId: _strOpt(json['authorId']),
       authorName: _strOpt(json['authorName']),
       isGlobal: _bool(json['isGlobal'], false),
-      modules: (json['modules'] as List?)?.map((m) => Module.fromJson(m is Map ? Map<String, dynamic>.from(m) : {})).toList() ?? [],
-      questionPapers: (json['questionPapers'] as List?)?.map((q) => QuestionPaper.fromJson(q is Map ? Map<String, dynamic>.from(q) : {})).toList() ?? [],
+      modules:
+          (json['modules'] as List?)
+              ?.map(
+                (m) => Module.fromJson(
+                  m is Map ? Map<String, dynamic>.from(m) : {},
+                ),
+              )
+              .toList() ??
+          [],
+      questionPapers:
+          (json['questionPapers'] as List?)
+              ?.map(
+                (q) => QuestionPaper.fromJson(
+                  q is Map ? Map<String, dynamic>.from(q) : {},
+                ),
+              )
+              .toList() ??
+          [],
       lessonFormats: formats,
       defaultFormatId: defaultId,
       syllabusPath: _strOpt(json['syllabusPath']),
       plannerQuestions: plannerQuestions,
       selectedQuestions: selectedQuestions,
       bloomLevel: _str(json['bloomLevel'], 'Remembering / Understanding'),
-      pageOffset: json['pageOffset'] is num ? (json['pageOffset'] as num).toInt() : int.tryParse(_str(json['pageOffset'])),
+      pageOffset: json['pageOffset'] is num
+          ? (json['pageOffset'] as num).toInt()
+          : int.tryParse(_str(json['pageOffset'])),
       mappingVerified: _bool(json['mappingVerified'], false),
     );
   }
@@ -579,7 +1028,7 @@ class Book {
 
   Book scopeBookIds(String newBookId) {
     final oldBookId = id;
-    
+
     String updateId(String oldId) {
       if (oldId.startsWith('${newBookId}_')) return oldId;
       if (oldId.startsWith('${oldBookId}_')) {
@@ -593,18 +1042,24 @@ class Book {
       modules: modules.map((m) {
         return m.copyWith(
           id: updateId(m.id),
-          practiceQuestions: m.practiceQuestions.map((q) => q.copyWith(id: updateId(q.id))).toList(),
+          practiceQuestions: m.practiceQuestions
+              .map((q) => q.copyWith(id: updateId(q.id)))
+              .toList(),
           sections: m.sections.map((s) {
             return s.copyWith(
               id: updateId(s.id),
-              pyqQuestions: s.pyqQuestions.map((q) => q.copyWith(id: updateId(q.id))).toList(),
+              pyqQuestions: s.pyqQuestions
+                  .map((q) => q.copyWith(id: updateId(q.id)))
+                  .toList(),
               units: s.units.map((u) {
                 return u.copyWith(
                   id: updateId(u.id),
                   lessons: u.lessons.map((l) {
                     return l.copyWith(
                       id: updateId(l.id),
-                      slides: l.slides.map((sl) => sl.copyWith(id: updateId(sl.id))).toList(),
+                      slides: l.slides
+                          .map((sl) => sl.copyWith(id: updateId(sl.id)))
+                          .toList(),
                     );
                   }).toList(),
                 );
@@ -618,7 +1073,9 @@ class Book {
           id: updateId(qp.id),
           sections: qp.sections.map((qs) {
             return qs.copyWith(
-              questions: qs.questions.map((q) => q.copyWith(id: updateId(q.id))).toList(),
+              questions: qs.questions
+                  .map((q) => q.copyWith(id: updateId(q.id)))
+                  .toList(),
             );
           }).toList(),
         );
@@ -669,15 +1126,20 @@ class QpSection {
   final String title;
   final List<QpQuestion> questions;
 
-  QpSection({
-    required this.title,
-    required this.questions,
-  });
+  QpSection({required this.title, required this.questions});
 
   factory QpSection.fromJson(Map<String, dynamic> json) {
     return QpSection(
       title: _str(json['title'], 'Section'),
-      questions: (json['questions'] as List?)?.map((q) => QpQuestion.fromJson(q is Map ? Map<String, dynamic>.from(q) : {})).toList() ?? [],
+      questions:
+          (json['questions'] as List?)
+              ?.map(
+                (q) => QpQuestion.fromJson(
+                  q is Map ? Map<String, dynamic>.from(q) : {},
+                ),
+              )
+              .toList() ??
+          [],
     );
   }
 
@@ -686,10 +1148,7 @@ class QpSection {
     'questions': questions.map((q) => q.toJson()).toList(),
   };
 
-  QpSection copyWith({
-    String? title,
-    List<QpQuestion>? questions,
-  }) {
+  QpSection copyWith({String? title, List<QpQuestion>? questions}) {
     return QpSection(
       title: title ?? this.title,
       questions: questions ?? this.questions,
@@ -703,26 +1162,37 @@ class QuestionPaper {
   final List<QpSection> sections;
 
   QuestionPaper({
-    required this.id, 
-    required this.title, 
+    required this.id,
+    required this.title,
     required this.sections,
   });
 
   factory QuestionPaper.fromJson(Map<String, dynamic> json) {
     List<QpSection> parsedSections = [];
     if (json['sections'] != null) {
-      parsedSections = (json['sections'] as List).map((s) => QpSection.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList();
+      parsedSections = (json['sections'] as List)
+          .map(
+            (s) => QpSection.fromJson(
+              s is Map ? Map<String, dynamic>.from(s) : {},
+            ),
+          )
+          .toList();
     } else if (json['slides'] != null) {
       // Fallback parser for old Slide-based QPs
       List<QpQuestion> fallbackQs = (json['slides'] as List).map((s) {
-        final sm = s is Map ? Map<String, dynamic>.from(s) : <String, dynamic>{};
+        final sm = s is Map
+            ? Map<String, dynamic>.from(s)
+            : <String, dynamic>{};
         return QpQuestion(
           id: _str(sm['id']),
           questionText: '${_str(sm['title'])}\n\n${_str(sm['content'])}',
-          solutionText: "Solution data is in old interactive format. Please regenerate.",
+          solutionText:
+              "Solution data is in old interactive format. Please regenerate.",
         );
       }).toList();
-      parsedSections = [QpSection(title: "General Questions", questions: fallbackQs)];
+      parsedSections = [
+        QpSection(title: "General Questions", questions: fallbackQs),
+      ];
     }
 
     return QuestionPaper(
@@ -755,15 +1225,14 @@ class QuickReviewItem {
   final String statement;
   final String relatedLessonTitle;
 
-  QuickReviewItem({
-    required this.statement,
-    required this.relatedLessonTitle,
-  });
+  QuickReviewItem({required this.statement, required this.relatedLessonTitle});
 
   factory QuickReviewItem.fromJson(Map<String, dynamic> json) {
     return QuickReviewItem(
       statement: _str(json['statement']),
-      relatedLessonTitle: _str(json['relatedLessonTitle'] ?? json['relatedLesson'] ?? ''),
+      relatedLessonTitle: _str(
+        json['relatedLessonTitle'] ?? json['relatedLesson'] ?? '',
+      ),
     );
   }
 
@@ -782,9 +1251,9 @@ class Module {
   final List<QuickReviewItem>? quickReview;
 
   Module({
-    required this.id, 
-    required this.title, 
-    required this.description, 
+    required this.id,
+    required this.title,
+    required this.description,
     required this.sections,
     required this.practiceQuestions,
     this.quickReview,
@@ -795,9 +1264,31 @@ class Module {
       id: _str(json['id']),
       title: _str(json['title']),
       description: _str(json['description']),
-      sections: (json['sections'] as List?)?.map((s) => Section.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
-      practiceQuestions: (json['practiceQuestions'] as List?)?.map((s) => Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
-      quickReview: (json['quickReview'] as List?)?.map((r) => QuickReviewItem.fromJson(r is Map ? Map<String, dynamic>.from(r) : {})).toList(),
+      sections:
+          (json['sections'] as List?)
+              ?.map(
+                (s) => Section.fromJson(
+                  s is Map ? Map<String, dynamic>.from(s) : {},
+                ),
+              )
+              .toList() ??
+          [],
+      practiceQuestions:
+          (json['practiceQuestions'] as List?)
+              ?.map(
+                (s) => Slide.fromJson(
+                  s is Map ? Map<String, dynamic>.from(s) : {},
+                ),
+              )
+              .toList() ??
+          [],
+      quickReview: (json['quickReview'] as List?)
+          ?.map(
+            (r) => QuickReviewItem.fromJson(
+              r is Map ? Map<String, dynamic>.from(r) : {},
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -807,7 +1298,8 @@ class Module {
     'description': description,
     'sections': sections.map((s) => s.toJson()).toList(),
     'practiceQuestions': practiceQuestions.map((s) => s.toJson()).toList(),
-    if (quickReview != null) 'quickReview': quickReview!.map((r) => r.toJson()).toList(),
+    if (quickReview != null)
+      'quickReview': quickReview!.map((r) => r.toJson()).toList(),
   };
 
   Module copyWith({
@@ -843,10 +1335,12 @@ class Section {
   final int? endPage;
   final String? pdfPath;
   final bool unitsGenerated;
+
   /// Set to true once the user has reviewed the AI's per-unit format
   /// suggestions (or accepted them as-is). Lessons stay gated behind a
   /// confirmation panel until this flips true.
   final bool unitFormatsConfirmed;
+
   /// Per-section planner instructions, captured on the "Plan units" panel.
   /// Pre-filled from the book's [Book.customInstructions] but editable so a
   /// section can be planned with a tweaked focus. Persisted so a manifest
@@ -856,6 +1350,7 @@ class Section {
   final int? bookIndex;
   final List<String>? selectedQuestions;
   final List<LessonFormat>? lessonFormats;
+
   /// Set when the PDF splitter could not produce this section's chunk (bad
   /// range, corrupt pages, ...). A non-null value means [pdfPath] is absent
   /// ON PURPOSE and the UI should offer a repair instead of silently showing
@@ -888,18 +1383,45 @@ class Section {
       title: _str(json['title']),
       description: _str(json['description']),
       color: _str(json['color'], 'duo-blue'),
-      units: (json['units'] as List?)?.map((u) => Unit.fromJson(u is Map ? Map<String, dynamic>.from(u) : {})).toList() ?? [],
-      startPage: json['startPage'] is num ? (json['startPage'] as num).toInt() : int.tryParse(_str(json['startPage'])),
-      endPage: json['endPage'] is num ? (json['endPage'] as num).toInt() : int.tryParse(_str(json['endPage'])),
+      units:
+          (json['units'] as List?)
+              ?.map(
+                (u) =>
+                    Unit.fromJson(u is Map ? Map<String, dynamic>.from(u) : {}),
+              )
+              .toList() ??
+          [],
+      startPage: json['startPage'] is num
+          ? (json['startPage'] as num).toInt()
+          : int.tryParse(_str(json['startPage'])),
+      endPage: json['endPage'] is num
+          ? (json['endPage'] as num).toInt()
+          : int.tryParse(_str(json['endPage'])),
       pdfPath: _strOpt(json['pdfPath']),
       unitsGenerated: _bool(json['unitsGenerated'], false),
       unitFormatsConfirmed: _bool(json['unitFormatsConfirmed'], false),
       customInstructions: _strOpt(json['customInstructions']),
-      pyqQuestions: (json['pyqQuestions'] as List?)?.map((s) => Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [],
-      bookIndex: json['bookIndex'] is num ? (json['bookIndex'] as num).toInt() : int.tryParse(_str(json['bookIndex'])),
-      selectedQuestions: (json['selectedQuestions'] as List?)?.map((q) => _str(q)).toList(),
+      pyqQuestions:
+          (json['pyqQuestions'] as List?)
+              ?.map(
+                (s) => Slide.fromJson(
+                  s is Map ? Map<String, dynamic>.from(s) : {},
+                ),
+              )
+              .toList() ??
+          [],
+      bookIndex: json['bookIndex'] is num
+          ? (json['bookIndex'] as num).toInt()
+          : int.tryParse(_str(json['bookIndex'])),
+      selectedQuestions: (json['selectedQuestions'] as List?)
+          ?.map((q) => _str(q))
+          .toList(),
       lessonFormats: (json['lessonFormats'] as List?)
-          ?.map((f) => LessonFormat.fromJson(f is Map ? Map<String, dynamic>.from(f) : {}))
+          ?.map(
+            (f) => LessonFormat.fromJson(
+              f is Map ? Map<String, dynamic>.from(f) : {},
+            ),
+          )
           .toList(),
       chunkError: _strOpt(json['chunkError']),
     );
@@ -920,13 +1442,22 @@ class Section {
     'pyqQuestions': pyqQuestions.map((s) => s.toJson()).toList(),
     if (bookIndex != null) 'bookIndex': bookIndex,
     if (selectedQuestions != null) 'selectedQuestions': selectedQuestions,
-    if (lessonFormats != null) 'lessonFormats': lessonFormats!.map((f) => f.toJson()).toList(),
+    if (lessonFormats != null)
+      'lessonFormats': lessonFormats!.map((f) => f.toJson()).toList(),
     if (chunkError != null) 'chunkError': chunkError,
   };
 
-  /// True for skeletons that carry their own page-range and PDF chunk and
-  /// expect a lazy unit-manifest pass before lessons can be generated.
-  bool get isLazySection => pdfPath != null || startPage != null;
+  /// True when this section was mapped to source-PDF pages at skeleton time
+  /// (i.e. a reference book backs it). Knowledge-only sections — generated
+  /// from just a syllabus or a text prompt — have no mapping.
+  bool get hasSourceMapping =>
+      pdfPath != null || startPage != null || endPage != null;
+
+  /// True for skeletons that expect a lazy unit-manifest pass before lessons
+  /// can be generated: chunk-mapped new-flow sections, and knowledge-only
+  /// sections (no source mapping, no baked-in units). Old-flow books return
+  /// false because their units are baked in at skeleton time.
+  bool get isLazySection => hasSourceMapping || units.isEmpty || unitsGenerated;
 
   /// Whether the unit list still needs to be produced by the AI. Old-flow
   /// books always return false here because their units are baked in at
@@ -936,7 +1467,10 @@ class Section {
   /// True when the units are present but the user hasn't signed off on
   /// the AI's per-unit format assignments yet.
   bool get needsFormatConfirmation =>
-      isLazySection && unitsGenerated && units.isNotEmpty && !unitFormatsConfirmed;
+      isLazySection &&
+      unitsGenerated &&
+      units.isNotEmpty &&
+      !unitFormatsConfirmed;
 
   Section copyWith({
     String? id,
@@ -1006,12 +1540,26 @@ class Unit {
       id: _str(json['id']),
       title: _str(json['title']),
       description: _str(json['description']),
-      startPage: json['startPage'] is num ? (json['startPage'] as num).toInt() : int.tryParse(_str(json['startPage'])),
-      endPage: json['endPage'] is num ? (json['endPage'] as num).toInt() : int.tryParse(_str(json['endPage'])),
+      startPage: json['startPage'] is num
+          ? (json['startPage'] as num).toInt()
+          : int.tryParse(_str(json['startPage'])),
+      endPage: json['endPage'] is num
+          ? (json['endPage'] as num).toInt()
+          : int.tryParse(_str(json['endPage'])),
       isGenerated: _bool(json['isGenerated'], true),
       pdfPath: _strOpt(json['pdfPath']),
-      lessons: (json['lessons'] as List?)?.map((l) => Lesson.fromJson(l is Map ? Map<String, dynamic>.from(l) : {})).toList() ?? [],
-      bookIndex: json['bookIndex'] is num ? (json['bookIndex'] as num).toInt() : int.tryParse(_str(json['bookIndex'])),
+      lessons:
+          (json['lessons'] as List?)
+              ?.map(
+                (l) => Lesson.fromJson(
+                  l is Map ? Map<String, dynamic>.from(l) : {},
+                ),
+              )
+              .toList() ??
+          [],
+      bookIndex: json['bookIndex'] is num
+          ? (json['bookIndex'] as num).toInt()
+          : int.tryParse(_str(json['bookIndex'])),
     );
   }
 
@@ -1058,17 +1606,20 @@ class Lesson {
   final String description;
   final String icon;
   final List<Slide> slides;
+
   /// Id of the [LessonFormat] this specific lesson follows. Different
   /// lessons in the same unit may pick different formats (e.g. a unit on
   /// "Newton\'s laws" can contain a theory lesson, a worked-example lesson
   /// and a proof lesson). The AI picks one per lesson during generation;
   /// null falls back to the book\'s default format.
   final String? formatId;
+
   /// Natural-language description of the diagram that best illustrates
   /// this lesson. The text AI emits it during lesson generation; the
   /// graphics AI later turns it into [canvasSvg]. Null only on lessons
   /// generated before canvas-art support existed.
   final String? canvasPrompt;
+
   /// The rendered diagram source. Newer art is a JavaScript `draw(ctx, W, H)`
   /// function executed inside a reusable HTML5 `<canvas>` host; legacy art is
   /// raw `<svg>` markup. The renderer ([CanvasArtView]) auto-detects which by
@@ -1089,13 +1640,23 @@ class Lesson {
 
   factory Lesson.fromJson(Map<String, dynamic> json) {
     final lessonId = _str(json['id']);
-    final rawSlides = (json['slides'] as List?)?.map((s) => Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList() ?? [];
-    
+    final rawSlides =
+        (json['slides'] as List?)
+            ?.map(
+              (s) =>
+                  Slide.fromJson(s is Map ? Map<String, dynamic>.from(s) : {}),
+            )
+            .toList() ??
+        [];
+
     final Set<String> seenIds = {};
     int slideIdx = 1;
     final slides = rawSlides.map((s) {
       var sId = s.id.trim();
-      if (sId.isEmpty || sId == '%slide_id%' || sId == 'null' || seenIds.contains(sId)) {
+      if (sId.isEmpty ||
+          sId == '%slide_id%' ||
+          sId == 'null' ||
+          seenIds.contains(sId)) {
         sId = 's${slideIdx++}';
         var candidate = '$lessonId-$sId';
         while (seenIds.contains(candidate)) {
@@ -1141,7 +1702,9 @@ class Lesson {
 
     var parts = s.content.split(RegExp(r'\n+\s*---\s*\n+'));
     if (parts.length == 1) parts = s.content.split(RegExp(r'\n\s*\n'));
-    parts = [for (final p in parts) p.trim()].where((p) => p.isNotEmpty).toList();
+    parts = [
+      for (final p in parts) p.trim(),
+    ].where((p) => p.isNotEmpty).toList();
     if (parts.length <= 1) return [s];
 
     final chunks = <String>[];
@@ -1226,7 +1789,12 @@ class InteractiveStep {
         } else if (o is Map) {
           return QuizOption.fromJson(Map<String, dynamic>.from(o));
         } else {
-          return QuizOption(id: 'opt', text: 'Option', isCorrect: false, explanation: '');
+          return QuizOption(
+            id: 'opt',
+            text: 'Option',
+            isCorrect: false,
+            explanation: '',
+          );
         }
       }).toList(),
     );
@@ -1238,12 +1806,15 @@ class InteractiveStep {
     if (options != null) 'options': options!.map((o) => o.toJson()).toList(),
   };
 
-  InteractiveStep copyWith({String? prompt, String? stepText, List<QuizOption>? options}) =>
-      InteractiveStep(
-        prompt: prompt ?? this.prompt,
-        stepText: stepText ?? this.stepText,
-        options: options ?? this.options,
-      );
+  InteractiveStep copyWith({
+    String? prompt,
+    String? stepText,
+    List<QuizOption>? options,
+  }) => InteractiveStep(
+    prompt: prompt ?? this.prompt,
+    stepText: stepText ?? this.stepText,
+    options: options ?? this.options,
+  );
 }
 
 class Slide {
@@ -1259,6 +1830,7 @@ class Slide {
   final List<String>? blankDistractors;
   final double? numericAnswer;
   final double? numericTolerance;
+
   /// Optional per-slide diagram (only used today by proof/step_by_step
   /// slides). When the slide\'s content actually demands a visual the AI
   /// emits a [canvasPrompt]; otherwise this stays null and no diagram is
@@ -1275,8 +1847,10 @@ class Slide {
 
   /// `matching` slides: the correct left↔right pairs (shuffled at render).
   final List<MatchPair>? matchPairs;
+
   /// `ordering` slides: the items in their CORRECT order (shuffled at render).
   final List<String>? orderItems;
+
   /// `error_spotting` slides: index into [proofSteps] of the flawed step.
   final int? errorIndex;
 
@@ -1304,7 +1878,7 @@ class Slide {
   factory Slide.fromJson(Map<String, dynamic> json) {
     final type = _str(json['type'], 'theory');
     List<QuizOption>? parsedOptions;
-    
+
     if (json['options'] != null) {
       parsedOptions = (json['options'] as List).map((o) {
         if (o is String) {
@@ -1317,7 +1891,12 @@ class Slide {
         } else if (o is Map) {
           return QuizOption.fromJson(Map<String, dynamic>.from(o));
         } else {
-          return QuizOption(id: 'opt', text: 'Option', isCorrect: false, explanation: '');
+          return QuizOption(
+            id: 'opt',
+            text: 'Option',
+            isCorrect: false,
+            explanation: '',
+          );
         }
       }).toList();
       if (parsedOptions.isNotEmpty) {
@@ -1354,14 +1933,24 @@ class Slide {
           parsedOptions = parsedOptions.map((o) {
             if (correctCount == 0 && !firstTrue) {
               firstTrue = true;
-              return QuizOption(id: o.id, text: o.text, isCorrect: true, explanation: o.explanation);
+              return QuizOption(
+                id: o.id,
+                text: o.text,
+                isCorrect: true,
+                explanation: o.explanation,
+              );
             }
             if (o.isCorrect) {
               if (!firstTrue) {
                 firstTrue = true;
                 return o;
               }
-              return QuizOption(id: o.id, text: o.text, isCorrect: false, explanation: o.explanation);
+              return QuizOption(
+                id: o.id,
+                text: o.text,
+                isCorrect: false,
+                explanation: o.explanation,
+              );
             }
             return o;
           }).toList();
@@ -1392,7 +1981,9 @@ class Slide {
       } else if (blanks > answers.length && answers.isNotEmpty) {
         var seen = 0;
         content = content.replaceAllMapped(
-            blankRe, (m) => ++seen <= answers.length ? m.group(0)! : '…');
+          blankRe,
+          (m) => ++seen <= answers.length ? m.group(0)! : '…',
+        );
       }
     }
 
@@ -1403,21 +1994,38 @@ class Slide {
       content: content,
       interactiveCanvasHtml: _strOpt(json['interactiveCanvasHtml']),
       options: parsedOptions,
-      interactiveSteps: (json['interactiveSteps'] as List?)?.map((s) => InteractiveStep.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList(),
+      interactiveSteps: (json['interactiveSteps'] as List?)
+          ?.map(
+            (s) => InteractiveStep.fromJson(
+              s is Map ? Map<String, dynamic>.from(s) : {},
+            ),
+          )
+          .toList(),
       proofSteps: (json['proofSteps'] as List?)?.map((s) => _str(s)).toList(),
       blankAnswer: blankAnswer,
-      blankDistractors: (json['blankDistractors'] as List?)?.map((s) => _str(s)).toList(),
+      blankDistractors: (json['blankDistractors'] as List?)
+          ?.map((s) => _str(s))
+          .toList(),
       numericAnswer: _dblOpt(json['numericAnswer']),
       numericTolerance: _dblOpt(json['numericTolerance']) ?? 0.01,
       canvasPrompt: _strOpt(json['canvasPrompt']),
       canvasSvg: _strOpt(json['canvasSvg']),
       source: _strOpt(json['source']),
       matchPairs: (json['matchPairs'] as List?)
-          ?.map((p) => MatchPair.fromJson(p is Map ? Map<String, dynamic>.from(p) : {}))
+          ?.map(
+            (p) => MatchPair.fromJson(
+              p is Map ? Map<String, dynamic>.from(p) : {},
+            ),
+          )
           .where((p) => p.left.isNotEmpty && p.right.isNotEmpty)
           .toList(),
-      orderItems: (json['orderItems'] as List?)?.map((s) => _str(s)).where((s) => s.isNotEmpty).toList(),
-      errorIndex: json['errorIndex'] is num ? (json['errorIndex'] as num).toInt() : int.tryParse(_str(json['errorIndex'])),
+      orderItems: (json['orderItems'] as List?)
+          ?.map((s) => _str(s))
+          .where((s) => s.isNotEmpty)
+          .toList(),
+      errorIndex: json['errorIndex'] is num
+          ? (json['errorIndex'] as num).toInt()
+          : int.tryParse(_str(json['errorIndex'])),
     );
   }
 
@@ -1426,9 +2034,11 @@ class Slide {
     'type': type,
     'title': title,
     'content': content,
-    if (interactiveCanvasHtml != null) 'interactiveCanvasHtml': interactiveCanvasHtml,
+    if (interactiveCanvasHtml != null)
+      'interactiveCanvasHtml': interactiveCanvasHtml,
     if (options != null) 'options': options!.map((o) => o.toJson()).toList(),
-    if (interactiveSteps != null) 'interactiveSteps': interactiveSteps!.map((s) => s.toJson()).toList(),
+    if (interactiveSteps != null)
+      'interactiveSteps': interactiveSteps!.map((s) => s.toJson()).toList(),
     if (proofSteps != null) 'proofSteps': proofSteps,
     if (blankAnswer != null) 'blankAnswer': blankAnswer,
     if (blankDistractors != null) 'blankDistractors': blankDistractors,
@@ -1437,7 +2047,8 @@ class Slide {
     if (canvasPrompt != null) 'canvasPrompt': canvasPrompt,
     if (canvasSvg != null) 'canvasSvg': canvasSvg,
     if (source != null) 'source': source,
-    if (matchPairs != null) 'matchPairs': matchPairs!.map((p) => p.toJson()).toList(),
+    if (matchPairs != null)
+      'matchPairs': matchPairs!.map((p) => p.toJson()).toList(),
     if (orderItems != null) 'orderItems': orderItems,
     if (errorIndex != null) 'errorIndex': errorIndex,
   };
@@ -1467,7 +2078,8 @@ class Slide {
       type: type ?? this.type,
       title: title ?? this.title,
       content: content ?? this.content,
-      interactiveCanvasHtml: interactiveCanvasHtml ?? this.interactiveCanvasHtml,
+      interactiveCanvasHtml:
+          interactiveCanvasHtml ?? this.interactiveCanvasHtml,
       options: options ?? this.options,
       interactiveSteps: interactiveSteps ?? this.interactiveSteps,
       proofSteps: proofSteps ?? this.proofSteps,
@@ -1493,9 +2105,9 @@ class MatchPair {
   MatchPair({required this.left, required this.right});
 
   factory MatchPair.fromJson(Map<String, dynamic> json) => MatchPair(
-        left: _str(json['left'] ?? json['term'] ?? json['question']),
-        right: _str(json['right'] ?? json['definition'] ?? json['answer']),
-      );
+    left: _str(json['left'] ?? json['term'] ?? json['question']),
+    right: _str(json['right'] ?? json['definition'] ?? json['answer']),
+  );
 
   Map<String, dynamic> toJson() => {'left': left, 'right': right};
 }
@@ -1506,11 +2118,16 @@ class QuizOption {
   final bool isCorrect;
   final String explanation;
 
-  QuizOption({required this.id, required this.text, required this.isCorrect, required this.explanation});
+  QuizOption({
+    required this.id,
+    required this.text,
+    required this.isCorrect,
+    required this.explanation,
+  });
 
   factory QuizOption.fromJson(Map<String, dynamic> json) {
     final rawId = _strOpt(json['id']);
-    
+
     String optionText = '';
     if (json['text'] != null) {
       optionText = _str(json['text']);
@@ -1524,8 +2141,12 @@ class QuizOption {
       optionText = 'Option';
     }
 
-    final parsedText = optionText.trim().isNotEmpty ? optionText.trim() : 'Option';
-    final effectiveId = (rawId != null && rawId.isNotEmpty) ? rawId.trim() : parsedText.hashCode.toString();
+    final parsedText = optionText.trim().isNotEmpty
+        ? optionText.trim()
+        : 'Option';
+    final effectiveId = (rawId != null && rawId.isNotEmpty)
+        ? rawId.trim()
+        : parsedText.hashCode.toString();
 
     return QuizOption(
       id: effectiveId,
@@ -1542,13 +2163,17 @@ class QuizOption {
     'explanation': explanation,
   };
 
-  QuizOption copyWith({String? id, String? text, bool? isCorrect, String? explanation}) =>
-      QuizOption(
-        id: id ?? this.id,
-        text: text ?? this.text,
-        isCorrect: isCorrect ?? this.isCorrect,
-        explanation: explanation ?? this.explanation,
-      );
+  QuizOption copyWith({
+    String? id,
+    String? text,
+    bool? isCorrect,
+    String? explanation,
+  }) => QuizOption(
+    id: id ?? this.id,
+    text: text ?? this.text,
+    isCorrect: isCorrect ?? this.isCorrect,
+    explanation: explanation ?? this.explanation,
+  );
 }
 
 class CourseFolder {
@@ -1556,11 +2181,7 @@ class CourseFolder {
   final String name;
   final List<String> bookIds;
 
-  CourseFolder({
-    required this.id,
-    required this.name,
-    required this.bookIds,
-  });
+  CourseFolder({required this.id, required this.name, required this.bookIds});
 
   factory CourseFolder.fromJson(Map<String, dynamic> json) {
     return CourseFolder(
@@ -1570,17 +2191,9 @@ class CourseFolder {
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'bookIds': bookIds,
-  };
+  Map<String, dynamic> toJson() => {'id': id, 'name': name, 'bookIds': bookIds};
 
-  CourseFolder copyWith({
-    String? id,
-    String? name,
-    List<String>? bookIds,
-  }) {
+  CourseFolder copyWith({String? id, String? name, List<String>? bookIds}) {
     return CourseFolder(
       id: id ?? this.id,
       name: name ?? this.name,
