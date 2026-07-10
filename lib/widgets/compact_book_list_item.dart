@@ -90,7 +90,7 @@ class CompactBookListItem extends StatelessWidget {
           child: Ink(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.03),
+              color: context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: mostUsedColor.withOpacity(0.2), width: 1.2),
             ),
@@ -122,8 +122,8 @@ class CompactBookListItem extends StatelessWidget {
                     children: [
                       Text(
                         book.title,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: context.colors.textPrimary,
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                           height: 1.2,
@@ -137,7 +137,7 @@ class CompactBookListItem extends StatelessWidget {
                             ? '1 Module • $percentText complete'
                             : '${book.modules.length} Modules • $percentText complete',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
+                          color: context.colors.textFaint,
                           fontSize: 12,
                         ),
                       ),
@@ -161,7 +161,7 @@ class CompactBookListItem extends StatelessWidget {
                 dragHandle ??
                     Icon(
                       LucideIcons.chevronRight,
-                      color: Colors.white.withOpacity(0.2),
+                      color: context.colors.textFaint,
                       size: 20,
                     ),
               ],

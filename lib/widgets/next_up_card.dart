@@ -89,7 +89,7 @@ class NextUpCard extends StatelessWidget {
                           CircularProgressIndicator(
                             value: ringValue,
                             strokeWidth: 5,
-                            backgroundColor: Colors.white.withOpacity(0.08),
+                            backgroundColor: context.colors.surfaceAlt,
                             valueColor: AlwaysStoppedAnimation(
                                 goalMet ? AppTheme.duoGreen : AppTheme.duoOrange),
                           ),
@@ -119,8 +119,8 @@ class NextUpCard extends StatelessWidget {
                             n.lesson.title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                color: Colors.white,
+                            style: TextStyle(
+                                color: context.colors.textPrimary,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 15),
                           ),
@@ -129,7 +129,7 @@ class NextUpCard extends StatelessWidget {
                             '${n.book.title}  •  $xpToday/$goal XP today',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Colors.white54, fontSize: 11),
+                            style: TextStyle(color: context.colors.textFaint, fontSize: 11),
                           ),
                         ],
                       ),
@@ -145,7 +145,7 @@ class NextUpCard extends StatelessWidget {
                           BoxShadow(color: AppTheme.duoGreenDark, offset: Offset(0, 3)),
                         ],
                       ),
-                      child: const Icon(LucideIcons.play, color: Colors.white, size: 20),
+                      child: Icon(LucideIcons.play, color: context.colors.textPrimary, size: 20),
                     ),
                   ],
                 ),
