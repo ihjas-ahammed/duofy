@@ -79,7 +79,10 @@ class _MatchingViewState extends State<MatchingView> {
           ? widget.slide.content
           : 'Match each item with its pair.',
       textStyle: TextStyle(
-          fontSize: 17, color: context.colors.textPrimary, fontWeight: FontWeight.bold),
+        fontSize: 17,
+        color: context.colors.textPrimary,
+        fontWeight: FontWeight.bold,
+      ),
     );
 
     _leftChips = [
@@ -88,7 +91,10 @@ class _MatchingViewState extends State<MatchingView> {
           key: ValueKey('left_${widget.slide.id}_$i'),
           data: _pairs[i].left,
           textStyle: TextStyle(
-              fontSize: 14, color: context.colors.textPrimary, fontWeight: FontWeight.bold),
+            fontSize: 14,
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
         ),
     ];
     _rightChips = [
@@ -97,7 +103,10 @@ class _MatchingViewState extends State<MatchingView> {
           key: ValueKey('right_${widget.slide.id}_$i'),
           data: _pairs[i].right,
           textStyle: TextStyle(
-              fontSize: 14, color: context.colors.textPrimary, fontWeight: FontWeight.bold),
+            fontSize: 14,
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
         ),
     ];
   }
@@ -153,7 +162,8 @@ class _MatchingViewState extends State<MatchingView> {
     Color? resultColor,
     required VoidCallback onTap,
   }) {
-    final border = resultColor ??
+    final border =
+        resultColor ??
         (bound ? color : (highlighted ? Colors.amber : context.colors.outline));
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -168,7 +178,9 @@ class _MatchingViewState extends State<MatchingView> {
             constraints: const BoxConstraints(minHeight: 48),
             alignment: Alignment.centerLeft,
             decoration: BoxDecoration(
-              color: bound ? color.withOpacity(0.12) : context.colors.surfaceAlt,
+              color: bound
+                  ? color.withOpacity(0.12)
+                  : context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: border, width: 2),
             ),
@@ -211,8 +223,8 @@ class _MatchingViewState extends State<MatchingView> {
                               highlighted: _selectedLeft == i,
                               resultColor: widget.isAnswered
                                   ? (_isPairCorrect(i)
-                                      ? AppTheme.duoGreen
-                                      : AppTheme.duoRed)
+                                        ? AppTheme.duoGreen
+                                        : AppTheme.duoRed)
                                   : null,
                               onTap: () => _tapLeft(i),
                             ),
@@ -225,23 +237,26 @@ class _MatchingViewState extends State<MatchingView> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           for (final rightIndex in _rightOrder)
-                            Builder(builder: (context) {
-                              final boundLeft = _boundLeftFor(rightIndex);
-                              return _chip(
-                                child: _rightChips[rightIndex],
-                                bound: boundLeft != null,
-                                color: boundLeft != null
-                                    ? _pairColor(boundLeft)
-                                    : context.colors.outline,
-                                highlighted: false,
-                                resultColor: widget.isAnswered && boundLeft != null
-                                    ? (_isPairCorrect(boundLeft)
-                                        ? AppTheme.duoGreen
-                                        : AppTheme.duoRed)
-                                    : null,
-                                onTap: () => _tapRight(rightIndex),
-                              );
-                            }),
+                            Builder(
+                              builder: (context) {
+                                final boundLeft = _boundLeftFor(rightIndex);
+                                return _chip(
+                                  child: _rightChips[rightIndex],
+                                  bound: boundLeft != null,
+                                  color: boundLeft != null
+                                      ? _pairColor(boundLeft)
+                                      : context.colors.outline,
+                                  highlighted: false,
+                                  resultColor:
+                                      widget.isAnswered && boundLeft != null
+                                      ? (_isPairCorrect(boundLeft)
+                                            ? AppTheme.duoGreen
+                                            : AppTheme.duoRed)
+                                      : null,
+                                  onTap: () => _tapRight(rightIndex),
+                                );
+                              },
+                            ),
                         ],
                       ),
                     ),
@@ -255,10 +270,7 @@ class _MatchingViewState extends State<MatchingView> {
               hasScrollBody: false,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  const SizedBox(height: 24),
-                  widget.bottomBar!,
-                ],
+                children: [const SizedBox(height: 24), widget.bottomBar!],
               ),
             ),
         ],

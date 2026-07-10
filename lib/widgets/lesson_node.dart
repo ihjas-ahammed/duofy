@@ -146,24 +146,109 @@ final Map<String, IconData> _lessonIcons = {
 /// in sync with [_lessonIcons]. Surface this in prompts so the model picks
 /// from the supported vocabulary.
 const List<String> lessonIconChoices = [
-  'book', 'book-open', 'bookmark', 'file-text', 'scroll',
-  'clipboard', 'pencil', 'feather', 'graduation-cap', 'lightbulb', 'brain',
-  'sparkles', 'star', 'trophy', 'medal', 'award', 'target', 'crown', 'gem',
-  'wand', 'puzzle',
-  'calculator', 'function', 'variable', 'infinity', 'sigma', 'pi', 'percent',
-  'plus', 'minus', 'divide', 'equal', 'hash', 'pie-chart', 'bar-chart',
-  'line-chart', 'trending-up',
-  'atom', 'orbit', 'rocket', 'magnet', 'zap', 'flame',
-  'thermometer', 'flask', 'beaker', 'microscope', 'circuit-board', 'cpu',
-  'dna', 'leaf', 'sprout', 'tree', 'trees', 'heart', 'eye', 'bone', 'pill',
-  'stethoscope', 'syringe',
-  'globe', 'map', 'sun', 'moon', 'cloud', 'wind', 'droplets',
-  'history', 'landmark', 'swords', 'shield', 'languages', 'message-circle',
-  'code', 'database', 'key', 'lock', 'wrench', 'hammer', 'cog',
-  'palette', 'paintbrush', 'paint-bucket', 'image', 'camera', 'video',
-  'film', 'music', 'mic', 'drum', 'radio',
-  'building', 'home', 'car', 'plane', 'ship', 'cake', 'coffee', 'utensils',
-  'dice', 'gamepad', 'users', 'user',
+  'book',
+  'book-open',
+  'bookmark',
+  'file-text',
+  'scroll',
+  'clipboard',
+  'pencil',
+  'feather',
+  'graduation-cap',
+  'lightbulb',
+  'brain',
+  'sparkles',
+  'star',
+  'trophy',
+  'medal',
+  'award',
+  'target',
+  'crown',
+  'gem',
+  'wand',
+  'puzzle',
+  'calculator',
+  'function',
+  'variable',
+  'infinity',
+  'sigma',
+  'pi',
+  'percent',
+  'plus',
+  'minus',
+  'divide',
+  'equal',
+  'hash',
+  'pie-chart',
+  'bar-chart',
+  'line-chart',
+  'trending-up',
+  'atom',
+  'orbit',
+  'rocket',
+  'magnet',
+  'zap',
+  'flame',
+  'thermometer',
+  'flask',
+  'beaker',
+  'microscope',
+  'circuit-board',
+  'cpu',
+  'dna',
+  'leaf',
+  'sprout',
+  'tree',
+  'trees',
+  'heart',
+  'eye',
+  'bone',
+  'pill',
+  'stethoscope',
+  'syringe',
+  'globe',
+  'map',
+  'sun',
+  'moon',
+  'cloud',
+  'wind',
+  'droplets',
+  'history',
+  'landmark',
+  'swords',
+  'shield',
+  'languages',
+  'message-circle',
+  'code',
+  'database',
+  'key',
+  'lock',
+  'wrench',
+  'hammer',
+  'cog',
+  'palette',
+  'paintbrush',
+  'paint-bucket',
+  'image',
+  'camera',
+  'video',
+  'film',
+  'music',
+  'mic',
+  'drum',
+  'radio',
+  'building',
+  'home',
+  'car',
+  'plane',
+  'ship',
+  'cake',
+  'coffee',
+  'utensils',
+  'dice',
+  'gamepad',
+  'users',
+  'user',
 ];
 
 class NextNodePop extends StatefulWidget {
@@ -175,13 +260,17 @@ class NextNodePop extends StatefulWidget {
   State<NextNodePop> createState() => _NextNodePopState();
 }
 
-class _NextNodePopState extends State<NextNodePop> with SingleTickerProviderStateMixin {
+class _NextNodePopState extends State<NextNodePop>
+    with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500));
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
     if (widget.animate) _ctrl.repeat();
   }
 
@@ -248,6 +337,7 @@ class LessonNodeWidget extends StatefulWidget {
   final bool isNextToStart;
   final String sectionColorStr;
   final VoidCallback onTap;
+
   /// Long-press the node to surface destructive/maintenance actions
   /// (currently: regenerate this entire lesson). Null hides the affordance.
   final VoidCallback? onLongPress;
@@ -270,7 +360,8 @@ class LessonNodeWidget extends StatefulWidget {
   State<LessonNodeWidget> createState() => _LessonNodeWidgetState();
 }
 
-class _LessonNodeWidgetState extends State<LessonNodeWidget> with SingleTickerProviderStateMixin {
+class _LessonNodeWidgetState extends State<LessonNodeWidget>
+    with SingleTickerProviderStateMixin {
   bool _isPressed = false;
   late AnimationController _glowCtrl;
 
@@ -324,12 +415,15 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget> with SingleTickerPr
 
     // When NOT pressed, the top face is shifted UP by _depthOffset.
     // When pressed, it shifts to 0, covering the shadow.
-    final double topFaceOffset = (_isPressed && !widget.isLocked) ? 0 : -_depthOffset;
+    final double topFaceOffset = (_isPressed && !widget.isLocked)
+        ? 0
+        : -_depthOffset;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final parentWidth = constraints.maxWidth;
-        final computedLabelWidth = parentWidth - LessonNodeWidget.nodeSize - 20 - 32;
+        final computedLabelWidth =
+            parentWidth - LessonNodeWidget.nodeSize - 20 - 32;
         final labelWidth = computedLabelWidth > 50 ? computedLabelWidth : 140.0;
 
         return Stack(
@@ -362,7 +456,8 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget> with SingleTickerPr
                       // GLOW dimensions / intensity depend on active state.
                       final bool active = widget.isActive && !widget.isLocked;
                       final double extra = active ? 10 + 6 * t : 6;
-                      final double glowSize = LessonNodeWidget.nodeSize + extra * 2;
+                      final double glowSize =
+                          LessonNodeWidget.nodeSize + extra * 2;
                       final Color glowColor = active ? bgColor : Colors.black;
                       final double glowOpacity = active
                           ? 0.35 + 0.30 * t
@@ -408,11 +503,9 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget> with SingleTickerPr
                                 children: [
                                   // Circle 1: Background
                                   Positioned.fill(
-                                    child: Container(
-                                      color: bgColor,
-                                    ),
+                                    child: Container(color: bgColor),
                                   ),
-                                  
+
                                   // Circle 2: Transparent black for shadow effect
                                   Positioned.fill(
                                     child: Container(
@@ -435,7 +528,10 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget> with SingleTickerPr
                                           center: const Alignment(-0.2, -0.55),
                                           radius: 0.95,
                                           colors: [
-                                            Color.alphaBlend(highlightColor, bgColor),
+                                            Color.alphaBlend(
+                                              highlightColor,
+                                              bgColor,
+                                            ),
                                             bgColor,
                                             Color.alphaBlend(rimShade, bgColor),
                                           ],
@@ -454,13 +550,20 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget> with SingleTickerPr
                                             child: IgnorePointer(
                                               child: DecoratedBox(
                                                 decoration: BoxDecoration(
-                                                  borderRadius: BorderRadius.circular(40),
+                                                  borderRadius:
+                                                      BorderRadius.circular(40),
                                                   gradient: LinearGradient(
                                                     begin: Alignment.topCenter,
                                                     end: Alignment.bottomCenter,
                                                     colors: [
-                                                      Colors.white.withOpacity(widget.isLocked ? 0.10 : 0.28),
-                                                      Colors.white.withOpacity(0.0),
+                                                      Colors.white.withOpacity(
+                                                        widget.isLocked
+                                                            ? 0.10
+                                                            : 0.28,
+                                                      ),
+                                                      Colors.white.withOpacity(
+                                                        0.0,
+                                                      ),
                                                     ],
                                                   ),
                                                 ),
@@ -497,7 +600,10 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget> with SingleTickerPr
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF4ADE80),
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: const Color(0xFF16A34A), width: 1.5),
+                                  border: Border.all(
+                                    color: const Color(0xFF16A34A),
+                                    width: 1.5,
+                                  ),
                                   boxShadow: [
                                     BoxShadow(
                                       color: context.colors.shadow,
@@ -506,7 +612,11 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget> with SingleTickerPr
                                     ),
                                   ],
                                 ),
-                                child: const Icon(LucideIcons.check, size: 11, color: Color(0xFF14532D)),
+                                child: const Icon(
+                                  LucideIcons.check,
+                                  size: 11,
+                                  color: Color(0xFF14532D),
+                                ),
                               ),
                             ),
                         ],
@@ -530,25 +640,33 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget> with SingleTickerPr
                           Expanded(
                             child: Container(
                               height: 2,
-                              color: widget.isLocked ? const Color(0xFF475569) : sectionColor.withOpacity(0.5),
+                              color: widget.isLocked
+                                  ? const Color(0xFF475569)
+                                  : sectionColor.withOpacity(0.5),
                             ),
                           ),
                           Icon(
                             Icons.chevron_right,
                             size: 14,
-                            color: widget.isLocked ? const Color(0xFF475569) : sectionColor.withOpacity(0.8),
+                            color: widget.isLocked
+                                ? const Color(0xFF475569)
+                                : sectionColor.withOpacity(0.8),
                           ),
                         ]
                       : [
                           Icon(
                             Icons.chevron_left,
                             size: 14,
-                            color: widget.isLocked ? const Color(0xFF475569) : sectionColor.withOpacity(0.8),
+                            color: widget.isLocked
+                                ? const Color(0xFF475569)
+                                : sectionColor.withOpacity(0.8),
                           ),
                           Expanded(
                             child: Container(
                               height: 2,
-                              color: widget.isLocked ? const Color(0xFF475569) : sectionColor.withOpacity(0.5),
+                              color: widget.isLocked
+                                  ? const Color(0xFF475569)
+                                  : sectionColor.withOpacity(0.5),
                             ),
                           ),
                         ],
@@ -558,7 +676,9 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget> with SingleTickerPr
             // Title pill next to the icon
             Positioned(
               left: widget.textOnRight ? LessonNodeWidget.nodeSize + 20 : null,
-              right: !widget.textOnRight ? LessonNodeWidget.nodeSize + 20 : null,
+              right: !widget.textOnRight
+                  ? LessonNodeWidget.nodeSize + 20
+                  : null,
               top: 0,
               bottom: 0,
               width: labelWidth,
@@ -573,7 +693,10 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget> with SingleTickerPr
                         child: Container(
                           width: labelWidth,
                           height: 44,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: context.colors.surfaceAlt,
                             border: Border.all(color: context.colors.outline),

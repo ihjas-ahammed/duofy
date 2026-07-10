@@ -70,7 +70,11 @@ class _PyqOneWordViewState extends State<PyqOneWordView> {
               padding: const EdgeInsets.only(bottom: 12.0),
               child: Text(
                 widget.slide.title,
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.colors.textPrimary),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: context.colors.textPrimary,
+                ),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -80,16 +84,24 @@ class _PyqOneWordViewState extends State<PyqOneWordView> {
               decoration: AppTheme.glassOf(context),
               child: MathMarkdown(
                 data: widget.slide.content,
-                textStyle: TextStyle(fontSize: 15, color: context.colors.textPrimary),
+                textStyle: TextStyle(
+                  fontSize: 15,
+                  color: context.colors.textPrimary,
+                ),
               ),
             ),
           const SizedBox(height: 24),
           Text(
             'FILL IN YOUR ANSWERS BELOW',
-            style: TextStyle(color: context.colors.textFaint, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.5),
+            style: TextStyle(
+              color: context.colors.textFaint,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.5,
+            ),
           ),
           const SizedBox(height: 12),
-          
+
           if (steps.isEmpty)
             Container(
               padding: const EdgeInsets.all(20),
@@ -101,21 +113,31 @@ class _PyqOneWordViewState extends State<PyqOneWordView> {
                 children: [
                   Text(
                     'Solve the question below:',
-                    style: TextStyle(color: context.colors.textSecondary, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: context.colors.textSecondary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _controllers[0] ??= TextEditingController(),
                     onChanged: (val) => widget.onChanged(0, val),
-                    style: const TextStyle(color: Colors.amber, fontSize: 18, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      color: Colors.amber,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                     decoration: InputDecoration(
                       hintText: 'Type answer',
                       hintStyle: TextStyle(color: context.colors.textFaint),
                       filled: true,
                       fillColor: context.colors.surfaceAlt,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
-                  )
+                  ),
                 ],
               ),
             )
@@ -123,7 +145,7 @@ class _PyqOneWordViewState extends State<PyqOneWordView> {
             ...List.generate(steps.length, (idx) {
               final step = steps[idx];
               final ctrl = _controllers[idx] ??= TextEditingController();
-              
+
               return Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(16),
@@ -139,21 +161,32 @@ class _PyqOneWordViewState extends State<PyqOneWordView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.amber.withOpacity(0.15),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             'Q${idx + 1}',
-                            style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 12),
+                            style: const TextStyle(
+                              color: Colors.amber,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: MathMarkdown(
                             data: step.prompt ?? widget.slide.content,
-                            textStyle: TextStyle(color: context.colors.textPrimary, fontSize: 14, fontWeight: FontWeight.w600),
+                            textStyle: TextStyle(
+                              color: context.colors.textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ],
@@ -162,20 +195,33 @@ class _PyqOneWordViewState extends State<PyqOneWordView> {
                     TextField(
                       controller: ctrl,
                       onChanged: (val) => widget.onChanged(idx, val),
-                      style: const TextStyle(color: Colors.amber, fontSize: 16, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        color: Colors.amber,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                       decoration: InputDecoration(
                         hintText: 'type answer here',
-                        hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 13),
+                        hintStyle: TextStyle(
+                          color: context.colors.textFaint,
+                          fontSize: 13,
+                        ),
                         filled: true,
                         fillColor: context.colors.surfaceAlt,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
                       ),
                     ),
                   ],
                 ),
               );
-            })
+            }),
         ],
       ),
     );

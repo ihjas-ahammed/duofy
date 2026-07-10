@@ -27,6 +27,7 @@ import 'main_layout_screen.dart';
 class BookDashboardScreen extends StatefulWidget {
   final Book book;
   final Function(Book) onBookUpdated;
+
   /// Shared with [MainLayoutScreen]/the PYQ tab so the QP extractor follows the
   /// module the user is viewing here. Kept in sync whenever the active module
   /// changes.
@@ -88,17 +89,20 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
             CoachMark(
               targetKey: _coachModuleKey,
               title: 'Switch modules',
-              body: 'Your course is split into modules (chapters). Tap here to jump between them.',
+              body:
+                  'Your course is split into modules (chapters). Tap here to jump between them.',
             ),
             CoachMark(
               targetKey: _coachSectionKey,
               title: 'Pick a section',
-              body: 'Each module has sections. The lesson path below always shows the selected section — tap a node to start learning.',
+              body:
+                  'Each module has sections. The lesson path below always shows the selected section — tap a node to start learning.',
             ),
             CoachMark(
               targetKey: _coachReviewKey,
               title: 'Quick review',
-              body: 'Short on time? Get the key statements and formulas of this module in one tap.',
+              body:
+                  'Short on time? Get the key statements and formulas of this module in one tap.',
             ),
           ],
         );
@@ -143,7 +147,8 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
   @override
   void didUpdateWidget(BookDashboardScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.book.id != widget.book.id || oldWidget.book.updatedAt != widget.book.updatedAt) {
+    if (oldWidget.book.id != widget.book.id ||
+        oldWidget.book.updatedAt != widget.book.updatedAt) {
       _checkMissingFiles();
     }
   }
@@ -192,7 +197,13 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.surface,
-        title: Text('Regenerate Unit?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        title: Text(
+          'Regenerate Unit?',
+          style: TextStyle(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: Text(
           'This will permanently delete the AI-generated lessons for this unit, allowing you to generate it fresh.',
           style: TextStyle(color: context.colors.textSecondary),
@@ -200,7 +211,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: context.colors.textFaint),
+            ),
           ),
           TextButton(
             onPressed: () async {
@@ -208,20 +222,37 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
               for (var l in unit.lessons) {
                 await ProgressService.clearLessonProgress(l.id, widget.book.id);
               }
-              final List<Unit> updatedUnits = List.from(widget.book.modules[modIdx].sections[secIdx].units);
-              updatedUnits[unitIdx] = unit.copyWith(isGenerated: false, lessons: []);
+              final List<Unit> updatedUnits = List.from(
+                widget.book.modules[modIdx].sections[secIdx].units,
+              );
+              updatedUnits[unitIdx] = unit.copyWith(
+                isGenerated: false,
+                lessons: [],
+              );
 
-              final List<Section> updatedSecs = List.from(widget.book.modules[modIdx].sections);
-              updatedSecs[secIdx] = updatedSecs[secIdx].copyWith(units: updatedUnits);
+              final List<Section> updatedSecs = List.from(
+                widget.book.modules[modIdx].sections,
+              );
+              updatedSecs[secIdx] = updatedSecs[secIdx].copyWith(
+                units: updatedUnits,
+              );
 
               final List<Module> updatedMods = List.from(widget.book.modules);
-              updatedMods[modIdx] = updatedMods[modIdx].copyWith(sections: updatedSecs);
+              updatedMods[modIdx] = updatedMods[modIdx].copyWith(
+                sections: updatedSecs,
+              );
 
               final newBook = widget.book.copyWith(modules: updatedMods);
               await DatabaseService().saveGeneratedBook(newBook);
               widget.onBookUpdated(newBook);
             },
-            child: const Text('Regenerate', style: TextStyle(color: AppTheme.duoOrange, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Regenerate',
+              style: TextStyle(
+                color: AppTheme.duoOrange,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -232,18 +263,26 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
   /// regenerates JUST that one lesson (preserving its slot and id). Diagrams
   /// are re-rendered too when the user opts in. The previous lesson is kept
   /// if every model/key fails.
-  Future<void> _promptRegenerateLesson(int modIdx, int secIdx, int unitIdx, int lessonIdx, Lesson lesson) async {
+  Future<void> _promptRegenerateLesson(
+    int modIdx,
+    int secIdx,
+    int unitIdx,
+    int lessonIdx,
+    Lesson lesson,
+  ) async {
     final customPromptController = TextEditingController();
     final section = widget.book.modules[modIdx].sections[secIdx];
     final sectionFormats = widget.book.formatsForSection(section);
     String selectedFormatId = lesson.formatId ?? widget.book.defaultFormatId;
-    
+
     // Ensure selectedFormatId is valid in the section's formats
-    final bool isValidFormat = sectionFormats.any((f) => f.id == selectedFormatId);
+    final bool isValidFormat = sectionFormats.any(
+      (f) => f.id == selectedFormatId,
+    );
     if (!isValidFormat && sectionFormats.isNotEmpty) {
       selectedFormatId = sectionFormats.first.id;
     }
-    
+
     bool generateGraphics = true;
 
     final result = await showDialog<Map<String, dynamic>>(
@@ -253,10 +292,16 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
           builder: (context, setState) {
             return AlertDialog(
               backgroundColor: context.colors.surface,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
               title: Text(
                 'Regenerate Lesson',
-                style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 20),
+                style: TextStyle(
+                  color: context.colors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
               ),
               content: SingleChildScrollView(
                 child: Column(
@@ -265,21 +310,36 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   children: [
                     Text(
                       'Replace "${lesson.title}" with a fresh version generated from the source PDF.',
-                      style: TextStyle(color: context.colors.textSecondary, fontSize: 13),
+                      style: TextStyle(
+                        color: context.colors.textSecondary,
+                        fontSize: 13,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Text(
                       'CUSTOM INSTRUCTIONS (OPTIONAL)',
-                      style: TextStyle(color: context.colors.textFaint, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      style: TextStyle(
+                        color: context.colors.textFaint,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     TextField(
                       controller: customPromptController,
                       maxLines: 3,
-                      style: TextStyle(color: context.colors.textPrimary, fontSize: 14),
+                      style: TextStyle(
+                        color: context.colors.textPrimary,
+                        fontSize: 14,
+                      ),
                       decoration: InputDecoration(
-                        hintText: 'e.g. Focus more on proofs, make explanation simpler, add more examples...',
-                        hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 13),
+                        hintText:
+                            'e.g. Focus more on proofs, make explanation simpler, add more examples...',
+                        hintStyle: TextStyle(
+                          color: context.colors.textFaint,
+                          fontSize: 13,
+                        ),
                         filled: true,
                         fillColor: context.colors.surfaceAlt,
                         border: OutlineInputBorder(
@@ -292,7 +352,12 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                     const SizedBox(height: 16),
                     Text(
                       'LESSON FORMAT',
-                      style: TextStyle(color: context.colors.textFaint, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      style: TextStyle(
+                        color: context.colors.textFaint,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Container(
@@ -306,8 +371,14 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                           value: selectedFormatId,
                           dropdownColor: context.colors.surface,
                           isExpanded: true,
-                          icon: Icon(Icons.arrow_drop_down, color: context.colors.textFaint),
-                          style: TextStyle(color: context.colors.textPrimary, fontSize: 14),
+                          icon: Icon(
+                            Icons.arrow_drop_down,
+                            color: context.colors.textFaint,
+                          ),
+                          style: TextStyle(
+                            color: context.colors.textPrimary,
+                            fontSize: 14,
+                          ),
                           items: sectionFormats.map((f) {
                             return DropdownMenuItem<String>(
                               value: f.id,
@@ -329,7 +400,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                       children: [
                         Text(
                           'Generate diagrams',
-                          style: TextStyle(color: context.colors.textSecondary, fontSize: 14),
+                          style: TextStyle(
+                            color: context.colors.textSecondary,
+                            fontSize: 14,
+                          ),
                         ),
                         const Spacer(),
                         Switch(
@@ -349,7 +423,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: context.colors.textFaint),
+                  ),
                 ),
                 TextButton(
                   onPressed: () {
@@ -361,7 +438,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   },
                   child: const Text(
                     'Regenerate',
-                    style: TextStyle(color: AppTheme.duoOrange, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: AppTheme.duoOrange,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -381,7 +461,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: context.colors.surface,
-        content: Text('Regenerating "${lesson.title}"…', style: TextStyle(color: context.colors.textPrimary)),
+        content: Text(
+          'Regenerating "${lesson.title}"…',
+          style: TextStyle(color: context.colors.textPrimary),
+        ),
         duration: const Duration(seconds: 3),
       ),
     );
@@ -400,7 +483,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: AppTheme.duoRed.withOpacity(0.85),
-            content: Text(msg, style: TextStyle(color: context.colors.textPrimary)),
+            content: Text(
+              msg,
+              style: TextStyle(color: context.colors.textPrimary),
+            ),
           ),
         );
       },
@@ -410,12 +496,23 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
   /// Asks whether to also render diagrams for this unit, then kicks off
   /// generation. Graphics are optional (and slower), so we let the user
   /// decide per unit instead of always generating them.
-  Future<void> _promptAndGenerateUnit(Unit unit, int modIdx, int secIdx, int unitIdx) async {
+  Future<void> _promptAndGenerateUnit(
+    Unit unit,
+    int modIdx,
+    int secIdx,
+    int unitIdx,
+  ) async {
     final Map<String, dynamic>? result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.surface,
-        title: Text('Generate Lesson', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        title: Text(
+          'Generate Lesson',
+          style: TextStyle(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: Text(
           'Choose when and how to generate lessons for this unit.',
           style: TextStyle(color: context.colors.textSecondary),
@@ -423,14 +520,20 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: context.colors.textFaint),
+            ),
           ),
           PopupMenuButton<Map<String, dynamic>>(
             onSelected: (val) => Navigator.pop(ctx, val),
             style: TextButton.styleFrom(foregroundColor: AppTheme.duoGreen),
             child: const Padding(
               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Text('Generate Now', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: Text(
+                'Generate Now',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
             itemBuilder: (context) => [
               const PopupMenuItem(
@@ -449,7 +552,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
               style: TextButton.styleFrom(foregroundColor: AppTheme.duoViolet),
               child: const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                child: Text('Schedule', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: Text(
+                  'Schedule',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
               itemBuilder: (context) => [
                 const PopupMenuItem(
@@ -468,18 +574,24 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     if (result == null) return;
     final bool graphics = result['graphics'] as bool;
     final bool scheduled = result['scheduled'] as bool;
-    
+
     GenerationManager.instance.startUnitGeneration(
-      unit, widget.book, modIdx, secIdx, unitIdx,
+      unit,
+      widget.book,
+      modIdx,
+      secIdx,
+      unitIdx,
       generateGraphics: graphics,
       isScheduled: scheduled,
     );
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: context.colors.surface,
         content: Text(
-          scheduled ? 'Lesson generation scheduled!' : 'Lesson generation queued!',
+          scheduled
+              ? 'Lesson generation scheduled!'
+              : 'Lesson generation queued!',
           style: TextStyle(color: context.colors.textPrimary),
         ),
       ),
@@ -520,8 +632,14 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
         widget.activeSection?.value = 0;
         try {
           final prefs = await SharedPreferences.getInstance();
-          await prefs.setInt('last_mod_idx_${widget.book.id}', _activeModuleIdx);
-          await prefs.setInt('last_sec_idx_${widget.book.id}', _activeSectionIdx);
+          await prefs.setInt(
+            'last_mod_idx_${widget.book.id}',
+            _activeModuleIdx,
+          );
+          await prefs.setInt(
+            'last_sec_idx_${widget.book.id}',
+            _activeSectionIdx,
+          );
         } catch (e) {
           print('Error saving last resumed position: $e');
         }
@@ -538,7 +656,12 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => FractionallySizedBox(
-        heightFactor: 0.25 + 0.2*(widget.book.modules[_activeModuleIdx].sections.length < 2 ? widget.book.modules[_activeModuleIdx].sections.length: 2),
+        heightFactor:
+            0.25 +
+            0.2 *
+                (widget.book.modules[_activeModuleIdx].sections.length < 2
+                    ? widget.book.modules[_activeModuleIdx].sections.length
+                    : 2),
         child: SectionBottomSheet(
           book: widget.book,
           activeModuleIdx: _activeModuleIdx,
@@ -553,8 +676,14 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
             widget.activeSection?.value = _activeSectionIdx;
             try {
               final prefs = await SharedPreferences.getInstance();
-              await prefs.setInt('last_mod_idx_${widget.book.id}', _activeModuleIdx);
-              await prefs.setInt('last_sec_idx_${widget.book.id}', _activeSectionIdx);
+              await prefs.setInt(
+                'last_mod_idx_${widget.book.id}',
+                _activeModuleIdx,
+              );
+              await prefs.setInt(
+                'last_sec_idx_${widget.book.id}',
+                _activeSectionIdx,
+              );
             } catch (e) {
               print('Error saving last resumed position: $e');
             }
@@ -578,10 +707,8 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     if (!_isSectionPdfMissing(sec)) {
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => ReferencePdfViewerScreen(
-            book: widget.book,
-            initialSection: sec,
-          ),
+          builder: (_) =>
+              ReferencePdfViewerScreen(book: widget.book, initialSection: sec),
         ),
       );
     } else {
@@ -598,11 +725,21 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
           children: [
-            const Icon(LucideIcons.fileWarning, color: AppTheme.duoOrange, size: 28),
+            const Icon(
+              LucideIcons.fileWarning,
+              color: AppTheme.duoOrange,
+              size: 28,
+            ),
             const SizedBox(width: 12),
             Text(
-              chunkError != null ? 'Section PDF Failed' : 'Missing Reference PDF',
-              style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
+              chunkError != null
+                  ? 'Section PDF Failed'
+                  : 'Missing Reference PDF',
+              style: TextStyle(
+                color: context.colors.textPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
             ),
           ],
         ),
@@ -615,7 +752,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: context.colors.textFaint),
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -628,7 +768,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
             },
             child: const Text(
               'Restore PDF(s)',
-              style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: AppTheme.duoBlue,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -638,7 +781,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
 
   Widget _buildSectionPdfBar(Section sec) {
     final isMissing = _isSectionPdfMissing(sec);
-    final hasSyllabus = widget.book.syllabusPath != null && widget.book.syllabusPath!.isNotEmpty;
+    final hasSyllabus =
+        widget.book.syllabusPath != null &&
+        widget.book.syllabusPath!.isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -649,17 +794,26 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
               onTap: () => _onSectionPdfPressed(sec),
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 10,
+                  horizontal: 16,
+                ),
                 decoration: BoxDecoration(
-                  color: (isMissing ? AppTheme.duoOrange : AppTheme.duoBlue).withOpacity(0.12),
+                  color: (isMissing ? AppTheme.duoOrange : AppTheme.duoBlue)
+                      .withOpacity(0.12),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: (isMissing ? AppTheme.duoOrange : AppTheme.duoBlue).withOpacity(0.35)),
+                  border: Border.all(
+                    color: (isMissing ? AppTheme.duoOrange : AppTheme.duoBlue)
+                        .withOpacity(0.35),
+                  ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      isMissing ? LucideIcons.fileWarning : LucideIcons.fileText,
+                      isMissing
+                          ? LucideIcons.fileWarning
+                          : LucideIcons.fileText,
                       size: 16,
                       color: isMissing ? AppTheme.duoOrange : AppTheme.duoBlue,
                     ),
@@ -667,7 +821,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                     Text(
                       isMissing ? 'MISSING REFERENCE' : 'VIEW REFERENCE',
                       style: TextStyle(
-                        color: isMissing ? AppTheme.duoOrange : AppTheme.duoBlue,
+                        color: isMissing
+                            ? AppTheme.duoOrange
+                            : AppTheme.duoBlue,
                         fontSize: 11,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0.8,
@@ -686,26 +842,43 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   MaterialPageRoute(
                     builder: (_) => Scaffold(
                       appBar: AppBar(
-                        title: Text('${widget.book.title} - Syllabus', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                        title: Text(
+                          '${widget.book.title} - Syllabus',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         backgroundColor: context.colors.background,
                       ),
-                      body: SafePdfViewer(file: File(widget.book.syllabusPath!)),
+                      body: SafePdfViewer(
+                        file: File(widget.book.syllabusPath!),
+                      ),
                     ),
                   ),
                 );
               },
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 10,
+                  horizontal: 16,
+                ),
                 decoration: BoxDecoration(
                   color: AppTheme.duoGreen.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppTheme.duoGreen.withOpacity(0.35)),
+                  border: Border.all(
+                    color: AppTheme.duoGreen.withOpacity(0.35),
+                  ),
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(LucideIcons.scroll, size: 16, color: AppTheme.duoGreen),
+                    Icon(
+                      LucideIcons.scroll,
+                      size: 16,
+                      color: AppTheme.duoGreen,
+                    ),
                     SizedBox(width: 8),
                     Text(
                       'SYLLABUS',
@@ -731,7 +904,12 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     if (widget.book.modules.isEmpty) {
       return Scaffold(
         backgroundColor: context.colors.background,
-        body: Center(child: Text('This book is empty.', style: TextStyle(color: context.colors.textFaint))),
+        body: Center(
+          child: Text(
+            'This book is empty.',
+            style: TextStyle(color: context.colors.textFaint),
+          ),
+        ),
       );
     }
 
@@ -739,11 +917,14 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     final activeMod = widget.book.modules[mIdx];
 
     final sectionsCount = activeMod.sections.length;
-    final sIdx = sectionsCount == 0 ? 0 : _activeSectionIdx.clamp(0, sectionsCount - 1);
+    final sIdx = sectionsCount == 0
+        ? 0
+        : _activeSectionIdx.clamp(0, sectionsCount - 1);
     final activeSec = sectionsCount > 0 ? activeMod.sections[sIdx] : null;
 
-    final Color sectionColor =
-        activeSec != null ? SectionColors.base(activeSec.color) : AppTheme.duoBlue;
+    final Color sectionColor = activeSec != null
+        ? SectionColors.base(activeSec.color)
+        : AppTheme.duoBlue;
 
     return Scaffold(
       backgroundColor: context.colors.background,
@@ -760,20 +941,26 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                     builder: (context, _) {
                       if (activeSec == null) {
                         return Center(
-                          child: Text('No sections available.', style: TextStyle(color: context.colors.textFaint)),
+                          child: Text(
+                            'No sections available.',
+                            style: TextStyle(color: context.colors.textFaint),
+                          ),
                         );
                       }
                       // New-flow sections carry their own PDF chunk but don't
                       // have units yet. Planning is now user-triggered from the
                       // manifest panel (so they can tweak the planner
                       // instructions first) rather than auto-firing here.
-                      final manifestTask = GenerationManager.instance.activeSectionManifests[activeSec.id];
+                      final manifestTask = GenerationManager
+                          .instance
+                          .activeSectionManifests[activeSec.id];
                       return LessonPath(
                         section: activeSec,
                         book: widget.book,
                         modIdx: mIdx,
                         secIdx: sIdx,
-                        loadingUnitStatuses: GenerationManager.instance.activeUnitGenerations,
+                        loadingUnitStatuses:
+                            GenerationManager.instance.activeUnitGenerations,
                         sectionManifestStatus: manifestTask,
                         completedLessons: _completedLessons,
                         hasMissingFiles: _hasMissingFiles,
@@ -789,20 +976,31 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                           _onClearUnit(unit, mIdx, sIdx, unitIdx);
                         },
                         onRegenerateLesson: (unitIdx, lessonIdx, lesson) {
-                          _showLessonLongPressMenu(mIdx, sIdx, unitIdx, lessonIdx, lesson);
+                          _showLessonLongPressMenu(
+                            mIdx,
+                            sIdx,
+                            unitIdx,
+                            lessonIdx,
+                            lesson,
+                          );
                         },
                         onUnitLongPress: (unitIdx, unit) {
                           _showUnitLongPressMenu(mIdx, sIdx, unitIdx, unit);
                         },
-                        onPlanManifest: (instructions, selectedQuestions, saveGlobally) {
-                          GenerationManager.instance.clearSectionManifestError(activeSec.id);
-                          GenerationManager.instance.startSectionUnitManifest(
-                            widget.book, mIdx, sIdx,
-                            instructions: instructions,
-                            selectedQuestions: selectedQuestions,
-                            saveGlobally: saveGlobally,
-                          );
-                        },
+                        onPlanManifest:
+                            (instructions, selectedQuestions, saveGlobally) {
+                              GenerationManager.instance
+                                  .clearSectionManifestError(activeSec.id);
+                              GenerationManager.instance
+                                  .startSectionUnitManifest(
+                                    widget.book,
+                                    mIdx,
+                                    sIdx,
+                                    instructions: instructions,
+                                    selectedQuestions: selectedQuestions,
+                                    saveGlobally: saveGlobally,
+                                  );
+                            },
                         onEditFormats: () async {
                           await Navigator.of(context).push(
                             MaterialPageRoute(
@@ -814,7 +1012,8 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                               ),
                             ),
                           );
-                          final freshest = await DatabaseService().getBookFromCache(widget.book.id);
+                          final freshest = await DatabaseService()
+                              .getBookFromCache(widget.book.id);
                           if (freshest != null && mounted) {
                             widget.onBookUpdated(freshest);
                           }
@@ -826,14 +1025,22 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                           // User signed off on per-unit format assignments.
                           // Persist them and flip the section's confirmation
                           // flag so the lesson path opens up.
-                          final modules = List<Module>.from(widget.book.modules);
-                          final secs = List<Section>.from(modules[mIdx].sections);
+                          final modules = List<Module>.from(
+                            widget.book.modules,
+                          );
+                          final secs = List<Section>.from(
+                            modules[mIdx].sections,
+                          );
                           secs[sIdx] = secs[sIdx].copyWith(
                             units: confirmedUnits,
                             unitFormatsConfirmed: true,
                           );
-                          modules[mIdx] = modules[mIdx].copyWith(sections: secs);
-                          final newBook = widget.book.copyWith(modules: modules);
+                          modules[mIdx] = modules[mIdx].copyWith(
+                            sections: secs,
+                          );
+                          final newBook = widget.book.copyWith(
+                            modules: modules,
+                          );
                           await DatabaseService().saveGeneratedBook(newBook);
                           widget.onBookUpdated(newBook);
                         },
@@ -858,7 +1065,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: ClipRRect(
-                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                      borderRadius: const BorderRadius.vertical(
+                        bottom: Radius.circular(20),
+                      ),
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
                         child: Container(
@@ -869,9 +1078,15 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                               right: BorderSide(color: context.colors.outline),
                               bottom: BorderSide(color: context.colors.outline),
                             ),
-                            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                            borderRadius: const BorderRadius.vertical(
+                              bottom: Radius.circular(20),
+                            ),
                             boxShadow: [
-                              BoxShadow(color: context.colors.shadow, blurRadius: 30, offset: const Offset(0, 4)),
+                              BoxShadow(
+                                color: context.colors.shadow,
+                                blurRadius: 30,
+                                offset: const Offset(0, 4),
+                              ),
                             ],
                           ),
                           padding: const EdgeInsets.all(8),
@@ -884,7 +1099,11 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                 child: Stack(
                                   clipBehavior: Clip.none,
                                   children: [
-                                    const Icon(LucideIcons.bookOpen, color: AppTheme.duoBlue, size: 26),
+                                    const Icon(
+                                      LucideIcons.bookOpen,
+                                      color: AppTheme.duoBlue,
+                                      size: 26,
+                                    ),
                                     Positioned(
                                       bottom: -4,
                                       right: -4,
@@ -893,9 +1112,16 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                         decoration: BoxDecoration(
                                           color: const Color(0xFF1E293B),
                                           shape: BoxShape.circle,
-                                          border: Border.all(color: const Color(0xFF475569), width: 1),
+                                          border: Border.all(
+                                            color: const Color(0xFF475569),
+                                            width: 1,
+                                          ),
                                         ),
-                                        child: const Icon(LucideIcons.chevronDown, size: 10, color: Color(0xFFCBD5E1)),
+                                        child: const Icon(
+                                          LucideIcons.chevronDown,
+                                          size: 10,
+                                          color: Color(0xFFCBD5E1),
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -913,12 +1139,20 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                       onTap: _openSectionSelector,
                                       borderRadius: BorderRadius.circular(12),
                                       child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 10,
+                                        ),
                                         decoration: BoxDecoration(
                                           color: context.colors.surfaceAlt,
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                           border: Border(
-                                            bottom: BorderSide(color: sectionColor, width: 2),
+                                            bottom: BorderSide(
+                                              color: sectionColor,
+                                              width: 2,
+                                            ),
                                           ),
                                         ),
                                         child: Row(
@@ -927,7 +1161,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                               child: Text(
                                                 activeSec.title.toUpperCase(),
                                                 style: TextStyle(
-                                                  color: context.colors.textPrimary,
+                                                  color: context
+                                                      .colors
+                                                      .textPrimary,
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.w900,
                                                   letterSpacing: 1.6,
@@ -937,7 +1173,11 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                               ),
                                             ),
                                             const SizedBox(width: 4),
-                                            const Icon(LucideIcons.chevronDown, size: 16, color: Color(0xFFCBD5E1)),
+                                            const Icon(
+                                              LucideIcons.chevronDown,
+                                              size: 16,
+                                              color: Color(0xFFCBD5E1),
+                                            ),
                                           ],
                                         ),
                                       ),
@@ -952,7 +1192,11 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                               _IconHeaderButton(
                                 key: _coachReviewKey,
                                 onTap: _openQuickReview,
-                                child: const Icon(LucideIcons.sparkles, color: AppTheme.duoGreen, size: 22),
+                                child: const Icon(
+                                  LucideIcons.sparkles,
+                                  color: AppTheme.duoGreen,
+                                  size: 22,
+                                ),
                               ),
 
                               const SizedBox(width: 8),
@@ -962,7 +1206,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                 valueListenable: GlobalState.xpNotifier,
                                 builder: (context, xp, _) {
                                   return Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: context.colors.surfaceAlt,
                                       borderRadius: BorderRadius.circular(12),
@@ -970,7 +1217,11 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Icon(LucideIcons.zap, size: 14, color: Color(0xFFFBBF24)),
+                                        const Icon(
+                                          LucideIcons.zap,
+                                          size: 14,
+                                          color: Color(0xFFFBBF24),
+                                        ),
                                         const SizedBox(width: 4),
                                         Text(
                                           '$xp',
@@ -1000,7 +1251,13 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     );
   }
 
-  void _showLessonLongPressMenu(int modIdx, int secIdx, int unitIdx, int lessonIdx, Lesson lesson) {
+  void _showLessonLongPressMenu(
+    int modIdx,
+    int secIdx,
+    int unitIdx,
+    int lessonIdx,
+    Lesson lesson,
+  ) {
     final isCompleted = _completedLessons.contains(lesson.id);
 
     showModalBottomSheet(
@@ -1022,7 +1279,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                 iconColor: AppTheme.duoGreen,
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await ProgressService.markLessonCompleted(lesson.id, widget.book.id);
+                  await ProgressService.markLessonCompleted(
+                    lesson.id,
+                    widget.book.id,
+                  );
                   await _loadProgress();
                   widget.onBookUpdated(widget.book);
                 },
@@ -1035,7 +1295,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                 iconColor: AppTheme.duoRed,
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await ProgressService.clearLessonProgress(lesson.id, widget.book.id);
+                  await ProgressService.clearLessonProgress(
+                    lesson.id,
+                    widget.book.id,
+                  );
                   await _loadProgress();
                   widget.onBookUpdated(widget.book);
                 },
@@ -1048,7 +1311,13 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                 iconColor: AppTheme.duoOrange,
                 onTap: () {
                   Navigator.pop(ctx);
-                  _promptRegenerateLesson(modIdx, secIdx, unitIdx, lessonIdx, lesson);
+                  _promptRegenerateLesson(
+                    modIdx,
+                    secIdx,
+                    unitIdx,
+                    lessonIdx,
+                    lesson,
+                  );
                 },
               ),
           ],
@@ -1057,14 +1326,21 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     );
   }
 
-  void _showUnitLongPressMenu(int modIdx, int secIdx, int unitIdx, Unit unit) async {
+  void _showUnitLongPressMenu(
+    int modIdx,
+    int secIdx,
+    int unitIdx,
+    Unit unit,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     final cacheKey = 'prereqs_of_unit_${widget.book.id}_${unit.id}';
     final hasCache = prefs.containsKey(cacheKey);
     final cachedList = prefs.getStringList(cacheKey) ?? [];
 
     int totalLessons = unit.lessons.length;
-    int completedCount = unit.lessons.where((l) => _completedLessons.contains(l.id)).length;
+    int completedCount = unit.lessons
+        .where((l) => _completedLessons.contains(l.id))
+        .length;
     int incompleteCount = totalLessons - completedCount;
 
     if (!mounted) return;
@@ -1084,7 +1360,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
               _MenuActionItem(
                 icon: hasCache ? LucideIcons.gitMerge : LucideIcons.search,
                 title: hasCache ? 'View Dependencies' : 'Search Dependencies',
-                subtitle: hasCache ? 'Show prerequisite units to study first' : 'Scan all courses for prerequisites',
+                subtitle: hasCache
+                    ? 'Show prerequisite units to study first'
+                    : 'Scan all courses for prerequisites',
                 iconColor: AppTheme.duoViolet,
                 onTap: () {
                   Navigator.pop(ctx);
@@ -1110,7 +1388,8 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
               _MenuActionItem(
                 icon: LucideIcons.checkCircle,
                 title: 'Mark Unit as Finished',
-                subtitle: 'Mark all $incompleteCount remaining lesson(s) (+${incompleteCount * 20} XP)',
+                subtitle:
+                    'Mark all $incompleteCount remaining lesson(s) (+${incompleteCount * 20} XP)',
                 iconColor: AppTheme.duoGreen,
                 onTap: () async {
                   Navigator.pop(ctx);
@@ -1123,7 +1402,8 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
               _MenuActionItem(
                 icon: LucideIcons.xCircle,
                 title: 'Clear Unit Progress',
-                subtitle: 'Lock and clear $completedCount completed lesson(s) (-${completedCount * 20} XP)',
+                subtitle:
+                    'Lock and clear $completedCount completed lesson(s) (-${completedCount * 20} XP)',
                 iconColor: AppTheme.duoRed,
                 onTap: () async {
                   Navigator.pop(ctx);
@@ -1132,7 +1412,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   widget.onBookUpdated(widget.book);
                 },
               ),
-            if (GlobalState.advancedModeNotifier.value && unit.isGenerated && unit.lessons.isNotEmpty)
+            if (GlobalState.advancedModeNotifier.value &&
+                unit.isGenerated &&
+                unit.lessons.isNotEmpty)
               _MenuActionItem(
                 icon: LucideIcons.refreshCcw,
                 title: 'Delete Unit',
@@ -1159,7 +1441,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     final List<File> selectedFiles = [];
     final section = widget.book.modules[modIdx].sections[secIdx];
     final sectionFormats = widget.book.formatsForSection(section);
-    LessonFormat? selectedFormat = sectionFormats.isNotEmpty ? sectionFormats.first : null;
+    LessonFormat? selectedFormat = sectionFormats.isNotEmpty
+        ? sectionFormats.first
+        : null;
 
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
@@ -1168,10 +1452,16 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
           builder: (context, setState) {
             return AlertDialog(
               backgroundColor: context.colors.surface,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
               title: Text(
                 'Create Custom Lesson',
-                style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 20),
+                style: TextStyle(
+                  color: context.colors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
               ),
               content: SingleChildScrollView(
                 child: Column(
@@ -1180,16 +1470,27 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   children: [
                     Text(
                       'LESSON INSTRUCTIONS & TOPIC',
-                      style: TextStyle(color: context.colors.textFaint, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      style: TextStyle(
+                        color: context.colors.textFaint,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     TextField(
                       controller: promptController,
                       maxLines: 3,
-                      style: TextStyle(color: context.colors.textPrimary, fontSize: 14),
+                      style: TextStyle(
+                        color: context.colors.textPrimary,
+                        fontSize: 14,
+                      ),
                       decoration: InputDecoration(
                         hintText: 'What should this custom lesson cover?',
-                        hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 13),
+                        hintStyle: TextStyle(
+                          color: context.colors.textFaint,
+                          fontSize: 13,
+                        ),
                         filled: true,
                         fillColor: context.colors.surfaceAlt,
                         border: OutlineInputBorder(
@@ -1202,7 +1503,12 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                     const SizedBox(height: 16),
                     Text(
                       'REFERENCE FILES (PDF/IMAGES)',
-                      style: TextStyle(color: context.colors.textFaint, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      style: TextStyle(
+                        color: context.colors.textFaint,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Row(
@@ -1213,18 +1519,26 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                 ? 'No files selected'
                                 : '${selectedFiles.length} file(s) added',
                             style: TextStyle(
-                              color: selectedFiles.isEmpty ? context.colors.textFaint : AppTheme.duoGreen,
+                              color: selectedFiles.isEmpty
+                                  ? context.colors.textFaint
+                                  : AppTheme.duoGreen,
                               fontSize: 13,
                             ),
                           ),
                         ),
                         TextButton.icon(
                           onPressed: () async {
-                            final pickerResult = await FilePicker.platform.pickFiles(
-                              type: FileType.custom,
-                              allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
-                              allowMultiple: true,
-                            );
+                            final pickerResult = await FilePicker.platform
+                                .pickFiles(
+                                  type: FileType.custom,
+                                  allowedExtensions: [
+                                    'pdf',
+                                    'png',
+                                    'jpg',
+                                    'jpeg',
+                                  ],
+                                  allowMultiple: true,
+                                );
                             if (pickerResult != null) {
                               setState(() {
                                 final newFiles = pickerResult.paths
@@ -1235,8 +1549,15 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                               });
                             }
                           },
-                          icon: const Icon(LucideIcons.paperclip, size: 16, color: AppTheme.duoBlue),
-                          label: const Text('Add', style: TextStyle(color: AppTheme.duoBlue)),
+                          icon: const Icon(
+                            LucideIcons.paperclip,
+                            size: 16,
+                            color: AppTheme.duoBlue,
+                          ),
+                          label: const Text(
+                            'Add',
+                            style: TextStyle(color: AppTheme.duoBlue),
+                          ),
                         ),
                       ],
                     ),
@@ -1256,9 +1577,19 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                             final name = f.path.split('/').last;
                             return ListTile(
                               dense: true,
-                              title: Text(name, style: TextStyle(color: context.colors.textSecondary, fontSize: 12)),
+                              title: Text(
+                                name,
+                                style: TextStyle(
+                                  color: context.colors.textSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
                               trailing: IconButton(
-                                icon: const Icon(LucideIcons.trash2, size: 14, color: AppTheme.duoRed),
+                                icon: const Icon(
+                                  LucideIcons.trash2,
+                                  size: 14,
+                                  color: AppTheme.duoRed,
+                                ),
                                 onPressed: () {
                                   setState(() {
                                     selectedFiles.removeAt(idx);
@@ -1273,7 +1604,12 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                     const SizedBox(height: 16),
                     Text(
                       'SLIDES FORMAT',
-                      style: TextStyle(color: context.colors.textFaint, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      style: TextStyle(
+                        color: context.colors.textFaint,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Row(
@@ -1290,12 +1626,21 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                 value: selectedFormat,
                                 dropdownColor: context.colors.surface,
                                 isExpanded: true,
-                                icon: Icon(Icons.arrow_drop_down, color: context.colors.textFaint),
-                                style: TextStyle(color: context.colors.textPrimary, fontSize: 13),
+                                icon: Icon(
+                                  Icons.arrow_drop_down,
+                                  color: context.colors.textFaint,
+                                ),
+                                style: TextStyle(
+                                  color: context.colors.textPrimary,
+                                  fontSize: 13,
+                                ),
                                 items: sectionFormats.map((f) {
                                   return DropdownMenuItem<LessonFormat>(
                                     value: f,
-                                    child: Text(f.name, overflow: TextOverflow.ellipsis),
+                                    child: Text(
+                                      f.name,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   );
                                 }).toList(),
                                 onChanged: (val) {
@@ -1318,31 +1663,50 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                               description: 'Custom slide structure',
                               slides: List.of(SlideTemplate.defaultTemplate),
                             );
-                            final edited = await Navigator.of(context).push<LessonFormat>(
-                              MaterialPageRoute(builder: (_) => FormatEditorScreen(format: newFormat)),
-                            );
+                            final edited = await Navigator.of(context)
+                                .push<LessonFormat>(
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        FormatEditorScreen(format: newFormat),
+                                  ),
+                                );
                             if (edited != null) {
                               final base = widget.book;
-                              final updatedFormats = List<LessonFormat>.from(base.formatsForSection(section))..add(edited);
-                              
+                              final updatedFormats = List<LessonFormat>.from(
+                                base.formatsForSection(section),
+                              )..add(edited);
+
                               final modules = List<Module>.from(base.modules);
-                              final sections = List<Section>.from(modules[modIdx].sections);
+                              final sections = List<Section>.from(
+                                modules[modIdx].sections,
+                              );
                               sections[secIdx] = sections[secIdx].copyWith(
                                 lessonFormats: updatedFormats,
                               );
-                              modules[modIdx] = modules[modIdx].copyWith(sections: sections);
+                              modules[modIdx] = modules[modIdx].copyWith(
+                                sections: sections,
+                              );
                               final newBook = base.copyWith(modules: modules);
-                              
-                              await DatabaseService().saveGeneratedBook(newBook);
+
+                              await DatabaseService().saveGeneratedBook(
+                                newBook,
+                              );
                               widget.onBookUpdated(newBook);
-                              
+
                               setState(() {
                                 selectedFormat = edited;
                               });
                             }
                           },
-                          icon: const Icon(LucideIcons.plus, size: 16, color: AppTheme.duoBlue),
-                          label: const Text('New', style: TextStyle(color: AppTheme.duoBlue)),
+                          icon: const Icon(
+                            LucideIcons.plus,
+                            size: 16,
+                            color: AppTheme.duoBlue,
+                          ),
+                          label: const Text(
+                            'New',
+                            style: TextStyle(color: AppTheme.duoBlue),
+                          ),
                         ),
                       ],
                     ),
@@ -1352,20 +1716,27 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: context.colors.textFaint),
+                  ),
                 ),
                 TextButton(
                   onPressed: () {
                     final prompt = promptController.text.trim();
                     if (prompt.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please enter a lesson prompt.')),
+                        const SnackBar(
+                          content: Text('Please enter a lesson prompt.'),
+                        ),
                       );
                       return;
                     }
                     if (selectedFormat == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please select a lesson format.')),
+                        const SnackBar(
+                          content: Text('Please select a lesson format.'),
+                        ),
                       );
                       return;
                     }
@@ -1377,7 +1748,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   },
                   child: const Text(
                     'Create',
-                    style: TextStyle(color: AppTheme.duoGreen, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: AppTheme.duoGreen,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -1394,7 +1768,8 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     final List<File> files = result['files'] as List<File>;
     final LessonFormat format = result['format'] as LessonFormat;
 
-    final customLessonId = 'lesson_custom_${DateTime.now().millisecondsSinceEpoch}';
+    final customLessonId =
+        'lesson_custom_${DateTime.now().millisecondsSinceEpoch}';
 
     final customLesson = Lesson(
       id: customLessonId,
@@ -1405,16 +1780,15 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       formatId: format.id,
     );
 
-    final base = (await DatabaseService().getBookFromCache(widget.book.id)) ?? widget.book;
+    final base =
+        (await DatabaseService().getBookFromCache(widget.book.id)) ??
+        widget.book;
     final mods = List<Module>.from(base.modules);
     final secs = List<Section>.from(mods[modIdx].sections);
     final uns = List<Unit>.from(secs[secIdx].units);
     final lessons = List<Lesson>.from(uns[unitIdx].lessons)..add(customLesson);
-    
-    uns[unitIdx] = uns[unitIdx].copyWith(
-      lessons: lessons,
-      isGenerated: true,
-    );
+
+    uns[unitIdx] = uns[unitIdx].copyWith(lessons: lessons, isGenerated: true);
     secs[secIdx] = secs[secIdx].copyWith(units: uns);
     mods[modIdx] = mods[modIdx].copyWith(sections: secs);
     final newBook = base.copyWith(modules: mods);
@@ -1423,7 +1797,8 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     widget.onBookUpdated(newBook);
 
     final size = MediaQuery.of(context).size;
-    final screenSizeInfo = 'Screen Width: ${size.width.toStringAsFixed(0)}px, Screen Height: ${size.height.toStringAsFixed(0)}px';
+    final screenSizeInfo =
+        'Screen Width: ${size.width.toStringAsFixed(0)}px, Screen Height: ${size.height.toStringAsFixed(0)}px';
 
     await GenerationManager.instance.startCustomLessonGeneration(
       book: newBook,
@@ -1440,7 +1815,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: context.colors.surface,
-        content: Text('Custom lesson queued with top priority...', style: TextStyle(color: context.colors.textPrimary)),
+        content: Text(
+          'Custom lesson queued with top priority...',
+          style: TextStyle(color: context.colors.textPrimary),
+        ),
         duration: const Duration(seconds: 3),
       ),
     );
@@ -1478,7 +1856,11 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
               iconColor: AppTheme.duoGreen,
               onTap: () {
                 Navigator.pop(ctx);
-                _promptGenerateOrScheduleSection(modIdx, secIdx, isScheduled: false);
+                _promptGenerateOrScheduleSection(
+                  modIdx,
+                  secIdx,
+                  isScheduled: false,
+                );
               },
             ),
             if (GlobalState.advancedModeNotifier.value)
@@ -1489,18 +1871,26 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                 iconColor: AppTheme.duoViolet,
                 onTap: () {
                   Navigator.pop(ctx);
-                  _promptGenerateOrScheduleSection(modIdx, secIdx, isScheduled: true);
+                  _promptGenerateOrScheduleSection(
+                    modIdx,
+                    secIdx,
+                    isScheduled: true,
+                  );
                 },
               ),
             if (incompleteCount > 0)
               _MenuActionItem(
                 icon: LucideIcons.checkCircle,
                 title: 'Mark Section as Finished',
-                subtitle: 'Mark all $incompleteCount remaining lesson(s) (+${incompleteCount * 20} XP)',
+                subtitle:
+                    'Mark all $incompleteCount remaining lesson(s) (+${incompleteCount * 20} XP)',
                 iconColor: AppTheme.duoGreen,
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await ProgressService.markSectionCompleted(section, widget.book.id);
+                  await ProgressService.markSectionCompleted(
+                    section,
+                    widget.book.id,
+                  );
                   await _loadProgress();
                   widget.onBookUpdated(widget.book);
                 },
@@ -1509,16 +1899,21 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
               _MenuActionItem(
                 icon: LucideIcons.xCircle,
                 title: 'Clear Section Progress',
-                subtitle: 'Lock and clear $completedCount completed lesson(s) (-${completedCount * 20} XP)',
+                subtitle:
+                    'Lock and clear $completedCount completed lesson(s) (-${completedCount * 20} XP)',
                 iconColor: AppTheme.duoRed,
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await ProgressService.clearSectionProgress(section, widget.book.id);
+                  await ProgressService.clearSectionProgress(
+                    section,
+                    widget.book.id,
+                  );
                   await _loadProgress();
                   widget.onBookUpdated(widget.book);
                 },
               ),
-            if (GlobalState.advancedModeNotifier.value && (section.units.isNotEmpty || section.unitsGenerated))
+            if (GlobalState.advancedModeNotifier.value &&
+                (section.units.isNotEmpty || section.unitsGenerated))
               _MenuActionItem(
                 icon: LucideIcons.rotateCcw,
                 title: 'Reset Section Plan',
@@ -1541,7 +1936,13 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.surface,
-        title: Text('Reset Section Plan?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        title: Text(
+          'Reset Section Plan?',
+          style: TextStyle(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: Text(
           'This will permanently delete all units, lessons, and custom lesson formats for "${section.title}". Any progress in these lessons will be cleared. This action cannot be undone.',
           style: TextStyle(color: context.colors.textSecondary),
@@ -1549,11 +1950,20 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: context.colors.textFaint),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Reset', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Reset',
+              style: TextStyle(
+                color: AppTheme.duoRed,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -1584,43 +1994,72 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Section "${section.title}" reset successfully.')),
+          SnackBar(
+            content: Text('Section "${section.title}" reset successfully.'),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to reset section: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to reset section: $e')));
       }
     }
   }
 
-  Future<void> _promptGenerateOrScheduleSection(int modIdx, int secIdx, {required bool isScheduled}) async {
+  Future<void> _promptGenerateOrScheduleSection(
+    int modIdx,
+    int secIdx, {
+    required bool isScheduled,
+  }) async {
     final wantsGraphics = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.surface,
-        title: Text(isScheduled ? 'Schedule Section Generation' : 'Generate Section Contents', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        title: Text(
+          isScheduled
+              ? 'Schedule Section Generation'
+              : 'Generate Section Contents',
+          style: TextStyle(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: Text(
           'Choose what kind of content to generate. This will automatically plan the section units and generate them sequentially.',
           style: TextStyle(color: context.colors.textSecondary),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: context.colors.textFaint),
+            ),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Text only', style: TextStyle(color: context.colors.textFaint)),
+            child: Text(
+              'Text only',
+              style: TextStyle(color: context.colors.textFaint),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('With diagrams', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'With diagrams',
+              style: TextStyle(
+                color: AppTheme.duoBlue,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
     );
     if (wantsGraphics == null) return;
-    
+
     GenerationManager.instance.startSectionGeneration(
       widget.book,
       modIdx,
@@ -1628,12 +2067,14 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       generateGraphics: wantsGraphics,
       isScheduled: isScheduled,
     );
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: context.colors.surface,
         content: Text(
-          isScheduled ? 'Section generation scheduled!' : 'Section generation queued!',
+          isScheduled
+              ? 'Section generation scheduled!'
+              : 'Section generation queued!',
           style: TextStyle(color: context.colors.textPrimary),
         ),
       ),
@@ -1692,11 +2133,15 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
               _MenuActionItem(
                 icon: LucideIcons.checkCircle,
                 title: 'Mark Module as Finished',
-                subtitle: 'Mark all $incompleteCount remaining lesson(s) (+${incompleteCount * 20} XP)',
+                subtitle:
+                    'Mark all $incompleteCount remaining lesson(s) (+${incompleteCount * 20} XP)',
                 iconColor: AppTheme.duoGreen,
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await ProgressService.markModuleCompleted(module, widget.book.id);
+                  await ProgressService.markModuleCompleted(
+                    module,
+                    widget.book.id,
+                  );
                   await _loadProgress();
                   widget.onBookUpdated(widget.book);
                 },
@@ -1705,11 +2150,15 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
               _MenuActionItem(
                 icon: LucideIcons.xCircle,
                 title: 'Clear Module Progress',
-                subtitle: 'Lock and clear $completedCount completed lesson(s) (-${completedCount * 20} XP)',
+                subtitle:
+                    'Lock and clear $completedCount completed lesson(s) (-${completedCount * 20} XP)',
                 iconColor: AppTheme.duoRed,
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await ProgressService.clearModuleProgress(module, widget.book.id);
+                  await ProgressService.clearModuleProgress(
+                    module,
+                    widget.book.id,
+                  );
                   await _loadProgress();
                   widget.onBookUpdated(widget.book);
                 },
@@ -1720,43 +2169,71 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     );
   }
 
-  Future<void> _promptGenerateOrScheduleModule(int modIdx, {required bool isScheduled}) async {
+  Future<void> _promptGenerateOrScheduleModule(
+    int modIdx, {
+    required bool isScheduled,
+  }) async {
     final wantsGraphics = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.surface,
-        title: Text(isScheduled ? 'Schedule Module Generation' : 'Generate Module Contents', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        title: Text(
+          isScheduled
+              ? 'Schedule Module Generation'
+              : 'Generate Module Contents',
+          style: TextStyle(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: Text(
           'Choose what kind of content to generate for all sections in this module.',
           style: TextStyle(color: context.colors.textSecondary),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: context.colors.textFaint),
+            ),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Text only', style: TextStyle(color: context.colors.textFaint)),
+            child: Text(
+              'Text only',
+              style: TextStyle(color: context.colors.textFaint),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('With diagrams', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'With diagrams',
+              style: TextStyle(
+                color: AppTheme.duoBlue,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
     );
     if (wantsGraphics == null) return;
-    
+
     GenerationManager.instance.startModuleGeneration(
       widget.book,
       modIdx,
       generateGraphics: wantsGraphics,
       isScheduled: isScheduled,
     );
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: context.colors.surface,
         content: Text(
-          isScheduled ? 'Module generation scheduled!' : 'Module generation queued!',
+          isScheduled
+              ? 'Module generation scheduled!'
+              : 'Module generation queued!',
           style: TextStyle(color: context.colors.textPrimary),
         ),
       ),
@@ -1779,7 +2256,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
             decoration: BoxDecoration(
               color: context.colors.glassStrong,
               border: Border.all(color: context.colors.outline),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
             ),
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
             child: SingleChildScrollView(
@@ -1839,7 +2318,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                           onTap: item.onTap,
                           borderRadius: BorderRadius.circular(16),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
                             decoration: BoxDecoration(
                               color: context.colors.surfaceAlt,
                               borderRadius: BorderRadius.circular(16),
@@ -1847,11 +2329,16 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                             ),
                             child: Row(
                               children: [
-                                Icon(item.icon, color: item.iconColor, size: 22),
+                                Icon(
+                                  item.icon,
+                                  color: item.iconColor,
+                                  size: 22,
+                                ),
                                 const SizedBox(width: 14),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         item.title,
@@ -1873,7 +2360,11 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                     ],
                                   ),
                                 ),
-                                Icon(LucideIcons.chevronRight, size: 16, color: context.colors.textFaint),
+                                Icon(
+                                  LucideIcons.chevronRight,
+                                  size: 16,
+                                  color: context.colors.textFaint,
+                                ),
                               ],
                             ),
                           ),
@@ -1895,15 +2386,19 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                     ),
                   ),
                 ],
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-  Future<void> _showResetFormatsDialog(Section section, int modIdx, int secIdx) async {
+  Future<void> _showResetFormatsDialog(
+    Section section,
+    int modIdx,
+    int secIdx,
+  ) async {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1915,8 +2410,13 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
               const CircularProgressIndicator(),
               const SizedBox(width: 20),
               Expanded(
-                child: Text('AI is analyzing section PDF and generating custom formats...',
-                    style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+                child: Text(
+                  'AI is analyzing section PDF and generating custom formats...',
+                  style: TextStyle(
+                    color: context.colors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),
@@ -1925,16 +2425,20 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     );
 
     try {
-      final generatedFormats = await AiService().generateSectionFormats(section);
-      
+      final generatedFormats = await AiService().generateSectionFormats(
+        section,
+      );
+
       if (mounted) {
         Navigator.of(context).pop();
       }
 
       final List<LessonFormat> finalFormats = [];
       for (final gf in generatedFormats) {
-        final alreadyExists = finalFormats.any((lf) =>
-            lf.id == gf.id || lf.name.toLowerCase() == gf.name.toLowerCase());
+        final alreadyExists = finalFormats.any(
+          (lf) =>
+              lf.id == gf.id || lf.name.toLowerCase() == gf.name.toLowerCase(),
+        );
         if (!alreadyExists) {
           finalFormats.add(gf);
         }
@@ -1942,9 +2446,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
 
       final modules = List<Module>.from(widget.book.modules);
       final sections = List<Section>.from(modules[modIdx].sections);
-      sections[secIdx] = sections[secIdx].copyWith(
-        lessonFormats: finalFormats,
-      );
+      sections[secIdx] = sections[secIdx].copyWith(lessonFormats: finalFormats);
       modules[modIdx] = modules[modIdx].copyWith(sections: sections);
       final newBook = widget.book.copyWith(modules: modules);
       await DatabaseService().saveGeneratedBook(newBook);
@@ -1952,7 +2454,11 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Section lesson formats reset and generated successfully.')),
+          const SnackBar(
+            content: Text(
+              'Section lesson formats reset and generated successfully.',
+            ),
+          ),
         );
       }
     } catch (e) {
@@ -1964,8 +2470,17 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: context.colors.surface,
-          title: Text('Generation Failed', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
-          content: Text(e.toString(), style: TextStyle(color: context.colors.textSecondary)),
+          title: Text(
+            'Generation Failed',
+            style: TextStyle(
+              color: context.colors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            e.toString(),
+            style: TextStyle(color: context.colors.textSecondary),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
@@ -1991,7 +2506,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
             Expanded(
               child: Text(
                 'Searching for dependencies across all courses...',
-                style: TextStyle(color: context.colors.textPrimary, fontSize: 14),
+                style: TextStyle(
+                  color: context.colors.textPrimary,
+                  fontSize: 14,
+                ),
               ),
             ),
           ],
@@ -2000,7 +2518,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     );
 
     try {
-      final List<Book> books = await DatabaseService().fetchBooks(forceRefresh: false);
+      final List<Book> books = await DatabaseService().fetchBooks(
+        forceRefresh: false,
+      );
       final List<String> result = await AiService().analyzePrerequisites(
         targetUnit: unit,
         targetBook: widget.book,
@@ -2008,7 +2528,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       );
 
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setStringList('prereqs_of_unit_${widget.book.id}_${unit.id}', result);
+      await prefs.setStringList(
+        'prereqs_of_unit_${widget.book.id}_${unit.id}',
+        result,
+      );
 
       if (mounted) {
         Navigator.pop(context); // Dismiss loading dialog
@@ -2018,7 +2541,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       if (mounted) {
         Navigator.pop(context); // Dismiss loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error finding prerequisites: $e'), backgroundColor: AppTheme.duoRed),
+          SnackBar(
+            content: Text('Error finding prerequisites: $e'),
+            backgroundColor: AppTheme.duoRed,
+          ),
         );
       }
     }
@@ -2028,11 +2554,15 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue)),
+      builder: (ctx) => const Center(
+        child: CircularProgressIndicator(color: AppTheme.duoBlue),
+      ),
     );
 
-    final List<UnitPrerequisite> prereqs = await _getPrerequisitesFromIds(uniqueIds);
-    
+    final List<UnitPrerequisite> prereqs = await _getPrerequisitesFromIds(
+      uniqueIds,
+    );
+
     if (mounted) {
       Navigator.pop(context); // dismiss spinner
     }
@@ -2044,20 +2574,33 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       builder: (ctx) {
         return AlertDialog(
           backgroundColor: context.colors.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
           title: Text(
             'Prerequisites for "${unit.title}"',
-            style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
+            style: TextStyle(
+              color: context.colors.textPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
           ),
           content: prereqs.isEmpty
               ? Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(LucideIcons.checkCircle, color: AppTheme.duoGreen, size: 40),
+                    const Icon(
+                      LucideIcons.checkCircle,
+                      color: AppTheme.duoGreen,
+                      size: 40,
+                    ),
                     const SizedBox(height: 12),
                     Text(
                       'No prerequisites found! You\'re ready to start this unit.',
-                      style: TextStyle(color: context.colors.textSecondary, fontSize: 13),
+                      style: TextStyle(
+                        color: context.colors.textSecondary,
+                        fontSize: 13,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -2072,7 +2615,11 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         padding: const EdgeInsets.only(bottom: 12.0),
                         child: Text(
                           'Tap on a prerequisite to navigate to that unit.',
-                          style: TextStyle(color: context.colors.textFaint, fontSize: 12, fontStyle: FontStyle.italic),
+                          style: TextStyle(
+                            color: context.colors.textFaint,
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                          ),
                         ),
                       ),
                       Flexible(
@@ -2096,18 +2643,23 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                     decoration: BoxDecoration(
                                       color: context.colors.surfaceAlt,
                                       borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(color: context.colors.outline),
+                                      border: Border.all(
+                                        color: context.colors.outline,
+                                      ),
                                     ),
                                     child: Row(
                                       children: [
                                         Expanded(
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 p.unitTitle,
                                                 style: TextStyle(
-                                                  color: context.colors.textPrimary,
+                                                  color: context
+                                                      .colors
+                                                      .textPrimary,
                                                   fontWeight: FontWeight.bold,
                                                   fontSize: 14,
                                                 ),
@@ -2115,22 +2667,37 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                               const SizedBox(height: 4),
                                               Text(
                                                 '${p.bookTitle} / ${p.moduleTitle} / ${p.sectionTitle}',
-                                                style: TextStyle(color: context.colors.textFaint, fontSize: 10),
+                                                style: TextStyle(
+                                                  color:
+                                                      context.colors.textFaint,
+                                                  fontSize: 10,
+                                                ),
                                               ),
                                               const SizedBox(height: 8),
                                               Row(
                                                 children: [
                                                   Expanded(
                                                     child: ClipRRect(
-                                                      borderRadius: BorderRadius.circular(4),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            4,
+                                                          ),
                                                       child: LinearProgressIndicator(
                                                         value: p.completionRate,
-                                                        backgroundColor: context.colors.surfaceAlt,
-                                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                                          p.completionRate >= 1.0
-                                                              ? AppTheme.duoGreen
-                                                              : AppTheme.duoBlue,
-                                                        ),
+                                                        backgroundColor: context
+                                                            .colors
+                                                            .surfaceAlt,
+                                                        valueColor:
+                                                            AlwaysStoppedAnimation<
+                                                              Color
+                                                            >(
+                                                              p.completionRate >=
+                                                                      1.0
+                                                                  ? AppTheme
+                                                                        .duoGreen
+                                                                  : AppTheme
+                                                                        .duoBlue,
+                                                            ),
                                                         minHeight: 6,
                                                       ),
                                                     ),
@@ -2139,11 +2706,16 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                                   Text(
                                                     '${(p.completionRate * 100).toInt()}% (${p.completedLessonsCount}/${p.totalLessonsCount})',
                                                     style: TextStyle(
-                                                      color: p.completionRate >= 1.0
+                                                      color:
+                                                          p.completionRate >=
+                                                              1.0
                                                           ? AppTheme.duoGreen
-                                                          : context.colors.textSecondary,
+                                                          : context
+                                                                .colors
+                                                                .textSecondary,
                                                       fontSize: 10,
-                                                      fontWeight: FontWeight.bold,
+                                                      fontWeight:
+                                                          FontWeight.bold,
                                                     ),
                                                   ),
                                                 ],
@@ -2175,11 +2747,20 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                 Navigator.pop(ctx);
                 _runDependencySearch(unit); // Re-scan
               },
-              child: const Text('Re-scan', style: TextStyle(color: AppTheme.duoOrange, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'Re-scan',
+                style: TextStyle(
+                  color: AppTheme.duoOrange,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: Text('Close', style: TextStyle(color: context.colors.textFaint)),
+              child: Text(
+                'Close',
+                style: TextStyle(color: context.colors.textFaint),
+              ),
             ),
           ],
         );
@@ -2212,18 +2793,26 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
         });
         widget.activeModule?.value = _activeModuleIdx;
         widget.activeSection?.value = _activeSectionIdx;
-        
+
         try {
           final prefs = await SharedPreferences.getInstance();
-          await prefs.setInt('last_mod_idx_${widget.book.id}', _activeModuleIdx);
-          await prefs.setInt('last_sec_idx_${widget.book.id}', _activeSectionIdx);
+          await prefs.setInt(
+            'last_mod_idx_${widget.book.id}',
+            _activeModuleIdx,
+          );
+          await prefs.setInt(
+            'last_sec_idx_${widget.book.id}',
+            _activeSectionIdx,
+          );
         } catch (e) {
           print('Error saving last resumed position: $e');
         }
       }
     } else {
       try {
-        final List<Book> books = await DatabaseService().fetchBooks(forceRefresh: false);
+        final List<Book> books = await DatabaseService().fetchBooks(
+          forceRefresh: false,
+        );
         Book? targetBook;
         for (final b in books) {
           if (b.id == p.bookId) {
@@ -2270,10 +2859,14 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     }
   }
 
-  Future<List<UnitPrerequisite>> _getPrerequisitesFromIds(List<String> ids) async {
-    final List<Book> books = await DatabaseService().fetchBooks(forceRefresh: false);
+  Future<List<UnitPrerequisite>> _getPrerequisitesFromIds(
+    List<String> ids,
+  ) async {
+    final List<Book> books = await DatabaseService().fetchBooks(
+      forceRefresh: false,
+    );
     final List<UnitPrerequisite> results = [];
-    
+
     for (final id in ids) {
       final parts = id.split('::');
       if (parts.length != 4) continue;
@@ -2281,30 +2874,36 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       final moduleId = parts[1];
       final sectionId = parts[2];
       final unitId = parts[3];
-      
+
       try {
         final book = books.firstWhere((b) => b.id == bookId);
         final module = book.modules.firstWhere((m) => m.id == moduleId);
         final section = module.sections.firstWhere((s) => s.id == sectionId);
         final unit = section.units.firstWhere((u) => u.id == unitId);
-        
-        final totalCount = unit.lessons.length;
-        final completedCount = unit.lessons.where((l) => _completedLessons.contains(l.id)).length;
-        final double completionRate = totalCount > 0 ? (completedCount / totalCount) : 0.0;
 
-        results.add(UnitPrerequisite(
-          bookId: bookId,
-          bookTitle: book.title,
-          moduleId: moduleId,
-          moduleTitle: module.title,
-          sectionId: sectionId,
-          sectionTitle: section.title,
-          unitId: unitId,
-          unitTitle: unit.title,
-          completionRate: completionRate,
-          completedLessonsCount: completedCount,
-          totalLessonsCount: totalCount,
-        ));
+        final totalCount = unit.lessons.length;
+        final completedCount = unit.lessons
+            .where((l) => _completedLessons.contains(l.id))
+            .length;
+        final double completionRate = totalCount > 0
+            ? (completedCount / totalCount)
+            : 0.0;
+
+        results.add(
+          UnitPrerequisite(
+            bookId: bookId,
+            bookTitle: book.title,
+            moduleId: moduleId,
+            moduleTitle: module.title,
+            sectionId: sectionId,
+            sectionTitle: section.title,
+            unitId: unitId,
+            unitTitle: unit.title,
+            completionRate: completionRate,
+            completedLessonsCount: completedCount,
+            totalLessonsCount: totalCount,
+          ),
+        );
       } catch (_) {
         // Book/module/section/unit might have been modified/deleted
       }
@@ -2332,7 +2931,11 @@ class _MenuActionItem {
 class _IconHeaderButton extends StatelessWidget {
   final Widget child;
   final VoidCallback onTap;
-  const _IconHeaderButton({super.key, required this.child, required this.onTap});
+  const _IconHeaderButton({
+    super.key,
+    required this.child,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -2341,10 +2944,7 @@ class _IconHeaderButton extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(6),
-          child: child,
-        ),
+        child: Padding(padding: const EdgeInsets.all(6), child: child),
       ),
     );
   }

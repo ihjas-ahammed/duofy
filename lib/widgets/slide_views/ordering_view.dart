@@ -75,7 +75,10 @@ class _OrderingViewState extends State<OrderingView> {
                   ? widget.slide.content
                   : 'Drag the steps into the correct order.',
               textStyle: TextStyle(
-                  fontSize: 17, color: context.colors.textPrimary, fontWeight: FontWeight.bold),
+                fontSize: 17,
+                color: context.colors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -97,18 +100,23 @@ class _OrderingViewState extends State<OrderingView> {
                 final item = _current[i];
                 final resultColor = widget.isAnswered
                     ? (i < correct.length && correct[i] == item
-                        ? AppTheme.duoGreen
-                        : AppTheme.duoRed)
+                          ? AppTheme.duoGreen
+                          : AppTheme.duoRed)
                     : null;
                 return Container(
                   key: ValueKey('order-$item'),
                   margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                        color: resultColor ?? context.colors.outline, width: 2),
+                      color: resultColor ?? context.colors.outline,
+                      width: 2,
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -117,15 +125,18 @@ class _OrderingViewState extends State<OrderingView> {
                         height: 28,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: (resultColor ?? AppTheme.duoBlue).withOpacity(0.15),
+                          color: (resultColor ?? AppTheme.duoBlue).withOpacity(
+                            0.15,
+                          ),
                           shape: BoxShape.circle,
                         ),
                         child: Text(
                           '${i + 1}',
                           style: TextStyle(
-                              color: resultColor ?? AppTheme.duoBlue,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 13),
+                            color: resultColor ?? AppTheme.duoBlue,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -133,14 +144,18 @@ class _OrderingViewState extends State<OrderingView> {
                         child: MathMarkdown(
                           data: item,
                           textStyle: TextStyle(
-                              fontSize: 14,
-                              color: context.colors.textPrimary,
-                              fontWeight: FontWeight.bold),
+                            fontSize: 14,
+                            color: context.colors.textPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       if (!widget.isAnswered)
-                        Icon(LucideIcons.gripVertical,
-                            color: context.colors.textFaint, size: 18),
+                        Icon(
+                          LucideIcons.gripVertical,
+                          color: context.colors.textFaint,
+                          size: 18,
+                        ),
                     ],
                   ),
                 );

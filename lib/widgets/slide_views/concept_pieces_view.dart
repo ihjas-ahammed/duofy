@@ -51,7 +51,9 @@ class ConceptPiecesView extends StatelessWidget {
                       textAlign: TextAlign.center,
                     ),
                   ),
-                if (!hasCanvas && slide.title.isNotEmpty && slide.title.toLowerCase() != lessonTitle.toLowerCase())
+                if (!hasCanvas &&
+                    slide.title.isNotEmpty &&
+                    slide.title.toLowerCase() != lessonTitle.toLowerCase())
                   Padding(
                     padding: const EdgeInsets.only(bottom: 24.0, top: 16.0),
                     child: Text(
@@ -71,9 +73,22 @@ class ConceptPiecesView extends StatelessWidget {
                     final s = sentences[idx];
                     final isLast = idx == sentences.length - 1;
 
-                    final stepRatio = idx / (sentences.length > 1 ? sentences.length - 1 : 1);
-                    final currentAccent = Color.lerp(AppTheme.duoBlue, AppTheme.duoViolet, stepRatio) ?? AppTheme.duoBlue;
-                    final currentAccentSecondary = Color.lerp(AppTheme.duoBlueDark, AppTheme.duoVioletDark, stepRatio) ?? AppTheme.duoBlueDark;
+                    final stepRatio =
+                        idx / (sentences.length > 1 ? sentences.length - 1 : 1);
+                    final currentAccent =
+                        Color.lerp(
+                          AppTheme.duoBlue,
+                          AppTheme.duoViolet,
+                          stepRatio,
+                        ) ??
+                        AppTheme.duoBlue;
+                    final currentAccentSecondary =
+                        Color.lerp(
+                          AppTheme.duoBlueDark,
+                          AppTheme.duoVioletDark,
+                          stepRatio,
+                        ) ??
+                        AppTheme.duoBlueDark;
 
                     return TweenAnimationBuilder<double>(
                       tween: Tween<double>(begin: 0.0, end: 1.0),
@@ -105,7 +120,10 @@ class ConceptPiecesView extends StatelessWidget {
                                 height: 32,
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
-                                    colors: [currentAccent, currentAccentSecondary],
+                                    colors: [
+                                      currentAccent,
+                                      currentAccentSecondary,
+                                    ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
@@ -136,7 +154,10 @@ class ConceptPiecesView extends StatelessWidget {
                                 child: AppTheme.applyGlassBlur(
                                   borderRadius: 16,
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 18,
+                                      vertical: 16,
+                                    ),
                                     decoration: BoxDecoration(
                                       border: Border(
                                         left: BorderSide(
@@ -171,10 +192,7 @@ class ConceptPiecesView extends StatelessWidget {
               hasScrollBody: false,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  const SizedBox(height: 24),
-                  bottomBar!,
-                ],
+                children: [const SizedBox(height: 24), bottomBar!],
               ),
             ),
         ],
@@ -204,43 +222,53 @@ class _TimelineLinePainter extends CustomPainter {
     if (index > 0) {
       final startRatio = (index - 0.5) / (totalCount > 1 ? totalCount - 1 : 1);
       final endRatio = index / (totalCount > 1 ? totalCount - 1 : 1);
-      final startColor = Color.lerp(AppTheme.duoBlue, AppTheme.duoViolet, startRatio) ?? AppTheme.duoBlue;
-      final endColor = Color.lerp(AppTheme.duoBlue, AppTheme.duoViolet, endRatio) ?? AppTheme.duoBlue;
+      final startColor =
+          Color.lerp(AppTheme.duoBlue, AppTheme.duoViolet, startRatio) ??
+          AppTheme.duoBlue;
+      final endColor =
+          Color.lerp(AppTheme.duoBlue, AppTheme.duoViolet, endRatio) ??
+          AppTheme.duoBlue;
 
       final paintTop = Paint()
         ..shader = ui.Gradient.linear(
           Offset(startX, 0),
           Offset(startX, centerY - bubbleSize / 2),
-          [
-            startColor.withOpacity(0.8),
-            endColor.withOpacity(0.8),
-          ],
+          [startColor.withOpacity(0.8), endColor.withOpacity(0.8)],
         )
         ..strokeWidth = 2.0
         ..style = PaintingStyle.stroke;
 
-      canvas.drawLine(Offset(startX, 0), Offset(startX, centerY - bubbleSize / 2), paintTop);
+      canvas.drawLine(
+        Offset(startX, 0),
+        Offset(startX, centerY - bubbleSize / 2),
+        paintTop,
+      );
     }
 
     if (!isLast) {
       final startRatio = index / (totalCount > 1 ? totalCount - 1 : 1);
       final endRatio = (index + 0.5) / (totalCount > 1 ? totalCount - 1 : 1);
-      final startColor = Color.lerp(AppTheme.duoBlue, AppTheme.duoViolet, startRatio) ?? AppTheme.duoBlue;
-      final endColor = Color.lerp(AppTheme.duoBlue, AppTheme.duoViolet, endRatio) ?? AppTheme.duoViolet;
+      final startColor =
+          Color.lerp(AppTheme.duoBlue, AppTheme.duoViolet, startRatio) ??
+          AppTheme.duoBlue;
+      final endColor =
+          Color.lerp(AppTheme.duoBlue, AppTheme.duoViolet, endRatio) ??
+          AppTheme.duoViolet;
 
       final paintBottom = Paint()
         ..shader = ui.Gradient.linear(
           Offset(startX, centerY + bubbleSize / 2),
           Offset(startX, size.height),
-          [
-            startColor.withOpacity(0.8),
-            endColor.withOpacity(0.8),
-          ],
+          [startColor.withOpacity(0.8), endColor.withOpacity(0.8)],
         )
         ..strokeWidth = 2.0
         ..style = PaintingStyle.stroke;
 
-      canvas.drawLine(Offset(startX, centerY + bubbleSize / 2), Offset(startX, size.height), paintBottom);
+      canvas.drawLine(
+        Offset(startX, centerY + bubbleSize / 2),
+        Offset(startX, size.height),
+        paintBottom,
+      );
     }
   }
 

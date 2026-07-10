@@ -35,16 +35,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // Each slot is now an ordered list — the first model is tried first, the
   // next is the fallback, and so on. Empty list means "use the built-in
   // default" but the UI keeps at least one entry to avoid that state.
-  List<String> _modelPrimaryText = ['gemini-flash-lite-latest', 'gemini-2.5-flash-lite', 'gemma-4-26b-a4b-it', 'gemma-4-31b-it'];
-  List<String> _modelPrimaryGraphics = ['gemini-3.5-flash', 'gemini-3-flash-preview', 'gemini-2.5-flash', 'gemma-4-31b-it'];
-  List<String> _modelLite = ['gemini-flash-lite-latest', 'gemini-3.1-flash-lite', 'gemini-3.1-flash-lite-preview', 'gemini-2.5-flash-lite', 'gemma-4-26b-a4b-it', 'gemini-2.0-flash-lite'];
+  List<String> _modelPrimaryText = [
+    'gemini-flash-lite-latest',
+    'gemini-2.5-flash-lite',
+    'gemma-4-26b-a4b-it',
+    'gemma-4-31b-it',
+  ];
+  List<String> _modelPrimaryGraphics = [
+    'gemini-3.5-flash',
+    'gemini-3-flash-preview',
+    'gemini-2.5-flash',
+    'gemma-4-31b-it',
+  ];
+  List<String> _modelLite = [
+    'gemini-flash-lite-latest',
+    'gemini-3.1-flash-lite',
+    'gemini-3.1-flash-lite-preview',
+    'gemini-2.5-flash-lite',
+    'gemma-4-26b-a4b-it',
+    'gemini-2.0-flash-lite',
+  ];
   List<String> _modelLive = ['gemini-3.1-flash-live-preview'];
+
   /// How many lesson requests to fire in parallel during generation.
   /// 'auto' lets the app pick from the device's capacity; otherwise a fixed
   /// count string ('1'..'4'). Read by AiService via the `gen_concurrency` pref.
   String _genConcurrency = 'auto';
   TimeOfDay _scheduleStart = const TimeOfDay(hour: 21, minute: 0);
   TimeOfDay _scheduleEnd = const TimeOfDay(hour: 9, minute: 0);
+
   /// Local-first: cloud backup/sync is opt-in. Mirrors
   /// [DatabaseService.cloudSyncPrefKey].
   bool _cloudSync = false;
@@ -54,7 +73,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _autoVerifyMappings = true;
   bool _autoGenerateModule1 = true;
   int? _lastSyncTime;
-  final GlobalKey<StringListManagerState> _keysManagerKey = GlobalKey<StringListManagerState>();
+  final GlobalKey<StringListManagerState> _keysManagerKey =
+      GlobalKey<StringListManagerState>();
   final DatabaseService _db = DatabaseService();
   final TextEditingController _customPromptController = TextEditingController();
   Map<String, dynamic>? _writingStyleProfile;
@@ -94,8 +114,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     List<String> keys = prefs.getStringList('gemini_api_keys_list') ?? [];
     if (keys.isEmpty) {
-       final keysString = prefs.getString('gemini_api_keys') ?? '';
-       keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      final keysString = prefs.getString('gemini_api_keys') ?? '';
+      keys = keysString
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
     }
 
     // Legacy generic-models list. No UI binds to it anymore — the three
@@ -105,20 +129,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // gemini-1.5-flash and silently poisoned the ladder).
     List<String> models = prefs.getStringList('gemini_models_list') ?? [];
 
-    List<String> primaryText = await _loadModelList(prefs, 'model_primary_text_list', 'model_primary_text', const ['gemini-flash-lite-latest', 'gemini-2.5-flash-lite', 'gemma-4-26b-a4b-it', 'gemma-4-31b-it']);
-    List<String> primaryGraphics = await _loadModelList(prefs, 'model_primary_graphics_list', 'model_primary_graphics', const ['gemini-3.5-flash', 'gemini-3-flash-preview', 'gemini-2.5-flash', 'gemma-4-31b-it']);
-    List<String> lite = await _loadModelList(prefs, 'model_lite_list', 'model_lite', const ['gemini-flash-lite-latest', 'gemini-3.1-flash-lite', 'gemini-3.1-flash-lite-preview', 'gemini-2.5-flash-lite', 'gemma-4-26b-a4b-it', 'gemini-2.0-flash-lite']);
-    List<String> live = await _loadModelList(prefs, 'model_live_list', 'model_live', const ['gemini-3.1-flash-live-preview']);
+    List<String> primaryText = await _loadModelList(
+      prefs,
+      'model_primary_text_list',
+      'model_primary_text',
+      const [
+        'gemini-flash-lite-latest',
+        'gemini-2.5-flash-lite',
+        'gemma-4-26b-a4b-it',
+        'gemma-4-31b-it',
+      ],
+    );
+    List<String> primaryGraphics = await _loadModelList(
+      prefs,
+      'model_primary_graphics_list',
+      'model_primary_graphics',
+      const [
+        'gemini-3.5-flash',
+        'gemini-3-flash-preview',
+        'gemini-2.5-flash',
+        'gemma-4-31b-it',
+      ],
+    );
+    List<String> lite =
+        await _loadModelList(prefs, 'model_lite_list', 'model_lite', const [
+          'gemini-flash-lite-latest',
+          'gemini-3.1-flash-lite',
+          'gemini-3.1-flash-lite-preview',
+          'gemini-2.5-flash-lite',
+          'gemma-4-26b-a4b-it',
+          'gemini-2.0-flash-lite',
+        ]);
+    List<String> live = await _loadModelList(
+      prefs,
+      'model_live_list',
+      'model_live',
+      const ['gemini-3.1-flash-live-preview'],
+    );
 
     // Hydrate from Firestore if local is empty.
     if (keys.isEmpty || models.isEmpty) {
       final remote = await _db.fetchUserSettings();
       if (remote != null) {
-        if (keys.isEmpty && remote['apiKeys'] != null && (remote['apiKeys'] as List).isNotEmpty) {
+        if (keys.isEmpty &&
+            remote['apiKeys'] != null &&
+            (remote['apiKeys'] as List).isNotEmpty) {
           keys = List<String>.from(remote['apiKeys']!);
           await prefs.setStringList('gemini_api_keys_list', keys);
         }
-        if (models.isEmpty && remote['models'] != null && (remote['models'] as List).isNotEmpty) {
+        if (models.isEmpty &&
+            remote['models'] != null &&
+            (remote['models'] as List).isNotEmpty) {
           models = List<String>.from(remote['models']!);
           await prefs.setStringList('gemini_models_list', models);
         }
@@ -129,10 +190,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           primaryText = List<String>.from(remotePT);
           await prefs.setStringList('model_primary_text_list', primaryText);
         }
-        final remotePG = remote['modelPrimaryGraphicsList'] as List? ?? const [];
+        final remotePG =
+            remote['modelPrimaryGraphicsList'] as List? ?? const [];
         if (remotePG.isNotEmpty) {
           primaryGraphics = List<String>.from(remotePG);
-          await prefs.setStringList('model_primary_graphics_list', primaryGraphics);
+          await prefs.setStringList(
+            'model_primary_graphics_list',
+            primaryGraphics,
+          );
         }
         final remoteLite = remote['modelLiteList'] as List? ?? const [];
         if (remoteLite.isNotEmpty) {
@@ -161,7 +226,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _scheduleStart = TimeOfDay(hour: startHour, minute: startMinute);
     _scheduleEnd = TimeOfDay(hour: endHour, minute: endMinute);
     _lastSyncTime = prefs.getInt('last_db_sync_time');
-    _customPromptController.text = prefs.getString('custom_live_chat_prompt') ?? '';
+    _customPromptController.text =
+        prefs.getString('custom_live_chat_prompt') ?? '';
     _autoFetchBooks = prefs.getBool('auto_fetch_books') ?? true;
     _autoVerifyMappings = prefs.getBool('auto_verify_mappings') ?? true;
     _autoGenerateModule1 = prefs.getBool('auto_generate_module_1') ?? true;
@@ -201,7 +267,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final prefs = await SharedPreferences.getInstance();
       await _db.fetchBooks(
         forceRefresh: true,
-        onConflict: (Book local, Book remote) => showSyncConflictDialog(context, local, remote),
+        onConflict: (Book local, Book remote) =>
+            showSyncConflictDialog(context, local, remote),
       );
       final now = DateTime.now().millisecondsSinceEpoch;
       await prefs.setInt('last_db_sync_time', now);
@@ -215,9 +282,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Sync failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Sync failed: $e')));
       }
     } finally {
       if (mounted) {
@@ -234,9 +301,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     final prefs = await SharedPreferences.getInstance();
     final keysSaved = await prefs.setStringList('gemini_api_keys_list', _keys);
-    final modelsSaved = await prefs.setStringList('gemini_models_list', _models);
-    final pTextSaved = await prefs.setStringList('model_primary_text_list', _modelPrimaryText);
-    final pGraphicsSaved = await prefs.setStringList('model_primary_graphics_list', _modelPrimaryGraphics);
+    final modelsSaved = await prefs.setStringList(
+      'gemini_models_list',
+      _models,
+    );
+    final pTextSaved = await prefs.setStringList(
+      'model_primary_text_list',
+      _modelPrimaryText,
+    );
+    final pGraphicsSaved = await prefs.setStringList(
+      'model_primary_graphics_list',
+      _modelPrimaryGraphics,
+    );
     final liteSaved = await prefs.setStringList('model_lite_list', _modelLite);
     final liveSaved = await prefs.setStringList('model_live_list', _modelLive);
     await prefs.setString('gen_concurrency', _genConcurrency);
@@ -244,7 +320,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setInt('schedule_start_minute', _scheduleStart.minute);
     await prefs.setInt('schedule_end_hour', _scheduleEnd.hour);
     await prefs.setInt('schedule_end_minute', _scheduleEnd.minute);
-    await prefs.setString('custom_live_chat_prompt', _customPromptController.text.trim());
+    await prefs.setString(
+      'custom_live_chat_prompt',
+      _customPromptController.text.trim(),
+    );
     await prefs.setBool('auto_fetch_books', _autoFetchBooks);
     await prefs.setBool('auto_verify_mappings', _autoVerifyMappings);
     await prefs.setBool('auto_generate_module_1', _autoGenerateModule1);
@@ -253,14 +332,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // Mirror the head of each list back into the legacy scalar key so other
     // code paths still relying on it (older app versions, tests) keep
     // working without a follow-up migration.
-    if (_modelPrimaryText.isNotEmpty) await prefs.setString('model_primary_text', _modelPrimaryText.first);
-    if (_modelPrimaryGraphics.isNotEmpty) await prefs.setString('model_primary_graphics', _modelPrimaryGraphics.first);
-    if (_modelLite.isNotEmpty) await prefs.setString('model_lite', _modelLite.first);
-    if (_modelLive.isNotEmpty) await prefs.setString('model_live', _modelLive.first);
+    if (_modelPrimaryText.isNotEmpty)
+      await prefs.setString('model_primary_text', _modelPrimaryText.first);
+    if (_modelPrimaryGraphics.isNotEmpty)
+      await prefs.setString(
+        'model_primary_graphics',
+        _modelPrimaryGraphics.first,
+      );
+    if (_modelLite.isNotEmpty)
+      await prefs.setString('model_lite', _modelLite.first);
+    if (_modelLive.isNotEmpty)
+      await prefs.setString('model_live', _modelLive.first);
 
-    if (!keysSaved || !modelsSaved || !pTextSaved || !pGraphicsSaved || !liteSaved || !liveSaved) {
+    if (!keysSaved ||
+        !modelsSaved ||
+        !pTextSaved ||
+        !pGraphicsSaved ||
+        !liteSaved ||
+        !liveSaved) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Local save failed — syncing to cloud only.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Local save failed — syncing to cloud only.'),
+          ),
+        );
       }
     }
 
@@ -274,7 +369,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Saved ${_keys.length} key(s) and assigned models.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Saved ${_keys.length} key(s) and assigned models.'),
+        ),
+      );
       Navigator.pop(context);
     }
   }
@@ -283,7 +382,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// remote response + the hard-coded model names we want to keep
   /// discoverable even when the API doesn\'t list them.
   Future<List<String>> _fetchAvailableModels() async {
-    final response = await http.get(Uri.parse('https://generativelanguage.googleapis.com/v1beta/models?key=${_keys.first}'));
+    final response = await http.get(
+      Uri.parse(
+        'https://generativelanguage.googleapis.com/v1beta/models?key=${_keys.first}',
+      ),
+    );
     if (response.statusCode != 200) {
       throw Exception('Failed to fetch: ${response.statusCode}');
     }
@@ -293,7 +396,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     for (var m in fetched) {
       String name = m['name'];
       if (name.startsWith('models/')) name = name.substring(7);
-      if (name.contains('gemini') || name.contains('gemma')) fetchedModels.add(name);
+      if (name.contains('gemini') || name.contains('gemma'))
+        fetchedModels.add(name);
     }
     for (final id in const [
       'gemma4',
@@ -307,7 +411,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       'gemini-2.5-flash-lite',
       'gemini-2.0-flash-lite',
       'gemma-4-31b-it',
-      'gemma-4-26b-a4b-it'
+      'gemma-4-26b-a4b-it',
     ]) {
       if (!fetchedModels.contains(id)) fetchedModels.add(id);
     }
@@ -319,6 +423,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (n.startsWith('gemma')) return 3;
         return 4;
       }
+
       final r = rank(a).compareTo(rank(b));
       return r != 0 ? r : a.compareTo(b);
     });
@@ -330,7 +435,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// the front if the user re-picks it.
   Future<void> _addModelToSlot(String slotName) async {
     if (_keys.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please add an API key first.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please add an API key first.')),
+      );
       return;
     }
     List<String> fetched;
@@ -338,7 +445,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       fetched = await _fetchAvailableModels();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
       return;
     }
@@ -348,13 +457,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await showModalBottomSheet(
       context: context,
       backgroundColor: context.colors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Add Fallback Model for $slotName', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: context.colors.textPrimary)),
+            Text(
+              'Add Fallback Model for $slotName',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 18,
+                color: context.colors.textPrimary,
+              ),
+            ),
             const SizedBox(height: 6),
             Text(
               'Models are tried in the order you list them. The first one that succeeds wins.',
@@ -368,11 +486,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   final name = fetched[i];
                   final alreadyIn = current.contains(name);
                   return ListTile(
-                    leading: Icon(alreadyIn ? LucideIcons.checkCircle : LucideIcons.bot,
-                        color: alreadyIn ? AppTheme.duoGreen : AppTheme.duoBlue),
-                    title: Text(name, style: TextStyle(fontWeight: FontWeight.bold, color: context.colors.textPrimary)),
+                    leading: Icon(
+                      alreadyIn ? LucideIcons.checkCircle : LucideIcons.bot,
+                      color: alreadyIn ? AppTheme.duoGreen : AppTheme.duoBlue,
+                    ),
+                    title: Text(
+                      name,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: context.colors.textPrimary,
+                      ),
+                    ),
                     subtitle: alreadyIn
-                        ? Text('Already in this slot', style: TextStyle(color: context.colors.textFaint, fontSize: 11))
+                        ? Text(
+                            'Already in this slot',
+                            style: TextStyle(
+                              color: context.colors.textFaint,
+                              fontSize: 11,
+                            ),
+                          )
                         : null,
                     onTap: () {
                       setState(() {
@@ -456,16 +588,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: context.colors.textPrimary)),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                        color: context.colors.textPrimary,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text(subtitle, style: TextStyle(color: context.colors.textFaint, fontSize: 11, fontWeight: FontWeight.bold)),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: context.colors.textFaint,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ),
               TextButton.icon(
                 onPressed: () => _addModelToSlot(slotName),
-                icon: const Icon(LucideIcons.plus, size: 14, color: AppTheme.duoBlue),
-                label: const Text('Add fallback', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.w900, fontSize: 11)),
+                icon: const Icon(
+                  LucideIcons.plus,
+                  size: 14,
+                  color: AppTheme.duoBlue,
+                ),
+                label: const Text(
+                  'Add fallback',
+                  style: TextStyle(
+                    color: AppTheme.duoBlue,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 11,
+                  ),
+                ),
               ),
             ],
           ),
@@ -477,18 +634,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
             physics: const NeverScrollableScrollPhysics(),
             buildDefaultDragHandles: false,
             itemCount: models.length,
-            onReorder: (oldIndex, newIndex) => _reorderSlot(slotName, oldIndex, newIndex),
+            onReorder: (oldIndex, newIndex) =>
+                _reorderSlot(slotName, oldIndex, newIndex),
             itemBuilder: (context, i) {
               final m = models[i];
               final isPrimary = i == 0;
               return Container(
                 key: ValueKey('${slotName}_$i'),
                 margin: const EdgeInsets.only(bottom: 6),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: context.colors.shadow,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: isPrimary ? AppTheme.duoBlue.withOpacity(0.6) : context.colors.outline),
+                  border: Border.all(
+                    color: isPrimary
+                        ? AppTheme.duoBlue.withOpacity(0.6)
+                        : context.colors.outline,
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -497,15 +662,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       height: 22,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: isPrimary ? AppTheme.duoBlue : context.colors.outline,
+                        color: isPrimary
+                            ? AppTheme.duoBlue
+                            : context.colors.outline,
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Text('${i + 1}',
-                          style: TextStyle(
-                            color: isPrimary ? context.colors.textPrimary : context.colors.textSecondary,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 11,
-                          )),
+                      child: Text(
+                        '${i + 1}',
+                        style: TextStyle(
+                          color: isPrimary
+                              ? context.colors.textPrimary
+                              : context.colors.textSecondary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 11,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -514,23 +685,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         style: TextStyle(
                           fontFamily: 'monospace',
                           fontSize: 12,
-                          color: isPrimary ? Colors.amber : context.colors.textSecondary,
+                          color: isPrimary
+                              ? Colors.amber
+                              : context.colors.textSecondary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
                     if (models.length > 1)
                       IconButton(
-                        icon: Icon(LucideIcons.trash2, size: 16, color: context.colors.textFaint),
+                        icon: Icon(
+                          LucideIcons.trash2,
+                          size: 16,
+                          color: context.colors.textFaint,
+                        ),
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
                         onPressed: () => _removeFromSlot(slotName, i),
                       ),
                     ReorderableDragStartListener(
                       index: i,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Icon(LucideIcons.gripVertical, size: 16, color: context.colors.textFaint),
+                        child: Icon(
+                          LucideIcons.gripVertical,
+                          size: 16,
+                          color: context.colors.textFaint,
+                        ),
                       ),
                     ),
                   ],
@@ -549,19 +733,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: BoxDecoration(
         color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _cloudSync ? AppTheme.duoBlue.withOpacity(0.5) : context.colors.outline),
+        border: Border.all(
+          color: _cloudSync
+              ? AppTheme.duoBlue.withOpacity(0.5)
+              : context.colors.outline,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(_cloudSync ? LucideIcons.cloud : LucideIcons.cloudOff,
-                  color: _cloudSync ? AppTheme.duoBlue : context.colors.textFaint, size: 28),
+              Icon(
+                _cloudSync ? LucideIcons.cloud : LucideIcons.cloudOff,
+                color: _cloudSync ? AppTheme.duoBlue : context.colors.textFaint,
+                size: 28,
+              ),
               const SizedBox(width: 16),
               Expanded(
-                child: Text('Cloud Backup & Sync',
-                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: context.colors.textPrimary)),
+                child: Text(
+                  'Cloud Backup & Sync',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                    color: context.colors.textPrimary,
+                  ),
+                ),
               ),
               Switch(
                 value: _cloudSync,
@@ -582,9 +779,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _isGuest
                 ? 'Sign in to back up your courses to the cloud. Everything is currently stored on this device.'
                 : _cloudSync
-                    ? 'Your courses and settings are backed up to your account and synced across devices. Local storage stays the source of truth.'
-                    : 'Off — courses are stored only on this device (no network used). Turn on to back up and sync across devices, and to publish to the community.',
-            style: TextStyle(color: context.colors.textFaint, fontSize: 12, height: 1.4),
+                ? 'Your courses and settings are backed up to your account and synced across devices. Local storage stays the source of truth.'
+                : 'Off — courses are stored only on this device (no network used). Turn on to back up and sync across devices, and to publish to the community.',
+            style: TextStyle(
+              color: context.colors.textFaint,
+              fontSize: 12,
+              height: 1.4,
+            ),
           ),
           if (_cloudSync && !_isGuest) ...[
             const SizedBox(height: 16),
@@ -629,7 +830,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       )
                     : TextButton.icon(
                         onPressed: _triggerQuickSync,
-                        icon: const Icon(LucideIcons.refreshCw, size: 14, color: AppTheme.duoBlue),
+                        icon: const Icon(
+                          LucideIcons.refreshCw,
+                          size: 14,
+                          color: AppTheme.duoBlue,
+                        ),
                         label: const Text(
                           'Sync Now',
                           style: TextStyle(
@@ -641,7 +846,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
               ],
             ),
-          ]
+          ],
         ],
       ),
     );
@@ -669,8 +874,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Icon(LucideIcons.gauge, color: AppTheme.duoBlue, size: 28),
           const SizedBox(width: 16),
           Expanded(
-            child: Text('Parallel requests',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: context.colors.textPrimary)),
+            child: Text(
+              'Parallel requests',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 16,
+                color: context.colors.textPrimary,
+              ),
+            ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -681,11 +892,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
-                value: options.containsKey(_genConcurrency) ? _genConcurrency : 'auto',
+                value: options.containsKey(_genConcurrency)
+                    ? _genConcurrency
+                    : 'auto',
                 dropdownColor: context.colors.surface,
-                style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
+                style: TextStyle(
+                  color: context.colors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
                 items: options.entries
-                    .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+                    .map(
+                      (e) =>
+                          DropdownMenuItem(value: e.key, child: Text(e.value)),
+                    )
                     .toList(),
                 onChanged: (v) {
                   if (v != null) setState(() => _genConcurrency = v);
@@ -716,7 +936,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Expanded(
                 child: Text(
                   'Automation Settings',
-                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: context.colors.textPrimary),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                    color: context.colors.textPrimary,
+                  ),
                 ),
               ),
             ],
@@ -730,12 +954,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     Text(
                       'Auto-fetch Reference Books',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: context.colors.textPrimary),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: context.colors.textPrimary,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Extract mentioned books from syllabus and download them from the marketplace automatically.',
-                      style: TextStyle(color: context.colors.textFaint, fontSize: 11),
+                      style: TextStyle(
+                        color: context.colors.textFaint,
+                        fontSize: 11,
+                      ),
                     ),
                   ],
                 ),
@@ -759,12 +990,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     Text(
                       'AI Verification Verification',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: context.colors.textPrimary),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: context.colors.textPrimary,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Verify page ranges automatically using AI and proceed without manual confirmation.',
-                      style: TextStyle(color: context.colors.textFaint, fontSize: 11),
+                      style: TextStyle(
+                        color: context.colors.textFaint,
+                        fontSize: 11,
+                      ),
                     ),
                   ],
                 ),
@@ -788,12 +1026,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     Text(
                       'Auto-generate Module 1',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: context.colors.textPrimary),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: context.colors.textPrimary,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Create outlines for Module 1 sections and auto-generate the first unit with diagrams.',
-                      style: TextStyle(color: context.colors.textFaint, fontSize: 11),
+                      style: TextStyle(
+                        color: context.colors.textFaint,
+                        fontSize: 11,
+                      ),
                     ),
                   ],
                 ),
@@ -840,7 +1085,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     color: AppTheme.duoBlue.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(LucideIcons.cpu, color: AppTheme.duoBlue, size: 20),
+                  child: const Icon(
+                    LucideIcons.cpu,
+                    color: AppTheme.duoBlue,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -849,17 +1098,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     children: [
                       Text(
                         'AI Request Queue',
-                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: context.colors.textPrimary),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                          color: context.colors.textPrimary,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Monitor active, queued, and scheduled lesson generation tasks.',
-                        style: TextStyle(color: context.colors.textFaint, fontSize: 11),
+                        style: TextStyle(
+                          color: context.colors.textFaint,
+                          fontSize: 11,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                Icon(LucideIcons.chevronRight, color: context.colors.textFaint, size: 20),
+                Icon(
+                  LucideIcons.chevronRight,
+                  color: context.colors.textFaint,
+                  size: 20,
+                ),
               ],
             ),
           ),
@@ -895,7 +1155,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     color: AppTheme.duoViolet.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(LucideIcons.flaskConical, color: AppTheme.duoViolet, size: 20),
+                  child: const Icon(
+                    LucideIcons.flaskConical,
+                    color: AppTheme.duoViolet,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -904,17 +1168,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     children: [
                       Text(
                         'Experiments / Slide Testing',
-                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: context.colors.textPrimary),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                          color: context.colors.textPrimary,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Load slide presets or paste custom slide JSON to test rendering live.',
-                        style: TextStyle(color: context.colors.textFaint, fontSize: 11),
+                        style: TextStyle(
+                          color: context.colors.textFaint,
+                          fontSize: 11,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                Icon(LucideIcons.chevronRight, color: context.colors.textFaint, size: 20),
+                Icon(
+                  LucideIcons.chevronRight,
+                  color: context.colors.textFaint,
+                  size: 20,
+                ),
               ],
             ),
           ),
@@ -922,7 +1197,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
-
 
   String _formatTimeOfDay(TimeOfDay time) {
     final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
@@ -944,11 +1218,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           Row(
             children: [
-              const Icon(LucideIcons.calendarRange, color: AppTheme.duoBlue, size: 28),
+              const Icon(
+                LucideIcons.calendarRange,
+                color: AppTheme.duoBlue,
+                size: 28,
+              ),
               const SizedBox(width: 16),
               Expanded(
-                child: Text('Auto-schedule hours',
-                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: context.colors.textPrimary)),
+                child: Text(
+                  'Auto-schedule hours',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                    color: context.colors.textPrimary,
+                  ),
+                ),
               ),
             ],
           ),
@@ -959,7 +1243,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Start Time', style: TextStyle(color: context.colors.textFaint, fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text(
+                    'Start Time',
+                    style: TextStyle(
+                      color: context.colors.textFaint,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   ElevatedButton(
                     onPressed: () async {
@@ -984,7 +1275,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('End Time', style: TextStyle(color: context.colors.textFaint, fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text(
+                    'End Time',
+                    style: TextStyle(
+                      color: context.colors.textFaint,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   ElevatedButton(
                     onPressed: () async {
@@ -1026,31 +1324,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           Row(
             children: [
-              const Icon(LucideIcons.messageSquare, color: AppTheme.duoBlue, size: 28),
+              const Icon(
+                LucideIcons.messageSquare,
+                color: AppTheme.duoBlue,
+                size: 28,
+              ),
               const SizedBox(width: 16),
               Text(
                 'Chat System Prompt',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: context.colors.textPrimary),
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
+                  color: context.colors.textPrimary,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 12),
           Text(
             'This prompt is appended to the tutor\'s instructions in both live and standard chat modes. Use it to specify custom personas, topics, or explanation guidelines.',
-            style: TextStyle(color: context.colors.textFaint, fontSize: 12, height: 1.4),
+            style: TextStyle(
+              color: context.colors.textFaint,
+              fontSize: 12,
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _customPromptController,
             maxLines: 4,
             minLines: 2,
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: context.colors.textPrimary),
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+              color: context.colors.textPrimary,
+            ),
             decoration: InputDecoration(
-              hintText: 'e.g. Always explain concepts using analogies to space exploration. Keep tone humorous.',
-              hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 12),
+              hintText:
+                  'e.g. Always explain concepts using analogies to space exploration. Keep tone humorous.',
+              hintStyle: TextStyle(
+                color: context.colors.textFaint,
+                fontSize: 12,
+              ),
               filled: true,
               fillColor: context.colors.shadow,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: context.colors.outline),
@@ -1083,26 +1404,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Expanded(
                 child: Text(
                   'Writing Style Personalized',
-                  style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 15),
+                  style: TextStyle(
+                    color: context.colors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
                 ),
               ),
               if (hasProfile)
-                const Icon(LucideIcons.checkCircle2, color: AppTheme.duoGreen, size: 20)
+                const Icon(
+                  LucideIcons.checkCircle2,
+                  color: AppTheme.duoGreen,
+                  size: 20,
+                )
               else
-                const Icon(LucideIcons.alertCircle, color: AppTheme.duoOrange, size: 20),
+                const Icon(
+                  LucideIcons.alertCircle,
+                  color: AppTheme.duoOrange,
+                  size: 20,
+                ),
             ],
           ),
           const SizedBox(height: 16),
           if (hasProfile) ...[
-            _buildProfileRow('Syntactic Complexity', profile['syntactic_complexity']?.toString().toUpperCase() ?? 'MEDIUM'),
-            _buildProfileRow('Lexical Richness', profile['lexical_richness']?.toString().toUpperCase() ?? 'MODERATE'),
-            _buildProfileRow('Tone & Register', profile['tone_and_register']?.toString().toUpperCase() ?? 'OBJECTIVE'),
-            _buildProfileRow('Pacing & Rhythm', profile['pacing_and_rhythm']?.toString() ?? 'Flowing prose'),
-            _buildProfileRow('Transitions Favored', (profile['transitional_mechanics'] as List?)?.join(', ') ?? 'however, furthermore'),
+            _buildProfileRow(
+              'Syntactic Complexity',
+              profile['syntactic_complexity']?.toString().toUpperCase() ??
+                  'MEDIUM',
+            ),
+            _buildProfileRow(
+              'Lexical Richness',
+              profile['lexical_richness']?.toString().toUpperCase() ??
+                  'MODERATE',
+            ),
+            _buildProfileRow(
+              'Tone & Register',
+              profile['tone_and_register']?.toString().toUpperCase() ??
+                  'OBJECTIVE',
+            ),
+            _buildProfileRow(
+              'Pacing & Rhythm',
+              profile['pacing_and_rhythm']?.toString() ?? 'Flowing prose',
+            ),
+            _buildProfileRow(
+              'Transitions Favored',
+              (profile['transitional_mechanics'] as List?)?.join(', ') ??
+                  'however, furthermore',
+            ),
           ] else ...[
             Text(
               'No custom writing style profile is set yet. Sirius is currently generating lessons in standard academic style.',
-              style: TextStyle(color: context.colors.textFaint, fontSize: 13, height: 1.4),
+              style: TextStyle(
+                color: context.colors.textFaint,
+                fontSize: 13,
+                height: 1.4,
+              ),
             ),
           ],
           const SizedBox(height: 20),
@@ -1112,13 +1468,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.duoBlue,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
               onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => const MetacognitionSetupScreen(isSettingsMode: true),
+                    builder: (_) =>
+                        const MetacognitionSetupScreen(isSettingsMode: true),
                   ),
                 ).then((updated) {
                   if (updated == true) {
@@ -1127,8 +1486,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 });
               },
               child: Text(
-                hasProfile ? 'Re-evaluate Writing Style' : 'Set Up Writing Style Profile',
-                style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
+                hasProfile
+                    ? 'Re-evaluate Writing Style'
+                    : 'Set Up Writing Style Profile',
+                style: TextStyle(
+                  color: context.colors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
             ),
           ),
@@ -1147,13 +1512,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             width: 150,
             child: Text(
               label,
-              style: TextStyle(color: context.colors.textFaint, fontSize: 12, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: context.colors.textFaint,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: TextStyle(color: context.colors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: context.colors.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -1176,7 +1549,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return Scaffold(
         backgroundColor: context.colors.background,
         appBar: AppBar(
-          title: const Text('Settings', style: TextStyle(fontWeight: FontWeight.w900)),
+          title: const Text(
+            'Settings',
+            style: TextStyle(fontWeight: FontWeight.w900),
+          ),
           backgroundColor: Colors.transparent,
           elevation: 0,
         ),
@@ -1201,8 +1577,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           radius: 24,
                           backgroundColor: AppTheme.duoBlue,
                           child: Text(
-                            user?.displayName?.isNotEmpty == true ? user!.displayName![0].toUpperCase() : 'U', 
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: context.colors.textPrimary)
+                            user?.displayName?.isNotEmpty == true
+                                ? user!.displayName![0].toUpperCase()
+                                : 'U',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              color: context.colors.textPrimary,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -1210,21 +1592,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(user?.displayName ?? 'Guest User', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: context.colors.textPrimary, overflow: TextOverflow.ellipsis)),
-                              Text(user?.email ?? 'Not logged in', style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold, fontSize: 10, overflow: TextOverflow.ellipsis)),
+                              Text(
+                                user?.displayName ?? 'Guest User',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 14,
+                                  color: context.colors.textPrimary,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Text(
+                                user?.email ?? 'Not logged in',
+                                style: TextStyle(
+                                  color: context.colors.textFaint,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 10,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                             ],
                           ),
-                        )
+                        ),
                       ],
                     ),
                   ),
 
                   // Categories list
-                  _buildCategoryMenuItem('general', LucideIcons.settings, 'General & Goals'),
+                  _buildCategoryMenuItem(
+                    'general',
+                    LucideIcons.settings,
+                    'General & Goals',
+                  ),
                   const SizedBox(height: 8),
-                  _buildCategoryMenuItem('profile', LucideIcons.user, 'Profile & Style'),
+                  _buildCategoryMenuItem(
+                    'profile',
+                    LucideIcons.user,
+                    'Profile & Style',
+                  ),
                   const SizedBox(height: 8),
-                  _buildCategoryMenuItem('advanced', LucideIcons.cpu, 'Advanced Config'),
+                  _buildCategoryMenuItem(
+                    'advanced',
+                    LucideIcons.cpu,
+                    'Advanced Config',
+                  ),
 
                   const Spacer(),
 
@@ -1284,222 +1694,315 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings', style: TextStyle(fontWeight: FontWeight.w900))),
+      appBar: AppBar(
+        title: const Text(
+          'Settings',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
+      ),
       body: ResponsiveCenter(
         maxWidth: ResponsiveMaxWidth.form,
         child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children:[
-            Container(
-              padding: const EdgeInsets.all(20),
-              margin: const EdgeInsets.only(bottom: 32),
-              decoration: AppTheme.glassOf(context),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: AppTheme.duoBlue,
-                    child: Text(
-                      user?.displayName?.isNotEmpty == true ? user!.displayName![0].toUpperCase() : 'U', 
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: context.colors.textPrimary)
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                margin: const EdgeInsets.only(bottom: 32),
+                decoration: AppTheme.glassOf(context),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 28,
+                      backgroundColor: AppTheme.duoBlue,
+                      child: Text(
+                        user?.displayName?.isNotEmpty == true
+                            ? user!.displayName![0].toUpperCase()
+                            : 'U',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          color: context.colors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user?.displayName ?? 'Guest User',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 18,
+                              color: context.colors.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            user?.email ?? 'Not logged in',
+                            style: TextStyle(
+                              color: context.colors.textFaint,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const Text(
+                'Appearance',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Follow the system, or pick light/dark explicitly.',
+                style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+              ),
+              const SizedBox(height: 16),
+              _buildAppearanceCard(),
+              const SizedBox(height: 32),
+
+              const Text(
+                'Learning',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Set a daily XP goal and an optional study reminder.',
+                style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+              ),
+              const SizedBox(height: 16),
+              const DailyGoalCard(),
+              const SizedBox(height: 32),
+
+              const Text(
+                'Personalization',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Optional: tune the generated content to your writing and learning style.',
+                style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+              ),
+              const SizedBox(height: 16),
+              const LearnerProfileCard(),
+              const SizedBox(height: 16),
+              _buildMetacognitionCard(),
+              const SizedBox(height: 32),
+
+              const Text(
+                'Storage',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Courses are saved on this device first. Cloud sync is optional.',
+                style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+              ),
+              const SizedBox(height: 16),
+              _buildCloudSyncCard(),
+              const SizedBox(height: 32),
+
+              const Text(
+                'API Keys',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Add multiple keys to fall back automatically if rate-limited.',
+                style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+              ),
+              const SizedBox(height: 16),
+              StringListManager(
+                key: _keysManagerKey,
+                initialItems: _keys,
+                hintText: 'Enter Gemini API Key',
+                itemIcon: LucideIcons.key,
+                onChanged: (newKeys) => setState(() => _keys = newKeys),
+              ),
+              const SizedBox(height: 32),
+
+              // ---- Advanced mode gate: everything below is power-user tooling.
+              Container(
+                decoration: AppTheme.glassOf(context),
+                child: SwitchListTile(
+                  value: GlobalState.advancedModeNotifier.value,
+                  activeColor: AppTheme.duoViolet,
+                  title: Text(
+                    'Advanced mode',
+                    style: TextStyle(
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(user?.displayName ?? 'Guest User', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: context.colors.textPrimary)),
-                        Text(user?.email ?? 'Not logged in', style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold, fontSize: 12)),
-                      ],
+                  subtitle: Text(
+                    'Model ladders, concurrency, automation, experiments, and per-node generation menus.',
+                    style: TextStyle(
+                      color: context.colors.textFaint,
+                      fontSize: 11,
                     ),
-                  )
-                ],
-              ),
-            ),
-
-            const Text('Appearance', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 8),
-            Text('Follow the system, or pick light/dark explicitly.',
-                style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
-            const SizedBox(height: 16),
-            _buildAppearanceCard(),
-            const SizedBox(height: 32),
-
-            const Text('Learning', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 8),
-            Text('Set a daily XP goal and an optional study reminder.',
-                style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
-            const SizedBox(height: 16),
-            const DailyGoalCard(),
-            const SizedBox(height: 32),
-
-            const Text('Personalization', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 8),
-            Text('Optional: tune the generated content to your writing and learning style.',
-                style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
-            const SizedBox(height: 16),
-            const LearnerProfileCard(),
-            const SizedBox(height: 16),
-            _buildMetacognitionCard(),
-            const SizedBox(height: 32),
-
-            const Text('Storage', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 8),
-            Text('Courses are saved on this device first. Cloud sync is optional.',
-                style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
-            const SizedBox(height: 16),
-            _buildCloudSyncCard(),
-            const SizedBox(height: 32),
-
-            const Text('API Keys', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 8),
-            Text('Add multiple keys to fall back automatically if rate-limited.', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
-            const SizedBox(height: 16),
-            StringListManager(
-              key: _keysManagerKey,
-              initialItems: _keys,
-              hintText: 'Enter Gemini API Key',
-              itemIcon: LucideIcons.key,
-              onChanged: (newKeys) => setState(() => _keys = newKeys),
-            ),
-            const SizedBox(height: 32),
-
-            // ---- Advanced mode gate: everything below is power-user tooling.
-            Container(
-              decoration: AppTheme.glassOf(context),
-              child: SwitchListTile(
-                value: GlobalState.advancedModeNotifier.value,
-                activeColor: AppTheme.duoViolet,
-                title: Text('Advanced mode',
-                    style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w800)),
-                subtitle: Text(
-                  'Model ladders, concurrency, automation, experiments, and per-node generation menus.',
-                  style: TextStyle(color: context.colors.textFaint, fontSize: 11),
-                ),
-                onChanged: (v) => setState(() => GlobalState.advancedModeNotifier.value = v),
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            if (GlobalState.advancedModeNotifier.value) ...[
-              SizedBox(
-                width: double.infinity,
-                child: DuoButton(
-                  text: 'PDF Browser',
-                  onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const PdfBrowserScreen()));
-                  },
-                  color: AppTheme.duoViolet,
-                  shadowColor: AppTheme.duoVioletDark,
+                  ),
+                  onChanged: (v) => setState(
+                    () => GlobalState.advancedModeNotifier.value = v,
+                  ),
                 ),
               ),
               const SizedBox(height: 32),
 
-              const Text('AI Model Assignments', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 8),
-              Text('Select specialized models for text, graphics, and light-weight tasks.', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
-              const SizedBox(height: 16),
+              if (GlobalState.advancedModeNotifier.value) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: DuoButton(
+                    text: 'PDF Browser',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const PdfBrowserScreen(),
+                        ),
+                      );
+                    },
+                    color: AppTheme.duoViolet,
+                    shadowColor: AppTheme.duoVioletDark,
+                  ),
+                ),
+                const SizedBox(height: 32),
 
-              _buildModelSlotCard(
-                title: 'Primary - Text',
-                subtitle: 'Generates final interactive lessons & quizzes.',
-                slotName: 'Primary - Text',
-                icon: LucideIcons.fileText,
+                const Text(
+                  'AI Model Assignments',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Select specialized models for text, graphics, and light-weight tasks.',
+                  style: TextStyle(
+                    color: context.colors.textFaint,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                _buildModelSlotCard(
+                  title: 'Primary - Text',
+                  subtitle: 'Generates final interactive lessons & quizzes.',
+                  slotName: 'Primary - Text',
+                  icon: LucideIcons.fileText,
+                ),
+                const SizedBox(height: 16),
+
+                _buildModelSlotCard(
+                  title: 'Primary - Graphics',
+                  subtitle: 'Generates canvas diagrams for lessons & proofs.',
+                  slotName: 'Primary - Graphics',
+                  icon: LucideIcons.image,
+                ),
+                const SizedBox(height: 16),
+
+                _buildModelSlotCard(
+                  title: 'Lite',
+                  subtitle: 'Creates skeletons and maps lesson plan lists.',
+                  slotName: 'Lite',
+                  icon: LucideIcons.zap,
+                ),
+                const SizedBox(height: 16),
+
+                _buildModelSlotCard(
+                  title: 'Live',
+                  subtitle: 'Real-time live model for chat & voice assistance.',
+                  slotName: 'Live',
+                  icon: LucideIcons.mic,
+                ),
+
+                const SizedBox(height: 32),
+                const Text(
+                  'Generation',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'How many lessons to generate at once. Higher is faster but uses more bandwidth and may hit rate limits.',
+                  style: TextStyle(
+                    color: context.colors.textFaint,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildConcurrencyCard(),
+                const SizedBox(height: 16),
+                _buildScheduleCard(),
+                const SizedBox(height: 16),
+                _buildAutomationCard(),
+                const SizedBox(height: 16),
+                _buildAiQueueCard(),
+                const SizedBox(height: 16),
+                _buildExperimentsCard(),
+
+                const SizedBox(height: 32),
+                const Text(
+                  'Live Chat Assistant',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Customize the behavior and system instructions for the real-time AI helper.',
+                  style: TextStyle(
+                    color: context.colors.textFaint,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildLiveChatPromptCard(),
+              ],
+
+              const SizedBox(height: 48),
+              DuoButton(
+                text: 'Save Settings',
+                onPressed: _saveSettings,
+                color: AppTheme.duoGreen,
+                shadowColor: AppTheme.duoGreenDark,
               ),
+
               const SizedBox(height: 16),
-
-              _buildModelSlotCard(
-                title: 'Primary - Graphics',
-                subtitle: 'Generates canvas diagrams for lessons & proofs.',
-                slotName: 'Primary - Graphics',
-                icon: LucideIcons.image,
-              ),
-              const SizedBox(height: 16),
-
-              _buildModelSlotCard(
-                title: 'Lite',
-                subtitle: 'Creates skeletons and maps lesson plan lists.',
-                slotName: 'Lite',
-                icon: LucideIcons.zap,
-              ),
-              const SizedBox(height: 16),
-
-              _buildModelSlotCard(
-                title: 'Live',
-                subtitle: 'Real-time live model for chat & voice assistance.',
-                slotName: 'Live',
-                icon: LucideIcons.mic,
-              ),
-
+              if (user != null)
+                SizedBox(
+                  width: double.infinity,
+                  child: DuoButton(
+                    text: 'Sign Out',
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      await FbAuth.instance.signOut();
+                      SecretsService.instance.clear();
+                      GlobalState.isGuestNotifier.value = false;
+                      GlobalState.xpNotifier.value = 0;
+                    },
+                    color: AppTheme.duoRed,
+                    shadowColor: AppTheme.duoRedDark,
+                    isOutline: true,
+                  ),
+                )
+              else
+                SizedBox(
+                  width: double.infinity,
+                  child: DuoButton(
+                    text: 'Sign In / Log In',
+                    onPressed: () {
+                      GlobalState.isGuestNotifier.value = false;
+                      GlobalState.forceShowAuthScreen.value = true;
+                      Navigator.pop(context);
+                    },
+                    color: AppTheme.duoBlue,
+                    shadowColor: AppTheme.duoBlueDark,
+                  ),
+                ),
               const SizedBox(height: 32),
-              const Text('Generation', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 8),
-              Text('How many lessons to generate at once. Higher is faster but uses more bandwidth and may hit rate limits.', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
-              const SizedBox(height: 16),
-              _buildConcurrencyCard(),
-              const SizedBox(height: 16),
-              _buildScheduleCard(),
-              const SizedBox(height: 16),
-              _buildAutomationCard(),
-              const SizedBox(height: 16),
-              _buildAiQueueCard(),
-              const SizedBox(height: 16),
-              _buildExperimentsCard(),
-
-              const SizedBox(height: 32),
-              const Text('Live Chat Assistant', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 8),
-              Text('Customize the behavior and system instructions for the real-time AI helper.', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
-              const SizedBox(height: 16),
-              _buildLiveChatPromptCard(),
             ],
-
-            const SizedBox(height: 48),
-            DuoButton(
-              text: 'Save Settings',
-              onPressed: _saveSettings,
-              color: AppTheme.duoGreen,
-              shadowColor: AppTheme.duoGreenDark,
-            ),
-            
-            const SizedBox(height: 16),
-            if (user != null)
-              SizedBox(
-                width: double.infinity,
-                child: DuoButton(
-                  text: 'Sign Out',
-                  onPressed: () async {
-                    Navigator.pop(context);
-                    await FbAuth.instance.signOut();
-                    SecretsService.instance.clear();
-                    GlobalState.isGuestNotifier.value = false;
-                    GlobalState.xpNotifier.value = 0;
-                  },
-                  color: AppTheme.duoRed,
-                  shadowColor: AppTheme.duoRedDark,
-                  isOutline: true,
-                ),
-              )
-            else
-              SizedBox(
-                width: double.infinity,
-                child: DuoButton(
-                  text: 'Sign In / Log In',
-                  onPressed: () {
-                    GlobalState.isGuestNotifier.value = false;
-                    GlobalState.forceShowAuthScreen.value = true;
-                    Navigator.pop(context);
-                  },
-                  color: AppTheme.duoBlue,
-                  shadowColor: AppTheme.duoBlueDark,
-                ),
-              ),
-            const SizedBox(height: 32),
-          ],
-        ),
+          ),
         ),
       ),
     );
@@ -1518,17 +2021,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.duoBlue.withOpacity(0.15) : Colors.transparent,
+          color: isSelected
+              ? AppTheme.duoBlue.withOpacity(0.15)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? AppTheme.duoBlue.withOpacity(0.3) : Colors.transparent,
+            color: isSelected
+                ? AppTheme.duoBlue.withOpacity(0.3)
+                : Colors.transparent,
           ),
         ),
         child: Row(
           children: [
             Icon(
               icon,
-              color: isSelected ? AppTheme.duoBlue : context.colors.textSecondary,
+              color: isSelected
+                  ? AppTheme.duoBlue
+                  : context.colors.textSecondary,
               size: 20,
             ),
             const SizedBox(width: 12),
@@ -1538,7 +2047,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 fontFamily: 'Nunito',
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
-                color: isSelected ? AppTheme.duoBlue : context.colors.textSecondary,
+                color: isSelected
+                    ? AppTheme.duoBlue
+                    : context.colors.textSecondary,
               ),
             ),
           ],
@@ -1559,17 +2070,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
               mode == ThemeMode.dark
                   ? LucideIcons.moon
                   : mode == ThemeMode.light
-                      ? LucideIcons.sun
-                      : LucideIcons.monitor,
+                  ? LucideIcons.sun
+                  : LucideIcons.monitor,
               size: 20,
               color: context.colors.textSecondary,
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text('Theme',
-                  style: TextStyle(
-                      color: context.colors.textPrimary,
-                      fontWeight: FontWeight.w800)),
+              child: Text(
+                'Theme',
+                style: TextStyle(
+                  color: context.colors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ),
             SegmentedButton<ThemeMode>(
               segments: const [
@@ -1593,33 +2107,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Appearance', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          const Text(
+            'Appearance',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          ),
           const SizedBox(height: 8),
-          Text('Follow the system, or pick light/dark explicitly.',
-              style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
+          Text(
+            'Follow the system, or pick light/dark explicitly.',
+            style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+          ),
           const SizedBox(height: 16),
           _buildAppearanceCard(),
           const SizedBox(height: 32),
 
-          const Text('Learning Goal', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          const Text(
+            'Learning Goal',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          ),
           const SizedBox(height: 8),
-          Text('Set a daily XP goal and an optional study reminder.',
-              style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
+          Text(
+            'Set a daily XP goal and an optional study reminder.',
+            style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+          ),
           const SizedBox(height: 16),
           const DailyGoalCard(),
           const SizedBox(height: 32),
 
-          const Text('Storage & Sync', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          const Text(
+            'Storage & Sync',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          ),
           const SizedBox(height: 8),
-          Text('Courses are saved on this device first. Cloud sync is optional.',
-              style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
+          Text(
+            'Courses are saved on this device first. Cloud sync is optional.',
+            style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+          ),
           const SizedBox(height: 16),
           _buildCloudSyncCard(),
           const SizedBox(height: 32),
 
-          const Text('API Keys', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          const Text(
+            'API Keys',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          ),
           const SizedBox(height: 8),
-          Text('Add multiple keys to fall back automatically if rate-limited.', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
+          Text(
+            'Add multiple keys to fall back automatically if rate-limited.',
+            style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+          ),
           const SizedBox(height: 16),
           StringListManager(
             key: _keysManagerKey,
@@ -1634,19 +2169,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Personalization', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          const Text(
+            'Personalization',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          ),
           const SizedBox(height: 8),
-          Text('Optional: tune the generated content to your writing and learning style.',
-              style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
+          Text(
+            'Optional: tune the generated content to your writing and learning style.',
+            style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+          ),
           const SizedBox(height: 16),
           const LearnerProfileCard(),
           const SizedBox(height: 16),
           _buildMetacognitionCard(),
           const SizedBox(height: 32),
 
-          const Text('Live Chat Assistant', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          const Text(
+            'Live Chat Assistant',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          ),
           const SizedBox(height: 8),
-          Text('Customize the behavior and system instructions for the real-time AI helper.', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
+          Text(
+            'Customize the behavior and system instructions for the real-time AI helper.',
+            style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+          ),
           const SizedBox(height: 16),
           _buildLiveChatPromptCard(),
         ],
@@ -1655,22 +2201,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Advanced Options', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          const Text(
+            'Advanced Options',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          ),
           const SizedBox(height: 8),
-          Text('Enable Advanced Mode to configure AI models, concurrency settings, and execute experiments.', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
+          Text(
+            'Enable Advanced Mode to configure AI models, concurrency settings, and execute experiments.',
+            style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+          ),
           const SizedBox(height: 16),
           Container(
             decoration: AppTheme.glassOf(context),
             child: SwitchListTile(
               value: GlobalState.advancedModeNotifier.value,
               activeColor: AppTheme.duoViolet,
-              title: Text('Advanced mode',
-                  style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w800)),
+              title: Text(
+                'Advanced mode',
+                style: TextStyle(
+                  color: context.colors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
               subtitle: Text(
                 'Model ladders, concurrency, automation, experiments, and per-node generation menus.',
                 style: TextStyle(color: context.colors.textFaint, fontSize: 11),
               ),
-              onChanged: (v) => setState(() => GlobalState.advancedModeNotifier.value = v),
+              onChanged: (v) =>
+                  setState(() => GlobalState.advancedModeNotifier.value = v),
             ),
           ),
           const SizedBox(height: 32),
@@ -1681,7 +2239,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: DuoButton(
                 text: 'PDF Browser',
                 onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const PdfBrowserScreen()));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PdfBrowserScreen()),
+                  );
                 },
                 color: AppTheme.duoViolet,
                 shadowColor: AppTheme.duoVioletDark,
@@ -1689,9 +2250,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 32),
 
-            const Text('AI Model Assignments', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const Text(
+              'AI Model Assignments',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+            ),
             const SizedBox(height: 8),
-            Text('Select specialized models for text, graphics, and light-weight tasks.', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
+            Text(
+              'Select specialized models for text, graphics, and light-weight tasks.',
+              style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+            ),
             const SizedBox(height: 16),
 
             _buildModelSlotCard(
@@ -1726,9 +2293,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
 
             const SizedBox(height: 32),
-            const Text('Generation Settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const Text(
+              'Generation Settings',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+            ),
             const SizedBox(height: 8),
-            Text('How many lessons to generate at once, task queueing, schedule settings, and automated rules.', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
+            Text(
+              'How many lessons to generate at once, task queueing, schedule settings, and automated rules.',
+              style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+            ),
             const SizedBox(height: 16),
             _buildConcurrencyCard(),
             const SizedBox(height: 16),

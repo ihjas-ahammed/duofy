@@ -40,7 +40,10 @@ class FileSelectionList extends StatelessWidget {
               children: [
                 Text(
                   '${files.length} File(s) Selected',
-                  style: TextStyle(fontWeight: FontWeight.w900, color: context.colors.textPrimary)
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: context.colors.textPrimary,
+                  ),
                 ),
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -49,16 +52,23 @@ class FileSelectionList extends StatelessWidget {
                       GestureDetector(
                         onTap: onSelectFromStore,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: AppTheme.duoViolet.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Row(
                             children: [
-                              Icon(LucideIcons.cloud, size: 14, color: AppTheme.duoViolet),
+                              Icon(
+                                LucideIcons.cloud,
+                                size: 14,
+                                color: AppTheme.duoViolet,
+                              ),
                               SizedBox(width: 4),
-                              ],
+                            ],
                           ),
                         ),
                       ),
@@ -67,16 +77,30 @@ class FileSelectionList extends StatelessWidget {
                     GestureDetector(
                       onTap: onAddMore,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: AppTheme.duoBlue.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Row(
                           children: [
-                            Icon(LucideIcons.plus, size: 14, color: AppTheme.duoBlue),
+                            Icon(
+                              LucideIcons.plus,
+                              size: 14,
+                              color: AppTheme.duoBlue,
+                            ),
                             SizedBox(width: 4),
-                            Text('Add', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold, fontSize: 12)),
+                            Text(
+                              'Add',
+                              style: TextStyle(
+                                color: AppTheme.duoBlue,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -86,7 +110,7 @@ class FileSelectionList extends StatelessWidget {
               ],
             ),
           ),
-          
+
           if (files.isEmpty)
             Padding(
               padding: const EdgeInsets.all(24.0),
@@ -101,7 +125,8 @@ class FileSelectionList extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: files.length,
-              separatorBuilder: (_, _) => Divider(height: 1, color: context.colors.outline),
+              separatorBuilder: (_, _) =>
+                  Divider(height: 1, color: context.colors.outline),
               itemBuilder: (context, index) {
                 final file = files[index];
                 String name = '';
@@ -113,23 +138,34 @@ class FileSelectionList extends StatelessWidget {
                   name = file.name;
                   isPdf = file.name.toLowerCase().endsWith('.pdf');
                 }
-                
+
                 return Material(
                   color: Colors.transparent,
                   child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
                     leading: Icon(
                       isPdf ? LucideIcons.fileText : LucideIcons.image,
                       color: isPdf ? AppTheme.duoViolet : AppTheme.duoOrange,
                     ),
                     title: Text(
                       name,
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.colors.textPrimary),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: context.colors.textPrimary,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     trailing: IconButton(
-                      icon: const Icon(LucideIcons.trash2, size: 18, color: AppTheme.duoRed),
+                      icon: const Icon(
+                        LucideIcons.trash2,
+                        size: 18,
+                        color: AppTheme.duoRed,
+                      ),
                       onPressed: () => onRemove(index),
                     ),
                   ),

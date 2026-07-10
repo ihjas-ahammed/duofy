@@ -48,14 +48,21 @@ class ErrorSpottingView extends StatelessWidget {
                     children: [
                       const Row(
                         children: [
-                          Icon(LucideIcons.searchX, color: AppTheme.duoOrange, size: 18),
+                          Icon(
+                            LucideIcons.searchX,
+                            color: AppTheme.duoOrange,
+                            size: 18,
+                          ),
                           SizedBox(width: 8),
-                          Text('FIND THE MISTAKE',
-                              style: TextStyle(
-                                  color: AppTheme.duoOrange,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 11,
-                                  letterSpacing: 1.5)),
+                          Text(
+                            'FIND THE MISTAKE',
+                            style: TextStyle(
+                              color: AppTheme.duoOrange,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 11,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 12),
@@ -64,61 +71,74 @@ class ErrorSpottingView extends StatelessWidget {
                             ? slide.content
                             : 'One of these steps is wrong. Tap it.',
                         textStyle: TextStyle(
-                            fontSize: 16, color: context.colors.textPrimary, fontWeight: FontWeight.bold),
+                          fontSize: 16,
+                          color: context.colors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 16),
                 for (var i = 0; i < steps.length; i++)
-                  Builder(builder: (context) {
-                    Color border = context.colors.outline;
-                    if (isAnswered) {
-                      if (i == slide.errorIndex) {
-                        border = AppTheme.duoGreen; // the actual flaw, revealed
+                  Builder(
+                    builder: (context) {
+                      Color border = context.colors.outline;
+                      if (isAnswered) {
+                        if (i == slide.errorIndex) {
+                          border =
+                              AppTheme.duoGreen; // the actual flaw, revealed
+                        } else if (i == selectedIndex) {
+                          border = AppTheme.duoRed;
+                        }
                       } else if (i == selectedIndex) {
-                        border = AppTheme.duoRed;
+                        border = Colors.amber;
                       }
-                    } else if (i == selectedIndex) {
-                      border = Colors.amber;
-                    }
-                    return GestureDetector(
-                      onTap: isAnswered ? null : () => onSelect(i),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: context.colors.surfaceAlt,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: border, width: 2),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('${i + 1}.',
+                      return GestureDetector(
+                        onTap: isAnswered ? null : () => onSelect(i),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: context.colors.surfaceAlt,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: border, width: 2),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${i + 1}.',
                                 style: TextStyle(
-                                    color: context.colors.textFaint,
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 14)),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: MathMarkdown(
-                                data: steps[i],
-                                textStyle: TextStyle(
+                                  color: context.colors.textFaint,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: MathMarkdown(
+                                  data: steps[i],
+                                  textStyle: TextStyle(
                                     fontSize: 14,
                                     color: context.colors.textPrimary,
-                                    fontWeight: FontWeight.w600),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ),
-                            ),
-                            if (isAnswered && i == slide.errorIndex)
-                              const Icon(LucideIcons.badgeAlert,
-                                  color: AppTheme.duoGreen, size: 18),
-                          ],
+                              if (isAnswered && i == slide.errorIndex)
+                                const Icon(
+                                  LucideIcons.badgeAlert,
+                                  color: AppTheme.duoGreen,
+                                  size: 18,
+                                ),
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  }),
+                      );
+                    },
+                  ),
               ],
             ),
           ),
@@ -127,10 +147,7 @@ class ErrorSpottingView extends StatelessWidget {
               hasScrollBody: false,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  const SizedBox(height: 24),
-                  bottomBar!,
-                ],
+                children: [const SizedBox(height: 24), bottomBar!],
               ),
             ),
         ],

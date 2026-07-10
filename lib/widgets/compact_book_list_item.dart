@@ -92,7 +92,10 @@ class CompactBookListItem extends StatelessWidget {
             decoration: BoxDecoration(
               color: context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: mostUsedColor.withOpacity(0.2), width: 1.2),
+              border: Border.all(
+                color: mostUsedColor.withOpacity(0.2),
+                width: 1.2,
+              ),
             ),
             child: Row(
               children: [
@@ -103,17 +106,16 @@ class CompactBookListItem extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: mostUsedColor.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: mostUsedColor.withOpacity(0.25), width: 1.2),
+                    border: Border.all(
+                      color: mostUsedColor.withOpacity(0.25),
+                      width: 1.2,
+                    ),
                   ),
                   alignment: Alignment.center,
-                  child: Icon(
-                    displayIcon,
-                    color: mostUsedColor,
-                    size: 24,
-                  ),
+                  child: Icon(displayIcon, color: mostUsedColor, size: 24),
                 ),
                 const SizedBox(width: 14),
-                
+
                 // 2. Middle Texts & Progress
                 Expanded(
                   child: Column(
@@ -156,7 +158,7 @@ class CompactBookListItem extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 14),
-                
+
                 // 3. Trailing Arrow or Drag Handle
                 dragHandle ??
                     Icon(

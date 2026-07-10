@@ -10,13 +10,11 @@ import '../widgets/responsive_center.dart';
 class MetacognitionSetupScreen extends StatefulWidget {
   final bool isSettingsMode;
 
-  const MetacognitionSetupScreen({
-    super.key,
-    this.isSettingsMode = false,
-  });
+  const MetacognitionSetupScreen({super.key, this.isSettingsMode = false});
 
   @override
-  State<MetacognitionSetupScreen> createState() => _MetacognitionSetupScreenState();
+  State<MetacognitionSetupScreen> createState() =>
+      _MetacognitionSetupScreenState();
 }
 
 class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
@@ -68,7 +66,10 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
   int _countSentences(String text) {
     if (text.trim().isEmpty) return 0;
     // Split by punctuation followed by space or end of string
-    return text.split(RegExp(r'[.!?](\s+|$)')).where((s) => s.trim().isNotEmpty).length;
+    return text
+        .split(RegExp(r'[.!?](\s+|$)'))
+        .where((s) => s.trim().isNotEmpty)
+        .length;
   }
 
   bool get _isValid1 => _words1 >= 50 || _sentences1 >= 3;
@@ -81,21 +82,25 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
     setState(() => _isSaving = true);
 
     try {
-      final answers = [
-        _answersCtrl1.text.trim(),
-        _answersCtrl2.text.trim(),
-      ];
+      final answers = [_answersCtrl1.text.trim(), _answersCtrl2.text.trim()];
 
-      final profileMap = await AiService().extractWritingStyleProfile(answers: answers);
+      final profileMap = await AiService().extractWritingStyleProfile(
+        answers: answers,
+      );
 
       if (profileMap != null) {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_writing_style_profile', jsonEncode(profileMap));
+        await prefs.setString(
+          'user_writing_style_profile',
+          jsonEncode(profileMap),
+        );
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Writing style analysis complete! Lessons will now adapt to you.'),
+              content: Text(
+                'Writing style analysis complete! Lessons will now adapt to you.',
+              ),
               backgroundColor: AppTheme.duoGreen,
             ),
           );
@@ -108,7 +113,9 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to analyze style: $e. Using standard default style instead.'),
+            content: Text(
+              'Failed to analyze style: $e. Using standard default style instead.',
+            ),
             backgroundColor: AppTheme.duoRed,
           ),
         );
@@ -127,11 +134,14 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
       "lexical_richness": "moderate",
       "pacing_and_rhythm": "flowing, analytical prose",
       "transitional_mechanics": ["however", "consequently", "furthermore"],
-      "tone_and_register": "objective"
+      "tone_and_register": "objective",
     };
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_writing_style_profile', jsonEncode(defaultProfile));
+    await prefs.setString(
+      'user_writing_style_profile',
+      jsonEncode(defaultProfile),
+    );
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -170,10 +180,17 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
           TextField(
             controller: controller,
             maxLines: 4,
-            style: TextStyle(color: context.colors.textPrimary, fontSize: 13, height: 1.4),
+            style: TextStyle(
+              color: context.colors.textPrimary,
+              fontSize: 13,
+              height: 1.4,
+            ),
             decoration: InputDecoration(
               hintText: 'Type your answer here...',
-              hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 13),
+              hintStyle: TextStyle(
+                color: context.colors.textFaint,
+                fontSize: 13,
+              ),
               filled: true,
               fillColor: context.colors.surfaceAlt,
               border: OutlineInputBorder(
@@ -182,7 +199,10 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppTheme.duoBlue, width: 1.5),
+                borderSide: const BorderSide(
+                  color: AppTheme.duoBlue,
+                  width: 1.5,
+                ),
               ),
               contentPadding: const EdgeInsets.all(16),
             ),
@@ -264,25 +284,27 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
-                  
+
                   _buildField(
-                    question: '1. Describe a topic or field of study you are deeply interested in (e.g. physics, art, history). Explain it in your own words.',
+                    question:
+                        '1. Describe a topic or field of study you are deeply interested in (e.g. physics, art, history). Explain it in your own words.',
                     controller: _answersCtrl1,
                     words: _words1,
                     sentences: _sentences1,
                     isValid: _isValid1,
                   ),
-                  
+
                   _buildField(
-                    question: '2. Tell us about a time you found a concept difficult to learn. How did you eventually understand it, and what helps you learn best?',
+                    question:
+                        '2. Tell us about a time you found a concept difficult to learn. How did you eventually understand it, and what helps you learn best?',
                     controller: _answersCtrl2,
                     words: _words2,
                     sentences: _sentences2,
                     isValid: _isValid2,
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   DuoButton(
                     text: 'Analyze Style Signature',
                     onPressed: () {
@@ -290,10 +312,14 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
                         _submit();
                       }
                     },
-                    color: _canSubmit ? AppTheme.duoBlue : context.colors.outline,
-                    shadowColor: _canSubmit ? AppTheme.duoBlueDark : Colors.transparent,
+                    color: _canSubmit
+                        ? AppTheme.duoBlue
+                        : context.colors.outline,
+                    shadowColor: _canSubmit
+                        ? AppTheme.duoBlueDark
+                        : Colors.transparent,
                   ),
-                  
+
                   if (!widget.isSettingsMode) ...[
                     const SizedBox(height: 12),
                     TextButton(
@@ -320,12 +346,17 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
                   borderRadius: 24,
                   color: const Color(0xFF1E293B).withOpacity(0.85),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 32),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 40,
+                      vertical: 32,
+                    ),
                     width: 320,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const CircularProgressIndicator(color: AppTheme.duoBlue),
+                        const CircularProgressIndicator(
+                          color: AppTheme.duoBlue,
+                        ),
                         const SizedBox(height: 24),
                         Text(
                           'Analyzing Writing Style...',

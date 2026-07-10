@@ -26,7 +26,8 @@ class _CustomHtmlViewState extends State<CustomHtmlView> {
   void didUpdateWidget(CustomHtmlView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.slide.id != widget.slide.id ||
-        oldWidget.slide.interactiveCanvasHtml != widget.slide.interactiveCanvasHtml ||
+        oldWidget.slide.interactiveCanvasHtml !=
+            widget.slide.interactiveCanvasHtml ||
         oldWidget.slide.content != widget.slide.content) {
       setState(() {
         _isCompleted = false;

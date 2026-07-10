@@ -38,7 +38,10 @@ class _GenerateQpScreenState extends State<GenerateQpScreen> {
 
     if (result != null) {
       setState(() {
-        final newFiles = result.paths.where((p) => p != null).map((p) => File(p!)).toList();
+        final newFiles = result.paths
+            .where((p) => p != null)
+            .map((p) => File(p!))
+            .toList();
         _selectedFiles.addAll(newFiles);
       });
     }
@@ -46,28 +49,38 @@ class _GenerateQpScreenState extends State<GenerateQpScreen> {
 
   void _generate() {
     if (_selectedFiles.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select at least one file.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select at least one file.')),
+      );
       return;
     }
-    
+
     final title = _titleCtrl.text.trim();
     if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a name for this past paper.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a name for this past paper.'),
+        ),
+      );
       return;
     }
 
     final customInstructions = _customPromptCtrl.text.trim();
 
     GenerationManager.instance.startQpGeneration(
-      widget.book.id, 
-      _selectedFiles, 
-      title, 
+      widget.book.id,
+      _selectedFiles,
+      title,
       widget.book,
-      customInstructions: customInstructions.isNotEmpty ? customInstructions : null,
+      customInstructions: customInstructions.isNotEmpty
+          ? customInstructions
+          : null,
     );
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Processing Exam in Background! You can queue another.'))
+      const SnackBar(
+        content: Text('Processing Exam in Background! You can queue another.'),
+      ),
     );
 
     setState(() {
@@ -80,80 +93,129 @@ class _GenerateQpScreenState extends State<GenerateQpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Past Paper', style: TextStyle(fontWeight: FontWeight.w900))),
+      appBar: AppBar(
+        title: const Text(
+          'Add Past Paper',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
+      ),
       body: ResponsiveCenter(
         maxWidth: ResponsiveMaxWidth.form,
         child: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                       "Upload PDFs or photos of past exams. The AI will extract the questions and solve them interactively. You can safely minimize the app during processing.",
-                      style: TextStyle(color: context.colors.textFaint, fontSize: 13, height: 1.5),
-                    ),
-                    const SizedBox(height: 24),
-
-                    Text('Exam Name', style: TextStyle(fontWeight: FontWeight.w900, color: context.colors.textPrimary)),
-                    const SizedBox(height: 8),
-                    Container(
-                      decoration: AppTheme.glassOf(context),
-                      child: TextField(
-                        controller: _titleCtrl,
-                        style: TextStyle(color: context.colors.textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
-                        decoration: InputDecoration(
-                          hintText: "e.g. Midterm 2023",
-                          hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 13, fontWeight: FontWeight.normal),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                          contentPadding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        "Upload PDFs or photos of past exams. The AI will extract the questions and solve them interactively. You can safely minimize the app during processing.",
+                        style: TextStyle(
+                          color: context.colors.textFaint,
+                          fontSize: 13,
+                          height: 1.5,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
-                    Text('Custom Prompt / Generation Instructions', style: TextStyle(fontWeight: FontWeight.w900, color: context.colors.textPrimary)),
-                    const SizedBox(height: 8),
-                    Container(
-                      decoration: AppTheme.glassOf(context),
-                      child: TextField(
-                        controller: _customPromptCtrl,
-                        maxLines: 4,
-                        minLines: 2,
-                        style: TextStyle(color: context.colors.textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
-                        decoration: InputDecoration(
-                          hintText: "e.g. Focus on multiple choice questions, explain formula derivations.",
-                          hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 13, fontWeight: FontWeight.normal),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                          contentPadding: const EdgeInsets.all(16),
+                      Text(
+                        'Exam Name',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          color: context.colors.textPrimary,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    FileSelectionList(
-                      files: _selectedFiles,
-                      onAddMore: _pickFiles,
-                      onRemove: (idx) => setState(() => _selectedFiles.removeAt(idx)),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      Container(
+                        decoration: AppTheme.glassOf(context),
+                        child: TextField(
+                          controller: _titleCtrl,
+                          style: TextStyle(
+                            color: context.colors.textPrimary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: "e.g. Midterm 2023",
+                            hintStyle: TextStyle(
+                              color: context.colors.textFaint,
+                              fontSize: 13,
+                              fontWeight: FontWeight.normal,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: const EdgeInsets.all(16),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      Text(
+                        'Custom Prompt / Generation Instructions',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          color: context.colors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        decoration: AppTheme.glassOf(context),
+                        child: TextField(
+                          controller: _customPromptCtrl,
+                          maxLines: 4,
+                          minLines: 2,
+                          style: TextStyle(
+                            color: context.colors.textPrimary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          decoration: InputDecoration(
+                            hintText:
+                                "e.g. Focus on multiple choice questions, explain formula derivations.",
+                            hintStyle: TextStyle(
+                              color: context.colors.textFaint,
+                              fontSize: 13,
+                              fontWeight: FontWeight.normal,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: const EdgeInsets.all(16),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      FileSelectionList(
+                        files: _selectedFiles,
+                        onAddMore: _pickFiles,
+                        onRemove: (idx) =>
+                            setState(() => _selectedFiles.removeAt(idx)),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: DuoButton(
-                text: 'Solve & Add Paper',
-                onPressed: _generate,
-                color: _selectedFiles.isNotEmpty ? AppTheme.duoBlue : Colors.grey.shade700,
-                shadowColor: _selectedFiles.isNotEmpty ? AppTheme.duoBlueDark : Colors.grey.shade800,
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: DuoButton(
+                  text: 'Solve & Add Paper',
+                  onPressed: _generate,
+                  color: _selectedFiles.isNotEmpty
+                      ? AppTheme.duoBlue
+                      : Colors.grey.shade700,
+                  shadowColor: _selectedFiles.isNotEmpty
+                      ? AppTheme.duoBlueDark
+                      : Colors.grey.shade800,
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
         ),
       ),
     );

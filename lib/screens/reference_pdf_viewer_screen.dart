@@ -19,14 +19,15 @@ class ReferencePdfViewerScreen extends StatefulWidget {
   });
 
   @override
-  State<ReferencePdfViewerScreen> createState() => _ReferencePdfViewerScreenState();
+  State<ReferencePdfViewerScreen> createState() =>
+      _ReferencePdfViewerScreenState();
 }
 
 class _ReferencePdfViewerScreenState extends State<ReferencePdfViewerScreen> {
   late SafePdfViewerController _pdfViewerController;
   late List<Section> _pdfSections;
   late int _currentIndex;
-  
+
   double _zoomFactor = 1.0;
   bool _isDocumentLoaded = false;
   bool _scrollToBottomOnNextLoad = false;
@@ -35,17 +36,21 @@ class _ReferencePdfViewerScreenState extends State<ReferencePdfViewerScreen> {
   void initState() {
     super.initState();
     _pdfViewerController = SafePdfViewerController();
-    
+
     _pdfSections = [];
     for (var module in widget.book.modules) {
       for (var sec in module.sections) {
-        if (sec.pdfPath != null && sec.pdfPath!.isNotEmpty && File(sec.pdfPath!).existsSync()) {
+        if (sec.pdfPath != null &&
+            sec.pdfPath!.isNotEmpty &&
+            File(sec.pdfPath!).existsSync()) {
           _pdfSections.add(sec);
         }
       }
     }
-    
-    _currentIndex = _pdfSections.indexWhere((s) => s.id == widget.initialSection.id);
+
+    _currentIndex = _pdfSections.indexWhere(
+      (s) => s.id == widget.initialSection.id,
+    );
     if (_currentIndex == -1) {
       _pdfSections.insert(0, widget.initialSection);
       _currentIndex = 0;
@@ -91,10 +96,9 @@ class _ReferencePdfViewerScreenState extends State<ReferencePdfViewerScreen> {
   void _sharePdf() {
     final currentSection = _pdfSections[_currentIndex];
     if (currentSection.pdfPath != null) {
-      Share.shareXFiles(
-        [XFile(currentSection.pdfPath!)],
-        text: currentSection.title,
-      );
+      Share.shareXFiles([
+        XFile(currentSection.pdfPath!),
+      ], text: currentSection.title);
     }
   }
 
@@ -130,7 +134,10 @@ class _ReferencePdfViewerScreenState extends State<ReferencePdfViewerScreen> {
         elevation: 1,
         shadowColor: context.colors.shadow,
         leading: IconButton(
-          icon: Icon(LucideIcons.arrowLeft, color: context.colors.textSecondary),
+          icon: Icon(
+            LucideIcons.arrowLeft,
+            color: context.colors.textSecondary,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -147,7 +154,11 @@ class _ReferencePdfViewerScreenState extends State<ReferencePdfViewerScreen> {
         actions: [
           // Share Action
           IconButton(
-            icon: Icon(LucideIcons.share2, color: context.colors.textSecondary, size: 20),
+            icon: Icon(
+              LucideIcons.share2,
+              color: context.colors.textSecondary,
+              size: 20,
+            ),
             tooltip: 'Share PDF',
             onPressed: _isDocumentLoaded ? _sharePdf : null,
           ),
@@ -163,13 +174,19 @@ class _ReferencePdfViewerScreenState extends State<ReferencePdfViewerScreen> {
             icon: const Icon(LucideIcons.chevronUp, size: 22),
             tooltip: 'Previous Reference PDF (Up)',
             onPressed: _currentIndex > 0 ? _goToPreviousSection : null,
-            color: _currentIndex > 0 ? AppTheme.duoBlue : context.colors.textFaint,
+            color: _currentIndex > 0
+                ? AppTheme.duoBlue
+                : context.colors.textFaint,
           ),
           IconButton(
             icon: const Icon(LucideIcons.chevronDown, size: 22),
             tooltip: 'Next Reference PDF (Down)',
-            onPressed: _currentIndex < _pdfSections.length - 1 ? _goToNextSection : null,
-            color: _currentIndex < _pdfSections.length - 1 ? AppTheme.duoBlue : context.colors.textFaint,
+            onPressed: _currentIndex < _pdfSections.length - 1
+                ? _goToNextSection
+                : null,
+            color: _currentIndex < _pdfSections.length - 1
+                ? AppTheme.duoBlue
+                : context.colors.textFaint,
           ),
           const SizedBox(width: 8),
         ],
@@ -191,7 +208,7 @@ class _ReferencePdfViewerScreenState extends State<ReferencePdfViewerScreen> {
           builder: (context, constraints) {
             final double actualWidth = constraints.maxWidth;
             final double actualHeight = constraints.maxHeight;
-            
+
             final bool useLocalScale = _zoomFactor < 1.0;
             final double scale = useLocalScale ? _zoomFactor : 1.0;
             final double containerWidth = actualWidth * scale;
@@ -209,25 +226,24 @@ class _ReferencePdfViewerScreenState extends State<ReferencePdfViewerScreen> {
                     setState(() {
                       _isDocumentLoaded = true;
                     });
-                    
+
                     if (_zoomFactor >= 1.0) {
                       _pdfViewerController.zoomLevel = _zoomFactor;
                     }
-                    
+
                     if (_scrollToBottomOnNextLoad) {
                       _scrollToBottomOnNextLoad = false;
                       _pdfViewerController.lastPage();
                       Future.delayed(const Duration(milliseconds: 60), () {
                         if (mounted) {
-                          _pdfViewerController.jumpTo(
-                            yOffset: 999999,
-                          );
+                          _pdfViewerController.jumpTo(yOffset: 999999);
                         }
                       });
                     }
                   },
                   onZoomLevelChanged: (details) {
-                    if (details.newZoomLevel >= 1.0 && details.newZoomLevel != _zoomFactor) {
+                    if (details.newZoomLevel >= 1.0 &&
+                        details.newZoomLevel != _zoomFactor) {
                       setState(() {
                         _zoomFactor = details.newZoomLevel;
                       });

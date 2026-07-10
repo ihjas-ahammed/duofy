@@ -31,11 +31,12 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
     final int headerCount = 1;
     final int outlineHeaderCount = outlineCount > 0 ? 1 : 0;
     final int theoryHeaderCount = 1;
-    
-    final int totalCount = headerCount + 
-        outlineHeaderCount + 
-        outlineCount + 
-        theoryHeaderCount + 
+
+    final int totalCount =
+        headerCount +
+        outlineHeaderCount +
+        outlineCount +
+        theoryHeaderCount +
         moduleTheorySlides.length;
 
     return Scaffold(
@@ -58,7 +59,12 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
         bottom: false,
         child: ListView.builder(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 80),
+          padding: const EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: 80,
+          ),
           itemCount: totalCount,
           itemBuilder: (context, index) {
             // 1. Header with description
@@ -73,7 +79,11 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
                     children: [
                       const Row(
                         children: [
-                          Icon(LucideIcons.info, color: AppTheme.duoBlue, size: 18),
+                          Icon(
+                            LucideIcons.info,
+                            color: AppTheme.duoBlue,
+                            size: 18,
+                          ),
                           SizedBox(width: 8),
                           Text(
                             'MODULE OVERVIEW',
@@ -124,7 +134,8 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
 
             // 3. Outline items
             if (outlineCount > 0) {
-              if (index >= currentIndex && index < currentIndex + outlineCount) {
+              if (index >= currentIndex &&
+                  index < currentIndex + outlineCount) {
                 final secIdx = index - currentIndex;
                 final sec = module.sections[secIdx];
                 return Container(
@@ -136,7 +147,11 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
                     children: [
                       const Padding(
                         padding: EdgeInsets.only(top: 3),
-                        child: Icon(LucideIcons.arrowRight, size: 14, color: AppTheme.duoBlue),
+                        child: Icon(
+                          LucideIcons.arrowRight,
+                          size: 14,
+                          color: AppTheme.duoBlue,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -202,7 +217,11 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Icon(LucideIcons.sparkles, color: AppTheme.duoViolet, size: 16),
+                        const Icon(
+                          LucideIcons.sparkles,
+                          color: AppTheme.duoViolet,
+                          size: 16,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(

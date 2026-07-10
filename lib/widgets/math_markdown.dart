@@ -52,10 +52,7 @@ class MathMarkdown extends StatelessWidget {
 
     // The AI is prompted to double-escape LaTeX (\\frac → \frac in the
     // runtime string). Fix ALL double-escaped commands, not just a handful.
-    s = s.replaceAllMapped(
-      RegExp(r'\\\\([a-zA-Z]+)'),
-      (m) => '\\${m[1]}',
-    );
+    s = s.replaceAllMapped(RegExp(r'\\\\([a-zA-Z]+)'), (m) => '\\${m[1]}');
 
     // HTML entities that occasionally appear in AI output
     s = s.replaceAll('&amp;', '&');
@@ -70,16 +67,24 @@ class MathMarkdown extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final tint = colors.isDark ? Colors.white : Colors.black;
-    final baseStyle = textStyle ??
-        TextStyle(fontSize: 16, color: colors.textPrimary, height: 1.5, fontWeight: FontWeight.w600);
+    final baseStyle =
+        textStyle ??
+        TextStyle(
+          fontSize: 16,
+          color: colors.textPrimary,
+          height: 1.5,
+          fontWeight: FontWeight.w600,
+        );
 
     final wrapAlign = textAlign == TextAlign.center
         ? WrapAlignment.center
         : textAlign == TextAlign.right
-            ? WrapAlignment.end
-            : WrapAlignment.start;
+        ? WrapAlignment.end
+        : WrapAlignment.start;
 
-    final mathStyle = baseStyle.copyWith(color: baseStyle.color ?? colors.textPrimary);
+    final mathStyle = baseStyle.copyWith(
+      color: baseStyle.color ?? colors.textPrimary,
+    );
 
     final inlineSyntaxes = <md.InlineSyntax>[
       _PermissiveLatexInlineSyntax(),
@@ -107,9 +112,18 @@ class MathMarkdown extends StatelessWidget {
       styleSheet: MarkdownStyleSheet(
         p: baseStyle,
         textAlign: wrapAlign,
-        h1: baseStyle.copyWith(fontSize: (baseStyle.fontSize ?? 16) * 1.6, fontWeight: FontWeight.w900),
-        h2: baseStyle.copyWith(fontSize: (baseStyle.fontSize ?? 16) * 1.4, fontWeight: FontWeight.w800),
-        h3: baseStyle.copyWith(fontSize: (baseStyle.fontSize ?? 16) * 1.2, fontWeight: FontWeight.w700),
+        h1: baseStyle.copyWith(
+          fontSize: (baseStyle.fontSize ?? 16) * 1.6,
+          fontWeight: FontWeight.w900,
+        ),
+        h2: baseStyle.copyWith(
+          fontSize: (baseStyle.fontSize ?? 16) * 1.4,
+          fontWeight: FontWeight.w800,
+        ),
+        h3: baseStyle.copyWith(
+          fontSize: (baseStyle.fontSize ?? 16) * 1.2,
+          fontWeight: FontWeight.w700,
+        ),
         strong: baseStyle.copyWith(fontWeight: FontWeight.w900),
         em: baseStyle.copyWith(fontStyle: FontStyle.italic),
         code: baseStyle.copyWith(
@@ -122,9 +136,15 @@ class MathMarkdown extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
         ),
         blockquoteDecoration: BoxDecoration(
-          border: Border(left: BorderSide(color: tint.withValues(alpha: 0.25), width: 3)),
+          border: Border(
+            left: BorderSide(color: tint.withValues(alpha: 0.25), width: 3),
+          ),
         ),
-        blockquote: baseStyle.copyWith(color: (baseStyle.color ?? colors.textPrimary).withValues(alpha: 0.85)),
+        blockquote: baseStyle.copyWith(
+          color: (baseStyle.color ?? colors.textPrimary).withValues(
+            alpha: 0.85,
+          ),
+        ),
         listBullet: baseStyle,
         tableBody: baseStyle,
         tableHead: baseStyle.copyWith(fontWeight: FontWeight.w800),
@@ -132,10 +152,10 @@ class MathMarkdown extends StatelessWidget {
         tableHeadAlign: TextAlign.left,
       ),
       builders: builders,
-      extensionSet: md.ExtensionSet(
-        [LatexBlockSyntax(), ...md.ExtensionSet.gitHubFlavored.blockSyntaxes],
-        inlineSyntaxes,
-      ),
+      extensionSet: md.ExtensionSet([
+        LatexBlockSyntax(),
+        ...md.ExtensionSet.gitHubFlavored.blockSyntaxes,
+      ], inlineSyntaxes),
     );
   }
 }
@@ -153,20 +173,22 @@ class _PermissiveLatexInlineSyntax extends md.InlineSyntax {
   // Order matters: $$ before $ so the greedy display match is tried first.
   static const _delimiters = [
     (left: r'$$', right: r'$$', display: true),
-    (left: r'$',  right: r'$',  display: false),
+    (left: r'$', right: r'$', display: false),
   ];
 
   static String _esc(String s) =>
       s.replaceAllMapped(RegExp(r'[-/\\^$*+?.()|[\]{}]'), (m) => '\\${m[0]}');
 
-  static final String _pattern = _delimiters.map((d) {
-    final l = _esc(d.left);
-    final r = _esc(d.right);
-    // Capture the content between delimiters (non-greedy, no unescaped
-    // newlines). The outer group lets onMatch retrieve the full match
-    // including delimiters.
-    return '$l((?:\\\\.|[^\\\\\\n])*?)$r';
-  }).join('|');
+  static final String _pattern = _delimiters
+      .map((d) {
+        final l = _esc(d.left);
+        final r = _esc(d.right);
+        // Capture the content between delimiters (non-greedy, no unescaped
+        // newlines). The outer group lets onMatch retrieve the full match
+        // including delimiters.
+        return '$l((?:\\\\.|[^\\\\\\n])*?)$r';
+      })
+      .join('|');
 
   @override
   bool onMatch(md.InlineParser parser, Match match) {
@@ -304,24 +326,90 @@ String _fixLatex(String tex) {
   s = s.replaceAll('&nbsp;', ' ');
 
   // ── 2. Double-escaped commands (\\frac → \frac) ──
-  s = s.replaceAllMapped(
-    RegExp(r'\\\\([a-zA-Z]+)'),
-    (m) => '\\${m[1]}',
-  );
+  s = s.replaceAllMapped(RegExp(r'\\\\([a-zA-Z]+)'), (m) => '\\${m[1]}');
 
   // ── 3. Bare well-known commands missing the leading backslash ──
   const knownCmds = [
-    'frac', 'sqrt', 'text', 'mathrm', 'mathbf', 'mathit', 'mathbb',
-    'cdot', 'times', 'div', 'pm', 'mp', 'leq', 'geq', 'neq', 'approx',
-    'infty', 'sum', 'prod', 'int', 'lim', 'sin', 'cos', 'tan', 'log',
-    'ln', 'exp', 'max', 'min', 'sup', 'inf', 'det', 'gcd',
-    'alpha', 'beta', 'gamma', 'delta', 'epsilon', 'theta', 'lambda',
-    'mu', 'pi', 'sigma', 'omega', 'phi', 'psi', 'rho', 'tau', 'chi',
-    'Delta', 'Gamma', 'Lambda', 'Sigma', 'Omega', 'Phi', 'Psi', 'Theta',
-    'to', 'rightarrow', 'leftarrow', 'Rightarrow', 'Leftarrow',
-    'quad', 'qquad', 'space', 'not', 'in', 'notin', 'subset', 'subseteq',
-    'cup', 'cap', 'forall', 'exists', 'partial', 'nabla',
-    'binom', 'choose', 'over', 'atop',
+    'frac',
+    'sqrt',
+    'text',
+    'mathrm',
+    'mathbf',
+    'mathit',
+    'mathbb',
+    'cdot',
+    'times',
+    'div',
+    'pm',
+    'mp',
+    'leq',
+    'geq',
+    'neq',
+    'approx',
+    'infty',
+    'sum',
+    'prod',
+    'int',
+    'lim',
+    'sin',
+    'cos',
+    'tan',
+    'log',
+    'ln',
+    'exp',
+    'max',
+    'min',
+    'sup',
+    'inf',
+    'det',
+    'gcd',
+    'alpha',
+    'beta',
+    'gamma',
+    'delta',
+    'epsilon',
+    'theta',
+    'lambda',
+    'mu',
+    'pi',
+    'sigma',
+    'omega',
+    'phi',
+    'psi',
+    'rho',
+    'tau',
+    'chi',
+    'Delta',
+    'Gamma',
+    'Lambda',
+    'Sigma',
+    'Omega',
+    'Phi',
+    'Psi',
+    'Theta',
+    'to',
+    'rightarrow',
+    'leftarrow',
+    'Rightarrow',
+    'Leftarrow',
+    'quad',
+    'qquad',
+    'space',
+    'not',
+    'in',
+    'notin',
+    'subset',
+    'subseteq',
+    'cup',
+    'cap',
+    'forall',
+    'exists',
+    'partial',
+    'nabla',
+    'binom',
+    'choose',
+    'over',
+    'atop',
   ];
   final cmdPattern = knownCmds.join('|');
   s = s.replaceAllMapped(
@@ -332,14 +420,14 @@ String _fixLatex(String tex) {
   // ── 4. Balance curly braces ──
   int depth = 0;
   for (final c in s.codeUnits) {
-    if (c == 0x7B) depth++;  // {
-    if (c == 0x7D) depth--;  // }
+    if (c == 0x7B) depth++; // {
+    if (c == 0x7D) depth--; // }
   }
   if (depth > 0) s += '}' * depth;
   if (depth < 0) s = '{' * (-depth) + s;
 
   // ── 5. \left / \right balance ──
-  final nLeft  = RegExp(r'\\left[\s]*[(.|\[{|]').allMatches(s).length;
+  final nLeft = RegExp(r'\\left[\s]*[(.|\[{|]').allMatches(s).length;
   final nRight = RegExp(r'\\right[\s]*[).|\]}|]').allMatches(s).length;
   if (nLeft > nRight) s += r'\right.' * (nLeft - nRight);
   if (nRight > nLeft) s = r'\left.' * (nRight - nLeft) + s;
@@ -347,7 +435,7 @@ String _fixLatex(String tex) {
   // ── 6. \begin without matching \end ──
   for (final m in RegExp(r'\\begin\{(\w+)\}').allMatches(s).toList()) {
     final env = m.group(1)!;
-    final opens  = RegExp('\\\\begin\\{$env\\}').allMatches(s).length;
+    final opens = RegExp('\\\\begin\\{$env\\}').allMatches(s).length;
     final closes = RegExp('\\\\end\\{$env\\}').allMatches(s).length;
     if (opens > closes) {
       for (var i = 0; i < opens - closes; i++) s += '\\end{$env}';
@@ -357,8 +445,14 @@ String _fixLatex(String tex) {
   // ── 7. Remove commands flutter_math_fork doesn't support ──
   s = s.replaceAll(RegExp(r'\\(color|textcolor|colorbox)\{[^}]*\}\{'), '{');
   s = s.replaceAll(RegExp(r'\\(color|textcolor|colorbox)\{[^}]*\}'), '');
-  s = s.replaceAll(RegExp(r'\\(hspace|vspace|phantom|hphantom|vphantom)\{[^}]*\}'), ' ');
-  s = s.replaceAll(RegExp(r'\\(label|tag|ref|eqref|nonumber|notag)\{[^}]*\}'), '');
+  s = s.replaceAll(
+    RegExp(r'\\(hspace|vspace|phantom|hphantom|vphantom)\{[^}]*\}'),
+    ' ',
+  );
+  s = s.replaceAll(
+    RegExp(r'\\(label|tag|ref|eqref|nonumber|notag)\{[^}]*\}'),
+    '',
+  );
   s = s.replaceAll(RegExp(r'\\(label|tag|ref|eqref|nonumber|notag)\b'), '');
   s = s.replaceAll(RegExp(r'\\(displaystyle|textstyle|scriptstyle)\s*'), '');
   s = s.replaceAll(RegExp(r'\\(boxed)\{'), '{');
@@ -388,34 +482,78 @@ String _fixLatex(String tex) {
 String _latexToPlainText(String tex) {
   var s = tex;
   // \frac{a}{b} → (a)/(b)
-  s = s.replaceAllMapped(RegExp(r'\\frac\s*\{([^}]*)\}\s*\{([^}]*)\}'), (m) => '(${m[1]})/(${m[2]})');
+  s = s.replaceAllMapped(
+    RegExp(r'\\frac\s*\{([^}]*)\}\s*\{([^}]*)\}'),
+    (m) => '(${m[1]})/(${m[2]})',
+  );
   // \sqrt{x} → √(x)
   s = s.replaceAllMapped(RegExp(r'\\sqrt\s*\{([^}]*)\}'), (m) => '√(${m[1]})');
   // \text{...} → ...
-  s = s.replaceAllMapped(RegExp(r'\\(?:text|mathrm|mathit|mathbf|mathbb)\s*\{([^}]*)\}'), (m) => m[1]!);
+  s = s.replaceAllMapped(
+    RegExp(r'\\(?:text|mathrm|mathit|mathbf|mathbb)\s*\{([^}]*)\}'),
+    (m) => m[1]!,
+  );
   // Symbol commands → unicode
   const symbols = {
-    r'\cdot': '·', r'\times': '×', r'\div': '÷',
-    r'\pm': '±', r'\mp': '∓', r'\leq': '≤', r'\geq': '≥',
-    r'\neq': '≠', r'\approx': '≈', r'\infty': '∞',
-    r'\alpha': 'α', r'\beta': 'β', r'\gamma': 'γ',
-    r'\delta': 'δ', r'\epsilon': 'ε', r'\theta': 'θ',
-    r'\lambda': 'λ', r'\mu': 'μ', r'\pi': 'π',
-    r'\sigma': 'σ', r'\omega': 'ω', r'\phi': 'φ',
-    r'\psi': 'ψ', r'\rho': 'ρ', r'\tau': 'τ',
-    r'\chi': 'χ', r'\Delta': 'Δ', r'\Gamma': 'Γ',
-    r'\Lambda': 'Λ', r'\Sigma': 'Σ', r'\Omega': 'Ω',
-    r'\Phi': 'Φ', r'\Psi': 'Ψ', r'\Theta': 'Θ',
-    r'\rightarrow': '→', r'\leftarrow': '←', r'\to': '→',
-    r'\Rightarrow': '⇒', r'\Leftarrow': '⇐',
-    r'\forall': '∀', r'\exists': '∃', r'\partial': '∂',
-    r'\nabla': '∇', r'\in': '∈', r'\notin': '∉',
-    r'\subset': '⊂', r'\subseteq': '⊆',
-    r'\cup': '∪', r'\cap': '∩',
-    r'\sum': 'Σ', r'\prod': 'Π', r'\int': '∫',
-    r'\quad': '  ', r'\qquad': '    ', r'\,': ' ',
-    r'\;': ' ', r'\!': '',
-    r'\left': '', r'\right': '',
+    r'\cdot': '·',
+    r'\times': '×',
+    r'\div': '÷',
+    r'\pm': '±',
+    r'\mp': '∓',
+    r'\leq': '≤',
+    r'\geq': '≥',
+    r'\neq': '≠',
+    r'\approx': '≈',
+    r'\infty': '∞',
+    r'\alpha': 'α',
+    r'\beta': 'β',
+    r'\gamma': 'γ',
+    r'\delta': 'δ',
+    r'\epsilon': 'ε',
+    r'\theta': 'θ',
+    r'\lambda': 'λ',
+    r'\mu': 'μ',
+    r'\pi': 'π',
+    r'\sigma': 'σ',
+    r'\omega': 'ω',
+    r'\phi': 'φ',
+    r'\psi': 'ψ',
+    r'\rho': 'ρ',
+    r'\tau': 'τ',
+    r'\chi': 'χ',
+    r'\Delta': 'Δ',
+    r'\Gamma': 'Γ',
+    r'\Lambda': 'Λ',
+    r'\Sigma': 'Σ',
+    r'\Omega': 'Ω',
+    r'\Phi': 'Φ',
+    r'\Psi': 'Ψ',
+    r'\Theta': 'Θ',
+    r'\rightarrow': '→',
+    r'\leftarrow': '←',
+    r'\to': '→',
+    r'\Rightarrow': '⇒',
+    r'\Leftarrow': '⇐',
+    r'\forall': '∀',
+    r'\exists': '∃',
+    r'\partial': '∂',
+    r'\nabla': '∇',
+    r'\in': '∈',
+    r'\notin': '∉',
+    r'\subset': '⊂',
+    r'\subseteq': '⊆',
+    r'\cup': '∪',
+    r'\cap': '∩',
+    r'\sum': 'Σ',
+    r'\prod': 'Π',
+    r'\int': '∫',
+    r'\quad': '  ',
+    r'\qquad': '    ',
+    r'\,': ' ',
+    r'\;': ' ',
+    r'\!': '',
+    r'\left': '',
+    r'\right': '',
   };
   symbols.forEach((cmd, char) => s = s.replaceAll(cmd, char));
   // Remaining \command → command
@@ -552,7 +690,10 @@ class _InlineBlankFieldState extends State<_InlineBlankField> {
         style: style,
         decoration: InputDecoration(
           isDense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: _hPad, vertical: 4),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: _hPad,
+            vertical: 4,
+          ),
           filled: true,
           fillColor: context.colors.isDark ? Colors.black45 : Colors.black12,
           border: OutlineInputBorder(

@@ -26,9 +26,13 @@ class PyqCompleteScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final correctCount = gradedResults.where((r) => r['isCorrect'] == true).length;
+    final correctCount = gradedResults
+        .where((r) => r['isCorrect'] == true)
+        .length;
     final totalCount = gradedResults.length;
-    final accuracy = totalCount > 0 ? ((correctCount / totalCount) * 100).round() : 100;
+    final accuracy = totalCount > 0
+        ? ((correctCount / totalCount) * 100).round()
+        : 100;
 
     return Scaffold(
       backgroundColor: context.colors.background,
@@ -45,7 +49,7 @@ class PyqCompleteScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const SizedBox(height: 20),
-                      
+
                       // Celebration Icon
                       Center(
                         child: Container(
@@ -53,7 +57,10 @@ class PyqCompleteScreen extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: AppTheme.duoGreen.withOpacity(0.15),
                             shape: BoxShape.circle,
-                            border: Border.all(color: AppTheme.duoGreen.withOpacity(0.3), width: 3),
+                            border: Border.all(
+                              color: AppTheme.duoGreen.withOpacity(0.3),
+                              width: 3,
+                            ),
                           ),
                           child: const Icon(
                             LucideIcons.partyPopper,
@@ -129,15 +136,22 @@ class PyqCompleteScreen extends StatelessWidget {
                             child: Text(
                               'Only interactive proofs were practiced in this session. They were graded step-by-step.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: context.colors.textFaint, fontSize: 13),
+                              style: TextStyle(
+                                color: context.colors.textFaint,
+                                fontSize: 13,
+                              ),
                             ),
                           ),
                         )
                       else
                         ...gradedResults.map((result) {
                           final isCorrect = result['isCorrect'] == true;
-                          final borderCol = isCorrect ? AppTheme.duoGreen : AppTheme.duoRed;
-                          final bgCol = isCorrect ? AppTheme.duoGreen.withOpacity(0.06) : AppTheme.duoRed.withOpacity(0.06);
+                          final borderCol = isCorrect
+                              ? AppTheme.duoGreen
+                              : AppTheme.duoRed;
+                          final bgCol = isCorrect
+                              ? AppTheme.duoGreen.withOpacity(0.06)
+                              : AppTheme.duoRed.withOpacity(0.06);
 
                           return Container(
                             margin: const EdgeInsets.only(bottom: 16),
@@ -145,7 +159,10 @@ class PyqCompleteScreen extends StatelessWidget {
                             decoration: BoxDecoration(
                               color: bgCol,
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: borderCol.withOpacity(0.3), width: 1.5),
+                              border: Border.all(
+                                color: borderCol.withOpacity(0.3),
+                                width: 1.5,
+                              ),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -154,7 +171,9 @@ class PyqCompleteScreen extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Icon(
-                                      isCorrect ? LucideIcons.checkCircle2 : LucideIcons.xCircle,
+                                      isCorrect
+                                          ? LucideIcons.checkCircle2
+                                          : LucideIcons.xCircle,
                                       color: borderCol,
                                       size: 20,
                                     ),
@@ -172,23 +191,34 @@ class PyqCompleteScreen extends StatelessWidget {
                                   ],
                                 ),
                                 const SizedBox(height: 12),
-                                Divider(color: context.colors.outline, height: 1),
+                                Divider(
+                                  color: context.colors.outline,
+                                  height: 1,
+                                ),
                                 const SizedBox(height: 12),
-                                
+
                                 // User Answer
                                 Row(
                                   children: [
                                     Text(
                                       'Your Answer: ',
-                                      style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+                                      style: TextStyle(
+                                        color: context.colors.textFaint,
+                                        fontSize: 12,
+                                      ),
                                     ),
                                     Expanded(
                                       child: Text(
-                                        result['userAnswer']?.toString().isNotEmpty == true
+                                        result['userAnswer']
+                                                    ?.toString()
+                                                    .isNotEmpty ==
+                                                true
                                             ? result['userAnswer']
                                             : '[No Answer]',
                                         style: TextStyle(
-                                          color: isCorrect ? AppTheme.duoGreen : AppTheme.duoRed,
+                                          color: isCorrect
+                                              ? AppTheme.duoGreen
+                                              : AppTheme.duoRed,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 13,
                                         ),
@@ -197,13 +227,16 @@ class PyqCompleteScreen extends StatelessWidget {
                                   ],
                                 ),
                                 const SizedBox(height: 6),
-                                
+
                                 // Correct Answer
                                 Row(
                                   children: [
                                     Text(
                                       'Correct Answer: ',
-                                      style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+                                      style: TextStyle(
+                                        color: context.colors.textFaint,
+                                        fontSize: 12,
+                                      ),
                                     ),
                                     Expanded(
                                       child: Text(
@@ -217,9 +250,12 @@ class PyqCompleteScreen extends StatelessWidget {
                                     ),
                                   ],
                                 ),
-                                
+
                                 // AI Explanation
-                                if (result['explanation'] != null && result['explanation'].toString().isNotEmpty) ...[
+                                if (result['explanation'] != null &&
+                                    result['explanation']
+                                        .toString()
+                                        .isNotEmpty) ...[
                                   const SizedBox(height: 10),
                                   Container(
                                     padding: const EdgeInsets.all(10),
@@ -248,7 +284,10 @@ class PyqCompleteScreen extends StatelessWidget {
 
               // Bottom Button
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 20,
+                ),
                 child: DuoButton(
                   text: 'Continue',
                   color: AppTheme.duoBlue,

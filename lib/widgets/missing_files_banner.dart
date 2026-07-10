@@ -19,10 +19,15 @@ class MissingFilesBanner extends StatelessWidget {
     );
 
     if (result != null && result.paths.isNotEmpty) {
-      final files = result.paths.where((p) => p != null).map((p) => File(p!)).toList();
+      final files = result.paths
+          .where((p) => p != null)
+          .map((p) => File(p!))
+          .toList();
       GenerationManager.instance.restoreBookFiles(book, files);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Restoring files natively in background...'))
+        const SnackBar(
+          content: Text('Restoring files natively in background...'),
+        ),
       );
     }
   }
@@ -35,11 +40,18 @@ class MissingFilesBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.duoOrange.withOpacity(0.15),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.duoOrange.withOpacity(0.5), width: 2),
+        border: Border.all(
+          color: AppTheme.duoOrange.withOpacity(0.5),
+          width: 2,
+        ),
       ),
       child: Row(
         children: [
-          const Icon(LucideIcons.fileWarning, color: AppTheme.duoOrange, size: 28),
+          const Icon(
+            LucideIcons.fileWarning,
+            color: AppTheme.duoOrange,
+            size: 28,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -47,11 +59,18 @@ class MissingFilesBanner extends StatelessWidget {
               children: [
                 const Text(
                   'Missing Source Files',
-                  style: TextStyle(fontWeight: FontWeight.w900, color: AppTheme.duoOrange, fontSize: 13),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: AppTheme.duoOrange,
+                    fontSize: 13,
+                  ),
                 ),
                 Text(
                   'Upload original files to restore generation capabilities across devices.',
-                  style: TextStyle(color: context.colors.textSecondary, fontSize: 11),
+                  style: TextStyle(
+                    color: context.colors.textSecondary,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),
@@ -65,9 +84,16 @@ class MissingFilesBanner extends StatelessWidget {
                 color: AppTheme.duoOrange,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Text('Restore', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 12)),
+              child: Text(
+                'Restore',
+                style: TextStyle(
+                  color: context.colors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
             ),
-          )
+          ),
         ],
       ),
     );

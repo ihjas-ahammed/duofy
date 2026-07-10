@@ -10,9 +10,9 @@ class GeneratingBookCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const GeneratingBookCard({
-    super.key, 
-    required this.task, 
-    required this.onTap
+    super.key,
+    required this.task,
+    required this.onTap,
   });
 
   @override
@@ -20,7 +20,7 @@ class GeneratingBookCard extends StatelessWidget {
     Color borderColor = AppTheme.duoViolet;
     IconData statusIcon = LucideIcons.loader;
     Color iconColor = AppTheme.duoViolet;
-    
+
     if (task.state == BookGenState.error) {
       borderColor = AppTheme.duoRed;
       iconColor = AppTheme.duoRed;
@@ -48,7 +48,7 @@ class GeneratingBookCard extends StatelessWidget {
                     color: context.colors.shadow,
                     blurRadius: 16,
                     offset: const Offset(0, 8),
-                  )
+                  ),
                 ],
               ),
               clipBehavior: Clip.hardEdge,
@@ -58,17 +58,22 @@ class GeneratingBookCard extends StatelessWidget {
                     width: 120,
                     decoration: BoxDecoration(
                       color: borderColor.withOpacity(0.15),
-                      border: Border(right: BorderSide(color: borderColor, width: 2)),
+                      border: Border(
+                        right: BorderSide(color: borderColor, width: 2),
+                      ),
                     ),
                     child: Center(
-                      child: task.state == BookGenState.extracting || task.state == BookGenState.chunking || task.state == BookGenState.saving
-                        ? RealProgressBar(
-                            progress: task.progress,
-                            startTime: task.startTime,
-                            estimatedDuration: task.estimatedDuration,
-                            isCircular: true,
-                          )
-                        : Icon(statusIcon, size: 50, color: iconColor),
+                      child:
+                          task.state == BookGenState.extracting ||
+                              task.state == BookGenState.chunking ||
+                              task.state == BookGenState.saving
+                          ? RealProgressBar(
+                              progress: task.progress,
+                              startTime: task.startTime,
+                              estimatedDuration: task.estimatedDuration,
+                              isCircular: true,
+                            )
+                          : Icon(statusIcon, size: 50, color: iconColor),
                     ),
                   ),
                   Expanded(
@@ -80,7 +85,12 @@ class GeneratingBookCard extends StatelessWidget {
                         children: [
                           Text(
                             task.title,
-                            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: context.colors.textPrimary, height: 1.2),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 18,
+                              color: context.colors.textPrimary,
+                              height: 1.2,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -88,14 +98,17 @@ class GeneratingBookCard extends StatelessWidget {
                           Text(
                             task.statusMessage,
                             style: TextStyle(
-                              fontWeight: FontWeight.bold, 
-                              fontSize: 13, 
-                              color: task.state == BookGenState.error ? AppTheme.duoRed : context.colors.textSecondary
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: task.state == BookGenState.error
+                                  ? AppTheme.duoRed
+                                  : context.colors.textSecondary,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          if (task.state == BookGenState.error && task.errorMessage != null)
+                          if (task.state == BookGenState.error &&
+                              task.errorMessage != null)
                             Padding(
                               padding: const EdgeInsets.only(top: 4.0),
                               child: Row(
@@ -103,7 +116,10 @@ class GeneratingBookCard extends StatelessWidget {
                                   Expanded(
                                     child: Text(
                                       task.errorMessage!,
-                                      style: TextStyle(fontSize: 10, color: context.colors.textFaint),
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: context.colors.textFaint,
+                                      ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -111,10 +127,16 @@ class GeneratingBookCard extends StatelessWidget {
                                   const SizedBox(width: 6),
                                   GestureDetector(
                                     onTap: () {
-                                      Clipboard.setData(ClipboardData(text: task.errorMessage!));
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      Clipboard.setData(
+                                        ClipboardData(text: task.errorMessage!),
+                                      );
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         const SnackBar(
-                                          content: Text('Error copied to clipboard'),
+                                          content: Text(
+                                            'Error copied to clipboard',
+                                          ),
                                           duration: Duration(seconds: 2),
                                         ),
                                       );
@@ -136,13 +158,18 @@ class GeneratingBookCard extends StatelessWidget {
                               padding: EdgeInsets.only(top: 8.0),
                               child: Text(
                                 'TAP TO CONTINUE',
-                                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: AppTheme.duoOrange, letterSpacing: 1.5),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 10,
+                                  color: AppTheme.duoOrange,
+                                  letterSpacing: 1.5,
+                                ),
                               ),
-                            )
+                            ),
                         ],
                       ),
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -159,7 +186,13 @@ class GeneratingBookCard extends StatelessWidget {
                     context: context,
                     builder: (ctx) => AlertDialog(
                       backgroundColor: context.colors.surface,
-                      title: Text('Cancel Course Generation?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+                      title: Text(
+                        'Cancel Course Generation?',
+                        style: TextStyle(
+                          color: context.colors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       content: Text(
                         'Are you sure you want to cancel and discard this course generation?',
                         style: TextStyle(color: context.colors.textSecondary),
@@ -167,11 +200,17 @@ class GeneratingBookCard extends StatelessWidget {
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.of(ctx).pop(false),
-                          child: Text('Keep Generating', style: TextStyle(color: context.colors.textFaint)),
+                          child: Text(
+                            'Keep Generating',
+                            style: TextStyle(color: context.colors.textFaint),
+                          ),
                         ),
                         TextButton(
                           onPressed: () => Navigator.of(ctx).pop(true),
-                          child: const Text('Cancel & Discard', style: TextStyle(color: AppTheme.duoRed)),
+                          child: const Text(
+                            'Cancel & Discard',
+                            style: TextStyle(color: AppTheme.duoRed),
+                          ),
                         ),
                       ],
                     ),
@@ -182,7 +221,11 @@ class GeneratingBookCard extends StatelessWidget {
                 },
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: Icon(LucideIcons.x, size: 20, color: context.colors.textFaint),
+                  child: Icon(
+                    LucideIcons.x,
+                    size: 20,
+                    color: context.colors.textFaint,
+                  ),
                 ),
               ),
             ),

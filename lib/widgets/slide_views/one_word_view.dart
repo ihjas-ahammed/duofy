@@ -43,7 +43,11 @@ class OneWordView extends StatelessWidget {
                   decoration: AppTheme.glassOf(context),
                   child: MathMarkdown(
                     data: slide.content,
-                    textStyle: TextStyle(fontSize: 18, color: context.colors.textPrimary, fontWeight: FontWeight.bold),
+                    textStyle: TextStyle(
+                      fontSize: 18,
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -53,14 +57,23 @@ class OneWordView extends StatelessWidget {
                     color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : context.colors.outline,
+                      color: isAnswered
+                          ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed)
+                          : context.colors.outline,
                       width: 2,
                     ),
                   ),
                   child: Column(
                     children: [
-                      Text('TYPE YOUR ANSWER',
-                          style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.5)),
+                      Text(
+                        'TYPE YOUR ANSWER',
+                        style: TextStyle(
+                          color: context.colors.textFaint,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 10,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       TextField(
                         enabled: !isAnswered,
@@ -71,17 +84,31 @@ class OneWordView extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w900,
-                          color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.amber,
+                          color: isAnswered
+                              ? (isCorrect
+                                    ? AppTheme.duoGreen
+                                    : AppTheme.duoRed)
+                              : Colors.amber,
                         ),
                         decoration: InputDecoration(
                           hintText: 'answer',
                           hintStyle: TextStyle(color: context.colors.textFaint),
                           filled: true,
                           fillColor: context.colors.surfaceAlt,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
                           focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.amber, width: 2)),
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Colors.amber,
+                              width: 2,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -95,10 +122,7 @@ class OneWordView extends StatelessWidget {
               hasScrollBody: false,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  const SizedBox(height: 24),
-                  bottomBar!,
-                ],
+                children: [const SizedBox(height: 24), bottomBar!],
               ),
             ),
         ],

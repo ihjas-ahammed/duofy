@@ -20,6 +20,7 @@ import 'missing_files_banner.dart';
 class LessonPath extends StatefulWidget {
   final Section section;
   final Book book;
+
   /// Indices of [section] within [book], used so the lesson screen can
   /// route regenerate-canvas calls back to the right slot in the model.
   final int modIdx;
@@ -27,21 +28,31 @@ class LessonPath extends StatefulWidget {
   final Map<String, UnitGenTask> loadingUnitStatuses;
   final Function(Unit, int) onGenerateUnit;
   final Function(Unit, int) onClearUnit;
+
   /// Fired when the user long-presses a lesson node to regenerate the entire
   /// lesson. Receives the unit index inside the section, the lesson index
   /// inside the unit, and the lesson itself for confirmation copy. Null
   /// disables the affordance.
-  final void Function(int unitIdx, int lessonIdx, Lesson lesson)? onRegenerateLesson;
+  final void Function(int unitIdx, int lessonIdx, Lesson lesson)?
+  onRegenerateLesson;
   final void Function(int unitIdx, Unit unit)? onUnitLongPress;
   final List<String> completedLessons;
   final VoidCallback onLessonFinished;
+
   /// Status of the lazy unit-manifest call for this section (new flow).
   /// Null means no manifest call is in flight or needed.
   final UnitGenTask? sectionManifestStatus;
+
   /// Starts (or retries) the unit-manifest call with optional planner
   /// instructions captured on the panel. Replaces the old auto-trigger so the
   /// user can review/tweak the guidance before units are planned.
-  final void Function(String? instructions, List<String>? selectedQuestions, bool saveGlobally)? onPlanManifest;
+  final void Function(
+    String? instructions,
+    List<String>? selectedQuestions,
+    bool saveGlobally,
+  )?
+  onPlanManifest;
+
   /// Commits the user's per-unit format selections and flips
   /// [Section.unitFormatsConfirmed] true so lessons become reachable.
   final void Function(List<Unit> confirmedUnits)? onConfirmFormats;
@@ -218,7 +229,8 @@ class _LessonPathState extends State<LessonPath> {
         book: widget.book,
         task: widget.sectionManifestStatus,
         sectionColor: color,
-        initialInstructions: widget.section.customInstructions ?? widget.book.customInstructions,
+        initialInstructions:
+            widget.section.customInstructions ?? widget.book.customInstructions,
         topHeader: widget.topHeader,
         onPlan: widget.onPlanManifest,
       );
@@ -257,13 +269,16 @@ class _LessonPathState extends State<LessonPath> {
       final loading = widget.loadingUnitStatuses[unit.id];
       final bool generating = loading != null;
       final bool fullyGenerated = unit.isGenerated && hasLessons;
-      final bool showPlaceholders = generating || (!unit.isGenerated && hasLessons);
+      final bool showPlaceholders =
+          generating || (!unit.isGenerated && hasLessons);
       final bool hasNodes = hasLessons || showPlaceholders;
-      
+
       // Use a tight gap when neither this nor the previous unit drew lesson
       // nodes, so a run of ungenerated unit headers stacks compactly.
       if (uIdx > 0) {
-        y += (prevUnitHadNodes || hasNodes) ? _interUnitGap : _interUnitGapUngenerated;
+        y += (prevUnitHadNodes || hasNodes)
+            ? _interUnitGap
+            : _interUnitGapUngenerated;
       }
 
       elements.add(_Element.header(unit: unit, unitIdx: uIdx, y: y));
@@ -285,7 +300,8 @@ class _LessonPathState extends State<LessonPath> {
         points.add(_PathPoint(x: _centerX, y: stemY, id: '__stem_${unit.id}'));
 
         final int totalPlanned = showPlaceholders
-            ? (loading?.plannedLessonsCount ?? (unit.lessons.isNotEmpty ? unit.lessons.length + 3 : 4))
+            ? (loading?.plannedLessonsCount ??
+                  (unit.lessons.isNotEmpty ? unit.lessons.length + 3 : 4))
             : unit.lessons.length;
         for (int lIdx = 0; lIdx < totalPlanned; lIdx++) {
           double offset = 0;
@@ -297,29 +313,33 @@ class _LessonPathState extends State<LessonPath> {
           if (lIdx < unit.lessons.length) {
             final lesson = unit.lessons[lIdx];
             points.add(_PathPoint(x: x, y: y, id: lesson.id));
-            elements.add(_Element.lesson(
-              unit: unit,
-              unitIdx: uIdx,
-              lesson: lesson,
-              lessonIdx: lIdx,
-              x: x,
-              y: y,
-              textOnRight: textOnRight,
-            ));
+            elements.add(
+              _Element.lesson(
+                unit: unit,
+                unitIdx: uIdx,
+                lesson: lesson,
+                lessonIdx: lIdx,
+                x: x,
+                y: y,
+                textOnRight: textOnRight,
+              ),
+            );
             if (lesson.id == _lastLessonId) {
               targetY = y;
             }
           } else {
             final fakeLessonId = '${unit.id}-pending-$lIdx';
             points.add(_PathPoint(x: x, y: y, id: fakeLessonId));
-            elements.add(_Element.placeholder(
-              unit: unit,
-              unitIdx: uIdx,
-              lessonIdx: lIdx,
-              x: x,
-              y: y,
-              textOnRight: textOnRight,
-            ));
+            elements.add(
+              _Element.placeholder(
+                unit: unit,
+                unitIdx: uIdx,
+                lessonIdx: lIdx,
+                x: x,
+                y: y,
+                textOnRight: textOnRight,
+              ),
+            );
           }
 
           if (lIdx < totalPlanned - 1) {
@@ -370,7 +390,9 @@ class _LessonPathState extends State<LessonPath> {
                 widget.topHeader!,
                 const SizedBox(height: 16),
               ],
-              if (widget.hasMissingFiles && !(widget.section.units.isNotEmpty && widget.section.units.every((u) => u.isGenerated))) ...[
+              if (widget.hasMissingFiles &&
+                  !(widget.section.units.isNotEmpty &&
+                      widget.section.units.every((u) => u.isGenerated))) ...[
                 MissingFilesBanner(book: widget.book),
                 const SizedBox(height: 20),
               ],
@@ -391,25 +413,33 @@ class _LessonPathState extends State<LessonPath> {
                     if (el.kind == _ElementKind.header) {
                       final unit = el.unit!;
                       final loading = widget.loadingUnitStatuses[unit.id];
-                      final isGenerated = unit.isGenerated && unit.lessons.isNotEmpty;
-                      headerWidgets.add(Positioned(
-                        left: 16,
-                        right: 16,
-                        top: el.y - 20,
-                        child: GestureDetector(
-                          onLongPress: widget.onUnitLongPress == null
-                              ? null
-                              : () => widget.onUnitLongPress!(el.unitIdx!, unit),
-                          child: UnitHeader(
-                            unit: unit,
-                            isGenerated: isGenerated,
-                            generationTask: loading,
-                            onGenerate: () => widget.onGenerateUnit(unit, el.unitIdx!),
-                            onClear: () => widget.onClearUnit(unit, el.unitIdx!),
-                            book: widget.book,
+                      final isGenerated =
+                          unit.isGenerated && unit.lessons.isNotEmpty;
+                      headerWidgets.add(
+                        Positioned(
+                          left: 16,
+                          right: 16,
+                          top: el.y - 20,
+                          child: GestureDetector(
+                            onLongPress: widget.onUnitLongPress == null
+                                ? null
+                                : () => widget.onUnitLongPress!(
+                                    el.unitIdx!,
+                                    unit,
+                                  ),
+                            child: UnitHeader(
+                              unit: unit,
+                              isGenerated: isGenerated,
+                              generationTask: loading,
+                              onGenerate: () =>
+                                  widget.onGenerateUnit(unit, el.unitIdx!),
+                              onClear: () =>
+                                  widget.onClearUnit(unit, el.unitIdx!),
+                              book: widget.book,
+                            ),
                           ),
                         ),
-                      ));
+                      );
                       continue;
                     }
                     if (el.kind == _ElementKind.placeholder) {
@@ -423,85 +453,107 @@ class _LessonPathState extends State<LessonPath> {
                       );
                       final nodeSize = LessonNodeWidget.nodeSize;
                       final leftPos = (el.x! * scaleX) - (nodeSize / 2);
-                      
-                      final bool generating = widget.loadingUnitStatuses[unit.id] != null;
-                      final bool isGeneratingNode = generating && el.lessonIdx == unit.lessons.length;
-                      
-                      lessonWidgets.add(Positioned(
-                        left: leftPos,
-                        top: el.y - (nodeSize / 2),
-                        child: SizedBox(
-                          width: width - leftPos,
-                          child: isGeneratingNode
-                              ? _ActiveGeneratingNodeWrapper(
-                                  unitId: el.unit!.id,
-                                  lesson: fakeLesson,
-                                  sectionColorStr: widget.section.color,
-                                  textOnRight: el.textOnRight ?? true,
-                                )
-                              : LessonNodeWidget(
-                                  lesson: fakeLesson,
-                                  isCompleted: false,
-                                  isLocked: true,
-                                  isActive: false,
-                                  isNextToStart: false,
-                                  sectionColorStr: widget.section.color,
-                                  onTap: () {},
-                                  textOnRight: el.textOnRight ?? true,
-                                ),
+
+                      final bool generating =
+                          widget.loadingUnitStatuses[unit.id] != null;
+                      final bool isGeneratingNode =
+                          generating && el.lessonIdx == unit.lessons.length;
+
+                      lessonWidgets.add(
+                        Positioned(
+                          left: leftPos,
+                          top: el.y - (nodeSize / 2),
+                          child: SizedBox(
+                            width: width - leftPos,
+                            child: isGeneratingNode
+                                ? _ActiveGeneratingNodeWrapper(
+                                    unitId: el.unit!.id,
+                                    lesson: fakeLesson,
+                                    sectionColorStr: widget.section.color,
+                                    textOnRight: el.textOnRight ?? true,
+                                  )
+                                : LessonNodeWidget(
+                                    lesson: fakeLesson,
+                                    isCompleted: false,
+                                    isLocked: true,
+                                    isActive: false,
+                                    isNextToStart: false,
+                                    sectionColorStr: widget.section.color,
+                                    onTap: () {},
+                                    textOnRight: el.textOnRight ?? true,
+                                  ),
+                          ),
                         ),
-                      ));
+                      );
                       continue;
                     }
                     final lesson = el.lesson!;
-                    final isCompleted = widget.completedLessons.contains(lesson.id);
+                    final isCompleted = widget.completedLessons.contains(
+                      lesson.id,
+                    );
                     final isUnlocked = unlocked.contains(lesson.id);
                     final isActive = isUnlocked && !isCompleted;
                     final isLocked = !isCompleted && !isUnlocked;
                     final nodeSize = LessonNodeWidget.nodeSize;
                     final leftPos = (el.x! * scaleX) - (nodeSize / 2);
-                    lessonWidgets.add(Positioned(
-                      left: leftPos,
-                      top: el.y - (nodeSize / 2),
-                      child: SizedBox(
-                        width: width - leftPos,
-                        child: LessonNodeWidget(
-                          lesson: lesson,
-                          isCompleted: isCompleted,
-                          isLocked: isLocked,
-                          isActive: isActive,
-                          isNextToStart: false,
-                          sectionColorStr: widget.section.color,
-                          onLongPress: widget.onRegenerateLesson == null
-                              ? null
-                              : () => widget.onRegenerateLesson!(el.unitIdx!, el.lessonIdx!, lesson),
-                          onTap: () async {
-                            final prefs = await SharedPreferences.getInstance();
-                            await prefs.setString('last_lesson_id_${widget.book.id}', lesson.id);
-                            await prefs.setInt('last_mod_idx_${widget.book.id}', widget.modIdx);
-                            await prefs.setInt('last_sec_idx_${widget.book.id}', widget.secIdx);
-
-                            if (context.mounted) {
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => LessonScreen(
-                                    lesson: lesson,
-                                    book: widget.book,
-                                    modIdx: widget.modIdx,
-                                    secIdx: widget.secIdx,
-                                    unitIdx: el.unitIdx!,
-                                    lessonIdx: el.lessonIdx!,
+                    lessonWidgets.add(
+                      Positioned(
+                        left: leftPos,
+                        top: el.y - (nodeSize / 2),
+                        child: SizedBox(
+                          width: width - leftPos,
+                          child: LessonNodeWidget(
+                            lesson: lesson,
+                            isCompleted: isCompleted,
+                            isLocked: isLocked,
+                            isActive: isActive,
+                            isNextToStart: false,
+                            sectionColorStr: widget.section.color,
+                            onLongPress: widget.onRegenerateLesson == null
+                                ? null
+                                : () => widget.onRegenerateLesson!(
+                                    el.unitIdx!,
+                                    el.lessonIdx!,
+                                    lesson,
                                   ),
-                                ),
+                            onTap: () async {
+                              final prefs =
+                                  await SharedPreferences.getInstance();
+                              await prefs.setString(
+                                'last_lesson_id_${widget.book.id}',
+                                lesson.id,
                               );
-                              widget.onLessonFinished();
-                            }
-                          },
-                          textOnRight: el.textOnRight ?? true,
+                              await prefs.setInt(
+                                'last_mod_idx_${widget.book.id}',
+                                widget.modIdx,
+                              );
+                              await prefs.setInt(
+                                'last_sec_idx_${widget.book.id}',
+                                widget.secIdx,
+                              );
+
+                              if (context.mounted) {
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => LessonScreen(
+                                      lesson: lesson,
+                                      book: widget.book,
+                                      modIdx: widget.modIdx,
+                                      secIdx: widget.secIdx,
+                                      unitIdx: el.unitIdx!,
+                                      lessonIdx: el.lessonIdx!,
+                                    ),
+                                  ),
+                                );
+                                widget.onLessonFinished();
+                              }
+                            },
+                            textOnRight: el.textOnRight ?? true,
+                          ),
                         ),
                       ),
-                    ));
+                    );
                   }
 
                   return SizedBox(
@@ -569,7 +621,11 @@ class _Element {
     this.textOnRight,
   });
 
-  factory _Element.header({required Unit unit, required int unitIdx, required double y}) =>
+  factory _Element.header({
+    required Unit unit,
+    required int unitIdx,
+    required double y,
+  }) =>
       _Element._(kind: _ElementKind.header, unit: unit, unitIdx: unitIdx, y: y);
 
   factory _Element.lesson({
@@ -580,17 +636,16 @@ class _Element {
     required double x,
     required double y,
     required bool textOnRight,
-  }) =>
-      _Element._(
-        kind: _ElementKind.lesson,
-        unit: unit,
-        unitIdx: unitIdx,
-        lesson: lesson,
-        lessonIdx: lessonIdx,
-        x: x,
-        y: y,
-        textOnRight: textOnRight,
-      );
+  }) => _Element._(
+    kind: _ElementKind.lesson,
+    unit: unit,
+    unitIdx: unitIdx,
+    lesson: lesson,
+    lessonIdx: lessonIdx,
+    x: x,
+    y: y,
+    textOnRight: textOnRight,
+  );
 
   factory _Element.placeholder({
     required Unit unit,
@@ -599,16 +654,15 @@ class _Element {
     required double x,
     required double y,
     required bool textOnRight,
-  }) =>
-      _Element._(
-        kind: _ElementKind.placeholder,
-        unit: unit,
-        unitIdx: unitIdx,
-        lessonIdx: lessonIdx,
-        x: x,
-        y: y,
-        textOnRight: textOnRight,
-      );
+  }) => _Element._(
+    kind: _ElementKind.placeholder,
+    unit: unit,
+    unitIdx: unitIdx,
+    lessonIdx: lessonIdx,
+    x: x,
+    y: y,
+    textOnRight: textOnRight,
+  );
 }
 
 class _PathConnectorPainter extends CustomPainter {
@@ -658,7 +712,8 @@ class _PathConnectorPainter extends CustomPainter {
       final p2 = points[i + 1];
       final p1Done = p1.id.startsWith('__stem_') || completed.contains(p1.id);
       final p2Done = p2.id.startsWith('__stem_') || completed.contains(p2.id);
-      final p2Unlocked = p2.id.startsWith('__stem_') || unlocked.contains(p2.id);
+      final p2Unlocked =
+          p2.id.startsWith('__stem_') || unlocked.contains(p2.id);
       final isActive = p1Done && (p2Done || p2Unlocked);
       if (!isActive) continue;
 
@@ -694,7 +749,12 @@ class _SectionManifestPanel extends StatefulWidget {
   final Color sectionColor;
   final String? initialInstructions;
   final Widget? topHeader;
-  final void Function(String? instructions, List<String>? selectedQuestions, bool saveGlobally)? onPlan;
+  final void Function(
+    String? instructions,
+    List<String>? selectedQuestions,
+    bool saveGlobally,
+  )?
+  onPlan;
 
   const _SectionManifestPanel({
     required this.section,
@@ -728,11 +788,7 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
 
   void _plan() {
     final text = _ctrl.text.trim();
-    widget.onPlan?.call(
-      text.isEmpty ? null : text,
-      null,
-      _saveGlobally,
-    );
+    widget.onPlan?.call(text.isEmpty ? null : text, null, _saveGlobally);
   }
 
   @override
@@ -763,34 +819,58 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
                 decoration: BoxDecoration(
                   color: sectionColor.withOpacity(0.18),
                   shape: BoxShape.circle,
-                  border: Border.all(color: sectionColor.withOpacity(0.5), width: 2),
+                  border: Border.all(
+                    color: sectionColor.withOpacity(0.5),
+                    width: 2,
+                  ),
                 ),
                 child: isError
-                    ? const Icon(Icons.error_outline, color: Colors.amber, size: 32)
+                    ? const Icon(
+                        Icons.error_outline,
+                        color: Colors.amber,
+                        size: 32,
+                      )
                     : (isRunning
-                        ? SizedBox(
-                            width: 28,
-                            height: 28,
-                            child: CircularProgressIndicator(color: sectionColor, strokeWidth: 3),
-                          )
-                        : Icon(Icons.auto_awesome, color: sectionColor, size: 28)),
+                          ? SizedBox(
+                              width: 28,
+                              height: 28,
+                              child: CircularProgressIndicator(
+                                color: sectionColor,
+                                strokeWidth: 3,
+                              ),
+                            )
+                          : Icon(
+                              Icons.auto_awesome,
+                              color: sectionColor,
+                              size: 28,
+                            )),
               ),
               Text(
                 isError
                     ? 'Couldn\'t plan units for this section'
-                    : (isRunning ? 'Planning units…' : 'Plan units for "${widget.section.title}"'),
+                    : (isRunning
+                          ? 'Planning units…'
+                          : 'Plan units for "${widget.section.title}"'),
                 textAlign: TextAlign.center,
-                style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w900, fontSize: 18),
+                style: TextStyle(
+                  color: context.colors.textPrimary,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 isError
                     ? (task?.status ?? 'Unknown error.')
                     : (isRunning
-                        ? (task.status)
-                        : 'Review the planning guidance below, then plan this section into units. This runs once; lessons stay per-unit and on-demand.'),
+                          ? (task.status)
+                          : 'Review the planning guidance below, then plan this section into units. This runs once; lessons stay per-unit and on-demand.'),
                 textAlign: TextAlign.center,
-                style: TextStyle(color: context.colors.textFaint, fontSize: 13, height: 1.4),
+                style: TextStyle(
+                  color: context.colors.textFaint,
+                  fontSize: 13,
+                  height: 1.4,
+                ),
               ),
               // Editable instructions + action are hidden while a call is
               // actively in flight, shown for the idle and error states.
@@ -798,12 +878,21 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
                 const SizedBox(height: 24),
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('Target Cognitive Level',
-                      style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w900, fontSize: 13)),
+                  child: Text(
+                    'Target Cognitive Level',
+                    style: TextStyle(
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 13,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(12),
@@ -819,16 +908,25 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
                           children: [
                             Text(
                               widget.book.bloomLevel,
-                              style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
+                              style: TextStyle(
+                                color: context.colors.textPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              widget.book.bloomLevel == 'Remembering / Understanding'
+                              widget.book.bloomLevel ==
+                                      'Remembering / Understanding'
                                   ? 'Focuses on core concepts, definitions, and simple retention checks.'
-                                  : widget.book.bloomLevel == 'Applying / Analyzing'
-                                      ? 'Focuses on applications, calculations, and analytical patterns.'
-                                      : 'Focuses on complex derivations, error spotting, and critiques.',
-                              style: TextStyle(color: context.colors.textFaint, fontSize: 11),
+                                  : widget.book.bloomLevel ==
+                                        'Applying / Analyzing'
+                                  ? 'Focuses on applications, calculations, and analytical patterns.'
+                                  : 'Focuses on complex derivations, error spotting, and critiques.',
+                              style: TextStyle(
+                                color: context.colors.textFaint,
+                                fontSize: 11,
+                              ),
                             ),
                           ],
                         ),
@@ -839,29 +937,55 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
                 const SizedBox(height: 24),
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('Additional instructions (optional)',
-                      style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w900, fontSize: 13)),
+                  child: Text(
+                    'Additional instructions (optional)',
+                    style: TextStyle(
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 13,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _ctrl,
                   maxLines: 4,
                   minLines: 2,
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: context.colors.textPrimary),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: context.colors.textPrimary,
+                  ),
                   decoration: InputDecoration(
-                    hintText: 'e.g. Emphasise derivations; one worked example per concept.',
-                    hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 12),
+                    hintText:
+                        'e.g. Emphasise derivations; one worked example per concept.',
+                    hintStyle: TextStyle(
+                      color: context.colors.textFaint,
+                      fontSize: 12,
+                    ),
                     filled: true,
                     fillColor: context.colors.surfaceAlt,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
                 CheckboxListTile(
                   value: _saveGlobally,
-                  onChanged: (val) => setState(() => _saveGlobally = val ?? false),
-                  title: Text('Save these preferences for all future units in this course', style: TextStyle(color: context.colors.textSecondary, fontSize: 13)),
+                  onChanged: (val) =>
+                      setState(() => _saveGlobally = val ?? false),
+                  title: Text(
+                    'Save these preferences for all future units in this course',
+                    style: TextStyle(
+                      color: context.colors.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
                   controlAffinity: ListTileControlAffinity.leading,
                   activeColor: sectionColor,
                   contentPadding: EdgeInsets.zero,
@@ -869,13 +993,21 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
                 const SizedBox(height: 16),
                 ElevatedButton.icon(
                   onPressed: widget.onPlan == null ? null : _plan,
-                  icon: Icon(isError ? Icons.refresh : Icons.auto_awesome, size: 16),
-                  label: Text(isError ? 'Try again' : 'Plan units',
-                      style: const TextStyle(fontWeight: FontWeight.w900)),
+                  icon: Icon(
+                    isError ? Icons.refresh : Icons.auto_awesome,
+                    size: 16,
+                  ),
+                  label: Text(
+                    isError ? 'Try again' : 'Plan units',
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: sectionColor,
                     foregroundColor: context.colors.textPrimary,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 14,
+                    ),
                   ),
                 ),
               ],
@@ -935,23 +1067,34 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: sectionColor.withOpacity(0.18),
                   shape: BoxShape.circle,
-                  border: Border.all(color: sectionColor.withOpacity(0.55), width: 2),
+                  border: Border.all(
+                    color: sectionColor.withOpacity(0.55),
+                    width: 2,
+                  ),
                 ),
                 child: Icon(Icons.tune, color: sectionColor, size: 26),
               ),
               Text(
                 'Confirm units',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w900, fontSize: 18),
+                style: TextStyle(
+                  color: context.colors.textPrimary,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
+                ),
               ),
               const SizedBox(height: 6),
               Text(
                 'The AI has broken this section into the following units. Review the scope before generating lessons.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: context.colors.textFaint, fontSize: 13, height: 1.4),
+                style: TextStyle(
+                  color: context.colors.textFaint,
+                  fontSize: 13,
+                  height: 1.4,
+                ),
               ),
               const SizedBox(height: 20),
-              
+
               for (final unit in section.units)
                 Container(
                   margin: const EdgeInsets.only(bottom: 10),
@@ -964,27 +1107,43 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(unit.title,
-                          style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w900, fontSize: 14)),
+                      Text(
+                        unit.title,
+                        style: TextStyle(
+                          color: context.colors.textPrimary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14,
+                        ),
+                      ),
                       if (unit.description.isNotEmpty) ...[
                         const SizedBox(height: 4),
-                        Text(unit.description,
-                            style: TextStyle(color: context.colors.textFaint, fontSize: 12, height: 1.4),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis),
+                        Text(
+                          unit.description,
+                          style: TextStyle(
+                            color: context.colors.textFaint,
+                            fontSize: 12,
+                            height: 1.4,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ],
                     ],
                   ),
                 ),
-                
+
               const SizedBox(height: 20),
-              
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     'Available lesson formats:',
-                    style: TextStyle(color: context.colors.textSecondary, fontWeight: FontWeight.w800, fontSize: 13),
+                    style: TextStyle(
+                      color: context.colors.textSecondary,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
+                    ),
                   ),
                   Row(
                     mainAxisSize: MainAxisSize.min,
@@ -997,7 +1156,13 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
                         ),
                         onPressed: onEditFormats,
                         icon: const Icon(Icons.edit, size: 14),
-                        label: const Text('Edit', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        label: const Text(
+                          'Edit',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 4),
                       TextButton.icon(
@@ -1008,7 +1173,13 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
                         ),
                         onPressed: onResetFormats,
                         icon: const Icon(Icons.auto_awesome, size: 14),
-                        label: const Text('Reset (AI)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        label: const Text(
+                          'Reset (AI)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -1026,27 +1197,38 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     for (var i = 0; i < formats.length; i++) ...[
-                      if (i > 0) Divider(color: context.colors.outline, height: 16),
+                      if (i > 0)
+                        Divider(color: context.colors.outline, height: 16),
                       Text(
                         formats[i].name,
-                        style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 12),
+                        style: TextStyle(
+                          color: sectionColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         formats[i].description,
-                        style: TextStyle(color: context.colors.textFaint, fontSize: 11, height: 1.4),
+                        style: TextStyle(
+                          color: context.colors.textFaint,
+                          fontSize: 11,
+                          height: 1.4,
+                        ),
                       ),
                     ],
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: _confirm,
                 icon: const Icon(Icons.check, size: 18),
-                label: const Text('Confirm and unlock units',
-                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
+                label: const Text(
+                  'Confirm and unlock units',
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: sectionColor,
                   foregroundColor: context.colors.textPrimary,
@@ -1075,10 +1257,12 @@ class _ActiveGeneratingNodeWrapper extends StatefulWidget {
   });
 
   @override
-  State<_ActiveGeneratingNodeWrapper> createState() => _ActiveGeneratingNodeWrapperState();
+  State<_ActiveGeneratingNodeWrapper> createState() =>
+      _ActiveGeneratingNodeWrapperState();
 }
 
-class _ActiveGeneratingNodeWrapperState extends State<_ActiveGeneratingNodeWrapper> {
+class _ActiveGeneratingNodeWrapperState
+    extends State<_ActiveGeneratingNodeWrapper> {
   Timer? _timer;
 
   @override
@@ -1102,18 +1286,23 @@ class _ActiveGeneratingNodeWrapperState extends State<_ActiveGeneratingNodeWrapp
     final pendingIdx = widget.lesson.id.split('-pending-').last;
     final targetId = '${widget.unitId}-pending-$pendingIdx';
     final reqInfo = AiEstimator.activeRequests[targetId];
-    
+
     double progress = 0.0;
     if (reqInfo != null) {
-      final elapsed = DateTime.now().difference(reqInfo.startTime).inMilliseconds;
+      final elapsed = DateTime.now()
+          .difference(reqInfo.startTime)
+          .inMilliseconds;
       final est = reqInfo.estimatedDuration.inMilliseconds;
       if (est > 0) {
         progress = (elapsed / est * 0.95).clamp(0.0, 0.95);
       }
     } else {
-      final unitTask = GenerationManager.instance.activeUnitGenerations[widget.unitId];
+      final unitTask =
+          GenerationManager.instance.activeUnitGenerations[widget.unitId];
       if (unitTask != null) {
-        final elapsed = DateTime.now().difference(unitTask.startTime).inMilliseconds;
+        final elapsed = DateTime.now()
+            .difference(unitTask.startTime)
+            .inMilliseconds;
         final est = unitTask.estimatedDuration.inMilliseconds;
         if (est > 0) {
           progress = (elapsed / est * 0.95).clamp(0.0, 0.95);

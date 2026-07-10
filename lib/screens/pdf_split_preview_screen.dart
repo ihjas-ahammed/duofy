@@ -27,8 +27,9 @@ class PdfSplitPreviewScreen extends StatefulWidget {
 }
 
 class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
-  final SafePdfViewerController _pdfViewerController = SafePdfViewerController();
-  
+  final SafePdfViewerController _pdfViewerController =
+      SafePdfViewerController();
+
   late List<Module> _modules;
   int _selectedFileIndex = 0;
   bool _isSectionLevel = false;
@@ -44,15 +45,19 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
 
   bool get _isCurrentFilePdf {
     if (widget.originalPdf.isEmpty) return false;
-    if (_selectedFileIndex < 0 || _selectedFileIndex >= widget.originalPdf.length) return false;
-    return widget.originalPdf[_selectedFileIndex].path.toLowerCase().endsWith('.pdf');
+    if (_selectedFileIndex < 0 ||
+        _selectedFileIndex >= widget.originalPdf.length)
+      return false;
+    return widget.originalPdf[_selectedFileIndex].path.toLowerCase().endsWith(
+      '.pdf',
+    );
   }
 
   @override
   void initState() {
     super.initState();
     _modules = List.from(widget.skeletonBook.modules);
-    
+
     // Determine if section-level or unit-level flow is used
     _isSectionLevel = widget.skeletonBook.modules.any(
       (m) => m.sections.any((s) => s.startPage != null || s.endPage != null),
@@ -65,15 +70,27 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
     for (final module in _modules) {
       for (final section in module.sections) {
         if (_isSectionLevel) {
-          _startPageControllers[section.id] = TextEditingController(text: section.startPage?.toString() ?? '');
-          _endPageControllers[section.id] = TextEditingController(text: section.endPage?.toString() ?? '');
-          _titleControllers[section.id] = TextEditingController(text: section.title);
+          _startPageControllers[section.id] = TextEditingController(
+            text: section.startPage?.toString() ?? '',
+          );
+          _endPageControllers[section.id] = TextEditingController(
+            text: section.endPage?.toString() ?? '',
+          );
+          _titleControllers[section.id] = TextEditingController(
+            text: section.title,
+          );
           _bookIndices[section.id] = section.bookIndex ?? 0;
         } else {
           for (final unit in section.units) {
-            _startPageControllers[unit.id] = TextEditingController(text: unit.startPage?.toString() ?? '');
-            _endPageControllers[unit.id] = TextEditingController(text: unit.endPage?.toString() ?? '');
-            _titleControllers[unit.id] = TextEditingController(text: unit.title);
+            _startPageControllers[unit.id] = TextEditingController(
+              text: unit.startPage?.toString() ?? '',
+            );
+            _endPageControllers[unit.id] = TextEditingController(
+              text: unit.endPage?.toString() ?? '',
+            );
+            _titleControllers[unit.id] = TextEditingController(
+              text: unit.title,
+            );
             _bookIndices[unit.id] = unit.bookIndex ?? 0;
           }
         }
@@ -98,14 +115,17 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
         endPage: null,
         bookIndex: _selectedFileIndex,
       );
-      
+
       _startPageControllers[newId] = TextEditingController();
       _endPageControllers[newId] = TextEditingController();
       _titleControllers[newId] = TextEditingController(text: newSec.title);
       _bookIndices[newId] = _selectedFileIndex;
-      
-      final updatedSections = List<Section>.from(_modules[moduleIndex].sections)..add(newSec);
-      _modules[moduleIndex] = _modules[moduleIndex].copyWith(sections: updatedSections);
+
+      final updatedSections = List<Section>.from(_modules[moduleIndex].sections)
+        ..add(newSec);
+      _modules[moduleIndex] = _modules[moduleIndex].copyWith(
+        sections: updatedSections,
+      );
     });
   }
 
@@ -113,8 +133,10 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
     setState(() {
       final updatedSections = List<Section>.from(_modules[moduleIndex].sections)
         ..removeWhere((s) => s.id == sectionId);
-      _modules[moduleIndex] = _modules[moduleIndex].copyWith(sections: updatedSections);
-      
+      _modules[moduleIndex] = _modules[moduleIndex].copyWith(
+        sections: updatedSections,
+      );
+
       _startPageControllers.remove(sectionId)?.dispose();
       _endPageControllers.remove(sectionId)?.dispose();
       _titleControllers.remove(sectionId)?.dispose();
@@ -135,19 +157,25 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
         endPage: null,
         bookIndex: _selectedFileIndex,
       );
-      
+
       _startPageControllers[newId] = TextEditingController();
       _endPageControllers[newId] = TextEditingController();
       _titleControllers[newId] = TextEditingController(text: newUnit.title);
       _bookIndices[newId] = _selectedFileIndex;
-      
+
       final currentSection = _modules[moduleIndex].sections[sectionIndex];
       final updatedUnits = List<Unit>.from(currentSection.units)..add(newUnit);
-      
-      final updatedSections = List<Section>.from(_modules[moduleIndex].sections);
-      updatedSections[sectionIndex] = currentSection.copyWith(units: updatedUnits);
-      
-      _modules[moduleIndex] = _modules[moduleIndex].copyWith(sections: updatedSections);
+
+      final updatedSections = List<Section>.from(
+        _modules[moduleIndex].sections,
+      );
+      updatedSections[sectionIndex] = currentSection.copyWith(
+        units: updatedUnits,
+      );
+
+      _modules[moduleIndex] = _modules[moduleIndex].copyWith(
+        sections: updatedSections,
+      );
     });
   }
 
@@ -156,12 +184,18 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
       final currentSection = _modules[moduleIndex].sections[sectionIndex];
       final updatedUnits = List<Unit>.from(currentSection.units)
         ..removeWhere((u) => u.id == unitId);
-      
-      final updatedSections = List<Section>.from(_modules[moduleIndex].sections);
-      updatedSections[sectionIndex] = currentSection.copyWith(units: updatedUnits);
-      
-      _modules[moduleIndex] = _modules[moduleIndex].copyWith(sections: updatedSections);
-      
+
+      final updatedSections = List<Section>.from(
+        _modules[moduleIndex].sections,
+      );
+      updatedSections[sectionIndex] = currentSection.copyWith(
+        units: updatedUnits,
+      );
+
+      _modules[moduleIndex] = _modules[moduleIndex].copyWith(
+        sections: updatedSections,
+      );
+
       _startPageControllers.remove(unitId)?.dispose();
       _endPageControllers.remove(unitId)?.dispose();
       _titleControllers.remove(unitId)?.dispose();
@@ -257,10 +291,16 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
       for (var s = 0; s < module.sections.length; s++) {
         final section = module.sections[s];
         if (_isSectionLevel) {
-          rows.add((section.id, 'M${m + 1}·S${s + 1} "${_titleControllers[section.id]?.text ?? section.title}"'));
+          rows.add((
+            section.id,
+            'M${m + 1}·S${s + 1} "${_titleControllers[section.id]?.text ?? section.title}"',
+          ));
         } else {
           for (final unit in section.units) {
-            rows.add((unit.id, 'M${m + 1}·S${s + 1} "${_titleControllers[unit.id]?.text ?? unit.title}"'));
+            rows.add((
+              unit.id,
+              'M${m + 1}·S${s + 1} "${_titleControllers[unit.id]?.text ?? unit.title}"',
+            ));
           }
         }
       }
@@ -283,18 +323,25 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
         continue;
       }
       if (start == null || end == null) {
-        issues.add('$label is missing its ${start == null ? 'start' : 'end'} page.');
+        issues.add(
+          '$label is missing its ${start == null ? 'start' : 'end'} page.',
+        );
         continue;
       }
       if (start < 1) issues.add('$label starts before page 1.');
-      if (end < start) issues.add('$label has an inverted range ($start–$end).');
+      if (end < start)
+        issues.add('$label has an inverted range ($start–$end).');
       final prev = lastEndByFile[fileIdx];
       if (prev != null) {
         final (prevEnd, prevLabel) = prev;
         if (start <= prevEnd) {
-          issues.add('$label (p.$start) overlaps $prevLabel (ends p.$prevEnd).');
+          issues.add(
+            '$label (p.$start) overlaps $prevLabel (ends p.$prevEnd).',
+          );
         } else if (start > prevEnd + 1) {
-          issues.add('Pages ${prevEnd + 1}–${start - 1} are not covered (between $prevLabel and $label).');
+          issues.add(
+            'Pages ${prevEnd + 1}–${start - 1} are not covered (between $prevLabel and $label).',
+          );
         }
       }
       if (end >= start) lastEndByFile[fileIdx] = (end, label);
@@ -309,10 +356,14 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
     if (delta == 0) return;
     setState(() {
       for (final (id, _) in _editableRows()) {
-        if (widget.originalPdf.length > 1 && (_bookIndices[id] ?? 0) != _selectedFileIndex) {
+        if (widget.originalPdf.length > 1 &&
+            (_bookIndices[id] ?? 0) != _selectedFileIndex) {
           continue;
         }
-        for (final ctrl in [_startPageControllers[id], _endPageControllers[id]]) {
+        for (final ctrl in [
+          _startPageControllers[id],
+          _endPageControllers[id],
+        ]) {
           final v = int.tryParse(ctrl?.text.trim() ?? '');
           if (ctrl != null && v != null) {
             ctrl.text = '${(v + delta) < 1 ? 1 : v + delta}';
@@ -329,7 +380,14 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
           backgroundColor: context.colors.surface,
-          title: Text('Shift All Pages', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+          title: Text(
+            'Shift All Pages',
+            style: TextStyle(
+              color: context.colors.textPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -337,14 +395,20 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                 widget.originalPdf.length > 1
                     ? 'Moves every range of File ${_selectedFileIndex + 1} by the same amount. Use when all pages are consistently early or late.'
                     : 'Moves every range by the same amount. Use when all pages are consistently early or late.',
-                style: TextStyle(color: context.colors.textSecondary, fontSize: 12),
+                style: TextStyle(
+                  color: context.colors.textSecondary,
+                  fontSize: 12,
+                ),
               ),
               const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   IconButton(
-                    icon: const Icon(LucideIcons.minusCircle, color: AppTheme.duoRed),
+                    icon: const Icon(
+                      LucideIcons.minusCircle,
+                      color: AppTheme.duoRed,
+                    ),
                     onPressed: () => setDialogState(() => delta--),
                   ),
                   Container(
@@ -357,11 +421,18 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                     ),
                     child: Text(
                       delta > 0 ? '+$delta' : '$delta',
-                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: context.colors.textPrimary),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 20,
+                        color: context.colors.textPrimary,
+                      ),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(LucideIcons.plusCircle, color: AppTheme.duoGreen),
+                    icon: const Icon(
+                      LucideIcons.plusCircle,
+                      color: AppTheme.duoGreen,
+                    ),
                     onPressed: () => setDialogState(() => delta++),
                   ),
                 ],
@@ -371,14 +442,23 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: context.colors.textFaint),
+              ),
             ),
             TextButton(
               onPressed: () {
                 Navigator.of(ctx).pop();
                 _shiftAllPages(delta);
               },
-              child: const Text('Apply', style: TextStyle(color: AppTheme.duoGreen, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'Apply',
+                style: TextStyle(
+                  color: AppTheme.duoGreen,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         ),
@@ -394,7 +474,14 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
           context: context,
           builder: (ctx) => AlertDialog(
             backgroundColor: context.colors.surface,
-            title: Text('Check These Ranges', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+            title: Text(
+              'Check These Ranges',
+              style: TextStyle(
+                color: context.colors.textPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
             content: ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 320),
               child: SingleChildScrollView(
@@ -408,14 +495,32 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(LucideIcons.alertTriangle, color: AppTheme.duoOrange, size: 14),
+                            const Icon(
+                              LucideIcons.alertTriangle,
+                              color: AppTheme.duoOrange,
+                              size: 14,
+                            ),
                             const SizedBox(width: 8),
-                            Expanded(child: Text(issue, style: TextStyle(color: context.colors.textSecondary, fontSize: 12))),
+                            Expanded(
+                              child: Text(
+                                issue,
+                                style: TextStyle(
+                                  color: context.colors.textSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
                     if (issues.length > 12)
-                      Text('…and ${issues.length - 12} more.', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
+                      Text(
+                        '…and ${issues.length - 12} more.',
+                        style: TextStyle(
+                          color: context.colors.textFaint,
+                          fontSize: 12,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -423,14 +528,23 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('Go Back & Fix', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'Go Back & Fix',
+                  style: TextStyle(
+                    color: AppTheme.duoBlue,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
               TextButton(
                 onPressed: () {
                   Navigator.of(ctx).pop();
                   _commitSplits(force: true);
                 },
-                child: const Text('Split Anyway', style: TextStyle(color: AppTheme.duoOrange)),
+                child: const Text(
+                  'Split Anyway',
+                  style: TextStyle(color: AppTheme.duoOrange),
+                ),
               ),
             ],
           ),
@@ -447,7 +561,9 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
       for (var s = 0; s < module.sections.length; s++) {
         final section = module.sections[s];
 
-        final sPage = int.tryParse(_startPageControllers[section.id]?.text ?? '');
+        final sPage = int.tryParse(
+          _startPageControllers[section.id]?.text ?? '',
+        );
         final ePage = int.tryParse(_endPageControllers[section.id]?.text ?? '');
         final title = _titleControllers[section.id]?.text ?? section.title;
         final bookIdx = _bookIndices[section.id] ?? 0;
@@ -455,34 +571,47 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
         List<Unit> finalUnits = [];
         for (var u = 0; u < section.units.length; u++) {
           final unit = section.units[u];
-          final uStart = int.tryParse(_startPageControllers[unit.id]?.text ?? '');
+          final uStart = int.tryParse(
+            _startPageControllers[unit.id]?.text ?? '',
+          );
           final uEnd = int.tryParse(_endPageControllers[unit.id]?.text ?? '');
           final uTitle = _titleControllers[unit.id]?.text ?? unit.title;
           final uBookIdx = _bookIndices[unit.id] ?? 0;
 
-          finalUnits.add(unit.copyWith(
-            title: uTitle,
-            startPage: uStart,
-            endPage: uEnd,
-            bookIndex: uBookIdx,
-          ));
+          finalUnits.add(
+            unit.copyWith(
+              title: uTitle,
+              startPage: uStart,
+              endPage: uEnd,
+              bookIndex: uBookIdx,
+            ),
+          );
         }
 
-        finalSections.add(section.copyWith(
-          title: title,
-          startPage: sPage,
-          endPage: ePage,
-          bookIndex: bookIdx,
-          units: finalUnits,
-        ));
+        finalSections.add(
+          section.copyWith(
+            title: title,
+            startPage: sPage,
+            endPage: ePage,
+            bookIndex: bookIdx,
+            units: finalUnits,
+          ),
+        );
       }
       finalModules.add(module.copyWith(sections: finalSections));
     }
 
     // The user has personally reviewed the ranges on this screen.
-    final offsetBook = widget.skeletonBook.copyWith(modules: finalModules, mappingVerified: true);
+    final offsetBook = widget.skeletonBook.copyWith(
+      modules: finalModules,
+      mappingVerified: true,
+    );
 
-    GenerationManager.instance.startBackgroundSplitAndSave(widget.taskId, widget.originalPdf, offsetBook);
+    GenerationManager.instance.startBackgroundSplitAndSave(
+      widget.taskId,
+      widget.originalPdf,
+      offsetBook,
+    );
     Navigator.pop(context);
   }
 
@@ -532,20 +661,31 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                         child: TextField(
                           controller: _titleControllers[itemId],
                           autofocus: true,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
                           decoration: const InputDecoration(
                             isDense: true,
                             contentPadding: EdgeInsets.symmetric(vertical: 6),
-                            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.duoBlue)),
+                            focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: AppTheme.duoBlue),
+                            ),
                           ),
-                          onSubmitted: (_) => _saveTitle(itemId, moduleIndex, sectionIndex),
+                          onSubmitted: (_) =>
+                              _saveTitle(itemId, moduleIndex, sectionIndex),
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(LucideIcons.check, color: AppTheme.duoGreen, size: 16),
+                        icon: const Icon(
+                          LucideIcons.check,
+                          color: AppTheme.duoGreen,
+                          size: 16,
+                        ),
                         padding: const EdgeInsets.all(4),
                         constraints: const BoxConstraints(),
-                        onPressed: () => _saveTitle(itemId, moduleIndex, sectionIndex),
+                        onPressed: () =>
+                            _saveTitle(itemId, moduleIndex, sectionIndex),
                       ),
                     ],
                   )
@@ -555,13 +695,20 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                       Expanded(
                         child: Text(
                           title,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       IconButton(
-                        icon: Icon(LucideIcons.edit2, color: context.colors.textFaint, size: 14),
+                        icon: Icon(
+                          LucideIcons.edit2,
+                          color: context.colors.textFaint,
+                          size: 14,
+                        ),
                         padding: const EdgeInsets.all(4),
                         constraints: const BoxConstraints(),
                         onPressed: () {
@@ -573,7 +720,14 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                     ],
                   ),
                 const SizedBox(height: 4),
-                Text(subtitle, style: TextStyle(color: context.colors.textFaint, fontSize: 9, fontWeight: FontWeight.w900)),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: context.colors.textFaint,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
               ],
             ),
           ),
@@ -589,8 +743,16 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                 child: DropdownButton<int>(
                   value: _bookIndices[itemId] ?? 0,
                   dropdownColor: context.colors.surface,
-                  icon: Icon(LucideIcons.chevronDown, size: 12, color: context.colors.textFaint),
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: context.colors.textPrimary),
+                  icon: Icon(
+                    LucideIcons.chevronDown,
+                    size: 12,
+                    color: context.colors.textFaint,
+                  ),
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: context.colors.textPrimary,
+                  ),
                   onChanged: (val) {
                     if (val != null) {
                       setState(() {
@@ -600,14 +762,27 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                   },
                   selectedItemBuilder: (BuildContext context) {
                     return List.generate(widget.originalPdf.length, (index) {
-                      return Center(child: Text('F${index + 1}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)));
+                      return Center(
+                        child: Text(
+                          'F${index + 1}',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      );
                     });
                   },
                   items: List.generate(widget.originalPdf.length, (index) {
-                    final filename = widget.originalPdf[index].path.split(RegExp(r'[/\\]')).last;
+                    final filename = widget.originalPdf[index].path
+                        .split(RegExp(r'[/\\]'))
+                        .last;
                     return DropdownMenuItem<int>(
                       value: index,
-                      child: Text('File ${index + 1}: $filename', style: const TextStyle(fontSize: 11)),
+                      child: Text(
+                        'File ${index + 1}: $filename',
+                        style: const TextStyle(fontSize: 11),
+                      ),
                     );
                   }),
                 ),
@@ -625,14 +800,22 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
               decoration: InputDecoration(
                 labelText: 'Start',
                 labelStyle: const TextStyle(fontSize: 9),
-                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 4),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 0,
+                  horizontal: 4,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Text('-', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
+            child: Text(
+              '-',
+              style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+            ),
           ),
           SizedBox(
             width: 50,
@@ -644,21 +827,34 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
               decoration: InputDecoration(
                 labelText: 'End',
                 labelStyle: const TextStyle(fontSize: 9),
-                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 4),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 0,
+                  horizontal: 4,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
           ),
           const SizedBox(width: 4),
           IconButton(
-            icon: const Icon(LucideIcons.eye, color: AppTheme.duoBlue, size: 16),
+            icon: const Icon(
+              LucideIcons.eye,
+              color: AppTheme.duoBlue,
+              size: 16,
+            ),
             padding: const EdgeInsets.all(4),
             constraints: const BoxConstraints(),
             tooltip: 'View page',
             onPressed: () => _viewPage(itemId),
           ),
           IconButton(
-            icon: const Icon(LucideIcons.trash2, color: AppTheme.duoRed, size: 16),
+            icon: const Icon(
+              LucideIcons.trash2,
+              color: AppTheme.duoRed,
+              size: 16,
+            ),
             padding: const EdgeInsets.all(4),
             constraints: const BoxConstraints(),
             tooltip: 'Delete',
@@ -675,7 +871,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
 
     for (int m = 0; m < _modules.length; m++) {
       final module = _modules[m];
-      
+
       // Module Header Card
       listItems.add(
         Padding(
@@ -689,17 +885,29 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
             ),
             child: Row(
               children: [
-                const Icon(LucideIcons.bookOpen, color: AppTheme.duoBlue, size: 18),
+                const Icon(
+                  LucideIcons.bookOpen,
+                  color: AppTheme.duoBlue,
+                  size: 18,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     'Module ${m + 1}: ${module.title}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.duoBlue),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      color: AppTheme.duoBlue,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(LucideIcons.trash2, color: AppTheme.duoRed, size: 16),
+                  icon: const Icon(
+                    LucideIcons.trash2,
+                    color: AppTheme.duoRed,
+                    size: 16,
+                  ),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   tooltip: 'Delete Module',
@@ -715,26 +923,36 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
         final section = module.sections[s];
 
         if (_isSectionLevel) {
-          listItems.add(_buildEditorRow(
-            itemId: section.id,
-            title: section.title,
-            subtitle: 'M${m + 1} • Section ${s + 1}',
-            moduleIndex: m,
-            sectionIndex: s,
-            onDelete: () => _removeSection(m, section.id),
-          ));
+          listItems.add(
+            _buildEditorRow(
+              itemId: section.id,
+              title: section.title,
+              subtitle: 'M${m + 1} • Section ${s + 1}',
+              moduleIndex: m,
+              sectionIndex: s,
+              onDelete: () => _removeSection(m, section.id),
+            ),
+          );
         } else {
           listItems.add(
             Padding(
               padding: const EdgeInsets.only(top: 12, bottom: 6, left: 8),
               child: Row(
                 children: [
-                  const Icon(LucideIcons.layers, color: AppTheme.duoViolet, size: 14),
+                  const Icon(
+                    LucideIcons.layers,
+                    color: AppTheme.duoViolet,
+                    size: 14,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Section ${s + 1}: ${section.title}',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: context.colors.textSecondary),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                        color: context.colors.textSecondary,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -745,14 +963,16 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
 
           for (int u = 0; u < section.units.length; u++) {
             final unit = section.units[u];
-            listItems.add(_buildEditorRow(
-              itemId: unit.id,
-              title: unit.title,
-              subtitle: 'M${m + 1} • S${s + 1} • Unit ${u + 1}',
-              moduleIndex: m,
-              sectionIndex: s,
-              onDelete: () => _removeUnit(m, s, unit.id),
-            ));
+            listItems.add(
+              _buildEditorRow(
+                itemId: unit.id,
+                title: unit.title,
+                subtitle: 'M${m + 1} • S${s + 1} • Unit ${u + 1}',
+                moduleIndex: m,
+                sectionIndex: s,
+                onDelete: () => _removeUnit(m, s, unit.id),
+              ),
+            );
           }
 
           listItems.add(
@@ -762,12 +982,28 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                 alignment: Alignment.centerLeft,
                 child: TextButton.icon(
                   onPressed: () => _addUnit(m, s),
-                  icon: const Icon(LucideIcons.plus, size: 14, color: AppTheme.duoViolet),
-                  label: const Text('Add Unit', style: TextStyle(color: AppTheme.duoViolet, fontSize: 11, fontWeight: FontWeight.bold)),
+                  icon: const Icon(
+                    LucideIcons.plus,
+                    size: 14,
+                    color: AppTheme.duoViolet,
+                  ),
+                  label: const Text(
+                    'Add Unit',
+                    style: TextStyle(
+                      color: AppTheme.duoViolet,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     backgroundColor: AppTheme.duoViolet.withOpacity(0.08),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
               ),
@@ -784,12 +1020,28 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
                 onPressed: () => _addSection(m),
-                icon: const Icon(LucideIcons.plus, size: 14, color: AppTheme.duoBlue),
-                label: const Text('Add Section', style: TextStyle(color: AppTheme.duoBlue, fontSize: 11, fontWeight: FontWeight.bold)),
+                icon: const Icon(
+                  LucideIcons.plus,
+                  size: 14,
+                  color: AppTheme.duoBlue,
+                ),
+                label: const Text(
+                  'Add Section',
+                  style: TextStyle(
+                    color: AppTheme.duoBlue,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   backgroundColor: AppTheme.duoBlue.withOpacity(0.08),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
               ),
             ),
@@ -800,7 +1052,10 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Review Page Splits', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+        title: const Text(
+          'Review Page Splits',
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+        ),
         actions: [
           IconButton(
             icon: const Icon(LucideIcons.arrowUpDown, color: AppTheme.duoBlue),
@@ -815,7 +1070,13 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                 context: context,
                 builder: (ctx) => AlertDialog(
                   backgroundColor: context.colors.surface,
-                  title: Text('Cancel Course Generation?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+                  title: Text(
+                    'Cancel Course Generation?',
+                    style: TextStyle(
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   content: Text(
                     'Are you sure you want to cancel the generation of this course? All progress and generated skeleton files will be discarded.',
                     style: TextStyle(color: context.colors.textSecondary),
@@ -823,17 +1084,25 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.of(ctx).pop(false),
-                      child: Text('Keep Generating', style: TextStyle(color: context.colors.textFaint)),
+                      child: Text(
+                        'Keep Generating',
+                        style: TextStyle(color: context.colors.textFaint),
+                      ),
                     ),
                     TextButton(
                       onPressed: () => Navigator.of(ctx).pop(true),
-                      child: const Text('Cancel & Discard', style: TextStyle(color: AppTheme.duoRed)),
+                      child: const Text(
+                        'Cancel & Discard',
+                        style: TextStyle(color: AppTheme.duoRed),
+                      ),
                     ),
                   ],
                 ),
               );
               if (confirm == true && mounted) {
-                await GenerationManager.instance.cancelCourseGeneration(widget.taskId);
+                await GenerationManager.instance.cancelCourseGeneration(
+                  widget.taskId,
+                );
                 if (mounted) {
                   Navigator.of(context).popUntil((route) => route.isFirst);
                 }
@@ -847,8 +1116,16 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
           children: [
             if (widget.originalPdf.isNotEmpty)
               Container(
-                margin: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                margin: const EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 12,
+                  bottom: 4,
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: context.colors.surfaceAlt,
                   borderRadius: BorderRadius.circular(12),
@@ -856,7 +1133,11 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(LucideIcons.fileText, color: AppTheme.duoBlue, size: 16),
+                    const Icon(
+                      LucideIcons.fileText,
+                      color: AppTheme.duoBlue,
+                      size: 16,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: widget.originalPdf.length > 1
@@ -864,8 +1145,16 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                               child: DropdownButton<int>(
                                 value: _selectedFileIndex,
                                 dropdownColor: context.colors.surface,
-                                icon: Icon(LucideIcons.chevronDown, size: 14, color: context.colors.textSecondary),
-                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.colors.textPrimary),
+                                icon: Icon(
+                                  LucideIcons.chevronDown,
+                                  size: 14,
+                                  color: context.colors.textSecondary,
+                                ),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: context.colors.textPrimary,
+                                ),
                                 isExpanded: true,
                                 onChanged: (val) {
                                   if (val != null) {
@@ -874,20 +1163,37 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                                     });
                                   }
                                 },
-                                items: List.generate(widget.originalPdf.length, (index) {
-                                  final filename = widget.originalPdf[index].path.split(RegExp(r'[/\\]')).last;
-                                  return DropdownMenuItem<int>(
-                                    value: index,
-                                    child: Text('File ${index + 1}: $filename', style: const TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis),
-                                  );
-                                }),
+                                items: List.generate(
+                                  widget.originalPdf.length,
+                                  (index) {
+                                    final filename = widget
+                                        .originalPdf[index]
+                                        .path
+                                        .split(RegExp(r'[/\\]'))
+                                        .last;
+                                    return DropdownMenuItem<int>(
+                                      value: index,
+                                      child: Text(
+                                        'File ${index + 1}: $filename',
+                                        style: const TextStyle(fontSize: 12),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
                             )
                           : Padding(
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               child: Text(
-                                widget.originalPdf.first.path.split(RegExp(r'[/\\]')).last,
-                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.colors.textPrimary),
+                                widget.originalPdf.first.path
+                                    .split(RegExp(r'[/\\]'))
+                                    .last,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: context.colors.textPrimary,
+                                ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -934,16 +1240,25 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                               decoration: BoxDecoration(
                                 color: context.colors.surface.withOpacity(0.95),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
+                                border: Border.all(
+                                  color: Colors.redAccent.withOpacity(0.5),
+                                ),
                               ),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.error_outline, color: Colors.redAccent, size: 36),
+                                  const Icon(
+                                    Icons.error_outline,
+                                    color: Colors.redAccent,
+                                    size: 36,
+                                  ),
                                   const SizedBox(height: 12),
                                   Text(
                                     'Failed to render PDF preview:\n$_pdfErrorMessage\n\nYou can still modify page ranges and proceed.',
-                                    style: TextStyle(color: context.colors.textPrimary, fontSize: 13),
+                                    style: TextStyle(
+                                      color: context.colors.textPrimary,
+                                      fontSize: 13,
+                                    ),
                                     textAlign: TextAlign.center,
                                   ),
                                 ],
@@ -951,21 +1266,25 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                             ),
                           ),
                         ),
-                    ]
-                    else
+                    ] else
                       Center(
                         child: Image(
-                          image: fileImageProvider(widget.originalPdf[_selectedFileIndex]),
+                          image: fileImageProvider(
+                            widget.originalPdf[_selectedFileIndex],
+                          ),
                           key: ValueKey(_selectedFileIndex),
                           fit: BoxFit.contain,
                         ),
                       ),
-                    
+
                     Positioned(
                       bottom: 12,
                       right: 12,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.25),
                           borderRadius: BorderRadius.circular(12),
@@ -974,47 +1293,73 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              _isCurrentFilePdf ? LucideIcons.fileText : LucideIcons.image,
+                              _isCurrentFilePdf
+                                  ? LucideIcons.fileText
+                                  : LucideIcons.image,
                               size: 11,
                               color: Colors.white70,
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              _isCurrentFilePdf ? 'Use Viewer to find exact page #' : 'File ${_selectedFileIndex + 1} of ${widget.originalPdf.length}',
-                              style: const TextStyle(fontSize: 9, color: Colors.white70),
+                              _isCurrentFilePdf
+                                  ? 'Use Viewer to find exact page #'
+                                  : 'File ${_selectedFileIndex + 1} of ${widget.originalPdf.length}',
+                              style: const TextStyle(
+                                fontSize: 9,
+                                color: Colors.white70,
+                              ),
                             ),
                           ],
                         ),
                       ),
-                    )
+                    ),
                   ],
                 ),
               ),
             ),
-            
+
             Expanded(
               flex: 3,
               child: Container(
                 decoration: BoxDecoration(
                   color: context.colors.surface,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
                   boxShadow: [
-                    BoxShadow(color: context.colors.shadow, blurRadius: 10, offset: const Offset(0, -4))
+                    BoxShadow(
+                      color: context.colors.shadow,
+                      blurRadius: 10,
+                      offset: const Offset(0, -4),
+                    ),
                   ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.only(top: 20, left: 24, right: 24, bottom: 8),
+                      padding: const EdgeInsets.only(
+                        top: 20,
+                        left: 24,
+                        right: 24,
+                        bottom: 8,
+                      ),
                       child: Text(
-                        _isSectionLevel ? 'Adjust Section Ranges' : 'Adjust Unit Ranges',
-                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                        _isSectionLevel
+                            ? 'Adjust Section Ranges'
+                            : 'Adjust Unit Ranges',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                     Expanded(
                       child: ListView(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 4,
+                        ),
                         children: listItems,
                       ),
                     ),
@@ -1026,11 +1371,11 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                         shadowColor: AppTheme.duoGreenDark,
                         onPressed: _commitSplits,
                       ),
-                    )
+                    ),
                   ],
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),

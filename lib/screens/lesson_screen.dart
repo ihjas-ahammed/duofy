@@ -33,6 +33,7 @@ import 'lesson_complete_screen.dart';
 
 class LessonScreen extends StatefulWidget {
   final Lesson lesson;
+
   /// The following are optional because callers in older paths (e.g. quick
   /// preview from a non-dashboard surface) may not know them. When all four
   /// are non-null the in-lesson canvas regenerate button is wired up.
@@ -68,6 +69,7 @@ class _LessonScreenState extends State<LessonScreen> {
   int _totalInteractive = 0;
   int _correctAttempts = 0;
   final Set<String> _failedCanvasIds = {};
+
   /// How many times each interactive slide has been answered wrong, keyed by
   /// slide id. Drives the "retry once, then skip" flow and ensures any failure
   /// permanently counts against final accuracy.
@@ -78,6 +80,7 @@ class _LessonScreenState extends State<LessonScreen> {
   /// slides (growing the denominator), which used to visibly yank the bar
   /// backwards — clamp it so progress only ever moves forward.
   double _maxProgress = 0;
+
   /// Live copy of the lesson. Starts as the one we were constructed with and
   /// gets refreshed whenever [GenerationManager] notifies — this is how the
   /// background canvas-art pass and the user-triggered regenerate button
@@ -124,7 +127,9 @@ class _LessonScreenState extends State<LessonScreen> {
     _lesson = widget.lesson;
     _buildSlideQueue();
     if (widget.initialSlideId != null) {
-      final index = _slideQueue.indexWhere((s) => s.id == widget.initialSlideId);
+      final index = _slideQueue.indexWhere(
+        (s) => s.id == widget.initialSlideId,
+      );
       if (index != -1) {
         _currentIndex = index;
       }
@@ -146,8 +151,13 @@ class _LessonScreenState extends State<LessonScreen> {
   }
 
   void _triggerBackgroundCanvasGeneration() {
-    if (widget.book == null || widget.modIdx == null || widget.secIdx == null || widget.unitIdx == null || widget.lessonIdx == null) return;
-    
+    if (widget.book == null ||
+        widget.modIdx == null ||
+        widget.secIdx == null ||
+        widget.unitIdx == null ||
+        widget.lessonIdx == null)
+      return;
+
     final book = widget.book!;
     final modIdx = widget.modIdx!;
     final secIdx = widget.secIdx!;
@@ -156,7 +166,8 @@ class _LessonScreenState extends State<LessonScreen> {
     final lesson = _lesson;
 
     // Trigger lesson canvas if prompt is present but SVG is empty
-    if ((lesson.canvasPrompt?.trim().isNotEmpty ?? false) && (lesson.canvasSvg?.trim().isEmpty ?? true)) {
+    if ((lesson.canvasPrompt?.trim().isNotEmpty ?? false) &&
+        (lesson.canvasSvg?.trim().isEmpty ?? true)) {
       GenerationManager.instance.regenerateLessonCanvas(
         book: book,
         modIdx: modIdx,
@@ -169,7 +180,8 @@ class _LessonScreenState extends State<LessonScreen> {
     // Trigger slide canvas for any slide that has a prompt but no SVG
     for (int i = 0; i < lesson.slides.length; i++) {
       final s = lesson.slides[i];
-      if ((s.canvasPrompt?.trim().isNotEmpty ?? false) && (s.canvasSvg?.trim().isEmpty ?? true)) {
+      if ((s.canvasPrompt?.trim().isNotEmpty ?? false) &&
+          (s.canvasSvg?.trim().isEmpty ?? true)) {
         GenerationManager.instance.regenerateSlideCanvas(
           book: book,
           modIdx: modIdx,
@@ -209,8 +221,6 @@ class _LessonScreenState extends State<LessonScreen> {
     );
   }
 
-
-
   @override
   void dispose() {
     GenerationManager.instance.removeListener(_onGenerationManagerChange);
@@ -229,7 +239,7 @@ class _LessonScreenState extends State<LessonScreen> {
     try {
       final fresh = await DatabaseService().getBookFromCache(widget.book!.id);
       if (fresh == null || !mounted) return;
-      
+
       Lesson? lesson;
       final mIdx = widget.modIdx!;
       final sIdx = widget.secIdx!;
@@ -270,7 +280,7 @@ class _LessonScreenState extends State<LessonScreen> {
       setState(() {
         _lesson = lesson!;
         _failedCanvasIds.remove(lesson.id);
-        
+
         // Update elements in _slideQueue in-place to reflect updated slide contents
         final freshSlidesMap = {for (var s in lesson.slides) s.id: s};
         for (int i = 0; i < _slideQueue.length; i++) {
@@ -297,7 +307,20 @@ class _LessonScreenState extends State<LessonScreen> {
     _maxProgress = 0;
 
     for (var slide in _slideQueue) {
-      if (['quiz', 'fill_in_blank', 'one_word', 'numerical', 'proof', 'step_by_step', 'descriptive', 'custom_html', 'matching', 'ordering', 'error_spotting', 'flashcard'].contains(slide.type)) {
+      if ([
+        'quiz',
+        'fill_in_blank',
+        'one_word',
+        'numerical',
+        'proof',
+        'step_by_step',
+        'descriptive',
+        'custom_html',
+        'matching',
+        'ordering',
+        'error_spotting',
+        'flashcard',
+      ].contains(slide.type)) {
         _totalInteractive++;
       }
     }
@@ -325,10 +348,13 @@ class _LessonScreenState extends State<LessonScreen> {
 
   Future<void> _finishLesson() async {
     int timeSpent = DateTime.now().difference(_startTime).inSeconds;
-    int accuracy = _totalInteractive > 0 ? ((_correctAttempts / _totalInteractive) * 100).round() : 100;
-    
+    int accuracy = _totalInteractive > 0
+        ? ((_correctAttempts / _totalInteractive) * 100).round()
+        : 100;
+
     final courseId = widget.book?.id ?? 'unknown_course';
-    bool isNewCompletion = !(await ProgressService.getCompletedLessons()).contains(widget.lesson.id);
+    bool isNewCompletion = !(await ProgressService.getCompletedLessons())
+        .contains(widget.lesson.id);
     int xpEarned = isNewCompletion ? 20 : 5;
 
     await ProgressService.markLessonCompleted(widget.lesson.id, courseId);
@@ -365,7 +391,7 @@ class _LessonScreenState extends State<LessonScreen> {
         final updatedBook = widget.book!.copyWith(bloomLevel: newLevel);
         await DatabaseService().saveGeneratedBook(updatedBook);
         GenerationManager.instance.triggerBookUpdate(updatedBook);
-        
+
         if (mounted) {
           final isPromotion = accuracy >= 80;
           ScaffoldMessenger.of(context).showSnackBar(
@@ -373,7 +399,9 @@ class _LessonScreenState extends State<LessonScreen> {
               content: Row(
                 children: [
                   Icon(
-                    isPromotion ? LucideIcons.trendingUp : LucideIcons.trendingDown,
+                    isPromotion
+                        ? LucideIcons.trendingUp
+                        : LucideIcons.trendingDown,
                     color: Colors.white,
                   ),
                   const SizedBox(width: 12),
@@ -387,29 +415,34 @@ class _LessonScreenState extends State<LessonScreen> {
                   ),
                 ],
               ),
-              backgroundColor: isPromotion ? AppTheme.duoGreen : AppTheme.duoOrange,
+              backgroundColor: isPromotion
+                  ? AppTheme.duoGreen
+                  : AppTheme.duoOrange,
               duration: const Duration(seconds: 4),
             ),
           );
         }
       }
     }
-    
+
     if (mounted) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => LessonCompleteScreen(
-          xpEarned: xpEarned,
-          accuracy: accuracy,
-          timeSpentSeconds: timeSpent,
-          bookId: widget.book?.id,
-          moduleId: (widget.book != null &&
-                  widget.modIdx != null &&
-                  widget.modIdx! >= 0 &&
-                  widget.modIdx! < widget.book!.modules.length)
-              ? widget.book!.modules[widget.modIdx!].id
-              : null,
-        ))
+        MaterialPageRoute(
+          builder: (_) => LessonCompleteScreen(
+            xpEarned: xpEarned,
+            accuracy: accuracy,
+            timeSpentSeconds: timeSpent,
+            bookId: widget.book?.id,
+            moduleId:
+                (widget.book != null &&
+                    widget.modIdx != null &&
+                    widget.modIdx! >= 0 &&
+                    widget.modIdx! < widget.book!.modules.length)
+                ? widget.book!.modules[widget.modIdx!].id
+                : null,
+          ),
+        ),
       );
     }
   }
@@ -420,16 +453,24 @@ class _LessonScreenState extends State<LessonScreen> {
     if (slide.type == 'quiz' && _selectedQuizOption != null) {
       final opt = slide.options!.firstWhere((o) => o.id == _selectedQuizOption);
       correct = opt.isCorrect;
-      
+
       if (!correct) {
         final correctOpts = slide.options!.where((o) => o.isCorrect);
-        if (correctOpts.any((c) => c.text.trim().toLowerCase() == opt.text.trim().toLowerCase())) {
+        if (correctOpts.any(
+          (c) => c.text.trim().toLowerCase() == opt.text.trim().toLowerCase(),
+        )) {
           correct = true;
         }
       }
     } else if (slide.type == 'fill_in_blank') {
-      final userParts = _blankInput.split(',').map((s) => s.trim().toLowerCase().replaceAll(r'\', '')).toList();
-      final correctParts = (slide.blankAnswer ?? '').split(',').map((s) => s.trim().toLowerCase().replaceAll(r'\', '')).toList();
+      final userParts = _blankInput
+          .split(',')
+          .map((s) => s.trim().toLowerCase().replaceAll(r'\', ''))
+          .toList();
+      final correctParts = (slide.blankAnswer ?? '')
+          .split(',')
+          .map((s) => s.trim().toLowerCase().replaceAll(r'\', ''))
+          .toList();
       if (userParts.length == correctParts.length) {
         correct = true;
         for (int i = 0; i < userParts.length; i++) {
@@ -442,19 +483,25 @@ class _LessonScreenState extends State<LessonScreen> {
         // Count mismatch (old cached slides generated before blank/answer
         // normalization): fall back to comparing the whole answer as one
         // string so the slide stays winnable.
-        correct = userParts.join(' ').replaceAll(RegExp(r'\s+'), ' ') ==
+        correct =
+            userParts.join(' ').replaceAll(RegExp(r'\s+'), ' ') ==
             correctParts.join(' ').replaceAll(RegExp(r'\s+'), ' ');
       }
     } else if (slide.type == 'one_word') {
-      correct = _wordInput.trim().toLowerCase() == (slide.blankAnswer ?? '').trim().toLowerCase().replaceAll(r'\', '');
+      correct =
+          _wordInput.trim().toLowerCase() ==
+          (slide.blankAnswer ?? '').trim().toLowerCase().replaceAll(r'\', '');
     } else if (slide.type == 'numerical') {
       final val = double.tryParse(_numericInput);
       if (val != null && slide.numericAnswer != null) {
-        correct = (val - slide.numericAnswer!).abs() <= (slide.numericTolerance ?? 0.01);
+        correct =
+            (val - slide.numericAnswer!).abs() <=
+            (slide.numericTolerance ?? 0.01);
       }
     } else if (slide.type == 'matching') {
       final pairs = slide.matchPairs ?? [];
-      correct = pairs.isNotEmpty &&
+      correct =
+          pairs.isNotEmpty &&
           _matchingAssignments.length == pairs.length &&
           _matchingAssignments.entries.every((e) => e.key == e.value);
     } else if (slide.type == 'ordering') {
@@ -527,28 +574,41 @@ class _LessonScreenState extends State<LessonScreen> {
   }
 
   bool _isCustomBottomBar(Slide slide) {
-    return slide.type == 'proof' || slide.type == 'step_by_step' || slide.type == 'descriptive' || slide.type == 'custom_html' || slide.type == 'flashcard';
+    return slide.type == 'proof' ||
+        slide.type == 'step_by_step' ||
+        slide.type == 'descriptive' ||
+        slide.type == 'custom_html' ||
+        slide.type == 'flashcard';
   }
 
   String _getCorrectAnswerText(Slide slide) {
     if (slide.type == 'quiz') {
-      final opt = slide.options?.firstWhere((o) => o.isCorrect, orElse: () => slide.options!.first);
+      final opt = slide.options?.firstWhere(
+        (o) => o.isCorrect,
+        orElse: () => slide.options!.first,
+      );
       return opt?.text ?? '';
     }
     if (slide.type == 'fill_in_blank') return slide.blankAnswer ?? '';
     if (slide.type == 'one_word') return slide.blankAnswer ?? '';
     if (slide.type == 'numerical') return slide.numericAnswer?.toString() ?? '';
     if (slide.type == 'matching') {
-      return (slide.matchPairs ?? []).map((p) => '${p.left} → ${p.right}').join('\n\n');
+      return (slide.matchPairs ?? [])
+          .map((p) => '${p.left} → ${p.right}')
+          .join('\n\n');
     }
     if (slide.type == 'ordering') {
       final items = slide.orderItems ?? [];
-      return [for (var i = 0; i < items.length; i++) '${i + 1}. ${items[i]}'].join('\n\n');
+      return [
+        for (var i = 0; i < items.length; i++) '${i + 1}. ${items[i]}',
+      ].join('\n\n');
     }
     if (slide.type == 'error_spotting') {
       final steps = slide.proofSteps ?? [];
       final idx = slide.errorIndex ?? -1;
-      return (idx >= 0 && idx < steps.length) ? 'Step ${idx + 1}: ${steps[idx]}' : '';
+      return (idx >= 0 && idx < steps.length)
+          ? 'Step ${idx + 1}: ${steps[idx]}'
+          : '';
     }
     return '';
   }
@@ -561,7 +621,9 @@ class _LessonScreenState extends State<LessonScreen> {
       svg: _lesson.canvasSvg,
       hasPrompt: (_lesson.canvasPrompt?.trim().isNotEmpty ?? false),
       prompt: _lesson.canvasPrompt,
-      isLoading: GenerationManager.instance.activeCanvasRegens.contains(_lesson.id),
+      isLoading: GenerationManager.instance.activeCanvasRegens.contains(
+        _lesson.id,
+      ),
       isStackedWithContent: !hasFailed,
       targetId: _lesson.id,
       onError: () {
@@ -573,13 +635,13 @@ class _LessonScreenState extends State<LessonScreen> {
       },
       onRegenerate: _canRegenerateCanvas
           ? (err) => GenerationManager.instance.regenerateLessonCanvas(
-                book: widget.book!,
-                modIdx: widget.modIdx!,
-                secIdx: widget.secIdx!,
-                unitIdx: widget.unitIdx!,
-                lessonIdx: widget.lessonIdx!,
-                errorContext: err,
-              )
+              book: widget.book!,
+              modIdx: widget.modIdx!,
+              secIdx: widget.secIdx!,
+              unitIdx: widget.unitIdx!,
+              lessonIdx: widget.lessonIdx!,
+              errorContext: err,
+            )
           : null,
     );
   }
@@ -620,15 +682,26 @@ class _LessonScreenState extends State<LessonScreen> {
           builder: (context, setStateDialog) {
             return AlertDialog(
               backgroundColor: context.colors.surface,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              title: Text('Regenerate this slide?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              title: Text(
+                'Regenerate this slide?',
+                style: TextStyle(
+                  color: context.colors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
                     'The AI will rewrite this slide using the source material. Optionally tell it what to change.',
-                    style: TextStyle(color: context.colors.textSecondary, fontSize: 13),
+                    style: TextStyle(
+                      color: context.colors.textSecondary,
+                      fontSize: 13,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -638,27 +711,44 @@ class _LessonScreenState extends State<LessonScreen> {
                     style: TextStyle(color: context.colors.textPrimary),
                     decoration: InputDecoration(
                       hintText: 'Optional note — e.g. "make it simpler"',
-                      hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 12),
+                      hintStyle: TextStyle(
+                        color: context.colors.textFaint,
+                        fontSize: 12,
+                      ),
                       filled: true,
                       fillColor: context.colors.surfaceAlt,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     'Slide Type:',
-                    style: TextStyle(color: context.colors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: context.colors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
                     dropdownColor: context.colors.surface,
                     value: selectedType,
-                    style: TextStyle(color: context.colors.textPrimary, fontSize: 13),
+                    style: TextStyle(
+                      color: context.colors.textPrimary,
+                      fontSize: 13,
+                    ),
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: context.colors.surfaceAlt,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     items: slideTypes.entries.map((entry) {
                       return DropdownMenuItem<String>(
@@ -679,11 +769,20 @@ class _LessonScreenState extends State<LessonScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx, false),
-                  child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: context.colors.textFaint),
+                  ),
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text('Regenerate', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Regenerate',
+                    style: TextStyle(
+                      color: AppTheme.duoBlue,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             );
@@ -711,7 +810,11 @@ class _LessonScreenState extends State<LessonScreen> {
             const SizedBox(height: 16),
             Text(
               'Regenerating slide...',
-              style: TextStyle(color: context.colors.textPrimary, fontSize: 14, decoration: TextDecoration.none),
+              style: TextStyle(
+                color: context.colors.textPrimary,
+                fontSize: 14,
+                decoration: TextDecoration.none,
+              ),
             ),
           ],
         ),
@@ -719,7 +822,8 @@ class _LessonScreenState extends State<LessonScreen> {
     );
 
     final size = MediaQuery.of(context).size;
-    final screenSizeInfo = 'Screen Width: ${size.width.toStringAsFixed(0)}px, Screen Height: ${size.height.toStringAsFixed(0)}px';
+    final screenSizeInfo =
+        'Screen Width: ${size.width.toStringAsFixed(0)}px, Screen Height: ${size.height.toStringAsFixed(0)}px';
 
     try {
       await GenerationManager.instance.regenerateSlide(
@@ -760,16 +864,34 @@ class _LessonScreenState extends State<LessonScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.surface,
-        title: Text('Leave lesson?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        title: Text(
+          'Leave lesson?',
+          style: TextStyle(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: Text(
           "Your progress on this lesson won't be saved if you leave now.",
           style: TextStyle(color: context.colors.textSecondary, fontSize: 13),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Keep Learning', style: TextStyle(color: context.colors.textFaint))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'Keep Learning',
+              style: TextStyle(color: context.colors.textFaint),
+            ),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Leave', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Leave',
+              style: TextStyle(
+                color: AppTheme.duoRed,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -783,16 +905,34 @@ class _LessonScreenState extends State<LessonScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.surface,
-        title: Text('Delete this slide?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        title: Text(
+          'Delete this slide?',
+          style: TextStyle(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: Text(
           'Are you sure you want to permanently delete this slide from this lesson? This cannot be undone.',
           style: TextStyle(color: context.colors.textSecondary, fontSize: 13),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: context.colors.textFaint),
+            ),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(
+                color: AppTheme.duoRed,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -808,16 +948,16 @@ class _LessonScreenState extends State<LessonScreen> {
     setState(() {
       _lesson = _lesson.copyWith(slides: newSlides);
       _slideQueue.removeWhere((s) => s.id == slide.id);
-      
+
       if (_slideQueue.isEmpty) {
         Navigator.pop(context);
         return;
       }
-      
+
       if (_currentIndex >= _slideQueue.length) {
         _currentIndex = _slideQueue.length - 1;
       }
-      
+
       _answered = false;
       _isCorrect = false;
       _selectedQuizOption = null;
@@ -842,7 +982,8 @@ class _LessonScreenState extends State<LessonScreen> {
     String sectionNotes = "";
     if (widget.book != null && widget.modIdx != null && widget.secIdx != null) {
       try {
-        final sec = widget.book!.modules[widget.modIdx!].sections[widget.secIdx!];
+        final sec =
+            widget.book!.modules[widget.modIdx!].sections[widget.secIdx!];
         final List<String> notesParts = [];
         for (var unit in sec.units) {
           for (var lesson in unit.lessons) {
@@ -873,7 +1014,17 @@ class _LessonScreenState extends State<LessonScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => LessonAssistantChat(
-        book: widget.book ?? Book(id: 'dummy', title: 'Lesson Course', description: '', icon: '', modules: [], lessonFormats: [], defaultFormatId: ''),
+        book:
+            widget.book ??
+            Book(
+              id: 'dummy',
+              title: 'Lesson Course',
+              description: '',
+              icon: '',
+              modules: [],
+              lessonFormats: [],
+              defaultFormatId: '',
+            ),
         modIdx: widget.modIdx ?? 0,
         secIdx: widget.secIdx ?? 0,
         currentSlide: slide,
@@ -887,7 +1038,9 @@ class _LessonScreenState extends State<LessonScreen> {
   /// GenerationManager so edits survive reloads.
   void _applySlideEdit(Slide updated) {
     final currentSlide = _slideQueue[_currentIndex];
-    final lessonSlideIdx = _lesson.slides.indexWhere((s) => identical(s, currentSlide));
+    final lessonSlideIdx = _lesson.slides.indexWhere(
+      (s) => identical(s, currentSlide),
+    );
     if (lessonSlideIdx < 0) return;
     final newSlides = List<Slide>.from(_lesson.slides);
     newSlides[lessonSlideIdx] = updated;
@@ -922,20 +1075,33 @@ class _LessonScreenState extends State<LessonScreen> {
             margin: const EdgeInsets.symmetric(horizontal: 4),
             padding: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
-              color: selected ? AppTheme.duoBlue.withOpacity(0.18) : context.colors.surfaceAlt,
+              color: selected
+                  ? AppTheme.duoBlue.withOpacity(0.18)
+                  : context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: selected ? AppTheme.duoBlue : context.colors.outline),
+              border: Border.all(
+                color: selected ? AppTheme.duoBlue : context.colors.outline,
+              ),
             ),
             child: Column(
               children: [
-                Icon(icon, size: 16, color: selected ? AppTheme.duoBlue : context.colors.textFaint),
+                Icon(
+                  icon,
+                  size: 16,
+                  color: selected ? AppTheme.duoBlue : context.colors.textFaint,
+                ),
                 const SizedBox(height: 2),
-                Text(label,
-                    style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.6,
-                        color: selected ? AppTheme.duoBlue : context.colors.textFaint)),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.6,
+                    color: selected
+                        ? AppTheme.duoBlue
+                        : context.colors.textFaint,
+                  ),
+                ),
               ],
             ),
           ),
@@ -947,9 +1113,21 @@ class _LessonScreenState extends State<LessonScreen> {
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          chip(MetacognitionService.confidenceGuessing, LucideIcons.dices, 'GUESSING'),
-          chip(MetacognitionService.confidenceUnsure, LucideIcons.helpCircle, 'UNSURE'),
-          chip(MetacognitionService.confidenceConfident, LucideIcons.checkCircle2, 'SURE'),
+          chip(
+            MetacognitionService.confidenceGuessing,
+            LucideIcons.dices,
+            'GUESSING',
+          ),
+          chip(
+            MetacognitionService.confidenceUnsure,
+            LucideIcons.helpCircle,
+            'UNSURE',
+          ),
+          chip(
+            MetacognitionService.confidenceConfident,
+            LucideIcons.checkCircle2,
+            'SURE',
+          ),
         ],
       ),
     );
@@ -960,8 +1138,9 @@ class _LessonScreenState extends State<LessonScreen> {
   /// every option — it was never surfaced anywhere).
   String? _wrongQuizExplanation(Slide slide) {
     if (slide.type != 'quiz' || slide.options == null) return null;
-    final selected =
-        slide.options!.where((o) => o.id == _selectedQuizOption).firstOrNull;
+    final selected = slide.options!
+        .where((o) => o.id == _selectedQuizOption)
+        .firstOrNull;
     final correct = slide.options!.where((o) => o.isCorrect).firstOrNull;
     final parts = [
       if (selected != null &&
@@ -975,21 +1154,27 @@ class _LessonScreenState extends State<LessonScreen> {
   }
 
   Widget _buildActionBottomBar(Slide slide) {
-    final isInteractive = ['quiz', 'fill_in_blank', 'one_word', 'numerical', 'matching', 'ordering', 'error_spotting'].contains(slide.type);
+    final isInteractive = [
+      'quiz',
+      'fill_in_blank',
+      'one_word',
+      'numerical',
+      'matching',
+      'ordering',
+      'error_spotting',
+    ].contains(slide.type);
     final feedbackColor = _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed;
     final wrongExplanation = _wrongQuizExplanation(slide);
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       decoration: BoxDecoration(
-        color: _answered 
-          ? feedbackColor.withOpacity(0.1)
-          : Colors.transparent,
+        color: _answered ? feedbackColor.withOpacity(0.1) : Colors.transparent,
         borderRadius: BorderRadius.circular(_answered ? 20 : 0),
         border: Border.all(
-          color: _answered 
-            ? feedbackColor.withOpacity(0.3)
-            : Colors.transparent,
+          color: _answered
+              ? feedbackColor.withOpacity(0.3)
+              : Colors.transparent,
           width: 1,
         ),
       ),
@@ -1015,16 +1200,30 @@ class _LessonScreenState extends State<LessonScreen> {
                       decoration: BoxDecoration(
                         color: AppTheme.duoRed.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppTheme.duoRed.withOpacity(0.4)),
+                        border: Border.all(
+                          color: AppTheme.duoRed.withOpacity(0.4),
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('CORRECT ANSWER:', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.2)),
+                          const Text(
+                            'CORRECT ANSWER:',
+                            style: TextStyle(
+                              color: AppTheme.duoRed,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 12,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
                           const SizedBox(height: 8),
                           MathMarkdown(
                             data: _getCorrectAnswerText(slide),
-                            textStyle: const TextStyle(color: AppTheme.duoRed, fontSize: 18, fontWeight: FontWeight.bold)
+                            textStyle: const TextStyle(
+                              color: AppTheme.duoRed,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           if (wrongExplanation != null) ...[
                             const SizedBox(height: 10),
@@ -1050,8 +1249,12 @@ class _LessonScreenState extends State<LessonScreen> {
                 ? DuoButton(
                     key: const ValueKey('check_button'),
                     text: 'CHECK',
-                    color: _canCheck(slide) ? AppTheme.duoGreen : const Color(0xFF334155),
-                    shadowColor: _canCheck(slide) ? AppTheme.duoGreenDark : const Color(0xFF1E293B),
+                    color: _canCheck(slide)
+                        ? AppTheme.duoGreen
+                        : const Color(0xFF334155),
+                    shadowColor: _canCheck(slide)
+                        ? AppTheme.duoGreenDark
+                        : const Color(0xFF1E293B),
                     onPressed: () {
                       if (_canCheck(slide)) _checkAnswer(slide);
                     },
@@ -1059,8 +1262,12 @@ class _LessonScreenState extends State<LessonScreen> {
                 : DuoButton(
                     key: const ValueKey('continue_button'),
                     text: _answered && !_isCorrect ? 'GOT IT' : 'CONTINUE',
-                    color: _answered && !_isCorrect ? AppTheme.duoRed : AppTheme.duoGreen,
-                    shadowColor: _answered && !_isCorrect ? AppTheme.duoRedDark : AppTheme.duoGreenDark,
+                    color: _answered && !_isCorrect
+                        ? AppTheme.duoRed
+                        : AppTheme.duoGreen,
+                    shadowColor: _answered && !_isCorrect
+                        ? AppTheme.duoRedDark
+                        : AppTheme.duoGreenDark,
                     onPressed: _nextSlide,
                   ),
           ),
@@ -1106,17 +1313,18 @@ class _LessonScreenState extends State<LessonScreen> {
         return InteractiveProofView(
           slide: slide,
           lessonCanvas: _buildLessonCanvas(),
-          canvasIsLoading: GenerationManager.instance.activeCanvasRegens.contains(slide.id),
+          canvasIsLoading: GenerationManager.instance.activeCanvasRegens
+              .contains(slide.id),
           onRegenerateCanvas: (_canRegenerateCanvas && slideIdx >= 0)
               ? (err) => GenerationManager.instance.regenerateSlideCanvas(
-                    book: widget.book!,
-                    modIdx: widget.modIdx!,
-                    secIdx: widget.secIdx!,
-                    unitIdx: widget.unitIdx!,
-                    lessonIdx: widget.lessonIdx!,
-                    slideIdx: slideIdx,
-                    errorContext: err,
-                  )
+                  book: widget.book!,
+                  modIdx: widget.modIdx!,
+                  secIdx: widget.secIdx!,
+                  unitIdx: widget.unitIdx!,
+                  lessonIdx: widget.lessonIdx!,
+                  slideIdx: slideIdx,
+                  errorContext: err,
+                )
               : null,
           onUpdateSlide: _applySlideEdit,
           onComplete: () {
@@ -1173,7 +1381,8 @@ class _LessonScreenState extends State<LessonScreen> {
           slide: slide,
           isAnswered: _answered,
           isCorrect: _isCorrect,
-          onChanged: (assignments) => setState(() => _matchingAssignments = assignments),
+          onChanged: (assignments) =>
+              setState(() => _matchingAssignments = assignments),
           bottomBar: bottomBar,
         );
       case 'ordering':
@@ -1220,7 +1429,9 @@ class _LessonScreenState extends State<LessonScreen> {
           },
         );
       case 'concept_pieces':
-        final hasConceptCanvas = (_lesson.canvasPrompt?.trim().isNotEmpty ?? false) && !_failedCanvasIds.contains(_lesson.id);
+        final hasConceptCanvas =
+            (_lesson.canvasPrompt?.trim().isNotEmpty ?? false) &&
+            !_failedCanvasIds.contains(_lesson.id);
         return ConceptPiecesView(
           slide: slide,
           lessonCanvas: _buildLessonCanvas(),
@@ -1231,7 +1442,9 @@ class _LessonScreenState extends State<LessonScreen> {
       case 'theory':
       case 'theory_group':
       default:
-        final hasTheoryCanvas = (_lesson.canvasPrompt?.trim().isNotEmpty ?? false) && !_failedCanvasIds.contains(_lesson.id);
+        final hasTheoryCanvas =
+            (_lesson.canvasPrompt?.trim().isNotEmpty ?? false) &&
+            !_failedCanvasIds.contains(_lesson.id);
         return TheoryView(
           slide: slide,
           lessonCanvas: _buildLessonCanvas(),
@@ -1242,14 +1455,17 @@ class _LessonScreenState extends State<LessonScreen> {
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     if (_slideQueue.isEmpty) {
       return Scaffold(
         backgroundColor: context.colors.background, // Match React lesson bg
-        body: Center(child: Text("Empty Lesson", style: TextStyle(color: context.colors.textPrimary))),
+        body: Center(
+          child: Text(
+            "Empty Lesson",
+            style: TextStyle(color: context.colors.textPrimary),
+          ),
+        ),
       );
     }
 
@@ -1270,7 +1486,9 @@ class _LessonScreenState extends State<LessonScreen> {
     }
     final remaining = _slideQueue.length - _currentIndex;
     final hasCustomBar = _isCustomBottomBar(slide);
-    final bottomBar = (!hasCustomBar && !_isEditingMode) ? _buildActionBottomBar(slide) : null;
+    final bottomBar = (!hasCustomBar && !_isEditingMode)
+        ? _buildActionBottomBar(slide)
+        : null;
 
     return Scaffold(
       backgroundColor: context.colors.background,
@@ -1278,198 +1496,259 @@ class _LessonScreenState extends State<LessonScreen> {
         maxWidth: ResponsiveMaxWidth.mobile,
         breakpoint: ResponsiveMaxWidth.mobile,
         child: SafeArea(
-        child: Column(
-          children: [
-            // Header Bar exactly as LessonView.tsx
-            ClipRRect( // To clip the BackdropFilter
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(
-                  height: 64,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: context.colors.surfaceAlt,
-                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
-                    border: Border(bottom: BorderSide(color: context.colors.outline)),
-                  ),
-                  child: Row(
-                    children: [
-                      GestureDetector(
-                        onTap: _confirmExit,
-                        child: Container(
-                          width: 48,
-                          height: 48,
-                          decoration: const BoxDecoration(shape: BoxShape.circle),
-                          child: Icon(LucideIcons.x, color: context.colors.textFaint, size: 28),
-                        ),
+          child: Column(
+            children: [
+              // Header Bar exactly as LessonView.tsx
+              ClipRRect(
+                // To clip the BackdropFilter
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(24),
+                ),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    height: 64,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: context.colors.surfaceAlt,
+                      borderRadius: const BorderRadius.vertical(
+                        bottom: Radius.circular(24),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: TweenAnimationBuilder<double>(
-                            tween: Tween(end: progress),
-                            duration: const Duration(milliseconds: 350),
-                            curve: Curves.easeOut,
-                            builder: (context, value, _) =>
-                                LinearProgressIndicator(
-                              value: value,
-                              backgroundColor: context.colors.outline,
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                  AppTheme.duoGreen),
-                              minHeight: 16,
+                      border: Border(
+                        bottom: BorderSide(color: context.colors.outline),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        GestureDetector(
+                          onTap: _confirmExit,
+                          child: Container(
+                            width: 48,
+                            height: 48,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              LucideIcons.x,
+                              color: context.colors.textFaint,
+                              size: 28,
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '$remaining left',
-                        style: TextStyle(
-                          color: context.colors.textFaint,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: TweenAnimationBuilder<double>(
+                              tween: Tween(end: progress),
+                              duration: const Duration(milliseconds: 350),
+                              curve: Curves.easeOut,
+                              builder: (context, value, _) =>
+                                  LinearProgressIndicator(
+                                    value: value,
+                                    backgroundColor: context.colors.outline,
+                                    valueColor:
+                                        const AlwaysStoppedAnimation<Color>(
+                                          AppTheme.duoGreen,
+                                        ),
+                                    minHeight: 16,
+                                  ),
+                            ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      GestureDetector(
-                        onTap: () => _openAssistant(),
-                        child: SizedBox(
-                          width: 40,
-                          height: 48,
-                          child: Icon(LucideIcons.messageCircle, color: AppTheme.duoBlue, size: 22),
+                        const SizedBox(width: 8),
+                        Text(
+                          '$remaining left',
+                          style: TextStyle(
+                            color: context.colors.textFaint,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      if (_canBookmark)
+                        const SizedBox(width: 12),
                         GestureDetector(
-                          onTap: _toggleBookmark,
+                          onTap: () => _openAssistant(),
                           child: SizedBox(
                             width: 40,
                             height: 48,
                             child: Icon(
-                              _isBookmarked ? LucideIcons.bookmark : LucideIcons.bookmarkPlus,
-                              color: _isBookmarked ? AppTheme.duoOrange : context.colors.textFaint,
+                              LucideIcons.messageCircle,
+                              color: AppTheme.duoBlue,
                               size: 22,
                             ),
                           ),
                         ),
-                      if (_canBookmark) const SizedBox(width: 8),
-                      if (_canRegenerateCanvas)
-                        AnimatedBuilder(
-                          animation: GenerationManager.instance,
-                          builder: (context, _) {
-                            final busy = GenerationManager.instance.activeSlideRegens.contains(slide.id);
-                            return GestureDetector(
-                              onTap: busy ? null : () => _promptRegenerateSlide(slide),
-                              child: SizedBox(
-                                width: 40,
-                                height: 48,
-                                child: Center(
-                                  child: busy
-                                      ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2.5,
-                                            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.duoBlue),
-                                          ),
-                                        )
-                                      : Icon(LucideIcons.refreshCcw, color: context.colors.textFaint, size: 22),
-                                ),
+                        const SizedBox(width: 8),
+                        if (_canBookmark)
+                          GestureDetector(
+                            onTap: _toggleBookmark,
+                            child: SizedBox(
+                              width: 40,
+                              height: 48,
+                              child: Icon(
+                                _isBookmarked
+                                    ? LucideIcons.bookmark
+                                    : LucideIcons.bookmarkPlus,
+                                color: _isBookmarked
+                                    ? AppTheme.duoOrange
+                                    : context.colors.textFaint,
+                                size: 22,
                               ),
-                            );
-                          },
-                        ),
-                      if (_canRegenerateCanvas)
-                        GestureDetector(
-                          onTap: () => _promptDeleteSlide(slide),
-                          child: const SizedBox(
-                            width: 40,
-                            height: 48,
-                            child: Icon(LucideIcons.trash2, color: AppTheme.duoRed, size: 22),
+                            ),
                           ),
-                        ),
-                    ],
+                        if (_canBookmark) const SizedBox(width: 8),
+                        if (_canRegenerateCanvas)
+                          AnimatedBuilder(
+                            animation: GenerationManager.instance,
+                            builder: (context, _) {
+                              final busy = GenerationManager
+                                  .instance
+                                  .activeSlideRegens
+                                  .contains(slide.id);
+                              return GestureDetector(
+                                onTap: busy
+                                    ? null
+                                    : () => _promptRegenerateSlide(slide),
+                                child: SizedBox(
+                                  width: 40,
+                                  height: 48,
+                                  child: Center(
+                                    child: busy
+                                        ? const SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2.5,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                    AppTheme.duoBlue,
+                                                  ),
+                                            ),
+                                          )
+                                        : Icon(
+                                            LucideIcons.refreshCcw,
+                                            color: context.colors.textFaint,
+                                            size: 22,
+                                          ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        if (_canRegenerateCanvas)
+                          GestureDetector(
+                            onTap: () => _promptDeleteSlide(slide),
+                            child: const SizedBox(
+                              width: 40,
+                              height: 48,
+                              child: Icon(
+                                LucideIcons.trash2,
+                                color: AppTheme.duoRed,
+                                size: 22,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            
-            // Slide Main Content
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: _isEditingMode
-                    ? TextField(
-                        controller: _editController,
-                        maxLines: null,
-                        expands: true,
-                        textAlignVertical: TextAlignVertical.top,
-                        style: TextStyle(color: context.colors.textPrimary, fontFamily: 'monospace', fontSize: 14),
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: context.colors.surfaceAlt,
-                          border: const OutlineInputBorder(),
-                          hintText: 'Markdown content...',
-                          hintStyle: TextStyle(color: context.colors.textFaint),
+
+              // Slide Main Content
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: _isEditingMode
+                      ? TextField(
+                          controller: _editController,
+                          maxLines: null,
+                          expands: true,
+                          textAlignVertical: TextAlignVertical.top,
+                          style: TextStyle(
+                            color: context.colors.textPrimary,
+                            fontFamily: 'monospace',
+                            fontSize: 14,
+                          ),
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: context.colors.surfaceAlt,
+                            border: const OutlineInputBorder(),
+                            hintText: 'Markdown content...',
+                            hintStyle: TextStyle(
+                              color: context.colors.textFaint,
+                            ),
+                          ),
+                        )
+                      : ([
+                              'descriptive',
+                              'one_word',
+                              'numerical',
+                              'fill_in_blank',
+                              'custom_html',
+                            ].contains(slide.type)
+                            ? _buildSlideContent(slide, bottomBar)
+                            : GestureDetector(
+                                behavior: HitTestBehavior.translucent,
+                                onDoubleTap: () {
+                                  setState(() {
+                                    _editController.text = slide.content;
+                                    _isEditingMode = true;
+                                  });
+                                },
+                                child: _buildSlideContent(slide, bottomBar),
+                              )),
+                ),
+              ),
+
+              // Action Bottom Bar (SAVE only in editing mode)
+              if (_isEditingMode)
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    border: Border(
+                      top: BorderSide(color: context.colors.outline, width: 1),
+                    ),
+                  ),
+                  padding: const EdgeInsets.only(
+                    top: 16,
+                    left: 16,
+                    right: 16,
+                    bottom: 24,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: DuoButton(
+                          text: 'CANCEL',
+                          color: context.colors.textFaint,
+                          shadowColor: context.colors.outline,
+                          isOutline: true,
+                          onPressed: () =>
+                              setState(() => _isEditingMode = false),
                         ),
-                      )
-                    : (['descriptive', 'one_word', 'numerical', 'fill_in_blank', 'custom_html'].contains(slide.type)
-                        ? _buildSlideContent(slide, bottomBar)
-                        : GestureDetector(
-                            behavior: HitTestBehavior.translucent,
-                            onDoubleTap: () {
-                              setState(() {
-                                _editController.text = slide.content;
-                                _isEditingMode = true;
-                              });
-                            },
-                            child: _buildSlideContent(slide, bottomBar),
-                          )),
-              )
-            ),
-            
-            // Action Bottom Bar (SAVE only in editing mode)
-            if (_isEditingMode)
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  border: Border(top: BorderSide(color: context.colors.outline, width: 1)),
-                ),
-                padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 24),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: DuoButton(
-                        text: 'CANCEL',
-                        color: context.colors.textFaint,
-                        shadowColor: context.colors.outline,
-                        isOutline: true,
-                        onPressed: () => setState(() => _isEditingMode = false),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: DuoButton(
-                        text: 'SAVE',
-                        color: AppTheme.duoGreen,
-                        shadowColor: AppTheme.duoGreenDark,
-                        onPressed: () {
-                          final updatedSlide = slide.copyWith(content: _editController.text);
-                          setState(() {
-                            _isEditingMode = false;
-                          });
-                          _applySlideEdit(updatedSlide);
-                        },
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: DuoButton(
+                          text: 'SAVE',
+                          color: AppTheme.duoGreen,
+                          shadowColor: AppTheme.duoGreenDark,
+                          onPressed: () {
+                            final updatedSlide = slide.copyWith(
+                              content: _editController.text,
+                            );
+                            setState(() {
+                              _isEditingMode = false;
+                            });
+                            _applySlideEdit(updatedSlide);
+                          },
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              )
-          ],
-        ),
+            ],
+          ),
         ),
       ),
     );

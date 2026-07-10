@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 
-Future<bool> showSyncConflictDialog(BuildContext context, Book local, Book remote) async {
+Future<bool> showSyncConflictDialog(
+  BuildContext context,
+  Book local,
+  Book remote,
+) async {
   String formatTime(int? ts) {
     if (ts == null || ts == 0) return 'Unknown';
     final dt = DateTime.fromMillisecondsSinceEpoch(ts);
@@ -22,11 +26,19 @@ Future<bool> showSyncConflictDialog(BuildContext context, Book local, Book remot
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       title: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: AppTheme.duoOrange, size: 28),
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: AppTheme.duoOrange,
+            size: 28,
+          ),
           const SizedBox(width: 12),
           Text(
             'Sync Conflict',
-            style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
+            style: TextStyle(
+              color: context.colors.textPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
           ),
         ],
       ),
@@ -36,12 +48,20 @@ Future<bool> showSyncConflictDialog(BuildContext context, Book local, Book remot
         children: [
           Text(
             'The course "${local.title}" has different modifications on another device.',
-            style: TextStyle(color: context.colors.textSecondary, fontSize: 13, height: 1.4),
+            style: TextStyle(
+              color: context.colors.textSecondary,
+              fontSize: 13,
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
             'Which version do you want to keep?',
-            style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
+            style: TextStyle(
+              color: context.colors.textPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
           ),
           const SizedBox(height: 12),
           Container(
@@ -56,12 +76,21 @@ Future<bool> showSyncConflictDialog(BuildContext context, Book local, Book remot
               children: [
                 const Text(
                   'Local Version (This Device)',
-                  style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
+                  style: TextStyle(
+                    color: AppTheme.duoBlue,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                    letterSpacing: 0.5,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   'Last modified: ${formatTime(local.updatedAt)}',
-                  style: TextStyle(color: context.colors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: context.colors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -79,12 +108,21 @@ Future<bool> showSyncConflictDialog(BuildContext context, Book local, Book remot
               children: [
                 const Text(
                   'Remote Version (Cloud/Other Device)',
-                  style: TextStyle(color: AppTheme.duoOrange, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
+                  style: TextStyle(
+                    color: AppTheme.duoOrange,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                    letterSpacing: 0.5,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   'Last modified: ${formatTime(remote.updatedAt)}',
-                  style: TextStyle(color: context.colors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: context.colors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -94,11 +132,23 @@ Future<bool> showSyncConflictDialog(BuildContext context, Book local, Book remot
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx, false),
-          child: Text('Use Cloud Version', style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold)),
+          child: Text(
+            'Use Cloud Version',
+            style: TextStyle(
+              color: context.colors.textFaint,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
         TextButton(
           onPressed: () => Navigator.pop(ctx, true),
-          child: const Text('Keep Local Version', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.w900)),
+          child: const Text(
+            'Keep Local Version',
+            style: TextStyle(
+              color: AppTheme.duoBlue,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
         ),
       ],
     ),

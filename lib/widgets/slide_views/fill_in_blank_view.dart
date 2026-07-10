@@ -45,7 +45,8 @@ class _FillInBlankViewState extends State<FillInBlankView> {
 
   void _buildSuggestions() {
     _suggestions = [];
-    if (widget.slide.blankAnswer != null && widget.slide.blankAnswer!.isNotEmpty) {
+    if (widget.slide.blankAnswer != null &&
+        widget.slide.blankAnswer!.isNotEmpty) {
       // Split by comma in case of multiple answers
       final answers = widget.slide.blankAnswer!.split(',').map((s) => s.trim());
       for (final ans in answers) {
@@ -83,7 +84,11 @@ class _FillInBlankViewState extends State<FillInBlankView> {
     super.dispose();
   }
 
-  void _onSuggestionTapped(String word, [int numBlanks = 1, List<String>? userAnswers]) {
+  void _onSuggestionTapped(
+    String word, [
+    int numBlanks = 1,
+    List<String>? userAnswers,
+  ]) {
     if (widget.isAnswered) return;
     HapticFeedback.selectionClick();
 
@@ -96,7 +101,7 @@ class _FillInBlankViewState extends State<FillInBlankView> {
     setState(() {
       userAnswers[_activeBlankIndex] = word;
       widget.onChanged(userAnswers.join(', '));
-      
+
       // Auto-advance to the next empty blank
       int nextEmpty = -1;
       for (int i = 0; i < numBlanks; i++) {
@@ -115,7 +120,8 @@ class _FillInBlankViewState extends State<FillInBlankView> {
   }
 
   Widget _buildSuggestionsBank([int numBlanks = 1, List<String>? userAnswers]) {
-    if (_suggestions.isEmpty || widget.isAnswered) return const SizedBox.shrink();
+    if (_suggestions.isEmpty || widget.isAnswered)
+      return const SizedBox.shrink();
     final effectiveUserAnswers = userAnswers ?? [widget.value];
 
     return Padding(
@@ -129,16 +135,21 @@ class _FillInBlankViewState extends State<FillInBlankView> {
               ? widget.value == word
               : effectiveUserAnswers.contains(word);
           return GestureDetector(
-            onTap: () => _onSuggestionTapped(word, numBlanks, effectiveUserAnswers),
+            onTap: () =>
+                _onSuggestionTapped(word, numBlanks, effectiveUserAnswers),
             child: Container(
               constraints: const BoxConstraints(minHeight: 48),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: isSelected ? AppTheme.duoBlue.withOpacity(0.2) : context.colors.surfaceAlt,
+                color: isSelected
+                    ? AppTheme.duoBlue.withOpacity(0.2)
+                    : context.colors.surfaceAlt,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isSelected ? AppTheme.duoBlue : context.colors.textFaint,
+                  color: isSelected
+                      ? AppTheme.duoBlue
+                      : context.colors.textFaint,
                   width: 2,
                 ),
               ),
@@ -147,7 +158,9 @@ class _FillInBlankViewState extends State<FillInBlankView> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: isSelected ? AppTheme.duoBlue : context.colors.textPrimary,
+                  color: isSelected
+                      ? AppTheme.duoBlue
+                      : context.colors.textPrimary,
                 ),
               ),
             ),
@@ -170,14 +183,26 @@ class _FillInBlankViewState extends State<FillInBlankView> {
         textAlign: TextAlign.center,
         textInputAction: TextInputAction.done,
         onFieldSubmitted: (_) => widget.onSubmit?.call(),
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.amber),
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w900,
+          color: Colors.amber,
+        ),
         decoration: InputDecoration(
-          hintText: numBlanks > 1 ? 'Type answer for blank ${_activeBlankIndex + 1}' : 'Type your answer',
+          hintText: numBlanks > 1
+              ? 'Type answer for blank ${_activeBlankIndex + 1}'
+              : 'Type your answer',
           hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 14),
           filled: true,
           fillColor: context.colors.surfaceAlt,
-          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 12,
+            horizontal: 16,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
         ),
         onChanged: (text) {
           userAnswers[_activeBlankIndex] = text;
@@ -206,11 +231,16 @@ class _FillInBlankViewState extends State<FillInBlankView> {
 
       // Rebuild updatedContent replacing each ___ sequentially with the user answer
       int blankCounter = 0;
-      String updatedContent = widget.slide.content.replaceAllMapped(RegExp(r'___+'), (match) {
-        final i = blankCounter++;
-        final displayWord = userAnswers[i].isEmpty ? r'\_\_\_\_\_' : userAnswers[i];
-        return '**$displayWord**';
-      });
+      String updatedContent = widget.slide.content.replaceAllMapped(
+        RegExp(r'___+'),
+        (match) {
+          final i = blankCounter++;
+          final displayWord = userAnswers[i].isEmpty
+              ? r'\_\_\_\_\_'
+              : userAnswers[i];
+          return '**$displayWord**';
+        },
+      );
 
       return Padding(
         padding: const EdgeInsets.all(24),
@@ -223,9 +253,7 @@ class _FillInBlankViewState extends State<FillInBlankView> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: AppTheme.glassOf(context),
-                    child: MathMarkdown(
-                      data: updatedContent,
-                    ),
+                    child: MathMarkdown(data: updatedContent),
                   ),
                   if (numBlanks > 1 && !widget.isAnswered) ...[
                     const SizedBox(height: 20),
@@ -248,13 +276,21 @@ class _FillInBlankViewState extends State<FillInBlankView> {
                           final isActive = i == _activeBlankIndex;
                           final val = userAnswers[i];
                           return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6.0,
+                            ),
                             child: GestureDetector(
-                              onTap: () => setState(() => _activeBlankIndex = i),
+                              onTap: () =>
+                                  setState(() => _activeBlankIndex = i),
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
-                                constraints: const BoxConstraints(minHeight: 48),
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                constraints: const BoxConstraints(
+                                  minHeight: 48,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
                                   color: isActive
@@ -262,14 +298,18 @@ class _FillInBlankViewState extends State<FillInBlankView> {
                                       : context.colors.surfaceAlt,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: isActive ? AppTheme.duoBlue : context.colors.textFaint,
+                                    color: isActive
+                                        ? AppTheme.duoBlue
+                                        : context.colors.textFaint,
                                     width: 2,
                                   ),
                                 ),
                                 child: Text(
                                   'Blank ${i + 1}: ${val.isEmpty ? '___' : val}',
                                   style: TextStyle(
-                                    color: isActive ? AppTheme.duoBlue : context.colors.textSecondary,
+                                    color: isActive
+                                        ? AppTheme.duoBlue
+                                        : context.colors.textSecondary,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
                                   ),
@@ -292,10 +332,7 @@ class _FillInBlankViewState extends State<FillInBlankView> {
                 hasScrollBody: false,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    const SizedBox(height: 24),
-                    widget.bottomBar!,
-                  ],
+                  children: [const SizedBox(height: 24), widget.bottomBar!],
                 ),
               ),
           ],
@@ -315,7 +352,14 @@ class _FillInBlankViewState extends State<FillInBlankView> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: AppTheme.glassOf(context),
-                  child: MathMarkdown(data: widget.slide.content, textStyle: TextStyle(fontSize: 18, color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+                  child: MathMarkdown(
+                    data: widget.slide.content,
+                    textStyle: TextStyle(
+                      fontSize: 18,
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 32),
                 Container(
@@ -323,11 +367,26 @@ class _FillInBlankViewState extends State<FillInBlankView> {
                   decoration: BoxDecoration(
                     color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: widget.isAnswered ? (widget.isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : context.colors.outline, width: 2),
+                    border: Border.all(
+                      color: widget.isAnswered
+                          ? (widget.isCorrect
+                                ? AppTheme.duoGreen
+                                : AppTheme.duoRed)
+                          : context.colors.outline,
+                      width: 2,
+                    ),
                   ),
                   child: Column(
                     children: [
-                      Text('YOUR ANSWER', style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.5)),
+                      Text(
+                        'YOUR ANSWER',
+                        style: TextStyle(
+                          color: context.colors.textFaint,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 10,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       TextField(
                         controller: _controller,
@@ -335,20 +394,37 @@ class _FillInBlankViewState extends State<FillInBlankView> {
                         onChanged: widget.onChanged,
                         textAlign: TextAlign.center,
                         textInputAction: TextInputAction.done,
-                        onSubmitted: widget.isAnswered ? null : (_) => widget.onSubmit?.call(),
+                        onSubmitted: widget.isAnswered
+                            ? null
+                            : (_) => widget.onSubmit?.call(),
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w900,
-                          color: widget.isAnswered ? (widget.isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.amber,
+                          color: widget.isAnswered
+                              ? (widget.isCorrect
+                                    ? AppTheme.duoGreen
+                                    : AppTheme.duoRed)
+                              : Colors.amber,
                         ),
                         decoration: InputDecoration(
                           hintText: '___',
                           hintStyle: TextStyle(color: context.colors.textFaint),
                           filled: true,
                           fillColor: context.colors.surfaceAlt,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.amber, width: 2)),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Colors.amber,
+                              width: 2,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -363,10 +439,7 @@ class _FillInBlankViewState extends State<FillInBlankView> {
               hasScrollBody: false,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  const SizedBox(height: 24),
-                  widget.bottomBar!,
-                ],
+                children: [const SizedBox(height: 24), widget.bottomBar!],
               ),
             ),
         ],

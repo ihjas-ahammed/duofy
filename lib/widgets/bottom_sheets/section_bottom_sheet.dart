@@ -51,14 +51,17 @@ class _SectionBottomSheetState extends State<SectionBottomSheet> {
 
   void _scrollToActiveSection() {
     if (!mounted) return;
-    final sections = (widget.book.modules.isNotEmpty && widget.activeModuleIdx < widget.book.modules.length)
+    final sections =
+        (widget.book.modules.isNotEmpty &&
+            widget.activeModuleIdx < widget.book.modules.length)
         ? widget.book.modules[widget.activeModuleIdx].sections
         : <Section>[];
     if (sections.isEmpty) return;
 
     final index = widget.activeSectionIdx;
     if (index > 0 && _scrollController.hasClients) {
-      double targetOffset = 40.0; // Height offset before the first card (title + top padding)
+      double targetOffset =
+          40.0; // Height offset before the first card (title + top padding)
       for (int i = 0; i < index; i++) {
         final sec = sections[i];
         final cardHeight = sec.description.isNotEmpty ? 82.0 : 64.0;
@@ -79,7 +82,9 @@ class _SectionBottomSheetState extends State<SectionBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
-    final sections = (widget.book.modules.isNotEmpty && widget.activeModuleIdx < widget.book.modules.length)
+    final sections =
+        (widget.book.modules.isNotEmpty &&
+            widget.activeModuleIdx < widget.book.modules.length)
         ? widget.book.modules[widget.activeModuleIdx].sections
         : <Section>[];
 
@@ -93,7 +98,9 @@ class _SectionBottomSheetState extends State<SectionBottomSheet> {
             decoration: BoxDecoration(
               color: context.colors.surfaceAlt,
               border: Border.all(color: context.colors.outline),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -141,7 +148,10 @@ class _SectionBottomSheetState extends State<SectionBottomSheet> {
                           _SectionCard(
                             section: sections[i],
                             isActive: i == widget.activeSectionIdx,
-                            progress: calculateSectionProgress(sections[i], widget.completedLessons),
+                            progress: calculateSectionProgress(
+                              sections[i],
+                              widget.completedLessons,
+                            ),
                             onTap: () {
                               widget.onSelect(widget.activeModuleIdx, i);
                               Navigator.of(context).maybePop();
@@ -150,10 +160,14 @@ class _SectionBottomSheetState extends State<SectionBottomSheet> {
                                 ? null
                                 : () {
                                     Navigator.of(context).maybePop();
-                                    widget.onSectionLongPress!(widget.activeModuleIdx, i);
+                                    widget.onSectionLongPress!(
+                                      widget.activeModuleIdx,
+                                      i,
+                                    );
                                   },
                           ),
-                          if (i != sections.length - 1) const SizedBox(height: 8),
+                          if (i != sections.length - 1)
+                            const SizedBox(height: 8),
                         ],
                       ],
                     ),
@@ -166,7 +180,12 @@ class _SectionBottomSheetState extends State<SectionBottomSheet> {
                       top: BorderSide(color: context.colors.outline),
                     ),
                   ),
-                  padding: EdgeInsets.fromLTRB(16, 8, 16, 8 + media.padding.bottom),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    8,
+                    16,
+                    8 + media.padding.bottom,
+                  ),
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
@@ -226,7 +245,9 @@ class _SectionCard extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            color: isActive ? color.withOpacity(0.2) : context.colors.surfaceAlt,
+            color: isActive
+                ? color.withOpacity(0.2)
+                : context.colors.surfaceAlt,
             borderRadius: BorderRadius.circular(16),
             border: Border(
               top: BorderSide(color: context.colors.outline, width: 1.5),
@@ -248,7 +269,9 @@ class _SectionCard extends StatelessWidget {
                         Text(
                           section.title,
                           style: TextStyle(
-                            color: isActive ? context.colors.textPrimary : const Color(0xFFCBD5E1),
+                            color: isActive
+                                ? context.colors.textPrimary
+                                : const Color(0xFFCBD5E1),
                             fontWeight: FontWeight.w800,
                             fontSize: 14,
                           ),
@@ -258,7 +281,9 @@ class _SectionCard extends StatelessWidget {
                           Text(
                             section.description,
                             style: TextStyle(
-                              color: isActive ? context.colors.textSecondary : const Color(0xFF64748B),
+                              color: isActive
+                                  ? context.colors.textSecondary
+                                  : const Color(0xFF64748B),
                               fontWeight: FontWeight.w600,
                               fontSize: 11,
                             ),
@@ -281,7 +306,9 @@ class _SectionCard extends StatelessWidget {
                     child: Icon(
                       LucideIcons.chevronRight,
                       size: 16,
-                      color: isActive ? context.colors.textPrimary : const Color(0xFF64748B),
+                      color: isActive
+                          ? context.colors.textPrimary
+                          : const Color(0xFF64748B),
                     ),
                   ),
                 ],

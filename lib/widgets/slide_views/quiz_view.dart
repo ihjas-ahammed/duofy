@@ -10,6 +10,7 @@ class QuizView extends StatelessWidget {
   final String? selectedOptionId;
   final bool isAnswered;
   final Function(String) onSelect;
+
   /// Fires when the user double-taps an option to edit its text. The view
   /// passes back the new [Slide] (with the option's text replaced) and the
   /// lesson screen owns persistence + re-rendering. Null disables editing.
@@ -34,7 +35,13 @@ class QuizView extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.surface,
-        title: Text('Edit option', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        title: Text(
+          'Edit option',
+          style: TextStyle(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: TextField(
           controller: ctrl,
           maxLines: null,
@@ -49,10 +56,22 @@ class QuizView extends StatelessWidget {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: context.colors.textFaint),
+            ),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-            child: const Text('Save', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Save',
+              style: TextStyle(
+                color: AppTheme.duoBlue,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -81,19 +100,25 @@ class QuizView extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: AppTheme.glassOf(context),
-                    child: MathMarkdown(data: slide.content, textStyle: TextStyle(fontSize: 18, color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+                    child: MathMarkdown(
+                      data: slide.content,
+                      textStyle: TextStyle(
+                        fontSize: 18,
+                        color: context.colors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-    
-                if (slide.content.isNotEmpty)
-                  const SizedBox(height: 24),
-    
+
+                if (slide.content.isNotEmpty) const SizedBox(height: 24),
+
                 if (slide.options != null)
                   ...slide.options!.map((opt) {
                     final isSelected = selectedOptionId == opt.id;
-    
+
                     Color borderColor = context.colors.outline;
                     Color bgColor = context.colors.surfaceAlt;
-    
+
                     if (isAnswered) {
                       if (opt.isCorrect) {
                         borderColor = AppTheme.duoGreen;
@@ -108,7 +133,7 @@ class QuizView extends StatelessWidget {
                       borderColor = AppTheme.duoBlue;
                       bgColor = AppTheme.duoBlue.withOpacity(0.2);
                     }
-    
+
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: Stack(
@@ -120,21 +145,35 @@ class QuizView extends StatelessWidget {
                                     HapticFeedback.selectionClick();
                                     onSelect(opt.id);
                                   },
-                            onDoubleTap: onUpdateSlide == null ? null : () => _editOption(context, opt),
+                            onDoubleTap: onUpdateSlide == null
+                                ? null
+                                : () => _editOption(context, opt),
                             borderRadius: BorderRadius.circular(16),
                             child: Container(
-                              padding: EdgeInsets.fromLTRB(16, 16, onUpdateSlide == null ? 16 : 36, 16),
+                              padding: EdgeInsets.fromLTRB(
+                                16,
+                                16,
+                                onUpdateSlide == null ? 16 : 36,
+                                16,
+                              ),
                               constraints: const BoxConstraints(minHeight: 48),
                               alignment: Alignment.centerLeft,
                               decoration: BoxDecoration(
                                 color: bgColor,
-                                border: Border.all(color: borderColor, width: 2),
+                                border: Border.all(
+                                  color: borderColor,
+                                  width: 2,
+                                ),
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: MathMarkdown(
                                 data: opt.text,
                                 selectable: false,
-                                textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.colors.textPrimary),
+                                textStyle: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: context.colors.textPrimary,
+                                ),
                               ),
                             ),
                           ),
@@ -145,7 +184,11 @@ class QuizView extends StatelessWidget {
                               child: IgnorePointer(
                                 child: Tooltip(
                                   message: 'Double-tap to edit',
-                                  child: Icon(LucideIcons.edit2, size: 14, color: context.colors.textFaint),
+                                  child: Icon(
+                                    LucideIcons.edit2,
+                                    size: 14,
+                                    color: context.colors.textFaint,
+                                  ),
                                 ),
                               ),
                             ),
@@ -161,10 +204,7 @@ class QuizView extends StatelessWidget {
               hasScrollBody: false,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  const SizedBox(height: 24),
-                  bottomBar!,
-                ],
+                children: [const SizedBox(height: 24), bottomBar!],
               ),
             ),
         ],

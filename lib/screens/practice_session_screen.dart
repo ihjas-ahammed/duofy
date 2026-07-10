@@ -22,6 +22,7 @@ import 'lesson_complete_screen.dart';
 class PracticeSessionScreen extends StatefulWidget {
   final Book book;
   final String practiceType;
+
   /// When non-null and non-empty, the practice pool is drawn only from
   /// lessons belonging to these unit ids (set on the Practice screen via the
   /// unit-range selector). Null/empty keeps the original whole-book behaviour.
@@ -46,10 +47,10 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
   List<Slide> _queue = [];
   int _totalQuestions = 0;
   int _completedQuestions = 0;
-  
+
   bool _answered = false;
   bool _isCorrect = false;
-  
+
   late DateTime _startTime;
   int _mistakesMade = 0;
 
@@ -57,7 +58,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
   String _blankInput = '';
   String _numericInput = '';
   String _wordInput = '';
-  
+
   // PYQ practice tracking
   final List<Map<String, dynamic>> _pyqSessionAnswers = [];
   Map<int, String> _pyqOneWordInputs = {};
@@ -71,13 +72,14 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
 
   void _extractInteractiveSlides() {
     final unitFilter = widget.unitIds;
-    
+
     if (widget.practiceType == 'pyq') {
       List<Slide> pyqs = [];
       final wanted = unitFilter?.toSet();
       for (var module in widget.book.modules) {
         for (var section in module.sections) {
-          final isSelected = wanted == null || section.units.any((u) => wanted.contains(u.id));
+          final isSelected =
+              wanted == null || section.units.any((u) => wanted.contains(u.id));
           if (isSelected) {
             pyqs.addAll(section.pyqQuestions);
           }
@@ -93,14 +95,22 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
         }
       }
 
-      final oneWordPool = uniquePyqs.where((q) => q.type == 'one_word').toList()..shuffle();
-      final proofPool = uniquePyqs.where((q) => q.type == 'proof').toList()..shuffle();
+      final oneWordPool = uniquePyqs.where((q) => q.type == 'one_word').toList()
+        ..shuffle();
+      final proofPool = uniquePyqs.where((q) => q.type == 'proof').toList()
+        ..shuffle();
 
       final int oneWordCount = widget.pyqOneWordCount ?? 5;
       final int proofCount = widget.pyqProofCount ?? 2;
 
-      final selectedOneWord = oneWordPool.sublist(0, oneWordCount.clamp(0, oneWordPool.length));
-      final selectedProof = proofPool.sublist(0, proofCount.clamp(0, proofPool.length));
+      final selectedOneWord = oneWordPool.sublist(
+        0,
+        oneWordCount.clamp(0, oneWordPool.length),
+      );
+      final selectedProof = proofPool.sublist(
+        0,
+        proofCount.clamp(0, proofPool.length),
+      );
 
       _queue = [...selectedOneWord, ...selectedProof]..shuffle();
       _totalQuestions = _queue.length;
@@ -161,16 +171,21 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
   bool _isTargetType(String slideType) {
     if (widget.practiceType == 'quiz' && slideType == 'quiz') return true;
     if (widget.practiceType == 'proof' && slideType == 'proof') return true;
-    if (widget.practiceType == 'step_by_step' && (slideType == 'step_by_step' || slideType == 'proof')) return true;
-    if (widget.practiceType == 'fill_in_blank' && slideType == 'fill_in_blank') return true;
-    if (widget.practiceType == 'one_word' && slideType == 'one_word') return true;
-    if (widget.practiceType == 'numerical' && slideType == 'numerical') return true;
+    if (widget.practiceType == 'step_by_step' &&
+        (slideType == 'step_by_step' || slideType == 'proof'))
+      return true;
+    if (widget.practiceType == 'fill_in_blank' && slideType == 'fill_in_blank')
+      return true;
+    if (widget.practiceType == 'one_word' && slideType == 'one_word')
+      return true;
+    if (widget.practiceType == 'numerical' && slideType == 'numerical')
+      return true;
     return false;
   }
 
   Future<void> _finishPractice() async {
     int timeSpent = DateTime.now().difference(_startTime).inSeconds;
-    int xpEarned = 10; 
+    int xpEarned = 10;
 
     if (widget.practiceType == 'pyq') {
       // Show loading spinner
@@ -188,7 +203,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
         final slide = record['slide'] as Slide;
         final answersMap = record['userAnswers'] as Map<int, String>;
         final steps = slide.interactiveSteps ?? [];
-        
+
         if (steps.isEmpty) {
           answersToGrade.add({
             'index': idx++,
@@ -211,10 +226,16 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
       List<Map<String, dynamic>> gradedResults = [];
       try {
         if (answersToGrade.isNotEmpty) {
-          final results = await AiService().gradePyqAnswers(answersToGrade: answersToGrade);
+          final results = await AiService().gradePyqAnswers(
+            answersToGrade: answersToGrade,
+          );
           for (final r in results) {
-            final int index = r['index'] is int ? r['index'] : int.parse(r['index'].toString());
-            final matchingInput = answersToGrade.firstWhere((element) => element['index'] == index);
+            final int index = r['index'] is int
+                ? r['index']
+                : int.parse(r['index'].toString());
+            final matchingInput = answersToGrade.firstWhere(
+              (element) => element['index'] == index,
+            );
             gradedResults.add({
               'question': matchingInput['question'],
               'correctAnswer': matchingInput['correctAnswer'],
@@ -229,7 +250,10 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
         // Fallback exact match
         for (final input in answersToGrade) {
           final userAns = input['userAnswer'].toString().trim().toLowerCase();
-          final correctAns = input['correctAnswer'].toString().trim().toLowerCase();
+          final correctAns = input['correctAnswer']
+              .toString()
+              .trim()
+              .toLowerCase();
           final isCorrect = userAns == correctAns;
           gradedResults.add({
             'question': input['question'],
@@ -248,8 +272,12 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
 
       await GlobalState.addXp(xpEarned, widget.book.id);
 
-      int correctCount = gradedResults.where((r) => r['isCorrect'] == true).length;
-      int pyqAccuracy = gradedResults.isNotEmpty ? ((correctCount / gradedResults.length) * 100).round() : 100;
+      int correctCount = gradedResults
+          .where((r) => r['isCorrect'] == true)
+          .length;
+      int pyqAccuracy = gradedResults.isNotEmpty
+          ? ((correctCount / gradedResults.length) * 100).round()
+          : 100;
       await ProgressService.logActivity(
         courseId: widget.book.id,
         lessonId: 'practice_pyq',
@@ -261,18 +289,23 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
 
       if (mounted) {
         Navigator.pushReplacement(
-          context, 
-          MaterialPageRoute(builder: (_) => PyqCompleteScreen(
-            gradedResults: gradedResults,
-            timeSpentSeconds: timeSpent,
-            xpEarned: xpEarned,
-          ))
+          context,
+          MaterialPageRoute(
+            builder: (_) => PyqCompleteScreen(
+              gradedResults: gradedResults,
+              timeSpentSeconds: timeSpent,
+              xpEarned: xpEarned,
+            ),
+          ),
         );
       }
       return;
     }
 
-    int accuracy = _totalQuestions > 0 ? (((_totalQuestions) / (_totalQuestions + _mistakesMade)) * 100).round() : 100;
+    int accuracy = _totalQuestions > 0
+        ? (((_totalQuestions) / (_totalQuestions + _mistakesMade)) * 100)
+              .round()
+        : 100;
     await GlobalState.addXp(xpEarned, widget.book.id);
 
     await ProgressService.logActivity(
@@ -286,13 +319,15 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
 
     if (mounted) {
       Navigator.pushReplacement(
-        context, 
-        MaterialPageRoute(builder: (_) => LessonCompleteScreen(
-          xpEarned: xpEarned,
-          accuracy: accuracy,
-          timeSpentSeconds: timeSpent,
-          isPractice: true, 
-        ))
+        context,
+        MaterialPageRoute(
+          builder: (_) => LessonCompleteScreen(
+            xpEarned: xpEarned,
+            accuracy: accuracy,
+            timeSpentSeconds: timeSpent,
+            isPractice: true,
+          ),
+        ),
       );
     }
   }
@@ -325,7 +360,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
   void _processNext() {
     if (_isCorrect) {
       _completedQuestions++;
-      _queue.removeAt(0); 
+      _queue.removeAt(0);
     } else {
       _mistakesMade++;
       // Move to back of the queue to repeat later
@@ -352,19 +387,31 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     bool correct = false;
 
     if (slide.type == 'quiz' && _selectedQuizOption != null) {
-      final selectedOpt = slide.options!.firstWhere((o) => o.id == _selectedQuizOption);
+      final selectedOpt = slide.options!.firstWhere(
+        (o) => o.id == _selectedQuizOption,
+      );
       correct = selectedOpt.isCorrect;
-      
+
       // Fallback robust check
       if (!correct) {
         final correctOpts = slide.options!.where((o) => o.isCorrect);
-        if (correctOpts.any((c) => c.text.trim().toLowerCase() == selectedOpt.text.trim().toLowerCase())) {
+        if (correctOpts.any(
+          (c) =>
+              c.text.trim().toLowerCase() ==
+              selectedOpt.text.trim().toLowerCase(),
+        )) {
           correct = true;
         }
       }
     } else if (slide.type == 'fill_in_blank') {
-      final userParts = _blankInput.split(',').map((s) => s.trim().toLowerCase().replaceAll(r'\', '')).toList();
-      final correctParts = (slide.blankAnswer ?? '').split(',').map((s) => s.trim().toLowerCase().replaceAll(r'\', '')).toList();
+      final userParts = _blankInput
+          .split(',')
+          .map((s) => s.trim().toLowerCase().replaceAll(r'\', ''))
+          .toList();
+      final correctParts = (slide.blankAnswer ?? '')
+          .split(',')
+          .map((s) => s.trim().toLowerCase().replaceAll(r'\', ''))
+          .toList();
       if (userParts.length == correctParts.length) {
         correct = true;
         for (int i = 0; i < userParts.length; i++) {
@@ -377,11 +424,15 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
         correct = false;
       }
     } else if (slide.type == 'one_word') {
-      correct = _wordInput.trim().toLowerCase() == (slide.blankAnswer ?? '').trim().toLowerCase().replaceAll(r'\', '');
+      correct =
+          _wordInput.trim().toLowerCase() ==
+          (slide.blankAnswer ?? '').trim().toLowerCase().replaceAll(r'\', '');
     } else if (slide.type == 'numerical') {
       final val = double.tryParse(_numericInput);
       if (val != null && slide.numericAnswer != null) {
-        correct = (val - slide.numericAnswer!).abs() <= (slide.numericTolerance ?? 0.01);
+        correct =
+            (val - slide.numericAnswer!).abs() <=
+            (slide.numericTolerance ?? 0.01);
       }
     }
 
@@ -419,7 +470,10 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
 
   String _getCorrectAnswerText(Slide slide) {
     if (slide.type == 'quiz') {
-      final opt = slide.options?.firstWhere((o) => o.isCorrect, orElse: () => slide.options!.first);
+      final opt = slide.options?.firstWhere(
+        (o) => o.isCorrect,
+        orElse: () => slide.options!.first,
+      );
       return opt?.text ?? '';
     }
     if (slide.type == 'fill_in_blank') return slide.blankAnswer ?? '';
@@ -500,12 +554,19 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     if (_queue.isEmpty) {
       return Scaffold(
         appBar: AppBar(),
-        body: Center(child: Text('No practice questions available for this type.', style: TextStyle(color: context.colors.textFaint))),
+        body: Center(
+          child: Text(
+            'No practice questions available for this type.',
+            style: TextStyle(color: context.colors.textFaint),
+          ),
+        ),
       );
     }
 
     final slide = _queue.first;
-    final progress = _totalQuestions == 0 ? 0.0 : (_completedQuestions / _totalQuestions);
+    final progress = _totalQuestions == 0
+        ? 0.0
+        : (_completedQuestions / _totalQuestions);
 
     return Scaffold(
       appBar: AppBar(
@@ -524,92 +585,136 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
       body: ResponsiveCenter(
         maxWidth: ResponsiveMaxWidth.reading,
         child: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Text(
-                slide.title.toUpperCase(),
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppTheme.duoViolet, letterSpacing: 1.5),
-              ),
-            ),
-            
-            Expanded(child: _buildContent(slide)),
-            
-            // Native Bottom Action Bar (hide if child implements its own)
-            if (!_isCustomBottomBar)
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-                decoration: BoxDecoration(
-                  color: _answered 
-                    ? (_isCorrect ? AppTheme.duoGreen.withOpacity(0.15) : AppTheme.duoRed.withOpacity(0.15))
-                    : Colors.transparent,
-                  border: Border(top: BorderSide(
-                    color: _answered ? (_isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : context.colors.outline, 
-                    width: 2)
-                  ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (_answered && !_isCorrect)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppTheme.duoRed.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppTheme.duoRed.withOpacity(0.3)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('CORRECT ANSWER:', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.2)),
-                              const SizedBox(height: 4),
-                              MathMarkdown(
-                                data: _getCorrectAnswerText(slide), 
-                                textStyle: const TextStyle(color: AppTheme.duoRed, fontSize: 16, fontWeight: FontWeight.bold)
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      
-                    !_answered
-                        ? DuoButton(
-                            text: 'Check',
-                            color: _canCheck() ? AppTheme.duoGreen : Colors.grey.shade700,
-                            shadowColor: _canCheck() ? AppTheme.duoGreenDark : Colors.grey.shade800,
-                            onPressed: () {
-                              if (_canCheck()) _checkAnswer();
-                            },
-                          )
-                        : DuoButton(
-                            text: _answered && !_isCorrect ? 'Got It' : 'Continue',
-                            color: _answered && !_isCorrect ? AppTheme.duoRed : AppTheme.duoBlue,
-                            shadowColor: _answered && !_isCorrect ? AppTheme.duoRedDark : AppTheme.duoBlueDark,
-                            onPressed: _processNext,
-                          ),
-                  ],
+                child: Text(
+                  slide.title.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: AppTheme.duoViolet,
+                    letterSpacing: 1.5,
+                  ),
                 ),
               ),
 
-            // PYQ One Word Action Bar
-            if (widget.practiceType == 'pyq' && slide.type == 'one_word')
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                child: DuoButton(
-                  text: 'Continue',
-                  color: AppTheme.duoBlue,
-                  shadowColor: AppTheme.duoBlueDark,
-                  onPressed: _processNextPyqOneWord,
+              Expanded(child: _buildContent(slide)),
+
+              // Native Bottom Action Bar (hide if child implements its own)
+              if (!_isCustomBottomBar)
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 24,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _answered
+                        ? (_isCorrect
+                              ? AppTheme.duoGreen.withOpacity(0.15)
+                              : AppTheme.duoRed.withOpacity(0.15))
+                        : Colors.transparent,
+                    border: Border(
+                      top: BorderSide(
+                        color: _answered
+                            ? (_isCorrect ? AppTheme.duoGreen : AppTheme.duoRed)
+                            : context.colors.outline,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (_answered && !_isCorrect)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppTheme.duoRed.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppTheme.duoRed.withOpacity(0.3),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'CORRECT ANSWER:',
+                                  style: TextStyle(
+                                    color: AppTheme.duoRed,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 10,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                MathMarkdown(
+                                  data: _getCorrectAnswerText(slide),
+                                  textStyle: const TextStyle(
+                                    color: AppTheme.duoRed,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                      !_answered
+                          ? DuoButton(
+                              text: 'Check',
+                              color: _canCheck()
+                                  ? AppTheme.duoGreen
+                                  : Colors.grey.shade700,
+                              shadowColor: _canCheck()
+                                  ? AppTheme.duoGreenDark
+                                  : Colors.grey.shade800,
+                              onPressed: () {
+                                if (_canCheck()) _checkAnswer();
+                              },
+                            )
+                          : DuoButton(
+                              text: _answered && !_isCorrect
+                                  ? 'Got It'
+                                  : 'Continue',
+                              color: _answered && !_isCorrect
+                                  ? AppTheme.duoRed
+                                  : AppTheme.duoBlue,
+                              shadowColor: _answered && !_isCorrect
+                                  ? AppTheme.duoRedDark
+                                  : AppTheme.duoBlueDark,
+                              onPressed: _processNext,
+                            ),
+                    ],
+                  ),
                 ),
-              ),
-          ],
-        ),
+
+              // PYQ One Word Action Bar
+              if (widget.practiceType == 'pyq' && slide.type == 'one_word')
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 20,
+                  ),
+                  child: DuoButton(
+                    text: 'Continue',
+                    color: AppTheme.duoBlue,
+                    shadowColor: AppTheme.duoBlueDark,
+                    onPressed: _processNextPyqOneWord,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

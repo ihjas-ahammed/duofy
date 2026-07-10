@@ -16,7 +16,11 @@ class FlashcardView extends StatefulWidget {
   final Slide slide;
   final void Function(bool remembered) onSelfGrade;
 
-  const FlashcardView({super.key, required this.slide, required this.onSelfGrade});
+  const FlashcardView({
+    super.key,
+    required this.slide,
+    required this.onSelfGrade,
+  });
 
   @override
   State<FlashcardView> createState() => _FlashcardViewState();
@@ -51,7 +55,8 @@ class _FlashcardViewState extends State<FlashcardView> {
                       child: Transform(
                         alignment: Alignment.center,
                         // Un-mirror the back face.
-                        transform: Matrix4.identity()..rotateY(showBack ? math.pi : 0),
+                        transform: Matrix4.identity()
+                          ..rotateY(showBack ? math.pi : 0),
                         child: Container(
                           width: double.infinity,
                           constraints: const BoxConstraints(minHeight: 260),
@@ -72,9 +77,13 @@ class _FlashcardViewState extends State<FlashcardView> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                showBack ? 'ANSWER' : 'RECALL, THEN TAP TO FLIP',
+                                showBack
+                                    ? 'ANSWER'
+                                    : 'RECALL, THEN TAP TO FLIP',
                                 style: TextStyle(
-                                  color: showBack ? AppTheme.duoGreen : context.colors.textFaint,
+                                  color: showBack
+                                      ? AppTheme.duoGreen
+                                      : context.colors.textFaint,
                                   fontWeight: FontWeight.w900,
                                   fontSize: 10,
                                   letterSpacing: 1.5,
@@ -86,14 +95,18 @@ class _FlashcardViewState extends State<FlashcardView> {
                                     ? (widget.slide.blankAnswer ?? '')
                                     : widget.slide.content,
                                 textStyle: TextStyle(
-                                    fontSize: 19,
-                                    color: context.colors.textPrimary,
-                                    fontWeight: FontWeight.bold),
+                                  fontSize: 19,
+                                  color: context.colors.textPrimary,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               if (!showBack) ...[
                                 const SizedBox(height: 20),
-                                 Icon(LucideIcons.refreshCw,
-                                    color: context.colors.textFaint, size: 18),
+                                Icon(
+                                  LucideIcons.refreshCw,
+                                  color: context.colors.textFaint,
+                                  size: 18,
+                                ),
                               ],
                             ],
                           ),
@@ -138,7 +151,10 @@ class _FlashcardViewState extends State<FlashcardView> {
                       ),
                     ],
                   )
-                : const SizedBox(height: 56, key: ValueKey('grade_placeholder')),
+                : const SizedBox(
+                    height: 56,
+                    key: ValueKey('grade_placeholder'),
+                  ),
           ),
           const SizedBox(height: 16),
         ],

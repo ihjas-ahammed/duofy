@@ -35,7 +35,7 @@ class _BookRouteLoaderScreenState extends State<BookRouteLoaderScreen> {
           await db.saveGeneratedBook(b);
         }
       }
-      
+
       if (b != null) {
         if (mounted) {
           setState(() {
@@ -52,7 +52,8 @@ class _BookRouteLoaderScreenState extends State<BookRouteLoaderScreen> {
         }
       } else {
         setState(() {
-          _error = "Course not found. Ensure the course link is correct and cloud sync is enabled.";
+          _error =
+              "Course not found. Ensure the course link is correct and cloud sync is enabled.";
           _isLoading = false;
         });
       }
@@ -80,12 +81,19 @@ class _BookRouteLoaderScreenState extends State<BookRouteLoaderScreen> {
                     const SizedBox(height: 20),
                     Text(
                       "Loading course...",
-                      style: TextStyle(color: context.colors.textSecondary, fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(
+                        color: context.colors.textSecondary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       "Fetching from community library",
-                      style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+                      style: TextStyle(
+                        color: context.colors.textFaint,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 )
@@ -93,31 +101,49 @@ class _BookRouteLoaderScreenState extends State<BookRouteLoaderScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Icon(Icons.error_outline_rounded, size: 64, color: AppTheme.duoRed),
+                    const Icon(
+                      Icons.error_outline_rounded,
+                      size: 64,
+                      color: AppTheme.duoRed,
+                    ),
                     const SizedBox(height: 24),
                     Text(
                       "Failed to Open Course",
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w900, fontSize: 20),
+                      style: TextStyle(
+                        color: context.colors.textPrimary,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 20,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       _error ?? "Unknown error occurred",
-                      style: TextStyle(color: context.colors.textSecondary, fontSize: 14, height: 1.4),
+                      style: TextStyle(
+                        color: context.colors.textSecondary,
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 32),
                     ElevatedButton(
-                      onPressed: () => Navigator.pushReplacementNamed(context, '/'),
+                      onPressed: () =>
+                          Navigator.pushReplacementNamed(context, '/'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.duoBlue,
                         foregroundColor: context.colors.textPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                       ),
                       child: const Text(
                         "Go to Dashboard",
-                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 15,
+                        ),
                       ),
                     ),
                   ],

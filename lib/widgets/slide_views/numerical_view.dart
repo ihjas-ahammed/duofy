@@ -13,11 +13,11 @@ class NumericalView extends StatelessWidget {
   final Widget? bottomBar;
 
   const NumericalView({
-    super.key, 
-    required this.slide, 
-    required this.value, 
-    required this.isAnswered, 
-    required this.isCorrect, 
+    super.key,
+    required this.slide,
+    required this.value,
+    required this.isAnswered,
+    required this.isCorrect,
     required this.onChanged,
     this.bottomBar,
   });
@@ -52,7 +52,14 @@ class NumericalView extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: AppTheme.glassOf(context),
-                  child: MathMarkdown(data: slide.content, textStyle: TextStyle(fontSize: 18, color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+                  child: MathMarkdown(
+                    data: slide.content,
+                    textStyle: TextStyle(
+                      fontSize: 18,
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 32),
                 Container(
@@ -60,30 +67,61 @@ class NumericalView extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : context.colors.outline, width: 2),
+                    border: Border.all(
+                      color: isAnswered
+                          ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed)
+                          : context.colors.outline,
+                      width: 2,
+                    ),
                   ),
                   child: Column(
                     children: [
-                      Text('ENTER NUMBER', style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.5)),
+                      Text(
+                        'ENTER NUMBER',
+                        style: TextStyle(
+                          color: context.colors.textFaint,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 10,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       TextField(
                         enabled: !isAnswered,
                         onChanged: onChanged,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                          signed: true,
+                        ),
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 22, 
+                          fontSize: 22,
                           fontWeight: FontWeight.w900,
-                          color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.amber,
+                          color: isAnswered
+                              ? (isCorrect
+                                    ? AppTheme.duoGreen
+                                    : AppTheme.duoRed)
+                              : Colors.amber,
                         ),
                         decoration: InputDecoration(
                           hintText: placeholder,
                           hintStyle: TextStyle(color: context.colors.textFaint),
                           filled: true,
                           fillColor: context.colors.surfaceAlt,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.amber, width: 2)),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Colors.amber,
+                              width: 2,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -97,10 +135,7 @@ class NumericalView extends StatelessWidget {
               hasScrollBody: false,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  const SizedBox(height: 24),
-                  bottomBar!,
-                ],
+                children: [const SizedBox(height: 24), bottomBar!],
               ),
             ),
         ],

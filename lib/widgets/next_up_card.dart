@@ -47,12 +47,15 @@ class NextUpCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               onTap: () async {
                 final prefs = await SharedPreferences.getInstance();
-                await prefs.setString('last_lesson_id_${n.book.id}', n.lesson.id);
+                await prefs.setString(
+                  'last_lesson_id_${n.book.id}',
+                  n.lesson.id,
+                );
                 await prefs.setInt('last_mod_idx_${n.book.id}', n.modIdx);
                 await prefs.setInt('last_sec_idx_${n.book.id}', n.secIdx);
-                
+
                 if (!context.mounted) return;
-                
+
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -76,7 +79,9 @@ class NextUpCard extends StatelessWidget {
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppTheme.duoGreen.withOpacity(0.35)),
+                  border: Border.all(
+                    color: AppTheme.duoGreen.withOpacity(0.35),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -91,12 +96,15 @@ class NextUpCard extends StatelessWidget {
                             strokeWidth: 5,
                             backgroundColor: context.colors.surfaceAlt,
                             valueColor: AlwaysStoppedAnimation(
-                                goalMet ? AppTheme.duoGreen : AppTheme.duoOrange),
+                              goalMet ? AppTheme.duoGreen : AppTheme.duoOrange,
+                            ),
                           ),
                           Center(
                             child: Icon(
                               goalMet ? LucideIcons.check : LucideIcons.flame,
-                              color: goalMet ? AppTheme.duoGreen : AppTheme.duoOrange,
+                              color: goalMet
+                                  ? AppTheme.duoGreen
+                                  : AppTheme.duoOrange,
                               size: 22,
                             ),
                           ),
@@ -108,28 +116,35 @@ class NextUpCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('CONTINUE LEARNING',
-                              style: TextStyle(
-                                  color: AppTheme.duoGreen,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.2)),
+                          const Text(
+                            'CONTINUE LEARNING',
+                            style: TextStyle(
+                              color: AppTheme.duoGreen,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
                           const SizedBox(height: 4),
                           Text(
                             n.lesson.title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                                color: context.colors.textPrimary,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 15),
+                              color: context.colors.textPrimary,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                            ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             '${n.book.title}  •  $xpToday/$goal XP today',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: context.colors.textFaint, fontSize: 11),
+                            style: TextStyle(
+                              color: context.colors.textFaint,
+                              fontSize: 11,
+                            ),
                           ),
                         ],
                       ),
@@ -142,10 +157,17 @@ class NextUpCard extends StatelessWidget {
                         shape: BoxShape.circle,
                         color: AppTheme.duoGreen,
                         boxShadow: [
-                          BoxShadow(color: AppTheme.duoGreenDark, offset: Offset(0, 3)),
+                          BoxShadow(
+                            color: AppTheme.duoGreenDark,
+                            offset: Offset(0, 3),
+                          ),
                         ],
                       ),
-                      child: Icon(LucideIcons.play, color: context.colors.textPrimary, size: 20),
+                      child: Icon(
+                        LucideIcons.play,
+                        color: context.colors.textPrimary,
+                        size: 20,
+                      ),
                     ),
                   ],
                 ),

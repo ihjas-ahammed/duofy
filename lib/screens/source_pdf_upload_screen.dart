@@ -32,7 +32,8 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
     for (final module in widget.book.modules) {
       for (final section in module.sections) {
         hasUnitsOrSections = true;
-        if ((section.bookIndex ?? 0) > maxBookIdx) maxBookIdx = section.bookIndex!;
+        if ((section.bookIndex ?? 0) > maxBookIdx)
+          maxBookIdx = section.bookIndex!;
         for (final unit in section.units) {
           if ((unit.bookIndex ?? 0) > maxBookIdx) maxBookIdx = unit.bookIndex!;
         }
@@ -68,9 +69,14 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
 
   void _onGenerationManagerChange() {
     final taskId = "restore_${widget.book.id}";
-    final taskIndex = GenerationManager.instance.activeTasks.indexWhere((t) => t.id == taskId);
-    final hasActiveRunningTask = taskIndex != -1 && GenerationManager.instance.activeTasks[taskIndex].state != BookGenState.error;
-    
+    final taskIndex = GenerationManager.instance.activeTasks.indexWhere(
+      (t) => t.id == taskId,
+    );
+    final hasActiveRunningTask =
+        taskIndex != -1 &&
+        GenerationManager.instance.activeTasks[taskIndex].state !=
+            BookGenState.error;
+
     if (mounted) {
       setState(() {
         // If it was restoring and now it's not, and the files exist on disk, we succeeded!
@@ -161,7 +167,7 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
 
   Future<void> _pickFileForSlot(int index) async {
     if (_isRestoring) return;
-    
+
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
@@ -171,7 +177,8 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
     if (result != null && result.files.single.path != null) {
       setState(() {
         _selectedFiles[index] = File(result.files.single.path!);
-        _successMessage = null; // Clear success banner if they start editing again
+        _successMessage =
+            null; // Clear success banner if they start editing again
       });
     }
   }
@@ -193,7 +200,10 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
     );
 
     if (result != null && result.paths.isNotEmpty) {
-      final picked = result.paths.where((p) => p != null).map((p) => File(p!)).toList();
+      final picked = result.paths
+          .where((p) => p != null)
+          .map((p) => File(p!))
+          .toList();
       setState(() {
         for (int i = 0; i < expectedFileCount && i < picked.length; i++) {
           _selectedFiles[i] = picked[i];
@@ -250,10 +260,25 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                         color: AppTheme.duoBlue.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(LucideIcons.folderOpen, color: AppTheme.duoBlue),
+                      child: const Icon(
+                        LucideIcons.folderOpen,
+                        color: AppTheme.duoBlue,
+                      ),
                     ),
-                    title: Text('Browse Device Files', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
-                    subtitle: Text('Select a local PDF file from your device', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
+                    title: Text(
+                      'Browse Device Files',
+                      style: TextStyle(
+                        color: context.colors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Select a local PDF file from your device',
+                      style: TextStyle(
+                        color: context.colors.textFaint,
+                        fontSize: 12,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   ListTile(
@@ -267,10 +292,25 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                         color: AppTheme.duoGreen.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(LucideIcons.database, color: AppTheme.duoGreen),
+                      child: const Icon(
+                        LucideIcons.database,
+                        color: AppTheme.duoGreen,
+                      ),
                     ),
-                    title: Text('Choose from Document Store', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
-                    subtitle: Text('Select from files uploaded to your cloud storage', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
+                    title: Text(
+                      'Choose from Document Store',
+                      style: TextStyle(
+                        color: context.colors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Select from files uploaded to your cloud storage',
+                      style: TextStyle(
+                        color: context.colors.textFaint,
+                        fontSize: 12,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -285,7 +325,11 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
   void _showDocumentStorePicker(int index) {
     if (_cacheDirPath == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cache directory not initialized yet. Please try again.')),
+        const SnackBar(
+          content: Text(
+            'Cache directory not initialized yet. Please try again.',
+          ),
+        ),
       );
       return;
     }
@@ -362,14 +406,17 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
     return Scaffold(
       backgroundColor: context.colors.background,
       appBar: AppBar(
-        title: const Text('Source PDFs', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+        title: const Text(
+          'Source PDFs',
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+        ),
         actions: [
           if (!_isRestoring && expectedFileCount > 1)
             IconButton(
               icon: const Icon(LucideIcons.filePlus, color: AppTheme.duoBlue),
               tooltip: 'Select All Files',
               onPressed: _pickAllFiles,
-            )
+            ),
         ],
       ),
       body: ResponsiveCenter(
@@ -395,7 +442,11 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                               color: AppTheme.duoBlue.withOpacity(0.15),
                               borderRadius: BorderRadius.circular(16),
                             ),
-                            child: const Icon(LucideIcons.bookOpen, color: AppTheme.duoBlue, size: 28),
+                            child: const Icon(
+                              LucideIcons.bookOpen,
+                              color: AppTheme.duoBlue,
+                              size: 28,
+                            ),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
@@ -404,14 +455,21 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                               children: [
                                 Text(
                                   widget.book.title,
-                                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: context.colors.textPrimary),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 16,
+                                    color: context.colors.textPrimary,
+                                  ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   widget.book.description,
-                                  style: TextStyle(fontSize: 12, color: context.colors.textSecondary),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: context.colors.textSecondary,
+                                  ),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -430,16 +488,26 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                         decoration: BoxDecoration(
                           color: AppTheme.duoGreen.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppTheme.duoGreen.withOpacity(0.4)),
+                          border: Border.all(
+                            color: AppTheme.duoGreen.withOpacity(0.4),
+                          ),
                         ),
                         child: Row(
                           children: [
-                            const Icon(LucideIcons.checkCircle2, color: AppTheme.duoGreen, size: 24),
+                            const Icon(
+                              LucideIcons.checkCircle2,
+                              color: AppTheme.duoGreen,
+                              size: 24,
+                            ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 _successMessage!,
-                                style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
+                                style: TextStyle(
+                                  color: context.colors.textPrimary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                           ],
@@ -455,25 +523,41 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                           decoration: BoxDecoration(
                             color: AppTheme.duoRed.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppTheme.duoRed.withOpacity(0.3)),
+                            border: Border.all(
+                              color: AppTheme.duoRed.withOpacity(0.3),
+                            ),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
                                 children: [
-                                  const Icon(LucideIcons.alertTriangle, color: AppTheme.duoRed, size: 24),
+                                  const Icon(
+                                    LucideIcons.alertTriangle,
+                                    color: AppTheme.duoRed,
+                                    size: 24,
+                                  ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
                                       'Restore Failed',
-                                      style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
+                                      style: TextStyle(
+                                        color: context.colors.textPrimary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
                                     ),
                                   ),
                                   IconButton(
-                                    icon: Icon(LucideIcons.x, color: context.colors.textFaint, size: 20),
+                                    icon: Icon(
+                                      LucideIcons.x,
+                                      color: context.colors.textFaint,
+                                      size: 20,
+                                    ),
                                     onPressed: () {
-                                      GenerationManager.instance.dismissTask(taskId);
+                                      GenerationManager.instance.dismissTask(
+                                        taskId,
+                                      );
                                     },
                                   ),
                                 ],
@@ -481,35 +565,72 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                               const SizedBox(height: 10),
                               SelectableText(
                                 task.errorMessage ?? task.statusMessage,
-                                style: TextStyle(color: context.colors.textSecondary, fontSize: 12, height: 1.4),
+                                style: TextStyle(
+                                  color: context.colors.textSecondary,
+                                  fontSize: 12,
+                                  height: 1.4,
+                                ),
                               ),
                               const SizedBox(height: 12),
                               Row(
                                 children: [
                                   ElevatedButton.icon(
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: context.colors.surfaceAlt,
-                                      foregroundColor: context.colors.textPrimary,
+                                      backgroundColor:
+                                          context.colors.surfaceAlt,
+                                      foregroundColor:
+                                          context.colors.textPrimary,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
                                     ),
-                                    icon: const Icon(LucideIcons.copy, size: 14),
-                                    label: const Text('Copy Error', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                    icon: const Icon(
+                                      LucideIcons.copy,
+                                      size: 14,
+                                    ),
+                                    label: const Text(
+                                      'Copy Error',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                     onPressed: () {
-                                      final errText = task.errorMessage ?? task.statusMessage;
-                                      Clipboard.setData(ClipboardData(text: errText));
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Error copied to clipboard')),
+                                      final errText =
+                                          task.errorMessage ??
+                                          task.statusMessage;
+                                      Clipboard.setData(
+                                        ClipboardData(text: errText),
+                                      );
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Error copied to clipboard',
+                                          ),
+                                        ),
                                       );
                                     },
                                   ),
                                   const SizedBox(width: 10),
                                   TextButton(
-                                    child: const Text('Dismiss', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold, fontSize: 12)),
+                                    child: const Text(
+                                      'Dismiss',
+                                      style: TextStyle(
+                                        color: AppTheme.duoRed,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
                                     onPressed: () {
-                                      GenerationManager.instance.dismissTask(taskId);
+                                      GenerationManager.instance.dismissTask(
+                                        taskId,
+                                      );
                                     },
                                   ),
                                 ],
@@ -524,7 +645,9 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                           decoration: BoxDecoration(
                             color: AppTheme.duoBlue.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppTheme.duoBlue.withOpacity(0.3)),
+                            border: Border.all(
+                              color: AppTheme.duoBlue.withOpacity(0.3),
+                            ),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -536,14 +659,22 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                                     height: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2.5,
-                                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.duoBlue),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        AppTheme.duoBlue,
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
-                                      task.statusMessage.isNotEmpty ? task.statusMessage : 'Restoring course files...',
-                                      style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
+                                      task.statusMessage.isNotEmpty
+                                          ? task.statusMessage
+                                          : 'Restoring course files...',
+                                      style: TextStyle(
+                                        color: context.colors.textPrimary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -552,16 +683,24 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
                                 child: LinearProgressIndicator(
-                                  value: (task.progress ?? 0) > 0 ? task.progress : null,
+                                  value: (task.progress ?? 0) > 0
+                                      ? task.progress
+                                      : null,
                                   backgroundColor: context.colors.outline,
-                                  valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.duoBlue),
+                                  valueColor:
+                                      const AlwaysStoppedAnimation<Color>(
+                                        AppTheme.duoBlue,
+                                      ),
                                   minHeight: 8,
                                 ),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 'Please keep the app open. We are splitting the files into optimized PDF reference chunks for each topic.',
-                                style: TextStyle(color: context.colors.textFaint, fontSize: 11),
+                                style: TextStyle(
+                                  color: context.colors.textFaint,
+                                  fontSize: 11,
+                                ),
                               ),
                             ],
                           ),
@@ -575,7 +714,11 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                         expectedFileCount > 1
                             ? 'This course was generated from $expectedFileCount source files. Please upload the PDF files in order to restore them:'
                             : 'Upload the original source PDF file to restore the in-lesson reference viewer:',
-                        style: TextStyle(color: context.colors.textSecondary, fontSize: 13, height: 1.4),
+                        style: TextStyle(
+                          color: context.colors.textSecondary,
+                          fontSize: 13,
+                          height: 1.4,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -592,7 +735,9 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                           border: Border.all(
                             color: file != null
                                 ? AppTheme.duoBlue.withOpacity(0.4)
-                                : (isRestored ? AppTheme.duoGreen.withOpacity(0.3) : AppTheme.duoOrange.withOpacity(0.3)),
+                                : (isRestored
+                                      ? AppTheme.duoGreen.withOpacity(0.3)
+                                      : AppTheme.duoOrange.withOpacity(0.3)),
                           ),
                         ),
                         child: Material(
@@ -600,7 +745,9 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                           borderRadius: BorderRadius.circular(20),
                           clipBehavior: Clip.antiAlias,
                           child: InkWell(
-                            onTap: _isRestoring ? null : () => _showSourcePicker(index),
+                            onTap: _isRestoring
+                                ? null
+                                : () => _showSourcePicker(index),
                             child: Padding(
                               padding: const EdgeInsets.all(16),
                               child: Row(
@@ -611,14 +758,21 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                                     decoration: BoxDecoration(
                                       color: file != null
                                           ? AppTheme.duoBlue.withOpacity(0.2)
-                                          : (isRestored ? AppTheme.duoGreen.withOpacity(0.15) : AppTheme.duoOrange.withOpacity(0.15)),
+                                          : (isRestored
+                                                ? AppTheme.duoGreen.withOpacity(
+                                                    0.15,
+                                                  )
+                                                : AppTheme.duoOrange
+                                                      .withOpacity(0.15)),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
                                       LucideIcons.fileText,
                                       color: file != null
                                           ? AppTheme.duoBlue
-                                          : (isRestored ? AppTheme.duoGreen : AppTheme.duoOrange),
+                                          : (isRestored
+                                                ? AppTheme.duoGreen
+                                                : AppTheme.duoOrange),
                                       size: 22,
                                     ),
                                   ),
@@ -626,16 +780,26 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                                   // Details
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          expectedFileCount > 1 ? 'Part ${index + 1}' : 'Source PDF Document',
-                                          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: context.colors.textPrimary),
+                                          expectedFileCount > 1
+                                              ? 'Part ${index + 1}'
+                                              : 'Source PDF Document',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 14,
+                                            color: context.colors.textPrimary,
+                                          ),
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
                                           'Covers: $topics',
-                                          style: TextStyle(fontSize: 11, color: context.colors.textFaint),
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: context.colors.textFaint,
+                                          ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -643,29 +807,49 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                                         if (file != null)
                                           Text(
                                             'Selected: ${file.path.split(RegExp(r"[/\\]")).last}',
-                                            style: const TextStyle(fontSize: 12, color: AppTheme.duoBlue, fontWeight: FontWeight.bold),
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: AppTheme.duoBlue,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           )
                                         else if (isRestored)
                                           const Row(
                                             children: [
-                                              Icon(LucideIcons.check, color: AppTheme.duoGreen, size: 14),
+                                              Icon(
+                                                LucideIcons.check,
+                                                color: AppTheme.duoGreen,
+                                                size: 14,
+                                              ),
                                               SizedBox(width: 4),
                                               Text(
                                                 'Ready on device',
-                                                style: TextStyle(fontSize: 12, color: AppTheme.duoGreen, fontWeight: FontWeight.bold),
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: AppTheme.duoGreen,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
                                               ),
                                             ],
                                           )
                                         else
                                           const Row(
                                             children: [
-                                              Icon(LucideIcons.alertCircle, color: AppTheme.duoOrange, size: 14),
+                                              Icon(
+                                                LucideIcons.alertCircle,
+                                                color: AppTheme.duoOrange,
+                                                size: 14,
+                                              ),
                                               SizedBox(width: 4),
                                               Text(
                                                 'Missing reference file',
-                                                style: TextStyle(fontSize: 12, color: AppTheme.duoOrange, fontWeight: FontWeight.bold),
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: AppTheme.duoOrange,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
                                               ),
                                             ],
                                           ),
@@ -675,11 +859,18 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                                   // Clear / pick action
                                   if (file != null && !_isRestoring)
                                     IconButton(
-                                      icon: const Icon(LucideIcons.x, color: AppTheme.duoRed, size: 20),
+                                      icon: const Icon(
+                                        LucideIcons.x,
+                                        color: AppTheme.duoRed,
+                                        size: 20,
+                                      ),
                                       onPressed: () => _clearSlot(index),
                                     )
                                   else if (!_isRestoring)
-                                    Icon(LucideIcons.chevronRight, color: context.colors.textFaint),
+                                    Icon(
+                                      LucideIcons.chevronRight,
+                                      color: context.colors.textFaint,
+                                    ),
                                 ],
                               ),
                             ),
@@ -695,7 +886,9 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  border: Border(top: BorderSide(color: context.colors.outline)),
+                  border: Border(
+                    top: BorderSide(color: context.colors.outline),
+                  ),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -703,21 +896,30 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                   children: [
                     DuoButton(
                       text: _isRestoring ? 'Restoring...' : 'Restore Files',
-                      color: _canRestore ? AppTheme.duoGreen : const Color(0xFF334155),
-                      shadowColor: _canRestore ? AppTheme.duoGreenDark : const Color(0xFF1E293B),
+                      color: _canRestore
+                          ? AppTheme.duoGreen
+                          : const Color(0xFF334155),
+                      shadowColor: _canRestore
+                          ? AppTheme.duoGreenDark
+                          : const Color(0xFF1E293B),
                       onPressed: _canRestore ? _startRestore : () {},
                     ),
                     const SizedBox(height: 8),
                     TextButton(
-                      onPressed: _isRestoring ? null : () => Navigator.pop(context),
+                      onPressed: _isRestoring
+                          ? null
+                          : () => Navigator.pop(context),
                       child: Text(
                         _successMessage != null ? 'CLOSE' : 'CANCEL',
-                        style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: context.colors.textFaint,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              )
+              ),
             ],
           ),
         ),
@@ -736,10 +938,12 @@ class _DocumentStorePickerDialog extends StatefulWidget {
   });
 
   @override
-  State<_DocumentStorePickerDialog> createState() => _DocumentStorePickerDialogState();
+  State<_DocumentStorePickerDialog> createState() =>
+      _DocumentStorePickerDialogState();
 }
 
-class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> {
+class _DocumentStorePickerDialogState
+    extends State<_DocumentStorePickerDialog> {
   bool _isConfigured = false;
   bool _isLoading = true;
   List<B2Object> _files = [];
@@ -789,8 +993,10 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
       final files = await B2Service.instance.listObjects();
       // Sort files: newest first
       files.sort((a, b) {
-        final aDate = a.lastModifiedDate ?? DateTime.fromMillisecondsSinceEpoch(0);
-        final bDate = b.lastModifiedDate ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final aDate =
+            a.lastModifiedDate ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bDate =
+            b.lastModifiedDate ?? DateTime.fromMillisecondsSinceEpoch(0);
         return bDate.compareTo(aDate);
       });
       if (mounted) {
@@ -906,7 +1112,9 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
                   children: [
                     Expanded(
                       child: Text(
-                        _downloadingKey != null ? 'Downloading File...' : 'Select Document Store File',
+                        _downloadingKey != null
+                            ? 'Downloading File...'
+                            : 'Select Document Store File',
                         style: TextStyle(
                           color: context.colors.textPrimary,
                           fontSize: 16,
@@ -915,8 +1123,13 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
                       ),
                     ),
                     IconButton(
-                      icon: Icon(LucideIcons.x, color: context.colors.textSecondary),
-                      onPressed: _downloadingKey != null ? null : () => Navigator.pop(context),
+                      icon: Icon(
+                        LucideIcons.x,
+                        color: context.colors.textSecondary,
+                      ),
+                      onPressed: _downloadingKey != null
+                          ? null
+                          : () => Navigator.pop(context),
                     ),
                   ],
                 ),
@@ -931,27 +1144,41 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(LucideIcons.downloadCloud, size: 48, color: AppTheme.duoBlue),
+                          const Icon(
+                            LucideIcons.downloadCloud,
+                            size: 48,
+                            color: AppTheme.duoBlue,
+                          ),
                           const SizedBox(height: 16),
                           Text(
                             _downloadingKey!.split('/').last,
-                            style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: context.colors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 12),
                           ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: LinearProgressIndicator(
-                              value: _downloadProgress > 0 ? _downloadProgress : null,
+                              value: _downloadProgress > 0
+                                  ? _downloadProgress
+                                  : null,
                               backgroundColor: context.colors.outline,
-                              valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.duoBlue),
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                AppTheme.duoBlue,
+                              ),
                               minHeight: 8,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             '${(_downloadProgress * 100).toStringAsFixed(0)}% downloaded',
-                            style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+                            style: TextStyle(
+                              color: context.colors.textFaint,
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ),
@@ -966,16 +1193,27 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(LucideIcons.database, size: 48, color: AppTheme.duoOrange),
+                          const Icon(
+                            LucideIcons.database,
+                            size: 48,
+                            color: AppTheme.duoOrange,
+                          ),
                           const SizedBox(height: 16),
                           Text(
                             'Document Store Not Configured',
-                            style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+                            style: TextStyle(
+                              color: context.colors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             'Cloud storage is not configured. Please setup credentials in the Document Store tab first.',
-                            style: TextStyle(color: context.colors.textFaint, fontSize: 13),
+                            style: TextStyle(
+                              color: context.colors.textFaint,
+                              fontSize: 13,
+                            ),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 24),
@@ -983,7 +1221,9 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
                             style: ElevatedButton.styleFrom(
                               backgroundColor: context.colors.surface,
                               foregroundColor: context.colors.textPrimary,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                             onPressed: () => Navigator.pop(context),
                             child: const Text('Dismiss'),
@@ -997,7 +1237,9 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
                 const Expanded(
                   child: Center(
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.duoBlue),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppTheme.duoBlue,
+                      ),
                     ),
                   ),
                 ),
@@ -1009,11 +1251,17 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(LucideIcons.alertTriangle, size: 48, color: AppTheme.duoRed),
+                          const Icon(
+                            LucideIcons.alertTriangle,
+                            size: 48,
+                            color: AppTheme.duoRed,
+                          ),
                           const SizedBox(height: 16),
                           Text(
                             _errorMessage!,
-                            style: TextStyle(color: context.colors.textSecondary),
+                            style: TextStyle(
+                              color: context.colors.textSecondary,
+                            ),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 24),
@@ -1021,7 +1269,9 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
                             style: ElevatedButton.styleFrom(
                               backgroundColor: context.colors.surface,
                               foregroundColor: context.colors.textPrimary,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                             onPressed: _checkConfigAndLoad,
                             child: const Text('Retry'),
@@ -1034,7 +1284,10 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
               ] else ...[
                 // Search bar
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   child: Container(
                     decoration: BoxDecoration(
                       color: context.colors.surfaceAlt,
@@ -1047,10 +1300,18 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
                       decoration: InputDecoration(
                         hintText: 'Search files...',
                         hintStyle: TextStyle(color: context.colors.textFaint),
-                        prefixIcon: Icon(LucideIcons.search, color: context.colors.textFaint, size: 20),
+                        prefixIcon: Icon(
+                          LucideIcons.search,
+                          color: context.colors.textFaint,
+                          size: 20,
+                        ),
                         suffixIcon: _searchQuery.isNotEmpty
                             ? IconButton(
-                                icon: Icon(LucideIcons.x, color: context.colors.textFaint, size: 20),
+                                icon: Icon(
+                                  LucideIcons.x,
+                                  color: context.colors.textFaint,
+                                  size: 20,
+                                ),
                                 onPressed: () {
                                   setState(() {
                                     _searchController.clear();
@@ -1060,7 +1321,9 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
                               )
                             : null,
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                        ),
                       ),
                       onChanged: (val) {
                         setState(() {
@@ -1081,11 +1344,19 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(LucideIcons.folderOpen, size: 48, color: context.colors.textFaint),
+                              Icon(
+                                LucideIcons.folderOpen,
+                                size: 48,
+                                color: context.colors.textFaint,
+                              ),
                               const SizedBox(height: 12),
                               Text(
-                                _searchQuery.isNotEmpty ? 'No files match "$_searchQuery"' : 'No files in Document Store',
-                                style: TextStyle(color: context.colors.textFaint),
+                                _searchQuery.isNotEmpty
+                                    ? 'No files match "$_searchQuery"'
+                                    : 'No files in Document Store',
+                                style: TextStyle(
+                                  color: context.colors.textFaint,
+                                ),
                               ),
                             ],
                           ),
@@ -1106,17 +1377,27 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
                             leading: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: (isSyllabus ? AppTheme.duoOrange : AppTheme.duoBlue).withOpacity(0.1),
+                                color:
+                                    (isSyllabus
+                                            ? AppTheme.duoOrange
+                                            : AppTheme.duoBlue)
+                                        .withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Icon(
                                 LucideIcons.fileText,
-                                color: isSyllabus ? AppTheme.duoOrange : AppTheme.duoBlue,
+                                color: isSyllabus
+                                    ? AppTheme.duoOrange
+                                    : AppTheme.duoBlue,
                               ),
                             ),
                             title: Text(
                               displayName,
-                              style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14),
+                              style: TextStyle(
+                                color: context.colors.textPrimary,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -1124,19 +1405,31 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
                               children: [
                                 Text(
                                   file.sizeFormatted,
-                                  style: TextStyle(color: context.colors.textFaint, fontSize: 11),
+                                  style: TextStyle(
+                                    color: context.colors.textFaint,
+                                    fontSize: 11,
+                                  ),
                                 ),
                                 const SizedBox(width: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: (isSyllabus ? AppTheme.duoOrange : AppTheme.duoBlue).withOpacity(0.15),
+                                    color:
+                                        (isSyllabus
+                                                ? AppTheme.duoOrange
+                                                : AppTheme.duoBlue)
+                                            .withOpacity(0.15),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
                                     isSyllabus ? 'Syllabus' : 'Reference',
                                     style: TextStyle(
-                                      color: isSyllabus ? AppTheme.duoOrange : AppTheme.duoBlue,
+                                      color: isSyllabus
+                                          ? AppTheme.duoOrange
+                                          : AppTheme.duoBlue,
                                       fontSize: 9,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -1145,8 +1438,12 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
                               ],
                             ),
                             trailing: Icon(
-                              isCached ? LucideIcons.checkCircle2 : LucideIcons.downloadCloud,
-                              color: isCached ? AppTheme.duoGreen : context.colors.textFaint,
+                              isCached
+                                  ? LucideIcons.checkCircle2
+                                  : LucideIcons.downloadCloud,
+                              color: isCached
+                                  ? AppTheme.duoGreen
+                                  : context.colors.textFaint,
                               size: 20,
                             ),
                           );

@@ -33,7 +33,14 @@ class _StepByStepViewState extends State<StepByStepView> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: AppTheme.glassOf(context),
-              child: MathMarkdown(data: widget.slide.content, textStyle: TextStyle(fontSize: 18, color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+              child: MathMarkdown(
+                data: widget.slide.content,
+                textStyle: TextStyle(
+                  fontSize: 18,
+                  color: context.colors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
             const SizedBox(height: 32),
             DuoButton(
@@ -41,11 +48,14 @@ class _StepByStepViewState extends State<StepByStepView> {
               color: AppTheme.duoOrange,
               shadowColor: AppTheme.duoOrangeDark,
               onPressed: () => setState(() => _started = true),
-            )
+            ),
           ],
         ),
       );
     }
-    return InteractiveProofView(slide: widget.slide, onComplete: widget.onComplete);
+    return InteractiveProofView(
+      slide: widget.slide,
+      onComplete: widget.onComplete,
+    );
   }
 }

@@ -47,7 +47,9 @@ class TheoryView extends StatelessWidget {
                       textAlign: TextAlign.center,
                     ),
                   ),
-                if (!hasCanvas && slide.title.isNotEmpty && slide.title.toLowerCase() != lessonTitle.toLowerCase())
+                if (!hasCanvas &&
+                    slide.title.isNotEmpty &&
+                    slide.title.toLowerCase() != lessonTitle.toLowerCase())
                   Padding(
                     padding: const EdgeInsets.only(bottom: 24.0, top: 16.0),
                     child: Text(
@@ -61,58 +63,76 @@ class TheoryView extends StatelessWidget {
                       textAlign: TextAlign.center,
                     ),
                   ),
-                ...parts.map((p) => Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(24),
-                  decoration: AppTheme.glassOf(context).copyWith(
-                    borderRadius: hasCanvas
-                        ? const BorderRadius.vertical(bottom: Radius.circular(24))
-                        : BorderRadius.circular(24),
-                    color: context.colors.surfaceAlt,
-                    border: hasCanvas
-                        ? Border(
-                            left: BorderSide(color: context.colors.outline),
-                            right: BorderSide(color: context.colors.outline),
-                            bottom: BorderSide(color: context.colors.outline),
-                          )
-                        : null,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (hasCanvas && slide.title.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16.0),
-                          child: Center(
-                            child: Text(
-                              slide.title,
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                color: context.colors.textPrimary,
-                                letterSpacing: -0.5,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
+                ...parts
+                    .map(
+                      (p) => Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(24),
+                        decoration: AppTheme.glassOf(context).copyWith(
+                          borderRadius: hasCanvas
+                              ? const BorderRadius.vertical(
+                                  bottom: Radius.circular(24),
+                                )
+                              : BorderRadius.circular(24),
+                          color: context.colors.surfaceAlt,
+                          border: hasCanvas
+                              ? Border(
+                                  left: BorderSide(
+                                    color: context.colors.outline,
+                                  ),
+                                  right: BorderSide(
+                                    color: context.colors.outline,
+                                  ),
+                                  bottom: BorderSide(
+                                    color: context.colors.outline,
+                                  ),
+                                )
+                              : null,
                         ),
-                      ...p.split('\n').map((line) {
-                        if (line.isEmpty) {
-                          return const SizedBox(height: 8);
-                        }
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4.0),
-                          child: MathMarkdown(
-                            data: line,
-                            textStyle: TextStyle(fontSize: 16, color: context.colors.textPrimary, height: 1.55),
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
-                )).toList(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (hasCanvas && slide.title.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 16.0),
+                                child: Center(
+                                  child: Text(
+                                    slide.title,
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w900,
+                                      color: context.colors.textPrimary,
+                                      letterSpacing: -0.5,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                            ...p.split('\n').map((line) {
+                              if (line.isEmpty) {
+                                return const SizedBox(height: 8);
+                              }
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 4.0,
+                                ),
+                                child: MathMarkdown(
+                                  data: line,
+                                  textStyle: TextStyle(
+                                    fontSize: 16,
+                                    color: context.colors.textPrimary,
+                                    height: 1.55,
+                                  ),
+                                ),
+                              );
+                            }),
+                          ],
+                        ),
+                      ),
+                    )
+                    .toList(),
               ],
             ),
           ),
@@ -121,10 +141,7 @@ class TheoryView extends StatelessWidget {
               hasScrollBody: false,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  const SizedBox(height: 24),
-                  bottomBar!,
-                ],
+                children: [const SizedBox(height: 24), bottomBar!],
               ),
             ),
         ],

@@ -50,7 +50,9 @@ class MiniProgressBar extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w900,
-                    color: isCompleted ? const Color(0xFFFBBF24) : const Color(0xFFE2E8F0),
+                    color: isCompleted
+                        ? const Color(0xFFFBBF24)
+                        : const Color(0xFFE2E8F0),
                   ),
                 ),
               ],
@@ -76,9 +78,7 @@ class MiniProgressBar extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: fillGradient,
                     borderRadius: BorderRadius.circular(9999),
-                    boxShadow: [
-                      BoxShadow(color: shadowColor, blurRadius: 10),
-                    ],
+                    boxShadow: [BoxShadow(color: shadowColor, blurRadius: 10)],
                   ),
                 ),
               ],

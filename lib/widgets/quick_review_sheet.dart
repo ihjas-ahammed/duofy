@@ -73,7 +73,7 @@ class _QuickReviewSheetState extends State<QuickReviewSheet> {
   MatchingLessonResult? _findMatchingLessonResult(String title) {
     if (title.isEmpty) return null;
     final cleanTitle = title.toLowerCase().trim();
-    
+
     // Exact or substring match
     for (int secIdx = 0; secIdx < widget.module.sections.length; secIdx++) {
       final sec = widget.module.sections[secIdx];
@@ -82,8 +82,8 @@ class _QuickReviewSheetState extends State<QuickReviewSheet> {
         for (int lessonIdx = 0; lessonIdx < unit.lessons.length; lessonIdx++) {
           final lesson = unit.lessons[lessonIdx];
           final lessonTitle = lesson.title.toLowerCase().trim();
-          if (lessonTitle == cleanTitle || 
-              lessonTitle.contains(cleanTitle) || 
+          if (lessonTitle == cleanTitle ||
+              lessonTitle.contains(cleanTitle) ||
               cleanTitle.contains(lessonTitle)) {
             return MatchingLessonResult(
               lesson: lesson,
@@ -97,16 +97,26 @@ class _QuickReviewSheetState extends State<QuickReviewSheet> {
     }
 
     // Word overlap match
-    final titleWords = cleanTitle.split(RegExp(r'\s+')).where((w) => w.length > 3).toSet();
+    final titleWords = cleanTitle
+        .split(RegExp(r'\s+'))
+        .where((w) => w.length > 3)
+        .toSet();
     if (titleWords.isNotEmpty) {
       for (int secIdx = 0; secIdx < widget.module.sections.length; secIdx++) {
         final sec = widget.module.sections[secIdx];
         for (int unitIdx = 0; unitIdx < sec.units.length; unitIdx++) {
           final unit = sec.units[unitIdx];
-          for (int lessonIdx = 0; lessonIdx < unit.lessons.length; lessonIdx++) {
+          for (
+            int lessonIdx = 0;
+            lessonIdx < unit.lessons.length;
+            lessonIdx++
+          ) {
             final lesson = unit.lessons[lessonIdx];
             final lessonTitle = lesson.title.toLowerCase().trim();
-            final lessonWords = lessonTitle.split(RegExp(r'\s+')).where((w) => w.length > 3).toSet();
+            final lessonWords = lessonTitle
+                .split(RegExp(r'\s+'))
+                .where((w) => w.length > 3)
+                .toSet();
             final intersection = titleWords.intersection(lessonWords);
             if (intersection.isNotEmpty) {
               return MatchingLessonResult(
@@ -200,9 +210,15 @@ class _QuickReviewSheetState extends State<QuickReviewSheet> {
                       ],
                     ),
                   ),
-                  if (_reviewItems != null && _reviewItems!.isNotEmpty && !_isGenerating)
+                  if (_reviewItems != null &&
+                      _reviewItems!.isNotEmpty &&
+                      !_isGenerating)
                     IconButton(
-                      icon: Icon(LucideIcons.refreshCw, color: context.colors.textSecondary, size: 20),
+                      icon: Icon(
+                        LucideIcons.refreshCw,
+                        color: context.colors.textSecondary,
+                        size: 20,
+                      ),
                       onPressed: _generateReview,
                     ),
                 ],
@@ -214,21 +230,21 @@ class _QuickReviewSheetState extends State<QuickReviewSheet> {
                 child: _isGenerating
                     ? const _LoadingPanel()
                     : (_reviewItems == null || _reviewItems!.isEmpty)
-                        ? _EmptyReviewPanel(onGenerate: _generateReview)
-                        : ListView.builder(
-                            shrinkWrap: true,
-                            physics: const BouncingScrollPhysics(),
-                            itemCount: _reviewItems!.length,
-                            padding: const EdgeInsets.only(bottom: 24),
-                            itemBuilder: (context, index) {
-                              final item = _reviewItems![index];
-                              return _ReviewItemCard(
-                                item: item,
-                                index: index + 1,
-                                onTap: () => _showDetailDialog(item),
-                              );
-                            },
-                          ),
+                    ? _EmptyReviewPanel(onGenerate: _generateReview)
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: _reviewItems!.length,
+                        padding: const EdgeInsets.only(bottom: 24),
+                        itemBuilder: (context, index) {
+                          final item = _reviewItems![index];
+                          return _ReviewItemCard(
+                            item: item,
+                            index: index + 1,
+                            onTap: () => _showDetailDialog(item),
+                          );
+                        },
+                      ),
               ),
             ],
           ),
@@ -268,18 +284,30 @@ class _EmptyReviewPanel extends StatelessWidget {
               color: AppTheme.duoBlue.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(LucideIcons.sparkles, color: AppTheme.duoBlue, size: 36),
+            child: const Icon(
+              LucideIcons.sparkles,
+              color: AppTheme.duoBlue,
+              size: 36,
+            ),
           ),
           const SizedBox(height: 20),
           Text(
             'No Quick Review Sheet Yet',
-            style: TextStyle(color: context.colors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: context.colors.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             'Generate a summary of key concepts, equations, and definitions directly from the module\'s textbook sections.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: context.colors.textFaint, fontSize: 13, height: 1.4),
+            style: TextStyle(
+              color: context.colors.textFaint,
+              fontSize: 13,
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 24),
           SizedBox(
@@ -289,10 +317,15 @@ class _EmptyReviewPanel extends StatelessWidget {
                 backgroundColor: AppTheme.duoBlue,
                 foregroundColor: context.colors.textPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
               icon: const Icon(LucideIcons.sparkles, size: 18),
-              label: const Text('Generate Review Sheet', style: TextStyle(fontWeight: FontWeight.bold)),
+              label: const Text(
+                'Generate Review Sheet',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               onPressed: onGenerate,
             ),
           ),
@@ -316,7 +349,7 @@ class _LoadingPanelState extends State<_LoadingPanel> {
     'Analyzing key formulas and laws...',
     'Synthesizing concise review points...',
     'Formatting equations in LaTeX...',
-    'Finalizing review sheet...'
+    'Finalizing review sheet...',
   ];
 
   @override
@@ -354,7 +387,11 @@ class _LoadingPanelState extends State<_LoadingPanel> {
           const SizedBox(height: 24),
           Text(
             _statuses[_statusIdx],
-            style: TextStyle(color: context.colors.textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: context.colors.textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -419,7 +456,11 @@ class _ReviewItemCard extends StatelessWidget {
                   Expanded(
                     child: MathMarkdown(
                       data: item.statement,
-                      textStyle: TextStyle(color: context.colors.textPrimary, fontSize: 14, height: 1.5),
+                      textStyle: TextStyle(
+                        color: context.colors.textPrimary,
+                        fontSize: 14,
+                        height: 1.5,
+                      ),
                     ),
                   ),
                 ],
@@ -427,7 +468,10 @@ class _ReviewItemCard extends StatelessWidget {
               if (item.relatedLessonTitle.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(8),
@@ -435,11 +479,19 @@ class _ReviewItemCard extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(LucideIcons.bookOpen, color: context.colors.textFaint, size: 12),
+                      Icon(
+                        LucideIcons.bookOpen,
+                        color: context.colors.textFaint,
+                        size: 12,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         item.relatedLessonTitle,
-                        style: TextStyle(color: context.colors.textFaint, fontSize: 11, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: context.colors.textFaint,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
@@ -568,14 +620,22 @@ class _StatementDetailSheetState extends State<_StatementDetailSheet> {
               // Title
               Row(
                 children: [
-                  const Icon(LucideIcons.sparkles, color: AppTheme.duoGreen, size: 20),
+                  const Icon(
+                    LucideIcons.sparkles,
+                    color: AppTheme.duoGreen,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       widget.item.relatedLessonTitle.isNotEmpty
                           ? widget.item.relatedLessonTitle
                           : 'Concept Explanation',
-                      style: TextStyle(color: context.colors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: context.colors.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
@@ -592,7 +652,11 @@ class _StatementDetailSheetState extends State<_StatementDetailSheet> {
                 ),
                 child: MathMarkdown(
                   data: widget.item.statement,
-                  textStyle: TextStyle(color: context.colors.textSecondary, fontSize: 13, height: 1.4),
+                  textStyle: TextStyle(
+                    color: context.colors.textSecondary,
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
@@ -604,9 +668,19 @@ class _StatementDetailSheetState extends State<_StatementDetailSheet> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppTheme.duoGreen)),
+                            const CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                AppTheme.duoGreen,
+                              ),
+                            ),
                             const SizedBox(height: 16),
-                            Text('AI is writing detailed explanation...', style: TextStyle(color: context.colors.textFaint, fontSize: 13)),
+                            Text(
+                              'AI is writing detailed explanation...',
+                              style: TextStyle(
+                                color: context.colors.textFaint,
+                                fontSize: 13,
+                              ),
+                            ),
                           ],
                         ),
                       )
@@ -614,7 +688,11 @@ class _StatementDetailSheetState extends State<_StatementDetailSheet> {
                         physics: const BouncingScrollPhysics(),
                         child: MathMarkdown(
                           data: _explanation,
-                          textStyle: TextStyle(color: context.colors.textPrimary, fontSize: 14, height: 1.5),
+                          textStyle: TextStyle(
+                            color: context.colors.textPrimary,
+                            fontSize: 14,
+                            height: 1.5,
+                          ),
                         ),
                       ),
               ),
@@ -627,10 +705,15 @@ class _StatementDetailSheetState extends State<_StatementDetailSheet> {
                     backgroundColor: AppTheme.duoGreen,
                     foregroundColor: context.colors.textPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                   icon: const Icon(LucideIcons.playCircle, size: 18),
-                  label: const Text('Study Related Lesson', style: TextStyle(fontWeight: FontWeight.bold)),
+                  label: const Text(
+                    'Study Related Lesson',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   onPressed: () => _navigateToLesson(context),
                 )
               else
@@ -639,10 +722,15 @@ class _StatementDetailSheetState extends State<_StatementDetailSheet> {
                     backgroundColor: context.colors.surfaceAlt,
                     foregroundColor: context.colors.textPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Close', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Close',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
             ],
           ),

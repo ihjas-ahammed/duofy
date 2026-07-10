@@ -32,7 +32,9 @@ class _LearnerProfileCardState extends State<LearnerProfileCard> {
     if (!mounted) return;
     setState(() {
       _examplesFirst = prefs.getBool(PersonalizationService.prefExamplesFirst);
-      _languageLevel = prefs.getString(PersonalizationService.prefLanguageLevel);
+      _languageLevel = prefs.getString(
+        PersonalizationService.prefLanguageLevel,
+      );
       _tone = prefs.getString(PersonalizationService.prefTone);
       _loaded = true;
     });
@@ -49,12 +51,15 @@ class _LearnerProfileCardState extends State<LearnerProfileCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: TextStyle(
-                  color: context.colors.textFaint,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2)),
+          Text(
+            label,
+            style: TextStyle(
+              color: context.colors.textFaint,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.2,
+            ),
+          ),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -73,13 +78,18 @@ class _LearnerProfileCardState extends State<LearnerProfileCard> {
                             : context.colors.surfaceAlt,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                            color: selected == value ? AppTheme.duoBlue : context.colors.outline),
+                          color: selected == value
+                              ? AppTheme.duoBlue
+                              : context.colors.outline,
+                        ),
                       ),
                       child: Text(
                         text,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: selected == value ? AppTheme.duoBlue : context.colors.textSecondary,
+                          color: selected == value
+                              ? AppTheme.duoBlue
+                              : context.colors.textSecondary,
                           fontWeight: FontWeight.w800,
                           fontSize: 11,
                         ),
@@ -125,11 +135,20 @@ class _LearnerProfileCardState extends State<LearnerProfileCard> {
         children: [
           Row(
             children: [
-              const Icon(LucideIcons.slidersHorizontal, color: AppTheme.duoBlue, size: 18),
+              const Icon(
+                LucideIcons.slidersHorizontal,
+                color: AppTheme.duoBlue,
+                size: 18,
+              ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('Teaching preferences',
-                    style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w800)),
+                child: Text(
+                  'Teaching preferences',
+                  style: TextStyle(
+                    color: context.colors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ),
             ],
           ),

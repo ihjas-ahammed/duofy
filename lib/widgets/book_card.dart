@@ -33,7 +33,7 @@ class BookCard extends StatelessWidget {
               color: context.colors.shadow,
               blurRadius: 16,
               offset: const Offset(0, 8),
-            )
+            ),
           ],
         ),
         clipBehavior: Clip.hardEdge,
@@ -49,9 +49,9 @@ class BookCard extends StatelessWidget {
                     ),
                     child: Center(
                       child: Icon(
-                        LucideIcons.bookOpen, 
-                        size: 64, 
-                        color: Colors.white.withOpacity(0.8)
+                        LucideIcons.bookOpen,
+                        size: 64,
+                        color: Colors.white.withOpacity(0.8),
                       ),
                     ),
                   ),
@@ -59,21 +59,33 @@ class BookCard extends StatelessWidget {
                 Expanded(
                   flex: 4,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
                     color: context.colors.surface,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           book.title,
-                          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: context.colors.textPrimary, height: 1.2),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 20,
+                            color: context.colors.textPrimary,
+                            height: 1.2,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 6),
                         Text(
                           book.description,
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: context.colors.textFaint),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: context.colors.textFaint,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -92,14 +104,18 @@ class BookCard extends StatelessWidget {
                             const SizedBox(width: 16),
                             const Text(
                               'Continue',
-                              style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.w900, fontSize: 14),
-                            )
+                              style: TextStyle(
+                                color: AppTheme.duoBlue,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 14,
+                              ),
+                            ),
                           ],
-                        )
+                        ),
                       ],
                     ),
                   ),
-                )
+                ),
               ],
             ),
             Positioned(
@@ -114,7 +130,11 @@ class BookCard extends StatelessWidget {
                     shape: BoxShape.circle,
                     border: Border.all(color: context.colors.textFaint),
                   ),
-                  child: Icon(LucideIcons.trash2, size: 16, color: context.colors.textPrimary),
+                  child: Icon(
+                    LucideIcons.trash2,
+                    size: 16,
+                    color: context.colors.textPrimary,
+                  ),
                 ),
               ),
             ),

@@ -33,7 +33,8 @@ class LessonCompleteScreen extends StatefulWidget {
   State<LessonCompleteScreen> createState() => _LessonCompleteScreenState();
 }
 
-class _LessonCompleteScreenState extends State<LessonCompleteScreen> with SingleTickerProviderStateMixin {
+class _LessonCompleteScreenState extends State<LessonCompleteScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   late Animation<double> _scaleAnim;
   late ConfettiController _confettiController;
@@ -44,13 +45,17 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
     _scaleAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.elasticOut)
+      CurvedAnimation(parent: _animController, curve: Curves.elasticOut),
     );
 
-    _confettiController =
-        ConfettiController(duration: const Duration(milliseconds: 1200));
+    _confettiController = ConfettiController(
+      duration: const Duration(milliseconds: 1200),
+    );
 
     _animController.forward();
     _confettiController.play();
@@ -83,12 +88,12 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
 
   /// Wraps [child] in the staggered elastic pop-in used across the stat tiles.
   Widget _staggered(double start, Widget child) => ScaleTransition(
-        scale: CurvedAnimation(
-          parent: _animController,
-          curve: Interval(start, 1.0, curve: Curves.elasticOut),
-        ),
-        child: child,
-      );
+    scale: CurvedAnimation(
+      parent: _animController,
+      curve: Interval(start, 1.0, curve: Curves.elasticOut),
+    ),
+    child: child,
+  );
 
   /// A single stat tile (XP / accuracy / time). [accentColor] tints the icon
   /// and the bottom rule.
@@ -107,11 +112,21 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
         children: [
           Icon(icon, color: accentColor, size: 28),
           const SizedBox(height: 8),
-          Text(label,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: context.colors.textFaint, letterSpacing: 1.2)),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: context.colors.textFaint,
+              letterSpacing: 1.2,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+          ),
         ],
       ),
     );
@@ -119,44 +134,48 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
 
   /// XP tile whose number counts up from 0 as the screen lands.
   Widget _xpStatTile() => TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0, end: widget.xpEarned.toDouble()),
-        duration: const Duration(milliseconds: 900),
-        curve: Curves.easeOutCubic,
-        builder: (context, v, _) => _statTile(
-          icon: LucideIcons.zap,
-          accentColor: Colors.amber,
-          label: 'XP EARNED',
-          value: '+${v.round()}',
-        ),
-      );
+    tween: Tween(begin: 0, end: widget.xpEarned.toDouble()),
+    duration: const Duration(milliseconds: 900),
+    curve: Curves.easeOutCubic,
+    builder: (context, v, _) => _statTile(
+      icon: LucideIcons.zap,
+      accentColor: Colors.amber,
+      label: 'XP EARNED',
+      value: '+${v.round()}',
+    ),
+  );
 
   Widget get _hero => ScaleTransition(
-        scale: _scaleAnim,
-        child: Column(
-          children: [
-            const Icon(LucideIcons.trophy, size: 96, color: Colors.amber),
-            const SizedBox(height: 28),
-            Text(
-              _message,
-              style: const TextStyle(fontSize: 38, fontWeight: FontWeight.w900, color: Colors.amber),
-              textAlign: TextAlign.center,
-            ),
-          ],
+    scale: _scaleAnim,
+    child: Column(
+      children: [
+        const Icon(LucideIcons.trophy, size: 96, color: Colors.amber),
+        const SizedBox(height: 28),
+        Text(
+          _message,
+          style: const TextStyle(
+            fontSize: 38,
+            fontWeight: FontWeight.w900,
+            color: Colors.amber,
+          ),
+          textAlign: TextAlign.center,
         ),
-      );
+      ],
+    ),
+  );
 
   Widget get _continueButton => _staggered(
-        0.6,
-        DuoButton(
-          text: 'Continue',
-          color: AppTheme.duoGreen,
-          shadowColor: AppTheme.duoGreenDark,
-          // Because pushReplacement is used in both LessonScreen and
-          // PracticeSessionScreen, popping exactly once properly returns back
-          // to the lesson path or practice menu.
-          onPressed: () => Navigator.pop(context),
-        ),
-      );
+    0.6,
+    DuoButton(
+      text: 'Continue',
+      color: AppTheme.duoGreen,
+      shadowColor: AppTheme.duoGreenDark,
+      // Because pushReplacement is used in both LessonScreen and
+      // PracticeSessionScreen, popping exactly once properly returns back
+      // to the lesson path or practice menu.
+      onPressed: () => Navigator.pop(context),
+    ),
+  );
 
   /// One-tap "How did that feel?" row. Entirely optional — Continue works
   /// without it — but each tap tunes the module's future difficulty.
@@ -174,7 +193,10 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
               : () {
                   setState(() => _reflection = value);
                   MetacognitionService.recordReflection(
-                      widget.bookId!, widget.moduleId!, value);
+                    widget.bookId!,
+                    widget.moduleId!,
+                    value,
+                  );
                   HapticFeedback.selectionClick();
                 },
           child: AnimatedOpacity(
@@ -184,19 +206,30 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
               margin: const EdgeInsets.symmetric(horizontal: 4),
               padding: const EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
-                color: selected ? color.withOpacity(0.18) : context.colors.surfaceAlt,
+                color: selected
+                    ? color.withOpacity(0.18)
+                    : context.colors.surfaceAlt,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: selected ? color : context.colors.outline),
+                border: Border.all(
+                  color: selected ? color : context.colors.outline,
+                ),
               ),
               child: Column(
                 children: [
-                  Icon(icon, size: 18, color: selected ? color : context.colors.textFaint),
+                  Icon(
+                    icon,
+                    size: 18,
+                    color: selected ? color : context.colors.textFaint,
+                  ),
                   const SizedBox(height: 4),
-                  Text(label,
-                      style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          color: selected ? color : context.colors.textFaint)),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      color: selected ? color : context.colors.textFaint,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -210,19 +243,27 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
       Column(
         children: [
           Text(
-            _reflection == null ? 'HOW DID THAT FEEL?' : 'THANKS — FUTURE LESSONS WILL ADAPT',
+            _reflection == null
+                ? 'HOW DID THAT FEEL?'
+                : 'THANKS — FUTURE LESSONS WILL ADAPT',
             style: TextStyle(
-                color: context.colors.textFaint,
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.4),
+              color: context.colors.textFaint,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.4,
+            ),
           ),
           const SizedBox(height: 10),
           Row(
             children: [
               chip('easy', LucideIcons.feather, 'TOO EASY', AppTheme.duoBlue),
               chip('right', LucideIcons.smile, 'JUST RIGHT', AppTheme.duoGreen),
-              chip('confusing', LucideIcons.cloudFog, 'CONFUSING', AppTheme.duoOrange),
+              chip(
+                'confusing',
+                LucideIcons.cloudFog,
+                'CONFUSING',
+                AppTheme.duoOrange,
+              ),
             ],
           ),
         ],
@@ -291,16 +332,30 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      Expanded(child: _staggered(0.2, _xpStatTile())),
+                      const SizedBox(width: 16),
                       Expanded(
-                        child: _staggered(0.2, _xpStatTile()),
+                        child: _staggered(
+                          0.35,
+                          _statTile(
+                            icon: LucideIcons.target,
+                            accentColor: AppTheme.duoBlue,
+                            label: 'ACCURACY',
+                            value: '${widget.accuracy}%',
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: _staggered(0.35, _statTile(icon: LucideIcons.target, accentColor: AppTheme.duoBlue, label: 'ACCURACY', value: '${widget.accuracy}%')),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _staggered(0.5, _statTile(icon: LucideIcons.clock, accentColor: AppTheme.duoGreen, label: 'TIME SPENT', value: _formattedTime)),
+                        child: _staggered(
+                          0.5,
+                          _statTile(
+                            icon: LucideIcons.clock,
+                            accentColor: AppTheme.duoGreen,
+                            label: 'TIME SPENT',
+                            value: _formattedTime,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -332,7 +387,14 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
               children: [
                 Expanded(child: _xpStatTile()),
                 const SizedBox(width: 16),
-                Expanded(child: _statTile(icon: LucideIcons.target, accentColor: AppTheme.duoBlue, label: 'ACCURACY', value: '${widget.accuracy}%')),
+                Expanded(
+                  child: _statTile(
+                    icon: LucideIcons.target,
+                    accentColor: AppTheme.duoBlue,
+                    label: 'ACCURACY',
+                    value: '${widget.accuracy}%',
+                  ),
+                ),
               ],
             ),
           ),
@@ -341,7 +403,12 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
             0.4,
             SizedBox(
               width: double.infinity,
-              child: _statTile(icon: LucideIcons.clock, accentColor: AppTheme.duoGreen, label: 'TIME SPENT', value: _formattedTime),
+              child: _statTile(
+                icon: LucideIcons.clock,
+                accentColor: AppTheme.duoGreen,
+                label: 'TIME SPENT',
+                value: _formattedTime,
+              ),
             ),
           ),
           const Spacer(),

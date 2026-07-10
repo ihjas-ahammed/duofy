@@ -82,7 +82,9 @@ class _RealProgressBarState extends State<RealProgressBar> {
   double? get _value {
     if (widget.isComplete) return 1.0;
     if (widget.startTime != null && widget.estimatedDuration != null) {
-      final elapsed = DateTime.now().difference(widget.startTime!).inMilliseconds;
+      final elapsed = DateTime.now()
+          .difference(widget.startTime!)
+          .inMilliseconds;
       final est = widget.estimatedDuration!.inMilliseconds;
       if (est > 0) {
         final ratio = elapsed / est;
@@ -128,7 +130,11 @@ class _RealProgressBarState extends State<RealProgressBar> {
               padding: const EdgeInsets.only(top: 6),
               child: Text(
                 '${(val * 100).round()}%',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: color),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  color: color,
+                ),
               ),
             ),
           if (widget.label.isNotEmpty)
@@ -136,7 +142,11 @@ class _RealProgressBarState extends State<RealProgressBar> {
               padding: const EdgeInsets.only(top: 6.0),
               child: Text(
                 widget.label,
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: context.colors.textSecondary),
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: context.colors.textSecondary,
+                ),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -155,7 +165,11 @@ class _RealProgressBarState extends State<RealProgressBar> {
             padding: const EdgeInsets.only(bottom: 8.0),
             child: Text(
               widget.label,
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.colors.textSecondary),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: context.colors.textSecondary,
+              ),
             ),
           ),
         ClipRRect(

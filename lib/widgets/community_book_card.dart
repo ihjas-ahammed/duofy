@@ -38,7 +38,11 @@ class CommunityBookCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppTheme.duoBlue.withOpacity(0.4)),
             ),
-            child: const Icon(LucideIcons.bookOpen, color: AppTheme.duoBlue, size: 28),
+            child: const Icon(
+              LucideIcons.bookOpen,
+              color: AppTheme.duoBlue,
+              size: 28,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -48,21 +52,29 @@ class CommunityBookCard extends StatelessWidget {
               children: [
                 Text(
                   book.title,
-                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: context.colors.textPrimary),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                    color: context.colors.textPrimary,
+                  ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'By ${book.authorName ?? 'Community'}',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: context.colors.textFaint),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                    color: context.colors.textFaint,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          
+
           if (onDeletePressed != null)
             GestureDetector(
               onTap: onDeletePressed,
@@ -73,7 +85,11 @@ class CommunityBookCard extends StatelessWidget {
                   color: Colors.red.withOpacity(0.15),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(LucideIcons.trash2, color: Colors.red, size: 18),
+                child: const Icon(
+                  LucideIcons.trash2,
+                  color: Colors.red,
+                  size: 18,
+                ),
               ),
             ),
 
@@ -85,9 +101,15 @@ class CommunityBookCard extends StatelessWidget {
                 color: AppTheme.duoBlue.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Text(buttonText, style: const TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.w900)),
+              child: Text(
+                buttonText,
+                style: const TextStyle(
+                  color: AppTheme.duoBlue,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
             ),
-          )
+          ),
         ],
       ),
     );

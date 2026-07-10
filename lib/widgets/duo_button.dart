@@ -37,7 +37,10 @@ class _DuoButtonState extends State<DuoButton> {
       onTapCancel: () => setState(() => _isPressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 100),
-        margin: EdgeInsets.only(top: _isPressed ? 4 : 0, bottom: _isPressed ? 0 : 4),
+        margin: EdgeInsets.only(
+          top: _isPressed ? 4 : 0,
+          bottom: _isPressed ? 0 : 4,
+        ),
         decoration: BoxDecoration(
           color: widget.isOutline ? Colors.transparent : widget.color,
           borderRadius: BorderRadius.circular(16),
@@ -51,20 +54,24 @@ class _DuoButtonState extends State<DuoButton> {
                   BoxShadow(
                     color: widget.shadowColor,
                     offset: const Offset(0, 4),
-                  )
+                  ),
                 ],
         ),
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         child: Center(
-          child: widget.child ?? Text(
-            widget.text.toUpperCase(),
-            style: TextStyle(
-              color: widget.isOutline ? widget.color : context.colors.textPrimary,
-              fontWeight: FontWeight.w900,
-              fontSize: 16,
-              letterSpacing: 1.2,
-            ),
-          ),
+          child:
+              widget.child ??
+              Text(
+                widget.text.toUpperCase(),
+                style: TextStyle(
+                  color: widget.isOutline
+                      ? widget.color
+                      : context.colors.textPrimary,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
+                  letterSpacing: 1.2,
+                ),
+              ),
         ),
       ),
     );
@@ -120,12 +127,10 @@ class _DuoIconButtonState extends State<DuoIconButton> {
                   BoxShadow(
                     color: widget.shadowColor,
                     offset: const Offset(0, 4),
-                  )
+                  ),
                 ],
         ),
-        child: Center(
-          child: widget.icon,
-        ),
+        child: Center(child: widget.icon),
       ),
     );
   }

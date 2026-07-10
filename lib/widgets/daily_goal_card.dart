@@ -58,8 +58,10 @@ class _DailyGoalCardState extends State<DailyGoalCard> {
   Future<void> _applyReminder() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('daily_reminder_enabled', _reminderEnabled);
-    await prefs.setString('daily_reminder_time',
-        '${_reminderTime.hour}:${_reminderTime.minute.toString().padLeft(2, '0')}');
+    await prefs.setString(
+      'daily_reminder_time',
+      '${_reminderTime.hour}:${_reminderTime.minute.toString().padLeft(2, '0')}',
+    );
     if (_reminderEnabled) {
       await NotificationService.scheduleDailyReminder(_reminderTime);
     } else {
@@ -78,10 +80,19 @@ class _DailyGoalCardState extends State<DailyGoalCard> {
         children: [
           Row(
             children: [
-              const Icon(LucideIcons.flame, color: AppTheme.duoOrange, size: 18),
+              const Icon(
+                LucideIcons.flame,
+                color: AppTheme.duoOrange,
+                size: 18,
+              ),
               const SizedBox(width: 8),
-              Text('Daily XP goal',
-                  style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w800)),
+              Text(
+                'Daily XP goal',
+                style: TextStyle(
+                  color: context.colors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -109,7 +120,9 @@ class _DailyGoalCardState extends State<DailyGoalCard> {
                       child: Text(
                         '$g',
                         style: TextStyle(
-                          color: _goal == g ? AppTheme.duoOrange : context.colors.textSecondary,
+                          color: _goal == g
+                              ? AppTheme.duoOrange
+                              : context.colors.textSecondary,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -126,8 +139,14 @@ class _DailyGoalCardState extends State<DailyGoalCard> {
               contentPadding: EdgeInsets.zero,
               value: _reminderEnabled,
               activeColor: AppTheme.duoOrange,
-              title: Text('Daily reminder',
-                  style: TextStyle(color: context.colors.textPrimary, fontSize: 14, fontWeight: FontWeight.bold)),
+              title: Text(
+                'Daily reminder',
+                style: TextStyle(
+                  color: context.colors.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               subtitle: Text(
                 _reminderEnabled
                     ? 'Every day at ${_reminderTime.format(context)}'
@@ -145,16 +164,27 @@ class _DailyGoalCardState extends State<DailyGoalCard> {
                 child: TextButton.icon(
                   onPressed: () async {
                     final picked = await showTimePicker(
-                        context: context, initialTime: _reminderTime);
+                      context: context,
+                      initialTime: _reminderTime,
+                    );
                     if (picked != null) {
                       setState(() => _reminderTime = picked);
                       await _applyReminder();
                     }
                   },
-                  icon: const Icon(LucideIcons.clock, size: 14, color: AppTheme.duoBlue),
-                  label: Text('Change time (${_reminderTime.format(context)})',
-                      style: const TextStyle(
-                          color: AppTheme.duoBlue, fontSize: 12, fontWeight: FontWeight.bold)),
+                  icon: const Icon(
+                    LucideIcons.clock,
+                    size: 14,
+                    color: AppTheme.duoBlue,
+                  ),
+                  label: Text(
+                    'Change time (${_reminderTime.format(context)})',
+                    style: const TextStyle(
+                      color: AppTheme.duoBlue,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
           ],
