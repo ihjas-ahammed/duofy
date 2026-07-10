@@ -29,7 +29,9 @@ class UnitHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint("UNIT TITLE: '${unit.title}', DESC: '${unit.description}', IS_GENERATED: $isGenerated");
+    debugPrint(
+      "UNIT TITLE: '${unit.title}', DESC: '${unit.description}', IS_GENERATED: $isGenerated",
+    );
     final bool isError = generationTask?.isError ?? false;
     final String? status = generationTask?.status;
 
@@ -41,11 +43,15 @@ class UnitHeader extends StatelessWidget {
           filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.03),
+              color: context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.08)),
+              border: Border.all(color: context.colors.outline),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 30, offset: const Offset(0, 8)),
+                BoxShadow(
+                  color: context.colors.shadow,
+                  blurRadius: 30,
+                  offset: const Offset(0, 8),
+                ),
               ],
             ),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
@@ -54,90 +60,98 @@ class UnitHeader extends StatelessWidget {
               children: [
                 Text(
                   unit.title.toUpperCase(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 14,
-                    color: Colors.white,
+                    color: context.colors.textPrimary,
                     letterSpacing: -0.2,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                
+
                 if (!isGenerated)
                   Padding(
                     padding: const EdgeInsets.only(top: 12),
                     child: generationTask != null
                         ? (isError
-                            ? Column(
-                                children: [
-                                  Text(
-                                    status ?? 'Unknown Error',
-                                    style: const TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold, fontSize: 10),
-                                    textAlign: TextAlign.center,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: DuoButton(
-                                      text: 'Retry Generation',
-                                      color: AppTheme.duoOrange,
-                                      shadowColor: AppTheme.duoOrangeDark,
-                                      onPressed: () {
-                                        GenerationManager.instance.clearUnitError(unit.id);
-                                        onGenerate();
-                                      },
+                              ? Column(
+                                  children: [
+                                    Text(
+                                      status ?? 'Unknown Error',
+                                      style: const TextStyle(
+                                        color: AppTheme.duoRed,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 10,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                  ),
-                                ],
-                              )
-                            : Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Expanded(
-                                    child: RealProgressBar(
-                                      progress: generationTask!.progress,
-                                      startTime: generationTask!.startTime,
-                                      estimatedDuration: generationTask!.estimatedDuration,
-                                      isCircular: false,
-                                      label: status ?? 'Loading...',
+                                    const SizedBox(height: 8),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: DuoButton(
+                                        text: 'Retry Generation',
+                                        color: AppTheme.duoOrange,
+                                        shadowColor: AppTheme.duoOrangeDark,
+                                        onPressed: () {
+                                          GenerationManager.instance
+                                              .clearUnitError(unit.id);
+                                          onGenerate();
+                                        },
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ))
+                                  ],
+                                )
+                              : Row(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Expanded(
+                                      child: RealProgressBar(
+                                        progress: generationTask!.progress,
+                                        startTime: generationTask!.startTime,
+                                        estimatedDuration:
+                                            generationTask!.estimatedDuration,
+                                        isCircular: false,
+                                        label: status ?? 'Loading...',
+                                      ),
+                                    ),
+                                  ],
+                                ))
                         : (unit.lessons.isNotEmpty
-                            // Generation was interrupted (app killed / closed
-                            // mid-run): some lessons were saved but the unit was
-                            // never marked complete. Offer to pick up where it
-                            // left off rather than silently restarting.
-                            ? Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Expanded(
-                                    child: RealProgressBar(
-                                      progress: unit.lessons.isEmpty ? 0.0 : (unit.lessons.length / (unit.lessons.length + 2)),
-                                      isCircular: false,
-                                      label: 'Interrupted — ${unit.lessons.length} lesson${unit.lessons.length == 1 ? '' : 's'} saved',
+                              // Generation was interrupted (app killed / closed
+                              // mid-run): some lessons were saved but the unit was
+                              // never marked complete. Offer to pick up where it
+                              // left off rather than silently restarting.
+                              ? Row(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Expanded(
+                                      child: RealProgressBar(
+                                        progress: unit.lessons.isEmpty
+                                            ? 0.0
+                                            : (unit.lessons.length /
+                                                  (unit.lessons.length + 2)),
+                                        isCircular: false,
+                                        label:
+                                            'Interrupted — ${unit.lessons.length} lesson${unit.lessons.length == 1 ? '' : 's'} saved',
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  _ResumeIconButton(
+                                    const SizedBox(width: 12),
+                                    _ResumeIconButton(onPressed: onGenerate),
+                                  ],
+                                )
+                              : SizedBox(
+                                  width: double.infinity,
+                                  child: DuoButton(
+                                    text: 'Generate Unit',
+                                    color: AppTheme.duoViolet,
+                                    shadowColor: AppTheme.duoVioletDark,
                                     onPressed: onGenerate,
                                   ),
-                                ],
-                              )
-                            : SizedBox(
-                                width: double.infinity,
-                                child: DuoButton(
-                                  text: 'Generate Unit',
-                                  color: AppTheme.duoViolet,
-                                  shadowColor: AppTheme.duoVioletDark,
-                                  onPressed: onGenerate,
-                                ),
-                              )),
+                                )),
                   ),
               ],
             ),
@@ -171,29 +185,29 @@ class _ResumeIconButtonState extends State<_ResumeIconButton> {
       onTapCancel: () => setState(() => _isPressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 100),
-        margin: EdgeInsets.only(top: _isPressed ? 3 : 0, bottom: _isPressed ? 0 : 3),
+        margin: EdgeInsets.only(
+          top: _isPressed ? 3 : 0,
+          bottom: _isPressed ? 0 : 3,
+        ),
         width: 36,
         height: 36,
         decoration: BoxDecoration(
           color: AppTheme.duoViolet,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppTheme.duoVioletDark,
-            width: 2,
-          ),
+          border: Border.all(color: AppTheme.duoVioletDark, width: 2),
           boxShadow: _isPressed
               ? []
               : [
                   const BoxShadow(
                     color: AppTheme.duoVioletDark,
                     offset: Offset(0, 3),
-                  )
+                  ),
                 ],
         ),
-        child: const Center(
+        child: Center(
           child: Icon(
             LucideIcons.play,
-            color: Colors.white,
+            color: context.colors.textPrimary,
             size: 16,
           ),
         ),
@@ -201,4 +215,3 @@ class _ResumeIconButtonState extends State<_ResumeIconButton> {
     );
   }
 }
-

@@ -24,7 +24,11 @@ class WebPdfTextSearchResult extends PdfTextSearchResult {
        _onPrev = onPrev,
        _onClear = onClear;
 
-  void update({required bool hasResult, required int currentInstanceIndex, required int totalInstanceCount}) {
+  void update({
+    required bool hasResult,
+    required int currentInstanceIndex,
+    required int totalInstanceCount,
+  }) {
     _hasResult = hasResult;
     _currentInstanceIndex = currentInstanceIndex;
     _totalInstanceCount = totalInstanceCount;
@@ -110,7 +114,9 @@ class SafePdfViewerController extends PdfViewerController {
 
   @override
   void jumpTo({double xOffset = 0.0, double yOffset = 0.0}) {
-    _webViewController?.runJavaScript?.call('scrollToOffset($xOffset, $yOffset);');
+    _webViewController?.runJavaScript?.call(
+      'scrollToOffset($xOffset, $yOffset);',
+    );
   }
 
   @override
@@ -121,14 +127,18 @@ class SafePdfViewerController extends PdfViewerController {
   @override
   void nextPage() {
     if (_currentPageNumber < _totalPageCount) {
-      _webViewController?.runJavaScript?.call('jumpToPage(${_currentPageNumber + 1});');
+      _webViewController?.runJavaScript?.call(
+        'jumpToPage(${_currentPageNumber + 1});',
+      );
     }
   }
 
   @override
   void previousPage() {
     if (_currentPageNumber > 1) {
-      _webViewController?.runJavaScript?.call('jumpToPage(${_currentPageNumber - 1});');
+      _webViewController?.runJavaScript?.call(
+        'jumpToPage(${_currentPageNumber - 1});',
+      );
     }
   }
 
@@ -143,7 +153,10 @@ class SafePdfViewerController extends PdfViewerController {
   }
 
   @override
-  PdfTextSearchResult searchText(String searchText, {TextSearchOption? searchOption}) {
+  PdfTextSearchResult searchText(
+    String searchText, {
+    TextSearchOption? searchOption,
+  }) {
     _activeSearchResult?.clear();
     _activeSearchResult = WebPdfTextSearchResult(
       onNext: () {
@@ -168,7 +181,11 @@ class SafePdfViewerController extends PdfViewerController {
   }
 
   @override
-  void importFormData(List<int> inputBytes, DataFormat dataFormat, [bool continueImportOnError = false]) {}
+  void importFormData(
+    List<int> inputBytes,
+    DataFormat dataFormat, [
+    bool continueImportOnError = false,
+  ]) {}
 
   @override
   List<int> exportFormData({required DataFormat dataFormat}) {
@@ -176,7 +193,9 @@ class SafePdfViewerController extends PdfViewerController {
   }
 
   @override
-  Future<List<int>> saveDocument({PdfFlattenOption flattenOption = PdfFlattenOption.none}) {
+  Future<List<int>> saveDocument({
+    PdfFlattenOption flattenOption = PdfFlattenOption.none,
+  }) {
     return Future.value(<int>[]);
   }
 }
@@ -237,8 +256,9 @@ class _SafePdfViewerState extends State<SafePdfViewer> {
       _createdInternalController = true;
     }
     _externalSafePdfViewerController._onSearchText = (query) {
-      _externalSafePdfViewerController._webViewController?.runJavaScript
-          ?.call('performSearch("$query");');
+      _externalSafePdfViewerController._webViewController?.runJavaScript?.call(
+        'performSearch("$query");',
+      );
     };
   }
 
@@ -277,7 +297,9 @@ class _SafePdfViewerState extends State<SafePdfViewer> {
       final bytes = await widget.file.readAsBytes();
       debugPrint('[SafePdfViewer] Read ${bytes.length} bytes from file.');
       final base64String = base64Encode(bytes);
-      debugPrint('[SafePdfViewer] Base64 PDF size: ${base64String.length} chars.');
+      debugPrint(
+        '[SafePdfViewer] Base64 PDF size: ${base64String.length} chars.',
+      );
       if (!mounted) return;
       setState(() {
         _base64Data = base64String;
@@ -292,20 +314,25 @@ class _SafePdfViewerState extends State<SafePdfViewer> {
         _isLoading = false;
       });
       if (widget.onDocumentLoadFailed != null) {
-        widget.onDocumentLoadFailed!(PdfDocumentLoadFailedDetails(
-          e.toString(),
-          'Failed to read local file bytes.',
-        ));
+        widget.onDocumentLoadFailed!(
+          PdfDocumentLoadFailedDetails(
+            e.toString(),
+            'Failed to read local file bytes.',
+          ),
+        );
       }
     }
   }
 
   void _trySendPdfToJs() {
-    debugPrint('[SafePdfViewer] _trySendPdfToJs: base64Loaded=${_base64Data != null}, webviewReady=$_isWebviewReady');
+    debugPrint(
+      '[SafePdfViewer] _trySendPdfToJs: base64Loaded=${_base64Data != null}, webviewReady=$_isWebviewReady',
+    );
     if (_base64Data != null && _isWebviewReady) {
       debugPrint('[SafePdfViewer] Executing JS loadPdfFromBase64...');
-      _externalSafePdfViewerController._webViewController?.runJavaScript
-          ?.call('loadPdfFromBase64("$_base64Data");');
+      _externalSafePdfViewerController._webViewController?.runJavaScript?.call(
+        'loadPdfFromBase64("$_base64Data");',
+      );
     }
   }
 
@@ -326,7 +353,9 @@ class _SafePdfViewerState extends State<SafePdfViewer> {
           break;
         case 'loaded':
           final count = data['pageCount'] as int;
-          debugPrint('[SafePdfViewer] PDF loaded successfully. Total pages: $count');
+          debugPrint(
+            '[SafePdfViewer] PDF loaded successfully. Total pages: $count',
+          );
           _externalSafePdfViewerController._updatePageCount(count);
           setState(() {
             _isLoading = false;
@@ -337,16 +366,19 @@ class _SafePdfViewerState extends State<SafePdfViewer> {
           break;
         case 'pageChanged':
           final pageNum = data['pageNumber'] as int;
-          final oldPageNum = _externalSafePdfViewerController._currentPageNumber;
+          final oldPageNum =
+              _externalSafePdfViewerController._currentPageNumber;
           if (pageNum != oldPageNum) {
             _externalSafePdfViewerController._updatePageNumber(pageNum);
             if (widget.onPageChanged != null) {
-              widget.onPageChanged!(PdfPageChangedDetails(
-                pageNum,
-                oldPageNum,
-                pageNum == 1,
-                pageNum == _externalSafePdfViewerController.pageCount,
-              ));
+              widget.onPageChanged!(
+                PdfPageChangedDetails(
+                  pageNum,
+                  oldPageNum,
+                  pageNum == 1,
+                  pageNum == _externalSafePdfViewerController.pageCount,
+                ),
+              );
             }
           }
           break;
@@ -369,10 +401,12 @@ class _SafePdfViewerState extends State<SafePdfViewer> {
             _isLoading = false;
           });
           if (widget.onDocumentLoadFailed != null) {
-            widget.onDocumentLoadFailed!(PdfDocumentLoadFailedDetails(
-              msg,
-              'Error in WebView PDF rendering.',
-            ));
+            widget.onDocumentLoadFailed!(
+              PdfDocumentLoadFailedDetails(
+                msg,
+                'Error in WebView PDF rendering.',
+              ),
+            );
           }
           break;
       }
@@ -390,24 +424,38 @@ class _SafePdfViewerState extends State<SafePdfViewer> {
           child: Container(
             padding: const EdgeInsets.all(24.0),
             decoration: BoxDecoration(
-              color: AppTheme.surface,
+              color: context.colors.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.redAccent.withOpacity(0.3), width: 1.5),
+              border: Border.all(
+                color: Colors.redAccent.withOpacity(0.3),
+                width: 1.5,
+              ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.error_outline, color: Colors.redAccent, size: 48),
+                const Icon(
+                  Icons.error_outline,
+                  color: Colors.redAccent,
+                  size: 48,
+                ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Failed to load PDF document',
-                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: context.colors.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   _errorMessage,
-                  style: const TextStyle(color: Colors.white60, fontSize: 13),
+                  style: TextStyle(
+                    color: context.colors.textFaint,
+                    fontSize: 13,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -428,10 +476,9 @@ class _SafePdfViewerState extends State<SafePdfViewer> {
           _isLoading = false;
         });
         if (widget.onDocumentLoadFailed != null) {
-          widget.onDocumentLoadFailed!(PdfDocumentLoadFailedDetails(
-            err,
-            'JavaScript error in WebView.',
-          ));
+          widget.onDocumentLoadFailed!(
+            PdfDocumentLoadFailedDetails(err, 'JavaScript error in WebView.'),
+          );
         }
       },
       onControllerCreated: (controller) {

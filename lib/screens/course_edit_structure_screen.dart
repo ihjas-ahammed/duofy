@@ -22,12 +22,14 @@ class CourseEditStructureScreen extends StatefulWidget {
   });
 
   @override
-  State<CourseEditStructureScreen> createState() => _CourseEditStructureScreenState();
+  State<CourseEditStructureScreen> createState() =>
+      _CourseEditStructureScreenState();
 }
 
 class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
-  final SafePdfViewerController _pdfViewerController = SafePdfViewerController();
-  
+  final SafePdfViewerController _pdfViewerController =
+      SafePdfViewerController();
+
   late List<Module> _modules;
   bool _isSectionLevel = false;
   List<File> _uploadedPdfs = [];
@@ -38,7 +40,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
   final Map<String, TextEditingController> _startPageControllers = {};
   final Map<String, TextEditingController> _endPageControllers = {};
   final Map<String, TextEditingController> _titleControllers = {};
-  
+
   late TextEditingController _bookTitleController;
   late TextEditingController _bookDescController;
 
@@ -48,7 +50,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
   void initState() {
     super.initState();
     _modules = List.from(widget.book.modules);
-    
+
     // Determine if section-level or unit-level flow is used
     _isSectionLevel = widget.book.modules.any(
       (m) => m.sections.any((s) => s.startPage != null || s.endPage != null),
@@ -64,13 +66,23 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
     for (final module in _modules) {
       _titleControllers[module.id] = TextEditingController(text: module.title);
       for (final section in module.sections) {
-        _titleControllers[section.id] = TextEditingController(text: section.title);
-        _startPageControllers[section.id] = TextEditingController(text: section.startPage?.toString() ?? '');
-        _endPageControllers[section.id] = TextEditingController(text: section.endPage?.toString() ?? '');
+        _titleControllers[section.id] = TextEditingController(
+          text: section.title,
+        );
+        _startPageControllers[section.id] = TextEditingController(
+          text: section.startPage?.toString() ?? '',
+        );
+        _endPageControllers[section.id] = TextEditingController(
+          text: section.endPage?.toString() ?? '',
+        );
         _bookIndices[section.id] = section.bookIndex ?? 0;
         for (final unit in section.units) {
-          _startPageControllers[unit.id] = TextEditingController(text: unit.startPage?.toString() ?? '');
-          _endPageControllers[unit.id] = TextEditingController(text: unit.endPage?.toString() ?? '');
+          _startPageControllers[unit.id] = TextEditingController(
+            text: unit.startPage?.toString() ?? '',
+          );
+          _endPageControllers[unit.id] = TextEditingController(
+            text: unit.endPage?.toString() ?? '',
+          );
           _titleControllers[unit.id] = TextEditingController(text: unit.title);
           _bookIndices[unit.id] = unit.bookIndex ?? 0;
         }
@@ -107,7 +119,10 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
     );
     if (result != null && result.paths.isNotEmpty) {
       setState(() {
-        _uploadedPdfs = result.paths.where((p) => p != null).map((p) => File(p!)).toList();
+        _uploadedPdfs = result.paths
+            .where((p) => p != null)
+            .map((p) => File(p!))
+            .toList();
         _selectedFileIndex = 0;
         _showPdfPreview = true;
       });
@@ -159,14 +174,17 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
         startPage: null,
         endPage: null,
       );
-      
+
       _titleControllers[newId] = TextEditingController(text: newSec.title);
       _startPageControllers[newId] = TextEditingController();
       _endPageControllers[newId] = TextEditingController();
       _bookIndices[newId] = _selectedFileIndex;
-      
-      final updatedSections = List<Section>.from(_modules[moduleIndex].sections)..add(newSec);
-      _modules[moduleIndex] = _modules[moduleIndex].copyWith(sections: updatedSections);
+
+      final updatedSections = List<Section>.from(_modules[moduleIndex].sections)
+        ..add(newSec);
+      _modules[moduleIndex] = _modules[moduleIndex].copyWith(
+        sections: updatedSections,
+      );
     });
   }
 
@@ -174,8 +192,10 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
     setState(() {
       final updatedSections = List<Section>.from(_modules[moduleIndex].sections)
         ..removeWhere((s) => s.id == sectionId);
-      _modules[moduleIndex] = _modules[moduleIndex].copyWith(sections: updatedSections);
-      
+      _modules[moduleIndex] = _modules[moduleIndex].copyWith(
+        sections: updatedSections,
+      );
+
       _titleControllers.remove(sectionId)?.dispose();
       _startPageControllers.remove(sectionId)?.dispose();
       _endPageControllers.remove(sectionId)?.dispose();
@@ -195,19 +215,25 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
         startPage: null,
         endPage: null,
       );
-      
+
       _titleControllers[newId] = TextEditingController(text: newUnit.title);
       _startPageControllers[newId] = TextEditingController();
       _endPageControllers[newId] = TextEditingController();
       _bookIndices[newId] = _selectedFileIndex;
-      
+
       final currentSection = _modules[moduleIndex].sections[sectionIndex];
       final updatedUnits = List<Unit>.from(currentSection.units)..add(newUnit);
-      
-      final updatedSections = List<Section>.from(_modules[moduleIndex].sections);
-      updatedSections[sectionIndex] = currentSection.copyWith(units: updatedUnits);
-      
-      _modules[moduleIndex] = _modules[moduleIndex].copyWith(sections: updatedSections);
+
+      final updatedSections = List<Section>.from(
+        _modules[moduleIndex].sections,
+      );
+      updatedSections[sectionIndex] = currentSection.copyWith(
+        units: updatedUnits,
+      );
+
+      _modules[moduleIndex] = _modules[moduleIndex].copyWith(
+        sections: updatedSections,
+      );
     });
   }
 
@@ -216,19 +242,30 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
       final currentSection = _modules[moduleIndex].sections[sectionIndex];
       final updatedUnits = List<Unit>.from(currentSection.units)
         ..removeWhere((u) => u.id == unitId);
-      
-      final updatedSections = List<Section>.from(_modules[moduleIndex].sections);
-      updatedSections[sectionIndex] = currentSection.copyWith(units: updatedUnits);
-      
-      _modules[moduleIndex] = _modules[moduleIndex].copyWith(sections: updatedSections);
-      
+
+      final updatedSections = List<Section>.from(
+        _modules[moduleIndex].sections,
+      );
+      updatedSections[sectionIndex] = currentSection.copyWith(
+        units: updatedUnits,
+      );
+
+      _modules[moduleIndex] = _modules[moduleIndex].copyWith(
+        sections: updatedSections,
+      );
+
       _titleControllers.remove(unitId)?.dispose();
       _startPageControllers.remove(unitId)?.dispose();
       _bookIndices.remove(unitId);
     });
   }
 
-  void _saveTitle(String itemId, int moduleIndex, int? sectionIndex, String type) {
+  void _saveTitle(
+    String itemId,
+    int moduleIndex,
+    int? sectionIndex,
+    String type,
+  ) {
     setState(() {
       final newTitle = _titleControllers[itemId]?.text ?? '';
       if (type == 'module') {
@@ -265,7 +302,9 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
       for (var s = 0; s < module.sections.length; s++) {
         final section = module.sections[s];
 
-        final sPage = int.tryParse(_startPageControllers[section.id]?.text ?? '');
+        final sPage = int.tryParse(
+          _startPageControllers[section.id]?.text ?? '',
+        );
         final ePage = int.tryParse(_endPageControllers[section.id]?.text ?? '');
         final title = _titleControllers[section.id]?.text ?? section.title;
         final bookIdx = _bookIndices[section.id] ?? 0;
@@ -273,45 +312,62 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
         List<Unit> finalUnits = [];
         for (var u = 0; u < section.units.length; u++) {
           final unit = section.units[u];
-          final uStart = int.tryParse(_startPageControllers[unit.id]?.text ?? '');
+          final uStart = int.tryParse(
+            _startPageControllers[unit.id]?.text ?? '',
+          );
           final uEnd = int.tryParse(_endPageControllers[unit.id]?.text ?? '');
           final uTitle = _titleControllers[unit.id]?.text ?? unit.title;
           final uBookIdx = _bookIndices[unit.id] ?? 0;
 
-          finalUnits.add(unit.copyWith(
-            title: uTitle,
-            startPage: uStart,
-            endPage: uEnd,
-            bookIndex: uBookIdx,
-          ));
+          finalUnits.add(
+            unit.copyWith(
+              title: uTitle,
+              startPage: uStart,
+              endPage: uEnd,
+              bookIndex: uBookIdx,
+            ),
+          );
         }
 
-        finalSections.add(section.copyWith(
-          title: title,
-          startPage: sPage,
-          endPage: ePage,
-          bookIndex: bookIdx,
-          units: finalUnits,
-        ));
+        finalSections.add(
+          section.copyWith(
+            title: title,
+            startPage: sPage,
+            endPage: ePage,
+            bookIndex: bookIdx,
+            units: finalUnits,
+          ),
+        );
       }
-      finalModules.add(module.copyWith(
-        title: _titleControllers[module.id]?.text ?? module.title,
-        sections: finalSections,
-      ));
+      finalModules.add(
+        module.copyWith(
+          title: _titleControllers[module.id]?.text ?? module.title,
+          sections: finalSections,
+        ),
+      );
     }
 
     final updatedBook = widget.book.copyWith(
-      title: _bookTitleController.text.trim().isEmpty ? widget.book.title : _bookTitleController.text.trim(),
+      title: _bookTitleController.text.trim().isEmpty
+          ? widget.book.title
+          : _bookTitleController.text.trim(),
       description: _bookDescController.text.trim(),
       modules: finalModules,
       updatedAt: DateTime.now().millisecondsSinceEpoch,
     );
 
     if (_uploadedPdfs.isNotEmpty) {
-      await GenerationManager.instance.restoreBookFiles(updatedBook, _uploadedPdfs);
+      await GenerationManager.instance.restoreBookFiles(
+        updatedBook,
+        _uploadedPdfs,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Re-splitting pages and saving course in background...')),
+          const SnackBar(
+            content: Text(
+              'Re-splitting pages and saving course in background...',
+            ),
+          ),
         );
         Navigator.pop(context);
       }
@@ -320,9 +376,9 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
       GenerationManager.instance.triggerBookUpdate(updatedBook);
       widget.onBookUpdated(updatedBook);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Course details saved.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Course details saved.')));
         Navigator.pop(context);
       }
     }
@@ -334,25 +390,42 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: AppTheme.surface,
-          title: const Text('Shift All Page Numbers', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          backgroundColor: context.colors.surface,
+          title: Text(
+            'Shift All Page Numbers',
+            style: TextStyle(
+              color: context.colors.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
+              Text(
                 'Enter the offset to shift all start and end pages. Use a positive number to increase, or a negative number to decrease.',
-                style: TextStyle(color: Colors.white70, fontSize: 13),
+                style: TextStyle(
+                  color: context.colors.textSecondary,
+                  fontSize: 13,
+                ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: shiftController,
-                keyboardType: const TextInputType.numberWithOptions(signed: true),
-                style: const TextStyle(color: Colors.white),
+                keyboardType: const TextInputType.numberWithOptions(
+                  signed: true,
+                ),
+                style: TextStyle(color: context.colors.textPrimary),
                 decoration: InputDecoration(
                   labelText: 'Offset amount (e.g. 5, -2)',
-                  labelStyle: const TextStyle(color: Colors.white54),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
+                  labelStyle: TextStyle(color: context.colors.textFaint),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: context.colors.textFaint),
+                  ),
                 ),
               ),
             ],
@@ -360,7 +433,10 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: context.colors.textFaint),
+              ),
             ),
             TextButton(
               onPressed: () {
@@ -370,7 +446,10 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                 }
                 Navigator.pop(context);
               },
-              child: const Text('Apply', style: TextStyle(color: AppTheme.duoBlue)),
+              child: const Text(
+                'Apply',
+                style: TextStyle(color: AppTheme.duoBlue),
+              ),
             ),
           ],
         );
@@ -386,22 +465,27 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
           final ePageStr = _endPageControllers[section.id]?.text ?? '';
           if (sPageStr.isNotEmpty) {
             final val = int.tryParse(sPageStr);
-            if (val != null) _startPageControllers[section.id]!.text = (val + shift).toString();
+            if (val != null)
+              _startPageControllers[section.id]!.text = (val + shift)
+                  .toString();
           }
           if (ePageStr.isNotEmpty) {
             final val = int.tryParse(ePageStr);
-            if (val != null) _endPageControllers[section.id]!.text = (val + shift).toString();
+            if (val != null)
+              _endPageControllers[section.id]!.text = (val + shift).toString();
           }
           for (final unit in section.units) {
             final usPageStr = _startPageControllers[unit.id]?.text ?? '';
             final uePageStr = _endPageControllers[unit.id]?.text ?? '';
             if (usPageStr.isNotEmpty) {
               final val = int.tryParse(usPageStr);
-              if (val != null) _startPageControllers[unit.id]!.text = (val + shift).toString();
+              if (val != null)
+                _startPageControllers[unit.id]!.text = (val + shift).toString();
             }
             if (uePageStr.isNotEmpty) {
               final val = int.tryParse(uePageStr);
-              if (val != null) _endPageControllers[unit.id]!.text = (val + shift).toString();
+              if (val != null)
+                _endPageControllers[unit.id]!.text = (val + shift).toString();
             }
           }
         }
@@ -424,9 +508,9 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
+        color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: context.colors.outline),
       ),
       child: Row(
         children: [
@@ -441,20 +525,36 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                         child: TextField(
                           controller: _titleControllers[itemId],
                           autofocus: true,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            color: context.colors.textPrimary,
+                          ),
                           decoration: const InputDecoration(
                             isDense: true,
                             contentPadding: EdgeInsets.symmetric(vertical: 6),
-                            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.duoBlue)),
+                            focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: AppTheme.duoBlue),
+                            ),
                           ),
-                          onSubmitted: (_) => _saveTitle(itemId, moduleIndex, sectionIndex, type),
+                          onSubmitted: (_) => _saveTitle(
+                            itemId,
+                            moduleIndex,
+                            sectionIndex,
+                            type,
+                          ),
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(LucideIcons.check, color: AppTheme.duoGreen, size: 16),
+                        icon: const Icon(
+                          LucideIcons.check,
+                          color: AppTheme.duoGreen,
+                          size: 16,
+                        ),
                         padding: const EdgeInsets.all(4),
                         constraints: const BoxConstraints(),
-                        onPressed: () => _saveTitle(itemId, moduleIndex, sectionIndex, type),
+                        onPressed: () =>
+                            _saveTitle(itemId, moduleIndex, sectionIndex, type),
                       ),
                     ],
                   )
@@ -464,13 +564,21 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                       Expanded(
                         child: Text(
                           title,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            color: context.colors.textPrimary,
+                          ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(LucideIcons.edit2, color: Colors.white38, size: 14),
+                        icon: Icon(
+                          LucideIcons.edit2,
+                          color: context.colors.textFaint,
+                          size: 14,
+                        ),
                         padding: const EdgeInsets.all(4),
                         constraints: const BoxConstraints(),
                         onPressed: () {
@@ -482,7 +590,14 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                     ],
                   ),
                 const SizedBox(height: 4),
-                Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 9, fontWeight: FontWeight.w900)),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: context.colors.textFaint,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
               ],
             ),
           ),
@@ -494,19 +609,37 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                 controller: _startPageControllers[itemId],
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  color: context.colors.textPrimary,
+                ),
                 decoration: InputDecoration(
                   labelText: 'Start',
-                  labelStyle: const TextStyle(fontSize: 9, color: Colors.white54),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 4),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Colors.white24)),
+                  labelStyle: TextStyle(
+                    fontSize: 9,
+                    color: context.colors.textFaint,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 0,
+                    horizontal: 4,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: context.colors.textFaint),
+                  ),
                 ),
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4),
-              child: Text('-', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                '-',
+                style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+              ),
             ),
             SizedBox(
               width: 50,
@@ -514,13 +647,28 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                 controller: _endPageControllers[itemId],
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  color: context.colors.textPrimary,
+                ),
                 decoration: InputDecoration(
                   labelText: 'End',
-                  labelStyle: const TextStyle(fontSize: 9, color: Colors.white54),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 4),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Colors.white24)),
+                  labelStyle: TextStyle(
+                    fontSize: 9,
+                    color: context.colors.textFaint,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 0,
+                    horizontal: 4,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: context.colors.textFaint),
+                  ),
                 ),
               ),
             ),
@@ -529,32 +677,47 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
               int maxBookIdx = 0;
               for (final module in _modules) {
                 for (final section in module.sections) {
-                  if ((section.bookIndex ?? 0) > maxBookIdx) maxBookIdx = section.bookIndex!;
+                  if ((section.bookIndex ?? 0) > maxBookIdx)
+                    maxBookIdx = section.bookIndex!;
                   for (final unit in section.units) {
-                    if ((unit.bookIndex ?? 0) > maxBookIdx) maxBookIdx = unit.bookIndex!;
+                    if ((unit.bookIndex ?? 0) > maxBookIdx)
+                      maxBookIdx = unit.bookIndex!;
                   }
                 }
               }
               final int existingFileCount = maxBookIdx + 1;
-              final int fileCount = _uploadedPdfs.isNotEmpty ? _uploadedPdfs.length : (existingFileCount > 1 ? existingFileCount : 1);
+              final int fileCount = _uploadedPdfs.isNotEmpty
+                  ? _uploadedPdfs.length
+                  : (existingFileCount > 1 ? existingFileCount : 1);
 
               if (fileCount > 1) {
                 return Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
+                        color: context.colors.surfaceAlt,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.white.withOpacity(0.12)),
+                        border: Border.all(color: context.colors.outline),
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<int>(
                           value: _bookIndices[itemId] ?? 0,
-                          dropdownColor: AppTheme.surface,
-                          icon: const Icon(LucideIcons.chevronDown, size: 12, color: Colors.white54),
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                          dropdownColor: context.colors.surface,
+                          icon: Icon(
+                            LucideIcons.chevronDown,
+                            size: 12,
+                            color: context.colors.textFaint,
+                          ),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: context.colors.textPrimary,
+                          ),
                           onChanged: (val) {
                             if (val != null) {
                               setState(() {
@@ -564,16 +727,34 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                           },
                           selectedItemBuilder: (BuildContext context) {
                             return List.generate(fileCount, (index) {
-                              return Center(child: Text('F${index + 1}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)));
+                              return Center(
+                                child: Text(
+                                  'F${index + 1}',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              );
                             });
                           },
                           items: List.generate(fileCount, (index) {
-                            final String label = _uploadedPdfs.isNotEmpty && index < _uploadedPdfs.length
-                                ? _uploadedPdfs[index].path.split(RegExp(r'[/\\]')).last
+                            final String label =
+                                _uploadedPdfs.isNotEmpty &&
+                                    index < _uploadedPdfs.length
+                                ? _uploadedPdfs[index].path
+                                      .split(RegExp(r'[/\\]'))
+                                      .last
                                 : 'Source File ${index + 1}';
                             return DropdownMenuItem<int>(
                               value: index,
-                              child: Text('File ${index + 1}: $label', style: const TextStyle(fontSize: 11, color: Colors.white)),
+                              child: Text(
+                                'File ${index + 1}: $label',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: context.colors.textPrimary,
+                                ),
+                              ),
                             );
                           }),
                         ),
@@ -586,31 +767,45 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
               return const SizedBox.shrink();
             }(),
             IconButton(
-              icon: const Icon(LucideIcons.eye, color: AppTheme.duoBlue, size: 16),
+              icon: const Icon(
+                LucideIcons.eye,
+                color: AppTheme.duoBlue,
+                size: 16,
+              ),
               padding: const EdgeInsets.all(4),
               constraints: const BoxConstraints(),
               tooltip: 'View page',
               onPressed: () {
                 if (_uploadedPdfs.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please upload the source PDF to preview pages.')),
+                    const SnackBar(
+                      content: Text(
+                        'Please upload the source PDF to preview pages.',
+                      ),
+                    ),
                   );
                   return;
                 }
                 final targetBookIdx = _bookIndices[itemId] ?? 0;
                 if (targetBookIdx >= _uploadedPdfs.length) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Selected source file is not uploaded/loaded.')),
+                    const SnackBar(
+                      content: Text(
+                        'Selected source file is not uploaded/loaded.',
+                      ),
+                    ),
                   );
                   return;
                 }
-                
+
                 setState(() {
                   _selectedFileIndex = targetBookIdx;
                   _showPdfPreview = true;
                 });
-                
-                int? p = int.tryParse(_startPageControllers[itemId]?.text ?? '');
+
+                int? p = int.tryParse(
+                  _startPageControllers[itemId]?.text ?? '',
+                );
                 if (p != null) {
                   Future.microtask(() {
                     _pdfViewerController.jumpToPage(p);
@@ -620,7 +815,11 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
             ),
           ],
           IconButton(
-            icon: const Icon(LucideIcons.trash2, color: AppTheme.duoRed, size: 16),
+            icon: const Icon(
+              LucideIcons.trash2,
+              color: AppTheme.duoRed,
+              size: 16,
+            ),
             padding: const EdgeInsets.all(4),
             constraints: const BoxConstraints(),
             tooltip: 'Delete',
@@ -641,47 +840,80 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppTheme.surface,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white12),
+          border: Border.all(color: context.colors.outline),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
+            Text(
               'Course General Settings',
-              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Colors.white),
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 14,
+                color: context.colors.textPrimary,
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _bookTitleController,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+              style: TextStyle(
+                color: context.colors.textPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
               decoration: InputDecoration(
                 labelText: 'Course Title',
-                labelStyle: const TextStyle(color: Colors.white54, fontSize: 12),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
+                labelStyle: TextStyle(
+                  color: context.colors.textFaint,
+                  fontSize: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: context.colors.textFaint),
+                ),
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _bookDescController,
               maxLines: 2,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
+              style: TextStyle(color: context.colors.textPrimary, fontSize: 13),
               decoration: InputDecoration(
                 labelText: 'Course Description',
-                labelStyle: const TextStyle(color: Colors.white54, fontSize: 12),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
+                labelStyle: TextStyle(
+                  color: context.colors.textFaint,
+                  fontSize: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: context.colors.textFaint),
+                ),
               ),
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
-              icon: const Icon(LucideIcons.arrowUpDown, size: 16, color: Colors.white70),
-              label: const Text('Shift All Page Numbers (Offset)', style: TextStyle(color: Colors.white)),
+              icon: Icon(
+                LucideIcons.arrowUpDown,
+                size: 16,
+                color: context.colors.textSecondary,
+              ),
+              label: Text(
+                'Shift All Page Numbers (Offset)',
+                style: TextStyle(color: context.colors.textPrimary),
+              ),
               style: OutlinedButton.styleFrom(
-                side: BorderSide(color: Colors.white.withOpacity(0.2)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                side: BorderSide(color: context.colors.outline),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               onPressed: _showShiftOffsetDialog,
@@ -697,10 +929,14 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: _uploadedPdfs.isNotEmpty ? AppTheme.duoGreen.withOpacity(0.08) : AppTheme.surface,
+          color: _uploadedPdfs.isNotEmpty
+              ? AppTheme.duoGreen.withOpacity(0.08)
+              : context.colors.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: _uploadedPdfs.isNotEmpty ? AppTheme.duoGreen.withOpacity(0.3) : Colors.white12,
+            color: _uploadedPdfs.isNotEmpty
+                ? AppTheme.duoGreen.withOpacity(0.3)
+                : context.colors.outline,
             width: 1,
           ),
         ),
@@ -709,8 +945,12 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
             Row(
               children: [
                 Icon(
-                  _uploadedPdfs.isNotEmpty ? LucideIcons.fileCheck : LucideIcons.fileWarning,
-                  color: _uploadedPdfs.isNotEmpty ? AppTheme.duoGreen : AppTheme.duoOrange,
+                  _uploadedPdfs.isNotEmpty
+                      ? LucideIcons.fileCheck
+                      : LucideIcons.fileWarning,
+                  color: _uploadedPdfs.isNotEmpty
+                      ? AppTheme.duoGreen
+                      : AppTheme.duoOrange,
                   size: 24,
                 ),
                 const SizedBox(width: 12),
@@ -719,16 +959,33 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _uploadedPdfs.isNotEmpty ? 'Source PDF(s) Loaded' : 'No Source PDF Loaded',
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14),
+                        _uploadedPdfs.isNotEmpty
+                            ? 'Source PDF(s) Loaded'
+                            : 'No Source PDF Loaded',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: context.colors.textPrimary,
+                          fontSize: 14,
+                        ),
                       ),
                       Text(
                         _uploadedPdfs.isNotEmpty
-                            ? _uploadedPdfs.map((f) => f.path.split(kIsWeb ? '/' : Platform.pathSeparator).last).join(', ')
+                            ? _uploadedPdfs
+                                  .map(
+                                    (f) => f.path
+                                        .split(
+                                          kIsWeb ? '/' : Platform.pathSeparator,
+                                        )
+                                        .last,
+                                  )
+                                  .join(', ')
                             : 'Upload source PDF(s) to preview pages and split component files.',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white54, fontSize: 11),
+                        style: TextStyle(
+                          color: context.colors.textFaint,
+                          fontSize: 11,
+                        ),
                       ),
                     ],
                   ),
@@ -740,8 +997,10 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
               children: [
                 Expanded(
                   child: DuoButton(
-                    text: _uploadedPdfs.isNotEmpty ? 'Change PDF(s)' : 'Upload Source PDF(s)',
-                    color: AppTheme.surface,
+                    text: _uploadedPdfs.isNotEmpty
+                        ? 'Change PDF(s)'
+                        : 'Upload Source PDF(s)',
+                    color: context.colors.surface,
                     shadowColor: Colors.black,
                     isOutline: true,
                     onPressed: _pickPdfs,
@@ -766,20 +1025,31 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
               const SizedBox(height: 12),
               if (_uploadedPdfs.length > 1) ...[
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                   margin: const EdgeInsets.only(bottom: 8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white12),
+                    border: Border.all(color: context.colors.outline),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<int>(
                       value: _selectedFileIndex,
-                      dropdownColor: AppTheme.surface,
+                      dropdownColor: context.colors.surface,
                       isExpanded: true,
-                      icon: const Icon(LucideIcons.chevronDown, size: 16, color: Colors.white70),
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                      icon: Icon(
+                        LucideIcons.chevronDown,
+                        size: 16,
+                        color: context.colors.textSecondary,
+                      ),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: context.colors.textPrimary,
+                      ),
                       onChanged: (val) {
                         if (val != null) {
                           setState(() {
@@ -788,10 +1058,18 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                         }
                       },
                       items: List.generate(_uploadedPdfs.length, (index) {
-                        final filename = _uploadedPdfs[index].path.split(kIsWeb ? '/' : Platform.pathSeparator).last;
+                        final filename = _uploadedPdfs[index].path
+                            .split(kIsWeb ? '/' : Platform.pathSeparator)
+                            .last;
                         return DropdownMenuItem<int>(
                           value: index,
-                          child: Text('File ${index + 1}: $filename', style: const TextStyle(fontSize: 12, color: Colors.white)),
+                          child: Text(
+                            'File ${index + 1}: $filename',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: context.colors.textPrimary,
+                            ),
+                          ),
                         );
                       }),
                     ),
@@ -801,13 +1079,15 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
               Container(
                 height: 280,
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white12),
+                  border: Border.all(color: context.colors.outline),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 clipBehavior: Clip.hardEdge,
                 child: SafePdfViewer(
                   file: _uploadedPdfs[_selectedFileIndex],
-                  key: ValueKey('preview-$_selectedFileIndex-${_uploadedPdfs[_selectedFileIndex].path}'),
+                  key: ValueKey(
+                    'preview-$_selectedFileIndex-${_uploadedPdfs[_selectedFileIndex].path}',
+                  ),
                   controller: _pdfViewerController,
                   canShowScrollHead: false,
                   canShowScrollStatus: false,
@@ -822,7 +1102,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
     // Hierarchical structure list
     for (int m = 0; m < _modules.length; m++) {
       final module = _modules[m];
-      
+
       // Module Header Card
       listItems.add(
         Padding(
@@ -836,7 +1116,11 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
             ),
             child: Row(
               children: [
-                const Icon(LucideIcons.bookOpen, color: AppTheme.duoBlue, size: 18),
+                const Icon(
+                  LucideIcons.bookOpen,
+                  color: AppTheme.duoBlue,
+                  size: 18,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: _editingTitleId == module.id
@@ -846,20 +1130,36 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                               child: TextField(
                                 controller: _titleControllers[module.id],
                                 autofocus: true,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.duoBlue),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: AppTheme.duoBlue,
+                                ),
                                 decoration: const InputDecoration(
                                   isDense: true,
-                                  contentPadding: EdgeInsets.symmetric(vertical: 6),
-                                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.duoBlue)),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    vertical: 6,
+                                  ),
+                                  focusedBorder: UnderlineInputBorder(
+                                    borderSide: BorderSide(
+                                      color: AppTheme.duoBlue,
+                                    ),
+                                  ),
                                 ),
-                                onSubmitted: (_) => _saveTitle(module.id, m, null, 'module'),
+                                onSubmitted: (_) =>
+                                    _saveTitle(module.id, m, null, 'module'),
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(LucideIcons.check, color: AppTheme.duoGreen, size: 16),
+                              icon: const Icon(
+                                LucideIcons.check,
+                                color: AppTheme.duoGreen,
+                                size: 16,
+                              ),
                               padding: const EdgeInsets.all(4),
                               constraints: const BoxConstraints(),
-                              onPressed: () => _saveTitle(module.id, m, null, 'module'),
+                              onPressed: () =>
+                                  _saveTitle(module.id, m, null, 'module'),
                             ),
                           ],
                         )
@@ -868,12 +1168,20 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                             Expanded(
                               child: Text(
                                 'Module ${m + 1}: ${module.title}',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.duoBlue),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: AppTheme.duoBlue,
+                                ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(LucideIcons.edit2, color: Colors.white38, size: 14),
+                              icon: Icon(
+                                LucideIcons.edit2,
+                                color: context.colors.textFaint,
+                                size: 14,
+                              ),
                               padding: const EdgeInsets.all(4),
                               constraints: const BoxConstraints(),
                               onPressed: () {
@@ -886,7 +1194,11 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                         ),
                 ),
                 IconButton(
-                  icon: const Icon(LucideIcons.trash2, color: AppTheme.duoRed, size: 16),
+                  icon: const Icon(
+                    LucideIcons.trash2,
+                    color: AppTheme.duoRed,
+                    size: 16,
+                  ),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   tooltip: 'Delete Module',
@@ -902,22 +1214,28 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
         final section = module.sections[s];
 
         if (_isSectionLevel) {
-          listItems.add(_buildEditorRow(
-            itemId: section.id,
-            title: section.title,
-            subtitle: 'M${m + 1} • Section ${s + 1}',
-            moduleIndex: m,
-            sectionIndex: s,
-            type: 'section',
-            onDelete: () => _removeSection(m, section.id),
-          ));
+          listItems.add(
+            _buildEditorRow(
+              itemId: section.id,
+              title: section.title,
+              subtitle: 'M${m + 1} • Section ${s + 1}',
+              moduleIndex: m,
+              sectionIndex: s,
+              type: 'section',
+              onDelete: () => _removeSection(m, section.id),
+            ),
+          );
         } else {
           listItems.add(
             Padding(
               padding: const EdgeInsets.only(top: 12, bottom: 6, left: 8),
               child: Row(
                 children: [
-                  const Icon(LucideIcons.layers, color: AppTheme.duoViolet, size: 14),
+                  const Icon(
+                    LucideIcons.layers,
+                    color: AppTheme.duoViolet,
+                    size: 14,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: _editingTitleId == section.id
@@ -927,20 +1245,36 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                                 child: TextField(
                                   controller: _titleControllers[section.id],
                                   autofocus: true,
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.white.withOpacity(0.7)),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                    color: context.colors.textSecondary,
+                                  ),
                                   decoration: const InputDecoration(
                                     isDense: true,
-                                    contentPadding: EdgeInsets.symmetric(vertical: 6),
-                                    focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.duoViolet)),
+                                    contentPadding: EdgeInsets.symmetric(
+                                      vertical: 6,
+                                    ),
+                                    focusedBorder: UnderlineInputBorder(
+                                      borderSide: BorderSide(
+                                        color: AppTheme.duoViolet,
+                                      ),
+                                    ),
                                   ),
-                                  onSubmitted: (_) => _saveTitle(section.id, m, s, 'section'),
+                                  onSubmitted: (_) =>
+                                      _saveTitle(section.id, m, s, 'section'),
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(LucideIcons.check, color: AppTheme.duoGreen, size: 16),
+                                icon: const Icon(
+                                  LucideIcons.check,
+                                  color: AppTheme.duoGreen,
+                                  size: 16,
+                                ),
                                 padding: const EdgeInsets.all(4),
                                 constraints: const BoxConstraints(),
-                                onPressed: () => _saveTitle(section.id, m, s, 'section'),
+                                onPressed: () =>
+                                    _saveTitle(section.id, m, s, 'section'),
                               ),
                             ],
                           )
@@ -949,12 +1283,20 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                               Expanded(
                                 child: Text(
                                   'Section ${s + 1}: ${section.title}',
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.white.withOpacity(0.7)),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                    color: context.colors.textSecondary,
+                                  ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(LucideIcons.edit2, color: Colors.white38, size: 14),
+                                icon: Icon(
+                                  LucideIcons.edit2,
+                                  color: context.colors.textFaint,
+                                  size: 14,
+                                ),
                                 padding: const EdgeInsets.all(4),
                                 constraints: const BoxConstraints(),
                                 onPressed: () {
@@ -967,7 +1309,11 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                           ),
                   ),
                   IconButton(
-                    icon: const Icon(LucideIcons.trash2, color: AppTheme.duoRed, size: 14),
+                    icon: const Icon(
+                      LucideIcons.trash2,
+                      color: AppTheme.duoRed,
+                      size: 14,
+                    ),
                     padding: const EdgeInsets.all(4),
                     constraints: const BoxConstraints(),
                     tooltip: 'Delete Section',
@@ -980,15 +1326,17 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
 
           for (int u = 0; u < section.units.length; u++) {
             final unit = section.units[u];
-            listItems.add(_buildEditorRow(
-              itemId: unit.id,
-              title: unit.title,
-              subtitle: 'M${m + 1} • S${s + 1} • Unit ${u + 1}',
-              moduleIndex: m,
-              sectionIndex: s,
-              type: 'unit',
-              onDelete: () => _removeUnit(m, s, unit.id),
-            ));
+            listItems.add(
+              _buildEditorRow(
+                itemId: unit.id,
+                title: unit.title,
+                subtitle: 'M${m + 1} • S${s + 1} • Unit ${u + 1}',
+                moduleIndex: m,
+                sectionIndex: s,
+                type: 'unit',
+                onDelete: () => _removeUnit(m, s, unit.id),
+              ),
+            );
           }
 
           listItems.add(
@@ -998,12 +1346,28 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                 alignment: Alignment.centerLeft,
                 child: TextButton.icon(
                   onPressed: () => _addUnit(m, s),
-                  icon: const Icon(LucideIcons.plus, size: 14, color: AppTheme.duoViolet),
-                  label: const Text('Add Unit', style: TextStyle(color: AppTheme.duoViolet, fontSize: 11, fontWeight: FontWeight.bold)),
+                  icon: const Icon(
+                    LucideIcons.plus,
+                    size: 14,
+                    color: AppTheme.duoViolet,
+                  ),
+                  label: const Text(
+                    'Add Unit',
+                    style: TextStyle(
+                      color: AppTheme.duoViolet,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     backgroundColor: AppTheme.duoViolet.withOpacity(0.08),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
               ),
@@ -1019,12 +1383,28 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
               onPressed: () => _addSection(m),
-              icon: const Icon(LucideIcons.plus, size: 14, color: AppTheme.duoBlue),
-              label: const Text('Add Section', style: TextStyle(color: AppTheme.duoBlue, fontSize: 11, fontWeight: FontWeight.bold)),
+              icon: const Icon(
+                LucideIcons.plus,
+                size: 14,
+                color: AppTheme.duoBlue,
+              ),
+              label: const Text(
+                'Add Section',
+                style: TextStyle(
+                  color: AppTheme.duoBlue,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 backgroundColor: AppTheme.duoBlue.withOpacity(0.08),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
           ),
@@ -1038,7 +1418,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
         padding: const EdgeInsets.symmetric(vertical: 16),
         child: DuoButton(
           text: 'Add Module',
-          color: AppTheme.surface,
+          color: context.colors.surface,
           shadowColor: Colors.black,
           isOutline: true,
           onPressed: _addModule,
@@ -1047,16 +1427,22 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
     );
 
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: context.colors.background,
       appBar: AppBar(
-        title: const Text('Edit Course Structure', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+        title: const Text(
+          'Edit Course Structure',
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+        ),
       ),
       body: ResponsiveCenter(
         child: Column(
           children: [
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
                 children: listItems,
               ),
             ),
@@ -1068,7 +1454,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                 shadowColor: AppTheme.duoGreenDark,
                 onPressed: _saveChanges,
               ),
-            )
+            ),
           ],
         ),
       ),

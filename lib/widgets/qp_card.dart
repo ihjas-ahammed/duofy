@@ -11,22 +11,28 @@ class QpCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    int totalQuestions = qp.sections.fold<int>(0, (sum, sec) => sum + sec.questions.length);
+    int totalQuestions = qp.sections.fold<int>(
+      0,
+      (sum, sec) => sum + sec.questions.length,
+    );
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: AppTheme.surface,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppTheme.duoBlue.withOpacity(0.3), width: 2),
+          border: Border.all(
+            color: AppTheme.duoBlue.withOpacity(0.3),
+            width: 2,
+          ),
           boxShadow: [
             BoxShadow(
               color: AppTheme.duoBlue.withOpacity(0.1),
               offset: const Offset(0, 4),
               blurRadius: 10,
-            )
-          ]
+            ),
+          ],
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Row(
@@ -37,7 +43,11 @@ class QpCard extends StatelessWidget {
                 color: AppTheme.duoBlue.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(LucideIcons.fileSignature, size: 24, color: AppTheme.duoBlue),
+              child: const Icon(
+                LucideIcons.fileSignature,
+                size: 24,
+                color: AppTheme.duoBlue,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -46,19 +56,30 @@ class QpCard extends StatelessWidget {
                 children: [
                   Text(
                     qp.title,
-                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                      color: context.colors.textPrimary,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '$totalQuestions Solved Questions',
-                    style: const TextStyle(fontSize: 12, color: Colors.white54, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: context.colors.textFaint,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
             ),
-            Icon(LucideIcons.chevronRight, color: AppTheme.duoBlue.withOpacity(0.5))
+            Icon(
+              LucideIcons.chevronRight,
+              color: AppTheme.duoBlue.withOpacity(0.5),
+            ),
           ],
         ),
       ),

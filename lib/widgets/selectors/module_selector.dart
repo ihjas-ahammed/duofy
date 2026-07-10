@@ -46,11 +46,17 @@ class ModuleSelectorSheet extends StatelessWidget {
         onModuleLongPress: onModuleLongPress,
       ),
       transitionBuilder: (ctx, anim, _, child) {
-        final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
+        final curved = CurvedAnimation(
+          parent: anim,
+          curve: Curves.easeOutCubic,
+        );
         return FadeTransition(
           opacity: curved,
           child: SlideTransition(
-            position: Tween<Offset>(begin: const Offset(0, -0.04), end: Offset.zero).animate(curved),
+            position: Tween<Offset>(
+              begin: const Offset(0, -0.04),
+              end: Offset.zero,
+            ).animate(curved),
             child: child,
           ),
         );
@@ -89,64 +95,74 @@ class ModuleSelectorSheet extends StatelessWidget {
                   child: Material(
                     type: MaterialType.transparency,
                     child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.03),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withOpacity(0.08)),
-                      boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 30, offset: const Offset(0, 4)),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                         
-                          child: const Padding(
-                          padding: EdgeInsets.only(bottom: 0),
-                          child: Text(
-                            'MODULES',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
+                      decoration: BoxDecoration(
+                        color: context.colors.surfaceAlt,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: context.colors.outline),
+                        boxShadow: [
+                          BoxShadow(
+                            color: context.colors.shadow,
+                            blurRadius: 30,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 0),
+                              child: Text(
+                                'MODULES',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: context.colors.textPrimary,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
                             ),
                           ),
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxHeight: media.size.height * 0.6,
+                            ),
+                            child: ListView.separated(
+                              shrinkWrap: true,
+                              padding: const EdgeInsets.all(8),
+                              physics: const BouncingScrollPhysics(),
+                              itemCount: modules.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 8),
+                              itemBuilder: (context, index) {
+                                return _ModuleRow(
+                                  module: modules[index],
+                                  isActive: index == activeModuleIdx,
+                                  progress: calculateModuleProgress(
+                                    modules[index],
+                                    completedLessons,
+                                  ),
+                                  onTap: () {
+                                    onSelect(index);
+                                    Navigator.of(context).maybePop();
+                                  },
+                                  onLongPress: onModuleLongPress == null
+                                      ? null
+                                      : () {
+                                          Navigator.of(context).maybePop();
+                                          onModuleLongPress!(index);
+                                        },
+                                );
+                              },
+                            ),
                           ),
-                        ),
-                        ConstrainedBox(
-                          constraints: BoxConstraints(maxHeight: media.size.height * 0.6),
-                          child: ListView.separated(
-                            shrinkWrap: true,
-                            padding: const EdgeInsets.all(8),
-                            physics: const BouncingScrollPhysics(),
-                            itemCount: modules.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 8),
-                            itemBuilder: (context, index) {
-                              return _ModuleRow(
-                                module: modules[index],
-                                isActive: index == activeModuleIdx,
-                                progress: calculateModuleProgress(modules[index], completedLessons),
-                                onTap: () {
-                                  onSelect(index);
-                                  Navigator.of(context).maybePop();
-                                },
-                                onLongPress: onModuleLongPress == null
-                                    ? null
-                                    : () {
-                                        Navigator.of(context).maybePop();
-                                        onModuleLongPress!(index);
-                                      },
-                              );
-                            },
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
                   ),
                 ),
               ),
@@ -187,7 +203,7 @@ class _ModuleRow extends StatelessWidget {
           decoration: BoxDecoration(
             color: isActive
                 ? AppTheme.duoBlue.withOpacity(0.18)
-                : Colors.white.withOpacity(0.05),
+                : context.colors.surfaceAlt,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isActive ? AppTheme.duoBlue : Colors.transparent,
@@ -205,7 +221,9 @@ class _ModuleRow extends StatelessWidget {
                 child: Icon(
                   LucideIcons.bookOpen,
                   size: 22,
-                  color: isActive ? Colors.white : const Color(0xFF94A3B8),
+                  color: isActive
+                      ? context.colors.textPrimary
+                      : const Color(0xFF94A3B8),
                 ),
               ),
               const SizedBox(width: 14),
@@ -222,14 +240,20 @@ class _ModuleRow extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w800,
-                              color: isActive ? AppTheme.duoBlue : const Color(0xFFE2E8F0),
+                              color: isActive
+                                  ? AppTheme.duoBlue
+                                  : const Color(0xFFE2E8F0),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         if (isActive)
-                          const Icon(LucideIcons.check, size: 18, color: AppTheme.duoBlue),
+                          const Icon(
+                            LucideIcons.check,
+                            size: 18,
+                            color: AppTheme.duoBlue,
+                          ),
                       ],
                     ),
                     if (module.description.isNotEmpty) ...[
@@ -246,7 +270,11 @@ class _ModuleRow extends StatelessWidget {
                       ),
                     ],
                     const SizedBox(height: 8),
-                    MiniProgressBar(percentage: progress, height: 4, showText: false),
+                    MiniProgressBar(
+                      percentage: progress,
+                      height: 4,
+                      showText: false,
+                    ),
                   ],
                 ),
               ),

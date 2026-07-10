@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 
-Future<bool> showSyncConflictDialog(BuildContext context, Book local, Book remote) async {
+Future<bool> showSyncConflictDialog(
+  BuildContext context,
+  Book local,
+  Book remote,
+) async {
   String formatTime(int? ts) {
     if (ts == null || ts == 0) return 'Unknown';
     final dt = DateTime.fromMillisecondsSinceEpoch(ts);
@@ -18,15 +22,23 @@ Future<bool> showSyncConflictDialog(BuildContext context, Book local, Book remot
     context: context,
     barrierDismissible: false,
     builder: (ctx) => AlertDialog(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: context.colors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       title: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: AppTheme.duoOrange, size: 28),
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: AppTheme.duoOrange,
+            size: 28,
+          ),
           const SizedBox(width: 12),
-          const Text(
+          Text(
             'Sync Conflict',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+            style: TextStyle(
+              color: context.colors.textPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
           ),
         ],
       ),
@@ -36,32 +48,49 @@ Future<bool> showSyncConflictDialog(BuildContext context, Book local, Book remot
         children: [
           Text(
             'The course "${local.title}" has different modifications on another device.',
-            style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+            style: TextStyle(
+              color: context.colors.textSecondary,
+              fontSize: 13,
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Which version do you want to keep?',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+            style: TextStyle(
+              color: context.colors.textPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
           ),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.04),
+              color: context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withOpacity(0.08)),
+              border: Border.all(color: context.colors.outline),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
                   'Local Version (This Device)',
-                  style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
+                  style: TextStyle(
+                    color: AppTheme.duoBlue,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                    letterSpacing: 0.5,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   'Last modified: ${formatTime(local.updatedAt)}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: context.colors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -70,21 +99,30 @@ Future<bool> showSyncConflictDialog(BuildContext context, Book local, Book remot
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.04),
+              color: context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withOpacity(0.08)),
+              border: Border.all(color: context.colors.outline),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
                   'Remote Version (Cloud/Other Device)',
-                  style: TextStyle(color: AppTheme.duoOrange, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
+                  style: TextStyle(
+                    color: AppTheme.duoOrange,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                    letterSpacing: 0.5,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   'Last modified: ${formatTime(remote.updatedAt)}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: context.colors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -94,11 +132,23 @@ Future<bool> showSyncConflictDialog(BuildContext context, Book local, Book remot
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx, false),
-          child: const Text('Use Cloud Version', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+          child: Text(
+            'Use Cloud Version',
+            style: TextStyle(
+              color: context.colors.textFaint,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
         TextButton(
           onPressed: () => Navigator.pop(ctx, true),
-          child: const Text('Keep Local Version', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.w900)),
+          child: const Text(
+            'Keep Local Version',
+            style: TextStyle(
+              color: AppTheme.duoBlue,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
         ),
       ],
     ),

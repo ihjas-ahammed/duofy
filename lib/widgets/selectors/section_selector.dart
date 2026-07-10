@@ -16,11 +16,16 @@ class SectionSelector extends StatelessWidget {
 
   Color _getColor(String colorStr) {
     switch (colorStr) {
-      case 'duo-green': return AppTheme.duoGreen;
-      case 'duo-blue': return AppTheme.duoBlue;
-      case 'duo-violet': return AppTheme.duoViolet;
-      case 'duo-orange': return AppTheme.duoOrange;
-      default: return AppTheme.duoBlue;
+      case 'duo-green':
+        return AppTheme.duoGreen;
+      case 'duo-blue':
+        return AppTheme.duoBlue;
+      case 'duo-violet':
+        return AppTheme.duoViolet;
+      case 'duo-orange':
+        return AppTheme.duoOrange;
+      default:
+        return AppTheme.duoBlue;
     }
   }
 
@@ -39,7 +44,7 @@ class SectionSelector extends StatelessWidget {
           final section = sections[index];
           final isActive = index == activeSectionIdx;
           final color = _getColor(section.color);
-          
+
           return GestureDetector(
             onTap: () => onSelect(index),
             child: Container(
@@ -49,18 +54,20 @@ class SectionSelector extends StatelessWidget {
                 color: isActive ? color.withOpacity(0.2) : Colors.transparent,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isActive ? color : Colors.white10, 
-                  width: 2
+                  color: isActive ? color : context.colors.outline,
+                  width: 2,
                 ),
               ),
               alignment: Alignment.center,
               child: Text(
-                section.title, 
+                section.title,
                 style: TextStyle(
-                  fontSize: 13, 
+                  fontSize: 13,
                   fontWeight: FontWeight.bold,
-                  color: isActive ? Colors.white : Colors.white54
-                )
+                  color: isActive
+                      ? context.colors.textPrimary
+                      : context.colors.textFaint,
+                ),
               ),
             ),
           );

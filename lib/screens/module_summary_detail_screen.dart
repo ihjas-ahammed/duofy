@@ -31,17 +31,18 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
     final int headerCount = 1;
     final int outlineHeaderCount = outlineCount > 0 ? 1 : 0;
     final int theoryHeaderCount = 1;
-    
-    final int totalCount = headerCount + 
-        outlineHeaderCount + 
-        outlineCount + 
-        theoryHeaderCount + 
+
+    final int totalCount =
+        headerCount +
+        outlineHeaderCount +
+        outlineCount +
+        theoryHeaderCount +
         moduleTheorySlides.length;
 
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: context.colors.background,
       appBar: AppBar(
-        backgroundColor: AppTheme.background.withOpacity(0.9),
+        backgroundColor: context.colors.background.withOpacity(0.9),
         flexibleSpace: ClipRRect(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -58,7 +59,12 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
         bottom: false,
         child: ListView.builder(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 80),
+          padding: const EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: 80,
+          ),
           itemCount: totalCount,
           itemBuilder: (context, index) {
             // 1. Header with description
@@ -67,13 +73,17 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 24),
                 child: Container(
                   padding: const EdgeInsets.all(20),
-                  decoration: AppTheme.glassDecoration,
+                  decoration: AppTheme.glassOf(context),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Row(
                         children: [
-                          Icon(LucideIcons.info, color: AppTheme.duoBlue, size: 18),
+                          Icon(
+                            LucideIcons.info,
+                            color: AppTheme.duoBlue,
+                            size: 18,
+                          ),
                           SizedBox(width: 8),
                           Text(
                             'MODULE OVERVIEW',
@@ -89,9 +99,9 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
                       const SizedBox(height: 12),
                       Text(
                         module.description,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
-                          color: Colors.white,
+                          color: context.colors.textPrimary,
                           height: 1.5,
                         ),
                       ),
@@ -124,19 +134,24 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
 
             // 3. Outline items
             if (outlineCount > 0) {
-              if (index >= currentIndex && index < currentIndex + outlineCount) {
+              if (index >= currentIndex &&
+                  index < currentIndex + outlineCount) {
                 final secIdx = index - currentIndex;
                 final sec = module.sections[secIdx];
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(16),
-                  decoration: AppTheme.glassDecoration,
+                  decoration: AppTheme.glassOf(context),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Padding(
                         padding: EdgeInsets.only(top: 3),
-                        child: Icon(LucideIcons.arrowRight, size: 14, color: AppTheme.duoBlue),
+                        child: Icon(
+                          LucideIcons.arrowRight,
+                          size: 14,
+                          color: AppTheme.duoBlue,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -145,10 +160,10 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
                           children: [
                             Text(
                               sec.title,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
-                                color: Colors.white,
+                                color: context.colors.textPrimary,
                               ),
                             ),
                             if (sec.description.isNotEmpty)
@@ -156,9 +171,9 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
                                 padding: const EdgeInsets.only(top: 4),
                                 child: Text(
                                   sec.description,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.white54,
+                                    color: context.colors.textFaint,
                                   ),
                                 ),
                               ),
@@ -196,13 +211,17 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
               return Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(16),
-                decoration: AppTheme.glassDecoration,
+                decoration: AppTheme.glassOf(context),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        const Icon(LucideIcons.sparkles, color: AppTheme.duoViolet, size: 16),
+                        const Icon(
+                          LucideIcons.sparkles,
+                          color: AppTheme.duoViolet,
+                          size: 16,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -219,9 +238,9 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     MathMarkdown(
                       data: slide.content,
-                      textStyle: const TextStyle(
+                      textStyle: TextStyle(
                         fontSize: 14,
-                        color: Colors.white,
+                        color: context.colors.textPrimary,
                         height: 1.5,
                       ),
                     ),

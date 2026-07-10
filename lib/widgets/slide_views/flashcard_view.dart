@@ -16,7 +16,11 @@ class FlashcardView extends StatefulWidget {
   final Slide slide;
   final void Function(bool remembered) onSelfGrade;
 
-  const FlashcardView({super.key, required this.slide, required this.onSelfGrade});
+  const FlashcardView({
+    super.key,
+    required this.slide,
+    required this.onSelfGrade,
+  });
 
   @override
   State<FlashcardView> createState() => _FlashcardViewState();
@@ -51,7 +55,8 @@ class _FlashcardViewState extends State<FlashcardView> {
                       child: Transform(
                         alignment: Alignment.center,
                         // Un-mirror the back face.
-                        transform: Matrix4.identity()..rotateY(showBack ? math.pi : 0),
+                        transform: Matrix4.identity()
+                          ..rotateY(showBack ? math.pi : 0),
                         child: Container(
                           width: double.infinity,
                           constraints: const BoxConstraints(minHeight: 260),
@@ -59,7 +64,7 @@ class _FlashcardViewState extends State<FlashcardView> {
                           decoration: BoxDecoration(
                             color: showBack
                                 ? AppTheme.duoGreen.withOpacity(0.08)
-                                : Colors.white.withOpacity(0.05),
+                                : context.colors.surfaceAlt,
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
                               color: showBack
@@ -72,9 +77,13 @@ class _FlashcardViewState extends State<FlashcardView> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                showBack ? 'ANSWER' : 'RECALL, THEN TAP TO FLIP',
+                                showBack
+                                    ? 'ANSWER'
+                                    : 'RECALL, THEN TAP TO FLIP',
                                 style: TextStyle(
-                                  color: showBack ? AppTheme.duoGreen : Colors.white38,
+                                  color: showBack
+                                      ? AppTheme.duoGreen
+                                      : context.colors.textFaint,
                                   fontWeight: FontWeight.w900,
                                   fontSize: 10,
                                   letterSpacing: 1.5,
@@ -85,15 +94,19 @@ class _FlashcardViewState extends State<FlashcardView> {
                                 data: showBack
                                     ? (widget.slide.blankAnswer ?? '')
                                     : widget.slide.content,
-                                textStyle: const TextStyle(
-                                    fontSize: 19,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold),
+                                textStyle: TextStyle(
+                                  fontSize: 19,
+                                  color: context.colors.textPrimary,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               if (!showBack) ...[
                                 const SizedBox(height: 20),
-                                const Icon(LucideIcons.refreshCw,
-                                    color: Colors.white24, size: 18),
+                                Icon(
+                                  LucideIcons.refreshCw,
+                                  color: context.colors.textFaint,
+                                  size: 18,
+                                ),
                               ],
                             ],
                           ),
@@ -138,7 +151,10 @@ class _FlashcardViewState extends State<FlashcardView> {
                       ),
                     ],
                   )
-                : const SizedBox(height: 56, key: ValueKey('grade_placeholder')),
+                : const SizedBox(
+                    height: 56,
+                    key: ValueKey('grade_placeholder'),
+                  ),
           ),
           const SizedBox(height: 16),
         ],

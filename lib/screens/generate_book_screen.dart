@@ -65,7 +65,10 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
     );
 
     if (result != null) {
-      final newFiles = result.paths.where((p) => p != null).map((p) => File(p!)).toList();
+      final newFiles = result.paths
+          .where((p) => p != null)
+          .map((p) => File(p!))
+          .toList();
       setState(() {
         if (forSyllabus) {
           _syllabusFiles.addAll(newFiles);
@@ -88,20 +91,31 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: AppTheme.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text(
-            'Cloud Storage Required',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          backgroundColor: context.colors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-          content: const Text(
+          title: Text(
+            'Cloud Storage Required',
+            style: TextStyle(
+              color: context.colors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
             'Backblaze B2 is not configured. Please setup cloud storage in the Document Store tab first.',
-            style: TextStyle(color: Colors.white70),
+            style: TextStyle(color: context.colors.textSecondary),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('OK', style: TextStyle(color: AppTheme.duoGreen, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'OK',
+                style: TextStyle(
+                  color: AppTheme.duoGreen,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         ),
@@ -177,41 +191,51 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Syllabus PDF has no extractable text. Scanned PDFs are not supported for auto-fetching books.'),
+              content: Text(
+                'Syllabus PDF has no extractable text. Scanned PDFs are not supported for auto-fetching books.',
+              ),
             ),
           );
         }
         return;
       }
 
-      print('[SyllabusScan] Extracted ${text.length} characters of text. Invoking AI extraction...');
+      print(
+        '[SyllabusScan] Extracted ${text.length} characters of text. Invoking AI extraction...',
+      );
       final extractedBooks = await AiService().extractSyllabusBooks(text);
       if (extractedBooks == null) {
         print('[SyllabusScan] AI syllabus book extraction returned null.');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Failed to analyze syllabus textbook mentions using AI.'),
-            ),
-          );
-        }
-        return;
-      }
-      
-      if (extractedBooks.isEmpty) {
-        print('[SyllabusScan] AI found zero textbook mentions in syllabus.');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Syllabus scanned. AI did not identify any textbook or reference book mentions.'),
+              content: Text(
+                'Failed to analyze syllabus textbook mentions using AI.',
+              ),
             ),
           );
         }
         return;
       }
 
-      print('[SyllabusScan] AI identified ${extractedBooks.length} books: $extractedBooks');
-      
+      if (extractedBooks.isEmpty) {
+        print('[SyllabusScan] AI found zero textbook mentions in syllabus.');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Syllabus scanned. AI did not identify any textbook or reference book mentions.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      print(
+        '[SyllabusScan] AI identified ${extractedBooks.length} books: $extractedBooks',
+      );
+
       final b2 = B2Service.instance;
       List<B2Object> b2Objects = [];
       try {
@@ -222,9 +246,14 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
         print('[SyllabusScan] Error listing B2 objects: $e');
       }
 
-      final globalBooks = await DatabaseService().fetchGlobalBooks(useCacheOnly: false, forceNetwork: true);
-      print('[SyllabusScan] Fetched ${globalBooks.length} global books from marketplace.');
-      
+      final globalBooks = await DatabaseService().fetchGlobalBooks(
+        useCacheOnly: false,
+        forceNetwork: true,
+      );
+      print(
+        '[SyllabusScan] Fetched ${globalBooks.length} global books from marketplace.',
+      );
+
       if (mounted) {
         // Resolve matches using two-stage matching in parallel
         final futures = extractedBooks.map((extBook) async {
@@ -233,7 +262,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
           if (title.isEmpty) return null;
 
           print('[SyllabusScan] Resolving AI match for title: "$title"');
-          
+
           // 1. Search in B2 objects first
           B2Object? matchedB2Obj;
           for (final obj in b2Objects) {
@@ -243,7 +272,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
               break;
             }
           }
-          
+
           // 2. Search in Marketplace if no direct B2 match
           Book? matchedBook;
           if (matchedB2Obj == null) {
@@ -259,18 +288,18 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
         });
 
         final List<Map<String, dynamic>?> results = await Future.wait(futures);
-        final List<Map<String, dynamic>> resolvedItems = results.whereType<Map<String, dynamic>>().toList();
+        final List<Map<String, dynamic>> resolvedItems = results
+            .whereType<Map<String, dynamic>>()
+            .toList();
 
         _showSyllabusBooksDialog(resolvedItems);
       }
     } catch (e) {
       print('[SyllabusScan] Error: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error scanning syllabus: $e'),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error scanning syllabus: $e')));
       }
     } finally {
       if (mounted) {
@@ -281,18 +310,32 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
     }
   }
 
-  Future<Book?> _matchBookUsingAi(String qTitle, String qAuthors, List<Book> globalBooks) async {
+  Future<Book?> _matchBookUsingAi(
+    String qTitle,
+    String qAuthors,
+    List<Book> globalBooks,
+  ) async {
     // 1. Direct offline match first to save API calls
     for (final gb in globalBooks) {
-      if (_isSyllabusBookMatch(qTitle, qAuthors, gb.title, gb.authorName ?? '')) {
+      if (_isSyllabusBookMatch(
+        qTitle,
+        qAuthors,
+        gb.title,
+        gb.authorName ?? '',
+      )) {
         return gb;
       }
     }
-    
+
     // 2. Offline match failed, gather candidates using first word of the query title
-    final words = qTitle.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), ' ').split(' ').where((w) => w.trim().length > 3).toList();
+    final words = qTitle
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]'), ' ')
+        .split(' ')
+        .where((w) => w.trim().length > 3)
+        .toList();
     if (words.isEmpty) return null;
-    
+
     final firstKeyword = words.first;
     final List<Book> candidates = [];
     for (final gb in globalBooks) {
@@ -300,20 +343,26 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
         candidates.add(gb);
       }
     }
-    
+
     if (candidates.isEmpty) return null;
-    
+
     // 3. Match using Lite model
     final matchIndex = await AiService().matchSyllabusBookToMarketplace(
       syllabusBookTitle: qTitle,
       syllabusBookAuthors: qAuthors,
-      candidateBooks: candidates.map((c) => {'id': c.id, 'title': c.title, 'author': c.authorName ?? ''}).toList(),
+      candidateBooks: candidates
+          .map(
+            (c) => {'id': c.id, 'title': c.title, 'author': c.authorName ?? ''},
+          )
+          .toList(),
     );
-    
-    if (matchIndex != null && matchIndex >= 0 && matchIndex < candidates.length) {
+
+    if (matchIndex != null &&
+        matchIndex >= 0 &&
+        matchIndex < candidates.length) {
       return candidates[matchIndex];
     }
-    
+
     return null;
   }
 
@@ -324,24 +373,36 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
       builder: (ctx) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 40,
+          ),
           child: StatefulBuilder(
             builder: (context, setDialogState) {
-              final currentMatchedCount = itemsList.where((item) => item['matchedBook'] != null || item['matchedB2Object'] != null).length;
-              
+              final currentMatchedCount = itemsList
+                  .where(
+                    (item) =>
+                        item['matchedBook'] != null ||
+                        item['matchedB2Object'] != null,
+                  )
+                  .length;
+
               return Container(
-                constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
+                constraints: const BoxConstraints(
+                  maxWidth: 600,
+                  maxHeight: 700,
+                ),
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: AppTheme.background,
+                  color: context.colors.background,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.white12),
+                  border: Border.all(color: context.colors.outline),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.5),
+                      color: context.colors.shadow,
                       blurRadius: 20,
                       offset: const Offset(0, 10),
-                    )
+                    ),
                   ],
                 ),
                 child: Column(
@@ -350,16 +411,28 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                   children: [
                     Row(
                       children: [
-                        const Icon(LucideIcons.bookOpen, color: AppTheme.duoGreen, size: 28),
+                        const Icon(
+                          LucideIcons.bookOpen,
+                          color: AppTheme.duoGreen,
+                          size: 28,
+                        ),
                         const SizedBox(width: 12),
-                        const Expanded(
+                        Expanded(
                           child: Text(
                             'Syllabus Reference Books',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+                            style: TextStyle(
+                              color: context.colors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20,
+                            ),
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(LucideIcons.x, color: Colors.white54, size: 24),
+                          icon: Icon(
+                            LucideIcons.x,
+                            color: context.colors.textFaint,
+                            size: 24,
+                          ),
                           onPressed: () => Navigator.of(ctx).pop(),
                         ),
                       ],
@@ -367,7 +440,11 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                     const SizedBox(height: 16),
                     Text(
                       'AI identified the following reference books from your syllabus. Tap "AI Search" to perform a deep semantic search against the Marketplace or B2 Store.',
-                      style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13, height: 1.4),
+                      style: TextStyle(
+                        color: context.colors.textSecondary,
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
                     ),
                     const SizedBox(height: 20),
                     Expanded(
@@ -378,29 +455,41 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                           final item = itemsList[index];
                           final title = item['title'] as String;
                           final authors = item['authors'] as String;
-                          final Book? matchedBook = item['matchedBook'] as Book?;
-                          final B2Object? matchedB2Object = item['matchedB2Object'] as B2Object?;
-                          final isAvailable = matchedBook != null || matchedB2Object != null;
+                          final Book? matchedBook =
+                              item['matchedBook'] as Book?;
+                          final B2Object? matchedB2Object =
+                              item['matchedB2Object'] as B2Object?;
+                          final isAvailable =
+                              matchedBook != null || matchedB2Object != null;
                           final isSearching = item['isSearching'] == true;
 
                           return Container(
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.04),
+                              color: context.colors.surfaceAlt,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.white10),
+                              border: Border.all(color: context.colors.outline),
                             ),
                             child: Row(
                               children: [
-                                const Icon(LucideIcons.book, color: Colors.white38, size: 22),
+                                Icon(
+                                  LucideIcons.book,
+                                  color: context.colors.textFaint,
+                                  size: 22,
+                                ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         title,
-                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                        style: TextStyle(
+                                          color: context.colors.textPrimary,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -408,7 +497,10 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                                         const SizedBox(height: 4),
                                         Text(
                                           'By $authors',
-                                          style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11),
+                                          style: TextStyle(
+                                            color: context.colors.textFaint,
+                                            fontSize: 11,
+                                          ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -418,50 +510,71 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                                 ),
                                 const SizedBox(width: 12),
                                 InkWell(
-                                  onTap: (isAvailable || isSearching) ? null : () async {
-                                    setDialogState(() {
-                                      item['isSearching'] = true;
-                                    });
-                                    
-                                    try {
-                                      final globalBooks = await DatabaseService().fetchGlobalBooks(useCacheOnly: false, forceNetwork: true);
-                                      final searchResult = await _deepSearchBookUsingAiAndB2(title, authors, globalBooks);
-                                      if (searchResult != null) {
-                                        setDialogState(() {
-                                          item['matchedBook'] = searchResult['matchedBook'];
-                                          item['matchedB2Object'] = searchResult['matchedB2Object'];
-                                        });
-                                      } else {
-                                        if (mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('No semantic matches found in Marketplace or B2 Store.'),
-                                            ),
-                                          );
-                                        }
-                                      }
-                                    } catch (e) {
-                                      print('Deep search error: $e');
-                                    } finally {
-                                      setDialogState(() {
-                                        item['isSearching'] = false;
-                                      });
-                                    }
-                                  },
+                                  onTap: (isAvailable || isSearching)
+                                      ? null
+                                      : () async {
+                                          setDialogState(() {
+                                            item['isSearching'] = true;
+                                          });
+
+                                          try {
+                                            final globalBooks =
+                                                await DatabaseService()
+                                                    .fetchGlobalBooks(
+                                                      useCacheOnly: false,
+                                                      forceNetwork: true,
+                                                    );
+                                            final searchResult =
+                                                await _deepSearchBookUsingAiAndB2(
+                                                  title,
+                                                  authors,
+                                                  globalBooks,
+                                                );
+                                            if (searchResult != null) {
+                                              setDialogState(() {
+                                                item['matchedBook'] =
+                                                    searchResult['matchedBook'];
+                                                item['matchedB2Object'] =
+                                                    searchResult['matchedB2Object'];
+                                              });
+                                            } else {
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                      'No semantic matches found in Marketplace or B2 Store.',
+                                                    ),
+                                                  ),
+                                                );
+                                              }
+                                            }
+                                          } catch (e) {
+                                            print('Deep search error: $e');
+                                          } finally {
+                                            setDialogState(() {
+                                              item['isSearching'] = false;
+                                            });
+                                          }
+                                        },
                                   borderRadius: BorderRadius.circular(20),
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: isAvailable
                                           ? AppTheme.duoGreen.withOpacity(0.1)
                                           : isSearching
-                                              ? Colors.white.withOpacity(0.02)
-                                              : Colors.white.withOpacity(0.05),
+                                          ? context.colors.surfaceAlt
+                                          : context.colors.surfaceAlt,
                                       borderRadius: BorderRadius.circular(20),
                                       border: Border.all(
                                         color: isAvailable
                                             ? AppTheme.duoGreen.withOpacity(0.3)
-                                            : Colors.white10,
+                                            : context.colors.outline,
                                       ),
                                     ),
                                     child: isSearching
@@ -470,22 +583,35 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                                             height: 14,
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2,
-                                              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.duoBlue),
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                    AppTheme.duoBlue,
+                                                  ),
                                             ),
                                           )
                                         : Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Icon(
-                                                isAvailable ? LucideIcons.checkCircle : LucideIcons.search,
-                                                color: isAvailable ? AppTheme.duoGreen : Colors.white54,
+                                                isAvailable
+                                                    ? LucideIcons.checkCircle
+                                                    : LucideIcons.search,
+                                                color: isAvailable
+                                                    ? AppTheme.duoGreen
+                                                    : context.colors.textFaint,
                                                 size: 14,
                                               ),
                                               const SizedBox(width: 6),
                                               Text(
-                                                isAvailable ? 'Available' : 'AI Search',
+                                                isAvailable
+                                                    ? 'Available'
+                                                    : 'AI Search',
                                                 style: TextStyle(
-                                                  color: isAvailable ? AppTheme.duoGreen : Colors.white70,
+                                                  color: isAvailable
+                                                      ? AppTheme.duoGreen
+                                                      : context
+                                                            .colors
+                                                            .textSecondary,
                                                   fontWeight: FontWeight.bold,
                                                   fontSize: 10,
                                                 ),
@@ -503,25 +629,31 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                     const SizedBox(height: 24),
                     if (currentMatchedCount > 0)
                       DuoButton(
-                        text: 'Auto-fetch $currentMatchedCount Reference Book(s)',
+                        text:
+                            'Auto-fetch $currentMatchedCount Reference Book(s)',
                         color: AppTheme.duoGreen,
                         shadowColor: AppTheme.duoGreenDark,
                         onPressed: () async {
                           final navigator = Navigator.of(ctx);
-                          final scaffoldMessenger = ScaffoldMessenger.of(context);
-                          
+                          final scaffoldMessenger = ScaffoldMessenger.of(
+                            context,
+                          );
+
                           // Pre-show a downloading notification
                           scaffoldMessenger.showSnackBar(
                             const SnackBar(
-                              content: Text('Downloading and adding selected reference books to selection...'),
+                              content: Text(
+                                'Downloading and adding selected reference books to selection...',
+                              ),
                               duration: Duration(seconds: 3),
                             ),
                           );
 
                           for (final item in itemsList) {
                             final Book? mb = item['matchedBook'] as Book?;
-                            final B2Object? b2Obj = item['matchedB2Object'] as B2Object?;
-                            
+                            final B2Object? b2Obj =
+                                item['matchedB2Object'] as B2Object?;
+
                             if (mb != null) {
                               await DatabaseService().saveGeneratedBook(mb);
                               await _downloadAndSelectBookPdf(mb);
@@ -529,7 +661,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                               await _downloadAndSelectB2ObjectPdf(b2Obj);
                             }
                           }
-                          
+
                           navigator.pop();
                           scaffoldMessenger.showSnackBar(
                             SnackBar(
@@ -545,8 +677,8 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                     else
                       DuoButton(
                         text: 'Close',
-                        color: Colors.white10,
-                        shadowColor: Colors.black26,
+                        color: context.colors.surfaceAlt,
+                        shadowColor: context.colors.shadow,
                         onPressed: () => Navigator.of(ctx).pop(),
                       ),
                   ],
@@ -559,7 +691,11 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
     );
   }
 
-  Future<Map<String, dynamic>?> _deepSearchBookUsingAiAndB2(String qTitle, String qAuthors, List<Book> globalBooks) async {
+  Future<Map<String, dynamic>?> _deepSearchBookUsingAiAndB2(
+    String qTitle,
+    String qAuthors,
+    List<Book> globalBooks,
+  ) async {
     // 1. Search B2 first
     final b2 = B2Service.instance;
     if (await b2.isConfigured()) {
@@ -575,25 +711,34 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
         print('B2 list error: $e');
       }
     }
-    
+
     // 2. Search Marketplace
-    final resolvedBook = await _deepSearchBookUsingAi(qTitle, qAuthors, globalBooks);
+    final resolvedBook = await _deepSearchBookUsingAi(
+      qTitle,
+      qAuthors,
+      globalBooks,
+    );
     if (resolvedBook != null) {
       return {'matchedBook': resolvedBook, 'matchedB2Object': null};
     }
-    
+
     return null;
   }
 
-  Future<Book?> _deepSearchBookUsingAi(String qTitle, String qAuthors, List<Book> globalBooks) async {
-    final words = qTitle.toLowerCase()
+  Future<Book?> _deepSearchBookUsingAi(
+    String qTitle,
+    String qAuthors,
+    List<Book> globalBooks,
+  ) async {
+    final words = qTitle
+        .toLowerCase()
         .replaceAll(RegExp(r'[^a-z0-9]'), ' ')
         .split(' ')
         .where((w) => w.trim().length > 3)
         .toSet();
-        
+
     if (words.isEmpty) return null;
-    
+
     final List<Book> candidates = [];
     for (final gb in globalBooks) {
       final gbTitleLower = gb.title.toLowerCase();
@@ -608,21 +753,27 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
         candidates.add(gb);
       }
     }
-    
+
     if (candidates.isEmpty) return null;
-    
+
     final limitedCandidates = candidates.take(15).toList();
-    
+
     final matchIndex = await AiService().matchSyllabusBookToMarketplace(
       syllabusBookTitle: qTitle,
       syllabusBookAuthors: qAuthors,
-      candidateBooks: limitedCandidates.map((c) => {'id': c.id, 'title': c.title, 'author': c.authorName ?? ''}).toList(),
+      candidateBooks: limitedCandidates
+          .map(
+            (c) => {'id': c.id, 'title': c.title, 'author': c.authorName ?? ''},
+          )
+          .toList(),
     );
-    
-    if (matchIndex != null && matchIndex >= 0 && matchIndex < limitedCandidates.length) {
+
+    if (matchIndex != null &&
+        matchIndex >= 0 &&
+        matchIndex < limitedCandidates.length) {
       return limitedCandidates[matchIndex];
     }
-    
+
     return null;
   }
 
@@ -630,7 +781,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
     try {
       final b2 = B2Service.instance;
       if (!await b2.isConfigured()) return;
-      
+
       final objects = await b2.listObjects();
       B2Object? matchedObj;
       for (final obj in objects) {
@@ -640,11 +791,13 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
           break;
         }
       }
-      
+
       if (matchedObj != null) {
         await _downloadAndSelectB2ObjectPdf(matchedObj);
       } else {
-        print('[SyllabusScan] No matching PDF found in B2 for community book: ${mb.title}');
+        print(
+          '[SyllabusScan] No matching PDF found in B2 for community book: ${mb.title}',
+        );
       }
     } catch (e) {
       print('[SyllabusScan] Error auto-selecting B2 PDF: $e');
@@ -656,7 +809,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
       final appDir = await getApplicationDocumentsDirectory();
       final cacheDir = Directory('${appDir.path}/b2_cache');
       final file = File('${cacheDir.path}/${obj.key}');
-      
+
       if (file.existsSync()) {
         setState(() {
           if (!_selectedFiles.any((f) => f.path == file.path)) {
@@ -682,23 +835,34 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
     }
   }
 
-  bool _isSyllabusBookMatch(String qTitle, String qAuthors, String tTitle, String tAuthors) {
-    final qt = qTitle.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), ' ').trim();
-    final tt = tTitle.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), ' ').trim();
-    
+  bool _isSyllabusBookMatch(
+    String qTitle,
+    String qAuthors,
+    String tTitle,
+    String tAuthors,
+  ) {
+    final qt = qTitle
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]'), ' ')
+        .trim();
+    final tt = tTitle
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]'), ' ')
+        .trim();
+
     if (qt.isEmpty || tt.isEmpty) return false;
-    
+
     // 1. Direct containment check
     if (qt.contains(tt) || tt.contains(qt)) {
       return true;
     }
-    
+
     // 2. Fallback to word-overlap ratio
     final qw = qt.split(' ').where((w) => w.trim().length > 3).toSet();
     final tw = tt.split(' ').where((w) => w.trim().length > 3).toSet();
-    
+
     if (qw.isEmpty || tw.isEmpty) return false;
-    
+
     final intersection = qw.intersection(tw);
     final double matchRatio = intersection.length / qw.length;
     final double targetRatio = intersection.length / tw.length;
@@ -707,11 +871,17 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
 
   void _generate() {
     if (_selectedFiles.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select the required file(s).')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select the required file(s).')),
+      );
       return;
     }
     if (_mode == GenerationMode.course && _syllabusFiles.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a syllabus file for the course.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a syllabus file for the course.'),
+        ),
+      );
       return;
     }
 
@@ -721,15 +891,21 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
       barrierDismissible: false,
       builder: (context) => Center(
         child: Card(
-          color: AppTheme.surface,
-          child: const Padding(
-            padding: EdgeInsets.all(24.0),
+          color: context.colors.surface,
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CircularProgressIndicator(color: AppTheme.duoGreen),
-                SizedBox(height: 16),
-                Text('Preparing Files...', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                const CircularProgressIndicator(color: AppTheme.duoGreen),
+                const SizedBox(height: 16),
+                Text(
+                  'Preparing Files...',
+                  style: TextStyle(
+                    color: context.colors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
           ),
@@ -748,7 +924,9 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
         final filename = firstPdf.path.split(RegExp(r'[\\/]')).last;
 
         final customPrompt = _customPromptController.text.trim();
-        final presetTitle = _titleController.text.trim().isEmpty ? null : _titleController.text.trim();
+        final presetTitle = _titleController.text.trim().isEmpty
+            ? null
+            : _titleController.text.trim();
         if (_mode == GenerationMode.handout) {
           _showHandoutPrompt(_selectedFiles, presetTitle ?? filename);
         } else {
@@ -768,7 +946,9 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
       } catch (e) {
         if (mounted) {
           Navigator.of(context).pop(); // dismiss loading dialog
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error preparing files: $e')));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error preparing files: $e')));
         }
       }
     });
@@ -779,16 +959,22 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Handout Info', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: context.colors.surface,
+        title: Text(
+          'Handout Info',
+          style: TextStyle(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: TextField(
           controller: instructionsCtrl,
           maxLines: 3,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
+          style: TextStyle(color: context.colors.textPrimary),
+          decoration: InputDecoration(
             hintText: 'Enter any instructions or context for this handout...',
-            hintStyle: TextStyle(color: Colors.white54),
-            border: OutlineInputBorder(),
+            hintStyle: TextStyle(color: context.colors.textFaint),
+            border: const OutlineInputBorder(),
           ),
         ),
         actions: [
@@ -805,12 +991,20 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                 filename,
                 indexFiles: selectedFiles,
                 chapter1AbsolutePages: const [1],
-                customInstructions: instructionsCtrl.text.trim().isEmpty ? null : instructionsCtrl.text.trim(),
+                customInstructions: instructionsCtrl.text.trim().isEmpty
+                    ? null
+                    : instructionsCtrl.text.trim(),
                 isHandout: true,
               );
               Navigator.of(context).pop();
             },
-            child: const Text('Generate', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+            child: Text(
+              'Generate',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: context.colors.textPrimary,
+              ),
+            ),
           ),
         ],
       ),
@@ -824,7 +1018,11 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
         const SizedBox(width: 8),
         _buildModeTab(GenerationMode.handout, 'Handout', LucideIcons.file),
         const SizedBox(width: 8),
-        _buildModeTab(GenerationMode.course, 'Course', LucideIcons.graduationCap),
+        _buildModeTab(
+          GenerationMode.course,
+          'Course',
+          LucideIcons.graduationCap,
+        ),
       ],
     );
   }
@@ -843,15 +1041,32 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? AppTheme.duoBlue : AppTheme.surface,
+            color: isSelected ? AppTheme.duoBlue : context.colors.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: isSelected ? AppTheme.duoBlueDark : Colors.white12),
+            border: Border.all(
+              color: isSelected ? AppTheme.duoBlueDark : context.colors.outline,
+            ),
           ),
           child: Column(
             children: [
-              Icon(icon, color: isSelected ? Colors.white : Colors.white54, size: 24),
+              Icon(
+                icon,
+                color: isSelected
+                    ? context.colors.textPrimary
+                    : context.colors.textFaint,
+                size: 24,
+              ),
               const SizedBox(height: 4),
-              Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.white54, fontWeight: FontWeight.bold, fontSize: 13)),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected
+                      ? context.colors.textPrimary
+                      : context.colors.textFaint,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
             ],
           ),
         ),
@@ -862,142 +1077,240 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('New Material', style: TextStyle(fontWeight: FontWeight.w900))),
+      appBar: AppBar(
+        title: const Text(
+          'New Material',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
+      ),
       body: ResponsiveCenter(
         maxWidth: ResponsiveMaxWidth.form,
         child: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildModeSelector(),
-                    const SizedBox(height: 24),
-                    const Text('COURSE TITLE (OPTIONAL)', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _titleController,
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
-                      decoration: InputDecoration(
-                        hintText: 'e.g. Organic Chemistry, Linear Algebra...',
-                        hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
-                        filled: true,
-                        fillColor: AppTheme.surface,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.white12),
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildModeSelector(),
+                      const SizedBox(height: 24),
+                      Text(
+                        'COURSE TITLE (OPTIONAL)',
+                        style: TextStyle(
+                          color: context.colors.textFaint,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
                         ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: AppTheme.duoGreen),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    if (_mode == GenerationMode.course) ...[
-                      Row(
-                        children: [
-                          const Text('SYLLABUS (PDF)', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
-                          const SizedBox(width: 8),
-                          if (_isScanningSyllabus)
-                            const SizedBox(
-                              width: 12,
-                              height: 12,
-                              child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(AppTheme.duoGreen)),
-                            ),
-                        ],
                       ),
                       const SizedBox(height: 12),
-                      FileSelectionList(
-                        files: _syllabusFiles,
-                        onAddMore: () => _pickFiles(true),
-                        onSelectFromStore: () => _selectFromStore(true),
-                        onRemove: (idx) => setState(() => _syllabusFiles.removeAt(idx)),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: Checkbox(
-                              value: _autoFetchBooks,
-                              activeColor: AppTheme.duoGreen,
-                              onChanged: (val) async {
-                                setState(() {
-                                  _autoFetchBooks = val ?? true;
-                                });
-                                final prefs = await SharedPreferences.getInstance();
-                                await prefs.setBool('auto_fetch_books', _autoFetchBooks);
-                              },
+                      TextField(
+                        controller: _titleController,
+                        style: TextStyle(
+                          color: context.colors.textPrimary,
+                          fontSize: 14,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'e.g. Organic Chemistry, Linear Algebra...',
+                          hintStyle: TextStyle(
+                            color: context.colors.textFaint,
+                            fontSize: 13,
+                          ),
+                          filled: true,
+                          fillColor: context.colors.surface,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: context.colors.outline,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          const Expanded(
-                            child: Text(
-                              'Auto-fetch mentioned reference books from Marketplace',
-                              style: TextStyle(color: Colors.white70, fontSize: 12),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: AppTheme.duoGreen,
                             ),
                           ),
-                        ],
+                        ),
                       ),
                       const SizedBox(height: 24),
-                      const Text('REFERENCE BOOKS (PDF)', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
-                    ] else if (_mode == GenerationMode.book) ...[
-                      const Text('TEXTBOOK (PDF)', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
-                    ] else ...[
-                      const Text('DOCUMENT (PDF / Images)', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
-                    ],
-                    
-                    const SizedBox(height: 12),
-                    FileSelectionList(
-                      files: _selectedFiles,
-                      onAddMore: () => _pickFiles(false),
-                      onSelectFromStore: () => _selectFromStore(false),
-                      onRemove: (idx) => setState(() => _selectedFiles.removeAt(idx)),
-                    ),
 
-                    const SizedBox(height: 24),
-                    const Text('CUSTOM INDEXING INSTRUCTIONS (OPTIONAL)', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _customPromptController,
-                      maxLines: 3,
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
-                      decoration: InputDecoration(
-                        hintText: 'e.g. Ignore appendix chapters, focus on primary chapters, or translate topic names...',
-                        hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
-                        filled: true,
-                        fillColor: AppTheme.surface,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.white12),
+                      if (_mode == GenerationMode.course) ...[
+                        Row(
+                          children: [
+                            Text(
+                              'SYLLABUS (PDF)',
+                              style: TextStyle(
+                                color: context.colors.textFaint,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            if (_isScanningSyllabus)
+                              const SizedBox(
+                                width: 12,
+                                height: 12,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppTheme.duoGreen,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: AppTheme.duoGreen),
+                        const SizedBox(height: 12),
+                        FileSelectionList(
+                          files: _syllabusFiles,
+                          onAddMore: () => _pickFiles(true),
+                          onSelectFromStore: () => _selectFromStore(true),
+                          onRemove: (idx) =>
+                              setState(() => _syllabusFiles.removeAt(idx)),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: Checkbox(
+                                value: _autoFetchBooks,
+                                activeColor: AppTheme.duoGreen,
+                                onChanged: (val) async {
+                                  setState(() {
+                                    _autoFetchBooks = val ?? true;
+                                  });
+                                  final prefs =
+                                      await SharedPreferences.getInstance();
+                                  await prefs.setBool(
+                                    'auto_fetch_books',
+                                    _autoFetchBooks,
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Auto-fetch mentioned reference books from Marketplace',
+                                style: TextStyle(
+                                  color: context.colors.textSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'REFERENCE BOOKS (PDF)',
+                          style: TextStyle(
+                            color: context.colors.textFaint,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ] else if (_mode == GenerationMode.book) ...[
+                        Text(
+                          'TEXTBOOK (PDF)',
+                          style: TextStyle(
+                            color: context.colors.textFaint,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ] else ...[
+                        Text(
+                          'DOCUMENT (PDF / Images)',
+                          style: TextStyle(
+                            color: context.colors.textFaint,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(height: 12),
+                      FileSelectionList(
+                        files: _selectedFiles,
+                        onAddMore: () => _pickFiles(false),
+                        onSelectFromStore: () => _selectFromStore(false),
+                        onRemove: (idx) =>
+                            setState(() => _selectedFiles.removeAt(idx)),
+                      ),
+
+                      const SizedBox(height: 24),
+                      Text(
+                        'CUSTOM INDEXING INSTRUCTIONS (OPTIONAL)',
+                        style: TextStyle(
+                          color: context.colors.textFaint,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _customPromptController,
+                        maxLines: 3,
+                        style: TextStyle(
+                          color: context.colors.textPrimary,
+                          fontSize: 14,
+                        ),
+                        decoration: InputDecoration(
+                          hintText:
+                              'e.g. Ignore appendix chapters, focus on primary chapters, or translate topic names...',
+                          hintStyle: TextStyle(
+                            color: context.colors.textFaint,
+                            fontSize: 13,
+                          ),
+                          filled: true,
+                          fillColor: context.colors.surface,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: context.colors.outline,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: AppTheme.duoGreen,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: DuoButton(
-                text: 'Continue',
-                onPressed: _generate,
-                color: _selectedFiles.isNotEmpty && (_mode != GenerationMode.course || _syllabusFiles.isNotEmpty) ? AppTheme.duoGreen : Colors.grey.shade700,
-                shadowColor: _selectedFiles.isNotEmpty && (_mode != GenerationMode.course || _syllabusFiles.isNotEmpty) ? AppTheme.duoGreenDark : Colors.grey.shade800,
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: DuoButton(
+                  text: 'Continue',
+                  onPressed: _generate,
+                  color:
+                      _selectedFiles.isNotEmpty &&
+                          (_mode != GenerationMode.course ||
+                              _syllabusFiles.isNotEmpty)
+                      ? AppTheme.duoGreen
+                      : Colors.grey.shade700,
+                  shadowColor:
+                      _selectedFiles.isNotEmpty &&
+                          (_mode != GenerationMode.course ||
+                              _syllabusFiles.isNotEmpty)
+                      ? AppTheme.duoGreenDark
+                      : Colors.grey.shade800,
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
         ),
       ),
     );
@@ -1007,15 +1320,15 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
 class _DocumentStorePickerDialog extends StatefulWidget {
   final bool forSyllabus;
 
-  const _DocumentStorePickerDialog({
-    required this.forSyllabus,
-  });
+  const _DocumentStorePickerDialog({required this.forSyllabus});
 
   @override
-  State<_DocumentStorePickerDialog> createState() => _DocumentStorePickerDialogState();
+  State<_DocumentStorePickerDialog> createState() =>
+      _DocumentStorePickerDialogState();
 }
 
-class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> {
+class _DocumentStorePickerDialogState
+    extends State<_DocumentStorePickerDialog> {
   bool _isLoading = true;
   String? _errorMessage;
   List<B2Object> _files = [];
@@ -1027,7 +1340,9 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
   @override
   void initState() {
     super.initState();
-    _selectedCategory = widget.forSyllabus ? DocCategory.syllabus : DocCategory.reference;
+    _selectedCategory = widget.forSyllabus
+        ? DocCategory.syllabus
+        : DocCategory.reference;
     _initCacheDir();
     _loadFiles();
   }
@@ -1052,8 +1367,10 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
       final files = await B2Service.instance.listObjects();
       // Sort newest first
       files.sort((a, b) {
-        final aDate = a.lastModifiedDate ?? DateTime.fromMillisecondsSinceEpoch(0);
-        final bDate = b.lastModifiedDate ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final aDate =
+            a.lastModifiedDate ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bDate =
+            b.lastModifiedDate ?? DateTime.fromMillisecondsSinceEpoch(0);
         return bDate.compareTo(aDate);
       });
       if (mounted) {
@@ -1100,18 +1417,22 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
     final filtered = _getFilteredFiles();
 
     return AlertDialog(
-      backgroundColor: AppTheme.background,
+      backgroundColor: context.colors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
       contentPadding: const EdgeInsets.symmetric(horizontal: 24),
       actionsPadding: const EdgeInsets.all(16),
-      title: const Row(
+      title: Row(
         children: [
-          Icon(LucideIcons.cloud, color: AppTheme.duoViolet),
-          SizedBox(width: 8),
+          const Icon(LucideIcons.cloud, color: AppTheme.duoViolet),
+          const SizedBox(width: 8),
           Text(
             'Document Store',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+            style: TextStyle(
+              color: context.colors.textPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
           ),
         ],
       ),
@@ -1124,13 +1445,17 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.04),
+                color: context.colors.surfaceAlt,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                border: Border.all(color: context.colors.outline),
               ),
               child: Row(
                 children: [
-                  const Icon(LucideIcons.search, color: Colors.white30, size: 16),
+                  Icon(
+                    LucideIcons.search,
+                    color: context.colors.textFaint,
+                    size: 16,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
@@ -1140,13 +1465,19 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
                           _searchQuery = val;
                         });
                       },
-                      style: const TextStyle(color: Colors.white, fontSize: 13),
-                      decoration: const InputDecoration(
+                      style: TextStyle(
+                        color: context.colors.textPrimary,
+                        fontSize: 13,
+                      ),
+                      decoration: InputDecoration(
                         hintText: 'Search documents...',
-                        hintStyle: TextStyle(color: Colors.white30, fontSize: 13),
+                        hintStyle: TextStyle(
+                          color: context.colors.textFaint,
+                          fontSize: 13,
+                        ),
                         border: InputBorder.none,
                         isDense: true,
-                        contentPadding: EdgeInsets.symmetric(vertical: 8),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
                       ),
                     ),
                   ),
@@ -1158,7 +1489,11 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
                           _searchQuery = '';
                         });
                       },
-                      child: const Icon(LucideIcons.x, color: Colors.white60, size: 14),
+                      child: Icon(
+                        LucideIcons.x,
+                        color: context.colors.textFaint,
+                        size: 14,
+                      ),
                     ),
                 ],
               ),
@@ -1168,33 +1503,42 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
             Container(
               padding: const EdgeInsets.all(2),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.02),
+                color: context.colors.surfaceAlt,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white.withOpacity(0.05)),
+                border: Border.all(color: context.colors.outline),
               ),
               child: Row(
                 children: [
                   Expanded(
-                    child: _buildTab(DocCategory.reference, 'Reference', LucideIcons.bookOpen),
+                    child: _buildTab(
+                      DocCategory.reference,
+                      'Reference',
+                      LucideIcons.bookOpen,
+                    ),
                   ),
                   Expanded(
-                    child: _buildTab(DocCategory.syllabus, 'Syllabus', LucideIcons.fileSpreadsheet),
+                    child: _buildTab(
+                      DocCategory.syllabus,
+                      'Syllabus',
+                      LucideIcons.fileSpreadsheet,
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 12),
             // Files List
-            Expanded(
-              child: _buildListContent(filtered),
-            ),
+            Expanded(child: _buildListContent(filtered)),
           ],
         ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+          child: Text(
+            'Cancel',
+            style: TextStyle(color: context.colors.textFaint),
+          ),
         ),
       ],
     );
@@ -1217,12 +1561,20 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 14, color: isSelected ? Colors.white : Colors.white60),
+            Icon(
+              icon,
+              size: 14,
+              color: isSelected
+                  ? context.colors.textPrimary
+                  : context.colors.textFaint,
+            ),
             const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.white60,
+                color: isSelected
+                    ? context.colors.textPrimary
+                    : context.colors.textFaint,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 fontSize: 12,
               ),
@@ -1235,21 +1587,32 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
 
   Widget _buildListContent(List<B2Object> filtered) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppTheme.duoViolet));
+      return const Center(
+        child: CircularProgressIndicator(color: AppTheme.duoViolet),
+      );
     }
     if (_errorMessage != null) {
-      return Center(child: Text(_errorMessage!, style: const TextStyle(color: AppTheme.duoRed, fontSize: 12)));
+      return Center(
+        child: Text(
+          _errorMessage!,
+          style: const TextStyle(color: AppTheme.duoRed, fontSize: 12),
+        ),
+      );
     }
     if (filtered.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(LucideIcons.folderClosed, size: 32, color: Colors.white24),
+            Icon(
+              LucideIcons.folderClosed,
+              size: 32,
+              color: context.colors.textFaint,
+            ),
             const SizedBox(height: 8),
             Text(
               _searchQuery.isNotEmpty ? 'No search results' : 'No documents',
-              style: const TextStyle(color: Colors.white54, fontSize: 12),
+              style: TextStyle(color: context.colors.textFaint, fontSize: 12),
             ),
           ],
         ),
@@ -1258,7 +1621,8 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
 
     return ListView.separated(
       itemCount: filtered.length,
-      separatorBuilder: (_, _) => const Divider(height: 1, color: Colors.white12),
+      separatorBuilder: (_, _) =>
+          Divider(height: 1, color: context.colors.outline),
       itemBuilder: (context, index) {
         final file = filtered[index];
         final name = file.key.split('/').last;
@@ -1268,13 +1632,17 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
           contentPadding: EdgeInsets.zero,
           title: Text(
             name,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+            style: TextStyle(
+              color: context.colors.textPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           subtitle: Text(
             file.sizeFormatted,
-            style: const TextStyle(color: Colors.white54, fontSize: 11),
+            style: TextStyle(color: context.colors.textFaint, fontSize: 11),
           ),
           trailing: Icon(
             isCached ? LucideIcons.smartphone : LucideIcons.download,
@@ -1291,12 +1659,11 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
 class _DownloadProgressDialog extends StatefulWidget {
   final B2Object b2Obj;
 
-  const _DownloadProgressDialog({
-    required this.b2Obj,
-  });
+  const _DownloadProgressDialog({required this.b2Obj});
 
   @override
-  State<_DownloadProgressDialog> createState() => _DownloadProgressDialogState();
+  State<_DownloadProgressDialog> createState() =>
+      _DownloadProgressDialogState();
 }
 
 class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
@@ -1363,22 +1730,32 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: context.colors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Text(
         _errorMessage.isNotEmpty ? 'Download Failed' : 'Downloading File',
-        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+        style: TextStyle(
+          color: context.colors.textPrimary,
+          fontWeight: FontWeight.bold,
+          fontSize: 16,
+        ),
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (_errorMessage.isNotEmpty) ...[
-            Text(_errorMessage, style: const TextStyle(color: AppTheme.duoRed, fontSize: 13)),
+            Text(
+              _errorMessage,
+              style: const TextStyle(color: AppTheme.duoRed, fontSize: 13),
+            ),
             const SizedBox(height: 16),
           ] else ...[
             Text(
               widget.b2Obj.key.split('/').last,
-              style: const TextStyle(color: Colors.white70, fontSize: 13),
+              style: TextStyle(
+                color: context.colors.textSecondary,
+                fontSize: 13,
+              ),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -1390,14 +1767,20 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
                 value: _progress,
-                backgroundColor: Colors.white12,
-                valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.duoViolet),
+                backgroundColor: context.colors.outline,
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                  AppTheme.duoViolet,
+                ),
               ),
             ),
             const SizedBox(height: 8),
             Text(
               '${(_progress * 100).toStringAsFixed(0)}%',
-              style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: context.colors.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ],
@@ -1412,11 +1795,20 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
               });
               _startDownload();
             },
-            child: const Text('Retry', style: TextStyle(color: AppTheme.duoGreen, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Retry',
+              style: TextStyle(
+                color: AppTheme.duoGreen,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(null),
-            child: const Text('Close', style: TextStyle(color: Colors.white70)),
+            child: Text(
+              'Close',
+              style: TextStyle(color: context.colors.textSecondary),
+            ),
           ),
         ] else
           TextButton(
@@ -1426,7 +1818,13 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
               });
               Navigator.of(context).pop(null);
             },
-            child: const Text('Cancel', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(
+                color: AppTheme.duoRed,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
       ],
     );

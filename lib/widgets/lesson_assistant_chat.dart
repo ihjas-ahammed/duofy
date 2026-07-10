@@ -54,7 +54,8 @@ class LessonAssistantChat extends StatefulWidget {
   State<LessonAssistantChat> createState() => _LessonAssistantChatState();
 }
 
-class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTickerProviderStateMixin {
+class _LessonAssistantChatState extends State<LessonAssistantChat>
+    with SingleTickerProviderStateMixin {
   WebSocket? _webSocket;
   bool _isConnected = false;
   bool _isConnecting = false;
@@ -145,13 +146,15 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
       final apiKey = await AiService().getApiKey();
       final model = await AiService().getLiveModelName();
       if (apiKey.isEmpty) {
-        throw Exception("Gemini API Key is missing. Please add one in Settings.");
+        throw Exception(
+          "Gemini API Key is missing. Please add one in Settings.",
+        );
       }
-      
+
       final uri = Uri.parse(
         "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=$apiKey",
       );
-      
+
       _webSocket = await WebSocket.connect(uri.toString());
 
       // Widget may have been disposed while awaiting the connection.
@@ -175,29 +178,28 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
             if (_voiceOutputEnabled) ...{
               "speech_config": {
                 "voice_config": {
-                  "prebuilt_voice_config": {
-                    "voice_name": "Puck" 
-                  }
-                }
-              }
-            }
+                  "prebuilt_voice_config": {"voice_name": "Puck"},
+                },
+              },
+            },
           },
           if (_voiceOutputEnabled) "output_audio_transcription": {},
           "system_instruction": {
             "parts": [
               {
-                "text": "You are a helpful learning assistant for the course '${widget.book.title}'. "
+                "text":
+                    "You are a helpful learning assistant for the course '${widget.book.title}'. "
                     "The student is currently viewing slide: '${widget.currentSlide.title}' with contents:\n${widget.currentSlide.content}\n\n"
                     "Below are the generated notes for the current section:\n\n${widget.sectionNotes}\n\n"
                     "Help the student understand the concepts. Answer their questions clearly, concisely, and format math/formulas using standard LaTeX (\$inline\$ and \$\$display\$\$). "
                     "CRITICAL: Keep your response short, direct, and conversational (at most 1-2 sentences by default). Do not write long explanations unless explicitly requested."
-                    "${_customSystemPrompt.trim().isNotEmpty ? '\n\nADDITIONAL INSTRUCTIONS:\n$_customSystemPrompt' : ''}"
-              }
-            ]
-          }
-        }
+                    "${_customSystemPrompt.trim().isNotEmpty ? '\n\nADDITIONAL INSTRUCTIONS:\n$_customSystemPrompt' : ''}",
+              },
+            ],
+          },
+        },
       };
-      
+
       _webSocket!.add(jsonEncode(setupMsg));
       _addSystemMessage("Connected to Gemini Live!");
 
@@ -222,7 +224,9 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
         _isConnected = false;
         _webSocket = null;
       });
-      _addSystemMessage("Live Connection failed: $e. Falling back to REST model.");
+      _addSystemMessage(
+        "Live Connection failed: $e. Falling back to REST model.",
+      );
       setState(() {
         _isLiveMode = false;
       });
@@ -251,22 +255,27 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
       }
 
       // 1. Extract transcript text if output_audio_transcription is at the top level
-      final transcriptObj = json['outputTranscription'] ?? 
-                          json['output_transcription'] ?? 
-                          json['outputAudioTranscription'] ?? 
-                          json['output_audio_transcription'];
+      final transcriptObj =
+          json['outputTranscription'] ??
+          json['output_transcription'] ??
+          json['outputAudioTranscription'] ??
+          json['output_audio_transcription'];
       if (transcriptObj != null && transcriptObj['text'] != null) {
         final text = transcriptObj['text'].toString();
         setState(() {
           _currentLiveResponseText += text;
-          if (_messages.isNotEmpty && _messages.last.sender == MessageSender.assistant && _messages.last.isStreaming) {
+          if (_messages.isNotEmpty &&
+              _messages.last.sender == MessageSender.assistant &&
+              _messages.last.isStreaming) {
             _messages.last.text = _currentLiveResponseText;
           } else {
-            _messages.add(ChatMessage(
-              sender: MessageSender.assistant,
-              text: _currentLiveResponseText,
-              isStreaming: true,
-            ));
+            _messages.add(
+              ChatMessage(
+                sender: MessageSender.assistant,
+                text: _currentLiveResponseText,
+                isStreaming: true,
+              ),
+            );
           }
         });
         _scrollToBottom();
@@ -277,22 +286,28 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
         final content = serverContent;
 
         // 2. Extract transcript text if nested inside serverContent
-        final nestedTranscriptObj = content['outputTranscription'] ?? 
-                            content['output_transcription'] ?? 
-                            content['outputAudioTranscription'] ?? 
-                            content['output_audio_transcription'];
-        if (nestedTranscriptObj != null && nestedTranscriptObj['text'] != null) {
+        final nestedTranscriptObj =
+            content['outputTranscription'] ??
+            content['output_transcription'] ??
+            content['outputAudioTranscription'] ??
+            content['output_audio_transcription'];
+        if (nestedTranscriptObj != null &&
+            nestedTranscriptObj['text'] != null) {
           final text = nestedTranscriptObj['text'].toString();
           setState(() {
             _currentLiveResponseText += text;
-            if (_messages.isNotEmpty && _messages.last.sender == MessageSender.assistant && _messages.last.isStreaming) {
+            if (_messages.isNotEmpty &&
+                _messages.last.sender == MessageSender.assistant &&
+                _messages.last.isStreaming) {
               _messages.last.text = _currentLiveResponseText;
             } else {
-              _messages.add(ChatMessage(
-                sender: MessageSender.assistant,
-                text: _currentLiveResponseText,
-                isStreaming: true,
-              ));
+              _messages.add(
+                ChatMessage(
+                  sender: MessageSender.assistant,
+                  text: _currentLiveResponseText,
+                  isStreaming: true,
+                ),
+              );
             }
           });
           _scrollToBottom();
@@ -305,14 +320,18 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
               final text = part['text'].toString();
               setState(() {
                 _currentLiveResponseText += text;
-                if (_messages.isNotEmpty && _messages.last.sender == MessageSender.assistant && _messages.last.isStreaming) {
+                if (_messages.isNotEmpty &&
+                    _messages.last.sender == MessageSender.assistant &&
+                    _messages.last.isStreaming) {
                   _messages.last.text = _currentLiveResponseText;
                 } else {
-                  _messages.add(ChatMessage(
-                    sender: MessageSender.assistant,
-                    text: _currentLiveResponseText,
-                    isStreaming: true,
-                  ));
+                  _messages.add(
+                    ChatMessage(
+                      sender: MessageSender.assistant,
+                      text: _currentLiveResponseText,
+                      isStreaming: true,
+                    ),
+                  );
                 }
               });
               _scrollToBottom();
@@ -327,7 +346,8 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
             }
           }
         }
-        final turnComplete = content['turnComplete'] ?? content['turn_complete'];
+        final turnComplete =
+            content['turnComplete'] ?? content['turn_complete'];
         if (turnComplete == true) {
           setState(() {
             if (_messages.isNotEmpty && _messages.last.isStreaming) {
@@ -389,43 +409,43 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
     header[5] = ((totalAudioLen >> 8) & 0xff);
     header[6] = ((totalAudioLen >> 16) & 0xff);
     header[7] = ((totalAudioLen >> 24) & 0xff);
-    
+
     // WAVE
     header[8] = 0x57; // W
     header[9] = 0x41; // A
     header[10] = 0x56; // V
     header[11] = 0x45; // E
-    
-    // fmt 
+
+    // fmt
     header[12] = 0x66; // f
     header[13] = 0x6d; // m
     header[14] = 0x74; // t
-    header[15] = 0x20; // 
+    header[15] = 0x20; //
     header[16] = 16;
     header[17] = 0;
     header[18] = 0;
     header[19] = 0;
-    
+
     header[20] = 1; // PCM
     header[21] = 0;
     header[22] = 1; // Mono
     header[23] = 0;
-    
+
     header[24] = (sampleRate & 0xff);
     header[25] = ((sampleRate >> 8) & 0xff);
     header[26] = ((sampleRate >> 16) & 0xff);
     header[27] = ((sampleRate >> 24) & 0xff);
-    
+
     header[28] = (byteRate & 0xff);
     header[29] = ((byteRate >> 8) & 0xff);
     header[30] = ((byteRate >> 16) & 0xff);
     header[31] = ((byteRate >> 24) & 0xff);
-    
+
     header[32] = 2; // Block align
     header[33] = 0;
     header[34] = 16; // Bits
     header[35] = 0;
-    
+
     // data
     header[36] = 0x64; // d
     header[37] = 0x61; // a
@@ -507,11 +527,13 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
 
   Future<void> _sendVoiceMessage(Uint8List voiceBytes) async {
     setState(() {
-      _messages.add(ChatMessage(
-        sender: MessageSender.user,
-        text: "[Voice input]",
-        audioBytes: voiceBytes,
-      ));
+      _messages.add(
+        ChatMessage(
+          sender: MessageSender.user,
+          text: "[Voice input]",
+          audioBytes: voiceBytes,
+        ),
+      );
     });
     _scrollToBottom();
 
@@ -527,14 +549,14 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                 {
                   "inline_data": {
                     "mime_type": "audio/wav",
-                    "data": base64Audio
-                  }
-                }
-              ]
-            }
+                    "data": base64Audio,
+                  },
+                },
+              ],
+            },
           ],
-          "turn_complete": true
-        }
+          "turn_complete": true,
+        },
       };
       _webSocket!.add(jsonEncode(msg));
     } else {
@@ -546,10 +568,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
   Future<void> _sendTextMessage(String text) async {
     if (text.trim().isEmpty) return;
     setState(() {
-      _messages.add(ChatMessage(
-        sender: MessageSender.user,
-        text: text,
-      ));
+      _messages.add(ChatMessage(sender: MessageSender.user, text: text));
     });
     _textController.clear();
     _scrollToBottom();
@@ -561,14 +580,12 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
             {
               "role": "user",
               "parts": [
-                {
-                  "text": text
-                }
-              ]
-            }
+                {"text": text},
+              ],
+            },
           ],
-          "turn_complete": true
-        }
+          "turn_complete": true,
+        },
       };
       _webSocket!.add(jsonEncode(msg));
     } else {
@@ -576,13 +593,18 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
     }
   }
 
-  Future<void> _sendNormalModelMessage(String text, [Uint8List? voiceBytes]) async {
+  Future<void> _sendNormalModelMessage(
+    String text, [
+    Uint8List? voiceBytes,
+  ]) async {
     setState(() {
-      _messages.add(ChatMessage(
-        sender: MessageSender.assistant,
-        text: "Thinking...",
-        isStreaming: true,
-      ));
+      _messages.add(
+        ChatMessage(
+          sender: MessageSender.assistant,
+          text: "Thinking...",
+          isStreaming: true,
+        ),
+      );
     });
     _scrollToBottom();
 
@@ -590,21 +612,25 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
       final apiKey = await AiService().getApiKey();
       final modelName = await AiService().getPrimaryTextModelName();
       if (apiKey.isEmpty) {
-        throw Exception("Gemini API Key is missing. Please add one in Settings.");
+        throw Exception(
+          "Gemini API Key is missing. Please add one in Settings.",
+        );
       }
 
       final model = GenerativeModel(model: modelName, apiKey: apiKey);
       final List<Content> contents = [];
 
       // Add system prompt context as first user turn (REST does not have a setup socket, so we wrap it inside context)
-      contents.add(Content.text(
-        "You are a helpful learning assistant for the course '${widget.book.title}'. "
-        "The student is currently viewing slide: '${widget.currentSlide.title}' with contents:\n${widget.currentSlide.content}\n\n"
-        "Below are the generated notes for the current section:\n\n${widget.sectionNotes}\n\n"
-        "Use this context to answer the student's questions. Always format math/formulas using standard LaTeX (\$inline\$ and \$\$display\$\$). "
-        "CRITICAL: Keep your response short, direct, and conversational (at most 1-2 sentences by default). Do not write long explanations unless explicitly requested."
-        "${_customSystemPrompt.trim().isNotEmpty ? '\n\nADDITIONAL INSTRUCTIONS:\n$_customSystemPrompt' : ''}"
-      ));
+      contents.add(
+        Content.text(
+          "You are a helpful learning assistant for the course '${widget.book.title}'. "
+          "The student is currently viewing slide: '${widget.currentSlide.title}' with contents:\n${widget.currentSlide.content}\n\n"
+          "Below are the generated notes for the current section:\n\n${widget.sectionNotes}\n\n"
+          "Use this context to answer the student's questions. Always format math/formulas using standard LaTeX (\$inline\$ and \$\$display\$\$). "
+          "CRITICAL: Keep your response short, direct, and conversational (at most 1-2 sentences by default). Do not write long explanations unless explicitly requested."
+          "${_customSystemPrompt.trim().isNotEmpty ? '\n\nADDITIONAL INSTRUCTIONS:\n$_customSystemPrompt' : ''}",
+        ),
+      );
 
       // Append recent chat history (last 8 messages)
       final historyStart = _messages.length > 8 ? _messages.length - 8 : 0;
@@ -613,10 +639,12 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
         if (m.isSystem) continue;
         if (m.sender == MessageSender.user) {
           if (m.audioBytes != null) {
-            contents.add(Content.multi([
-              DataPart('audio/wav', m.audioBytes!),
-              TextPart(m.text),
-            ]));
+            contents.add(
+              Content.multi([
+                DataPart('audio/wav', m.audioBytes!),
+                TextPart(m.text),
+              ]),
+            );
           } else {
             contents.add(Content.text(m.text));
           }
@@ -627,10 +655,12 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
 
       // Add current message
       if (voiceBytes != null) {
-        contents.add(Content.multi([
-          DataPart('audio/wav', voiceBytes),
-          if (text.isNotEmpty) TextPart(text),
-        ]));
+        contents.add(
+          Content.multi([
+            DataPart('audio/wav', voiceBytes),
+            if (text.isNotEmpty) TextPart(text),
+          ]),
+        );
       } else {
         contents.add(Content.text(text));
       }
@@ -642,10 +672,9 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
         if (_messages.isNotEmpty && _messages.last.isStreaming) {
           _messages.removeLast();
         }
-        _messages.add(ChatMessage(
-          sender: MessageSender.assistant,
-          text: reply,
-        ));
+        _messages.add(
+          ChatMessage(sender: MessageSender.assistant, text: reply),
+        );
       });
       _scrollToBottom();
 
@@ -677,9 +706,9 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF0F172A), // Premium dark background
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: context.colors.background, // Premium dark background
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -695,7 +724,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
               width: 44,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: context.colors.textFaint,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -719,8 +748,10 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                               shape: BoxShape.circle,
                               color: _isLiveMode
                                   ? (_isConnected
-                                      ? AppTheme.duoGreen
-                                      : (_isConnecting ? Colors.orange : AppTheme.duoRed))
+                                        ? AppTheme.duoGreen
+                                        : (_isConnecting
+                                              ? Colors.orange
+                                              : AppTheme.duoRed))
                                   : AppTheme.duoBlue,
                             ),
                           ),
@@ -728,11 +759,13 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                           Text(
                             _isLiveMode
                                 ? (_isConnected
-                                    ? "Live Chat Active"
-                                    : (_isConnecting ? "Connecting Live..." : "Live Offline"))
+                                      ? "Live Chat Active"
+                                      : (_isConnecting
+                                            ? "Connecting Live..."
+                                            : "Live Offline"))
                                 : "Complex REST Model",
-                            style: const TextStyle(
-                              color: Colors.white70,
+                            style: TextStyle(
+                              color: context.colors.textSecondary,
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
                             ),
@@ -742,8 +775,8 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                       const SizedBox(height: 2),
                       Text(
                         "Study Helper (Slide: ${widget.currentSlide.title})",
-                        style: const TextStyle(
-                          color: Colors.white38,
+                        style: TextStyle(
+                          color: context.colors.textFaint,
                           fontSize: 10,
                         ),
                       ),
@@ -755,10 +788,14 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                       IconButton(
                         icon: Icon(
                           _isLiveMode ? LucideIcons.radio : LucideIcons.bot,
-                          color: _isLiveMode ? AppTheme.duoGreen : AppTheme.duoBlue,
+                          color: _isLiveMode
+                              ? AppTheme.duoGreen
+                              : AppTheme.duoBlue,
                           size: 20,
                         ),
-                        tooltip: _isLiveMode ? "Switch to REST Model" : "Switch to Live Model",
+                        tooltip: _isLiveMode
+                            ? "Switch to REST Model"
+                            : "Switch to Live Model",
                         onPressed: () {
                           setState(() {
                             _isLiveMode = !_isLiveMode;
@@ -775,11 +812,17 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                       // Voice Output Toggle
                       IconButton(
                         icon: Icon(
-                          _voiceOutputEnabled ? LucideIcons.volume2 : LucideIcons.volumeX,
-                          color: _voiceOutputEnabled ? AppTheme.duoViolet : Colors.white38,
+                          _voiceOutputEnabled
+                              ? LucideIcons.volume2
+                              : LucideIcons.volumeX,
+                          color: _voiceOutputEnabled
+                              ? AppTheme.duoViolet
+                              : context.colors.textFaint,
                           size: 20,
                         ),
-                        tooltip: _voiceOutputEnabled ? "Mute Voice Output" : "Enable Voice Output",
+                        tooltip: _voiceOutputEnabled
+                            ? "Mute Voice Output"
+                            : "Enable Voice Output",
                         onPressed: () {
                           setState(() {
                             _voiceOutputEnabled = !_voiceOutputEnabled;
@@ -798,7 +841,11 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                         },
                       ),
                       IconButton(
-                        icon: const Icon(LucideIcons.x, color: Colors.white60, size: 20),
+                        icon: Icon(
+                          LucideIcons.x,
+                          color: context.colors.textFaint,
+                          size: 20,
+                        ),
                         onPressed: () => Navigator.pop(context),
                       ),
                     ],
@@ -806,7 +853,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                 ],
               ),
             ),
-            const Divider(color: Colors.white10, height: 24),
+            Divider(color: context.colors.outline, height: 24),
 
             // Message History Window
             Flexible(
@@ -814,10 +861,13 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                 constraints: const BoxConstraints(maxHeight: 400),
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _messages.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text(
                           "Ask a question about this slide or lesson!",
-                          style: TextStyle(color: Colors.white38, fontSize: 13),
+                          style: TextStyle(
+                            color: context.colors.textFaint,
+                            fontSize: 13,
+                          ),
                         ),
                       )
                     : ListView.builder(
@@ -832,8 +882,8 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                               child: Center(
                                 child: Text(
                                   msg.text,
-                                  style: const TextStyle(
-                                    color: Colors.white38,
+                                  style: TextStyle(
+                                    color: context.colors.textFaint,
                                     fontSize: 11,
                                     fontStyle: FontStyle.italic,
                                   ),
@@ -844,24 +894,30 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
 
                           final isUser = msg.sender == MessageSender.user;
                           return Align(
-                            alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                            alignment: isUser
+                                ? Alignment.centerRight
+                                : Alignment.centerLeft,
                             child: Container(
                               margin: const EdgeInsets.symmetric(vertical: 6),
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
                                 color: isUser
                                     ? AppTheme.duoBlue.withOpacity(0.15)
-                                    : Colors.white.withOpacity(0.05),
+                                    : context.colors.surfaceAlt,
                                 borderRadius: BorderRadius.only(
                                   topLeft: const Radius.circular(16),
                                   topRight: const Radius.circular(16),
-                                  bottomLeft: isUser ? const Radius.circular(16) : const Radius.circular(2),
-                                  bottomRight: isUser ? const Radius.circular(2) : const Radius.circular(16),
+                                  bottomLeft: isUser
+                                      ? const Radius.circular(16)
+                                      : const Radius.circular(2),
+                                  bottomRight: isUser
+                                      ? const Radius.circular(2)
+                                      : const Radius.circular(16),
                                 ),
                                 border: Border.all(
                                   color: isUser
                                       ? AppTheme.duoBlue.withOpacity(0.3)
-                                      : Colors.white10,
+                                      : context.colors.outline,
                                 ),
                               ),
                               child: Column(
@@ -870,8 +926,8 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                                 children: [
                                   MathMarkdown(
                                     data: msg.text,
-                                    textStyle: const TextStyle(
-                                      color: Colors.white,
+                                    textStyle: TextStyle(
+                                      color: context.colors.textPrimary,
                                       fontSize: 14,
                                       height: 1.4,
                                     ),
@@ -881,18 +937,31 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                                     GestureDetector(
                                       onTap: () async {
                                         if (kIsWeb) {
-                                          _addSystemMessage("Voice message playback not supported on web.");
+                                          _addSystemMessage(
+                                            "Voice message playback not supported on web.",
+                                          );
                                           return;
                                         }
-                                        final dir = await getTemporaryDirectory();
-                                        final file = File('${dir.path}/temp_play.wav');
-                                        await file.writeAsBytes(msg.audioBytes!);
-                                        await _audioPlayer.play(DeviceFileSource(file.path));
+                                        final dir =
+                                            await getTemporaryDirectory();
+                                        final file = File(
+                                          '${dir.path}/temp_play.wav',
+                                        );
+                                        await file.writeAsBytes(
+                                          msg.audioBytes!,
+                                        );
+                                        await _audioPlayer.play(
+                                          DeviceFileSource(file.path),
+                                        );
                                       },
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Icon(LucideIcons.playCircle, size: 16, color: AppTheme.duoBlue),
+                                          Icon(
+                                            LucideIcons.playCircle,
+                                            size: 16,
+                                            color: AppTheme.duoBlue,
+                                          ),
                                           const SizedBox(width: 6),
                                           const Text(
                                             "Listen voice input",
@@ -914,7 +983,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                       ),
               ),
             ),
-            const Divider(color: Colors.white10, height: 24),
+            Divider(color: context.colors.outline, height: 24),
 
             // Input Panel
             Padding(
@@ -934,16 +1003,22 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: _isRecording
-                                ? Colors.red.withOpacity(0.2 + 0.3 * _pulsingController.value)
-                                : Colors.white.withOpacity(0.05),
+                                ? Colors.red.withOpacity(
+                                    0.2 + 0.3 * _pulsingController.value,
+                                  )
+                                : context.colors.surfaceAlt,
                             border: Border.all(
-                              color: _isRecording ? Colors.red : Colors.white12,
+                              color: _isRecording
+                                  ? Colors.red
+                                  : context.colors.outline,
                               width: 2,
                             ),
                           ),
                           child: Icon(
                             _isRecording ? LucideIcons.mic : LucideIcons.micOff,
-                            color: _isRecording ? Colors.red : Colors.white70,
+                            color: _isRecording
+                                ? Colors.red
+                                : context.colors.textSecondary,
                             size: 20,
                           ),
                         );
@@ -957,17 +1032,23 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                     child: Container(
                       height: 48,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
+                        color: context.colors.surfaceAlt,
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: Colors.white10),
+                        border: Border.all(color: context.colors.outline),
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: TextField(
                         controller: _textController,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
-                        decoration: const InputDecoration(
+                        style: TextStyle(
+                          color: context.colors.textPrimary,
+                          fontSize: 14,
+                        ),
+                        decoration: InputDecoration(
                           hintText: "Type message or hold mic...",
-                          hintStyle: TextStyle(color: Colors.white30, fontSize: 13),
+                          hintStyle: TextStyle(
+                            color: context.colors.textFaint,
+                            fontSize: 13,
+                          ),
                           border: InputBorder.none,
                         ),
                         onSubmitted: _sendTextMessage,
@@ -986,9 +1067,9 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                         shape: BoxShape.circle,
                         color: AppTheme.duoBlue,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         LucideIcons.send,
-                        color: Colors.white,
+                        color: context.colors.textPrimary,
                         size: 18,
                       ),
                     ),

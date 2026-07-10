@@ -90,9 +90,12 @@ class CompactBookListItem extends StatelessWidget {
           child: Ink(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.03),
+              color: context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: mostUsedColor.withOpacity(0.2), width: 1.2),
+              border: Border.all(
+                color: mostUsedColor.withOpacity(0.2),
+                width: 1.2,
+              ),
             ),
             child: Row(
               children: [
@@ -103,17 +106,16 @@ class CompactBookListItem extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: mostUsedColor.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: mostUsedColor.withOpacity(0.25), width: 1.2),
+                    border: Border.all(
+                      color: mostUsedColor.withOpacity(0.25),
+                      width: 1.2,
+                    ),
                   ),
                   alignment: Alignment.center,
-                  child: Icon(
-                    displayIcon,
-                    color: mostUsedColor,
-                    size: 24,
-                  ),
+                  child: Icon(displayIcon, color: mostUsedColor, size: 24),
                 ),
                 const SizedBox(width: 14),
-                
+
                 // 2. Middle Texts & Progress
                 Expanded(
                   child: Column(
@@ -122,8 +124,8 @@ class CompactBookListItem extends StatelessWidget {
                     children: [
                       Text(
                         book.title,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: context.colors.textPrimary,
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                           height: 1.2,
@@ -137,7 +139,7 @@ class CompactBookListItem extends StatelessWidget {
                             ? '1 Module • $percentText complete'
                             : '${book.modules.length} Modules • $percentText complete',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
+                          color: context.colors.textFaint,
                           fontSize: 12,
                         ),
                       ),
@@ -156,12 +158,12 @@ class CompactBookListItem extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 14),
-                
+
                 // 3. Trailing Arrow or Drag Handle
                 dragHandle ??
                     Icon(
                       LucideIcons.chevronRight,
-                      color: Colors.white.withOpacity(0.2),
+                      color: context.colors.textFaint,
                       size: 20,
                     ),
               ],

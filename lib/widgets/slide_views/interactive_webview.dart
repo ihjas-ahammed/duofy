@@ -9,7 +9,8 @@ class InteractiveWebview extends StatelessWidget {
 
   const InteractiveWebview({super.key, required this.slide});
 
-  String _wrapHtml() => '''
+  String _wrapHtml() =>
+      '''
       <!DOCTYPE html>
       <html>
       <head>
@@ -31,10 +32,14 @@ class InteractiveWebview extends StatelessWidget {
       children: [
         if (slide.content.isNotEmpty)
           Container(
-            constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.35),
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.35,
+            ),
             decoration: BoxDecoration(
-              color: AppTheme.surface.withOpacity(0.5),
-              border: const Border(bottom: BorderSide(color: Colors.white12, width: 2)),
+              color: context.colors.surface.withOpacity(0.5),
+              border: Border(
+                bottom: BorderSide(color: context.colors.outline, width: 2),
+              ),
             ),
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -45,16 +50,16 @@ class InteractiveWebview extends StatelessWidget {
           child: Container(
             margin: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.black45,
+              color: context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white12, width: 2),
+              border: Border.all(color: context.colors.outline, width: 2),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
+                  color: context.colors.shadow,
                   blurRadius: 10,
                   offset: const Offset(0, 4),
-                )
-              ]
+                ),
+              ],
             ),
             clipBehavior: Clip.hardEdge,
             child: PlatformWebView(html: _wrapHtml()),

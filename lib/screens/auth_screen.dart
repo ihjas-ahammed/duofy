@@ -27,7 +27,9 @@ class _AuthScreenState extends State<AuthScreen> {
     final username = _usernameCtrl.text.trim();
 
     if (email.isEmpty || password.isEmpty || (_isSignUp && username.isEmpty)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
       return;
     }
 
@@ -35,13 +37,21 @@ class _AuthScreenState extends State<AuthScreen> {
 
     try {
       if (_isSignUp) {
-        final user = await FbAuth.instance.createUserWithEmailAndPassword(email: email, password: password);
+        final user = await FbAuth.instance.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
         await user.updateDisplayName(username);
       } else {
-        await FbAuth.instance.signInWithEmailAndPassword(email: email, password: password);
+        await FbAuth.instance.signInWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
       }
     } on FbAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? 'Authentication error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? 'Authentication error')),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -55,94 +65,131 @@ class _AuthScreenState extends State<AuthScreen> {
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 40),
-              const Icon(LucideIcons.globe2, size: 80, color: AppTheme.duoBlue),
-              const SizedBox(height: 24),
-              Text(
-                _isSignUp ? 'Create your\nprofile' : 'Enter your\ndetails',
-                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.white, height: 1.2),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 40),
-              
-              if (_isSignUp)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: TextField(
-                    controller: _usernameCtrl,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.black26,
-                      hintText: 'Username',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 40),
+                const Icon(
+                  LucideIcons.globe2,
+                  size: 80,
+                  color: AppTheme.duoBlue,
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  _isSignUp ? 'Create your\nprofile' : 'Enter your\ndetails',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w900,
+                    color: context.colors.textPrimary,
+                    height: 1.2,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 40),
+
+                if (_isSignUp)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: TextField(
+                      controller: _usernameCtrl,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: context.colors.surfaceAlt,
+                        hintText: 'Username',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 18,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                TextField(
+                  controller: _emailCtrl,
+                  keyboardType: TextInputType.emailAddress,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: context.colors.surfaceAlt,
+                    hintText: 'Email address',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 18,
                     ),
                   ),
                 ),
-                
-              TextField(
-                controller: _emailCtrl,
-                keyboardType: TextInputType.emailAddress,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.black26,
-                  hintText: 'Email address',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                const SizedBox(height: 16),
+
+                TextField(
+                  controller: _passwordCtrl,
+                  obscureText: true,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: context.colors.surfaceAlt,
+                    hintText: 'Password',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 18,
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              
-              TextField(
-                controller: _passwordCtrl,
-                obscureText: true,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.black26,
-                  hintText: 'Password',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                const SizedBox(height: 32),
+
+                if (_isLoading)
+                  const Center(
+                    child: CircularProgressIndicator(color: AppTheme.duoBlue),
+                  )
+                else
+                  DuoButton(
+                    text: _isSignUp ? 'CREATE ACCOUNT' : 'SIGN IN',
+                    color: AppTheme.duoBlue,
+                    shadowColor: AppTheme.duoBlueDark,
+                    onPressed: _submit,
+                  ),
+
+                const SizedBox(height: 24),
+                TextButton(
+                  onPressed: () => setState(() => _isSignUp = !_isSignUp),
+                  child: Text(
+                    _isSignUp ? 'ALREADY HAVE AN ACCOUNT?' : 'CREATE A PROFILE',
+                    style: const TextStyle(
+                      color: AppTheme.duoBlue,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 32),
-              
-              if (_isLoading)
-                const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue))
-              else
-                DuoButton(
-                  text: _isSignUp ? 'CREATE ACCOUNT' : 'SIGN IN',
-                  color: AppTheme.duoBlue,
-                  shadowColor: AppTheme.duoBlueDark,
-                  onPressed: _submit,
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () {
+                    GlobalState.isGuestNotifier.value = true;
+                    GlobalState.forceShowAuthScreen.value = false;
+                  },
+                  child: Text(
+                    'CONTINUE AS GUEST',
+                    style: TextStyle(
+                      color: context.colors.textFaint,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
                 ),
-                
-              const SizedBox(height: 24),
-              TextButton(
-                onPressed: () => setState(() => _isSignUp = !_isSignUp),
-                child: Text(
-                  _isSignUp ? 'ALREADY HAVE AN ACCOUNT?' : 'CREATE A PROFILE',
-                  style: const TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.w900, letterSpacing: 1.2),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: () {
-                  GlobalState.isGuestNotifier.value = true;
-                  GlobalState.forceShowAuthScreen.value = false;
-                },
-                child: const Text(
-                  'CONTINUE AS GUEST',
-                  style: TextStyle(color: Colors.white54, fontWeight: FontWeight.w900, letterSpacing: 1.2),
-                ),
-              )
-            ],
-          ),
+              ],
+            ),
           ),
         ),
       ),

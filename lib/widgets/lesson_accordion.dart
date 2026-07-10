@@ -60,11 +60,16 @@ class _LessonAccordionState extends State<LessonAccordion> {
 
   Color _getSectionColor(String colorStr) {
     switch (colorStr) {
-      case 'duo-green': return AppTheme.duoGreen;
-      case 'duo-blue': return AppTheme.duoBlue;
-      case 'duo-violet': return AppTheme.duoViolet;
-      case 'duo-orange': return AppTheme.duoOrange;
-      default: return AppTheme.duoBlue;
+      case 'duo-green':
+        return AppTheme.duoGreen;
+      case 'duo-blue':
+        return AppTheme.duoBlue;
+      case 'duo-violet':
+        return AppTheme.duoViolet;
+      case 'duo-orange':
+        return AppTheme.duoOrange;
+      default:
+        return AppTheme.duoBlue;
     }
   }
 
@@ -80,14 +85,38 @@ class _LessonAccordionState extends State<LessonAccordion> {
       bool? preview = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: AppTheme.surface,
-          title: const Text('Lesson Locked', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          content: const Text('You haven\'t completed the required previous lessons yet. Do you want to preview this lesson?', style: TextStyle(color: Colors.white70)),
+          backgroundColor: context.colors.surface,
+          title: Text(
+            'Lesson Locked',
+            style: TextStyle(
+              color: context.colors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'You haven\'t completed the required previous lessons yet. Do you want to preview this lesson?',
+            style: TextStyle(color: context.colors.textSecondary),
+          ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
-            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Preview', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold))),
-          ]
-        )
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: context.colors.textFaint),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text(
+                'Preview',
+                style: TextStyle(
+                  color: AppTheme.duoBlue,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
       );
       if (preview != true) return;
     }
@@ -98,16 +127,19 @@ class _LessonAccordionState extends State<LessonAccordion> {
     await prefs.setInt('last_sec_idx_${widget.book.id}', secIdx);
 
     if (context.mounted) {
-      await Navigator.push(context, MaterialPageRoute(
-        builder: (_) => LessonScreen(
-          lesson: lesson,
-          book: widget.book,
-          modIdx: modIdx,
-          secIdx: secIdx,
-          unitIdx: unitIdx,
-          lessonIdx: lessonIdx,
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => LessonScreen(
+            lesson: lesson,
+            book: widget.book,
+            modIdx: modIdx,
+            secIdx: secIdx,
+            unitIdx: unitIdx,
+            lessonIdx: lessonIdx,
+          ),
         ),
-      ));
+      );
       widget.onLessonFinished();
       _findActiveUnit();
     }
@@ -124,15 +156,27 @@ class _LessonAccordionState extends State<LessonAccordion> {
     required int unitIdx,
     required int lessonIdx,
   }) {
-    IconData iconData = isCompleted ? LucideIcons.checkCircle2 : (isLocked ? LucideIcons.lock : LucideIcons.playCircle);
-    Color iconColor = isCompleted ? AppTheme.duoGreen : (isLocked ? Colors.white38 : secColor);
-    
+    IconData iconData = isCompleted
+        ? LucideIcons.checkCircle2
+        : (isLocked ? LucideIcons.lock : LucideIcons.playCircle);
+    Color iconColor = isCompleted
+        ? AppTheme.duoGreen
+        : (isLocked ? context.colors.textFaint : secColor);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8, left: 16, right: 16),
       decoration: BoxDecoration(
-        color: isCompleted ? AppTheme.duoGreen.withOpacity(0.05) : (isActive ? secColor.withOpacity(0.1) : Colors.transparent),
+        color: isCompleted
+            ? AppTheme.duoGreen.withOpacity(0.05)
+            : (isActive ? secColor.withOpacity(0.1) : Colors.transparent),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isActive ? secColor : (isCompleted ? AppTheme.duoGreen.withOpacity(0.3) : Colors.white10)),
+        border: Border.all(
+          color: isActive
+              ? secColor
+              : (isCompleted
+                    ? AppTheme.duoGreen.withOpacity(0.3)
+                    : context.colors.outline),
+        ),
       ),
       child: Material(
         color: Colors.transparent,
@@ -147,29 +191,52 @@ class _LessonAccordionState extends State<LessonAccordion> {
             unitIdx: unitIdx,
             lessonIdx: lessonIdx,
           ),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           leading: Icon(iconData, color: iconColor, size: 28),
           title: Text(
-            lesson.title, 
+            lesson.title,
             style: TextStyle(
-              fontWeight: FontWeight.bold, 
-              color: isLocked ? Colors.white54 : Colors.white
+              fontWeight: FontWeight.bold,
+              color: isLocked
+                  ? context.colors.textFaint
+                  : context.colors.textPrimary,
             ),
-            maxLines: 1, overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           subtitle: Text(
-            lesson.description, 
-            style: TextStyle(color: Colors.white38, fontSize: 12, decoration: isCompleted ? TextDecoration.lineThrough : null),
-            maxLines: 1, overflow: TextOverflow.ellipsis,
-          ),
-          trailing: isActive ? Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: secColor,
-              borderRadius: BorderRadius.circular(12),
+            lesson.description,
+            style: TextStyle(
+              color: context.colors.textFaint,
+              fontSize: 12,
+              decoration: isCompleted ? TextDecoration.lineThrough : null,
             ),
-            child: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.2)),
-          ) : null,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          trailing: isActive
+              ? Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: secColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'START',
+                    style: TextStyle(
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 10,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                )
+              : null,
         ),
       ),
     );
@@ -179,22 +246,26 @@ class _LessonAccordionState extends State<LessonAccordion> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8, left: 16, right: 16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.02),
+        color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: context.colors.outline),
       ),
       child: ListTile(
-        leading: Icon(LucideIcons.loader, color: secColor.withOpacity(0.4), size: 28),
+        leading: Icon(
+          LucideIcons.loader,
+          color: secColor.withOpacity(0.4),
+          size: 28,
+        ),
         title: Text(
-          'Lesson ${index + 1}: Planning Content...', 
+          'Lesson ${index + 1}: Planning Content...',
           style: TextStyle(
-            fontWeight: FontWeight.bold, 
-            color: Colors.white.withOpacity(0.3)
+            fontWeight: FontWeight.bold,
+            color: context.colors.textFaint,
           ),
         ),
         subtitle: Text(
           'This lesson will be available soon.',
-          style: TextStyle(color: Colors.white.withOpacity(0.15), fontSize: 12),
+          style: TextStyle(color: context.colors.textFaint, fontSize: 12),
         ),
       ),
     );
@@ -207,15 +278,20 @@ class _LessonAccordionState extends State<LessonAccordion> {
 
     for (int m = 0; m < widget.book.modules.length; m++) {
       final module = widget.book.modules[m];
-      
+
       listItems.add(
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
           child: Text(
             module.title.toUpperCase(),
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.white54, letterSpacing: 1.5),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              color: context.colors.textFaint,
+              letterSpacing: 1.5,
+            ),
           ),
-        )
+        ),
       );
 
       for (int s = 0; s < module.sections.length; s++) {
@@ -228,82 +304,131 @@ class _LessonAccordionState extends State<LessonAccordion> {
           final generationTask = widget.loadingUnitStatuses[unit.id];
           final isQueuedOrRunning = generationTask != null;
           final isInterrupted = !unit.isGenerated && unit.lessons.isNotEmpty;
-          final showExpandable = isGenerated || isQueuedOrRunning || isInterrupted;
+          final showExpandable =
+              isGenerated || isQueuedOrRunning || isInterrupted;
           final isExpanded = _activeUnitId == unit.id;
 
           listItems.add(
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: AppTheme.surface,
+                color: context.colors.surface,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: isExpanded ? secColor : Colors.white12, width: isExpanded ? 2 : 1),
+                border: Border.all(
+                  color: isExpanded ? secColor : context.colors.outline,
+                  width: isExpanded ? 2 : 1,
+                ),
               ),
               clipBehavior: Clip.hardEdge,
               child: Theme(
-                data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                child: showExpandable 
-                  ? ExpansionTile(
-                      initiallyExpanded: isExpanded,
-                      iconColor: secColor,
-                      collapsedIconColor: Colors.white54,
-                      title: Text(unit.title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-                      subtitle: Text(unit.description, style: const TextStyle(fontSize: 12, color: Colors.white54)),
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0),
-                          child: Column(
-                            children: [
-                              if (!isGenerated)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  child: UnitHeader(
-                                    unit: unit,
-                                    isGenerated: false,
-                                    generationTask: generationTask,
-                                    onGenerate: () => widget.onGenerateUnit(unit, m, s, u),
-                                    onClear: () => widget.onClearUnit(unit, m, s, u),
-                                    book: widget.book,
-                                  ),
-                                ),
-                              ...(() {
-                                final List<Widget> children = [];
-                                final bool showPlaceholders = isQueuedOrRunning || isInterrupted;
-                                final int totalPlanned = showPlaceholders
-                                    ? (generationTask?.plannedLessonsCount ?? (unit.lessons.isNotEmpty ? unit.lessons.length + 3 : 4))
-                                    : unit.lessons.length;
-                                for (int lIdx = 0; lIdx < totalPlanned; lIdx++) {
-                                  if (lIdx < unit.lessons.length) {
-                                    final lesson = unit.lessons[lIdx];
-                                    final bool isCompleted = widget.completedLessons.contains(lesson.id);
-                                    final bool isLocked = !previousCompleted && !isCompleted;
-                                    final bool isActive = previousCompleted && !isCompleted;
-                                    children.add(_buildLessonTile(
-                                      lesson, isCompleted, isLocked, isActive, secColor,
-                                      modIdx: m, secIdx: s, unitIdx: u, lessonIdx: lIdx,
-                                    ));
-                                    previousCompleted = isCompleted;
-                                  } else {
-                                    children.add(_buildPlaceholderLessonTile(lIdx, secColor));
-                                  }
-                                }
-                                return children;
-                              })(),
-                            ],
+                data: Theme.of(
+                  context,
+                ).copyWith(dividerColor: Colors.transparent),
+                child: showExpandable
+                    ? ExpansionTile(
+                        initiallyExpanded: isExpanded,
+                        iconColor: secColor,
+                        collapsedIconColor: context.colors.textFaint,
+                        title: Text(
+                          unit.title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 16,
                           ),
-                        )
-                      ],
-                    )
-                  : UnitHeader(
-                      unit: unit,
-                      isGenerated: false,
-                      generationTask: generationTask,
-                      onGenerate: () => widget.onGenerateUnit(unit, m, s, u),
-                      onClear: () {}, // Not needed for ungenerated unit
-                      book: widget.book,
-                    ),
+                        ),
+                        subtitle: Text(
+                          unit.description,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.colors.textFaint,
+                          ),
+                        ),
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: Column(
+                              children: [
+                                if (!isGenerated)
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 8,
+                                    ),
+                                    child: UnitHeader(
+                                      unit: unit,
+                                      isGenerated: false,
+                                      generationTask: generationTask,
+                                      onGenerate: () =>
+                                          widget.onGenerateUnit(unit, m, s, u),
+                                      onClear: () =>
+                                          widget.onClearUnit(unit, m, s, u),
+                                      book: widget.book,
+                                    ),
+                                  ),
+                                ...(() {
+                                  final List<Widget> children = [];
+                                  final bool showPlaceholders =
+                                      isQueuedOrRunning || isInterrupted;
+                                  final int totalPlanned = showPlaceholders
+                                      ? (generationTask?.plannedLessonsCount ??
+                                            (unit.lessons.isNotEmpty
+                                                ? unit.lessons.length + 3
+                                                : 4))
+                                      : unit.lessons.length;
+                                  for (
+                                    int lIdx = 0;
+                                    lIdx < totalPlanned;
+                                    lIdx++
+                                  ) {
+                                    if (lIdx < unit.lessons.length) {
+                                      final lesson = unit.lessons[lIdx];
+                                      final bool isCompleted = widget
+                                          .completedLessons
+                                          .contains(lesson.id);
+                                      final bool isLocked =
+                                          !previousCompleted && !isCompleted;
+                                      final bool isActive =
+                                          previousCompleted && !isCompleted;
+                                      children.add(
+                                        _buildLessonTile(
+                                          lesson,
+                                          isCompleted,
+                                          isLocked,
+                                          isActive,
+                                          secColor,
+                                          modIdx: m,
+                                          secIdx: s,
+                                          unitIdx: u,
+                                          lessonIdx: lIdx,
+                                        ),
+                                      );
+                                      previousCompleted = isCompleted;
+                                    } else {
+                                      children.add(
+                                        _buildPlaceholderLessonTile(
+                                          lIdx,
+                                          secColor,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                  return children;
+                                })(),
+                              ],
+                            ),
+                          ),
+                        ],
+                      )
+                    : UnitHeader(
+                        unit: unit,
+                        isGenerated: false,
+                        generationTask: generationTask,
+                        onGenerate: () => widget.onGenerateUnit(unit, m, s, u),
+                        onClear: () {}, // Not needed for ungenerated unit
+                        book: widget.book,
+                      ),
               ),
-            )
+            ),
           );
         }
       }

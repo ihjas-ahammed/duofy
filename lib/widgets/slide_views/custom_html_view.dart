@@ -26,7 +26,8 @@ class _CustomHtmlViewState extends State<CustomHtmlView> {
   void didUpdateWidget(CustomHtmlView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.slide.id != widget.slide.id ||
-        oldWidget.slide.interactiveCanvasHtml != widget.slide.interactiveCanvasHtml ||
+        oldWidget.slide.interactiveCanvasHtml !=
+            widget.slide.interactiveCanvasHtml ||
         oldWidget.slide.content != widget.slide.content) {
       setState(() {
         _isCompleted = false;
@@ -174,7 +175,7 @@ class _CustomHtmlViewState extends State<CustomHtmlView> {
     if (_isCompleted) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        color: const Color(0xFF111827),
+        color: context.colors.background,
         child: DuoButton(
           text: 'CONTINUE',
           color: AppTheme.duoGreen,
@@ -186,16 +187,16 @@ class _CustomHtmlViewState extends State<CustomHtmlView> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: const Color(0xFF111827),
+      color: context.colors.background,
       child: Row(
         children: [
           DuoIconButton(
             color: AppTheme.duoOrange,
             shadowColor: AppTheme.duoOrangeDark,
             onPressed: widget.onComplete,
-            icon: const Icon(
+            icon: Icon(
               Icons.skip_next_rounded,
-              color: Colors.white,
+              color: context.colors.textPrimary,
               size: 28,
             ),
           ),

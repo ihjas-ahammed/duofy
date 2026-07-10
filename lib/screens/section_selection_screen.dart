@@ -51,14 +51,19 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: context.colors.background,
       appBar: AppBar(
-        title: const Text('Select Section', style: TextStyle(fontWeight: FontWeight.w900)),
+        title: const Text(
+          'Select Section',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppTheme.duoBlue),
+            )
           : SafeArea(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -70,9 +75,9 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.02),
+                        color: context.colors.surfaceAlt,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white10),
+                        border: Border.all(color: context.colors.outline),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -89,8 +94,8 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                           const SizedBox(height: 4),
                           Text(
                             widget.module.title,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: context.colors.textPrimary,
                               fontSize: 20,
                               fontWeight: FontWeight.w900,
                             ),
@@ -98,17 +103,21 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                           const SizedBox(height: 6),
                           Text(
                             widget.module.description,
-                            style: const TextStyle(color: Colors.white54, fontSize: 13, height: 1.4),
+                            style: TextStyle(
+                              color: context.colors.textFaint,
+                              fontSize: 13,
+                              height: 1.4,
+                            ),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 24),
 
-                    const Text(
+                    Text(
                       'SECTIONS IN THIS MODULE',
                       style: TextStyle(
-                        color: Colors.white54,
+                        color: context.colors.textFaint,
                         fontSize: 11,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.5,
@@ -118,10 +127,15 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
 
                     // Section Cards List
                     widget.module.sections.isEmpty
-                        ? const Center(
+                        ? Center(
                             child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: 40),
-                              child: Text('No sections generated yet.', style: TextStyle(color: Colors.white38)),
+                              padding: const EdgeInsets.symmetric(vertical: 40),
+                              child: Text(
+                                'No sections generated yet.',
+                                style: TextStyle(
+                                  color: context.colors.textFaint,
+                                ),
+                              ),
                             ),
                           )
                         : ListView.builder(
@@ -130,7 +144,9 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                             itemCount: widget.module.sections.length,
                             itemBuilder: (context, index) {
                               final section = widget.module.sections[index];
-                              final Color sectionColor = SectionColors.base(section.color);
+                              final Color sectionColor = SectionColors.base(
+                                section.color,
+                              );
 
                               // Calculate progress for this section
                               int totalLessons = 0;
@@ -144,14 +160,18 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                                 }
                               }
 
-                              final progress = totalLessons > 0 ? (completedCount / totalLessons) : 0.0;
+                              final progress = totalLessons > 0
+                                  ? (completedCount / totalLessons)
+                                  : 0.0;
 
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 16),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.03),
+                                  color: context.colors.surfaceAlt,
                                   borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: Colors.white10),
+                                  border: Border.all(
+                                    color: context.colors.outline,
+                                  ),
                                 ),
                                 clipBehavior: Clip.antiAlias,
                                 child: InkWell(
@@ -170,7 +190,8 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                                   child: Padding(
                                     padding: const EdgeInsets.all(20),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Row(
                                           children: [
@@ -182,7 +203,8 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                                                 shape: BoxShape.circle,
                                                 boxShadow: [
                                                   BoxShadow(
-                                                    color: sectionColor.withValues(alpha: 0.4),
+                                                    color: sectionColor
+                                                        .withValues(alpha: 0.4),
                                                     blurRadius: 8,
                                                   ),
                                                 ],
@@ -192,21 +214,31 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                                             Expanded(
                                               child: Text(
                                                 section.title,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
+                                                style: TextStyle(
+                                                  color: context
+                                                      .colors
+                                                      .textPrimary,
                                                   fontSize: 16,
                                                   fontWeight: FontWeight.w900,
                                                 ),
                                               ),
                                             ),
                                             if (progress >= 1.0)
-                                              const Icon(LucideIcons.checkCircle2, color: AppTheme.duoGreen, size: 20),
+                                              const Icon(
+                                                LucideIcons.checkCircle2,
+                                                color: AppTheme.duoGreen,
+                                                size: 20,
+                                              ),
                                           ],
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
                                           section.description,
-                                          style: const TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
+                                          style: TextStyle(
+                                            color: context.colors.textFaint,
+                                            fontSize: 12,
+                                            height: 1.4,
+                                          ),
                                         ),
 
                                         // Display units inside the section (so the user knows there are multiple units!)
@@ -215,16 +247,20 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                                           Container(
                                             padding: const EdgeInsets.all(12),
                                             decoration: BoxDecoration(
-                                              color: Colors.black12,
-                                              borderRadius: BorderRadius.circular(12),
+                                              color: context.colors.surfaceAlt,
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
                                             ),
                                             child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
                                               children: [
-                                                const Text(
+                                                Text(
                                                   'UNITS IN THIS SECTION:',
                                                   style: TextStyle(
-                                                    color: Colors.white30,
+                                                    color: context
+                                                        .colors
+                                                        .textFaint,
                                                     fontSize: 9,
                                                     fontWeight: FontWeight.w900,
                                                     letterSpacing: 1.1,
@@ -232,25 +268,64 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                                                 ),
                                                 const SizedBox(height: 8),
                                                 ...section.units.map((unit) {
-                                                  final unitProgress = unit.lessons.isEmpty
+                                                  final unitProgress =
+                                                      unit.lessons.isEmpty
                                                       ? 0.0
-                                                      : (unit.lessons.where((l) => _completedLessons.contains(l.id)).length / unit.lessons.length);
+                                                      : (unit.lessons
+                                                                .where(
+                                                                  (
+                                                                    l,
+                                                                  ) => _completedLessons
+                                                                      .contains(
+                                                                        l.id,
+                                                                      ),
+                                                                )
+                                                                .length /
+                                                            unit
+                                                                .lessons
+                                                                .length);
                                                   return Padding(
-                                                    padding: const EdgeInsets.only(bottom: 6),
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                          bottom: 6,
+                                                        ),
                                                     child: Row(
                                                       children: [
                                                         Icon(
-                                                          unitProgress >= 1.0 ? LucideIcons.checkCircle2 : LucideIcons.circle,
-                                                          color: unitProgress >= 1.0 ? AppTheme.duoGreen : Colors.white24,
+                                                          unitProgress >= 1.0
+                                                              ? LucideIcons
+                                                                    .checkCircle2
+                                                              : LucideIcons
+                                                                    .circle,
+                                                          color:
+                                                              unitProgress >=
+                                                                  1.0
+                                                              ? AppTheme
+                                                                    .duoGreen
+                                                              : context
+                                                                    .colors
+                                                                    .textFaint,
                                                           size: 14,
                                                         ),
-                                                        const SizedBox(width: 8),
+                                                        const SizedBox(
+                                                          width: 8,
+                                                        ),
                                                         Expanded(
                                                           child: Text(
                                                             unit.title,
-                                                            style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+                                                            style: TextStyle(
+                                                              color: context
+                                                                  .colors
+                                                                  .textSecondary,
+                                                              fontSize: 12,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                            ),
                                                             maxLines: 1,
-                                                            overflow: TextOverflow.ellipsis,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
                                                           ),
                                                         ),
                                                       ],
@@ -264,16 +339,25 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
 
                                         const SizedBox(height: 20),
                                         Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
                                           children: [
                                             Text(
                                               '${section.units.length} Units • $totalLessons Lessons',
-                                              style: const TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold),
+                                              style: TextStyle(
+                                                color: context.colors.textFaint,
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                             ),
                                             Text(
                                               '${(progress * 100).toInt()}% Done',
                                               style: TextStyle(
-                                                color: progress >= 1.0 ? AppTheme.duoGreen : Colors.white70,
+                                                color: progress >= 1.0
+                                                    ? AppTheme.duoGreen
+                                                    : context
+                                                          .colors
+                                                          .textSecondary,
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w900,
                                               ),

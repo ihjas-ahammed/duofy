@@ -42,20 +42,27 @@ class ErrorSpottingView extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.all(20),
-                  decoration: AppTheme.glassDecoration,
+                  decoration: AppTheme.glassOf(context),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Row(
                         children: [
-                          Icon(LucideIcons.searchX, color: AppTheme.duoOrange, size: 18),
+                          Icon(
+                            LucideIcons.searchX,
+                            color: AppTheme.duoOrange,
+                            size: 18,
+                          ),
                           SizedBox(width: 8),
-                          Text('FIND THE MISTAKE',
-                              style: TextStyle(
-                                  color: AppTheme.duoOrange,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 11,
-                                  letterSpacing: 1.5)),
+                          Text(
+                            'FIND THE MISTAKE',
+                            style: TextStyle(
+                              color: AppTheme.duoOrange,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 11,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 12),
@@ -63,62 +70,75 @@ class ErrorSpottingView extends StatelessWidget {
                         data: slide.content.isNotEmpty
                             ? slide.content
                             : 'One of these steps is wrong. Tap it.',
-                        textStyle: const TextStyle(
-                            fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+                        textStyle: TextStyle(
+                          fontSize: 16,
+                          color: context.colors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 16),
                 for (var i = 0; i < steps.length; i++)
-                  Builder(builder: (context) {
-                    Color border = Colors.white12;
-                    if (isAnswered) {
-                      if (i == slide.errorIndex) {
-                        border = AppTheme.duoGreen; // the actual flaw, revealed
+                  Builder(
+                    builder: (context) {
+                      Color border = context.colors.outline;
+                      if (isAnswered) {
+                        if (i == slide.errorIndex) {
+                          border =
+                              AppTheme.duoGreen; // the actual flaw, revealed
+                        } else if (i == selectedIndex) {
+                          border = AppTheme.duoRed;
+                        }
                       } else if (i == selectedIndex) {
-                        border = AppTheme.duoRed;
+                        border = Colors.amber;
                       }
-                    } else if (i == selectedIndex) {
-                      border = Colors.amber;
-                    }
-                    return GestureDetector(
-                      onTap: isAnswered ? null : () => onSelect(i),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.04),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: border, width: 2),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('${i + 1}.',
-                                style: const TextStyle(
-                                    color: Colors.white38,
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 14)),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: MathMarkdown(
-                                data: steps[i],
-                                textStyle: const TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600),
+                      return GestureDetector(
+                        onTap: isAnswered ? null : () => onSelect(i),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: context.colors.surfaceAlt,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: border, width: 2),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${i + 1}.',
+                                style: TextStyle(
+                                  color: context.colors.textFaint,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 14,
+                                ),
                               ),
-                            ),
-                            if (isAnswered && i == slide.errorIndex)
-                              const Icon(LucideIcons.badgeAlert,
-                                  color: AppTheme.duoGreen, size: 18),
-                          ],
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: MathMarkdown(
+                                  data: steps[i],
+                                  textStyle: TextStyle(
+                                    fontSize: 14,
+                                    color: context.colors.textPrimary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              if (isAnswered && i == slide.errorIndex)
+                                const Icon(
+                                  LucideIcons.badgeAlert,
+                                  color: AppTheme.duoGreen,
+                                  size: 18,
+                                ),
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  }),
+                      );
+                    },
+                  ),
               ],
             ),
           ),
@@ -127,10 +147,7 @@ class ErrorSpottingView extends StatelessWidget {
               hasScrollBody: false,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  const SizedBox(height: 24),
-                  bottomBar!,
-                ],
+                children: [const SizedBox(height: 24), bottomBar!],
               ),
             ),
         ],

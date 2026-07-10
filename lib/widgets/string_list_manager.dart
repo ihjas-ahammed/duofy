@@ -13,7 +13,7 @@ class StringListManager extends StatefulWidget {
     required this.initialItems,
     required this.hintText,
     required this.itemIcon,
-    required this.onChanged
+    required this.onChanged,
   });
 
   @override
@@ -40,7 +40,9 @@ class StringListManagerState extends State<StringListManager> {
     final val = _controller.text.trim();
     if (val.isNotEmpty && !_items.contains(val)) {
       if (_items.length >= 5) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Maximum 5 items allowed.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Maximum 5 items allowed.')),
+        );
         return false;
       }
       setState(() {
@@ -66,7 +68,7 @@ class StringListManagerState extends State<StringListManager> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
-          children:[
+          children: [
             Expanded(
               child: TextField(
                 controller: _controller,
@@ -76,8 +78,11 @@ class StringListManagerState extends State<StringListManager> {
                   hintText: widget.hintText,
                   border: const OutlineInputBorder(),
                   filled: true,
-                  fillColor: Colors.black26,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  fillColor: context.colors.surfaceAlt,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                 ),
               ),
             ),
@@ -91,9 +96,12 @@ class StringListManagerState extends State<StringListManager> {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppTheme.duoGreenDark, width: 2),
                 ),
-                child: const Icon(LucideIcons.plus, color: Colors.white),
+                child: Icon(
+                  LucideIcons.plus,
+                  color: context.colors.textPrimary,
+                ),
               ),
-            )
+            ),
           ],
         ),
         if (_items.isNotEmpty) const SizedBox(height: 16),
@@ -106,25 +114,33 @@ class StringListManagerState extends State<StringListManager> {
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: AppTheme.surface,
+                color: context.colors.surface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white12),
+                border: Border.all(color: context.colors.outline),
               ),
               child: Row(
-                children:[
+                children: [
                   Icon(widget.itemIcon, color: Colors.amber, size: 18),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       _items[index],
-                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: context.colors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   GestureDetector(
                     onTap: () => _removeItem(index),
-                    child: const Icon(LucideIcons.trash2, color: AppTheme.duoRed, size: 20),
-                  )
+                    child: const Icon(
+                      LucideIcons.trash2,
+                      color: AppTheme.duoRed,
+                      size: 20,
+                    ),
+                  ),
                 ],
               ),
             );

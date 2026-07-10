@@ -86,9 +86,12 @@ class CompactBookCard extends StatelessWidget {
           onLongPress: onLongPress,
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.03),
+              color: context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: mostUsedColor.withOpacity(0.22), width: 1.2),
+              border: Border.all(
+                color: mostUsedColor.withOpacity(0.22),
+                width: 1.2,
+              ),
             ),
             child: Stack(
               children: [
@@ -106,16 +109,19 @@ class CompactBookCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    
+
                     // Middle: Text with tight, constant padding (no Expanded)
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 4,
+                      ),
                       child: Text(
                         book.title,
                         style: TextStyle(
-                          fontWeight: FontWeight.bold, 
-                          fontSize: fontSize, 
-                          color: Colors.white.withOpacity(0.9),
+                          fontWeight: FontWeight.bold,
+                          fontSize: fontSize,
+                          color: context.colors.textPrimary.withOpacity(0.9),
                           height: 1.15,
                         ),
                         maxLines: 2,
@@ -123,7 +129,7 @@ class CompactBookCard extends StatelessWidget {
                         textAlign: TextAlign.center,
                       ),
                     ),
-                    
+
                     // Bottom: Slim Progress Bar
                     Padding(
                       padding: const EdgeInsets.fromLTRB(8, 2, 8, 8),
@@ -140,11 +146,7 @@ class CompactBookCard extends StatelessWidget {
                   ],
                 ),
                 if (dragHandle != null)
-                  Positioned(
-                    top: 4,
-                    right: 4,
-                    child: dragHandle!,
-                  ),
+                  Positioned(top: 4, right: 4, child: dragHandle!),
               ],
             ),
           ),

@@ -52,7 +52,8 @@ class _SummaryScreenState extends State<SummaryScreen> {
 
   // Track search text controllers for each unit
   final Map<String, TextEditingController> _searchControllers = {};
-  final TextEditingController _sectionSearchController = TextEditingController();
+  final TextEditingController _sectionSearchController =
+      TextEditingController();
   List<YoutubeVideo>? _sectionVideos;
   bool _loadingSectionVideos = false;
   String? _errorSectionVideos;
@@ -105,7 +106,8 @@ class _SummaryScreenState extends State<SummaryScreen> {
       final module = widget.book.modules[modIdx];
       if (secIdx >= 0 && secIdx < module.sections.length) {
         final section = module.sections[secIdx];
-        _sectionSearchController.text = "${widget.book.title} ${section.title} class lecture";
+        _sectionSearchController.text =
+            "${widget.book.title} ${section.title} class lecture";
         _sectionVideos = null;
         for (final unit in section.units) {
           if (!_searchControllers.containsKey(unit.id)) {
@@ -127,15 +129,20 @@ class _SummaryScreenState extends State<SummaryScreen> {
   Future<void> _loadPreferences() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final modIdx = widget.activeModule?.value ?? (prefs.getInt('last_mod_idx_${widget.book.id}') ?? 0);
-      final secIdx = widget.activeSection?.value ?? (prefs.getInt('last_sec_idx_${widget.book.id}') ?? 0);
-      
+      final modIdx =
+          widget.activeModule?.value ??
+          (prefs.getInt('last_mod_idx_${widget.book.id}') ?? 0);
+      final secIdx =
+          widget.activeSection?.value ??
+          (prefs.getInt('last_sec_idx_${widget.book.id}') ?? 0);
+
       // Initialize text controllers for units in the current section
       if (modIdx >= 0 && modIdx < widget.book.modules.length) {
         final module = widget.book.modules[modIdx];
         if (secIdx >= 0 && secIdx < module.sections.length) {
           final section = module.sections[secIdx];
-          _sectionSearchController.text = "${widget.book.title} ${section.title} class lecture";
+          _sectionSearchController.text =
+              "${widget.book.title} ${section.title} class lecture";
           for (final unit in section.units) {
             if (!_searchControllers.containsKey(unit.id)) {
               _searchControllers[unit.id] = TextEditingController(
@@ -180,7 +187,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
     try {
       final videos = await _searchYouTube(query);
       _sortVideosByPriority(videos);
-      
+
       if (mounted) {
         setState(() {
           _cachedVideos[unitId] = videos;
@@ -211,7 +218,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
     try {
       final videos = await _searchYouTube(query);
       _sortVideosByPriority(videos);
-      
+
       if (mounted) {
         setState(() {
           _sectionVideos = videos;
@@ -259,17 +266,24 @@ class _SummaryScreenState extends State<SummaryScreen> {
   }
 
   Future<List<YoutubeVideo>> _searchYouTube(String query) async {
-    final searchUrl = Uri.parse('https://www.youtube.com/results?search_query=${Uri.encodeComponent(query)}');
-    final response = await http.get(
-      searchUrl,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-    ).timeout(const Duration(seconds: 10));
+    final searchUrl = Uri.parse(
+      'https://www.youtube.com/results?search_query=${Uri.encodeComponent(query)}',
+    );
+    final response = await http
+        .get(
+          searchUrl,
+          headers: {
+            'User-Agent':
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+            'Accept-Language': 'en-US,en;q=0.9',
+          },
+        )
+        .timeout(const Duration(seconds: 10));
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to fetch YouTube search results. Status: ${response.statusCode}');
+      throw Exception(
+        'Failed to fetch YouTube search results. Status: ${response.statusCode}',
+      );
     }
 
     final html = response.body;
@@ -289,7 +303,8 @@ class _SummaryScreenState extends State<SummaryScreen> {
 
     final List<YoutubeVideo> videos = [];
     try {
-      final contents = data['contents']?['twoColumnSearchResultsRenderer']?['primaryContents']?['sectionListRenderer']?['contents'];
+      final contents =
+          data['contents']?['twoColumnSearchResultsRenderer']?['primaryContents']?['sectionListRenderer']?['contents'];
       if (contents == null || contents.isEmpty) {
         return _searchFallbackRegex(html);
       }
@@ -307,24 +322,33 @@ class _SummaryScreenState extends State<SummaryScreen> {
           final videoId = video['videoId'] as String?;
           if (videoId == null || videoId.isEmpty) continue;
 
-          final titleText = video['title']?['runs']?[0]?['text'] as String? ?? 'No Title';
-          final channelText = video['ownerText']?['runs']?[0]?['text'] as String? ?? 'Unknown Channel';
-          final durationText = video['lengthText']?['simpleText'] as String? ?? 'N/A';
-          final viewsText = video['viewCountText']?['simpleText'] as String? ?? 'N/A';
+          final titleText =
+              video['title']?['runs']?[0]?['text'] as String? ?? 'No Title';
+          final channelText =
+              video['ownerText']?['runs']?[0]?['text'] as String? ??
+              'Unknown Channel';
+          final durationText =
+              video['lengthText']?['simpleText'] as String? ?? 'N/A';
+          final viewsText =
+              video['viewCountText']?['simpleText'] as String? ?? 'N/A';
 
           final thumbnails = video['thumbnail']?['thumbnails'] as List?;
           final thumbUrl = thumbnails != null && thumbnails.isNotEmpty
               ? thumbnails.last['url'] as String?
               : 'https://img.youtube.com/vi/$videoId/hqdefault.jpg';
 
-          videos.add(YoutubeVideo(
-            id: videoId,
-            title: titleText,
-            thumbnailUrl: thumbUrl ?? 'https://img.youtube.com/vi/$videoId/hqdefault.jpg',
-            channelTitle: channelText,
-            duration: durationText,
-            views: viewsText,
-          ));
+          videos.add(
+            YoutubeVideo(
+              id: videoId,
+              title: titleText,
+              thumbnailUrl:
+                  thumbUrl ??
+                  'https://img.youtube.com/vi/$videoId/hqdefault.jpg',
+              channelTitle: channelText,
+              duration: durationText,
+              views: viewsText,
+            ),
+          );
 
           if (videos.length >= 8) break;
         }
@@ -346,29 +370,33 @@ class _SummaryScreenState extends State<SummaryScreen> {
     final List<YoutubeVideo> videos = [];
     final regExp = RegExp(r'"videoRenderer":\s*\{"videoId":\s*"([^"]+)"');
     final matches = regExp.allMatches(html);
-    
+
     final Set<String> seenIds = {};
     for (final match in matches) {
       if (match.groupCount >= 1) {
         final videoId = match.group(1);
         if (videoId != null && !seenIds.contains(videoId)) {
           seenIds.add(videoId);
-          
+
           String title = 'YouTube Lecture';
-          final titleRegex = RegExp('"videoId":\\s*"$videoId"[^}]+?"title":\\s*\\{\\s*"runs":\\s*\\[\\s*\\{\\s*"text":\\s*"([^"]+)"');
+          final titleRegex = RegExp(
+            '"videoId":\\s*"$videoId"[^}]+?"title":\\s*\\{\\s*"runs":\\s*\\[\\s*\\{\\s*"text":\\s*"([^"]+)"',
+          );
           final titleMatch = titleRegex.firstMatch(html);
           if (titleMatch != null && titleMatch.groupCount >= 1) {
             title = titleMatch.group(1) ?? 'YouTube Lecture';
           }
 
-          videos.add(YoutubeVideo(
-            id: videoId,
-            title: title,
-            thumbnailUrl: 'https://img.youtube.com/vi/$videoId/hqdefault.jpg',
-            channelTitle: 'YouTube Channel',
-            duration: 'Class',
-            views: 'N/A',
-          ));
+          videos.add(
+            YoutubeVideo(
+              id: videoId,
+              title: title,
+              thumbnailUrl: 'https://img.youtube.com/vi/$videoId/hqdefault.jpg',
+              channelTitle: 'YouTube Channel',
+              duration: 'Class',
+              views: 'N/A',
+            ),
+          );
 
           if (videos.length >= 6) break;
         }
@@ -393,7 +421,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
           // Fall back to browser if checking/launching YouTube app fails
         }
       }
-      
+
       try {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } catch (e) {
@@ -426,9 +454,11 @@ class _SummaryScreenState extends State<SummaryScreen> {
     Module? currentModule;
     Section? currentSection;
 
-    if (_activeModuleIdx >= 0 && _activeModuleIdx < widget.book.modules.length) {
+    if (_activeModuleIdx >= 0 &&
+        _activeModuleIdx < widget.book.modules.length) {
       currentModule = widget.book.modules[_activeModuleIdx];
-      if (_activeSectionIdx >= 0 && _activeSectionIdx < currentModule.sections.length) {
+      if (_activeSectionIdx >= 0 &&
+          _activeSectionIdx < currentModule.sections.length) {
         currentSection = currentModule.sections[_activeSectionIdx];
       }
     }
@@ -439,16 +469,18 @@ class _SummaryScreenState extends State<SummaryScreen> {
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
-
             if (currentModule == null || currentSection == null)
-              const SliverFillRemaining(
+              SliverFillRemaining(
                 hasScrollBody: false,
                 child: Center(
                   child: Padding(
-                    padding: EdgeInsets.all(24.0),
+                    padding: const EdgeInsets.all(24.0),
                     child: Text(
                       'No active section selected.\nGo to the Learning Path tab and open a section first.',
-                      style: TextStyle(color: Colors.white54, height: 1.4),
+                      style: TextStyle(
+                        color: context.colors.textFaint,
+                        height: 1.4,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -461,7 +493,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                   padding: const EdgeInsets.all(16.0),
                   child: Container(
                     padding: const EdgeInsets.all(16),
-                    decoration: AppTheme.glassDecoration,
+                    decoration: AppTheme.glassOf(context),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -473,7 +505,11 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                 color: AppTheme.duoBlue.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: const Icon(LucideIcons.bookOpen, color: AppTheme.duoBlue, size: 20),
+                              child: const Icon(
+                                LucideIcons.bookOpen,
+                                color: AppTheme.duoBlue,
+                                size: 20,
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -492,8 +528,8 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                   const SizedBox(height: 2),
                                   Text(
                                     currentSection.title,
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: context.colors.textPrimary,
                                       fontWeight: FontWeight.w900,
                                       fontSize: 16,
                                       fontFamily: 'Nunito',
@@ -510,7 +546,11 @@ class _SummaryScreenState extends State<SummaryScreen> {
                           const SizedBox(height: 12),
                           Text(
                             currentSection.description,
-                            style: const TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
+                            style: TextStyle(
+                              color: context.colors.textFaint,
+                              fontSize: 12,
+                              height: 1.4,
+                            ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -524,20 +564,31 @@ class _SummaryScreenState extends State<SummaryScreen> {
               // Section Video Class Finder
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
                   child: Container(
                     padding: const EdgeInsets.all(16),
-                    decoration: AppTheme.glassDecoration,
+                    decoration: AppTheme.glassOf(context),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Row(
+                        Row(
                           children: [
-                            Icon(LucideIcons.playCircle, color: AppTheme.duoBlue, size: 22),
-                            SizedBox(width: 8),
+                            const Icon(
+                              LucideIcons.playCircle,
+                              color: AppTheme.duoBlue,
+                              size: 22,
+                            ),
+                            const SizedBox(width: 8),
                             Text(
                               'Section Video Class Finder',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                              style: TextStyle(
+                                color: context.colors.textPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
                             ),
                           ],
                         ),
@@ -546,19 +597,29 @@ class _SummaryScreenState extends State<SummaryScreen> {
                           children: [
                             Expanded(
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.05),
+                                  color: context.colors.surfaceAlt,
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: Colors.white.withOpacity(0.08)),
+                                  border: Border.all(
+                                    color: context.colors.outline,
+                                  ),
                                 ),
                                 child: TextField(
                                   controller: _sectionSearchController,
-                                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                                  decoration: const InputDecoration(
+                                  style: TextStyle(
+                                    color: context.colors.textPrimary,
+                                    fontSize: 12,
+                                  ),
+                                  decoration: InputDecoration(
                                     border: InputBorder.none,
                                     hintText: 'Search section videos...',
-                                    hintStyle: TextStyle(color: Colors.white30, fontSize: 12),
+                                    hintStyle: TextStyle(
+                                      color: context.colors.textFaint,
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -567,20 +628,31 @@ class _SummaryScreenState extends State<SummaryScreen> {
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppTheme.duoBlue,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                foregroundColor: context.colors.textPrimary,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
                                 minimumSize: const Size(0, 42),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
                                 elevation: 0,
                               ),
-                              onPressed: _loadingSectionVideos ? null : () => _searchVideosForSection(currentSection!),
+                              onPressed: _loadingSectionVideos
+                                  ? null
+                                  : () => _searchVideosForSection(
+                                      currentSection!,
+                                    ),
                               child: _loadingSectionVideos
-                                  ? const SizedBox(
+                                  ? SizedBox(
                                       width: 16,
                                       height: 16,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              context.colors.textPrimary,
+                                            ),
                                       ),
                                     )
                                   : const Icon(LucideIcons.search, size: 16),
@@ -588,12 +660,15 @@ class _SummaryScreenState extends State<SummaryScreen> {
                           ],
                         ),
                         if (_loadingSectionVideos)
-                          const Padding(
-                            padding: EdgeInsets.only(top: 20.0),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 20.0),
                             child: Center(
                               child: Text(
                                 'Searching YouTube...',
-                                style: TextStyle(color: Colors.white30, fontSize: 12),
+                                style: TextStyle(
+                                  color: context.colors.textFaint,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
                           )
@@ -602,21 +677,30 @@ class _SummaryScreenState extends State<SummaryScreen> {
                             padding: const EdgeInsets.only(top: 16.0),
                             child: Text(
                               'Error: $_errorSectionVideos',
-                              style: const TextStyle(color: AppTheme.duoRed, fontSize: 11),
+                              style: const TextStyle(
+                                color: AppTheme.duoRed,
+                                fontSize: 11,
+                              ),
                               textAlign: TextAlign.center,
                             ),
                           )
-                        else if (_sectionVideos != null && _sectionVideos!.isNotEmpty) ...[
+                        else if (_sectionVideos != null &&
+                            _sectionVideos!.isNotEmpty) ...[
                           const SizedBox(height: 16),
-                          const Divider(color: Colors.white10, height: 1),
+                          Divider(color: context.colors.outline, height: 1),
                           const SizedBox(height: 12),
-                          ..._sectionVideos!.map((video) => _buildVideoCard(context, video)),
+                          ..._sectionVideos!.map(
+                            (video) => _buildVideoCard(context, video),
+                          ),
                         ] else if (_sectionVideos != null)
-                          const Padding(
-                            padding: EdgeInsets.only(top: 16.0),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16.0),
                             child: Text(
                               'No lectures found for this section.',
-                              style: TextStyle(color: Colors.white30, fontSize: 11),
+                              style: TextStyle(
+                                color: context.colors.textFaint,
+                                fontSize: 11,
+                              ),
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -629,14 +713,19 @@ class _SummaryScreenState extends State<SummaryScreen> {
               // Title for search listings
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 8),
+                  padding: const EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    top: 8,
+                    bottom: 8,
+                  ),
                   child: Text(
                     'Search Classes by Unit'.toUpperCase(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 11,
                       letterSpacing: 1.0,
-                      color: Colors.white38,
+                      color: context.colors.textFaint,
                     ),
                   ),
                 ),
@@ -644,168 +733,219 @@ class _SummaryScreenState extends State<SummaryScreen> {
 
               // Unit searches listing
               currentSection.units.isEmpty
-                  ? const SliverFillRemaining(
+                  ? SliverFillRemaining(
                       hasScrollBody: false,
                       child: Center(
                         child: Text(
                           'No units available in this section.',
-                          style: TextStyle(color: Colors.white38),
+                          style: TextStyle(color: context.colors.textFaint),
                         ),
                       ),
                     )
                   : SliverPadding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final unit = currentSection!.units[index];
-                            final controller = _searchControllers[unit.id];
-                            final isLoading = _loadingUnits[unit.id] ?? false;
-                            final String? error = _errorUnits[unit.id];
-                            final List<YoutubeVideo>? videos = _cachedVideos[unit.id];
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final unit = currentSection!.units[index];
+                          final controller = _searchControllers[unit.id];
+                          final isLoading = _loadingUnits[unit.id] ?? false;
+                          final String? error = _errorUnits[unit.id];
+                          final List<YoutubeVideo>? videos =
+                              _cachedVideos[unit.id];
 
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 16),
-                              padding: const EdgeInsets.all(16),
-                              decoration: AppTheme.glassDecoration,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  // Unit details
-                                  Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.05),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(LucideIcons.playCircle, color: Colors.white70, size: 20),
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.all(16),
+                            decoration: AppTheme.glassOf(context),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // Unit details
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: context.colors.surfaceAlt,
+                                        shape: BoxShape.circle,
                                       ),
-                                      const SizedBox(width: 12),
+                                      child: Icon(
+                                        LucideIcons.playCircle,
+                                        color: context.colors.textSecondary,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            unit.title,
+                                            style: TextStyle(
+                                              color: context.colors.textPrimary,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                              fontFamily: 'Nunito',
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            unit.description,
+                                            style: TextStyle(
+                                              color: context.colors.textFaint,
+                                              fontSize: 11,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+
+                                // Search Control Row
+                                if (controller != null)
+                                  Row(
+                                    children: [
                                       Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              unit.title,
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 14,
-                                                fontFamily: 'Nunito',
+                                        child: Container(
+                                          height: 42,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: context.colors.surfaceAlt,
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                            border: Border.all(
+                                              color: context.colors.outline,
+                                            ),
+                                          ),
+                                          child: TextField(
+                                            controller: controller,
+                                            style: TextStyle(
+                                              color: context.colors.textPrimary,
+                                              fontSize: 12,
+                                            ),
+                                            decoration: InputDecoration(
+                                              border: InputBorder.none,
+                                              hintText:
+                                                  'Enter search keywords...',
+                                              hintStyle: TextStyle(
+                                                color: context.colors.textFaint,
+                                                fontSize: 12,
                                               ),
                                             ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              unit.description,
-                                              style: const TextStyle(color: Colors.white54, fontSize: 11),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
+                                          ),
                                         ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppTheme.duoBlue,
+                                          foregroundColor:
+                                              context.colors.textPrimary,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                          ),
+                                          minimumSize: const Size(0, 42),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          elevation: 0,
+                                        ),
+                                        onPressed: isLoading
+                                            ? null
+                                            : () => _searchVideosForUnit(unit),
+                                        child: isLoading
+                                            ? SizedBox(
+                                                width: 16,
+                                                height: 16,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  valueColor:
+                                                      AlwaysStoppedAnimation<
+                                                        Color
+                                                      >(
+                                                        context
+                                                            .colors
+                                                            .textPrimary,
+                                                      ),
+                                                ),
+                                              )
+                                            : const Icon(
+                                                LucideIcons.search,
+                                                size: 16,
+                                              ),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 16),
 
-                                  // Search Control Row
-                                  if (controller != null)
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Container(
-                                            height: 42,
-                                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                                            decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(0.04),
-                                              borderRadius: BorderRadius.circular(10),
-                                              border: Border.all(color: Colors.white.withOpacity(0.08)),
-                                            ),
-                                            child: TextField(
-                                              controller: controller,
-                                              style: const TextStyle(color: Colors.white, fontSize: 12),
-                                              decoration: const InputDecoration(
-                                                border: InputBorder.none,
-                                                hintText: 'Enter search keywords...',
-                                                hintStyle: TextStyle(color: Colors.white30, fontSize: 12),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: AppTheme.duoBlue,
-                                            foregroundColor: Colors.white,
-                                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                                            minimumSize: const Size(0, 42),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                            elevation: 0,
-                                          ),
-                                          onPressed: isLoading ? null : () => _searchVideosForUnit(unit),
-                                          child: isLoading
-                                              ? const SizedBox(
-                                                  width: 16,
-                                                  height: 16,
-                                                  child: CircularProgressIndicator(
-                                                    strokeWidth: 2,
-                                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                                  ),
-                                                )
-                                              : const Icon(LucideIcons.search, size: 16),
-                                        ),
-                                      ],
-                                    ),
-                                  
-                                  // Results Area
-                                  if (isLoading)
-                                    const Padding(
-                                      padding: EdgeInsets.only(top: 20.0),
-                                      child: Center(
-                                        child: Text(
-                                          'Searching YouTube...',
-                                          style: TextStyle(color: Colors.white30, fontSize: 12),
-                                        ),
-                                      ),
-                                    )
-                                  else if (error != null)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 16.0),
+                                // Results Area
+                                if (isLoading)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 20.0),
+                                    child: Center(
                                       child: Text(
-                                        'Error: $error',
-                                        style: const TextStyle(color: AppTheme.duoRed, fontSize: 11),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    )
-                                  else if (videos != null && videos.isNotEmpty) ...[
-                                    const SizedBox(height: 16),
-                                    const Divider(color: Colors.white10, height: 1),
-                                    const SizedBox(height: 12),
-                                    ...videos.map((video) => _buildVideoCard(context, video)),
-                                  ] else if (videos != null)
-                                    const Padding(
-                                      padding: EdgeInsets.only(top: 16.0),
-                                      child: Text(
-                                        'No lectures found for this query.',
-                                        style: TextStyle(color: Colors.white30, fontSize: 11),
-                                        textAlign: TextAlign.center,
+                                        'Searching YouTube...',
+                                        style: TextStyle(
+                                          color: context.colors.textFaint,
+                                          fontSize: 12,
+                                        ),
                                       ),
                                     ),
-                                ],
-                              ),
-                            );
-                          },
-                          childCount: currentSection.units.length,
-                        ),
+                                  )
+                                else if (error != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 16.0),
+                                    child: Text(
+                                      'Error: $error',
+                                      style: const TextStyle(
+                                        color: AppTheme.duoRed,
+                                        fontSize: 11,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  )
+                                else if (videos != null &&
+                                    videos.isNotEmpty) ...[
+                                  const SizedBox(height: 16),
+                                  Divider(
+                                    color: context.colors.outline,
+                                    height: 1,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  ...videos.map(
+                                    (video) => _buildVideoCard(context, video),
+                                  ),
+                                ] else if (videos != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 16.0),
+                                    child: Text(
+                                      'No lectures found for this query.',
+                                      style: TextStyle(
+                                        color: context.colors.textFaint,
+                                        fontSize: 11,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        }, childCount: currentSection.units.length),
                       ),
                     ),
             ],
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 100),
-            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
         ),
       ),
@@ -816,9 +956,9 @@ class _SummaryScreenState extends State<SummaryScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.02),
+        color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white.withOpacity(0.04)),
+        border: Border.all(color: context.colors.outline),
       ),
       child: Material(
         color: Colors.transparent,
@@ -835,7 +975,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                       width: 90,
                       height: 50,
                       decoration: BoxDecoration(
-                        color: Colors.black38,
+                        color: context.colors.surfaceAlt,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: ClipRRect(
@@ -844,8 +984,12 @@ class _SummaryScreenState extends State<SummaryScreen> {
                           video.thumbnailUrl,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
-                            return const Center(
-                              child: Icon(LucideIcons.video, color: Colors.white24, size: 16),
+                            return Center(
+                              child: Icon(
+                                LucideIcons.video,
+                                color: context.colors.textFaint,
+                                size: 16,
+                              ),
                             );
                           },
                         ),
@@ -859,7 +1003,11 @@ class _SummaryScreenState extends State<SummaryScreen> {
                             color: Colors.black54,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(LucideIcons.play, color: Colors.white, size: 10),
+                          child: const Icon(
+                            LucideIcons.play,
+                            color: Colors.white,
+                            size: 10,
+                          ),
                         ),
                       ),
                     ),
@@ -867,14 +1015,21 @@ class _SummaryScreenState extends State<SummaryScreen> {
                       bottom: 3,
                       right: 3,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 0.5),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 3,
+                          vertical: 0.5,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black87,
                           borderRadius: BorderRadius.circular(3),
                         ),
                         child: Text(
                           video.duration,
-                          style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
@@ -887,8 +1042,8 @@ class _SummaryScreenState extends State<SummaryScreen> {
                     children: [
                       Text(
                         video.title,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: context.colors.textPrimary,
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
                           fontFamily: 'Nunito',
@@ -902,7 +1057,10 @@ class _SummaryScreenState extends State<SummaryScreen> {
                           Expanded(
                             child: Text(
                               video.channelTitle,
-                              style: const TextStyle(color: Colors.white54, fontSize: 10),
+                              style: TextStyle(
+                                color: context.colors.textFaint,
+                                fontSize: 10,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -910,7 +1068,10 @@ class _SummaryScreenState extends State<SummaryScreen> {
                           const SizedBox(width: 6),
                           Text(
                             video.views,
-                            style: const TextStyle(color: Colors.white30, fontSize: 9),
+                            style: TextStyle(
+                              color: context.colors.textFaint,
+                              fontSize: 9,
+                            ),
                           ),
                         ],
                       ),

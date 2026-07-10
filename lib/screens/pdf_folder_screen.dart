@@ -15,10 +15,10 @@ class PdfFileMeta {
   final String sizeKb;
 
   PdfFileMeta({
-    required this.file, 
-    required this.unitId, 
-    required this.unitName, 
-    required this.sizeKb
+    required this.file,
+    required this.unitId,
+    required this.unitName,
+    required this.sizeKb,
   });
 }
 
@@ -28,10 +28,10 @@ class PdfFolderScreen extends StatefulWidget {
   final String folderId;
 
   const PdfFolderScreen({
-    super.key, 
-    required this.directory, 
-    this.linkedBook, 
-    required this.folderId
+    super.key,
+    required this.directory,
+    this.linkedBook,
+    required this.folderId,
   });
 
   @override
@@ -55,8 +55,13 @@ class _PdfFolderScreenState extends State<PdfFolderScreen> {
         return;
       }
 
-      final List<FileSystemEntity> entities = await widget.directory.list().toList();
-      final pdfs = entities.whereType<File>().where((f) => f.path.endsWith('.pdf')).toList();
+      final List<FileSystemEntity> entities = await widget.directory
+          .list()
+          .toList();
+      final pdfs = entities
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.pdf'))
+          .toList();
 
       List<PdfFileMeta> loaded = [];
 
@@ -106,19 +111,22 @@ class _PdfFolderScreenState extends State<PdfFolderScreen> {
           final regExp = RegExp(r'^m(\d+)-s(\d+)$');
           final match = regExp.firstMatch(unitIdRaw);
           if (match != null) {
-            mappedUnitName = "Module ${match.group(1)} Section ${match.group(2)}";
+            mappedUnitName =
+                "Module ${match.group(1)} Section ${match.group(2)}";
           } else {
             mappedUnitName = "Unknown Unit ($unitIdRaw)";
           }
         }
 
         final sizeKb = (file.lengthSync() / 1024).toStringAsFixed(1);
-        loaded.add(PdfFileMeta(
-          file: file,
-          unitId: unitIdRaw,
-          unitName: mappedUnitName,
-          sizeKb: sizeKb,
-        ));
+        loaded.add(
+          PdfFileMeta(
+            file: file,
+            unitId: unitIdRaw,
+            unitName: mappedUnitName,
+            sizeKb: sizeKb,
+          ),
+        );
       }
 
       if (mounted) {
@@ -137,17 +145,24 @@ class _PdfFolderScreenState extends State<PdfFolderScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => Scaffold(
-          appBar: AppBar(title: Text(meta.unitName, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold))),
+          appBar: AppBar(
+            title: Text(
+              meta.unitName,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            ),
+          ),
           body: SafePdfViewer(file: meta.file),
-        )
-      )
+        ),
+      ),
     );
   }
 
   Future<void> _sharePdf(PdfFileMeta meta) async {
     try {
-      final safeName = "${widget.linkedBook?.title ?? 'Course'} - ${meta.unitName}".replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
-      
+      final safeName =
+          "${widget.linkedBook?.title ?? 'Course'} - ${meta.unitName}"
+              .replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
+
       if (Platform.isLinux) {
         final savePath = await FilePicker.platform.saveFile(
           dialogTitle: 'Save Course Unit PDF',
@@ -166,11 +181,15 @@ class _PdfFolderScreenState extends State<PdfFolderScreen> {
       } else {
         final tempFile = File('${widget.directory.path}/$safeName.pdf');
         await meta.file.copy(tempFile.path);
-        await Share.shareXFiles([XFile(tempFile.path)], text: 'Check out this course unit: ${meta.unitName}');
+        await Share.shareXFiles([
+          XFile(tempFile.path),
+        ], text: 'Check out this course unit: ${meta.unitName}');
         await tempFile.delete(); // cleanup
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error sharing: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error sharing: $e')));
     }
   }
 
@@ -178,22 +197,42 @@ class _PdfFolderScreenState extends State<PdfFolderScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Delete File?', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-        content: Text('Are you sure you want to delete the PDF for ${meta.unitName}?'),
+        backgroundColor: context.colors.surface,
+        title: Text(
+          'Delete File?',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: context.colors.textPrimary,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to delete the PDF for ${meta.unitName}?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: context.colors.textFaint),
+            ),
+          ),
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
               setState(() => _isLoading = true);
               await meta.file.delete();
               _loadFiles();
-            }, 
-            child: const Text('Delete', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold))
+            },
+            child: const Text(
+              'Delete',
+              style: TextStyle(
+                color: AppTheme.duoRed,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
-      )
+      ),
     );
   }
 
@@ -201,57 +240,98 @@ class _PdfFolderScreenState extends State<PdfFolderScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.linkedBook?.title ?? 'Folder Contents', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+        title: Text(
+          widget.linkedBook?.title ?? 'Folder Contents',
+          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+        ),
       ),
       body: ResponsiveCenter(
         child: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue))
-          : _files.isEmpty
-              ? const Center(child: Text('This folder is empty.', style: TextStyle(color: Colors.white54)))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _files.length,
-                  itemBuilder: (context, index) {
-                    final meta = _files[index];
+            ? const Center(
+                child: CircularProgressIndicator(color: AppTheme.duoBlue),
+              )
+            : _files.isEmpty
+            ? Center(
+                child: Text(
+                  'This folder is empty.',
+                  style: TextStyle(color: context.colors.textFaint),
+                ),
+              )
+            : ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _files.length,
+                itemBuilder: (context, index) {
+                  final meta = _files[index];
 
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: AppTheme.glassDecoration,
-                      child: Material(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(20),
-                        clipBehavior: Clip.antiAlias,
-                        child: ListTile(
-                          onTap: () => _openPdf(meta),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          leading: Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(color: AppTheme.duoViolet.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
-                            child: const Icon(LucideIcons.fileText, color: AppTheme.duoViolet, size: 20),
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: AppTheme.glassOf(context),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(20),
+                      clipBehavior: Clip.antiAlias,
+                      child: ListTile(
+                        onTap: () => _openPdf(meta),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        leading: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppTheme.duoViolet.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          title: Text(meta.unitName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white)),
-                          subtitle: Padding(
-                            padding: const EdgeInsets.only(top: 4.0),
-                            child: Text('${meta.sizeKb} KB', style: const TextStyle(fontSize: 11, color: Colors.white54)),
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(LucideIcons.share, color: Colors.white70, size: 20),
-                                onPressed: () => _sharePdf(meta),
-                              ),
-                              IconButton(
-                                icon: const Icon(LucideIcons.trash2, color: AppTheme.duoRed, size: 20),
-                                onPressed: () => _deleteFile(meta),
-                              ),
-                            ],
+                          child: const Icon(
+                            LucideIcons.fileText,
+                            color: AppTheme.duoViolet,
+                            size: 20,
                           ),
                         ),
+                        title: Text(
+                          meta.unitName,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: context.colors.textPrimary,
+                          ),
+                        ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 4.0),
+                          child: Text(
+                            '${meta.sizeKb} KB',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: context.colors.textFaint,
+                            ),
+                          ),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(
+                                LucideIcons.share,
+                                color: context.colors.textSecondary,
+                                size: 20,
+                              ),
+                              onPressed: () => _sharePdf(meta),
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                LucideIcons.trash2,
+                                color: AppTheme.duoRed,
+                                size: 20,
+                              ),
+                              onPressed: () => _deleteFile(meta),
+                            ),
+                          ],
+                        ),
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
+              ),
       ),
     );
   }

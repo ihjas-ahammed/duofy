@@ -25,7 +25,8 @@ class SmartReviewCard extends StatelessWidget {
     if (!context.mounted) return;
     if (slides.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Nothing left to review — great job!')));
+        const SnackBar(content: Text('Nothing left to review — great job!')),
+      );
       GlobalState.bumpProgress();
       return;
     }
@@ -61,7 +62,9 @@ class SmartReviewCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppTheme.duoViolet.withOpacity(0.10),
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: AppTheme.duoViolet.withOpacity(0.4)),
+                  border: Border.all(
+                    color: AppTheme.duoViolet.withOpacity(0.4),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -72,27 +75,39 @@ class SmartReviewCard extends StatelessWidget {
                         shape: BoxShape.circle,
                         color: AppTheme.duoViolet.withOpacity(0.16),
                       ),
-                      child: const Icon(LucideIcons.brain,
-                          color: AppTheme.duoViolet, size: 20),
+                      child: const Icon(
+                        LucideIcons.brain,
+                        color: AppTheme.duoViolet,
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Smart Review',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 14)),
+                          Text(
+                            'Smart Review',
+                            style: TextStyle(
+                              color: context.colors.textPrimary,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                            ),
+                          ),
                           Text(
                             '$due item${due == 1 ? '' : 's'} due — 5 minutes well spent',
-                            style: const TextStyle(color: Colors.white54, fontSize: 11),
+                            style: TextStyle(
+                              color: context.colors.textFaint,
+                              fontSize: 11,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    const Icon(LucideIcons.chevronRight, color: AppTheme.duoViolet),
+                    const Icon(
+                      LucideIcons.chevronRight,
+                      color: AppTheme.duoViolet,
+                    ),
                   ],
                 ),
               ),

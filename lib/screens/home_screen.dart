@@ -55,8 +55,10 @@ class _HomeScreenState extends State<HomeScreen> {
   List<CourseFolder> folders = [];
   String? _selectedFolderId;
 
-  final TextEditingController _librarySearchController = TextEditingController();
-  final TextEditingController _publishedSearchController = TextEditingController();
+  final TextEditingController _librarySearchController =
+      TextEditingController();
+  final TextEditingController _publishedSearchController =
+      TextEditingController();
   String _librarySearchQuery = '';
   String _publishedSearchQuery = '';
 
@@ -97,10 +99,13 @@ class _HomeScreenState extends State<HomeScreen> {
     _syncRemoteData();
 
     GenerationManager.instance.addListener(_handleGenerationTasksChange);
-    _bookUpdateSubscription = GenerationManager.instance.bookUpdates.listen((_) {
+    _bookUpdateSubscription = GenerationManager.instance.bookUpdates.listen((
+      _,
+    ) {
       _loadAllData(force: false);
     });
-    GenerationManager.instance.onBookGenerated = () => _loadAllData(force: false);
+    GenerationManager.instance.onBookGenerated = () =>
+        _loadAllData(force: false);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (startupError != null) {
@@ -144,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final globals = await _db.fetchGlobalBooks(useCacheOnly: true);
     final fetchedFolders = await _db.fetchFolders();
     final completed = await ProgressService.getCompletedLessons();
-    
+
     Map<String, double> prog = {};
     for (var b in fetched) {
       prog[b.id] = await ProgressService.getBookProgress(b);
@@ -173,30 +178,39 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _syncRemoteData() async {
+    bool anyFailed = false;
     try {
       // Run sync operations in parallel to load faster (especially when offline or on a low network)
       final results = await Future.wait([
         LearningSync.pullAndMerge().catchError((e) {
           print("[HomeScreen] pullAndMerge error: $e");
+          anyFailed = true;
           return false;
         }),
-        _db.fetchBooks(
-          forceRefresh: true,
-          onConflict: (local, remote) => showSyncConflictDialog(context, local, remote),
-        ).catchError((e) {
-          print("[HomeScreen] fetchBooks error: $e");
-          return <Book>[];
-        }),
+        _db
+            .fetchBooks(
+              forceRefresh: true,
+              onConflict: (local, remote) =>
+                  showSyncConflictDialog(context, local, remote),
+            )
+            .catchError((e) {
+              print("[HomeScreen] fetchBooks error: $e");
+              anyFailed = true;
+              return <Book>[];
+            }),
         _db.fetchGlobalBooks(useCacheOnly: false).catchError((e) {
           print("[HomeScreen] fetchGlobalBooks error: $e");
+          anyFailed = true;
           return <Book>[];
         }),
         _db.fetchFolders().catchError((e) {
           print("[HomeScreen] fetchFolders error: $e");
+          anyFailed = true;
           return <CourseFolder>[];
         }),
         ProgressService.getCompletedLessons().catchError((e) {
           print("[HomeScreen] getCompletedLessons error: $e");
+          anyFailed = true;
           return <String>[];
         }),
       ]);
@@ -222,9 +236,91 @@ class _HomeScreenState extends State<HomeScreen> {
           _completedLessons = completed;
           folders = fetchedFolders;
         });
+        if (anyFailed) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Some data couldn't sync — showing cached content"),
+            ),
+          );
+        }
       }
     } catch (e) {
       print("[HomeScreen] Background sync error: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Sync failed — showing cached content")),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleGeneratingCardTap(GenerationTask task) async {
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.colors.surface,
+        title: Text(
+          'Course generation failed',
+          style: TextStyle(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          task.errorMessage?.isNotEmpty == true
+              ? task.errorMessage!
+              : 'Something went wrong generating "${task.title}".',
+          style: TextStyle(color: context.colors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'keep'),
+            child: Text(
+              'Keep',
+              style: TextStyle(color: context.colors.textFaint),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'dismiss'),
+            child: const Text(
+              'Dismiss',
+              style: TextStyle(color: AppTheme.duoRed),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'retry'),
+            child: const Text(
+              'Retry',
+              style: TextStyle(
+                color: AppTheme.duoBlue,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (choice == 'dismiss') {
+      GenerationManager.instance.dismissTask(task.id);
+    } else if (choice == 'retry') {
+      try {
+        GenerationManager.instance.dismissTask(task.id);
+        await GenerationManager.instance.startBookGeneration(
+          task.sourceFiles,
+          task.title,
+          syllabusFiles: task.syllabusFiles,
+          plannerQuestions: task.plannerQuestions,
+          selectedQuestions: task.selectedQuestions,
+          bloomLevel: task.bloomLevel,
+        );
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Couldn't retry — please re-upload")),
+          );
+        }
+      }
     }
   }
 
@@ -233,10 +329,25 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.surface,
-        title: Text('Delete Course?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
-        content: Text('Are you sure you want to delete this course from your local library?', style: TextStyle(color: context.colors.textSecondary)),
+        title: Text(
+          'Delete Course?',
+          style: TextStyle(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to delete this course from your local library?',
+          style: TextStyle(color: context.colors.textSecondary),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: context.colors.textFaint),
+            ),
+          ),
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx, true);
@@ -246,11 +357,17 @@ class _HomeScreenState extends State<HomeScreen> {
               await ProgressService.clearBookProgress(book);
               await _db.deleteBook(book.id);
               _loadAllData(force: true);
-            }, 
-            child: const Text('Delete', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold))
+            },
+            child: const Text(
+              'Delete',
+              style: TextStyle(
+                color: AppTheme.duoRed,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
-        ]
-      )
+        ],
+      ),
     );
     return result ?? false;
   }
@@ -261,7 +378,11 @@ class _HomeScreenState extends State<HomeScreen> {
         Padding(
           padding: const EdgeInsets.only(right: 8),
           child: TextButton.icon(
-            icon: Icon(LucideIcons.logIn, size: 20, color: context.colors.textPrimary),
+            icon: Icon(
+              LucideIcons.logIn,
+              size: 20,
+              color: context.colors.textPrimary,
+            ),
             label: Text(
               'LOG IN',
               style: TextStyle(
@@ -281,17 +402,22 @@ class _HomeScreenState extends State<HomeScreen> {
         icon: const Icon(LucideIcons.bookmark, size: 26),
         tooltip: 'Bookmarks',
         onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const BookmarksScreen()));
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const BookmarksScreen()),
+          );
         },
       ),
       IconButton(
         padding: const EdgeInsets.only(right: 16),
         icon: const Icon(LucideIcons.userCircle, size: 28),
         onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()))
-            .then((_) => _loadAllData(force: false));
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SettingsScreen()),
+          ).then((_) => _loadAllData(force: false));
         },
-      )
+      ),
     ];
   }
 
@@ -315,20 +441,30 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  Icon(LucideIcons.search, color: context.colors.textFaint, size: 20),
+                  Icon(
+                    LucideIcons.search,
+                    color: context.colors.textFaint,
+                    size: 20,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextField(
                       controller: controller,
-                      style: TextStyle(color: context.colors.textPrimary, fontSize: 14),
+                      style: TextStyle(
+                        color: context.colors.textPrimary,
+                        fontSize: 14,
+                      ),
                       textInputAction: TextInputAction.search,
-                      onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
+                      onTapOutside: (event) =>
+                          FocusManager.instance.primaryFocus?.unfocus(),
                       decoration: InputDecoration(
                         hintText: hintText,
                         hintStyle: TextStyle(color: context.colors.textFaint),
                         border: InputBorder.none,
                         isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                        ),
                       ),
                     ),
                   ),
@@ -337,22 +473,26 @@ class _HomeScreenState extends State<HomeScreen> {
                       onTap: () {
                         controller.clear();
                       },
-                      child: Icon(LucideIcons.x, color: context.colors.textFaint, size: 18),
+                      child: Icon(
+                        LucideIcons.x,
+                        color: context.colors.textFaint,
+                        size: 18,
+                      ),
                     ),
                 ],
               ),
             ),
           ),
-          if (trailing != null) ...[
-            const SizedBox(width: 12),
-            trailing,
-          ],
+          if (trailing != null) ...[const SizedBox(width: 12), trailing],
         ],
       ),
     );
   }
 
-  Widget _buildLibraryTab(List<GenerationTask> activeTasks, double screenWidth) {
+  Widget _buildLibraryTab(
+    List<GenerationTask> activeTasks,
+    double screenWidth,
+  ) {
     final query = _librarySearchQuery.toLowerCase().trim();
     final isSearching = query.isNotEmpty;
 
@@ -362,12 +502,14 @@ class _HomeScreenState extends State<HomeScreen> {
       for (final book in books) {
         if (book.title.toLowerCase().contains(query) ||
             book.description.toLowerCase().contains(query)) {
-          searchResults.add(SearchResultItem(
-            book: book,
-            type: 'book',
-            title: book.title,
-            context: 'Course',
-          ));
+          searchResults.add(
+            SearchResultItem(
+              book: book,
+              type: 'book',
+              title: book.title,
+              context: 'Course',
+            ),
+          );
           if (searchResults.length >= 50) break outerLoop;
         }
 
@@ -375,13 +517,15 @@ class _HomeScreenState extends State<HomeScreen> {
           final module = book.modules[modIdx];
           if (module.title.toLowerCase().contains(query) ||
               module.description.toLowerCase().contains(query)) {
-            searchResults.add(SearchResultItem(
-              book: book,
-              type: 'module',
-              title: module.title,
-              context: '${book.title} • Module ${modIdx + 1}',
-              modIdx: modIdx,
-            ));
+            searchResults.add(
+              SearchResultItem(
+                book: book,
+                type: 'module',
+                title: module.title,
+                context: '${book.title} • Module ${modIdx + 1}',
+                modIdx: modIdx,
+              ),
+            );
             if (searchResults.length >= 50) break outerLoop;
           }
 
@@ -389,14 +533,16 @@ class _HomeScreenState extends State<HomeScreen> {
             final section = module.sections[secIdx];
             if (section.title.toLowerCase().contains(query) ||
                 section.description.toLowerCase().contains(query)) {
-              searchResults.add(SearchResultItem(
-                book: book,
-                type: 'section',
-                title: section.title,
-                context: '${book.title} • ${module.title}',
-                modIdx: modIdx,
-                secIdx: secIdx,
-              ));
+              searchResults.add(
+                SearchResultItem(
+                  book: book,
+                  type: 'section',
+                  title: section.title,
+                  context: '${book.title} • ${module.title}',
+                  modIdx: modIdx,
+                  secIdx: secIdx,
+                ),
+              );
               if (searchResults.length >= 50) break outerLoop;
             }
 
@@ -404,41 +550,54 @@ class _HomeScreenState extends State<HomeScreen> {
               final unit = section.units[unitIdx];
               if (unit.title.toLowerCase().contains(query) ||
                   unit.description.toLowerCase().contains(query)) {
-                searchResults.add(SearchResultItem(
-                  book: book,
-                  type: 'unit',
-                  title: unit.title,
-                  context: '${book.title} • ${section.title}',
-                  modIdx: modIdx,
-                  secIdx: secIdx,
-                  unitIdx: unitIdx,
-                ));
-                if (searchResults.length >= 50) break outerLoop;
-              }
-
-              for (int lessonIdx = 0; lessonIdx < unit.lessons.length; lessonIdx++) {
-                final lesson = unit.lessons[lessonIdx];
-                if (lesson.title.toLowerCase().contains(query) ||
-                    lesson.description.toLowerCase().contains(query)) {
-                  searchResults.add(SearchResultItem(
+                searchResults.add(
+                  SearchResultItem(
                     book: book,
-                    type: 'lesson',
-                    title: lesson.title,
-                    context: '${book.title} • ${unit.title}',
+                    type: 'unit',
+                    title: unit.title,
+                    context: '${book.title} • ${section.title}',
                     modIdx: modIdx,
                     secIdx: secIdx,
                     unitIdx: unitIdx,
-                    lessonIdx: lessonIdx,
-                    lesson: lesson,
-                  ));
+                  ),
+                );
+                if (searchResults.length >= 50) break outerLoop;
+              }
+
+              for (
+                int lessonIdx = 0;
+                lessonIdx < unit.lessons.length;
+                lessonIdx++
+              ) {
+                final lesson = unit.lessons[lessonIdx];
+                if (lesson.title.toLowerCase().contains(query) ||
+                    lesson.description.toLowerCase().contains(query)) {
+                  searchResults.add(
+                    SearchResultItem(
+                      book: book,
+                      type: 'lesson',
+                      title: lesson.title,
+                      context: '${book.title} • ${unit.title}',
+                      modIdx: modIdx,
+                      secIdx: secIdx,
+                      unitIdx: unitIdx,
+                      lessonIdx: lessonIdx,
+                      lesson: lesson,
+                    ),
+                  );
                   if (searchResults.length >= 50) break outerLoop;
                 }
 
-                for (int slideIdx = 0; slideIdx < lesson.slides.length; slideIdx++) {
+                for (
+                  int slideIdx = 0;
+                  slideIdx < lesson.slides.length;
+                  slideIdx++
+                ) {
                   final slide = lesson.slides[slideIdx];
                   final inContent = slide.content.toLowerCase().contains(query);
                   final inTitle = slide.title.toLowerCase().contains(query);
-                  final inAnswer = slide.blankAnswer?.toLowerCase().contains(query) ?? false;
+                  final inAnswer =
+                      slide.blankAnswer?.toLowerCase().contains(query) ?? false;
 
                   if (inContent || inTitle || inAnswer) {
                     String snippet = '';
@@ -448,22 +607,27 @@ class _HomeScreenState extends State<HomeScreen> {
                       snippet = 'Answer: ${slide.blankAnswer}';
                     } else {
                       snippet = slide.content;
-                      if (snippet.length > 100) snippet = '${snippet.substring(0, 100)}...';
+                      if (snippet.length > 100)
+                        snippet = '${snippet.substring(0, 100)}...';
                     }
 
-                    searchResults.add(SearchResultItem(
-                      book: book,
-                      type: 'slide',
-                      title: slide.title.isNotEmpty ? slide.title : 'Theory Slide',
-                      context: '${book.title} • ${lesson.title}',
-                      snippet: snippet,
-                      modIdx: modIdx,
-                      secIdx: secIdx,
-                      unitIdx: unitIdx,
-                      lessonIdx: lessonIdx,
-                      lesson: lesson,
-                      slideId: slide.id,
-                    ));
+                    searchResults.add(
+                      SearchResultItem(
+                        book: book,
+                        type: 'slide',
+                        title: slide.title.isNotEmpty
+                            ? slide.title
+                            : 'Theory Slide',
+                        context: '${book.title} • ${lesson.title}',
+                        snippet: snippet,
+                        modIdx: modIdx,
+                        secIdx: secIdx,
+                        unitIdx: unitIdx,
+                        lessonIdx: lessonIdx,
+                        lesson: lesson,
+                        slideId: slide.id,
+                      ),
+                    );
                     if (searchResults.length >= 50) break outerLoop;
                   }
                 }
@@ -480,9 +644,13 @@ class _HomeScreenState extends State<HomeScreen> {
         (f) => f.id == _selectedFolderId,
         orElse: () => CourseFolder(id: '', name: '', bookIds: []),
       );
-      displayedBooks = books.where((b) => currentFolder.bookIds.contains(b.id)).toList();
+      displayedBooks = books
+          .where((b) => currentFolder.bookIds.contains(b.id))
+          .toList();
     } else {
-      displayedBooks = books.where((b) => !folders.any((f) => f.bookIds.contains(b.id))).toList();
+      displayedBooks = books
+          .where((b) => !folders.any((f) => f.bookIds.contains(b.id)))
+          .toList();
     }
 
     return ResponsiveCenter(
@@ -493,12 +661,14 @@ class _HomeScreenState extends State<HomeScreen> {
           await _syncRemoteData();
         },
         child: CustomScrollView(
-          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
           slivers: [
             SliverAppBar(
               floating: true,
               pinned: true,
-              backgroundColor: AppTheme.background,
+              backgroundColor: context.colors.background,
               elevation: 0,
               centerTitle: false,
               titleSpacing: 24,
@@ -518,15 +688,25 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
                 builder: (context, candidateData, rejectedData) {
                   final isHovered = candidateData.isNotEmpty;
-                  final folderName = _selectedFolderId != null 
-                      ? folders.firstWhere((f) => f.id == _selectedFolderId, orElse: () => folders.first).name
+                  final folderName = _selectedFolderId != null
+                      ? folders
+                            .firstWhere(
+                              (f) => f.id == _selectedFolderId,
+                              orElse: () => folders.first,
+                            )
+                            .name
                       : null;
-                  
+
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color: isHovered ? AppTheme.duoRed.withOpacity(0.15) : Colors.transparent,
+                      color: isHovered
+                          ? AppTheme.duoRed.withOpacity(0.15)
+                          : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: isHovered ? AppTheme.duoRed : Colors.transparent,
@@ -546,7 +726,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: const [
-                                Icon(LucideIcons.chevronLeft, size: 18, color: AppTheme.duoBlue),
+                                Icon(
+                                  LucideIcons.chevronLeft,
+                                  size: 18,
+                                  color: AppTheme.duoBlue,
+                                ),
                                 Text(
                                   'Library',
                                   style: TextStyle(
@@ -562,7 +746,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 4),
                             child: Text(
                               '/',
-                              style: TextStyle(fontSize: 14, color: context.colors.textFaint),
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: context.colors.textFaint,
+                              ),
                             ),
                           ),
                           Flexible(
@@ -601,13 +788,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 hintText: 'Search your courses...',
                 trailing: _selectedFolderId == null
                     ? IconButton(
-                        icon: Icon(LucideIcons.folderPlus, color: context.colors.textPrimary, size: 24),
+                        icon: Icon(
+                          LucideIcons.folderPlus,
+                          color: context.colors.textPrimary,
+                          size: 24,
+                        ),
                         onPressed: _showCreateFolderDialog,
                         style: IconButton.styleFrom(
                           backgroundColor: context.colors.surfaceAlt,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(color: context.colors.outline, width: 1.2),
+                            side: BorderSide(
+                              color: context.colors.outline,
+                              width: 1.2,
+                            ),
                           ),
                           padding: const EdgeInsets.all(12),
                         ),
@@ -625,69 +819,90 @@ class _HomeScreenState extends State<HomeScreen> {
             if (!isSearching && _selectedFolderId == null)
               const SliverToBoxAdapter(child: SmartReviewCard()),
             if (!isSearching && _selectedFolderId == null && folders.isNotEmpty)
-              SliverToBoxAdapter(
-                child: _buildFoldersList(),
-              ),
+              SliverToBoxAdapter(child: _buildFoldersList()),
             if (!isSearching && activeTasks.isNotEmpty && !kIsWeb)
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final task = activeTasks[index];
-                      return GeneratingBookCard(
-                        task: task,
-                        onTap: () {
-                          if (task.state == BookGenState.review && task.skeletonBook != null) {
-                            Navigator.push(context, MaterialPageRoute(
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final task = activeTasks[index];
+                    return GeneratingBookCard(
+                      task: task,
+                      onTap: () {
+                        if (task.state == BookGenState.review &&
+                            task.skeletonBook != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
                               builder: (_) => PdfSplitPreviewScreen(
                                 taskId: task.id,
                                 originalPdf: task.sourceFiles,
                                 skeletonBook: task.skeletonBook!,
-                              )
-                            )).then((_) => _loadAllData(force: false));
-                          } else if (task.state == BookGenState.error) {
-                            GenerationManager.instance.dismissTask(task.id);
-                          }
+                              ),
+                            ),
+                          ).then((_) => _loadAllData(force: false));
+                        } else if (task.state == BookGenState.error) {
+                          _handleGeneratingCardTap(task);
                         }
-                      );
-                    },
-                    childCount: activeTasks.length,
-                  ),
+                      },
+                    );
+                  }, childCount: activeTasks.length),
                 ),
               ),
             if (!isSearching)
               SliverToBoxAdapter(
-                child: (displayedBooks.isEmpty && activeTasks.isEmpty && (_selectedFolderId != null || folders.isEmpty))
+                child:
+                    (displayedBooks.isEmpty &&
+                        activeTasks.isEmpty &&
+                        (_selectedFolderId != null || folders.isEmpty))
                     ? (_selectedFolderId != null
-                        ? Container(
-                            height: 180,
-                            margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                            decoration: BoxDecoration(color: context.colors.surfaceAlt, borderRadius: BorderRadius.circular(24)),
-                            alignment: Alignment.center,
-                            child: Text(
-                              'This folder is empty.\nGo back and drag courses here!',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold),
-                            ),
-                          )
-                        : _buildFirstCourseCta())
+                          ? Container(
+                              height: 180,
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 16,
+                              ),
+                              decoration: BoxDecoration(
+                                color: context.colors.surfaceAlt,
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'This folder is empty.\nGo back and drag courses here!',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: context.colors.textFaint,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            )
+                          : _buildFirstCourseCta())
                     : const SizedBox.shrink(),
               ),
             if (isSearching)
               SliverToBoxAdapter(
                 child: searchResults.isEmpty
-                     ? Container(
+                    ? Container(
                         height: 200,
                         alignment: Alignment.center,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(LucideIcons.search, color: context.colors.outline, size: 40),
+                            Icon(
+                              LucideIcons.search,
+                              color: context.colors.outline,
+                              size: 40,
+                            ),
                             const SizedBox(height: 16),
                             Text(
                               'No matching courses or content found.',
-                              style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                color: context.colors.textFaint,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ],
                         ),
@@ -696,53 +911,58 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             if (isSearching && searchResults.isNotEmpty)
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 8,
+                ),
                 sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final result = searchResults[index];
-                      return _buildSearchResultCard(context, result, query);
-                    },
-                    childCount: searchResults.length,
-                  ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final result = searchResults[index];
+                    return _buildSearchResultCard(context, result, query);
+                  }, childCount: searchResults.length),
                 ),
               ),
             if (!isSearching && displayedBooks.isNotEmpty)
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final book = displayedBooks[index];
-                      return Dismissible(
-                        key: Key(book.id),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          alignment: Alignment.center,
-                          margin: const EdgeInsets.symmetric(vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.red.shade900.withOpacity(0.8),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: const Icon(LucideIcons.trash2, color: Colors.white, size: 20),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final book = displayedBooks[index];
+                    return Dismissible(
+                      key: Key(book.id),
+                      direction: DismissDirection.endToStart,
+                      background: Container(
+                        alignment: Alignment.center,
+                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade900.withOpacity(0.8),
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        confirmDismiss: (direction) async {
-                          return await _deleteLocalBook(book);
+                        child: Icon(
+                          LucideIcons.trash2,
+                          color: context.colors.textPrimary,
+                          size: 20,
+                        ),
+                      ),
+                      confirmDismiss: (direction) async {
+                        return await _deleteLocalBook(book);
+                      },
+                      child: CompactBookListItem(
+                        book: book,
+                        progress: progressMap[book.id] ?? 0.0,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ModuleSelectionScreen(book: book),
+                            ),
+                          ).then((_) => _loadAllData(force: false));
                         },
-                        child: CompactBookListItem(
-                          book: book,
-                          progress: progressMap[book.id] ?? 0.0,
-                          onTap: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (_) => ModuleSelectionScreen(book: book)))
-                              .then((_) => _loadAllData(force: false));
-                          },
-                          onLongPress: () => _showBookLongPressMenu(book),
-                          dragHandle: _buildDragHandle(book),
-                        ),
-                      );
-                    },
-                    childCount: displayedBooks.length,
-                  ),
+                        onLongPress: () => _showBookLongPressMenu(book),
+                        dragHandle: _buildDragHandle(book),
+                      ),
+                    );
+                  }, childCount: displayedBooks.length),
                 ),
               ),
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
@@ -767,20 +987,35 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: AppTheme.duoGreen.withOpacity(0.12),
-              border: Border.all(color: AppTheme.duoGreen.withOpacity(0.4), width: 2),
+              border: Border.all(
+                color: AppTheme.duoGreen.withOpacity(0.4),
+                width: 2,
+              ),
             ),
-            child: const Icon(LucideIcons.sparkles, color: AppTheme.duoGreen, size: 40),
+            child: const Icon(
+              LucideIcons.sparkles,
+              color: AppTheme.duoGreen,
+              size: 40,
+            ),
           ),
           const SizedBox(height: 20),
           Text(
             'Create your first course',
-            style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w900, fontSize: 18),
+            style: TextStyle(
+              color: context.colors.textPrimary,
+              fontWeight: FontWeight.w900,
+              fontSize: 18,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             'Pick any PDF — a textbook, notes, or a handout — and the AI turns it into an interactive lesson path.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: context.colors.textFaint, fontSize: 13, height: 1.4),
+            style: TextStyle(
+              color: context.colors.textFaint,
+              fontSize: 13,
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 20),
           if (!kIsWeb)
@@ -793,17 +1028,27 @@ class _HomeScreenState extends State<HomeScreen> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const GenerateBookScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const GenerateBookScreen(),
+                    ),
                   ).then((_) => _loadAllData(force: false));
                 },
               ),
             ),
           TextButton.icon(
             onPressed: () => setState(() => _selectedTabIndex = 2),
-            icon: const Icon(LucideIcons.globe, size: 16, color: AppTheme.duoBlue),
+            icon: const Icon(
+              LucideIcons.globe,
+              size: 16,
+              color: AppTheme.duoBlue,
+            ),
             label: const Text(
               'Or browse community courses',
-              style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold, fontSize: 13),
+              style: TextStyle(
+                color: AppTheme.duoBlue,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
             ),
           ),
         ],
@@ -823,7 +1068,11 @@ class _HomeScreenState extends State<HomeScreen> {
           titleSpacing: 24,
           title: Text(
             'Analytics',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: context.colors.textPrimary),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+              color: context.colors.textPrimary,
+            ),
           ),
           actions: _buildAppBarActions(),
         ),
@@ -847,7 +1096,9 @@ class _HomeScreenState extends State<HomeScreen> {
           await _syncRemoteData();
         },
         child: CustomScrollView(
-          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
           slivers: [
             SliverAppBar(
               floating: true,
@@ -858,7 +1109,11 @@ class _HomeScreenState extends State<HomeScreen> {
               titleSpacing: 24,
               title: Text(
                 'Published',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: context.colors.textPrimary),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  color: context.colors.textPrimary,
+                ),
               ),
               actions: _buildAppBarActions(),
             ),
@@ -873,10 +1128,23 @@ class _HomeScreenState extends State<HomeScreen> {
               child: globalBooks.isEmpty
                   ? Container(
                       height: 180,
-                      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                      decoration: BoxDecoration(color: context.colors.surfaceAlt, borderRadius: BorderRadius.circular(24)),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: context.colors.surfaceAlt,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
                       alignment: Alignment.center,
-                      child: Text('No published courses yet.', textAlign: TextAlign.center, style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold)),
+                      child: Text(
+                        'No published courses yet.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: context.colors.textFaint,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     )
                   : const SizedBox.shrink(),
             ),
@@ -887,7 +1155,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       alignment: Alignment.center,
                       child: Text(
                         'No matching published courses.',
-                        style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: context.colors.textFaint,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     )
                   : const SizedBox.shrink(),
@@ -896,69 +1167,108 @@ class _HomeScreenState extends State<HomeScreen> {
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final book = filteredGlobals[index];
-                      final user = FbAuth.instance.currentUser;
-                      final bool isOwner = user != null && book.authorId == user.uid;
-                      final bool isSuperAdmin = user?.email == 'ihjas.one@gmail.com';
-                      final bool canDelete = isOwner || isSuperAdmin;
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final book = filteredGlobals[index];
+                    final user = FbAuth.instance.currentUser;
+                    final bool isOwner =
+                        user != null && book.authorId == user.uid;
+                    final bool isSuperAdmin =
+                        user?.email == 'ihjas.one@gmail.com';
+                    final bool canDelete = isOwner || isSuperAdmin;
 
-                      return Dismissible(
-                        key: Key(book.id),
-                        direction: canDelete ? DismissDirection.endToStart : DismissDirection.none,
-                        background: Container(
-                          alignment: Alignment.center,
-                          margin: const EdgeInsets.symmetric(vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.red.shade900.withOpacity(0.8),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: const Icon(LucideIcons.trash2, color: Colors.white, size: 20),
+                    return Dismissible(
+                      key: Key(book.id),
+                      direction: canDelete
+                          ? DismissDirection.endToStart
+                          : DismissDirection.none,
+                      background: Container(
+                        alignment: Alignment.center,
+                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade900.withOpacity(0.8),
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        confirmDismiss: (direction) async {
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                              backgroundColor: context.colors.surface,
-                              title: Text('Unpublish Course?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
-                              content: Text('Are you sure you want to unpublish this course from Published Courses? This won\'t delete your local copy if you have one.', style: TextStyle(color: context.colors.textSecondary)),
-                              actions: [
-                                TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
-                                TextButton(
-                                  onPressed: () => Navigator.pop(ctx, true),
-                                  child: const Text('Unpublish', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
-                                ),
-                              ],
+                        child: Icon(
+                          LucideIcons.trash2,
+                          color: context.colors.textPrimary,
+                          size: 20,
+                        ),
+                      ),
+                      confirmDismiss: (direction) async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            backgroundColor: context.colors.surface,
+                            title: Text(
+                              'Unpublish Course?',
+                              style: TextStyle(
+                                color: context.colors.textPrimary,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          );
-                          if (confirm == true) {
-                            setState(() {
-                              globalBooks.removeWhere((b) => b.id == book.id);
-                            });
-                            await _db.deleteGlobalBook(book.id);
-                            _loadAllData(force: true);
-                            return true;
+                            content: Text(
+                              'Are you sure you want to unpublish this course from Published Courses? This won\'t delete your local copy if you have one.',
+                              style: TextStyle(
+                                color: context.colors.textSecondary,
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    color: context.colors.textFaint,
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: const Text(
+                                  'Unpublish',
+                                  style: TextStyle(
+                                    color: AppTheme.duoRed,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirm == true) {
+                          setState(() {
+                            globalBooks.removeWhere((b) => b.id == book.id);
+                          });
+                          await _db.deleteGlobalBook(book.id);
+                          _loadAllData(force: true);
+                          return true;
+                        }
+                        return false;
+                      },
+                      child: CompactBookListItem(
+                        book: book,
+                        progress: progressMap[book.id] ?? 0.0,
+                        onTap: () {
+                          if (kIsWeb) {
+                            Navigator.pushNamed(
+                              context,
+                              '/${book.id}',
+                            ).then((_) => _loadAllData(force: false));
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    ModuleSelectionScreen(book: book),
+                              ),
+                            ).then((_) => _loadAllData(force: false));
                           }
-                          return false;
                         },
-                        child: CompactBookListItem(
-                          book: book,
-                          progress: progressMap[book.id] ?? 0.0,
-                          onTap: () {
-                            if (kIsWeb) {
-                              Navigator.pushNamed(context, '/${book.id}').then((_) => _loadAllData(force: false));
-                            } else {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => ModuleSelectionScreen(book: book)))
-                                .then((_) => _loadAllData(force: false));
-                            }
-                          },
-                          onLongPress: () => _showPublishedBookLongPressMenu(book),
-                        ),
-                      );
-                    },
-                    childCount: filteredGlobals.length,
-                  ),
+                        onLongPress: () =>
+                            _showPublishedBookLongPressMenu(book),
+                      ),
+                    );
+                  }, childCount: filteredGlobals.length),
                 ),
               ),
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
@@ -987,7 +1297,9 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 color: context.colors.glassStrong,
                 border: Border.all(color: context.colors.outline),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(28),
+                ),
               ),
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
               child: SafeArea(
@@ -1004,9 +1316,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             decoration: BoxDecoration(
                               color: AppTheme.duoBlue.withOpacity(0.18),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: AppTheme.duoBlue.withOpacity(0.4)),
+                              border: Border.all(
+                                color: AppTheme.duoBlue.withOpacity(0.4),
+                              ),
                             ),
-                            child: const Icon(LucideIcons.globe, color: AppTheme.duoBlue, size: 24),
+                            child: const Icon(
+                              LucideIcons.globe,
+                              color: AppTheme.duoBlue,
+                              size: 24,
+                            ),
                           ),
                           const SizedBox(width: 14),
                           Expanded(
@@ -1061,13 +1379,38 @@ class _HomeScreenState extends State<HomeScreen> {
                               context: context,
                               builder: (ctx) => AlertDialog(
                                 backgroundColor: context.colors.surface,
-                                title: Text('Unpublish Course?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
-                                content: Text('Are you sure you want to unpublish this course from Published Courses? This won\'t delete your local copy if you have one.', style: TextStyle(color: context.colors.textSecondary)),
+                                title: Text(
+                                  'Unpublish Course?',
+                                  style: TextStyle(
+                                    color: context.colors.textPrimary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                content: Text(
+                                  'Are you sure you want to unpublish this course from Published Courses? This won\'t delete your local copy if you have one.',
+                                  style: TextStyle(
+                                    color: context.colors.textSecondary,
+                                  ),
+                                ),
                                 actions: [
-                                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: Text(
+                                      'Cancel',
+                                      style: TextStyle(
+                                        color: context.colors.textFaint,
+                                      ),
+                                    ),
+                                  ),
                                   TextButton(
                                     onPressed: () => Navigator.pop(ctx, true),
-                                    child: const Text('Unpublish', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
+                                    child: const Text(
+                                      'Unpublish',
+                                      style: TextStyle(
+                                        color: AppTheme.duoRed,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -1117,7 +1460,9 @@ class _HomeScreenState extends State<HomeScreen> {
         if (isLoading) {
           return Scaffold(
             backgroundColor: context.colors.background,
-            body: const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue)),
+            body: const Center(
+              child: CircularProgressIndicator(color: AppTheme.duoBlue),
+            ),
           );
         }
 
@@ -1167,12 +1512,7 @@ class _HomeScreenState extends State<HomeScreen> {
               LucideIcons.globe,
               LucideIcons.hardDrive,
             ],
-            tooltips: const [
-              'Library',
-              'Analytics',
-              'Published',
-              'Doc Store',
-            ],
+            tooltips: const ['Library', 'Analytics', 'Published', 'Doc Store'],
             onTap: (index) {
               setState(() {
                 _selectedTabIndex = index;
@@ -1184,10 +1524,16 @@ class _HomeScreenState extends State<HomeScreen> {
               ? FloatingActionButton(
                   heroTag: 'home_fab',
                   backgroundColor: AppTheme.duoGreen,
-                  child: const Icon(LucideIcons.plus, color: Colors.white, size: 32),
+                  child: Icon(
+                    LucideIcons.plus,
+                    color: context.colors.textPrimary,
+                    size: 32,
+                  ),
                   onPressed: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const GenerateBookScreen())
+                    MaterialPageRoute(
+                      builder: (_) => const GenerateBookScreen(),
+                    ),
                   ).then((_) => _loadAllData(force: false)),
                 )
               : null,
@@ -1208,7 +1554,11 @@ class _HomeScreenState extends State<HomeScreen> {
           // Branding Header
           Row(
             children: [
-              const Icon(LucideIcons.bookOpen, size: 30, color: AppTheme.duoBlue),
+              const Icon(
+                LucideIcons.bookOpen,
+                size: 30,
+                color: AppTheme.duoBlue,
+              ),
               const SizedBox(width: 12),
               Text(
                 'Sirius',
@@ -1223,7 +1573,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           const SizedBox(height: 40),
-          
+
           // Navigation Links
           _buildSidebarNavItem(0, LucideIcons.bookOpen, 'Your Library'),
           const SizedBox(height: 8),
@@ -1232,9 +1582,9 @@ class _HomeScreenState extends State<HomeScreen> {
           _buildSidebarNavItem(2, LucideIcons.globe, 'Published'),
           const SizedBox(height: 8),
           _buildSidebarNavItem(3, LucideIcons.hardDrive, 'Doc Store'),
-          
+
           const Spacer(),
-          
+
           // User profile at bottom if logged in
           if (user != null) ...[
             Container(
@@ -1250,8 +1600,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     radius: 18,
                     backgroundColor: AppTheme.duoBlue,
                     child: Text(
-                      user?.displayName?.isNotEmpty == true ? user!.displayName![0].toUpperCase() : 'U', 
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.white)
+                      user?.displayName?.isNotEmpty == true
+                          ? user!.displayName![0].toUpperCase()
+                          : 'U',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                        color: context.colors.textPrimary,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -1260,8 +1616,23 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(user?.displayName ?? 'User', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13, overflow: TextOverflow.ellipsis)),
-                        Text(user?.email ?? '', style: TextStyle(color: context.colors.textFaint, fontSize: 10, overflow: TextOverflow.ellipsis)),
+                        Text(
+                          user?.displayName ?? 'User',
+                          style: TextStyle(
+                            color: context.colors.textPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Text(
+                          user?.email ?? '',
+                          style: TextStyle(
+                            color: context.colors.textFaint,
+                            fontSize: 10,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -1274,8 +1645,10 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: LucideIcons.settings,
             label: 'Settings',
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()))
-                .then((_) => _loadAllData(force: false));
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              ).then((_) => _loadAllData(force: false));
             },
           ),
         ],
@@ -1292,7 +1665,9 @@ class _HomeScreenState extends State<HomeScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: isActive ? AppTheme.duoGreen.withOpacity(0.15) : Colors.transparent,
+          color: isActive
+              ? AppTheme.duoGreen.withOpacity(0.15)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -1310,7 +1685,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 fontWeight: FontWeight.w900,
                 fontSize: 14,
                 letterSpacing: 0.8,
-                color: isActive ? AppTheme.duoGreen : context.colors.textSecondary,
+                color: isActive
+                    ? AppTheme.duoGreen
+                    : context.colors.textSecondary,
               ),
             ),
           ],
@@ -1335,11 +1712,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              color: context.colors.textSecondary,
-              size: 24,
-            ),
+            Icon(icon, color: context.colors.textSecondary, size: 24),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
@@ -1359,7 +1732,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDesktopLibraryTab(List<GenerationTask> activeTasks, double screenWidth) {
+  Widget _buildDesktopLibraryTab(
+    List<GenerationTask> activeTasks,
+    double screenWidth,
+  ) {
     final query = _librarySearchQuery.toLowerCase().trim();
     final isSearching = query.isNotEmpty;
 
@@ -1369,12 +1745,14 @@ class _HomeScreenState extends State<HomeScreen> {
       for (final book in books) {
         if (book.title.toLowerCase().contains(query) ||
             book.description.toLowerCase().contains(query)) {
-          searchResults.add(SearchResultItem(
-            book: book,
-            type: 'book',
-            title: book.title,
-            context: 'Course',
-          ));
+          searchResults.add(
+            SearchResultItem(
+              book: book,
+              type: 'book',
+              title: book.title,
+              context: 'Course',
+            ),
+          );
           if (searchResults.length >= 50) break outerLoop;
         }
 
@@ -1382,13 +1760,15 @@ class _HomeScreenState extends State<HomeScreen> {
           final module = book.modules[modIdx];
           if (module.title.toLowerCase().contains(query) ||
               module.description.toLowerCase().contains(query)) {
-            searchResults.add(SearchResultItem(
-              book: book,
-              type: 'module',
-              title: module.title,
-              context: '${book.title} • Module ${modIdx + 1}',
-              modIdx: modIdx,
-            ));
+            searchResults.add(
+              SearchResultItem(
+                book: book,
+                type: 'module',
+                title: module.title,
+                context: '${book.title} • Module ${modIdx + 1}',
+                modIdx: modIdx,
+              ),
+            );
             if (searchResults.length >= 50) break outerLoop;
           }
 
@@ -1396,14 +1776,16 @@ class _HomeScreenState extends State<HomeScreen> {
             final section = module.sections[secIdx];
             if (section.title.toLowerCase().contains(query) ||
                 section.description.toLowerCase().contains(query)) {
-              searchResults.add(SearchResultItem(
-                book: book,
-                type: 'section',
-                title: section.title,
-                context: '${book.title} • ${module.title}',
-                modIdx: modIdx,
-                secIdx: secIdx,
-              ));
+              searchResults.add(
+                SearchResultItem(
+                  book: book,
+                  type: 'section',
+                  title: section.title,
+                  context: '${book.title} • ${module.title}',
+                  modIdx: modIdx,
+                  secIdx: secIdx,
+                ),
+              );
               if (searchResults.length >= 50) break outerLoop;
             }
 
@@ -1411,41 +1793,54 @@ class _HomeScreenState extends State<HomeScreen> {
               final unit = section.units[unitIdx];
               if (unit.title.toLowerCase().contains(query) ||
                   unit.description.toLowerCase().contains(query)) {
-                searchResults.add(SearchResultItem(
-                  book: book,
-                  type: 'unit',
-                  title: unit.title,
-                  context: '${book.title} • ${section.title}',
-                  modIdx: modIdx,
-                  secIdx: secIdx,
-                  unitIdx: unitIdx,
-                ));
-                if (searchResults.length >= 50) break outerLoop;
-              }
-
-              for (int lessonIdx = 0; lessonIdx < unit.lessons.length; lessonIdx++) {
-                final lesson = unit.lessons[lessonIdx];
-                if (lesson.title.toLowerCase().contains(query) ||
-                    lesson.description.toLowerCase().contains(query)) {
-                  searchResults.add(SearchResultItem(
+                searchResults.add(
+                  SearchResultItem(
                     book: book,
-                    type: 'lesson',
-                    title: lesson.title,
-                    context: '${book.title} • ${unit.title}',
+                    type: 'unit',
+                    title: unit.title,
+                    context: '${book.title} • ${section.title}',
                     modIdx: modIdx,
                     secIdx: secIdx,
                     unitIdx: unitIdx,
-                    lessonIdx: lessonIdx,
-                    lesson: lesson,
-                  ));
+                  ),
+                );
+                if (searchResults.length >= 50) break outerLoop;
+              }
+
+              for (
+                int lessonIdx = 0;
+                lessonIdx < unit.lessons.length;
+                lessonIdx++
+              ) {
+                final lesson = unit.lessons[lessonIdx];
+                if (lesson.title.toLowerCase().contains(query) ||
+                    lesson.description.toLowerCase().contains(query)) {
+                  searchResults.add(
+                    SearchResultItem(
+                      book: book,
+                      type: 'lesson',
+                      title: lesson.title,
+                      context: '${book.title} • ${unit.title}',
+                      modIdx: modIdx,
+                      secIdx: secIdx,
+                      unitIdx: unitIdx,
+                      lessonIdx: lessonIdx,
+                      lesson: lesson,
+                    ),
+                  );
                   if (searchResults.length >= 50) break outerLoop;
                 }
 
-                for (int slideIdx = 0; slideIdx < lesson.slides.length; slideIdx++) {
+                for (
+                  int slideIdx = 0;
+                  slideIdx < lesson.slides.length;
+                  slideIdx++
+                ) {
                   final slide = lesson.slides[slideIdx];
                   final inContent = slide.content.toLowerCase().contains(query);
                   final inTitle = slide.title.toLowerCase().contains(query);
-                  final inAnswer = slide.blankAnswer?.toLowerCase().contains(query) ?? false;
+                  final inAnswer =
+                      slide.blankAnswer?.toLowerCase().contains(query) ?? false;
 
                   if (inContent || inTitle || inAnswer) {
                     String snippet = '';
@@ -1455,22 +1850,27 @@ class _HomeScreenState extends State<HomeScreen> {
                       snippet = 'Answer: ${slide.blankAnswer}';
                     } else {
                       snippet = slide.content;
-                      if (snippet.length > 100) snippet = '${snippet.substring(0, 100)}...';
+                      if (snippet.length > 100)
+                        snippet = '${snippet.substring(0, 100)}...';
                     }
 
-                    searchResults.add(SearchResultItem(
-                      book: book,
-                      type: 'slide',
-                      title: slide.title.isNotEmpty ? slide.title : 'Theory Slide',
-                      context: '${book.title} • ${lesson.title}',
-                      snippet: snippet,
-                      modIdx: modIdx,
-                      secIdx: secIdx,
-                      unitIdx: unitIdx,
-                      lessonIdx: lessonIdx,
-                      lesson: lesson,
-                      slideId: slide.id,
-                    ));
+                    searchResults.add(
+                      SearchResultItem(
+                        book: book,
+                        type: 'slide',
+                        title: slide.title.isNotEmpty
+                            ? slide.title
+                            : 'Theory Slide',
+                        context: '${book.title} • ${lesson.title}',
+                        snippet: snippet,
+                        modIdx: modIdx,
+                        secIdx: secIdx,
+                        unitIdx: unitIdx,
+                        lessonIdx: lessonIdx,
+                        lesson: lesson,
+                        slideId: slide.id,
+                      ),
+                    );
                     if (searchResults.length >= 50) break outerLoop;
                   }
                 }
@@ -1487,9 +1887,13 @@ class _HomeScreenState extends State<HomeScreen> {
         (f) => f.id == _selectedFolderId,
         orElse: () => CourseFolder(id: '', name: '', bookIds: []),
       );
-      displayedBooks = books.where((b) => currentFolder.bookIds.contains(b.id)).toList();
+      displayedBooks = books
+          .where((b) => currentFolder.bookIds.contains(b.id))
+          .toList();
     } else {
-      displayedBooks = books.where((b) => !folders.any((f) => f.bookIds.contains(b.id))).toList();
+      displayedBooks = books
+          .where((b) => !folders.any((f) => f.bookIds.contains(b.id)))
+          .toList();
     }
 
     return Row(
@@ -1515,8 +1919,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                   if (folders.isNotEmpty) ...[
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      child: Text('FOLDERS', style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.0)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      child: Text(
+                        'FOLDERS',
+                        style: TextStyle(
+                          color: context.colors.textFaint,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 8),
                     _buildFoldersList(),
@@ -1540,7 +1955,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: DragTarget<Book>(
                         onWillAcceptWithDetails: (details) {
                           final book = details.data;
-                          return folders.any((f) => f.bookIds.contains(book.id));
+                          return folders.any(
+                            (f) => f.bookIds.contains(book.id),
+                          );
                         },
                         onAcceptWithDetails: (details) async {
                           final book = details.data;
@@ -1549,22 +1966,37 @@ class _HomeScreenState extends State<HomeScreen> {
                           }
                           await _db.saveFolders(folders);
                           setState(() {});
-                          showToast(context, 'Removed "${book.title}" from folder');
+                          showToast(
+                            context,
+                            'Removed "${book.title}" from folder',
+                          );
                         },
                         builder: (context, candidateData, rejectedData) {
                           final isHovered = candidateData.isNotEmpty;
-                          final folderName = _selectedFolderId != null 
-                              ? folders.firstWhere((f) => f.id == _selectedFolderId, orElse: () => folders.first).name
+                          final folderName = _selectedFolderId != null
+                              ? folders
+                                    .firstWhere(
+                                      (f) => f.id == _selectedFolderId,
+                                      orElse: () => folders.first,
+                                    )
+                                    .name
                               : null;
-                          
+
                           return AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
-                              color: isHovered ? AppTheme.duoRed.withOpacity(0.15) : Colors.transparent,
+                              color: isHovered
+                                  ? AppTheme.duoRed.withOpacity(0.15)
+                                  : Colors.transparent,
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: isHovered ? AppTheme.duoRed : Colors.transparent,
+                                color: isHovered
+                                    ? AppTheme.duoRed
+                                    : Colors.transparent,
                                 width: 1.2,
                               ),
                             ),
@@ -1581,7 +2013,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: const [
-                                        Icon(LucideIcons.chevronLeft, size: 18, color: AppTheme.duoBlue),
+                                        Icon(
+                                          LucideIcons.chevronLeft,
+                                          size: 18,
+                                          color: AppTheme.duoBlue,
+                                        ),
                                         Text(
                                           'Library',
                                           style: TextStyle(
@@ -1594,10 +2030,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ),
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                    ),
                                     child: Text(
                                       '/',
-                                      style: TextStyle(fontSize: 14, color: context.colors.textFaint),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: context.colors.textFaint,
+                                      ),
                                     ),
                                   ),
                                   Flexible(
@@ -1638,7 +2079,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           onPressed: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (_) => const GenerateBookScreen()),
+                              MaterialPageRoute(
+                                builder: (_) => const GenerateBookScreen(),
+                              ),
                             ).then((_) => _loadAllData(force: false));
                           },
                         ),
@@ -1654,13 +2097,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 hintText: 'Search your courses...',
                 trailing: _selectedFolderId == null
                     ? IconButton(
-                        icon: Icon(LucideIcons.folderPlus, color: context.colors.textPrimary, size: 24),
+                        icon: Icon(
+                          LucideIcons.folderPlus,
+                          color: context.colors.textPrimary,
+                          size: 24,
+                        ),
                         onPressed: _showCreateFolderDialog,
                         style: IconButton.styleFrom(
                           backgroundColor: context.colors.surfaceAlt,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(color: context.colors.outline, width: 1.2),
+                            side: BorderSide(
+                              color: context.colors.outline,
+                              width: 1.2,
+                            ),
                           ),
                           padding: const EdgeInsets.all(12),
                         ),
@@ -1683,11 +2133,18 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(LucideIcons.search, color: context.colors.outline, size: 40),
+                                Icon(
+                                  LucideIcons.search,
+                                  color: context.colors.outline,
+                                  size: 40,
+                                ),
                                 const SizedBox(height: 16),
                                 Text(
                                   'No matching courses or content found.',
-                                  style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    color: context.colors.textFaint,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ],
                             ),
@@ -1699,14 +2156,26 @@ class _HomeScreenState extends State<HomeScreen> {
                             itemCount: searchResults.length,
                             itemBuilder: (context, index) {
                               final result = searchResults[index];
-                              return _buildSearchResultCard(context, result, query);
+                              return _buildSearchResultCard(
+                                context,
+                                result,
+                                query,
+                              );
                             },
                           ),
                       ] else ...[
                         if (activeTasks.isNotEmpty && !kIsWeb) ...[
                           Padding(
                             padding: const EdgeInsets.only(bottom: 12),
-                            child: Text('GENERATING COURSES', style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.0)),
+                            child: Text(
+                              'GENERATING COURSES',
+                              style: TextStyle(
+                                color: context.colors.textFaint,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
                           ),
                           ListView.builder(
                             shrinkWrap: true,
@@ -1717,53 +2186,76 @@ class _HomeScreenState extends State<HomeScreen> {
                               return GeneratingBookCard(
                                 task: task,
                                 onTap: () {
-                                  if (task.state == BookGenState.review && task.skeletonBook != null) {
-                                    Navigator.push(context, MaterialPageRoute(
-                                      builder: (_) => PdfSplitPreviewScreen(
-                                        taskId: task.id,
-                                        originalPdf: task.sourceFiles,
-                                        skeletonBook: task.skeletonBook!,
-                                      )
-                                    )).then((_) => _loadAllData(force: false));
+                                  if (task.state == BookGenState.review &&
+                                      task.skeletonBook != null) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => PdfSplitPreviewScreen(
+                                          taskId: task.id,
+                                          originalPdf: task.sourceFiles,
+                                          skeletonBook: task.skeletonBook!,
+                                        ),
+                                      ),
+                                    ).then((_) => _loadAllData(force: false));
                                   } else if (task.state == BookGenState.error) {
-                                    GenerationManager.instance.dismissTask(task.id);
+                                    _handleGeneratingCardTap(task);
                                   }
-                                }
+                                },
                               );
                             },
                           ),
                           const SizedBox(height: 20),
                         ],
-                        if (displayedBooks.isEmpty && activeTasks.isEmpty && (_selectedFolderId != null || folders.isEmpty))
+                        if (displayedBooks.isEmpty &&
+                            activeTasks.isEmpty &&
+                            (_selectedFolderId != null || folders.isEmpty))
                           (_selectedFolderId != null
                               ? Container(
                                   height: 180,
-                                  decoration: BoxDecoration(color: context.colors.surfaceAlt, borderRadius: BorderRadius.circular(24)),
+                                  decoration: BoxDecoration(
+                                    color: context.colors.surfaceAlt,
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
                                   alignment: Alignment.center,
                                   child: Text(
                                     'This folder is empty.\nGo back and drag courses here!',
                                     textAlign: TextAlign.center,
-                                    style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold),
+                                    style: TextStyle(
+                                      color: context.colors.textFaint,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 )
                               : _buildFirstCourseCta())
                         else ...[
                           Padding(
                             padding: const EdgeInsets.only(bottom: 12),
-                            child: Text('COURSES', style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.0)),
+                            child: Text(
+                              'COURSES',
+                              style: TextStyle(
+                                color: context.colors.textFaint,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
                           ),
                           LayoutBuilder(
                             builder: (context, constraints) {
-                              final int columns = (constraints.maxWidth / 320).floor().clamp(1, 3);
+                              final int columns = (constraints.maxWidth / 320)
+                                  .floor()
+                                  .clamp(1, 3);
                               return GridView.builder(
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: columns,
-                                  crossAxisSpacing: 16,
-                                  mainAxisSpacing: 16,
-                                  mainAxisExtent: 110,
-                                ),
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: columns,
+                                      crossAxisSpacing: 16,
+                                      mainAxisSpacing: 16,
+                                      mainAxisExtent: 110,
+                                    ),
                                 itemCount: displayedBooks.length,
                                 itemBuilder: (context, index) {
                                   final book = displayedBooks[index];
@@ -1772,12 +2264,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                     direction: DismissDirection.endToStart,
                                     background: Container(
                                       alignment: Alignment.center,
-                                      margin: const EdgeInsets.symmetric(vertical: 6),
+                                      margin: const EdgeInsets.symmetric(
+                                        vertical: 6,
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: Colors.red.shade900.withOpacity(0.8),
+                                        color: Colors.red.shade900.withOpacity(
+                                          0.8,
+                                        ),
                                         borderRadius: BorderRadius.circular(16),
                                       ),
-                                      child: const Icon(LucideIcons.trash2, color: Colors.white, size: 20),
+                                      child: Icon(
+                                        LucideIcons.trash2,
+                                        color: context.colors.textPrimary,
+                                        size: 20,
+                                      ),
                                     ),
                                     confirmDismiss: (direction) async {
                                       return await _deleteLocalBook(book);
@@ -1786,10 +2286,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                       book: book,
                                       progress: progressMap[book.id] ?? 0.0,
                                       onTap: () {
-                                        Navigator.push(context, MaterialPageRoute(builder: (_) => ModuleSelectionScreen(book: book)))
-                                          .then((_) => _loadAllData(force: false));
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                ModuleSelectionScreen(
+                                                  book: book,
+                                                ),
+                                          ),
+                                        ).then(
+                                          (_) => _loadAllData(force: false),
+                                        );
                                       },
-                                      onLongPress: () => _showBookLongPressMenu(book),
+                                      onLongPress: () =>
+                                          _showBookLongPressMenu(book),
                                       dragHandle: _buildDragHandle(book),
                                     ),
                                   );
@@ -1824,7 +2334,9 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 color: context.colors.glassStrong,
                 border: Border.all(color: context.colors.outline),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(28),
+                ),
               ),
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
               child: SafeArea(
@@ -1841,9 +2353,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             decoration: BoxDecoration(
                               color: AppTheme.duoBlue.withOpacity(0.18),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: AppTheme.duoBlue.withOpacity(0.4)),
+                              border: Border.all(
+                                color: AppTheme.duoBlue.withOpacity(0.4),
+                              ),
                             ),
-                            child: const Icon(LucideIcons.bookOpen, color: AppTheme.duoBlue, size: 24),
+                            child: const Icon(
+                              LucideIcons.bookOpen,
+                              color: AppTheme.duoBlue,
+                              size: 24,
+                            ),
                           ),
                           const SizedBox(width: 14),
                           Expanded(
@@ -1883,7 +2401,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         iconColor: AppTheme.duoGreen,
                         onTap: () {
                           Navigator.pop(ctx);
-                          _promptGenerateOrScheduleBook(book, isScheduled: false);
+                          _promptGenerateOrScheduleBook(
+                            book,
+                            isScheduled: false,
+                          );
                         },
                       ),
                       _buildMenuItem(
@@ -1893,7 +2414,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         iconColor: AppTheme.duoViolet,
                         onTap: () {
                           Navigator.pop(ctx);
-                          _promptGenerateOrScheduleBook(book, isScheduled: true);
+                          _promptGenerateOrScheduleBook(
+                            book,
+                            isScheduled: true,
+                          );
                         },
                       ),
                       _buildMenuItem(
@@ -1907,11 +2431,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             context,
                             MaterialPageRoute(
                               builder: (_) => CourseEditStructureScreen(
-                                  book: book,
-                                  onBookUpdated: (updatedBook) {
-                                    _loadAllData(force: false);
-                                  },
-                                ),
+                                book: book,
+                                onBookUpdated: (updatedBook) {
+                                  _loadAllData(force: false);
+                                },
+                              ),
                             ),
                           );
                         },
@@ -1949,7 +2473,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             }
                             await _db.saveFolders(folders);
                             _loadAllData(force: false);
-                            showToast(context, 'Removed "${book.title}" from folder');
+                            showToast(
+                              context,
+                              'Removed "${book.title}" from folder',
+                            );
                           },
                         ),
                       ] else
@@ -2001,10 +2528,25 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.surface,
-        title: Text('Reset Progress?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
-        content: Text('Are you sure you want to clear all completion progress for "${book.title}"?', style: TextStyle(color: context.colors.textSecondary)),
+        title: Text(
+          'Reset Progress?',
+          style: TextStyle(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to clear all completion progress for "${book.title}"?',
+          style: TextStyle(color: context.colors.textSecondary),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: context.colors.textFaint),
+            ),
+          ),
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
@@ -2015,51 +2557,85 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SnackBar(content: Text('Course progress reset.')),
                 );
               }
-            }, 
-            child: const Text('Reset', style: TextStyle(color: AppTheme.duoOrange, fontWeight: FontWeight.bold))
+            },
+            child: const Text(
+              'Reset',
+              style: TextStyle(
+                color: AppTheme.duoOrange,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
-        ]
-      )
+        ],
+      ),
     );
   }
 
-  Future<void> _promptGenerateOrScheduleBook(Book book, {required bool isScheduled}) async {
+  Future<void> _promptGenerateOrScheduleBook(
+    Book book, {
+    required bool isScheduled,
+  }) async {
     final wantsGraphics = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.surface,
-        title: Text(isScheduled ? 'Schedule Course Generation' : 'Generate Course Contents', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        title: Text(
+          isScheduled
+              ? 'Schedule Course Generation'
+              : 'Generate Course Contents',
+          style: TextStyle(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: Text(
           'Choose what kind of content to generate for all modules and sections in this course.',
           style: TextStyle(color: context.colors.textSecondary),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: context.colors.textFaint),
+            ),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Text only', style: TextStyle(color: context.colors.textFaint)),
+            child: Text(
+              'Text only',
+              style: TextStyle(color: context.colors.textFaint),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('With diagrams', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'With diagrams',
+              style: TextStyle(
+                color: AppTheme.duoBlue,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
     );
     if (wantsGraphics == null) return;
-    
+
     GenerationManager.instance.startBookContentGeneration(
       book,
       generateGraphics: wantsGraphics,
       isScheduled: isScheduled,
     );
-    
+
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: context.colors.surface,
         content: Text(
-          isScheduled ? 'Course generation scheduled!' : 'Course generation queued!',
+          isScheduled
+              ? 'Course generation scheduled!'
+              : 'Course generation queued!',
           style: TextStyle(color: context.colors.textPrimary),
         ),
       ),
@@ -2115,7 +2691,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
-                Icon(LucideIcons.chevronRight, size: 16, color: context.colors.outline),
+                Icon(
+                  LucideIcons.chevronRight,
+                  size: 16,
+                  color: context.colors.outline,
+                ),
               ],
             ),
           ),
@@ -2129,72 +2709,87 @@ class _HomeScreenState extends State<HomeScreen> {
     if (idx == -1) {
       return text.length > 100 ? '${text.substring(0, 100)}...' : text;
     }
-    
+
     int start = idx - 40;
     if (start < 0) start = 0;
-    
+
     int end = idx + query.length + 60;
     if (end > text.length) end = text.length;
-    
+
     String prefix = start > 0 ? '...' : '';
     String suffix = end < text.length ? '...' : '';
-    
+
     return prefix + text.substring(start, end).replaceAll('\n', ' ') + suffix;
   }
 
-  Widget _highlightedText(String text, String query, TextStyle baseStyle, TextStyle highlightStyle) {
+  Widget _highlightedText(
+    String text,
+    String query,
+    TextStyle baseStyle,
+    TextStyle highlightStyle,
+  ) {
     if (query.isEmpty) return Text(text, style: baseStyle);
     final textLower = text.toLowerCase();
     final queryLower = query.toLowerCase();
-    
+
     final List<TextSpan> spans = [];
     int start = 0;
     int index = textLower.indexOf(queryLower, start);
-    
+
     while (index != -1) {
       if (index > start) {
         spans.add(TextSpan(text: text.substring(start, index)));
       }
-      spans.add(TextSpan(
-        text: text.substring(index, index + query.length),
-        style: highlightStyle,
-      ));
+      spans.add(
+        TextSpan(
+          text: text.substring(index, index + query.length),
+          style: highlightStyle,
+        ),
+      );
       start = index + query.length;
       index = textLower.indexOf(queryLower, start);
     }
-    
+
     if (start < text.length) {
       spans.add(TextSpan(text: text.substring(start)));
     }
-    
+
     return RichText(
-      text: TextSpan(
-        style: baseStyle,
-        children: spans,
-      ),
+      text: TextSpan(style: baseStyle, children: spans),
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
     );
   }
 
-  Widget _buildSearchResultCard(BuildContext context, SearchResultItem result, String query) {
+  Widget _buildSearchResultCard(
+    BuildContext context,
+    SearchResultItem result,
+    String query,
+  ) {
     IconData icon;
     Color color;
     String typeLabel;
 
-    final bool isLessonOrSlide = result.type == 'lesson' || result.type == 'slide';
+    final bool isLessonOrSlide =
+        result.type == 'lesson' || result.type == 'slide';
     bool isOpen = true;
     bool isCompleted = false;
 
     if (isLessonOrSlide && result.lesson != null) {
       isCompleted = _completedLessons.contains(result.lesson!.id);
       bool isUnlocked = false;
-      if (result.lessonIdx != null && result.book != null && result.modIdx != null && result.secIdx != null && result.unitIdx != null) {
-        if (result.modIdx! >= 0 && result.modIdx! < result.book.modules.length) {
+      if (result.lessonIdx != null &&
+          result.book != null &&
+          result.modIdx != null &&
+          result.secIdx != null &&
+          result.unitIdx != null) {
+        if (result.modIdx! >= 0 &&
+            result.modIdx! < result.book.modules.length) {
           final module = result.book.modules[result.modIdx!];
           if (result.secIdx! >= 0 && result.secIdx! < module.sections.length) {
             final section = module.sections[result.secIdx!];
-            if (result.unitIdx! >= 0 && result.unitIdx! < section.units.length) {
+            if (result.unitIdx! >= 0 &&
+                result.unitIdx! < section.units.length) {
               final unit = section.units[result.unitIdx!];
               final idx = result.lessonIdx!;
               if (idx == 0) {
@@ -2232,26 +2827,28 @@ class _HomeScreenState extends State<HomeScreen> {
         typeLabel = 'Unit';
         break;
       case 'lesson':
-        icon = isCompleted 
-            ? LucideIcons.checkCircle2 
+        icon = isCompleted
+            ? LucideIcons.checkCircle2
             : (!isOpen ? LucideIcons.lock : LucideIcons.bookOpen);
-        color = isCompleted 
-            ? AppTheme.duoGreen 
+        color = isCompleted
+            ? AppTheme.duoGreen
             : (!isOpen ? context.colors.textFaint : AppTheme.duoGreen);
-        typeLabel = isCompleted 
-            ? 'Lesson (Completed)' 
+        typeLabel = isCompleted
+            ? 'Lesson (Completed)'
             : (!isOpen ? 'Lesson (Locked)' : 'Lesson');
         break;
       case 'slide':
       default:
-        icon = isCompleted 
-            ? LucideIcons.checkCircle2 
+        icon = isCompleted
+            ? LucideIcons.checkCircle2
             : (!isOpen ? LucideIcons.lock : LucideIcons.fileText);
-        color = isCompleted 
-            ? AppTheme.duoGreen 
-            : (!isOpen ? context.colors.textFaint : context.colors.textSecondary);
-        typeLabel = isCompleted 
-            ? 'Lesson Text (Completed)' 
+        color = isCompleted
+            ? AppTheme.duoGreen
+            : (!isOpen
+                  ? context.colors.textFaint
+                  : context.colors.textSecondary);
+        typeLabel = isCompleted
+            ? 'Lesson Text (Completed)'
             : (!isOpen ? 'Lesson Text (Locked)' : 'Lesson Text');
         break;
     }
@@ -2268,7 +2865,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   context: context,
                   builder: (ctx) => AlertDialog(
                     backgroundColor: context.colors.surface,
-                    title: Text('Lesson Locked', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+                    title: Text(
+                      'Lesson Locked',
+                      style: TextStyle(
+                        color: context.colors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     content: Text(
                       'Finish the previous lessons in this unit to unlock this one.',
                       style: TextStyle(color: context.colors.textSecondary),
@@ -2276,7 +2879,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(ctx),
-                        child: const Text('OK', style: TextStyle(color: AppTheme.duoBlue)),
+                        child: const Text(
+                          'OK',
+                          style: TextStyle(color: AppTheme.duoBlue),
+                        ),
                       ),
                     ],
                   ),
@@ -2294,7 +2900,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       secIdx: result.secIdx,
                       unitIdx: result.unitIdx,
                       lessonIdx: result.lessonIdx,
-                      initialSlideId: result.type == 'slide' ? result.slideId : null,
+                      initialSlideId: result.type == 'slide'
+                          ? result.slideId
+                          : null,
                     ),
                   ),
                 ).then((_) => _loadAllData(force: false));
@@ -2302,9 +2910,15 @@ class _HomeScreenState extends State<HomeScreen> {
             } else {
               if (result.modIdx != null) {
                 final prefs = await SharedPreferences.getInstance();
-                await prefs.setInt('last_mod_idx_${result.book.id}', result.modIdx!);
+                await prefs.setInt(
+                  'last_mod_idx_${result.book.id}',
+                  result.modIdx!,
+                );
                 if (result.secIdx != null) {
-                  await prefs.setInt('last_sec_idx_${result.book.id}', result.secIdx!);
+                  await prefs.setInt(
+                    'last_sec_idx_${result.book.id}',
+                    result.secIdx!,
+                  );
                 }
               }
               Navigator.push(
@@ -2348,21 +2962,31 @@ class _HomeScreenState extends State<HomeScreen> {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: color.withOpacity(0.12),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               typeLabel,
-                              style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                color: color,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               result.context,
-                              style: TextStyle(color: context.colors.textFaint, fontSize: 11),
+                              style: TextStyle(
+                                color: context.colors.textFaint,
+                                fontSize: 11,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -2373,16 +2997,33 @@ class _HomeScreenState extends State<HomeScreen> {
                       _highlightedText(
                         result.title,
                         query,
-                        TextStyle(color: context.colors.textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
-                        TextStyle(color: color, fontWeight: FontWeight.bold, backgroundColor: color.withOpacity(0.1)),
+                        TextStyle(
+                          color: context.colors.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        TextStyle(
+                          color: color,
+                          fontWeight: FontWeight.bold,
+                          backgroundColor: color.withOpacity(0.1),
+                        ),
                       ),
-                      if (result.snippet != null && result.snippet!.isNotEmpty) ...[
+                      if (result.snippet != null &&
+                          result.snippet!.isNotEmpty) ...[
                         const SizedBox(height: 6),
                         _highlightedText(
                           result.snippet!,
                           query,
-                          TextStyle(color: context.colors.textSecondary, fontSize: 12, height: 1.3),
-                          TextStyle(color: color, fontWeight: FontWeight.bold, backgroundColor: color.withOpacity(0.1)),
+                          TextStyle(
+                            color: context.colors.textSecondary,
+                            fontSize: 12,
+                            height: 1.3,
+                          ),
+                          TextStyle(
+                            color: color,
+                            fontWeight: FontWeight.bold,
+                            backgroundColor: color.withOpacity(0.1),
+                          ),
                         ),
                       ],
                     ],
@@ -2422,7 +3063,13 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('New Folder', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        title: Text(
+          'New Folder',
+          style: TextStyle(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: TextField(
           controller: textController,
           autofocus: true,
@@ -2430,14 +3077,21 @@ class _HomeScreenState extends State<HomeScreen> {
           decoration: InputDecoration(
             hintText: 'Folder Name',
             hintStyle: TextStyle(color: context.colors.textFaint),
-            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: context.colors.outline)),
-            focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.duoBlue)),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: context.colors.outline),
+            ),
+            focusedBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(color: AppTheme.duoBlue),
+            ),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: context.colors.textFaint),
+            ),
           ),
           TextButton(
             onPressed: () async {
@@ -2454,7 +3108,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pop(ctx);
               }
             },
-            child: const Text('Create', style: TextStyle(color: AppTheme.duoGreen, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Create',
+              style: TextStyle(
+                color: AppTheme.duoGreen,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -2473,7 +3133,9 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               color: context.colors.glassStrong,
               border: Border.all(color: context.colors.outline),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
             ),
             padding: const EdgeInsets.all(24),
             child: SafeArea(
@@ -2483,7 +3145,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Text(
                     folder.name,
-                    style: TextStyle(color: context.colors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: context.colors.textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   _buildMenuItem(
@@ -2507,13 +3173,38 @@ class _HomeScreenState extends State<HomeScreen> {
                         context: context,
                         builder: (alertCtx) => AlertDialog(
                           backgroundColor: context.colors.surface,
-                          title: Text('Delete Folder?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
-                          content: Text('Are you sure you want to delete this folder? The courses inside will not be deleted.', style: TextStyle(color: context.colors.textSecondary)),
+                          title: Text(
+                            'Delete Folder?',
+                            style: TextStyle(
+                              color: context.colors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          content: Text(
+                            'Are you sure you want to delete this folder? The courses inside will not be deleted.',
+                            style: TextStyle(
+                              color: context.colors.textSecondary,
+                            ),
+                          ),
                           actions: [
-                            TextButton(onPressed: () => Navigator.pop(alertCtx, false), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
+                            TextButton(
+                              onPressed: () => Navigator.pop(alertCtx, false),
+                              child: Text(
+                                'Cancel',
+                                style: TextStyle(
+                                  color: context.colors.textFaint,
+                                ),
+                              ),
+                            ),
                             TextButton(
                               onPressed: () => Navigator.pop(alertCtx, true),
-                              child: const Text('Delete', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
+                              child: const Text(
+                                'Delete',
+                                style: TextStyle(
+                                  color: AppTheme.duoRed,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -2543,7 +3234,13 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.surface,
-        title: Text('Rename Folder', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        title: Text(
+          'Rename Folder',
+          style: TextStyle(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: TextField(
           controller: textController,
           autofocus: true,
@@ -2551,12 +3248,22 @@ class _HomeScreenState extends State<HomeScreen> {
           decoration: InputDecoration(
             hintText: 'Folder Name',
             hintStyle: TextStyle(color: context.colors.textFaint),
-            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: context.colors.outline)),
-            focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.duoBlue)),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: context.colors.outline),
+            ),
+            focusedBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(color: AppTheme.duoBlue),
+            ),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: context.colors.textFaint),
+            ),
+          ),
           TextButton(
             onPressed: () async {
               final newName = textController.text.trim();
@@ -2570,7 +3277,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pop(ctx);
               }
             },
-            child: const Text('Save', style: TextStyle(color: AppTheme.duoGreen, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Save',
+              style: TextStyle(
+                color: AppTheme.duoGreen,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -2614,7 +3327,7 @@ class _HomeScreenState extends State<HomeScreen> {
         folder.bookIds.add(book.id);
         await _db.saveFolders(folders);
         setState(() {});
-        
+
         showToast(context, 'Moved "${book.title}" to folder "${folder.name}"');
       },
       builder: (context, candidateData, rejectedData) {
@@ -2630,14 +3343,12 @@ class _HomeScreenState extends State<HomeScreen> {
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
             decoration: BoxDecoration(
-              color: isHovered 
-                  ? AppTheme.duoBlue.withOpacity(0.15) 
+              color: isHovered
+                  ? AppTheme.duoBlue.withOpacity(0.15)
                   : context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isHovered 
-                    ? AppTheme.duoBlue 
-                    : context.colors.outline, 
+                color: isHovered ? AppTheme.duoBlue : context.colors.outline,
                 width: 1.2,
               ),
             ),
@@ -2655,13 +3366,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         strokeWidth: 3.5,
                         backgroundColor: context.colors.surfaceAlt,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          progress == 1.0 ? AppTheme.duoGreen : AppTheme.duoBlue,
+                          progress == 1.0
+                              ? AppTheme.duoGreen
+                              : AppTheme.duoBlue,
                         ),
                       ),
                     ),
                     Icon(
                       LucideIcons.folderClosed,
-                      color: progress == 1.0 ? AppTheme.duoGreen : context.colors.textSecondary,
+                      color: progress == 1.0
+                          ? AppTheme.duoGreen
+                          : context.colors.textSecondary,
                       size: 20,
                     ),
                   ],
@@ -2680,8 +3395,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  folder.bookIds.length == 1 
-                      ? '1 course' 
+                  folder.bookIds.length == 1
+                      ? '1 course'
                       : '${folder.bookIds.length} courses',
                   style: TextStyle(
                     color: context.colors.textFaint,
@@ -2714,7 +3429,11 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(LucideIcons.bookOpen, color: AppTheme.duoBlue, size: 20),
+                const Icon(
+                  LucideIcons.bookOpen,
+                  color: AppTheme.duoBlue,
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   book.title,
@@ -2748,9 +3467,18 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Move to Folder', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        title: Text(
+          'Move to Folder',
+          style: TextStyle(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: folders.isEmpty
-            ? Text('No folders created yet. Create a folder first!', style: TextStyle(color: context.colors.textSecondary))
+            ? Text(
+                'No folders created yet. Create a folder first!',
+                style: TextStyle(color: context.colors.textSecondary),
+              )
             : SizedBox(
                 width: double.maxFinite,
                 child: ListView.builder(
@@ -2760,9 +3488,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     final folder = folders[idx];
                     final isAlreadyIn = folder.bookIds.contains(book.id);
                     return ListTile(
-                      title: Text(folder.name, style: TextStyle(color: context.colors.textPrimary)),
-                      trailing: isAlreadyIn 
-                          ? const Icon(LucideIcons.check, color: AppTheme.duoGreen) 
+                      title: Text(
+                        folder.name,
+                        style: TextStyle(color: context.colors.textPrimary),
+                      ),
+                      trailing: isAlreadyIn
+                          ? const Icon(
+                              LucideIcons.check,
+                              color: AppTheme.duoGreen,
+                            )
                           : null,
                       onTap: () async {
                         Navigator.pop(ctx);
@@ -2772,8 +3506,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         folder.bookIds.add(book.id);
                         await _db.saveFolders(folders);
                         _loadAllData(force: false);
-                        
-                        showToast(context, 'Moved "${book.title}" to folder "${folder.name}"');
+
+                        showToast(
+                          context,
+                          'Moved "${book.title}" to folder "${folder.name}"',
+                        );
                       },
                     );
                   },
@@ -2782,7 +3519,10 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: context.colors.textFaint),
+            ),
           ),
           if (folders.isEmpty)
             TextButton(
@@ -2790,7 +3530,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pop(ctx);
                 _showCreateFolderDialog();
               },
-              child: const Text('New Folder', style: TextStyle(color: AppTheme.duoGreen, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'New Folder',
+                style: TextStyle(
+                  color: AppTheme.duoGreen,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
         ],
       ),
@@ -2800,7 +3546,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class SearchResultItem {
   final Book book;
-  final String type; // 'book' | 'module' | 'section' | 'unit' | 'lesson' | 'slide'
+  final String
+  type; // 'book' | 'module' | 'section' | 'unit' | 'lesson' | 'slide'
   final String title;
   final String context;
   final String? snippet;

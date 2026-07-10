@@ -36,7 +36,9 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
   @override
   void initState() {
     super.initState();
-    final formatsSource = (widget.section?.lessonFormats != null && widget.section!.lessonFormats!.isNotEmpty)
+    final formatsSource =
+        (widget.section?.lessonFormats != null &&
+            widget.section!.lessonFormats!.isNotEmpty)
         ? widget.section!.lessonFormats!
         : widget.book.lessonFormats;
     _formats = List.of(formatsSource);
@@ -71,7 +73,9 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
 
   Future<void> _openEditor(int index) async {
     final edited = await Navigator.of(context).push<LessonFormat>(
-      MaterialPageRoute(builder: (_) => FormatEditorScreen(format: _formats[index])),
+      MaterialPageRoute(
+        builder: (_) => FormatEditorScreen(format: _formats[index]),
+      ),
     );
     if (edited != null) {
       setState(() => _formats[index] = edited);
@@ -111,13 +115,17 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
 
   Future<void> _save() async {
     Book updated;
-    if (widget.section != null && widget.modIdx != null && widget.secIdx != null) {
+    if (widget.section != null &&
+        widget.modIdx != null &&
+        widget.secIdx != null) {
       final modules = List<Module>.from(widget.book.modules);
       final sections = List<Section>.from(modules[widget.modIdx!].sections);
       sections[widget.secIdx!] = sections[widget.secIdx!].copyWith(
         lessonFormats: _formats,
       );
-      modules[widget.modIdx!] = modules[widget.modIdx!].copyWith(sections: sections);
+      modules[widget.modIdx!] = modules[widget.modIdx!].copyWith(
+        sections: sections,
+      );
       updated = widget.book.copyWith(
         modules: modules,
         plannerQuestions: _plannerQuestions,
@@ -131,7 +139,9 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
     }
     await DatabaseService().saveGeneratedBook(updated);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Course settings saved.')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Course settings saved.')));
       Navigator.pop(context);
     }
   }
@@ -147,7 +157,11 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
               widget.section != null
                   ? 'Define multiple lesson formats for this section. The AI assigns one of these formats to each unit in this section.'
                   : 'Define multiple lesson formats — one per pedagogical pattern (theory, worked example, proof, etc.). The AI assigns one to each unit when it generates the unit list; you confirm or change the assignments afterwards.',
-              style: const TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
+              style: TextStyle(
+                color: context.colors.textFaint,
+                fontSize: 13,
+                height: 1.5,
+              ),
             ),
           ),
           Expanded(
@@ -159,9 +173,9 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                     color: AppTheme.surface,
-                     borderRadius: BorderRadius.circular(16),
-                     border: Border.all(color: Colors.white12, width: 1),
+                    color: context.colors.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: context.colors.outline, width: 1),
                   ),
                   child: InkWell(
                     onTap: () => _openEditor(i),
@@ -173,18 +187,38 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
                         children: [
                           Text(
                             f.name,
-                            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900),
+                            style: TextStyle(
+                              color: context.colors.textPrimary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
                           const SizedBox(height: 4),
-                          Text(f.description,
-                              style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.4)),
+                          Text(
+                            f.description,
+                            style: TextStyle(
+                              color: context.colors.textSecondary,
+                              fontSize: 12,
+                              height: 1.4,
+                            ),
+                          ),
                           const SizedBox(height: 10),
                           Row(
                             children: [
-                              const Icon(LucideIcons.list, size: 13, color: Colors.white38),
+                              Icon(
+                                LucideIcons.list,
+                                size: 13,
+                                color: context.colors.textFaint,
+                              ),
                               const SizedBox(width: 6),
-                              Text('${f.slides.length} slides — ${f.slides.map((s) => s.type).join(", ")}',
-                                  style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w600)),
+                              Text(
+                                '${f.slides.length} slides — ${f.slides.map((s) => s.type).join(", ")}',
+                                style: TextStyle(
+                                  color: context.colors.textFaint,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 12),
@@ -193,12 +227,20 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
                               const Spacer(),
                               IconButton(
                                 tooltip: 'Edit',
-                                icon: const Icon(LucideIcons.edit2, size: 18, color: Colors.white54),
+                                icon: Icon(
+                                  LucideIcons.edit2,
+                                  size: 18,
+                                  color: context.colors.textFaint,
+                                ),
                                 onPressed: () => _openEditor(i),
                               ),
                               IconButton(
                                 tooltip: 'Delete',
-                                icon: const Icon(LucideIcons.trash2, size: 18, color: AppTheme.duoRed),
+                                icon: const Icon(
+                                  LucideIcons.trash2,
+                                  size: 18,
+                                  color: AppTheme.duoRed,
+                                ),
                                 onPressed: () => _deleteFormat(i),
                               ),
                             ],
@@ -219,7 +261,7 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
                   child: DuoButton(
                     text: 'Add Format',
                     onPressed: _addFormat,
-                    color: AppTheme.surface,
+                    color: context.colors.surface,
                     shadowColor: Colors.black,
                     isOutline: true,
                   ),
@@ -246,11 +288,15 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
       maxWidth: ResponsiveMaxWidth.form,
       child: Column(
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(24, 16, 24, 16),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
             child: Text(
               'Edit the objective options that appear as selection chips when planning section units. Users can toggle these choices to guide the AI.',
-              style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
+              style: TextStyle(
+                color: context.colors.textFaint,
+                fontSize: 13,
+                height: 1.5,
+              ),
             ),
           ),
           Expanded(
@@ -260,36 +306,49 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
               itemBuilder: (context, i) {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: AppTheme.surface,
+                    color: context.colors.surface,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white12, width: 1),
+                    border: Border.all(color: context.colors.outline, width: 1),
                   ),
                   child: Row(
                     children: [
                       Expanded(
                         child: TextFormField(
                           initialValue: _plannerQuestions[i],
-                          style: const TextStyle(color: Colors.white, fontSize: 14),
-                          decoration: const InputDecoration(
-                            hintText: 'e.g. Include interactive coding exercises',
+                          style: TextStyle(
+                            color: context.colors.textPrimary,
+                            fontSize: 14,
+                          ),
+                          decoration: InputDecoration(
+                            hintText:
+                                'e.g. Include interactive coding exercises',
                             border: InputBorder.none,
-                            hintStyle: TextStyle(color: Colors.white38),
+                            hintStyle: TextStyle(
+                              color: context.colors.textFaint,
+                            ),
                           ),
                           onChanged: (val) {
                             _plannerQuestions[i] = val.trim();
                           },
                         ),
-                       ),
-                       IconButton(
-                         icon: const Icon(LucideIcons.trash2, color: AppTheme.duoRed, size: 20),
-                         onPressed: () {
-                           setState(() {
-                             _plannerQuestions.removeAt(i);
-                           });
-                         },
-                       ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          LucideIcons.trash2,
+                          color: AppTheme.duoRed,
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _plannerQuestions.removeAt(i);
+                          });
+                        },
+                      ),
                     ],
                   ),
                 );
@@ -308,7 +367,7 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
                         _plannerQuestions.add('');
                       });
                     },
-                    color: AppTheme.surface,
+                    color: context.colors.surface,
                     shadowColor: Colors.black,
                     isOutline: true,
                   ),
@@ -350,7 +409,10 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
           ),
           actions: [
             IconButton(
-              icon: const Icon(LucideIcons.refreshCcw, color: AppTheme.duoOrange),
+              icon: const Icon(
+                LucideIcons.refreshCcw,
+                color: AppTheme.duoOrange,
+              ),
               tooltip: 'Reset to defaults',
               onPressed: _resetDefaults,
             ),
@@ -400,7 +462,15 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
   }
 
   void _addSlide() {
-    setState(() => _slides.add(SlideTemplate(type: 'theory', condition: 'Always', description: 'New description...')));
+    setState(
+      () => _slides.add(
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description: 'New description...',
+        ),
+      ),
+    );
   }
 
   void _editSlide(int index) {
@@ -412,8 +482,14 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Edit Slide Template', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: context.colors.surface,
+        title: Text(
+          'Edit Slide Template',
+          style: TextStyle(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -421,56 +497,78 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
             children: [
               TextField(
                 controller: typeCtrl,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: context.colors.textPrimary),
                 decoration: InputDecoration(
                   labelText: 'Slide Type (Custom allowed)',
-                  labelStyle: const TextStyle(color: Colors.white54),
+                  labelStyle: TextStyle(color: context.colors.textFaint),
                   filled: true,
-                  fillColor: Colors.black26,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  fillColor: context.colors.surfaceAlt,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: conditionCtrl,
                 maxLines: 2,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: context.colors.textPrimary),
                 decoration: InputDecoration(
                   labelText: 'Condition / Priority',
                   hintText: 'e.g., Only if mathematical proof is needed',
-                  labelStyle: const TextStyle(color: Colors.white54),
+                  labelStyle: TextStyle(color: context.colors.textFaint),
                   filled: true,
-                  fillColor: Colors.black26,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  fillColor: context.colors.surfaceAlt,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: descCtrl,
                 maxLines: 3,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: context.colors.textPrimary),
                 decoration: InputDecoration(
                   labelText: 'Instruction to AI',
-                  labelStyle: const TextStyle(color: Colors.white54),
+                  labelStyle: TextStyle(color: context.colors.textFaint),
                   filled: true,
-                  fillColor: Colors.black26,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  fillColor: context.colors.surfaceAlt,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: context.colors.textFaint),
+            ),
+          ),
           TextButton(
             onPressed: () {
               setState(() {
-                _slides[index] = SlideTemplate(type: typeCtrl.text, condition: conditionCtrl.text, description: descCtrl.text);
+                _slides[index] = SlideTemplate(
+                  type: typeCtrl.text,
+                  condition: conditionCtrl.text,
+                  description: descCtrl.text,
+                );
               });
               Navigator.pop(ctx);
             },
-            child: const Text('Save', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
-          )
+            child: const Text(
+              'Save',
+              style: TextStyle(
+                color: AppTheme.duoBlue,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -501,7 +599,9 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
   }
 
   void _save() {
-    final name = _nameCtrl.text.trim().isEmpty ? widget.format.name : _nameCtrl.text.trim();
+    final name = _nameCtrl.text.trim().isEmpty
+        ? widget.format.name
+        : _nameCtrl.text.trim();
     Navigator.pop(
       context,
       widget.format.copyWith(
@@ -516,143 +616,196 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Format', style: TextStyle(fontWeight: FontWeight.w900)),
+        title: const Text(
+          'Edit Format',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
       ),
       body: ResponsiveCenter(
         maxWidth: ResponsiveMaxWidth.form,
         child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                TextField(
-                  controller: _nameCtrl,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
-                  decoration: InputDecoration(
-                    labelText: 'Format name',
-                    labelStyle: const TextStyle(color: Colors.white54),
-                    filled: true,
-                    fillColor: AppTheme.surface,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _descCtrl,
-                  maxLines: 2,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    labelText: 'When should the AI pick this format?',
-                    labelStyle: const TextStyle(color: Colors.white54),
-                    filled: true,
-                    fillColor: AppTheme.surface,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 8, 20, 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Slide sequence',
-                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w900),
-              ),
-            ),
-          ),
-          Expanded(
-            child: ReorderableListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _slides.length,
-              onReorder: (oldIndex, newIndex) {
-                setState(() {
-                  if (newIndex > oldIndex) newIndex -= 1;
-                  final item = _slides.removeAt(oldIndex);
-                  _slides.insert(newIndex, item);
-                });
-              },
-              itemBuilder: (context, index) {
-                final slide = _slides[index];
-                return Container(
-                  key: ValueKey('slide_$index'),
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white12),
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(16),
-                    clipBehavior: Clip.antiAlias,
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      leading: Icon(_getIconForType(slide.type), color: AppTheme.duoViolet),
-                      title: Text(slide.type.toUpperCase(),
-                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: AppTheme.duoViolet, letterSpacing: 1.0)),
-                      subtitle: Padding(
-                        padding: const EdgeInsets.only(top: 4.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Condition: ${slide.condition}",
-                                style: const TextStyle(color: AppTheme.duoOrange, fontSize: 10, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 4),
-                            Text(slide.description, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(LucideIcons.edit2, size: 18, color: Colors.white54),
-                            onPressed: () => _editSlide(index),
-                          ),
-                          IconButton(
-                            icon: const Icon(LucideIcons.trash2, size: 18, color: AppTheme.duoRed),
-                            onPressed: () => setState(() => _slides.removeAt(index)),
-                          ),
-                          const Icon(LucideIcons.gripVertical, color: Colors.white38),
-                        ],
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    controller: _nameCtrl,
+                    style: TextStyle(
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: 'Format name',
+                      labelStyle: TextStyle(color: context.colors.textFaint),
+                      filled: true,
+                      fillColor: context.colors.surface,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                   ),
-                );
-              },
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _descCtrl,
+                    maxLines: 2,
+                    style: TextStyle(color: context.colors.textPrimary),
+                    decoration: InputDecoration(
+                      labelText: 'When should the AI pick this format?',
+                      labelStyle: TextStyle(color: context.colors.textFaint),
+                      filled: true,
+                      fillColor: context.colors.surface,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Expanded(
-                  child: DuoButton(
-                    text: 'Add Slide',
-                    onPressed: _addSlide,
-                    color: AppTheme.surface,
-                    shadowColor: Colors.black,
-                    isOutline: true,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Slide sequence',
+                  style: TextStyle(
+                    color: context.colors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: DuoButton(
-                    text: 'Save Format',
-                    onPressed: _save,
-                    color: AppTheme.duoBlue,
-                    shadowColor: AppTheme.duoBlueDark,
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
-      ),
+            Expanded(
+              child: ReorderableListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: _slides.length,
+                onReorder: (oldIndex, newIndex) {
+                  setState(() {
+                    if (newIndex > oldIndex) newIndex -= 1;
+                    final item = _slides.removeAt(oldIndex);
+                    _slides.insert(newIndex, item);
+                  });
+                },
+                itemBuilder: (context, index) {
+                  final slide = _slides[index];
+                  return Container(
+                    key: ValueKey('slide_$index'),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: context.colors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: context.colors.outline),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(16),
+                      clipBehavior: Clip.antiAlias,
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        leading: Icon(
+                          _getIconForType(slide.type),
+                          color: AppTheme.duoViolet,
+                        ),
+                        title: Text(
+                          slide.type.toUpperCase(),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 12,
+                            color: AppTheme.duoViolet,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 4.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Condition: ${slide.condition}",
+                                style: const TextStyle(
+                                  color: AppTheme.duoOrange,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                slide.description,
+                                style: TextStyle(
+                                  color: context.colors.textPrimary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(
+                                LucideIcons.edit2,
+                                size: 18,
+                                color: context.colors.textFaint,
+                              ),
+                              onPressed: () => _editSlide(index),
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                LucideIcons.trash2,
+                                size: 18,
+                                color: AppTheme.duoRed,
+                              ),
+                              onPressed: () =>
+                                  setState(() => _slides.removeAt(index)),
+                            ),
+                            Icon(
+                              LucideIcons.gripVertical,
+                              color: context.colors.textFaint,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: DuoButton(
+                      text: 'Add Slide',
+                      onPressed: _addSlide,
+                      color: context.colors.surface,
+                      shadowColor: Colors.black,
+                      isOutline: true,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: DuoButton(
+                      text: 'Save Format',
+                      onPressed: _save,
+                      color: AppTheme.duoBlue,
+                      shadowColor: AppTheme.duoBlueDark,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

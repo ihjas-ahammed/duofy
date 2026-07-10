@@ -32,7 +32,9 @@ class _LearnerProfileCardState extends State<LearnerProfileCard> {
     if (!mounted) return;
     setState(() {
       _examplesFirst = prefs.getBool(PersonalizationService.prefExamplesFirst);
-      _languageLevel = prefs.getString(PersonalizationService.prefLanguageLevel);
+      _languageLevel = prefs.getString(
+        PersonalizationService.prefLanguageLevel,
+      );
       _tone = prefs.getString(PersonalizationService.prefTone);
       _loaded = true;
     });
@@ -49,12 +51,15 @@ class _LearnerProfileCardState extends State<LearnerProfileCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: const TextStyle(
-                  color: Colors.white54,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2)),
+          Text(
+            label,
+            style: TextStyle(
+              color: context.colors.textFaint,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.2,
+            ),
+          ),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -70,16 +75,21 @@ class _LearnerProfileCardState extends State<LearnerProfileCard> {
                       decoration: BoxDecoration(
                         color: selected == value
                             ? AppTheme.duoBlue.withOpacity(0.18)
-                            : Colors.white.withOpacity(0.04),
+                            : context.colors.surfaceAlt,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                            color: selected == value ? AppTheme.duoBlue : Colors.white10),
+                          color: selected == value
+                              ? AppTheme.duoBlue
+                              : context.colors.outline,
+                        ),
                       ),
                       child: Text(
                         text,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: selected == value ? AppTheme.duoBlue : Colors.white70,
+                          color: selected == value
+                              ? AppTheme.duoBlue
+                              : context.colors.textSecondary,
                           fontWeight: FontWeight.w800,
                           fontSize: 11,
                         ),
@@ -119,24 +129,33 @@ class _LearnerProfileCardState extends State<LearnerProfileCard> {
     if (!_loaded) return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: AppTheme.glassDecoration,
+      decoration: AppTheme.glassOf(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(LucideIcons.slidersHorizontal, color: AppTheme.duoBlue, size: 18),
-              SizedBox(width: 8),
+              const Icon(
+                LucideIcons.slidersHorizontal,
+                color: AppTheme.duoBlue,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
               Expanded(
-                child: Text('Teaching preferences',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                child: Text(
+                  'Teaching preferences',
+                  style: TextStyle(
+                    color: context.colors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Applied to every newly generated lesson. Tap a selected chip to clear it.',
-            style: TextStyle(color: Colors.white38, fontSize: 11),
+            style: TextStyle(color: context.colors.textFaint, fontSize: 11),
           ),
           const SizedBox(height: 16),
           _chipRow<bool>(

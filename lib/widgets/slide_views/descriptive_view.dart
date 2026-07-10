@@ -33,7 +33,7 @@ class _DescriptiveViewState extends State<DescriptiveView> {
   bool _isSubmitted = false;
   bool _isCorrect = false;
   String _feedback = '';
-  
+
   // Timer & Bypass properties
   Timer? _timeoutTimer;
   int _secondsRemaining = 30;
@@ -60,7 +60,8 @@ class _DescriptiveViewState extends State<DescriptiveView> {
         } else {
           _isChecking = false;
           _showBypass = true;
-          _errorMessage = "AI took too long to respond. You can skip this question to continue.";
+          _errorMessage =
+              "AI took too long to respond. You can skip this question to continue.";
           _timeoutTimer?.cancel();
         }
       });
@@ -84,9 +85,9 @@ class _DescriptiveViewState extends State<DescriptiveView> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to pick photos: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to pick photos: $e')));
     }
   }
 
@@ -134,7 +135,8 @@ class _DescriptiveViewState extends State<DescriptiveView> {
       setState(() {
         _isChecking = false;
         _showBypass = true;
-        _errorMessage = "AI review failed: $e. You can skip this question to continue.";
+        _errorMessage =
+            "AI review failed: $e. You can skip this question to continue.";
       });
     }
   }
@@ -164,16 +166,16 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                     children: [
                       if (widget.lessonCanvas != null) widget.lessonCanvas!,
                       const SizedBox(height: 12),
-                      
+
                       // Question Card
                       Container(
                         padding: const EdgeInsets.all(20),
-                        decoration: AppTheme.glassDecoration,
+                        decoration: AppTheme.glassOf(context),
                         child: MathMarkdown(
                           data: widget.slide.content,
-                          textStyle: const TextStyle(
+                          textStyle: TextStyle(
                             fontSize: 17,
-                            color: Colors.white,
+                            color: context.colors.textPrimary,
                             fontWeight: FontWeight.bold,
                             height: 1.4,
                           ),
@@ -182,10 +184,10 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                       const SizedBox(height: 20),
 
                       // Text Input Area
-                      const Text(
+                      Text(
                         'YOUR ANSWER',
                         style: TextStyle(
-                          color: Colors.white54,
+                          color: context.colors.textFaint,
                           fontWeight: FontWeight.w900,
                           fontSize: 10,
                           letterSpacing: 1.5,
@@ -198,27 +200,39 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                         minLines: 4,
                         readOnly: _isSubmitted || _isChecking,
                         style: TextStyle(
-                          color: (_isSubmitted || _isChecking) ? Colors.white70 : Colors.white,
+                          color: (_isSubmitted || _isChecking)
+                              ? context.colors.textSecondary
+                              : context.colors.textPrimary,
                           fontSize: 15,
                         ),
                         onChanged: (_) => setState(() {}),
                         decoration: InputDecoration(
                           hintText: 'Type your answer here in paragraphs...',
-                          hintStyle: const TextStyle(color: Colors.white24, fontSize: 14),
+                          hintStyle: TextStyle(
+                            color: context.colors.textFaint,
+                            fontSize: 14,
+                          ),
                           filled: true,
-                          fillColor: (_isSubmitted || _isChecking) ? Colors.black26 : Colors.black45,
+                          fillColor: context.colors.surfaceAlt,
                           contentPadding: const EdgeInsets.all(16),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(color: Colors.white12),
+                            borderSide: BorderSide(
+                              color: context.colors.outline,
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(color: Colors.white12),
+                            borderSide: BorderSide(
+                              color: context.colors.outline,
+                            ),
                           ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(color: AppTheme.duoBlue, width: 2),
+                          focusedBorder: const OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(16)),
+                            borderSide: BorderSide(
+                              color: AppTheme.duoBlue,
+                              width: 2,
+                            ),
                           ),
                         ),
                       ),
@@ -228,10 +242,10 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'PHOTOS / DIAGRAMS (OPTIONAL)',
                             style: TextStyle(
-                              color: Colors.white54,
+                              color: context.colors.textFaint,
                               fontWeight: FontWeight.w900,
                               fontSize: 10,
                               letterSpacing: 1.5,
@@ -240,7 +254,11 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                           if (!_isSubmitted && !_isChecking)
                             IconButton(
                               onPressed: _pickPhotos,
-                              icon: const Icon(LucideIcons.camera, size: 14, color: AppTheme.duoBlue),
+                              icon: const Icon(
+                                LucideIcons.camera,
+                                size: 14,
+                                color: AppTheme.duoBlue,
+                              ),
                             ),
                         ],
                       ),
@@ -255,13 +273,21 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                               return Stack(
                                 children: [
                                   Container(
-                                    margin: const EdgeInsets.only(right: 12, top: 4, bottom: 4),
+                                    margin: const EdgeInsets.only(
+                                      right: 12,
+                                      top: 4,
+                                      bottom: 4,
+                                    ),
                                     width: 90,
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.white24),
+                                      border: Border.all(
+                                        color: context.colors.textFaint,
+                                      ),
                                       image: DecorationImage(
-                                        image: fileImageProvider(_attachedPhotos[idx]),
+                                        image: fileImageProvider(
+                                          _attachedPhotos[idx],
+                                        ),
                                         fit: BoxFit.cover,
                                       ),
                                     ),
@@ -278,10 +304,10 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                                             color: Colors.black87,
                                             shape: BoxShape.circle,
                                           ),
-                                          child: const Icon(
+                                          child: Icon(
                                             Icons.close,
                                             size: 14,
-                                            color: Colors.white,
+                                            color: context.colors.textPrimary,
                                           ),
                                         ),
                                       ),
@@ -297,16 +323,26 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                           child: Container(
                             height: 80,
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.02),
+                              color: context.colors.surfaceAlt,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.white12),
+                              border: Border.all(color: context.colors.outline),
                             ),
-                            child: const Column(
+                            child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(LucideIcons.imagePlus, color: Colors.white38, size: 24),
-                                SizedBox(height: 4),
-                                Text('Upload written work or diagrams', style: TextStyle(color: Colors.white38, fontSize: 12)),
+                                Icon(
+                                  LucideIcons.imagePlus,
+                                  color: context.colors.textFaint,
+                                  size: 24,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Upload written work or diagrams',
+                                  style: TextStyle(
+                                    color: context.colors.textFaint,
+                                    fontSize: 12,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -322,16 +358,25 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                           decoration: BoxDecoration(
                             color: AppTheme.duoOrange.withOpacity(0.15),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppTheme.duoOrange.withOpacity(0.5)),
+                            border: Border.all(
+                              color: AppTheme.duoOrange.withOpacity(0.5),
+                            ),
                           ),
                           child: Row(
                             children: [
-                              const Icon(LucideIcons.alertTriangle, color: AppTheme.duoOrange, size: 20),
+                              const Icon(
+                                LucideIcons.alertTriangle,
+                                color: AppTheme.duoOrange,
+                                size: 20,
+                              ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
                                   _errorMessage!,
-                                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                                  style: TextStyle(
+                                    color: context.colors.textPrimary,
+                                    fontSize: 13,
+                                  ),
                                 ),
                               ),
                             ],
@@ -360,15 +405,23 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                               Row(
                                 children: [
                                   Icon(
-                                    _isCorrect ? LucideIcons.checkCircle : LucideIcons.xCircle,
-                                    color: _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed,
+                                    _isCorrect
+                                        ? LucideIcons.checkCircle
+                                        : LucideIcons.xCircle,
+                                    color: _isCorrect
+                                        ? AppTheme.duoGreen
+                                        : AppTheme.duoRed,
                                     size: 20,
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    _isCorrect ? 'AI REVIEW: CORRECT' : 'AI REVIEW: NEEDS IMPROVEMENT',
+                                    _isCorrect
+                                        ? 'AI REVIEW: CORRECT'
+                                        : 'AI REVIEW: NEEDS IMPROVEMENT',
                                     style: TextStyle(
-                                      color: _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed,
+                                      color: _isCorrect
+                                          ? AppTheme.duoGreen
+                                          : AppTheme.duoRed,
                                       fontWeight: FontWeight.w900,
                                       fontSize: 11,
                                       letterSpacing: 1.0,
@@ -379,9 +432,9 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                               const SizedBox(height: 12),
                               MathMarkdown(
                                 data: _feedback,
-                                textStyle: const TextStyle(
+                                textStyle: TextStyle(
                                   fontSize: 14,
-                                  color: Colors.white,
+                                  color: context.colors.textPrimary,
                                   height: 1.4,
                                 ),
                               ),
@@ -403,14 +456,15 @@ class _DescriptiveViewState extends State<DescriptiveView> {
 
   // Custom Bottom Bar Implementation
   Widget get bottomBarWidget {
-    final canCheck = _answerController.text.trim().isNotEmpty || _attachedPhotos.isNotEmpty;
+    final canCheck =
+        _answerController.text.trim().isNotEmpty || _attachedPhotos.isNotEmpty;
 
     if (_isChecking) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration: BoxDecoration(
-          color: const Color(0xFF111827),
-          border: Border(top: BorderSide(color: Colors.white.withOpacity(0.05))),
+          color: context.colors.background,
+          border: Border(top: BorderSide(color: context.colors.outline)),
         ),
         child: Row(
           children: [
@@ -426,7 +480,10 @@ class _DescriptiveViewState extends State<DescriptiveView> {
             Expanded(
               child: Text(
                 'AI analyzing... ($_secondsRemaining s remaining)',
-                style: const TextStyle(color: Colors.white70, fontSize: 14),
+                style: TextStyle(
+                  color: context.colors.textSecondary,
+                  fontSize: 14,
+                ),
               ),
             ),
             if (_showBypass)
@@ -444,7 +501,7 @@ class _DescriptiveViewState extends State<DescriptiveView> {
     if (_showBypass && !_isSubmitted) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        color: const Color(0xFF111827),
+        color: context.colors.background,
         child: Row(
           children: [
             Expanded(
@@ -472,11 +529,13 @@ class _DescriptiveViewState extends State<DescriptiveView> {
     if (!_isSubmitted) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        color: const Color(0xFF111827),
+        color: context.colors.background,
         child: DuoButton(
           text: 'CHECK ANSWER',
           color: canCheck ? AppTheme.duoGreen : const Color(0xFF334155),
-          shadowColor: canCheck ? AppTheme.duoGreenDark : const Color(0xFF1E293B),
+          shadowColor: canCheck
+              ? AppTheme.duoGreenDark
+              : const Color(0xFF1E293B),
           onPressed: () {
             if (canCheck) _checkAnswer();
           },
@@ -487,7 +546,7 @@ class _DescriptiveViewState extends State<DescriptiveView> {
     // Is submitted
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: const Color(0xFF111827),
+      color: context.colors.background,
       child: _isCorrect
           ? DuoButton(
               text: 'CONTINUE',

@@ -56,7 +56,8 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
     }
 
     setState(() {
-      _scheduleText = 'Auto-schedule: ${formatTime(startHour, startMinute)} - ${formatTime(endHour, endMinute)}';
+      _scheduleText =
+          'Auto-schedule: ${formatTime(startHour, startMinute)} - ${formatTime(endHour, endMinute)}';
     });
   }
 
@@ -64,13 +65,25 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Cancel All Tasks?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: const Text('Are you sure you want to cancel all currently running and queued generation tasks? This will stop all active AI generations.', style: TextStyle(color: Colors.white70)),
+        backgroundColor: context.colors.surface,
+        title: Text(
+          'Cancel All Tasks?',
+          style: TextStyle(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to cancel all currently running and queued generation tasks? This will stop all active AI generations.',
+          style: TextStyle(color: context.colors.textSecondary),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('No', style: TextStyle(color: Colors.white54)),
+            child: Text(
+              'No',
+              style: TextStyle(color: context.colors.textFaint),
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -80,7 +93,13 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                 const SnackBar(content: Text('All tasks cancelled.')),
               );
             },
-            child: const Text('Yes, Cancel All', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Yes, Cancel All',
+              style: TextStyle(
+                color: AppTheme.duoRed,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -129,14 +148,19 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
     }
   }
 
-  Widget _buildSummaryCard(String title, String count, IconData icon, Color color) {
+  Widget _buildSummaryCard(
+    String title,
+    String count,
+    IconData icon,
+    Color color,
+  ) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.03),
+          color: context.colors.surfaceAlt,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          border: Border.all(color: context.colors.outline),
         ),
         child: Row(
           children: [
@@ -147,11 +171,19 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
               children: [
                 Text(
                   count,
-                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 18,
+                    color: context.colors.textPrimary,
+                  ),
                 ),
                 Text(
                   title,
-                  style: const TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: context.colors.textFaint,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -170,11 +202,13 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
     final card = Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppTheme.surface.withOpacity(0.4),
+        color: context.colors.surface.withOpacity(0.4),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isRunning ? AppTheme.duoBlue.withOpacity(0.3) : Colors.white12, 
-          width: isRunning ? 2 : 1
+          color: isRunning
+              ? AppTheme.duoBlue.withOpacity(0.3)
+              : context.colors.outline,
+          width: isRunning ? 2 : 1,
         ),
       ),
       clipBehavior: Clip.hardEdge,
@@ -202,7 +236,11 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                       children: [
                         Text(
                           task.title,
-                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: Colors.white),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 15,
+                            color: context.colors.textPrimary,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -210,20 +248,31 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: statusColor.withOpacity(0.15),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
                                 task.status.toUpperCase(),
-                                style: TextStyle(color: statusColor, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                                style: TextStyle(
+                                  color: statusColor,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.5,
+                                ),
                               ),
                             ),
                             if (task.isScheduled) ...[
                               const SizedBox(width: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: AppTheme.duoViolet.withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(6),
@@ -231,11 +280,20 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                                 child: const Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(LucideIcons.clock, color: AppTheme.duoViolet, size: 8),
+                                    Icon(
+                                      LucideIcons.clock,
+                                      color: AppTheme.duoViolet,
+                                      size: 8,
+                                    ),
                                     SizedBox(width: 3),
                                     Text(
                                       'SCHEDULED',
-                                      style: TextStyle(color: AppTheme.duoViolet, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                                      style: TextStyle(
+                                        color: AppTheme.duoViolet,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 0.5,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -248,7 +306,11 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                   ),
                   if (isRunning || isQueued)
                     IconButton(
-                      icon: const Icon(LucideIcons.xCircle, color: Colors.white30, size: 22),
+                      icon: Icon(
+                        LucideIcons.xCircle,
+                        color: context.colors.textFaint,
+                        size: 22,
+                      ),
                       onPressed: () {
                         GenerationManager.instance.cancelQueuedTask(task.id);
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -261,7 +323,11 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
               const SizedBox(height: 12),
               Text(
                 task.statusMessage,
-                style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: context.colors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               if (isRunning) ...[
                 const SizedBox(height: 10),
@@ -277,23 +343,36 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'Waiting for auto-schedule hours...',
-                        style: TextStyle(color: Colors.white38, fontSize: 10, fontStyle: FontStyle.italic),
+                        style: TextStyle(
+                          color: context.colors.textFaint,
+                          fontSize: 10,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
                     ),
                     TextButton.icon(
-                      onPressed: () => GenerationManager.instance.runTaskNow(task.id),
+                      onPressed: () =>
+                          GenerationManager.instance.runTaskNow(task.id),
                       style: TextButton.styleFrom(
                         foregroundColor: AppTheme.duoGreen,
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                       icon: const Icon(LucideIcons.play, size: 12),
-                      label: const Text('Run now',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
+                      label: const Text(
+                        'Run now',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -314,13 +393,19 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                       Expanded(
                         child: Text(
                           task.errorMessage!,
-                          style: const TextStyle(color: AppTheme.duoRed, fontSize: 11, fontFamily: 'monospace'),
+                          style: const TextStyle(
+                            color: AppTheme.duoRed,
+                            fontSize: 11,
+                            fontFamily: 'monospace',
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       GestureDetector(
                         onTap: () {
-                          Clipboard.setData(ClipboardData(text: task.errorMessage!));
+                          Clipboard.setData(
+                            ClipboardData(text: task.errorMessage!),
+                          );
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Error copied to clipboard'),
@@ -348,11 +433,17 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                   children: [
                     Text(
                       'Duration: ${task.endTime!.difference(task.startTime!).inSeconds}s',
-                      style: const TextStyle(color: Colors.white30, fontSize: 10),
+                      style: TextStyle(
+                        color: context.colors.textFaint,
+                        fontSize: 10,
+                      ),
                     ),
                     Text(
                       'Finished: ${task.endTime!.hour.toString().padLeft(2, '0')}:${task.endTime!.minute.toString().padLeft(2, '0')}',
-                      style: const TextStyle(color: Colors.white30, fontSize: 10),
+                      style: TextStyle(
+                        color: context.colors.textFaint,
+                        fontSize: 10,
+                      ),
                     ),
                   ],
                 ),
@@ -364,10 +455,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
     );
 
     if (indented) {
-      return Padding(
-        padding: const EdgeInsets.only(left: 20),
-        child: card,
-      );
+      return Padding(padding: const EdgeInsets.only(left: 20), child: card);
     }
     return card;
   }
@@ -389,8 +477,8 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
             Expanded(
               child: Text(
                 title.toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: context.colors.textPrimary,
                   fontWeight: FontWeight.w900,
                   fontSize: 13,
                   letterSpacing: 1.0,
@@ -403,30 +491,40 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
     );
   }
 
-  Widget _buildModuleDropdown({required String title, required List<Widget> children}) {
+  Widget _buildModuleDropdown({
+    required String title,
+    required List<Widget> children,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: AppTheme.surface.withOpacity(0.2),
+        color: context.colors.surface.withOpacity(0.2),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: context.colors.outline),
       ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           key: PageStorageKey<String>('module_$title'),
-          leading: const Icon(LucideIcons.package, color: AppTheme.duoBlue, size: 20),
+          leading: const Icon(
+            LucideIcons.package,
+            color: AppTheme.duoBlue,
+            size: 20,
+          ),
           title: Text(
             title,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: context.colors.textPrimary,
               fontWeight: FontWeight.w900,
               fontSize: 14,
             ),
           ),
           iconColor: AppTheme.duoBlue,
-          collapsedIconColor: Colors.white54,
-          childrenPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          collapsedIconColor: context.colors.textFaint,
+          childrenPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 8,
+          ),
           expandedAlignment: Alignment.topLeft,
           expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
           children: children,
@@ -435,30 +533,40 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
     );
   }
 
-  Widget _buildSectionDropdown({required String title, required List<Widget> children}) {
+  Widget _buildSectionDropdown({
+    required String title,
+    required List<Widget> children,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: AppTheme.surface.withOpacity(0.15),
+        color: context.colors.surface.withOpacity(0.15),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: context.colors.outline),
       ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           key: PageStorageKey<String>('section_$title'),
-          leading: const Icon(LucideIcons.layers, color: AppTheme.duoViolet, size: 18),
+          leading: const Icon(
+            LucideIcons.layers,
+            color: AppTheme.duoViolet,
+            size: 18,
+          ),
           title: Text(
             title,
-            style: const TextStyle(
-              color: Colors.white70,
+            style: TextStyle(
+              color: context.colors.textSecondary,
               fontWeight: FontWeight.bold,
               fontSize: 13,
             ),
           ),
           iconColor: AppTheme.duoViolet,
-          collapsedIconColor: Colors.white38,
-          childrenPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          collapsedIconColor: context.colors.textFaint,
+          childrenPadding: const EdgeInsets.symmetric(
+            horizontal: 8,
+            vertical: 8,
+          ),
           expandedAlignment: Alignment.topLeft,
           expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
           children: children,
@@ -470,15 +578,18 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
   List<Widget> _buildHierarchicalList(List<AiTask> filteredTasks) {
     if (filteredTasks.isEmpty) {
       return [
-        const Center(
+        Center(
           child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 48.0),
+            padding: const EdgeInsets.symmetric(vertical: 48.0),
             child: Text(
               'No tasks in this category.',
-              style: TextStyle(color: Colors.white30, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: context.colors.textFaint,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-        )
+        ),
       ];
     }
     final List<Widget> widgets = [];
@@ -587,7 +698,9 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
             if (t.sectionId == null || t.sectionId!.isEmpty) {
               moduleLevelTasks.add(t);
             } else {
-              final hasSection = module.sections.any((s) => s.id == t.sectionId);
+              final hasSection = module.sections.any(
+                (s) => s.id == t.sectionId,
+              );
               if (hasSection) {
                 tasksBySection.putIfAbsent(t.sectionId!, () => []).add(t);
               } else {
@@ -628,10 +741,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
           });
 
           widgets.add(
-            _buildModuleDropdown(
-              title: module.title,
-              children: moduleChildren,
-            ),
+            _buildModuleDropdown(title: module.title, children: moduleChildren),
           );
         }
 
@@ -639,7 +749,9 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
         tasksByModule.forEach((modId, modTasks) {
           final isRendered = book.modules.any((m) => m.id == modId);
           if (!isRendered) {
-            final List<Widget> modChildren = modTasks.map((t) => _buildTaskCard(t)).toList();
+            final List<Widget> modChildren = modTasks
+                .map((t) => _buildTaskCard(t))
+                .toList();
             widgets.add(
               _buildModuleDropdown(
                 title: 'Module: $modId',
@@ -672,16 +784,25 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
           final queue = GenerationManager.instance.queue;
           final running = queue.where((t) => t.status == 'running').toList();
           final queued = queue.where((t) => t.status == 'queued').toList();
-          final finished = queue.where((t) => t.status == 'completed' || t.status == 'failed').toList();
+          final finished = queue
+              .where((t) => t.status == 'completed' || t.status == 'failed')
+              .toList();
 
           return Scaffold(
-            backgroundColor: AppTheme.background,
+            backgroundColor: context.colors.background,
             appBar: AppBar(
-              title: const Text('AI Requests', style: TextStyle(fontWeight: FontWeight.w900)),
+              title: const Text(
+                'AI Requests',
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
               actions: [
                 if (running.isNotEmpty || queued.isNotEmpty)
                   IconButton(
-                    icon: const Icon(LucideIcons.ban, size: 20, color: AppTheme.duoRed),
+                    icon: const Icon(
+                      LucideIcons.ban,
+                      size: 20,
+                      color: AppTheme.duoRed,
+                    ),
                     tooltip: 'Cancel All Tasks',
                     onPressed: () {
                       _showCancelAllDialog(context);
@@ -706,16 +827,28 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                 children: [
                   // Top schedule info banner
                   Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: AppTheme.duoViolet.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppTheme.duoViolet.withOpacity(0.2)),
+                      border: Border.all(
+                        color: AppTheme.duoViolet.withOpacity(0.2),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(LucideIcons.calendarClock, color: AppTheme.duoViolet, size: 20),
+                        const Icon(
+                          LucideIcons.calendarClock,
+                          color: AppTheme.duoViolet,
+                          size: 20,
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
@@ -723,11 +856,18 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                             children: [
                               Text(
                                 _scheduleText,
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                style: TextStyle(
+                                  color: context.colors.textPrimary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
                               ),
-                              const Text(
+                              Text(
                                 'Scheduled tasks run with lowest priority during these hours.',
-                                style: TextStyle(color: Colors.white54, fontSize: 10),
+                                style: TextStyle(
+                                  color: context.colors.textFaint,
+                                  fontSize: 10,
+                                ),
                               ),
                             ],
                           ),
@@ -735,38 +875,63 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                       ],
                     ),
                   ),
-                  
+
                   // Live statistics cards
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     child: Row(
                       children: [
-                        _buildSummaryCard('Running', '${running.length}', LucideIcons.play, AppTheme.duoBlue),
+                        _buildSummaryCard(
+                          'Running',
+                          '${running.length}',
+                          LucideIcons.play,
+                          AppTheme.duoBlue,
+                        ),
                         const SizedBox(width: 12),
-                        _buildSummaryCard('Queued', '${queued.length}', LucideIcons.clock, AppTheme.duoOrange),
+                        _buildSummaryCard(
+                          'Queued',
+                          '${queued.length}',
+                          LucideIcons.clock,
+                          AppTheme.duoOrange,
+                        ),
                         const SizedBox(width: 12),
-                        _buildSummaryCard('History', '${finished.length}', LucideIcons.history, AppTheme.duoGreen),
+                        _buildSummaryCard(
+                          'History',
+                          '${finished.length}',
+                          LucideIcons.history,
+                          AppTheme.duoGreen,
+                        ),
                       ],
                     ),
                   ),
-                  
+
                   // Tabs for Active / Queued / History
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
                     child: TabBar(
                       indicatorColor: AppTheme.duoBlue,
                       indicatorSize: TabBarIndicatorSize.tab,
-                      labelColor: Colors.white,
-                      unselectedLabelColor: Colors.white38,
-                      labelStyle: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.8),
-                      tabs: [
+                      labelColor: context.colors.textPrimary,
+                      unselectedLabelColor: context.colors.textFaint,
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 12,
+                        letterSpacing: 0.8,
+                      ),
+                      tabs: const [
                         Tab(text: 'ACTIVE'),
                         Tab(text: 'QUEUED'),
                         Tab(text: 'HISTORY'),
                       ],
                     ),
                   ),
-                  
+
                   // Tab contents
                   Expanded(
                     child: TabBarView(
@@ -782,7 +947,9 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                         ),
                         ListView(
                           padding: const EdgeInsets.all(16),
-                          children: _buildHierarchicalList(finished.reversed.toList()),
+                          children: _buildHierarchicalList(
+                            finished.reversed.toList(),
+                          ),
                         ),
                       ],
                     ),

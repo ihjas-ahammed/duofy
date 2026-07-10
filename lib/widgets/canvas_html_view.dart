@@ -36,8 +36,10 @@ bool isSvgCanvas(String content) {
 double svgAspect(String svg) {
   const fallback = 3 / 2;
   double? w, h;
-  final viewBox =
-      RegExp(r'viewBox\s*=\s*"([^"]+)"', caseSensitive: false).firstMatch(svg);
+  final viewBox = RegExp(
+    r'viewBox\s*=\s*"([^"]+)"',
+    caseSensitive: false,
+  ).firstMatch(svg);
   if (viewBox != null) {
     final parts = viewBox.group(1)!.trim().split(RegExp(r'[\s,]+'));
     if (parts.length == 4) {
@@ -47,8 +49,10 @@ double svgAspect(String svg) {
   }
   if (w == null || h == null) {
     double? attr(String name) {
-      final m = RegExp('$name\\s*=\\s*"([0-9.]+)', caseSensitive: false)
-          .firstMatch(svg);
+      final m = RegExp(
+        '$name\\s*=\\s*"([0-9.]+)',
+        caseSensitive: false,
+      ).firstMatch(svg);
       return m == null ? null : double.tryParse(m.group(1)!);
     }
 
@@ -321,7 +325,7 @@ class _CanvasFullScreenScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final isSvg = isSvgCanvas(content);
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0F19),
+      backgroundColor: context.colors.background,
       body: SafeArea(
         child: Stack(
           children: [
@@ -330,17 +334,22 @@ class _CanvasFullScreenScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 child: isSvg
                     ? CanvasDoubleTapDetector(
-                        onDoubleTap: () => showCanvasCodeDialog(context, content),
+                        onDoubleTap: () =>
+                            showCanvasCodeDialog(context, content),
                         child: InteractiveViewer(
                           minScale: 0.5,
                           maxScale: 5,
                           child: Center(
-                            child: SvgPicture.string(content, fit: BoxFit.contain),
+                            child: SvgPicture.string(
+                              content,
+                              fit: BoxFit.contain,
+                            ),
                           ),
                         ),
                       )
                     : CanvasDoubleTapDetector(
-                        onDoubleTap: () => showCanvasCodeDialog(context, content),
+                        onDoubleTap: () =>
+                            showCanvasCodeDialog(context, content),
                         child: Center(
                           child: AspectRatio(
                             aspectRatio: 3 / 2,
@@ -386,7 +395,8 @@ class CanvasDoubleTapDetector extends StatefulWidget {
   });
 
   @override
-  State<CanvasDoubleTapDetector> createState() => _CanvasDoubleTapDetectorState();
+  State<CanvasDoubleTapDetector> createState() =>
+      _CanvasDoubleTapDetectorState();
 }
 
 class _CanvasDoubleTapDetectorState extends State<CanvasDoubleTapDetector> {
@@ -417,10 +427,10 @@ void showCanvasCodeDialog(BuildContext context, String code) {
     context: context,
     builder: (BuildContext context) {
       return Dialog(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: context.colors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Colors.white12),
+          side: BorderSide(color: context.colors.outline),
         ),
         child: Container(
           width: MediaQuery.of(context).size.width * 0.85,
@@ -440,17 +450,20 @@ void showCanvasCodeDialog(BuildContext context, String code) {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Source Code',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
-                            color: Colors.white,
+                            color: context.colors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: isSvg
                                 ? AppTheme.duoGreen.withOpacity(0.15)
@@ -463,11 +476,15 @@ void showCanvasCodeDialog(BuildContext context, String code) {
                             ),
                           ),
                           child: Text(
-                            isSvg ? 'SVG Vector Markup' : 'JS Canvas / Three.js',
+                            isSvg
+                                ? 'SVG Vector Markup'
+                                : 'JS Canvas / Three.js',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w900,
-                              color: isSvg ? AppTheme.duoGreen : AppTheme.duoBlue,
+                              color: isSvg
+                                  ? AppTheme.duoGreen
+                                  : AppTheme.duoBlue,
                             ),
                           ),
                         ),
@@ -475,7 +492,11 @@ void showCanvasCodeDialog(BuildContext context, String code) {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(LucideIcons.x, color: Colors.white54, size: 20),
+                    icon: Icon(
+                      LucideIcons.x,
+                      color: context.colors.textFaint,
+                      size: 20,
+                    ),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -485,19 +506,19 @@ void showCanvasCodeDialog(BuildContext context, String code) {
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF020617),
+                    color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white10),
+                    border: Border.all(color: context.colors.outline),
                   ),
                   padding: const EdgeInsets.all(12),
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
                     child: SelectableText(
                       code.trim(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 11,
-                        color: Color(0xFFE2E8F0),
+                        color: context.colors.textPrimary,
                         height: 1.4,
                       ),
                     ),
@@ -512,7 +533,7 @@ void showCanvasCodeDialog(BuildContext context, String code) {
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.duoBlue,
-                        foregroundColor: Colors.white,
+                        foregroundColor: context.colors.textPrimary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -537,8 +558,11 @@ void showCanvasCodeDialog(BuildContext context, String code) {
                   const SizedBox(width: 12),
                   TextButton(
                     style: TextButton.styleFrom(
-                      foregroundColor: Colors.white54,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      foregroundColor: context.colors.textFaint,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                     ),
                     onPressed: () => Navigator.of(context).pop(),
                     child: const Text(

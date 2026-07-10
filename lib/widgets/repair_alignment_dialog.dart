@@ -18,7 +18,8 @@ Future<void> showRepairAlignmentFlow(BuildContext context, Book book) async {
   final messenger = ScaffoldMessenger.of(context);
   if (kIsWeb) {
     messenger.showSnackBar(
-        const SnackBar(content: Text('Page repair is not available on web yet.')));
+      const SnackBar(content: Text('Page repair is not available on web yet.')),
+    );
     return;
   }
 
@@ -31,7 +32,7 @@ Future<void> showRepairAlignmentFlow(BuildContext context, Book book) async {
   if (picked == null || picked.files.isEmpty) return;
   final files = [
     for (final f in picked.files)
-      if (f.path != null) File(f.path!)
+      if (f.path != null) File(f.path!),
   ];
   if (files.isEmpty || !context.mounted) return;
 
@@ -42,17 +43,25 @@ Future<void> showRepairAlignmentFlow(BuildContext context, Book book) async {
     context: context,
     barrierDismissible: false,
     builder: (_) => AlertDialog(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: context.colors.surface,
       content: Row(
         children: [
           const SizedBox(
-              width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5)),
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2.5),
+          ),
           const SizedBox(width: 16),
           Expanded(
             child: ValueListenableBuilder<String>(
               valueListenable: status,
-              builder: (_, s, __) =>
-                  Text(s, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+              builder: (_, s, __) => Text(
+                s,
+                style: TextStyle(
+                  color: context.colors.textSecondary,
+                  fontSize: 13,
+                ),
+              ),
             ),
           ),
         ],
@@ -60,8 +69,11 @@ Future<void> showRepairAlignmentFlow(BuildContext context, Book book) async {
     ),
   );
   try {
-    report = await GenerationManager.instance
-        .checkPageAlignment(book, files, onStatus: (s) => status.value = s);
+    report = await GenerationManager.instance.checkPageAlignment(
+      book,
+      files,
+      onStatus: (s) => status.value = s,
+    );
   } catch (e) {
     error = e;
   }
@@ -69,7 +81,9 @@ Future<void> showRepairAlignmentFlow(BuildContext context, Book book) async {
   Navigator.of(context, rootNavigator: true).pop();
 
   if (error != null || report == null) {
-    messenger.showSnackBar(SnackBar(content: Text('Alignment check failed: $error')));
+    messenger.showSnackBar(
+      SnackBar(content: Text('Alignment check failed: $error')),
+    );
     return;
   }
   final r = report;
@@ -78,24 +92,28 @@ Future<void> showRepairAlignmentFlow(BuildContext context, Book book) async {
   IconData icon;
   Color color;
   if (r.pass && r.readable > 0) {
-    headline = 'Pages line up (${r.matched}/${r.readable} sampled sections matched). '
+    headline =
+        'Pages line up (${r.matched}/${r.readable} sampled sections matched). '
         'You can still apply a manual shift below.';
     icon = LucideIcons.checkCircle2;
     color = AppTheme.duoGreen;
   } else if (r.readable == 0) {
-    headline = 'This PDF has no extractable text (scanned book?), so alignment '
+    headline =
+        'This PDF has no extractable text (scanned book?), so alignment '
         'cannot be checked automatically. Apply a manual shift if pages are off.';
     icon = LucideIcons.scanLine;
     color = AppTheme.duoBlue;
   } else if (r.suggestedShift != null) {
     final n = r.suggestedShift!;
-    headline = 'Section headings were found ${n.abs()} page${n.abs() == 1 ? '' : 's'} '
+    headline =
+        'Section headings were found ${n.abs()} page${n.abs() == 1 ? '' : 's'} '
         '${n > 0 ? 'after' : 'before'} where they are mapped. '
         'Applying the shift below should fix the whole book.';
     icon = LucideIcons.alertTriangle;
     color = AppTheme.duoOrange;
   } else {
-    headline = '${r.mismatched} of ${r.readable} sampled sections did not match and '
+    headline =
+        '${r.mismatched} of ${r.readable} sampled sections did not match and '
         'no single shift explains it. Try "Edit Course Structure" to fix ranges '
         'individually.';
     icon = LucideIcons.alertTriangle;
@@ -107,9 +125,15 @@ Future<void> showRepairAlignmentFlow(BuildContext context, Book book) async {
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setDialogState) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Page Alignment',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+        backgroundColor: context.colors.surface,
+        title: Text(
+          'Page Alignment',
+          style: TextStyle(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,8 +144,13 @@ Future<void> showRepairAlignmentFlow(BuildContext context, Book book) async {
                 Icon(icon, color: color, size: 18),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(headline,
-                      style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                  child: Text(
+                    headline,
+                    style: TextStyle(
+                      color: context.colors.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -130,7 +159,10 @@ Future<void> showRepairAlignmentFlow(BuildContext context, Book book) async {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 IconButton(
-                  icon: const Icon(LucideIcons.minusCircle, color: AppTheme.duoRed),
+                  icon: const Icon(
+                    LucideIcons.minusCircle,
+                    color: AppTheme.duoRed,
+                  ),
                   onPressed: () => setDialogState(() => delta--),
                 ),
                 Container(
@@ -138,47 +170,69 @@ Future<void> showRepairAlignmentFlow(BuildContext context, Book book) async {
                   alignment: Alignment.center,
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.06),
+                    color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     '${delta > 0 ? '+' : ''}$delta pg',
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                      color: context.colors.textPrimary,
+                    ),
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(LucideIcons.plusCircle, color: AppTheme.duoGreen),
+                  icon: const Icon(
+                    LucideIcons.plusCircle,
+                    color: AppTheme.duoGreen,
+                  ),
                   onPressed: () => setDialogState(() => delta++),
                 ),
               ],
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Shifting moves every mapped page range of the book and re-splits the PDFs. Generated lessons are kept.',
-              style: TextStyle(color: Colors.white38, fontSize: 11),
+              style: TextStyle(color: context.colors.textFaint, fontSize: 11),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Close', style: TextStyle(color: Colors.white54)),
+            child: Text(
+              'Close',
+              style: TextStyle(color: context.colors.textFaint),
+            ),
           ),
           TextButton(
             onPressed: delta == 0
                 ? null
                 : () {
                     Navigator.of(ctx).pop();
-                    GenerationManager.instance.repairPageAlignment(book, files, delta);
-                    messenger.showSnackBar(SnackBar(
+                    GenerationManager.instance.repairPageAlignment(
+                      book,
+                      files,
+                      delta,
+                    );
+                    messenger.showSnackBar(
+                      SnackBar(
                         content: Text(
-                            'Shifting pages by ${delta > 0 ? '+' : ''}$delta and re-splitting in the background…')));
+                          'Shifting pages by ${delta > 0 ? '+' : ''}$delta and re-splitting in the background…',
+                        ),
+                      ),
+                    );
                   },
-            child: Text('Apply Shift & Re-split',
-                style: TextStyle(
-                    color: delta == 0 ? Colors.white24 : AppTheme.duoGreen,
-                    fontWeight: FontWeight.bold)),
+            child: Text(
+              'Apply Shift & Re-split',
+              style: TextStyle(
+                color: delta == 0
+                    ? context.colors.textFaint
+                    : AppTheme.duoGreen,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),

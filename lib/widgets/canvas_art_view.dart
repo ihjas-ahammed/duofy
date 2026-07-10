@@ -23,6 +23,7 @@ import 'canvas_html_view.dart';
 class CanvasArtView extends StatefulWidget {
   final String? svg;
   final bool hasPrompt;
+
   /// The natural-language diagram description. Shown in the "tap to generate"
   /// state so the user knows what the diagram would depict.
   final String? prompt;
@@ -55,7 +56,8 @@ class _CanvasArtViewState extends State<CanvasArtView> {
   @override
   void didUpdateWidget(CanvasArtView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.svg != oldWidget.svg || widget.isLoading != oldWidget.isLoading) {
+    if (widget.svg != oldWidget.svg ||
+        widget.isLoading != oldWidget.isLoading) {
       _hasError = false;
     }
   }
@@ -86,7 +88,8 @@ class _CanvasArtViewState extends State<CanvasArtView> {
 
     // No prompt → no slot at all. We don't want an empty rectangle for
     // lessons the text AI decided didn't need a diagram.
-    if (!widget.hasPrompt && (widget.svg == null || widget.svg!.trim().isEmpty)) {
+    if (!widget.hasPrompt &&
+        (widget.svg == null || widget.svg!.trim().isEmpty)) {
       return const SizedBox.shrink();
     }
 
@@ -109,17 +112,17 @@ class _CanvasArtViewState extends State<CanvasArtView> {
           : const EdgeInsets.only(bottom: 16),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
+        color: AppTheme.darkColors.surface,
         borderRadius: widget.isStackedWithContent
             ? const BorderRadius.vertical(top: Radius.circular(24))
             : BorderRadius.circular(16),
         border: widget.isStackedWithContent
             ? Border(
-                top: BorderSide(color: Colors.white.withOpacity(0.1)),
-                left: BorderSide(color: Colors.white.withOpacity(0.1)),
-                right: BorderSide(color: Colors.white.withOpacity(0.1)),
+                top: BorderSide(color: context.colors.outline),
+                left: BorderSide(color: context.colors.outline),
+                right: BorderSide(color: context.colors.outline),
               )
-            : Border.all(color: Colors.white.withOpacity(0.1)),
+            : Border.all(color: context.colors.outline),
       ),
       child: Stack(
         children: [
@@ -136,7 +139,8 @@ class _CanvasArtViewState extends State<CanvasArtView> {
                 // the model produced. Malformed SVG falls back to the
                 // tap-to-generate card instead of a red error widget.
                 ? CanvasDoubleTapDetector(
-                    onDoubleTap: () => showCanvasCodeDialog(context, widget.svg!),
+                    onDoubleTap: () =>
+                        showCanvasCodeDialog(context, widget.svg!),
                     child: buildCanvasArt(
                       widget.svg!,
                       svgPlaceholder: (_) => const SizedBox.shrink(),
@@ -144,49 +148,66 @@ class _CanvasArtViewState extends State<CanvasArtView> {
                       onSvgError: _handleSvgError,
                     ),
                   )
-                : _CanvasPlaceholder(label: 'Generating diagram…', spinning: true, targetId: widget.targetId),
+                : _CanvasPlaceholder(
+                    label: 'Generating diagram…',
+                    spinning: true,
+                    targetId: widget.targetId,
+                  ),
           ),
           // Expand-to-full-screen affordance (top-left).
           if (hasArt)
-              Positioned(
-                top: 6,
-                left: 6,
-                child: Material(
-                  color: Colors.black54,
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: () => showCanvasFullScreen(context, widget.svg!),
-                    child: const Padding(
-                      padding: EdgeInsets.all(6.0),
-                      child: Icon(LucideIcons.maximize2, size: 14, color: Colors.white70),
+            Positioned(
+              top: 6,
+              left: 6,
+              child: Material(
+                color: Colors.black54,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => showCanvasFullScreen(context, widget.svg!),
+                  child: const Padding(
+                    padding: EdgeInsets.all(6.0),
+                    child: Icon(
+                      LucideIcons.maximize2,
+                      size: 14,
+                      color: Colors.white70,
                     ),
                   ),
                 ),
               ),
-            if (widget.onRegenerate != null && hasArt)
-              Positioned(
-                top: 6,
-                right: 6,
-                child: Material(
-                  color: Colors.black54,
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: widget.isLoading ? null : () => widget.onRegenerate!(null),
-                    child: Padding(
-                      padding: const EdgeInsets.all(6.0),
-                      child: widget.isLoading
-                          ? const SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
-                            )
-                          : const Icon(LucideIcons.refreshCcw, size: 14, color: Colors.white70),
-                    ),
+            ),
+          if (widget.onRegenerate != null && hasArt)
+            Positioned(
+              top: 6,
+              right: 6,
+              child: Material(
+                color: Colors.black54,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: widget.isLoading
+                      ? null
+                      : () => widget.onRegenerate!(null),
+                  child: Padding(
+                    padding: const EdgeInsets.all(6.0),
+                    child: widget.isLoading
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white70,
+                            ),
+                          )
+                        : const Icon(
+                            LucideIcons.refreshCcw,
+                            size: 14,
+                            color: Colors.white70,
+                          ),
                   ),
                 ),
               ),
+            ),
         ],
       ),
     );
@@ -199,6 +220,7 @@ class _CanvasArtViewState extends State<CanvasArtView> {
 class _TapToGenerateCard extends StatelessWidget {
   final String? prompt;
   final VoidCallback? onTap;
+
   /// When true the card is rendered inside an existing AspectRatio box (the
   /// SVG render-failure fallback), so it fills its parent instead of adding
   /// its own outer margin.
@@ -231,7 +253,11 @@ class _TapToGenerateCard extends StatelessWidget {
                   color: AppTheme.duoBlue.withOpacity(0.15),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(LucideIcons.imagePlus, size: 18, color: AppTheme.duoBlue),
+                child: const Icon(
+                  LucideIcons.imagePlus,
+                  size: 18,
+                  color: AppTheme.duoBlue,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -252,7 +278,11 @@ class _TapToGenerateCard extends StatelessWidget {
                         ),
                         if (onTap != null) ...[
                           const SizedBox(width: 6),
-                          const Icon(LucideIcons.refreshCcw, size: 12, color: AppTheme.duoBlue),
+                          const Icon(
+                            LucideIcons.refreshCcw,
+                            size: 12,
+                            color: AppTheme.duoBlue,
+                          ),
                         ],
                       ],
                     ),
@@ -260,7 +290,11 @@ class _TapToGenerateCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         trimmed,
-                        style: const TextStyle(color: Colors.white60, fontSize: 12, height: 1.35),
+                        style: TextStyle(
+                          color: context.colors.textFaint,
+                          fontSize: 12,
+                          height: 1.35,
+                        ),
                         maxLines: embedded ? 3 : 4,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -335,7 +369,9 @@ class _CanvasPlaceholderState extends State<_CanvasPlaceholder> {
     if (widget.spinning && widget.targetId != null) {
       final info = AiEstimator.activeRequests[widget.targetId];
       if (info != null) {
-        final elapsed = DateTime.now().difference(info.startTime).inMilliseconds;
+        final elapsed = DateTime.now()
+            .difference(info.startTime)
+            .inMilliseconds;
         final est = info.estimatedDuration.inMilliseconds;
         if (est > 0) {
           final ratio = elapsed / est;
@@ -347,9 +383,9 @@ class _CanvasPlaceholderState extends State<_CanvasPlaceholder> {
     return Container(
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: Colors.black26,
+        color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: context.colors.outline),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -359,24 +395,28 @@ class _CanvasPlaceholderState extends State<_CanvasPlaceholder> {
               width: 40,
               height: 40,
               child: progressValue == null
-                  ? const CircularProgressIndicator(
+                  ? CircularProgressIndicator(
                       strokeWidth: 3,
                       color: AppTheme.duoBlue,
-                      backgroundColor: Colors.white12,
+                      backgroundColor: context.colors.outline,
                     )
                   : CircularProgressIndicator(
                       value: progressValue,
                       strokeWidth: 3,
                       color: AppTheme.duoBlue,
-                      backgroundColor: Colors.white12,
+                      backgroundColor: context.colors.outline,
                     ),
             )
           else
-            const Icon(LucideIcons.image, color: Colors.white24, size: 26),
+            Icon(LucideIcons.image, color: context.colors.textFaint, size: 26),
           const SizedBox(height: 8),
           Text(
             widget.label,
-            style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w800),
+            style: TextStyle(
+              color: context.colors.textFaint,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
           ),
           if (progressValue != null)
             Padding(

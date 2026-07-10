@@ -9,7 +9,11 @@ class CoachMark {
   final GlobalKey targetKey;
   final String title;
   final String body;
-  const CoachMark({required this.targetKey, required this.title, required this.body});
+  const CoachMark({
+    required this.targetKey,
+    required this.title,
+    required this.body,
+  });
 }
 
 /// Sequential first-visit tooltips: dims the screen, cuts a hole around the
@@ -43,7 +47,12 @@ class CoachMarkController {
   }
 
   static Future<void> _showOne(
-      OverlayState overlay, Rect target, CoachMark mark, int index, int total) {
+    OverlayState overlay,
+    Rect target,
+    CoachMark mark,
+    int index,
+    int total,
+  ) {
     final completer = Completer<void>();
     late OverlayEntry entry;
     entry = OverlayEntry(
@@ -70,12 +79,14 @@ class CoachMarkController {
                   child: Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: AppTheme.surface,
+                      color: context.colors.surface,
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: AppTheme.duoBlue.withOpacity(0.5)),
+                      border: Border.all(
+                        color: AppTheme.duoBlue.withOpacity(0.5),
+                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.4),
+                          color: context.colors.shadow,
                           blurRadius: 24,
                           offset: const Offset(0, 6),
                         ),
@@ -88,7 +99,10 @@ class CoachMarkController {
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppTheme.duoBlue.withOpacity(0.15),
                                 borderRadius: BorderRadius.circular(8),
@@ -96,19 +110,21 @@ class CoachMarkController {
                               child: Text(
                                 '$index / $total',
                                 style: const TextStyle(
-                                    color: AppTheme.duoBlue,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w900),
+                                  color: AppTheme.duoBlue,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900,
+                                ),
                               ),
                             ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
                                 mark.title,
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 15),
+                                style: TextStyle(
+                                  color: context.colors.textPrimary,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 15,
+                                ),
                               ),
                             ),
                           ],
@@ -116,13 +132,19 @@ class CoachMarkController {
                         const SizedBox(height: 8),
                         Text(
                           mark.body,
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 13, height: 1.4),
+                          style: TextStyle(
+                            color: context.colors.textSecondary,
+                            fontSize: 13,
+                            height: 1.4,
+                          ),
                         ),
                         const SizedBox(height: 10),
-                        const Text(
+                        Text(
                           'Tap anywhere to continue',
-                          style: TextStyle(color: Colors.white38, fontSize: 11),
+                          style: TextStyle(
+                            color: context.colors.textFaint,
+                            fontSize: 11,
+                          ),
                         ),
                       ],
                     ),
@@ -148,8 +170,11 @@ class _HolePainter extends CustomPainter {
     final path = Path.combine(
       PathOperation.difference,
       Path()..addRect(Offset.zero & size),
-      Path()..addRRect(RRect.fromRectAndRadius(hole, const Radius.circular(16))),
+      Path()
+        ..addRRect(RRect.fromRectAndRadius(hole, const Radius.circular(16))),
     );
+    // Fixed dimming scrim for the spotlight cutout — deliberately
+    // theme-invariant, not a themed surface.
     canvas.drawPath(path, Paint()..color = Colors.black.withOpacity(0.72));
   }
 

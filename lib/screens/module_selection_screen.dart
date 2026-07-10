@@ -83,14 +83,19 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: context.colors.background,
       appBar: AppBar(
-        title: const Text('Select Module', style: TextStyle(fontWeight: FontWeight.w900)),
+        title: const Text(
+          'Select Module',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppTheme.duoBlue),
+            )
           : SafeArea(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -103,12 +108,15 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [AppTheme.duoBlue.withValues(alpha: 0.15), Colors.transparent],
+                          colors: [
+                            AppTheme.duoBlue.withValues(alpha: 0.15),
+                            Colors.transparent,
+                          ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: Colors.white10),
+                        border: Border.all(color: context.colors.outline),
                       ),
                       child: Row(
                         children: [
@@ -120,14 +128,20 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppTheme.duoBlue.withValues(alpha: 0.3),
+                                  color: AppTheme.duoBlue.withValues(
+                                    alpha: 0.3,
+                                  ),
                                   blurRadius: 16,
                                   offset: const Offset(0, 4),
                                 ),
                               ],
                             ),
                             alignment: Alignment.center,
-                            child: const Icon(LucideIcons.bookOpen, color: Colors.white, size: 30),
+                            child: Icon(
+                              LucideIcons.bookOpen,
+                              color: context.colors.textPrimary,
+                              size: 30,
+                            ),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
@@ -136,8 +150,8 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                               children: [
                                 Text(
                                   widget.book.title,
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: context.colors.textPrimary,
                                     fontSize: 18,
                                     fontWeight: FontWeight.w900,
                                   ),
@@ -147,7 +161,10 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                 const SizedBox(height: 4),
                                 Text(
                                   widget.book.description,
-                                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                                  style: TextStyle(
+                                    color: context.colors.textFaint,
+                                    fontSize: 12,
+                                  ),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -157,7 +174,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                         ],
                       ),
                     ),
-                    
+
                     // Resume Learning Card
                     if (_lastLessonTitle != null) ...[
                       const SizedBox(height: 16),
@@ -172,7 +189,9 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: AppTheme.duoGreen.withValues(alpha: 0.3)),
+                          border: Border.all(
+                            color: AppTheme.duoGreen.withValues(alpha: 0.3),
+                          ),
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(20),
@@ -196,15 +215,22 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
-                                      color: AppTheme.duoGreen.withValues(alpha: 0.2),
+                                      color: AppTheme.duoGreen.withValues(
+                                        alpha: 0.2,
+                                      ),
                                       shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(LucideIcons.play, color: AppTheme.duoGreen, size: 20),
+                                    child: const Icon(
+                                      LucideIcons.play,
+                                      color: AppTheme.duoGreen,
+                                      size: 20,
+                                    ),
                                   ),
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         const Text(
                                           'RESUME LEARNING',
@@ -218,8 +244,8 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                         const SizedBox(height: 4),
                                         Text(
                                           _lastLessonTitle!,
-                                          style: const TextStyle(
-                                            color: Colors.white,
+                                          style: TextStyle(
+                                            color: context.colors.textPrimary,
                                             fontSize: 15,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -229,15 +255,19 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                         const SizedBox(height: 2),
                                         Text(
                                           'Module ${_lastModIdx! + 1} • Section ${_lastSecIdx! + 1}',
-                                          style: const TextStyle(
-                                            color: Colors.white38,
+                                          style: TextStyle(
+                                            color: context.colors.textFaint,
                                             fontSize: 11,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const Icon(LucideIcons.chevronRight, color: Colors.white30, size: 20),
+                                  Icon(
+                                    LucideIcons.chevronRight,
+                                    color: context.colors.textFaint,
+                                    size: 20,
+                                  ),
                                 ],
                               ),
                             ),
@@ -247,10 +277,10 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                     ],
                     const SizedBox(height: 24),
 
-                    const Text(
+                    Text(
                       'COURSE MODULES',
                       style: TextStyle(
-                        color: Colors.white54,
+                        color: context.colors.textFaint,
                         fontSize: 11,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.5,
@@ -282,14 +312,16 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                           }
                         }
 
-                        final progress = totalLessons > 0 ? (completedCount / totalLessons) : 0.0;
+                        final progress = totalLessons > 0
+                            ? (completedCount / totalLessons)
+                            : 0.0;
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 16),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.03),
+                            color: context.colors.surfaceAlt,
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.white10),
+                            border: Border.all(color: context.colors.outline),
                           ),
                           clipBehavior: Clip.antiAlias,
                           child: InkWell(
@@ -311,13 +343,21 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 4,
+                                        ),
                                         decoration: BoxDecoration(
-                                          color: AppTheme.duoBlue.withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(8),
+                                          color: AppTheme.duoBlue.withValues(
+                                            alpha: 0.1,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
                                         child: Text(
                                           'MODULE ${index + 1}',
@@ -331,15 +371,19 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                       ),
                                       Text(
                                         '${module.sections.length} Sections • $totalUnits Units',
-                                        style: const TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold),
+                                        style: TextStyle(
+                                          color: context.colors.textFaint,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ],
                                   ),
                                   const SizedBox(height: 12),
                                   Text(
                                     module.title,
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: context.colors.textPrimary,
                                       fontSize: 18,
                                       fontWeight: FontWeight.w900,
                                     ),
@@ -347,7 +391,11 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                   const SizedBox(height: 6),
                                   Text(
                                     module.description,
-                                    style: const TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
+                                    style: TextStyle(
+                                      color: context.colors.textFaint,
+                                      fontSize: 12,
+                                      height: 1.4,
+                                    ),
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -358,13 +406,19 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                     children: [
                                       Expanded(
                                         child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(6),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
                                           child: LinearProgressIndicator(
                                             value: progress,
-                                            backgroundColor: Colors.white10,
-                                            valueColor: AlwaysStoppedAnimation<Color>(
-                                              progress >= 1.0 ? AppTheme.duoGreen : AppTheme.duoBlue,
-                                            ),
+                                            backgroundColor:
+                                                context.colors.outline,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                  progress >= 1.0
+                                                      ? AppTheme.duoGreen
+                                                      : AppTheme.duoBlue,
+                                                ),
                                             minHeight: 6,
                                           ),
                                         ),
@@ -373,7 +427,9 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                       Text(
                                         '${(progress * 100).toInt()}%',
                                         style: TextStyle(
-                                          color: progress >= 1.0 ? AppTheme.duoGreen : Colors.white70,
+                                          color: progress >= 1.0
+                                              ? AppTheme.duoGreen
+                                              : context.colors.textSecondary,
                                           fontSize: 12,
                                           fontWeight: FontWeight.w900,
                                         ),
