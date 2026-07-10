@@ -330,22 +330,22 @@ void main() async {
     return true; // Prevent default app crash behavior
   };
 
-  runApp(const DuoFyApp());
+  runApp(const SiriusApp());
 }
 
 class PopIntent extends Intent {
   const PopIntent();
 }
 
-class DuoFyApp extends StatelessWidget {
-  const DuoFyApp({super.key});
+class SiriusApp extends StatelessWidget {
+  const SiriusApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: navigatorKey,
       scaffoldMessengerKey: scaffoldMessengerKey,
-      title: 'DuoFY',
+      title: 'Sirius',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       home: const AuthGate(),

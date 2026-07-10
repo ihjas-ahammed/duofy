@@ -1211,7 +1211,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Icon(LucideIcons.bookOpen, size: 30, color: AppTheme.duoBlue),
               SizedBox(width: 12),
               Text(
-                'DuoFY',
+                'Sirius',
                 style: TextStyle(
                   fontFamily: 'Nunito',
                   fontWeight: FontWeight.w900,

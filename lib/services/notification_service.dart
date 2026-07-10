@@ -39,7 +39,7 @@ class NotificationService {
     // Windows notification system); appUserModelId should match the app's AUMID.
     const WindowsInitializationSettings windowsSettings =
         WindowsInitializationSettings(
-      appName: 'duofy',
+      appName: 'Sirius',
       appUserModelId: 'com.duofy.app',
       guid: 'cd9ef36f-e3fa-4f0c-a409-d39c262ed9d9',
     );

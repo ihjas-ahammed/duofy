@@ -458,7 +458,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Text(
-                      'DuoFY',
+                      'Sirius',
                       style: TextStyle(
                         fontFamily: 'Nunito',
                         fontWeight: FontWeight.w900,

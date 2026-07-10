@@ -1101,7 +1101,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildProfileRow('Transitions Favored', (profile['transitional_mechanics'] as List?)?.join(', ') ?? 'however, furthermore'),
           ] else ...[
             const Text(
-              'No custom writing style profile is set yet. Duofy is currently generating lessons in standard academic style.',
+              'No custom writing style profile is set yet. Sirius is currently generating lessons in standard academic style.',
               style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.4),
             ),
           ],
