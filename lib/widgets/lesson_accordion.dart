@@ -80,11 +80,11 @@ class _LessonAccordionState extends State<LessonAccordion> {
       bool? preview = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: AppTheme.surface,
-          title: const Text('Lesson Locked', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          content: const Text('You haven\'t completed the required previous lessons yet. Do you want to preview this lesson?', style: TextStyle(color: Colors.white70)),
+          backgroundColor: context.colors.surface,
+          title: Text('Lesson Locked', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+          content: Text('You haven\'t completed the required previous lessons yet. Do you want to preview this lesson?', style: TextStyle(color: context.colors.textSecondary)),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
             TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Preview', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold))),
           ]
         )
@@ -125,14 +125,14 @@ class _LessonAccordionState extends State<LessonAccordion> {
     required int lessonIdx,
   }) {
     IconData iconData = isCompleted ? LucideIcons.checkCircle2 : (isLocked ? LucideIcons.lock : LucideIcons.playCircle);
-    Color iconColor = isCompleted ? AppTheme.duoGreen : (isLocked ? Colors.white38 : secColor);
+    Color iconColor = isCompleted ? AppTheme.duoGreen : (isLocked ? context.colors.textFaint : secColor);
     
     return Container(
       margin: const EdgeInsets.only(bottom: 8, left: 16, right: 16),
       decoration: BoxDecoration(
         color: isCompleted ? AppTheme.duoGreen.withOpacity(0.05) : (isActive ? secColor.withOpacity(0.1) : Colors.transparent),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isActive ? secColor : (isCompleted ? AppTheme.duoGreen.withOpacity(0.3) : Colors.white10)),
+        border: Border.all(color: isActive ? secColor : (isCompleted ? AppTheme.duoGreen.withOpacity(0.3) : context.colors.outline)),
       ),
       child: Material(
         color: Colors.transparent,
@@ -153,13 +153,13 @@ class _LessonAccordionState extends State<LessonAccordion> {
             lesson.title, 
             style: TextStyle(
               fontWeight: FontWeight.bold, 
-              color: isLocked ? Colors.white54 : Colors.white
+              color: isLocked ? context.colors.textFaint : context.colors.textPrimary
             ),
             maxLines: 1, overflow: TextOverflow.ellipsis,
           ),
           subtitle: Text(
             lesson.description, 
-            style: TextStyle(color: Colors.white38, fontSize: 12, decoration: isCompleted ? TextDecoration.lineThrough : null),
+            style: TextStyle(color: context.colors.textFaint, fontSize: 12, decoration: isCompleted ? TextDecoration.lineThrough : null),
             maxLines: 1, overflow: TextOverflow.ellipsis,
           ),
           trailing: isActive ? Container(
@@ -168,7 +168,7 @@ class _LessonAccordionState extends State<LessonAccordion> {
               color: secColor,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.2)),
+            child: Text('START', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.2)),
           ) : null,
         ),
       ),
@@ -179,9 +179,9 @@ class _LessonAccordionState extends State<LessonAccordion> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8, left: 16, right: 16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.02),
+        color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: context.colors.outline),
       ),
       child: ListTile(
         leading: Icon(LucideIcons.loader, color: secColor.withOpacity(0.4), size: 28),
@@ -189,12 +189,12 @@ class _LessonAccordionState extends State<LessonAccordion> {
           'Lesson ${index + 1}: Planning Content...', 
           style: TextStyle(
             fontWeight: FontWeight.bold, 
-            color: Colors.white.withOpacity(0.3)
+            color: context.colors.textFaint
           ),
         ),
         subtitle: Text(
           'This lesson will be available soon.',
-          style: TextStyle(color: Colors.white.withOpacity(0.15), fontSize: 12),
+          style: TextStyle(color: context.colors.textFaint, fontSize: 12),
         ),
       ),
     );
@@ -213,7 +213,7 @@ class _LessonAccordionState extends State<LessonAccordion> {
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
           child: Text(
             module.title.toUpperCase(),
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.white54, letterSpacing: 1.5),
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: context.colors.textFaint, letterSpacing: 1.5),
           ),
         )
       );
@@ -235,9 +235,9 @@ class _LessonAccordionState extends State<LessonAccordion> {
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: AppTheme.surface,
+                color: context.colors.surface,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: isExpanded ? secColor : Colors.white12, width: isExpanded ? 2 : 1),
+                border: Border.all(color: isExpanded ? secColor : context.colors.outline, width: isExpanded ? 2 : 1),
               ),
               clipBehavior: Clip.hardEdge,
               child: Theme(
@@ -246,9 +246,9 @@ class _LessonAccordionState extends State<LessonAccordion> {
                   ? ExpansionTile(
                       initiallyExpanded: isExpanded,
                       iconColor: secColor,
-                      collapsedIconColor: Colors.white54,
+                      collapsedIconColor: context.colors.textFaint,
                       title: Text(unit.title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-                      subtitle: Text(unit.description, style: const TextStyle(fontSize: 12, color: Colors.white54)),
+                      subtitle: Text(unit.description, style: TextStyle(fontSize: 12, color: context.colors.textFaint)),
                       children: [
                         Padding(
                           padding: const EdgeInsets.only(bottom: 8.0),
