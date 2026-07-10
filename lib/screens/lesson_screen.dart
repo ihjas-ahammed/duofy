@@ -73,6 +73,11 @@ class _LessonScreenState extends State<LessonScreen> {
   /// permanently counts against final accuracy.
   final Map<String, int> _failCounts = {};
   List<Slide> _slideQueue = [];
+
+  /// High-water mark for the header progress bar. Wrong answers requeue
+  /// slides (growing the denominator), which used to visibly yank the bar
+  /// backwards — clamp it so progress only ever moves forward.
+  double _maxProgress = 0;
   /// Live copy of the lesson. Starts as the one we were constructed with and
   /// gets refreshed whenever [GenerationManager] notifies — this is how the
   /// background canvas-art pass and the user-triggered regenerate button
@@ -289,6 +294,7 @@ class _LessonScreenState extends State<LessonScreen> {
 
   void _buildSlideQueue() {
     _slideQueue = List.of(_lesson.slides);
+    _maxProgress = 0;
 
     for (var slide in _slideQueue) {
       if (['quiz', 'fill_in_blank', 'one_word', 'numerical', 'proof', 'step_by_step', 'descriptive', 'custom_html', 'matching', 'ordering', 'error_spotting', 'flashcard'].contains(slide.type)) {
@@ -922,9 +928,29 @@ class _LessonScreenState extends State<LessonScreen> {
     );
   }
 
+  /// For a wrongly answered quiz: why the picked option is wrong and/or why
+  /// the correct one is right (the generator attaches an `explanation` to
+  /// every option — it was never surfaced anywhere).
+  String? _wrongQuizExplanation(Slide slide) {
+    if (slide.type != 'quiz' || slide.options == null) return null;
+    final selected =
+        slide.options!.where((o) => o.id == _selectedQuizOption).firstOrNull;
+    final correct = slide.options!.where((o) => o.isCorrect).firstOrNull;
+    final parts = [
+      if (selected != null &&
+          !selected.isCorrect &&
+          selected.explanation.trim().isNotEmpty)
+        selected.explanation.trim(),
+      if (correct != null && correct.explanation.trim().isNotEmpty)
+        correct.explanation.trim(),
+    ];
+    return parts.isEmpty ? null : parts.join('\n\n');
+  }
+
   Widget _buildActionBottomBar(Slide slide) {
     final isInteractive = ['quiz', 'fill_in_blank', 'one_word', 'numerical', 'matching', 'ordering', 'error_spotting'].contains(slide.type);
     final feedbackColor = _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed;
+    final wrongExplanation = _wrongQuizExplanation(slide);
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
@@ -970,9 +996,20 @@ class _LessonScreenState extends State<LessonScreen> {
                           const Text('CORRECT ANSWER:', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.2)),
                           const SizedBox(height: 8),
                           MathMarkdown(
-                            data: _getCorrectAnswerText(slide), 
+                            data: _getCorrectAnswerText(slide),
                             textStyle: const TextStyle(color: AppTheme.duoRed, fontSize: 18, fontWeight: FontWeight.bold)
                           ),
+                          if (wrongExplanation != null) ...[
+                            const SizedBox(height: 10),
+                            MathMarkdown(
+                              data: wrongExplanation,
+                              textStyle: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -1195,7 +1232,13 @@ class _LessonScreenState extends State<LessonScreen> {
     if (_currentIndex < 0) _currentIndex = 0;
 
     final slide = _slideQueue[_currentIndex];
-    final progress = (_currentIndex) / _slideQueue.length;
+    var progress = (_currentIndex) / _slideQueue.length;
+    if (progress > _maxProgress) {
+      _maxProgress = progress;
+    } else {
+      progress = _maxProgress;
+    }
+    final remaining = _slideQueue.length - _currentIndex;
     final hasCustomBar = _isCustomBottomBar(slide);
     final bottomBar = (!hasCustomBar && !_isEditingMode) ? _buildActionBottomBar(slide) : null;
 
@@ -1235,12 +1278,28 @@ class _LessonScreenState extends State<LessonScreen> {
                       Expanded(
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: LinearProgressIndicator(
-                            value: progress,
-                            backgroundColor: Colors.white10,
-                            valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.duoGreen),
-                            minHeight: 16,
+                          child: TweenAnimationBuilder<double>(
+                            tween: Tween(end: progress),
+                            duration: const Duration(milliseconds: 350),
+                            curve: Curves.easeOut,
+                            builder: (context, value, _) =>
+                                LinearProgressIndicator(
+                              value: value,
+                              backgroundColor: Colors.white10,
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                  AppTheme.duoGreen),
+                              minHeight: 16,
+                            ),
                           ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '$remaining left',
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                       const SizedBox(width: 12),
