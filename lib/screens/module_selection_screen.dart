@@ -83,7 +83,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: context.colors.background,
       appBar: AppBar(
         title: const Text('Select Module', style: TextStyle(fontWeight: FontWeight.w900)),
         backgroundColor: Colors.transparent,
@@ -108,7 +108,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: Colors.white10),
+                        border: Border.all(color: context.colors.outline),
                       ),
                       child: Row(
                         children: [
@@ -127,7 +127,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                               ],
                             ),
                             alignment: Alignment.center,
-                            child: const Icon(LucideIcons.bookOpen, color: Colors.white, size: 30),
+                            child: Icon(LucideIcons.bookOpen, color: context.colors.textPrimary, size: 30),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
@@ -136,8 +136,8 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                               children: [
                                 Text(
                                   widget.book.title,
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: context.colors.textPrimary,
                                     fontSize: 18,
                                     fontWeight: FontWeight.w900,
                                   ),
@@ -147,7 +147,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                 const SizedBox(height: 4),
                                 Text(
                                   widget.book.description,
-                                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                                  style: TextStyle(color: context.colors.textFaint, fontSize: 12),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -218,8 +218,8 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                         const SizedBox(height: 4),
                                         Text(
                                           _lastLessonTitle!,
-                                          style: const TextStyle(
-                                            color: Colors.white,
+                                          style: TextStyle(
+                                            color: context.colors.textPrimary,
                                             fontSize: 15,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -229,15 +229,15 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                         const SizedBox(height: 2),
                                         Text(
                                           'Module ${_lastModIdx! + 1} • Section ${_lastSecIdx! + 1}',
-                                          style: const TextStyle(
-                                            color: Colors.white38,
+                                          style: TextStyle(
+                                            color: context.colors.textFaint,
                                             fontSize: 11,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const Icon(LucideIcons.chevronRight, color: Colors.white30, size: 20),
+                                  Icon(LucideIcons.chevronRight, color: context.colors.textFaint, size: 20),
                                 ],
                               ),
                             ),
@@ -247,10 +247,10 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                     ],
                     const SizedBox(height: 24),
 
-                    const Text(
+                    Text(
                       'COURSE MODULES',
                       style: TextStyle(
-                        color: Colors.white54,
+                        color: context.colors.textFaint,
                         fontSize: 11,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.5,
@@ -287,9 +287,9 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 16),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.03),
+                            color: context.colors.surfaceAlt,
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.white10),
+                            border: Border.all(color: context.colors.outline),
                           ),
                           clipBehavior: Clip.antiAlias,
                           child: InkWell(
@@ -331,15 +331,15 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                       ),
                                       Text(
                                         '${module.sections.length} Sections • $totalUnits Units',
-                                        style: const TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold),
+                                        style: TextStyle(color: context.colors.textFaint, fontSize: 11, fontWeight: FontWeight.bold),
                                       ),
                                     ],
                                   ),
                                   const SizedBox(height: 12),
                                   Text(
                                     module.title,
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: context.colors.textPrimary,
                                       fontSize: 18,
                                       fontWeight: FontWeight.w900,
                                     ),
@@ -347,7 +347,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                   const SizedBox(height: 6),
                                   Text(
                                     module.description,
-                                    style: const TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
+                                    style: TextStyle(color: context.colors.textFaint, fontSize: 12, height: 1.4),
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -361,7 +361,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                           borderRadius: BorderRadius.circular(6),
                                           child: LinearProgressIndicator(
                                             value: progress,
-                                            backgroundColor: Colors.white10,
+                                            backgroundColor: context.colors.outline,
                                             valueColor: AlwaysStoppedAnimation<Color>(
                                               progress >= 1.0 ? AppTheme.duoGreen : AppTheme.duoBlue,
                                             ),
@@ -373,7 +373,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                       Text(
                                         '${(progress * 100).toInt()}%',
                                         style: TextStyle(
-                                          color: progress >= 1.0 ? AppTheme.duoGreen : Colors.white70,
+                                          color: progress >= 1.0 ? AppTheme.duoGreen : context.colors.textSecondary,
                                           fontSize: 12,
                                           fontWeight: FontWeight.w900,
                                         ),
