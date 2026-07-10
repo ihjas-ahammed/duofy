@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -33,6 +36,7 @@ class LessonCompleteScreen extends StatefulWidget {
 class _LessonCompleteScreenState extends State<LessonCompleteScreen> with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   late Animation<double> _scaleAnim;
+  late ConfettiController _confettiController;
 
   /// Which reflection chip was tapped (null until then).
   String? _reflection;
@@ -44,9 +48,13 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
     _scaleAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animController, curve: Curves.elasticOut)
     );
-    
+
+    _confettiController =
+        ConfettiController(duration: const Duration(milliseconds: 1200));
+
     _animController.forward();
-    
+    _confettiController.play();
+
     Future.delayed(const Duration(milliseconds: 100), () {
       HapticFeedback.heavyImpact();
     });
@@ -55,6 +63,7 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
   @override
   void dispose() {
     _animController.dispose();
+    _confettiController.dispose();
     super.dispose();
   }
 
@@ -107,6 +116,19 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
       ),
     );
   }
+
+  /// XP tile whose number counts up from 0 as the screen lands.
+  Widget _xpStatTile() => TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0, end: widget.xpEarned.toDouble()),
+        duration: const Duration(milliseconds: 900),
+        curve: Curves.easeOutCubic,
+        builder: (context, v, _) => _statTile(
+          icon: LucideIcons.zap,
+          accentColor: Colors.amber,
+          label: 'XP EARNED',
+          value: '+${v.round()}',
+        ),
+      );
 
   Widget get _hero => ScaleTransition(
         scale: _scaleAnim,
@@ -213,7 +235,35 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
     final isDesktop = MediaQuery.sizeOf(context).width >= 900;
     return Scaffold(
       body: SafeArea(
-        child: isDesktop ? _buildDesktop() : _buildMobile(),
+        child: Stack(
+          children: [
+            isDesktop ? _buildDesktop() : _buildMobile(),
+            // Celebration burst falling from the top, above the content but
+            // purely decorative (ignores pointer events).
+            Align(
+              alignment: Alignment.topCenter,
+              child: IgnorePointer(
+                child: ConfettiWidget(
+                  confettiController: _confettiController,
+                  blastDirection: math.pi / 2, // downwards
+                  blastDirectionality: BlastDirectionality.explosive,
+                  emissionFrequency: 0.55,
+                  numberOfParticles: 12,
+                  maxBlastForce: 24,
+                  minBlastForce: 8,
+                  gravity: 0.25,
+                  colors: const [
+                    AppTheme.duoGreen,
+                    AppTheme.duoBlue,
+                    AppTheme.duoViolet,
+                    AppTheme.duoOrange,
+                    Colors.amber,
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -242,7 +292,7 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Expanded(
-                        child: _staggered(0.2, _statTile(icon: LucideIcons.zap, accentColor: Colors.amber, label: 'XP EARNED', value: '+${widget.xpEarned}')),
+                        child: _staggered(0.2, _xpStatTile()),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
@@ -280,7 +330,7 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
             0.2,
             Row(
               children: [
-                Expanded(child: _statTile(icon: LucideIcons.zap, accentColor: Colors.amber, label: 'XP EARNED', value: '+${widget.xpEarned}')),
+                Expanded(child: _xpStatTile()),
                 const SizedBox(width: 16),
                 Expanded(child: _statTile(icon: LucideIcons.target, accentColor: AppTheme.duoBlue, label: 'ACCURACY', value: '${widget.accuracy}%')),
               ],
