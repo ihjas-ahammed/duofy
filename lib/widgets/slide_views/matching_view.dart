@@ -7,14 +7,17 @@ import '../../theme/app_theme.dart';
 import '../math_markdown.dart';
 
 /// `matching` slide: pair every left item with its right partner. Tap a left
-/// chip, then a right chip, to bind them (tap a bound chip to unbind). The
-/// host receives the current left→right assignment map via [onChanged] and
-/// validates it against [Slide.matchPairs].
+/// chip, then a right chip, to bind them; tapping a right chip while a left is
+/// selected reassigns it, tapping a bound right chip with nothing selected
+/// unbinds it. State is keyed by pair INDEX (not display text) so pairs with
+/// identical strings stay distinct. The host receives the current
+/// leftIndex→rightIndex assignment map via [onChanged]; an assignment is
+/// correct when key == value (the right item's original pair index matches).
 class MatchingView extends StatefulWidget {
   final Slide slide;
   final bool isAnswered;
   final bool isCorrect;
-  final void Function(Map<String, String> assignments) onChanged;
+  final void Function(Map<int, int> assignments) onChanged;
   final Widget? bottomBar;
 
   const MatchingView({
@@ -31,12 +34,13 @@ class MatchingView extends StatefulWidget {
 }
 
 class _MatchingViewState extends State<MatchingView> {
-  late List<String> _lefts;
-  late List<String> _rights; // shuffled
-  final Map<String, String> _assigned = {}; // left -> right
-  String? _selectedLeft;
+  late List<MatchPair> _pairs;
+  late List<int> _rightOrder; // pair indices, shuffled for the right column
+  final Map<int, int> _assigned = {}; // left pair index -> right pair index
+  int? _selectedLeft;
   late Widget _titleWidget;
-  late Map<String, Widget> _chipWidgets;
+  late List<Widget> _leftChips; // by pair index
+  late List<Widget> _rightChips; // by pair index
 
   static const List<Color> _pairColors = [
     AppTheme.duoBlue,
@@ -64,9 +68,8 @@ class _MatchingViewState extends State<MatchingView> {
   void _initSlide() {
     _assigned.clear();
     _selectedLeft = null;
-    final pairs = widget.slide.matchPairs ?? [];
-    _lefts = [for (final p in pairs) p.left];
-    _rights = [for (final p in pairs) p.right]
+    _pairs = widget.slide.matchPairs ?? [];
+    _rightOrder = List.generate(_pairs.length, (i) => i)
       ..shuffle(math.Random(widget.slide.id.hashCode));
 
     _titleWidget = MathMarkdown(
@@ -78,66 +81,69 @@ class _MatchingViewState extends State<MatchingView> {
           fontSize: 17, color: Colors.white, fontWeight: FontWeight.bold),
     );
 
-    _chipWidgets = {};
-    for (final p in pairs) {
-      _chipWidgets[p.left] = MathMarkdown(
-        key: ValueKey('left_${widget.slide.id}_${p.left}'),
-        data: p.left,
-        textStyle: const TextStyle(
-            fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
-      );
-      _chipWidgets[p.right] = MathMarkdown(
-        key: ValueKey('right_${widget.slide.id}_${p.right}'),
-        data: p.right,
-        textStyle: const TextStyle(
-            fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
-      );
-    }
+    _leftChips = [
+      for (var i = 0; i < _pairs.length; i++)
+        MathMarkdown(
+          key: ValueKey('left_${widget.slide.id}_$i'),
+          data: _pairs[i].left,
+          textStyle: const TextStyle(
+              fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+    ];
+    _rightChips = [
+      for (var i = 0; i < _pairs.length; i++)
+        MathMarkdown(
+          key: ValueKey('right_${widget.slide.id}_$i'),
+          data: _pairs[i].right,
+          textStyle: const TextStyle(
+              fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+    ];
   }
 
-  Color _pairColor(String left) =>
-      _pairColors[_lefts.indexOf(left) % _pairColors.length];
+  Color _pairColor(int leftIndex) =>
+      _pairColors[leftIndex % _pairColors.length];
 
-  bool _isPairCorrect(String left) {
-    final pairs = widget.slide.matchPairs ?? [];
-    final expected = pairs.firstWhere((p) => p.left == left,
-        orElse: () => MatchPair(left: '', right: ''));
-    return _assigned[left] == expected.right;
-  }
+  bool _isPairCorrect(int leftIndex) => _assigned[leftIndex] == leftIndex;
 
-  void _tapLeft(String left) {
+  /// The left pair index currently bound to this right item, if any.
+  int? _boundLeftFor(int rightIndex) => _assigned.entries
+      .where((e) => e.value == rightIndex)
+      .map((e) => e.key)
+      .firstOrNull;
+
+  void _tapLeft(int leftIndex) {
     if (widget.isAnswered) return;
     setState(() {
-      if (_assigned.containsKey(left)) {
-        _assigned.remove(left);
-        _selectedLeft = left;
-      } else {
-        _selectedLeft = _selectedLeft == left ? null : left;
-      }
+      // Selecting never unbinds — a bound left can be selected and re-pointed
+      // at a different right; tapping the selected left deselects it.
+      _selectedLeft = _selectedLeft == leftIndex ? null : leftIndex;
     });
     widget.onChanged(Map.of(_assigned));
   }
 
-  void _tapRight(String right) {
+  void _tapRight(int rightIndex) {
     if (widget.isAnswered) return;
     setState(() {
-      final boundLeft = _assigned.entries
-          .where((e) => e.value == right)
-          .map((e) => e.key)
-          .firstOrNull;
-      if (boundLeft != null) {
-        _assigned.remove(boundLeft);
-        _selectedLeft = boundLeft;
-      } else if (_selectedLeft != null) {
-        _assigned[_selectedLeft!] = right;
+      if (_selectedLeft != null) {
+        // Selection wins: (re)assign, stealing this right from any other left.
+        _assigned.removeWhere((_, v) => v == rightIndex);
+        _assigned[_selectedLeft!] = rightIndex;
         _selectedLeft = null;
+      } else {
+        final boundLeft = _boundLeftFor(rightIndex);
+        if (boundLeft != null) {
+          // Nothing selected: unbind and pick the freed left back up.
+          _assigned.remove(boundLeft);
+          _selectedLeft = boundLeft;
+        }
       }
     });
     widget.onChanged(Map.of(_assigned));
   }
 
   Widget _chip({
-    required String text,
+    required Widget child,
     required bool bound,
     required Color color,
     required bool highlighted,
@@ -157,7 +163,7 @@ class _MatchingViewState extends State<MatchingView> {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: border, width: 2),
         ),
-        child: _chipWidgets[text] ?? const SizedBox.shrink(),
+        child: child,
       ),
     );
   }
@@ -186,18 +192,18 @@ class _MatchingViewState extends State<MatchingView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          for (final left in _lefts)
+                          for (var i = 0; i < _pairs.length; i++)
                             _chip(
-                              text: left,
-                              bound: _assigned.containsKey(left),
-                              color: _pairColor(left),
-                              highlighted: _selectedLeft == left,
+                              child: _leftChips[i],
+                              bound: _assigned.containsKey(i),
+                              color: _pairColor(i),
+                              highlighted: _selectedLeft == i,
                               resultColor: widget.isAnswered
-                                  ? (_isPairCorrect(left)
+                                  ? (_isPairCorrect(i)
                                       ? AppTheme.duoGreen
                                       : AppTheme.duoRed)
                                   : null,
-                              onTap: () => _tapLeft(left),
+                              onTap: () => _tapLeft(i),
                             ),
                         ],
                       ),
@@ -207,14 +213,11 @@ class _MatchingViewState extends State<MatchingView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          for (final right in _rights)
+                          for (final rightIndex in _rightOrder)
                             Builder(builder: (context) {
-                              final boundLeft = _assigned.entries
-                                  .where((e) => e.value == right)
-                                  .map((e) => e.key)
-                                  .firstOrNull;
+                              final boundLeft = _boundLeftFor(rightIndex);
                               return _chip(
-                                text: right,
+                                child: _rightChips[rightIndex],
                                 bound: boundLeft != null,
                                 color: boundLeft != null
                                     ? _pairColor(boundLeft)
@@ -225,7 +228,7 @@ class _MatchingViewState extends State<MatchingView> {
                                         ? AppTheme.duoGreen
                                         : AppTheme.duoRed)
                                     : null,
-                                onTap: () => _tapRight(right),
+                                onTap: () => _tapRight(rightIndex),
                               );
                             }),
                         ],

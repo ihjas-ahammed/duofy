@@ -39,7 +39,7 @@ class TheoryView extends StatelessWidget {
                     child: Text(
                       lessonTitle,
                       style: const TextStyle(
-                        fontSize: 28,
+                        fontSize: 24,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
                         letterSpacing: -0.5,
@@ -53,7 +53,7 @@ class TheoryView extends StatelessWidget {
                     child: Text(
                       slide.title,
                       style: const TextStyle(
-                        fontSize: 24,
+                        fontSize: 20,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
                         letterSpacing: -0.5,
@@ -89,7 +89,7 @@ class TheoryView extends StatelessWidget {
                             child: Text(
                               slide.title,
                               style: const TextStyle(
-                                fontSize: 24,
+                                fontSize: 20,
                                 fontWeight: FontWeight.w900,
                                 color: Colors.white,
                                 letterSpacing: -0.5,
@@ -106,7 +106,7 @@ class TheoryView extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 4.0),
                           child: MathMarkdown(
                             data: line,
-                            textStyle: const TextStyle(fontSize: 16, color: Colors.white, height: 1.5),
+                            textStyle: const TextStyle(fontSize: 16, color: Colors.white, height: 1.55),
                           ),
                         );
                       }),
