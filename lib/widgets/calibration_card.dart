@@ -10,7 +10,7 @@ import '../theme/app_theme.dart';
 class CalibrationCard extends StatelessWidget {
   const CalibrationCard({super.key});
 
-  Widget _bar(String label, double? accuracy, Color color) {
+  Widget _bar(BuildContext context, String label, double? accuracy, Color color) {
     final pct = accuracy == null ? null : (accuracy * 100).round();
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -19,8 +19,8 @@ class CalibrationCard extends StatelessWidget {
           SizedBox(
             width: 76,
             child: Text(label,
-                style: const TextStyle(
-                    color: Colors.white54,
+                style: TextStyle(
+                    color: context.colors.textFaint,
                     fontSize: 10,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1)),
@@ -31,9 +31,9 @@ class CalibrationCard extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: accuracy ?? 0,
                 minHeight: 10,
-                backgroundColor: Colors.white.withOpacity(0.06),
+                backgroundColor: context.colors.surfaceAlt,
                 valueColor: AlwaysStoppedAnimation(
-                    accuracy == null ? Colors.white12 : color),
+                    accuracy == null ? context.colors.outline : color),
               ),
             ),
           ),
@@ -42,8 +42,8 @@ class CalibrationCard extends StatelessWidget {
             child: Text(
               pct == null ? '—' : '$pct%',
               textAlign: TextAlign.right,
-              style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12),
+              style: TextStyle(
+                  color: context.colors.textPrimary, fontWeight: FontWeight.w900, fontSize: 12),
             ),
           ),
         ],
@@ -62,31 +62,31 @@ class CalibrationCard extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 16),
           child: AppTheme.applyGlassBlur(
             borderRadius: 24,
-            color: Colors.black.withOpacity(0.3),
+            color: context.colors.glassStrong,
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Row(
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         'CALIBRATION — ACCURACY WHEN YOU FELT…',
                         style: TextStyle(
-                          color: Colors.white54,
+                          color: context.colors.textFaint,
                           fontWeight: FontWeight.bold,
                           fontSize: 11,
                           letterSpacing: 0.8,
                         ),
                       ),
-                      Icon(LucideIcons.brainCircuit, color: Colors.white54, size: 16),
+                      Icon(LucideIcons.brainCircuit, color: context.colors.textFaint, size: 16),
                     ],
                   ),
                   const SizedBox(height: 20),
-                  _bar('SURE', stats.confidentAccuracy, AppTheme.duoGreen),
-                  _bar('UNSURE', stats.unsureAccuracy, AppTheme.duoBlue),
-                  _bar('GUESSING', stats.guessingAccuracy, AppTheme.duoOrange),
+                  _bar(context, 'SURE', stats.confidentAccuracy, AppTheme.duoGreen),
+                  _bar(context, 'UNSURE', stats.unsureAccuracy, AppTheme.duoBlue),
+                  _bar(context, 'GUESSING', stats.guessingAccuracy, AppTheme.duoOrange),
                   if (stats.insight != null) ...[
                     const SizedBox(height: 4),
                     Row(
@@ -98,8 +98,8 @@ class CalibrationCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             stats.insight!,
-                            style: const TextStyle(
-                                color: Colors.white70, fontSize: 12, height: 1.4),
+                            style: TextStyle(
+                                color: context.colors.textSecondary, fontSize: 12, height: 1.4),
                           ),
                         ),
                       ],

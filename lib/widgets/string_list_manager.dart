@@ -76,7 +76,7 @@ class StringListManagerState extends State<StringListManager> {
                   hintText: widget.hintText,
                   border: const OutlineInputBorder(),
                   filled: true,
-                  fillColor: Colors.black26,
+                  fillColor: context.colors.surfaceAlt,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),
               ),
@@ -91,7 +91,7 @@ class StringListManagerState extends State<StringListManager> {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppTheme.duoGreenDark, width: 2),
                 ),
-                child: const Icon(LucideIcons.plus, color: Colors.white),
+                child: Icon(LucideIcons.plus, color: context.colors.textPrimary),
               ),
             )
           ],
@@ -106,9 +106,9 @@ class StringListManagerState extends State<StringListManager> {
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: AppTheme.surface,
+                color: context.colors.surface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white12),
+                border: Border.all(color: context.colors.outline),
               ),
               child: Row(
                 children:[
@@ -117,7 +117,7 @@ class StringListManagerState extends State<StringListManager> {
                   Expanded(
                     child: Text(
                       _items[index],
-                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: context.colors.textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),

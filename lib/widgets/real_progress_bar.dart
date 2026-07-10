@@ -108,7 +108,7 @@ class _RealProgressBarState extends State<RealProgressBar> {
             child: val == null
                 ? CircularProgressIndicator(
                     color: color,
-                    backgroundColor: Colors.white12,
+                    backgroundColor: context.colors.outline,
                     strokeWidth: 4,
                   )
                 : TweenAnimationBuilder<double>(
@@ -118,7 +118,7 @@ class _RealProgressBarState extends State<RealProgressBar> {
                     builder: (context, v, _) => CircularProgressIndicator(
                       value: v,
                       color: color,
-                      backgroundColor: Colors.white12,
+                      backgroundColor: context.colors.outline,
                       strokeWidth: 4,
                     ),
                   ),
@@ -136,7 +136,7 @@ class _RealProgressBarState extends State<RealProgressBar> {
               padding: const EdgeInsets.only(top: 6.0),
               child: Text(
                 widget.label,
-                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white70),
+                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: context.colors.textSecondary),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -155,7 +155,7 @@ class _RealProgressBarState extends State<RealProgressBar> {
             padding: const EdgeInsets.only(bottom: 8.0),
             child: Text(
               widget.label,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.colors.textSecondary),
             ),
           ),
         ClipRRect(
@@ -164,7 +164,7 @@ class _RealProgressBarState extends State<RealProgressBar> {
               ? LinearProgressIndicator(
                   minHeight: 12,
                   color: color,
-                  backgroundColor: Colors.white12,
+                  backgroundColor: context.colors.outline,
                 )
               : TweenAnimationBuilder<double>(
                   tween: Tween<double>(begin: 0, end: val),
@@ -174,7 +174,7 @@ class _RealProgressBarState extends State<RealProgressBar> {
                     value: v,
                     minHeight: 12,
                     color: color,
-                    backgroundColor: Colors.white12,
+                    backgroundColor: context.colors.outline,
                   ),
                 ),
         ),

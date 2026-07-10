@@ -23,24 +23,24 @@ class FileSelectionList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: context.colors.outline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: Colors.white12)),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: context.colors.outline)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '${files.length} File(s) Selected', 
-                  style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.white)
+                  '${files.length} File(s) Selected',
+                  style: TextStyle(fontWeight: FontWeight.w900, color: context.colors.textPrimary)
                 ),
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -88,12 +88,12 @@ class FileSelectionList extends StatelessWidget {
           ),
           
           if (files.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(24.0),
+            Padding(
+              padding: const EdgeInsets.all(24.0),
               child: Text(
                 'No files added yet.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white54, fontSize: 13),
+                style: TextStyle(color: context.colors.textFaint, fontSize: 13),
               ),
             )
           else
@@ -101,7 +101,7 @@ class FileSelectionList extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: files.length,
-              separatorBuilder: (_, _) => const Divider(height: 1, color: Colors.white12),
+              separatorBuilder: (_, _) => Divider(height: 1, color: context.colors.outline),
               itemBuilder: (context, index) {
                 final file = files[index];
                 String name = '';
@@ -124,7 +124,7 @@ class FileSelectionList extends StatelessWidget {
                     ),
                     title: Text(
                       name,
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.colors.textPrimary),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),

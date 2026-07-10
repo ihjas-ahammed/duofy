@@ -72,16 +72,16 @@ class _DailyGoalCardState extends State<DailyGoalCard> {
     if (!_loaded) return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: AppTheme.glassDecoration,
+      decoration: AppTheme.glassOf(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(LucideIcons.flame, color: AppTheme.duoOrange, size: 18),
-              SizedBox(width: 8),
+              const Icon(LucideIcons.flame, color: AppTheme.duoOrange, size: 18),
+              const SizedBox(width: 8),
               Text('Daily XP goal',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                  style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w800)),
             ],
           ),
           const SizedBox(height: 12),
@@ -98,18 +98,18 @@ class _DailyGoalCardState extends State<DailyGoalCard> {
                       decoration: BoxDecoration(
                         color: _goal == g
                             ? AppTheme.duoOrange.withOpacity(0.2)
-                            : Colors.white.withOpacity(0.04),
+                            : context.colors.surfaceAlt,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: _goal == g
                               ? AppTheme.duoOrange
-                              : Colors.white.withOpacity(0.1),
+                              : context.colors.outline,
                         ),
                       ),
                       child: Text(
                         '$g',
                         style: TextStyle(
-                          color: _goal == g ? AppTheme.duoOrange : Colors.white70,
+                          color: _goal == g ? AppTheme.duoOrange : context.colors.textSecondary,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -126,13 +126,13 @@ class _DailyGoalCardState extends State<DailyGoalCard> {
               contentPadding: EdgeInsets.zero,
               value: _reminderEnabled,
               activeColor: AppTheme.duoOrange,
-              title: const Text('Daily reminder',
-                  style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+              title: Text('Daily reminder',
+                  style: TextStyle(color: context.colors.textPrimary, fontSize: 14, fontWeight: FontWeight.bold)),
               subtitle: Text(
                 _reminderEnabled
                     ? 'Every day at ${_reminderTime.format(context)}'
                     : 'Get a nudge to keep your streak alive',
-                style: const TextStyle(color: Colors.white54, fontSize: 11),
+                style: TextStyle(color: context.colors.textFaint, fontSize: 11),
               ),
               onChanged: (v) async {
                 setState(() => _reminderEnabled = v);

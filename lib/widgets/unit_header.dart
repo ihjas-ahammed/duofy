@@ -41,11 +41,11 @@ class UnitHeader extends StatelessWidget {
           filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.03),
+              color: context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.08)),
+              border: Border.all(color: context.colors.outline),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 30, offset: const Offset(0, 8)),
+                BoxShadow(color: context.colors.shadow, blurRadius: 30, offset: const Offset(0, 8)),
               ],
             ),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
@@ -54,10 +54,10 @@ class UnitHeader extends StatelessWidget {
               children: [
                 Text(
                   unit.title.toUpperCase(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 14,
-                    color: Colors.white,
+                    color: context.colors.textPrimary,
                     letterSpacing: -0.2,
                   ),
                   textAlign: TextAlign.center,
@@ -190,10 +190,10 @@ class _ResumeIconButtonState extends State<_ResumeIconButton> {
                   )
                 ],
         ),
-        child: const Center(
+        child: Center(
           child: Icon(
             LucideIcons.play,
-            color: Colors.white,
+            color: context.colors.textPrimary,
             size: 16,
           ),
         ),

@@ -70,12 +70,12 @@ class CoachMarkController {
                   child: Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: AppTheme.surface,
+                      color: context.colors.surface,
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(color: AppTheme.duoBlue.withOpacity(0.5)),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.4),
+                          color: context.colors.shadow,
                           blurRadius: 24,
                           offset: const Offset(0, 6),
                         ),
@@ -105,8 +105,8 @@ class CoachMarkController {
                             Expanded(
                               child: Text(
                                 mark.title,
-                                style: const TextStyle(
-                                    color: Colors.white,
+                                style: TextStyle(
+                                    color: context.colors.textPrimary,
                                     fontWeight: FontWeight.w900,
                                     fontSize: 15),
                               ),
@@ -116,13 +116,13 @@ class CoachMarkController {
                         const SizedBox(height: 8),
                         Text(
                           mark.body,
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 13, height: 1.4),
+                          style: TextStyle(
+                              color: context.colors.textSecondary, fontSize: 13, height: 1.4),
                         ),
                         const SizedBox(height: 10),
-                        const Text(
+                        Text(
                           'Tap anywhere to continue',
-                          style: TextStyle(color: Colors.white38, fontSize: 11),
+                          style: TextStyle(color: context.colors.textFaint, fontSize: 11),
                         ),
                       ],
                     ),
@@ -150,6 +150,8 @@ class _HolePainter extends CustomPainter {
       Path()..addRect(Offset.zero & size),
       Path()..addRRect(RRect.fromRectAndRadius(hole, const Radius.circular(16))),
     );
+    // Fixed dimming scrim for the spotlight cutout — deliberately
+    // theme-invariant, not a themed surface.
     canvas.drawPath(path, Paint()..color = Colors.black.withOpacity(0.72));
   }
 
