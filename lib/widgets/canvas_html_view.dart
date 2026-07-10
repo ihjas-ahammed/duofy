@@ -417,10 +417,10 @@ void showCanvasCodeDialog(BuildContext context, String code) {
     context: context,
     builder: (BuildContext context) {
       return Dialog(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: context.colors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Colors.white12),
+          side: BorderSide(color: context.colors.outline),
         ),
         child: Container(
           width: MediaQuery.of(context).size.width * 0.85,
@@ -440,12 +440,12 @@ void showCanvasCodeDialog(BuildContext context, String code) {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Source Code',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
-                            color: Colors.white,
+                            color: context.colors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -475,7 +475,7 @@ void showCanvasCodeDialog(BuildContext context, String code) {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(LucideIcons.x, color: Colors.white54, size: 20),
+                    icon: Icon(LucideIcons.x, color: context.colors.textFaint, size: 20),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -485,19 +485,19 @@ void showCanvasCodeDialog(BuildContext context, String code) {
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF020617),
+                    color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white10),
+                    border: Border.all(color: context.colors.outline),
                   ),
                   padding: const EdgeInsets.all(12),
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
                     child: SelectableText(
                       code.trim(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 11,
-                        color: Color(0xFFE2E8F0),
+                        color: context.colors.textPrimary,
                         height: 1.4,
                       ),
                     ),
@@ -537,7 +537,7 @@ void showCanvasCodeDialog(BuildContext context, String code) {
                   const SizedBox(width: 12),
                   TextButton(
                     style: TextButton.styleFrom(
-                      foregroundColor: Colors.white54,
+                      foregroundColor: context.colors.textFaint,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
                     onPressed: () => Navigator.of(context).pop(),

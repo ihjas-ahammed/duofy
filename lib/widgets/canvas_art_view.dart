@@ -109,17 +109,17 @@ class _CanvasArtViewState extends State<CanvasArtView> {
           : const EdgeInsets.only(bottom: 16),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
+        color: AppTheme.darkColors.surface,
         borderRadius: widget.isStackedWithContent
             ? const BorderRadius.vertical(top: Radius.circular(24))
             : BorderRadius.circular(16),
         border: widget.isStackedWithContent
             ? Border(
-                top: BorderSide(color: Colors.white.withOpacity(0.1)),
-                left: BorderSide(color: Colors.white.withOpacity(0.1)),
-                right: BorderSide(color: Colors.white.withOpacity(0.1)),
+                top: BorderSide(color: context.colors.outline),
+                left: BorderSide(color: context.colors.outline),
+                right: BorderSide(color: context.colors.outline),
               )
-            : Border.all(color: Colors.white.withOpacity(0.1)),
+            : Border.all(color: context.colors.outline),
       ),
       child: Stack(
         children: [
@@ -260,7 +260,7 @@ class _TapToGenerateCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         trimmed,
-                        style: const TextStyle(color: Colors.white60, fontSize: 12, height: 1.35),
+                        style: TextStyle(color: context.colors.textFaint, fontSize: 12, height: 1.35),
                         maxLines: embedded ? 3 : 4,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -349,7 +349,7 @@ class _CanvasPlaceholderState extends State<_CanvasPlaceholder> {
       decoration: BoxDecoration(
         color: Colors.black26,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: context.colors.outline),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

@@ -100,7 +100,7 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-      decoration: AppTheme.glassDecoration.copyWith(
+      decoration: AppTheme.glassOf(context).copyWith(
         border: Border(bottom: BorderSide(color: accentColor, width: 4)),
       ),
       child: Column(
@@ -109,7 +109,7 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
           const SizedBox(height: 8),
           Text(label,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 1.2)),
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: context.colors.textFaint, letterSpacing: 1.2)),
           const SizedBox(height: 4),
           Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
         ],
@@ -184,19 +184,19 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
               margin: const EdgeInsets.symmetric(horizontal: 4),
               padding: const EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
-                color: selected ? color.withOpacity(0.18) : Colors.white.withOpacity(0.04),
+                color: selected ? color.withOpacity(0.18) : context.colors.surfaceAlt,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: selected ? color : Colors.white10),
+                border: Border.all(color: selected ? color : context.colors.outline),
               ),
               child: Column(
                 children: [
-                  Icon(icon, size: 18, color: selected ? color : Colors.white54),
+                  Icon(icon, size: 18, color: selected ? color : context.colors.textFaint),
                   const SizedBox(height: 4),
                   Text(label,
                       style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w900,
-                          color: selected ? color : Colors.white54)),
+                          color: selected ? color : context.colors.textFaint)),
                 ],
               ),
             ),
@@ -211,8 +211,8 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
         children: [
           Text(
             _reflection == null ? 'HOW DID THAT FEEL?' : 'THANKS — FUTURE LESSONS WILL ADAPT',
-            style: const TextStyle(
-                color: Colors.white38,
+            style: TextStyle(
+                color: context.colors.textFaint,
                 fontSize: 10,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 1.4),
@@ -278,9 +278,9 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen> with Single
           constraints: const BoxConstraints(maxWidth: 620),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 56, vertical: 56),
-            decoration: AppTheme.glassDecoration.copyWith(
+            decoration: AppTheme.glassOf(context).copyWith(
               borderRadius: BorderRadius.circular(32),
-              border: Border.all(color: Colors.white.withOpacity(0.08)),
+              border: Border.all(color: context.colors.outline),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
