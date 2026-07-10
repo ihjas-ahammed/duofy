@@ -96,24 +96,24 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: context.colors.background,
       appBar: AppBar(
         title: const Text('Bookmarks', style: TextStyle(fontWeight: FontWeight.w900)),
         actions: [
           PopupMenuButton<_SortMode>(
             icon: const Icon(LucideIcons.arrowDownUp, size: 20),
-            color: AppTheme.surface,
+            color: context.colors.surface,
             onSelected: (v) => setState(() => _sort = v),
             itemBuilder: (ctx) => [
               CheckedPopupMenuItem(
                 value: _SortMode.lastOpened,
                 checked: _sort == _SortMode.lastOpened,
-                child: const Text('Recently opened', style: TextStyle(color: Colors.white)),
+                child: Text('Recently opened', style: TextStyle(color: context.colors.textPrimary)),
               ),
               CheckedPopupMenuItem(
                 value: _SortMode.dateAdded,
                 checked: _sort == _SortMode.dateAdded,
-                child: const Text('Recently added', style: TextStyle(color: Colors.white)),
+                child: Text('Recently added', style: TextStyle(color: context.colors.textPrimary)),
               ),
             ],
           ),
@@ -156,17 +156,17 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(LucideIcons.bookmark, color: Colors.white24, size: 56),
+            Icon(LucideIcons.bookmark, color: context.colors.textFaint, size: 56),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'No bookmarks yet',
-              style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w900, fontSize: 18),
+              style: TextStyle(color: context.colors.textSecondary, fontWeight: FontWeight.w900, fontSize: 18),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Tap the bookmark icon while in a lesson to save it here for spaced practice.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.4),
+              style: TextStyle(color: context.colors.textFaint, fontSize: 13, height: 1.4),
             ),
           ],
         ),
@@ -196,9 +196,9 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppTheme.surface,
+              color: context.colors.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white12),
+              border: Border.all(color: context.colors.outline),
             ),
             child: Row(
               children: [
@@ -217,8 +217,8 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                     children: [
                       Text(
                         bm.lessonTitle.isNotEmpty ? bm.lessonTitle : 'Lesson',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: context.colors.textPrimary,
                           fontWeight: FontWeight.w900,
                           fontSize: 15,
                         ),
@@ -228,25 +228,25 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                       const SizedBox(height: 2),
                       Text(
                         bm.bookTitle,
-                        style: const TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w600),
+                        style: TextStyle(color: context.colors.textFaint, fontSize: 12, fontWeight: FontWeight.w600),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          const Icon(LucideIcons.clock, size: 12, color: Colors.white38),
+                          Icon(LucideIcons.clock, size: 12, color: context.colors.textFaint),
                           const SizedBox(width: 4),
                           Text(
                             'Last opened ${_formatDate(bm.lastOpenedAt)}',
-                            style: const TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.w600),
+                            style: TextStyle(color: context.colors.textFaint, fontSize: 11, fontWeight: FontWeight.w600),
                           ),
                         ],
                       ),
                     ],
                   ),
                 ),
-                const Icon(LucideIcons.chevronRight, size: 18, color: Colors.white24),
+                Icon(LucideIcons.chevronRight, size: 18, color: context.colors.textFaint),
               ],
             ),
           ),

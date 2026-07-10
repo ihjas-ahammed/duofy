@@ -31,7 +31,7 @@ class PyqCompleteScreen extends StatelessWidget {
     final accuracy = totalCount > 0 ? ((correctCount / totalCount) * 100).round() : 100;
 
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: context.colors.background,
       body: ResponsiveCenter(
         maxWidth: ResponsiveMaxWidth.reading,
         child: SafeArea(
@@ -64,13 +64,13 @@ class PyqCompleteScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 24),
 
-                      const Center(
+                      Center(
                         child: Text(
                           'Session Complete!',
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w900,
-                            color: Colors.white,
+                            color: context.colors.textPrimary,
                             letterSpacing: -0.5,
                           ),
                         ),
@@ -110,10 +110,10 @@ class PyqCompleteScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 32),
 
-                      const Text(
+                      Text(
                         'GRADED PYQ RESULTS',
                         style: TextStyle(
-                          color: Colors.white38,
+                          color: context.colors.textFaint,
                           fontSize: 11,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1.5,
@@ -124,12 +124,12 @@ class PyqCompleteScreen extends StatelessWidget {
                       if (totalCount == 0)
                         Container(
                           padding: const EdgeInsets.all(20),
-                          decoration: AppTheme.glassDecoration,
-                          child: const Center(
+                          decoration: AppTheme.glassOf(context),
+                          child: Center(
                             child: Text(
                               'Only interactive proofs were practiced in this session. They were graded step-by-step.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white54, fontSize: 13),
+                              style: TextStyle(color: context.colors.textFaint, fontSize: 13),
                             ),
                           ),
                         )
@@ -162,8 +162,8 @@ class PyqCompleteScreen extends StatelessWidget {
                                     Expanded(
                                       child: MathMarkdown(
                                         data: result['question'] ?? 'Question',
-                                        textStyle: const TextStyle(
-                                          color: Colors.white,
+                                        textStyle: TextStyle(
+                                          color: context.colors.textPrimary,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 14,
                                         ),
@@ -172,15 +172,15 @@ class PyqCompleteScreen extends StatelessWidget {
                                   ],
                                 ),
                                 const SizedBox(height: 12),
-                                const Divider(color: Colors.white10, height: 1),
+                                Divider(color: context.colors.outline, height: 1),
                                 const SizedBox(height: 12),
                                 
                                 // User Answer
                                 Row(
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Your Answer: ',
-                                      style: TextStyle(color: Colors.white38, fontSize: 12),
+                                      style: TextStyle(color: context.colors.textFaint, fontSize: 12),
                                     ),
                                     Expanded(
                                       child: Text(
@@ -201,9 +201,9 @@ class PyqCompleteScreen extends StatelessWidget {
                                 // Correct Answer
                                 Row(
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Correct Answer: ',
-                                      style: TextStyle(color: Colors.white38, fontSize: 12),
+                                      style: TextStyle(color: context.colors.textFaint, fontSize: 12),
                                     ),
                                     Expanded(
                                       child: Text(
@@ -224,13 +224,13 @@ class PyqCompleteScreen extends StatelessWidget {
                                   Container(
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.04),
+                                      color: context.colors.surfaceAlt,
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: Text(
                                       result['explanation'],
-                                      style: const TextStyle(
-                                        color: Colors.white70,
+                                      style: TextStyle(
+                                        color: context.colors.textSecondary,
                                         fontSize: 12,
                                         height: 1.35,
                                       ),
@@ -281,15 +281,15 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-      decoration: AppTheme.glassDecoration,
+      decoration: AppTheme.glassOf(context),
       child: Column(
         children: [
           Icon(icon, color: iconColor, size: 24),
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: context.colors.textPrimary,
               fontWeight: FontWeight.w900,
               fontSize: 16,
             ),
@@ -297,8 +297,8 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.white38,
+            style: TextStyle(
+              color: context.colors.textFaint,
               fontSize: 10,
               fontWeight: FontWeight.w900,
             ),

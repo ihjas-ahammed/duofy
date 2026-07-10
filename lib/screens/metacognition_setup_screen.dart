@@ -153,14 +153,14 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       padding: const EdgeInsets.all(18),
-      decoration: AppTheme.glassDecoration,
+      decoration: AppTheme.glassOf(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
             question,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: context.colors.textPrimary,
               fontSize: 14,
               fontWeight: FontWeight.bold,
               height: 1.4,
@@ -170,12 +170,12 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
           TextField(
             controller: controller,
             maxLines: 4,
-            style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
+            style: TextStyle(color: context.colors.textPrimary, fontSize: 13, height: 1.4),
             decoration: InputDecoration(
               hintText: 'Type your answer here...',
-              hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+              hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 13),
               filled: true,
-              fillColor: Colors.black12,
+              fillColor: context.colors.surfaceAlt,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -194,7 +194,7 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
               Text(
                 'Words: $words/50  •  Sentences: $sentences/3',
                 style: TextStyle(
-                  color: isValid ? AppTheme.duoGreen : Colors.white38,
+                  color: isValid ? AppTheme.duoGreen : context.colors.textFaint,
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                 ),
@@ -206,9 +206,9 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
                   size: 16,
                 )
               else
-                const Icon(
+                Icon(
                   LucideIcons.circle,
-                  color: Colors.white24,
+                  color: context.colors.textFaint,
                   size: 16,
                 ),
             ],
@@ -221,7 +221,7 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: context.colors.background,
       appBar: AppBar(
         title: const Text(
           'Metacognitive Setup',
@@ -244,20 +244,20 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
                     size: 64,
                   ),
                   const SizedBox(height: 20),
-                  const Text(
+                  Text(
                     'Personalize Your Learning Style',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: context.colors.textPrimary,
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'To reduce cognitive load, our AI will adapt textbook content to match the best academic version of your writing style. Answer the questions below to profile your syntax.',
                     style: TextStyle(
-                      color: Colors.white54,
+                      color: context.colors.textFaint,
                       fontSize: 12,
                       height: 1.5,
                     ),
@@ -290,7 +290,7 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
                         _submit();
                       }
                     },
-                    color: _canSubmit ? AppTheme.duoBlue : Colors.white12,
+                    color: _canSubmit ? AppTheme.duoBlue : context.colors.outline,
                     shadowColor: _canSubmit ? AppTheme.duoBlueDark : Colors.transparent,
                   ),
                   
@@ -298,10 +298,10 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
                     const SizedBox(height: 12),
                     TextButton(
                       onPressed: _skip,
-                      child: const Text(
+                      child: Text(
                         'Skip for now (Use default style)',
                         style: TextStyle(
-                          color: Colors.white54,
+                          color: context.colors.textFaint,
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
                         ),
@@ -322,25 +322,25 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 32),
                     width: 320,
-                    child: const Column(
+                    child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        CircularProgressIndicator(color: AppTheme.duoBlue),
-                        SizedBox(height: 24),
+                        const CircularProgressIndicator(color: AppTheme.duoBlue),
+                        const SizedBox(height: 24),
                         Text(
                           'Analyzing Writing Style...',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: context.colors.textPrimary,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         Text(
                           'Extracting syntactical signature parameters.',
                           style: TextStyle(
-                            color: Colors.white54,
+                            color: context.colors.textFaint,
                             fontSize: 11,
                             height: 1.4,
                           ),
