@@ -125,18 +125,18 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
     return showDialog<DocCategory>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
+        backgroundColor: context.colors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
+        title: Text(
           'Select Category',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               'Choose where to organize this PDF document:',
-              style: TextStyle(color: Colors.white70, fontSize: 14),
+              style: TextStyle(color: context.colors.textSecondary, fontSize: 14),
             ),
             const SizedBox(height: 16),
             ListTile(
@@ -148,8 +148,8 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                 ),
                 child: const Icon(LucideIcons.bookOpen, color: AppTheme.duoBlue),
               ),
-              title: const Text('Reference Book', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              subtitle: const Text('Textbooks, guides, and reference material', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              title: Text('Reference Book', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+              subtitle: Text('Textbooks, guides, and reference material', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               onTap: () => Navigator.pop(ctx, DocCategory.reference),
             ),
@@ -163,8 +163,8 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                 ),
                 child: const Icon(LucideIcons.fileSpreadsheet, color: AppTheme.duoOrange),
               ),
-              title: const Text('Syllabus', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              subtitle: const Text('Course outlines and syllabus documents', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              title: Text('Syllabus', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+              subtitle: Text('Course outlines and syllabus documents', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               onTap: () => Navigator.pop(ctx, DocCategory.syllabus),
             ),
@@ -173,7 +173,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, null),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
           ),
         ],
       ),
@@ -406,7 +406,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
       builder: (context) {
         return AppTheme.applyGlassBlur(
           borderRadius: 24,
-          color: AppTheme.surface.withOpacity(0.95),
+          color: context.colors.surface.withOpacity(0.95),
           child: SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -419,7 +419,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.white24,
+                        color: context.colors.textFaint,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -427,8 +427,8 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                   const SizedBox(height: 20),
                   Text(
                     displayName,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: context.colors.textPrimary,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
@@ -475,7 +475,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                   _buildContextActionItem(
                     icon: LucideIcons.x,
                     label: 'Cancel',
-                    color: Colors.white60,
+                    color: context.colors.textSecondary,
                     onTap: () => Navigator.pop(context),
                   ),
                 ],
@@ -496,16 +496,16 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
+        color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: context.colors.outline),
       ),
       child: ListTile(
         leading: Icon(icon, color: color, size: 20),
         title: Text(
           label,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: context.colors.textPrimary,
             fontSize: 14,
             fontWeight: FontWeight.bold,
           ),
@@ -595,13 +595,13 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Delete Document?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: Text('Are you sure you want to permanently delete "$displayName" from cloud store?', style: const TextStyle(color: Colors.white70)),
+        backgroundColor: context.colors.surface,
+        title: Text('Delete Document?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        content: Text('Are you sure you want to permanently delete "$displayName" from cloud store?', style: TextStyle(color: context.colors.textSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -671,7 +671,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: context.colors.background,
       floatingActionButton: _isConfigured && !_isLoading && _errorMessage == null
           ? Padding(
               padding: const EdgeInsets.only(bottom: 80),
@@ -679,7 +679,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                 heroTag: 'doc_store_fab',
                 onPressed: _pickAndUpload,
                 backgroundColor: AppTheme.duoGreen,
-                foregroundColor: Colors.white,
+                foregroundColor: context.colors.textPrimary,
                 elevation: 4,
                 child: const Icon(LucideIcons.upload, size: 22),
               ),
@@ -733,9 +733,9 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: AppTheme.surface,
+                    color: context.colors.surface,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white10),
+                    border: Border.all(color: context.colors.outline),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -744,7 +744,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                       const SizedBox(height: 16),
                       Text(
                         _actionLoadingText,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold),
                         textAlign: TextAlign.center,
                       ),
                       if (_actionProgress > 0.0) ...[
@@ -756,7 +756,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                             height: 8,
                             child: LinearProgressIndicator(
                               value: _actionProgress,
-                              backgroundColor: Colors.white12,
+                              backgroundColor: context.colors.outline,
                               valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.duoViolet),
                             ),
                           ),
@@ -764,7 +764,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                         const SizedBox(height: 8),
                         Text(
                           '${(_actionProgress * 100).toStringAsFixed(0)}%',
-                          style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+                          style: TextStyle(color: context.colors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
                         ),
                       ],
                       const SizedBox(height: 20),
@@ -803,14 +803,14 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Document Store',
                 style: TextStyle(
                   fontFamily: 'Nunito',
                   fontWeight: FontWeight.w900,
                   fontSize: 24,
                   letterSpacing: -0.5,
-                  color: Colors.white,
+                  color: context.colors.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
@@ -818,14 +818,14 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                 _isConfigured
                     ? 'Upload and download PDF references from cloud store'
                     : '10 GB free cloud storage setup',
-                style: const TextStyle(color: Colors.white54, fontSize: 13, fontWeight: FontWeight.bold),
+                style: TextStyle(color: context.colors.textFaint, fontSize: 13, fontWeight: FontWeight.bold),
               ),
             ],
           ),
         ),
         if (_isConfigured && !_isLoading && _errorMessage == null)
           IconButton(
-            icon: const Icon(LucideIcons.refreshCw, color: Colors.white70),
+            icon: Icon(LucideIcons.refreshCw, color: context.colors.textSecondary),
             tooltip: 'Refresh List',
             onPressed: _loadFiles,
           ),
@@ -853,7 +853,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
             const SizedBox(height: 16),
             Text(
               _errorMessage!,
-              style: const TextStyle(color: Colors.white70),
+              style: TextStyle(color: context.colors.textSecondary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -878,26 +878,26 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.02),
+                color: context.colors.surfaceAlt,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 _searchQuery.isNotEmpty ? LucideIcons.search : LucideIcons.folderClosed,
                 size: 64,
-                color: Colors.white24,
+                color: context.colors.textFaint,
               ),
             ),
             const SizedBox(height: 24),
             Text(
               _searchQuery.isNotEmpty ? 'No Search Results' : 'No Documents',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+              style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
             ),
             const SizedBox(height: 8),
             Text(
               _searchQuery.isNotEmpty
                   ? 'No documents in this category match "$_searchQuery".'
                   : 'Organize your references here by uploading a PDF document.',
-              style: const TextStyle(color: Colors.white54, fontSize: 13),
+              style: TextStyle(color: context.colors.textFaint, fontSize: 13),
               textAlign: TextAlign.center,
             ),
             
@@ -955,13 +955,13 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
+        color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: context.colors.outline),
       ),
       child: Row(
         children: [
-          const Icon(LucideIcons.search, color: Colors.white30, size: 18),
+          Icon(LucideIcons.search, color: context.colors.textFaint, size: 18),
           const SizedBox(width: 12),
           Expanded(
             child: TextField(
@@ -971,13 +971,13 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                   _searchQuery = val;
                 });
               },
-              style: const TextStyle(color: Colors.white, fontSize: 14),
-              decoration: const InputDecoration(
+              style: TextStyle(color: context.colors.textPrimary, fontSize: 14),
+              decoration: InputDecoration(
                 hintText: 'Search documents...',
-                hintStyle: TextStyle(color: Colors.white30, fontSize: 14),
+                hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 14),
                 border: InputBorder.none,
                 isDense: true,
-                contentPadding: EdgeInsets.symmetric(vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
               ),
             ),
           ),
@@ -989,7 +989,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                   _searchQuery = '';
                 });
               },
-              child: const Icon(LucideIcons.x, color: Colors.white60, size: 16),
+              child: Icon(LucideIcons.x, color: context.colors.textSecondary, size: 16),
             ),
         ],
       ),
@@ -1002,9 +1002,9 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
+        color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: context.colors.outline),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
@@ -1028,11 +1028,11 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                   decoration: BoxDecoration(
                     color: Colors.black54,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white12),
+                    border: Border.all(color: context.colors.outline),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     LucideIcons.cloud,
-                    color: Colors.white60,
+                    color: context.colors.textSecondary,
                     size: 10,
                   ),
                 ),
@@ -1068,8 +1068,8 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                     // Title
                     Text(
                       displayName,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: context.colors.textPrimary,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
@@ -1084,8 +1084,8 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                       children: [
                         Text(
                           file.sizeFormatted,
-                          style: const TextStyle(
-                            color: Colors.white54,
+                          style: TextStyle(
+                            color: context.colors.textFaint,
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
                           ),
@@ -1108,9 +1108,9 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                             // Redownload / Retry
                             if (isCached)
                               IconButton(
-                                icon: const Icon(
+                                icon: Icon(
                                   LucideIcons.refreshCw,
-                                  color: Colors.white70,
+                                  color: context.colors.textSecondary,
                                   size: 16,
                                 ),
                                 constraints: const BoxConstraints(),
@@ -1155,23 +1155,23 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.03),
+              color: context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withOpacity(0.08)),
+              border: Border.all(color: context.colors.outline),
             ),
-            child: const Column(
+            child: Column(
               children: [
-                Icon(LucideIcons.hardDrive, size: 48, color: AppTheme.duoViolet),
-                SizedBox(height: 16),
+                const Icon(LucideIcons.hardDrive, size: 48, color: AppTheme.duoViolet),
+                const SizedBox(height: 16),
                 Text(
                   'Backblaze B2 Setup Required',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
+                  style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w900, fontSize: 18),
                   textAlign: TextAlign.center,
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
                   'Backblaze B2 is not configured. Please configure your keyId, applicationKey, bucketName, and region constants in lib/services/b2_service.dart.',
-                  style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.4),
+                  style: TextStyle(color: context.colors.textFaint, fontSize: 13, height: 1.4),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -1179,9 +1179,9 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
           ),
           const SizedBox(height: 32),
 
-          const Text(
+          Text(
             'Step-by-step Setup Guide',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
+            style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w900, fontSize: 16),
           ),
           const SizedBox(height: 16),
 
@@ -1216,12 +1216,12 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                  style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   desc,
-                  style: const TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
+                  style: TextStyle(color: context.colors.textFaint, fontSize: 12, height: 1.4),
                 ),
               ],
             ),
@@ -1246,7 +1246,7 @@ class B2PdfViewerScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppTheme.background,
+        backgroundColor: context.colors.background,
         elevation: 0,
         title: Text(
           filename,
@@ -1406,7 +1406,7 @@ class _PdfThumbnailWidgetState extends State<PdfThumbnailWidget> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Container(
-        color: Colors.white.withOpacity(0.02),
+        color: context.colors.surfaceAlt,
         child: const Center(
           child: SizedBox(
             width: 20,
@@ -1434,8 +1434,8 @@ class _PdfThumbnailWidgetState extends State<PdfThumbnailWidget> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppTheme.surface,
-            AppTheme.surface.withOpacity(0.7),
+            context.colors.surface,
+            context.colors.surface.withOpacity(0.7),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -1458,10 +1458,10 @@ class _PdfThumbnailWidgetState extends State<PdfThumbnailWidget> {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'PDF',
               style: TextStyle(
-                color: Colors.white60,
+                color: context.colors.textSecondary,
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.2,
@@ -1489,9 +1489,9 @@ class CategoryTabs extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
+        color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: context.colors.outline),
       ),
       child: Row(
         children: [
@@ -1537,13 +1537,13 @@ class CategoryTabs extends StatelessWidget {
             Icon(
               icon,
               size: 16,
-              color: isSelected ? Colors.white : Colors.white60,
+              color: isSelected ? context.colors.textPrimary : context.colors.textSecondary,
             ),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.white60,
+                color: isSelected ? context.colors.textPrimary : context.colors.textSecondary,
                 fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold,
                 fontSize: 13,
               ),
@@ -1649,19 +1649,19 @@ Proposed clean title:
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: context.colors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: const Text(
+      title: Text(
         'Confirm Document Name',
-        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+        style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Confirm or customize the document name before upload:',
-            style: TextStyle(color: Colors.white70, fontSize: 13),
+            style: TextStyle(color: context.colors.textSecondary, fontSize: 13),
           ),
           const SizedBox(height: 16),
           Row(
@@ -1670,13 +1670,13 @@ Proposed clean title:
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.04),
+                    color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white10),
+                    border: Border.all(color: context.colors.outline),
                   ),
                   child: TextField(
                     controller: _nameController,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    style: TextStyle(color: context.colors.textPrimary, fontSize: 14),
                     decoration: const InputDecoration(
                       border: InputBorder.none,
                       isDense: true,
@@ -1718,7 +1718,7 @@ Proposed clean title:
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, null),
-          child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+          child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
         ),
         ElevatedButton(
           onPressed: () {
@@ -1728,7 +1728,7 @@ Proposed clean title:
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: AppTheme.duoGreen,
-            foregroundColor: Colors.white,
+            foregroundColor: context.colors.textPrimary,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
           child: const Text('Confirm', style: TextStyle(fontWeight: FontWeight.bold)),
