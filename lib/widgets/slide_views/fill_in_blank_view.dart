@@ -11,6 +11,7 @@ class FillInBlankView extends StatefulWidget {
   final bool isAnswered;
   final bool isCorrect;
   final Function(String) onChanged;
+  final VoidCallback? onSubmit;
 
   final Widget? bottomBar;
 
@@ -21,6 +22,7 @@ class FillInBlankView extends StatefulWidget {
     required this.isAnswered,
     required this.isCorrect,
     required this.onChanged,
+    this.onSubmit,
     this.bottomBar,
   });
 
@@ -129,7 +131,9 @@ class _FillInBlankViewState extends State<FillInBlankView> {
           return GestureDetector(
             onTap: () => _onSuggestionTapped(word, numBlanks, effectiveUserAnswers),
             child: Container(
+              constraints: const BoxConstraints(minHeight: 48),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: isSelected ? AppTheme.duoBlue.withOpacity(0.2) : Colors.white.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(16),
@@ -149,6 +153,36 @@ class _FillInBlankViewState extends State<FillInBlankView> {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+
+  // Fallback for when the AI returned no blankAnswer/blankDistractors to
+  // build a suggestion bank from — without this, CHECK stays permanently
+  // disabled with no way to answer the inline blank(s).
+  Widget _buildInlineFallbackField(int numBlanks, List<String> userAnswers) {
+    if (widget.isAnswered) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 24.0),
+      child: TextFormField(
+        key: ValueKey('blank_fallback_$_activeBlankIndex'),
+        initialValue: userAnswers[_activeBlankIndex],
+        textAlign: TextAlign.center,
+        textInputAction: TextInputAction.done,
+        onFieldSubmitted: (_) => widget.onSubmit?.call(),
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.amber),
+        decoration: InputDecoration(
+          hintText: numBlanks > 1 ? 'Type answer for blank ${_activeBlankIndex + 1}' : 'Type your answer',
+          hintStyle: const TextStyle(color: Colors.white24, fontSize: 14),
+          filled: true,
+          fillColor: Colors.black45,
+          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        ),
+        onChanged: (text) {
+          userAnswers[_activeBlankIndex] = text;
+          widget.onChanged(userAnswers.join(', '));
+        },
       ),
     );
   }
@@ -219,7 +253,9 @@ class _FillInBlankViewState extends State<FillInBlankView> {
                               onTap: () => setState(() => _activeBlankIndex = i),
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
+                                constraints: const BoxConstraints(minHeight: 48),
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                alignment: Alignment.center,
                                 decoration: BoxDecoration(
                                   color: isActive
                                       ? AppTheme.duoBlue.withOpacity(0.15)
@@ -245,7 +281,9 @@ class _FillInBlankViewState extends State<FillInBlankView> {
                       ),
                     ),
                   ],
-                  _buildSuggestionsBank(numBlanks, userAnswers),
+                  _suggestions.isEmpty
+                      ? _buildInlineFallbackField(numBlanks, userAnswers)
+                      : _buildSuggestionsBank(numBlanks, userAnswers),
                 ],
               ),
             ),
@@ -296,6 +334,8 @@ class _FillInBlankViewState extends State<FillInBlankView> {
                         enabled: !widget.isAnswered,
                         onChanged: widget.onChanged,
                         textAlign: TextAlign.center,
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: widget.isAnswered ? null : (_) => widget.onSubmit?.call(),
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w900,

@@ -31,7 +31,7 @@ class MathMarkdown extends StatelessWidget {
     required this.data,
     this.textStyle,
     this.textAlign = TextAlign.left,
-    this.selectable = true,
+    this.selectable = false,
     this.blankController,
     this.blankAnswered = false,
     this.blankCorrect = false,

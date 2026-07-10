@@ -173,11 +173,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _syncRemoteData() async {
+    bool anyFailed = false;
     try {
       // Run sync operations in parallel to load faster (especially when offline or on a low network)
       final results = await Future.wait([
         LearningSync.pullAndMerge().catchError((e) {
           print("[HomeScreen] pullAndMerge error: $e");
+          anyFailed = true;
           return false;
         }),
         _db.fetchBooks(
@@ -185,18 +187,22 @@ class _HomeScreenState extends State<HomeScreen> {
           onConflict: (local, remote) => showSyncConflictDialog(context, local, remote),
         ).catchError((e) {
           print("[HomeScreen] fetchBooks error: $e");
+          anyFailed = true;
           return <Book>[];
         }),
         _db.fetchGlobalBooks(useCacheOnly: false).catchError((e) {
           print("[HomeScreen] fetchGlobalBooks error: $e");
+          anyFailed = true;
           return <Book>[];
         }),
         _db.fetchFolders().catchError((e) {
           print("[HomeScreen] fetchFolders error: $e");
+          anyFailed = true;
           return <CourseFolder>[];
         }),
         ProgressService.getCompletedLessons().catchError((e) {
           print("[HomeScreen] getCompletedLessons error: $e");
+          anyFailed = true;
           return <String>[];
         }),
       ]);
@@ -222,9 +228,62 @@ class _HomeScreenState extends State<HomeScreen> {
           _completedLessons = completed;
           folders = fetchedFolders;
         });
+        if (anyFailed) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Some data couldn't sync — showing cached content")),
+          );
+        }
       }
     } catch (e) {
       print("[HomeScreen] Background sync error: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Sync failed — showing cached content")),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleGeneratingCardTap(GenerationTask task) async {
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.colors.surface,
+        title: Text('Course generation failed', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        content: Text(
+          task.errorMessage?.isNotEmpty == true
+              ? task.errorMessage!
+              : 'Something went wrong generating "${task.title}".',
+          style: TextStyle(color: context.colors.textSecondary),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, 'keep'), child: Text('Keep', style: TextStyle(color: context.colors.textFaint))),
+          TextButton(onPressed: () => Navigator.pop(ctx, 'dismiss'), child: const Text('Dismiss', style: TextStyle(color: AppTheme.duoRed))),
+          TextButton(onPressed: () => Navigator.pop(ctx, 'retry'), child: const Text('Retry', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold))),
+        ],
+      ),
+    );
+
+    if (choice == 'dismiss') {
+      GenerationManager.instance.dismissTask(task.id);
+    } else if (choice == 'retry') {
+      try {
+        GenerationManager.instance.dismissTask(task.id);
+        await GenerationManager.instance.startBookGeneration(
+          task.sourceFiles,
+          task.title,
+          syllabusFiles: task.syllabusFiles,
+          plannerQuestions: task.plannerQuestions,
+          selectedQuestions: task.selectedQuestions,
+          bloomLevel: task.bloomLevel,
+        );
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Couldn't retry — please re-upload")),
+          );
+        }
+      }
     }
   }
 
@@ -647,7 +706,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               )
                             )).then((_) => _loadAllData(force: false));
                           } else if (task.state == BookGenState.error) {
-                            GenerationManager.instance.dismissTask(task.id);
+                            _handleGeneratingCardTap(task);
                           }
                         }
                       );
@@ -1726,7 +1785,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       )
                                     )).then((_) => _loadAllData(force: false));
                                   } else if (task.state == BookGenState.error) {
-                                    GenerationManager.instance.dismissTask(task.id);
+                                    _handleGeneratingCardTap(task);
                                   }
                                 }
                               );

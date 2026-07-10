@@ -199,11 +199,11 @@ class _LessonScreenState extends State<LessonScreen> {
     setState(() => _isBookmarked = nowBookmarked);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: AppTheme.surface,
+        backgroundColor: context.colors.surface,
         duration: const Duration(seconds: 2),
         content: Text(
           nowBookmarked ? 'Lesson bookmarked' : 'Bookmark removed',
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: context.colors.textPrimary),
         ),
       ),
     );
@@ -287,8 +287,8 @@ class _LessonScreenState extends State<LessonScreen> {
           _triggerBackgroundCanvasGeneration();
         }
       });
-    } catch (_) {
-      // Ignore
+    } catch (e) {
+      debugPrint('[LessonScreen] _refreshFromCache failed: $e');
     }
   }
 
@@ -619,44 +619,44 @@ class _LessonScreenState extends State<LessonScreen> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              backgroundColor: AppTheme.surface,
+              backgroundColor: context.colors.surface,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              title: const Text('Regenerate this slide?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              title: Text('Regenerate this slide?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
+                  Text(
                     'The AI will rewrite this slide using the source material. Optionally tell it what to change.',
-                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                    style: TextStyle(color: context.colors.textSecondary, fontSize: 13),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: noteCtrl,
                     maxLines: 2,
                     autofocus: true,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: context.colors.textPrimary),
                     decoration: InputDecoration(
                       hintText: 'Optional note — e.g. "make it simpler"',
-                      hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+                      hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 12),
                       filled: true,
-                      fillColor: Colors.black26,
+                      fillColor: context.colors.surfaceAlt,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'Slide Type:',
-                    style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: context.colors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
-                    dropdownColor: AppTheme.surface,
+                    dropdownColor: context.colors.surface,
                     value: selectedType,
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    style: TextStyle(color: context.colors.textPrimary, fontSize: 13),
                     decoration: InputDecoration(
                       filled: true,
-                      fillColor: Colors.black26,
+                      fillColor: context.colors.surfaceAlt,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
@@ -679,7 +679,7 @@ class _LessonScreenState extends State<LessonScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+                  child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(ctx, true),
@@ -703,15 +703,15 @@ class _LessonScreenState extends State<LessonScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => const Center(
+      builder: (ctx) => Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(color: AppTheme.duoBlue),
-            SizedBox(height: 16),
+            const CircularProgressIndicator(color: AppTheme.duoBlue),
+            const SizedBox(height: 16),
             Text(
               'Regenerating slide...',
-              style: TextStyle(color: Colors.white, fontSize: 14, decoration: TextDecoration.none),
+              style: TextStyle(color: context.colors.textPrimary, fontSize: 14, decoration: TextDecoration.none),
             ),
           ],
         ),
@@ -751,18 +751,45 @@ class _LessonScreenState extends State<LessonScreen> {
     }
   }
 
+  Future<void> _confirmExit() async {
+    if (_currentIndex == 0 && _correctAttempts == 0) {
+      Navigator.pop(context);
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.colors.surface,
+        title: Text('Leave lesson?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        content: Text(
+          "Your progress on this lesson won't be saved if you leave now.",
+          style: TextStyle(color: context.colors.textSecondary, fontSize: 13),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Keep Learning', style: TextStyle(color: context.colors.textFaint))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Leave', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) Navigator.pop(context);
+  }
+
   Future<void> _promptDeleteSlide(Slide slide) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Delete this slide?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: const Text(
+        backgroundColor: context.colors.surface,
+        title: Text('Delete this slide?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        content: Text(
           'Are you sure you want to permanently delete this slide from this lesson? This cannot be undone.',
-          style: TextStyle(color: Colors.white70, fontSize: 13),
+          style: TextStyle(color: context.colors.textSecondary, fontSize: 13),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Delete', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
@@ -895,20 +922,20 @@ class _LessonScreenState extends State<LessonScreen> {
             margin: const EdgeInsets.symmetric(horizontal: 4),
             padding: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
-              color: selected ? AppTheme.duoBlue.withOpacity(0.18) : Colors.white.withOpacity(0.03),
+              color: selected ? AppTheme.duoBlue.withOpacity(0.18) : context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: selected ? AppTheme.duoBlue : Colors.white10),
+              border: Border.all(color: selected ? AppTheme.duoBlue : context.colors.outline),
             ),
             child: Column(
               children: [
-                Icon(icon, size: 16, color: selected ? AppTheme.duoBlue : Colors.white38),
+                Icon(icon, size: 16, color: selected ? AppTheme.duoBlue : context.colors.textFaint),
                 const SizedBox(height: 2),
                 Text(label,
                     style: TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0.6,
-                        color: selected ? AppTheme.duoBlue : Colors.white38)),
+                        color: selected ? AppTheme.duoBlue : context.colors.textFaint)),
               ],
             ),
           ),
@@ -1003,8 +1030,8 @@ class _LessonScreenState extends State<LessonScreen> {
                             const SizedBox(height: 10),
                             MathMarkdown(
                               data: wrongExplanation,
-                              textStyle: const TextStyle(
-                                color: Colors.white70,
+                              textStyle: TextStyle(
+                                color: context.colors.textSecondary,
                                 fontSize: 13,
                                 height: 1.4,
                               ),
@@ -1118,6 +1145,9 @@ class _LessonScreenState extends State<LessonScreen> {
           isAnswered: _answered,
           isCorrect: _isCorrect,
           onChanged: (val) => setState(() => _blankInput = val),
+          onSubmit: () {
+            if (_canCheck(slide)) _checkAnswer(slide);
+          },
           bottomBar: bottomBar,
         );
       case 'numerical':
@@ -1218,8 +1248,8 @@ class _LessonScreenState extends State<LessonScreen> {
   Widget build(BuildContext context) {
     if (_slideQueue.isEmpty) {
       return Scaffold(
-        backgroundColor: const Color(0xFF0B0F19), // Match React lesson bg
-        body: const Center(child: Text("Empty Lesson")),
+        backgroundColor: context.colors.background, // Match React lesson bg
+        body: Center(child: Text("Empty Lesson", style: TextStyle(color: context.colors.textPrimary))),
       );
     }
 
@@ -1243,7 +1273,7 @@ class _LessonScreenState extends State<LessonScreen> {
     final bottomBar = (!hasCustomBar && !_isEditingMode) ? _buildActionBottomBar(slide) : null;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0F19),
+      backgroundColor: context.colors.background,
       body: ResponsiveCenter(
         maxWidth: ResponsiveMaxWidth.mobile,
         breakpoint: ResponsiveMaxWidth.mobile,
@@ -1259,19 +1289,19 @@ class _LessonScreenState extends State<LessonScreen> {
                   height: 64,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: context.colors.surfaceAlt,
                     borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
-                    border: const Border(bottom: BorderSide(color: Colors.white10)),
+                    border: Border(bottom: BorderSide(color: context.colors.outline)),
                   ),
                   child: Row(
                     children: [
                       GestureDetector(
-                        onTap: () => Navigator.pop(context),
+                        onTap: _confirmExit,
                         child: Container(
                           width: 48,
                           height: 48,
                           decoration: const BoxDecoration(shape: BoxShape.circle),
-                          child: const Icon(LucideIcons.x, color: Colors.white54, size: 28),
+                          child: Icon(LucideIcons.x, color: context.colors.textFaint, size: 28),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -1285,7 +1315,7 @@ class _LessonScreenState extends State<LessonScreen> {
                             builder: (context, value, _) =>
                                 LinearProgressIndicator(
                               value: value,
-                              backgroundColor: Colors.white10,
+                              backgroundColor: context.colors.outline,
                               valueColor: const AlwaysStoppedAnimation<Color>(
                                   AppTheme.duoGreen),
                               minHeight: 16,
@@ -1296,8 +1326,8 @@ class _LessonScreenState extends State<LessonScreen> {
                       const SizedBox(width: 8),
                       Text(
                         '$remaining left',
-                        style: const TextStyle(
-                          color: Colors.white54,
+                        style: TextStyle(
+                          color: context.colors.textFaint,
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                         ),
@@ -1320,7 +1350,7 @@ class _LessonScreenState extends State<LessonScreen> {
                             height: 48,
                             child: Icon(
                               _isBookmarked ? LucideIcons.bookmark : LucideIcons.bookmarkPlus,
-                              color: _isBookmarked ? AppTheme.duoOrange : Colors.white54,
+                              color: _isBookmarked ? AppTheme.duoOrange : context.colors.textFaint,
                               size: 22,
                             ),
                           ),
@@ -1346,7 +1376,7 @@ class _LessonScreenState extends State<LessonScreen> {
                                             valueColor: AlwaysStoppedAnimation<Color>(AppTheme.duoBlue),
                                           ),
                                         )
-                                      : const Icon(LucideIcons.refreshCcw, color: Colors.white54, size: 22),
+                                      : Icon(LucideIcons.refreshCcw, color: context.colors.textFaint, size: 22),
                                 ),
                               ),
                             );
@@ -1377,13 +1407,13 @@ class _LessonScreenState extends State<LessonScreen> {
                         maxLines: null,
                         expands: true,
                         textAlignVertical: TextAlignVertical.top,
-                        style: const TextStyle(color: Colors.white, fontFamily: 'monospace', fontSize: 14),
-                        decoration: const InputDecoration(
+                        style: TextStyle(color: context.colors.textPrimary, fontFamily: 'monospace', fontSize: 14),
+                        decoration: InputDecoration(
                           filled: true,
-                          fillColor: Color(0xFF1E293B),
-                          border: OutlineInputBorder(),
+                          fillColor: context.colors.surfaceAlt,
+                          border: const OutlineInputBorder(),
                           hintText: 'Markdown content...',
-                          hintStyle: TextStyle(color: Colors.white24),
+                          hintStyle: TextStyle(color: context.colors.textFaint),
                         ),
                       )
                     : (['descriptive', 'one_word', 'numerical', 'fill_in_blank', 'custom_html'].contains(slide.type)
@@ -1404,22 +1434,38 @@ class _LessonScreenState extends State<LessonScreen> {
             // Action Bottom Bar (SAVE only in editing mode)
             if (_isEditingMode)
               Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: Colors.transparent,
-                  border: Border(top: BorderSide(color: Colors.white10, width: 1)),
+                  border: Border(top: BorderSide(color: context.colors.outline, width: 1)),
                 ),
                 padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 24),
-                child: DuoButton(
-                  text: 'SAVE',
-                  color: AppTheme.duoGreen,
-                  shadowColor: AppTheme.duoGreenDark,
-                  onPressed: () {
-                    final updatedSlide = slide.copyWith(content: _editController.text);
-                    setState(() {
-                      _isEditingMode = false;
-                    });
-                    _applySlideEdit(updatedSlide);
-                  },
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: DuoButton(
+                        text: 'CANCEL',
+                        color: context.colors.textFaint,
+                        shadowColor: context.colors.outline,
+                        isOutline: true,
+                        onPressed: () => setState(() => _isEditingMode = false),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DuoButton(
+                        text: 'SAVE',
+                        color: AppTheme.duoGreen,
+                        shadowColor: AppTheme.duoGreenDark,
+                        onPressed: () {
+                          final updatedSlide = slide.copyWith(content: _editController.text);
+                          setState(() {
+                            _isEditingMode = false;
+                          });
+                          _applySlideEdit(updatedSlide);
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               )
           ],
