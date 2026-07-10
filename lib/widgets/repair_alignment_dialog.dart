@@ -42,7 +42,7 @@ Future<void> showRepairAlignmentFlow(BuildContext context, Book book) async {
     context: context,
     barrierDismissible: false,
     builder: (_) => AlertDialog(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: context.colors.surface,
       content: Row(
         children: [
           const SizedBox(
@@ -52,7 +52,7 @@ Future<void> showRepairAlignmentFlow(BuildContext context, Book book) async {
             child: ValueListenableBuilder<String>(
               valueListenable: status,
               builder: (_, s, __) =>
-                  Text(s, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                  Text(s, style: TextStyle(color: context.colors.textSecondary, fontSize: 13)),
             ),
           ),
         ],
@@ -107,9 +107,9 @@ Future<void> showRepairAlignmentFlow(BuildContext context, Book book) async {
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setDialogState) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Page Alignment',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+        backgroundColor: context.colors.surface,
+        title: Text('Page Alignment',
+            style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,7 +121,7 @@ Future<void> showRepairAlignmentFlow(BuildContext context, Book book) async {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(headline,
-                      style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                      style: TextStyle(color: context.colors.textSecondary, fontSize: 13)),
                 ),
               ],
             ),
@@ -138,13 +138,13 @@ Future<void> showRepairAlignmentFlow(BuildContext context, Book book) async {
                   alignment: Alignment.center,
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.06),
+                    color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     '${delta > 0 ? '+' : ''}$delta pg',
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w900, fontSize: 18, color: context.colors.textPrimary),
                   ),
                 ),
                 IconButton(
@@ -154,16 +154,16 @@ Future<void> showRepairAlignmentFlow(BuildContext context, Book book) async {
               ],
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Shifting moves every mapped page range of the book and re-splits the PDFs. Generated lessons are kept.',
-              style: TextStyle(color: Colors.white38, fontSize: 11),
+              style: TextStyle(color: context.colors.textFaint, fontSize: 11),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Close', style: TextStyle(color: Colors.white54)),
+            child: Text('Close', style: TextStyle(color: context.colors.textFaint)),
           ),
           TextButton(
             onPressed: delta == 0
@@ -177,7 +177,7 @@ Future<void> showRepairAlignmentFlow(BuildContext context, Book book) async {
                   },
             child: Text('Apply Shift & Re-split',
                 style: TextStyle(
-                    color: delta == 0 ? Colors.white24 : AppTheme.duoGreen,
+                    color: delta == 0 ? context.colors.textFaint : AppTheme.duoGreen,
                     fontWeight: FontWeight.bold)),
           ),
         ],
