@@ -347,7 +347,7 @@ class _CanvasPlaceholderState extends State<_CanvasPlaceholder> {
     return Container(
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: Colors.black26,
+        color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: context.colors.outline),
       ),
@@ -359,24 +359,24 @@ class _CanvasPlaceholderState extends State<_CanvasPlaceholder> {
               width: 40,
               height: 40,
               child: progressValue == null
-                  ? const CircularProgressIndicator(
+                  ? CircularProgressIndicator(
                       strokeWidth: 3,
                       color: AppTheme.duoBlue,
-                      backgroundColor: Colors.white12,
+                      backgroundColor: context.colors.outline,
                     )
                   : CircularProgressIndicator(
                       value: progressValue,
                       strokeWidth: 3,
                       color: AppTheme.duoBlue,
-                      backgroundColor: Colors.white12,
+                      backgroundColor: context.colors.outline,
                     ),
             )
           else
-            const Icon(LucideIcons.image, color: Colors.white24, size: 26),
+            Icon(LucideIcons.image, color: context.colors.textFaint, size: 26),
           const SizedBox(height: 8),
           Text(
             widget.label,
-            style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w800),
+            style: TextStyle(color: context.colors.textFaint, fontSize: 11, fontWeight: FontWeight.w800),
           ),
           if (progressValue != null)
             Padding(
