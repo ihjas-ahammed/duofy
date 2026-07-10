@@ -88,15 +88,15 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: AppTheme.surface,
+          backgroundColor: context.colors.surface,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text(
+          title: Text(
             'Cloud Storage Required',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold),
           ),
-          content: const Text(
+          content: Text(
             'Backblaze B2 is not configured. Please setup cloud storage in the Document Store tab first.',
-            style: TextStyle(color: Colors.white70),
+            style: TextStyle(color: context.colors.textSecondary),
           ),
           actions: [
             TextButton(
@@ -333,12 +333,12 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                 constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: AppTheme.background,
+                  color: context.colors.background,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.white12),
+                  border: Border.all(color: context.colors.outline),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.5),
+                      color: context.colors.shadow,
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     )
@@ -352,14 +352,14 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                       children: [
                         const Icon(LucideIcons.bookOpen, color: AppTheme.duoGreen, size: 28),
                         const SizedBox(width: 12),
-                        const Expanded(
+                        Expanded(
                           child: Text(
                             'Syllabus Reference Books',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+                            style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 20),
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(LucideIcons.x, color: Colors.white54, size: 24),
+                          icon: Icon(LucideIcons.x, color: context.colors.textFaint, size: 24),
                           onPressed: () => Navigator.of(ctx).pop(),
                         ),
                       ],
@@ -367,7 +367,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                     const SizedBox(height: 16),
                     Text(
                       'AI identified the following reference books from your syllabus. Tap "AI Search" to perform a deep semantic search against the Marketplace or B2 Store.',
-                      style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13, height: 1.4),
+                      style: TextStyle(color: context.colors.textSecondary, fontSize: 13, height: 1.4),
                     ),
                     const SizedBox(height: 20),
                     Expanded(
@@ -386,13 +386,13 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                           return Container(
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.04),
+                              color: context.colors.surfaceAlt,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.white10),
+                              border: Border.all(color: context.colors.outline),
                             ),
                             child: Row(
                               children: [
-                                const Icon(LucideIcons.book, color: Colors.white38, size: 22),
+                                Icon(LucideIcons.book, color: context.colors.textFaint, size: 22),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
@@ -400,7 +400,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                                     children: [
                                       Text(
                                         title,
-                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                        style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -408,7 +408,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                                         const SizedBox(height: 4),
                                         Text(
                                           'By $authors',
-                                          style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11),
+                                          style: TextStyle(color: context.colors.textFaint, fontSize: 11),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -455,13 +455,13 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                                       color: isAvailable
                                           ? AppTheme.duoGreen.withOpacity(0.1)
                                           : isSearching
-                                              ? Colors.white.withOpacity(0.02)
-                                              : Colors.white.withOpacity(0.05),
+                                              ? context.colors.surfaceAlt
+                                              : context.colors.surfaceAlt,
                                       borderRadius: BorderRadius.circular(20),
                                       border: Border.all(
                                         color: isAvailable
                                             ? AppTheme.duoGreen.withOpacity(0.3)
-                                            : Colors.white10,
+                                            : context.colors.outline,
                                       ),
                                     ),
                                     child: isSearching
@@ -478,14 +478,14 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                                             children: [
                                               Icon(
                                                 isAvailable ? LucideIcons.checkCircle : LucideIcons.search,
-                                                color: isAvailable ? AppTheme.duoGreen : Colors.white54,
+                                                color: isAvailable ? AppTheme.duoGreen : context.colors.textFaint,
                                                 size: 14,
                                               ),
                                               const SizedBox(width: 6),
                                               Text(
                                                 isAvailable ? 'Available' : 'AI Search',
                                                 style: TextStyle(
-                                                  color: isAvailable ? AppTheme.duoGreen : Colors.white70,
+                                                  color: isAvailable ? AppTheme.duoGreen : context.colors.textSecondary,
                                                   fontWeight: FontWeight.bold,
                                                   fontSize: 10,
                                                 ),
@@ -545,8 +545,8 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                     else
                       DuoButton(
                         text: 'Close',
-                        color: Colors.white10,
-                        shadowColor: Colors.black26,
+                        color: context.colors.surfaceAlt,
+                        shadowColor: context.colors.shadow,
                         onPressed: () => Navigator.of(ctx).pop(),
                       ),
                   ],
@@ -721,15 +721,15 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
       barrierDismissible: false,
       builder: (context) => Center(
         child: Card(
-          color: AppTheme.surface,
-          child: const Padding(
-            padding: EdgeInsets.all(24.0),
+          color: context.colors.surface,
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CircularProgressIndicator(color: AppTheme.duoGreen),
-                SizedBox(height: 16),
-                Text('Preparing Files...', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                const CircularProgressIndicator(color: AppTheme.duoGreen),
+                const SizedBox(height: 16),
+                Text('Preparing Files...', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -779,16 +779,16 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Handout Info', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: context.colors.surface,
+        title: Text('Handout Info', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
         content: TextField(
           controller: instructionsCtrl,
           maxLines: 3,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
+          style: TextStyle(color: context.colors.textPrimary),
+          decoration: InputDecoration(
             hintText: 'Enter any instructions or context for this handout...',
-            hintStyle: TextStyle(color: Colors.white54),
-            border: OutlineInputBorder(),
+            hintStyle: TextStyle(color: context.colors.textFaint),
+            border: const OutlineInputBorder(),
           ),
         ),
         actions: [
@@ -810,7 +810,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
               );
               Navigator.of(context).pop();
             },
-            child: const Text('Generate', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+            child: Text('Generate', style: TextStyle(fontWeight: FontWeight.bold, color: context.colors.textPrimary)),
           ),
         ],
       ),
@@ -843,15 +843,15 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? AppTheme.duoBlue : AppTheme.surface,
+            color: isSelected ? AppTheme.duoBlue : context.colors.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: isSelected ? AppTheme.duoBlueDark : Colors.white12),
+            border: Border.all(color: isSelected ? AppTheme.duoBlueDark : context.colors.outline),
           ),
           child: Column(
             children: [
-              Icon(icon, color: isSelected ? Colors.white : Colors.white54, size: 24),
+              Icon(icon, color: isSelected ? context.colors.textPrimary : context.colors.textFaint, size: 24),
               const SizedBox(height: 4),
-              Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.white54, fontWeight: FontWeight.bold, fontSize: 13)),
+              Text(label, style: TextStyle(color: isSelected ? context.colors.textPrimary : context.colors.textFaint, fontWeight: FontWeight.bold, fontSize: 13)),
             ],
           ),
         ),
@@ -876,19 +876,19 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                   children: [
                     _buildModeSelector(),
                     const SizedBox(height: 24),
-                    const Text('COURSE TITLE (OPTIONAL)', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                    Text('COURSE TITLE (OPTIONAL)', style: TextStyle(color: context.colors.textFaint, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
                     const SizedBox(height: 12),
                     TextField(
                       controller: _titleController,
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      style: TextStyle(color: context.colors.textPrimary, fontSize: 14),
                       decoration: InputDecoration(
                         hintText: 'e.g. Organic Chemistry, Linear Algebra...',
-                        hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
+                        hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 13),
                         filled: true,
-                        fillColor: AppTheme.surface,
+                        fillColor: context.colors.surface,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.white12),
+                          borderSide: BorderSide(color: context.colors.outline),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -901,7 +901,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                     if (_mode == GenerationMode.course) ...[
                       Row(
                         children: [
-                          const Text('SYLLABUS (PDF)', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                          Text('SYLLABUS (PDF)', style: TextStyle(color: context.colors.textFaint, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
                           const SizedBox(width: 8),
                           if (_isScanningSyllabus)
                             const SizedBox(
@@ -937,20 +937,20 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Expanded(
+                          Expanded(
                             child: Text(
                               'Auto-fetch mentioned reference books from Marketplace',
-                              style: TextStyle(color: Colors.white70, fontSize: 12),
+                              style: TextStyle(color: context.colors.textSecondary, fontSize: 12),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 24),
-                      const Text('REFERENCE BOOKS (PDF)', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                      Text('REFERENCE BOOKS (PDF)', style: TextStyle(color: context.colors.textFaint, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
                     ] else if (_mode == GenerationMode.book) ...[
-                      const Text('TEXTBOOK (PDF)', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                      Text('TEXTBOOK (PDF)', style: TextStyle(color: context.colors.textFaint, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
                     ] else ...[
-                      const Text('DOCUMENT (PDF / Images)', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                      Text('DOCUMENT (PDF / Images)', style: TextStyle(color: context.colors.textFaint, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
                     ],
                     
                     const SizedBox(height: 12),
@@ -962,20 +962,20 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                     ),
 
                     const SizedBox(height: 24),
-                    const Text('CUSTOM INDEXING INSTRUCTIONS (OPTIONAL)', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                    Text('CUSTOM INDEXING INSTRUCTIONS (OPTIONAL)', style: TextStyle(color: context.colors.textFaint, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
                     const SizedBox(height: 12),
                     TextField(
                       controller: _customPromptController,
                       maxLines: 3,
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      style: TextStyle(color: context.colors.textPrimary, fontSize: 14),
                       decoration: InputDecoration(
                         hintText: 'e.g. Ignore appendix chapters, focus on primary chapters, or translate topic names...',
-                        hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
+                        hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 13),
                         filled: true,
-                        fillColor: AppTheme.surface,
+                        fillColor: context.colors.surface,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.white12),
+                          borderSide: BorderSide(color: context.colors.outline),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -1100,18 +1100,18 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
     final filtered = _getFilteredFiles();
 
     return AlertDialog(
-      backgroundColor: AppTheme.background,
+      backgroundColor: context.colors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
       contentPadding: const EdgeInsets.symmetric(horizontal: 24),
       actionsPadding: const EdgeInsets.all(16),
-      title: const Row(
+      title: Row(
         children: [
-          Icon(LucideIcons.cloud, color: AppTheme.duoViolet),
-          SizedBox(width: 8),
+          const Icon(LucideIcons.cloud, color: AppTheme.duoViolet),
+          const SizedBox(width: 8),
           Text(
             'Document Store',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+            style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
           ),
         ],
       ),
@@ -1124,13 +1124,13 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.04),
+                color: context.colors.surfaceAlt,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                border: Border.all(color: context.colors.outline),
               ),
               child: Row(
                 children: [
-                  const Icon(LucideIcons.search, color: Colors.white30, size: 16),
+                  Icon(LucideIcons.search, color: context.colors.textFaint, size: 16),
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
@@ -1140,13 +1140,13 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
                           _searchQuery = val;
                         });
                       },
-                      style: const TextStyle(color: Colors.white, fontSize: 13),
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: context.colors.textPrimary, fontSize: 13),
+                      decoration: InputDecoration(
                         hintText: 'Search documents...',
-                        hintStyle: TextStyle(color: Colors.white30, fontSize: 13),
+                        hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 13),
                         border: InputBorder.none,
                         isDense: true,
-                        contentPadding: EdgeInsets.symmetric(vertical: 8),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
                       ),
                     ),
                   ),
@@ -1158,7 +1158,7 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
                           _searchQuery = '';
                         });
                       },
-                      child: const Icon(LucideIcons.x, color: Colors.white60, size: 14),
+                      child: Icon(LucideIcons.x, color: context.colors.textFaint, size: 14),
                     ),
                 ],
               ),
@@ -1168,9 +1168,9 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
             Container(
               padding: const EdgeInsets.all(2),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.02),
+                color: context.colors.surfaceAlt,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white.withOpacity(0.05)),
+                border: Border.all(color: context.colors.outline),
               ),
               child: Row(
                 children: [
@@ -1194,7 +1194,7 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+          child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
         ),
       ],
     );
@@ -1217,12 +1217,12 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 14, color: isSelected ? Colors.white : Colors.white60),
+            Icon(icon, size: 14, color: isSelected ? context.colors.textPrimary : context.colors.textFaint),
             const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.white60,
+                color: isSelected ? context.colors.textPrimary : context.colors.textFaint,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 fontSize: 12,
               ),
@@ -1245,11 +1245,11 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(LucideIcons.folderClosed, size: 32, color: Colors.white24),
+            Icon(LucideIcons.folderClosed, size: 32, color: context.colors.textFaint),
             const SizedBox(height: 8),
             Text(
               _searchQuery.isNotEmpty ? 'No search results' : 'No documents',
-              style: const TextStyle(color: Colors.white54, fontSize: 12),
+              style: TextStyle(color: context.colors.textFaint, fontSize: 12),
             ),
           ],
         ),
@@ -1258,7 +1258,7 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
 
     return ListView.separated(
       itemCount: filtered.length,
-      separatorBuilder: (_, _) => const Divider(height: 1, color: Colors.white12),
+      separatorBuilder: (_, _) => Divider(height: 1, color: context.colors.outline),
       itemBuilder: (context, index) {
         final file = filtered[index];
         final name = file.key.split('/').last;
@@ -1268,13 +1268,13 @@ class _DocumentStorePickerDialogState extends State<_DocumentStorePickerDialog> 
           contentPadding: EdgeInsets.zero,
           title: Text(
             name,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+            style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           subtitle: Text(
             file.sizeFormatted,
-            style: const TextStyle(color: Colors.white54, fontSize: 11),
+            style: TextStyle(color: context.colors.textFaint, fontSize: 11),
           ),
           trailing: Icon(
             isCached ? LucideIcons.smartphone : LucideIcons.download,
@@ -1363,11 +1363,11 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: context.colors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Text(
         _errorMessage.isNotEmpty ? 'Download Failed' : 'Downloading File',
-        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+        style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1378,7 +1378,7 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
           ] else ...[
             Text(
               widget.b2Obj.key.split('/').last,
-              style: const TextStyle(color: Colors.white70, fontSize: 13),
+              style: TextStyle(color: context.colors.textSecondary, fontSize: 13),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -1390,14 +1390,14 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
                 value: _progress,
-                backgroundColor: Colors.white12,
+                backgroundColor: context.colors.outline,
                 valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.duoViolet),
               ),
             ),
             const SizedBox(height: 8),
             Text(
               '${(_progress * 100).toStringAsFixed(0)}%',
-              style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+              style: TextStyle(color: context.colors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
             ),
           ],
         ],
@@ -1416,7 +1416,7 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(null),
-            child: const Text('Close', style: TextStyle(color: Colors.white70)),
+            child: Text('Close', style: TextStyle(color: context.colors.textSecondary)),
           ),
         ] else
           TextButton(
