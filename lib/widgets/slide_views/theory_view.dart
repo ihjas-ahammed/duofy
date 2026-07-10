@@ -38,10 +38,10 @@ class TheoryView extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 16.0, top: 16.0),
                     child: Text(
                       lessonTitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w900,
-                        color: Colors.white,
+                        color: context.colors.textPrimary,
                         letterSpacing: -0.5,
                       ),
                       textAlign: TextAlign.center,
@@ -52,10 +52,10 @@ class TheoryView extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 24.0, top: 16.0),
                     child: Text(
                       slide.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
-                        color: Colors.white,
+                        color: context.colors.textPrimary,
                         letterSpacing: -0.5,
                       ),
                       textAlign: TextAlign.center,
@@ -65,16 +65,16 @@ class TheoryView extends StatelessWidget {
                   width: double.infinity,
                   margin: const EdgeInsets.only(bottom: 16),
                   padding: const EdgeInsets.all(24),
-                  decoration: AppTheme.glassDecoration.copyWith(
+                  decoration: AppTheme.glassOf(context).copyWith(
                     borderRadius: hasCanvas
                         ? const BorderRadius.vertical(bottom: Radius.circular(24))
                         : BorderRadius.circular(24),
-                    color: Colors.black.withOpacity(0.4),
+                    color: context.colors.surfaceAlt,
                     border: hasCanvas
                         ? Border(
-                            left: BorderSide(color: Colors.white.withOpacity(0.1)),
-                            right: BorderSide(color: Colors.white.withOpacity(0.1)),
-                            bottom: BorderSide(color: Colors.white.withOpacity(0.1)),
+                            left: BorderSide(color: context.colors.outline),
+                            right: BorderSide(color: context.colors.outline),
+                            bottom: BorderSide(color: context.colors.outline),
                           )
                         : null,
                   ),
@@ -88,10 +88,10 @@ class TheoryView extends StatelessWidget {
                           child: Center(
                             child: Text(
                               slide.title,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900,
-                                color: Colors.white,
+                                color: context.colors.textPrimary,
                                 letterSpacing: -0.5,
                               ),
                               textAlign: TextAlign.center,
@@ -106,7 +106,7 @@ class TheoryView extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 4.0),
                           child: MathMarkdown(
                             data: line,
-                            textStyle: const TextStyle(fontSize: 16, color: Colors.white, height: 1.55),
+                            textStyle: TextStyle(fontSize: 16, color: context.colors.textPrimary, height: 1.55),
                           ),
                         );
                       }),
