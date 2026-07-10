@@ -147,7 +147,7 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
               widget.section != null
                   ? 'Define multiple lesson formats for this section. The AI assigns one of these formats to each unit in this section.'
                   : 'Define multiple lesson formats — one per pedagogical pattern (theory, worked example, proof, etc.). The AI assigns one to each unit when it generates the unit list; you confirm or change the assignments afterwards.',
-              style: const TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
+              style: TextStyle(color: context.colors.textFaint, fontSize: 13, height: 1.5),
             ),
           ),
           Expanded(
@@ -159,9 +159,9 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                     color: AppTheme.surface,
+                     color: context.colors.surface,
                      borderRadius: BorderRadius.circular(16),
-                     border: Border.all(color: Colors.white12, width: 1),
+                     border: Border.all(color: context.colors.outline, width: 1),
                   ),
                   child: InkWell(
                     onTap: () => _openEditor(i),
@@ -173,18 +173,18 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
                         children: [
                           Text(
                             f.name,
-                            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900),
+                            style: TextStyle(color: context.colors.textPrimary, fontSize: 16, fontWeight: FontWeight.w900),
                           ),
                           const SizedBox(height: 4),
                           Text(f.description,
-                              style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.4)),
+                              style: TextStyle(color: context.colors.textSecondary, fontSize: 12, height: 1.4)),
                           const SizedBox(height: 10),
                           Row(
                             children: [
-                              const Icon(LucideIcons.list, size: 13, color: Colors.white38),
+                              Icon(LucideIcons.list, size: 13, color: context.colors.textFaint),
                               const SizedBox(width: 6),
                               Text('${f.slides.length} slides — ${f.slides.map((s) => s.type).join(", ")}',
-                                  style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w600)),
+                                  style: TextStyle(color: context.colors.textFaint, fontSize: 11, fontWeight: FontWeight.w600)),
                             ],
                           ),
                           const SizedBox(height: 12),
@@ -193,7 +193,7 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
                               const Spacer(),
                               IconButton(
                                 tooltip: 'Edit',
-                                icon: const Icon(LucideIcons.edit2, size: 18, color: Colors.white54),
+                                icon: Icon(LucideIcons.edit2, size: 18, color: context.colors.textFaint),
                                 onPressed: () => _openEditor(i),
                               ),
                               IconButton(
@@ -219,7 +219,7 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
                   child: DuoButton(
                     text: 'Add Format',
                     onPressed: _addFormat,
-                    color: AppTheme.surface,
+                    color: context.colors.surface,
                     shadowColor: Colors.black,
                     isOutline: true,
                   ),
@@ -246,11 +246,11 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
       maxWidth: ResponsiveMaxWidth.form,
       child: Column(
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(24, 16, 24, 16),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
             child: Text(
               'Edit the objective options that appear as selection chips when planning section units. Users can toggle these choices to guide the AI.',
-              style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
+              style: TextStyle(color: context.colors.textFaint, fontSize: 13, height: 1.5),
             ),
           ),
           Expanded(
@@ -262,20 +262,20 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: AppTheme.surface,
+                    color: context.colors.surface,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white12, width: 1),
+                    border: Border.all(color: context.colors.outline, width: 1),
                   ),
                   child: Row(
                     children: [
                       Expanded(
                         child: TextFormField(
                           initialValue: _plannerQuestions[i],
-                          style: const TextStyle(color: Colors.white, fontSize: 14),
-                          decoration: const InputDecoration(
+                          style: TextStyle(color: context.colors.textPrimary, fontSize: 14),
+                          decoration: InputDecoration(
                             hintText: 'e.g. Include interactive coding exercises',
                             border: InputBorder.none,
-                            hintStyle: TextStyle(color: Colors.white38),
+                            hintStyle: TextStyle(color: context.colors.textFaint),
                           ),
                           onChanged: (val) {
                             _plannerQuestions[i] = val.trim();
@@ -308,7 +308,7 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
                         _plannerQuestions.add('');
                       });
                     },
-                    color: AppTheme.surface,
+                    color: context.colors.surface,
                     shadowColor: Colors.black,
                     isOutline: true,
                   ),
@@ -412,8 +412,8 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Edit Slide Template', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: context.colors.surface,
+        title: Text('Edit Slide Template', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -421,12 +421,12 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
             children: [
               TextField(
                 controller: typeCtrl,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: context.colors.textPrimary),
                 decoration: InputDecoration(
                   labelText: 'Slide Type (Custom allowed)',
-                  labelStyle: const TextStyle(color: Colors.white54),
+                  labelStyle: TextStyle(color: context.colors.textFaint),
                   filled: true,
-                  fillColor: Colors.black26,
+                  fillColor: context.colors.surfaceAlt,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
@@ -434,13 +434,13 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
               TextField(
                 controller: conditionCtrl,
                 maxLines: 2,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: context.colors.textPrimary),
                 decoration: InputDecoration(
                   labelText: 'Condition / Priority',
                   hintText: 'e.g., Only if mathematical proof is needed',
-                  labelStyle: const TextStyle(color: Colors.white54),
+                  labelStyle: TextStyle(color: context.colors.textFaint),
                   filled: true,
-                  fillColor: Colors.black26,
+                  fillColor: context.colors.surfaceAlt,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
@@ -448,12 +448,12 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
               TextField(
                 controller: descCtrl,
                 maxLines: 3,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: context.colors.textPrimary),
                 decoration: InputDecoration(
                   labelText: 'Instruction to AI',
-                  labelStyle: const TextStyle(color: Colors.white54),
+                  labelStyle: TextStyle(color: context.colors.textFaint),
                   filled: true,
-                  fillColor: Colors.black26,
+                  fillColor: context.colors.surfaceAlt,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
@@ -461,7 +461,7 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
           TextButton(
             onPressed: () {
               setState(() {
@@ -529,12 +529,12 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
               children: [
                 TextField(
                   controller: _nameCtrl,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
+                  style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w900, fontSize: 18),
                   decoration: InputDecoration(
                     labelText: 'Format name',
-                    labelStyle: const TextStyle(color: Colors.white54),
+                    labelStyle: TextStyle(color: context.colors.textFaint),
                     filled: true,
-                    fillColor: AppTheme.surface,
+                    fillColor: context.colors.surface,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
@@ -542,25 +542,25 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
                 TextField(
                   controller: _descCtrl,
                   maxLines: 2,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: context.colors.textPrimary),
                   decoration: InputDecoration(
                     labelText: 'When should the AI pick this format?',
-                    labelStyle: const TextStyle(color: Colors.white54),
+                    labelStyle: TextStyle(color: context.colors.textFaint),
                     filled: true,
-                    fillColor: AppTheme.surface,
+                    fillColor: context.colors.surface,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ],
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 8, 20, 8),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
                 'Slide sequence',
-                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w900),
+                style: TextStyle(color: context.colors.textPrimary, fontSize: 14, fontWeight: FontWeight.w900),
               ),
             ),
           ),
@@ -581,9 +581,9 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
                   key: ValueKey('slide_$index'),
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: AppTheme.surface,
+                    color: context.colors.surface,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white12),
+                    border: Border.all(color: context.colors.outline),
                   ),
                   child: Material(
                     color: Colors.transparent,
@@ -602,7 +602,7 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
                             Text("Condition: ${slide.condition}",
                                 style: const TextStyle(color: AppTheme.duoOrange, fontSize: 10, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 4),
-                            Text(slide.description, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                            Text(slide.description, style: TextStyle(color: context.colors.textPrimary, fontSize: 13, fontWeight: FontWeight.bold)),
                           ],
                         ),
                       ),
@@ -610,14 +610,14 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            icon: const Icon(LucideIcons.edit2, size: 18, color: Colors.white54),
+                            icon: Icon(LucideIcons.edit2, size: 18, color: context.colors.textFaint),
                             onPressed: () => _editSlide(index),
                           ),
                           IconButton(
                             icon: const Icon(LucideIcons.trash2, size: 18, color: AppTheme.duoRed),
                             onPressed: () => setState(() => _slides.removeAt(index)),
                           ),
-                          const Icon(LucideIcons.gripVertical, color: Colors.white38),
+                          Icon(LucideIcons.gripVertical, color: context.colors.textFaint),
                         ],
                       ),
                     ),
@@ -634,7 +634,7 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
                   child: DuoButton(
                     text: 'Add Slide',
                     onPressed: _addSlide,
-                    color: AppTheme.surface,
+                    color: context.colors.surface,
                     shadowColor: Colors.black,
                     isOutline: true,
                   ),
