@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../theme/app_theme.dart';
 import '../models/app_models.dart';
 import '../screens/lesson_screen.dart';
 import '../services/generation_manager.dart';
@@ -779,7 +780,7 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
                     ? 'Couldn\'t plan units for this section'
                     : (isRunning ? 'Planning units…' : 'Plan units for "${widget.section.title}"'),
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
+                style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w900, fontSize: 18),
               ),
               const SizedBox(height: 8),
               Text(
@@ -789,24 +790,24 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
                         ? (task.status)
                         : 'Review the planning guidance below, then plan this section into units. This runs once; lessons stay per-unit and on-demand.'),
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white60, fontSize: 13, height: 1.4),
+                style: TextStyle(color: context.colors.textFaint, fontSize: 13, height: 1.4),
               ),
               // Editable instructions + action are hidden while a call is
               // actively in flight, shown for the idle and error states.
               if (!isRunning) ...[
                 const SizedBox(height: 24),
-                const Align(
+                Align(
                   alignment: Alignment.centerLeft,
                   child: Text('Target Cognitive Level',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13)),
+                      style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w900, fontSize: 13)),
                 ),
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.04),
+                    color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white12),
+                    border: Border.all(color: context.colors.outline),
                   ),
                   child: Row(
                     children: [
@@ -818,7 +819,7 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
                           children: [
                             Text(
                               widget.book.bloomLevel,
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                              style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
                             ),
                             const SizedBox(height: 2),
                             Text(
@@ -827,7 +828,7 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
                                   : widget.book.bloomLevel == 'Applying / Analyzing'
                                       ? 'Focuses on applications, calculations, and analytical patterns.'
                                       : 'Focuses on complex derivations, error spotting, and critiques.',
-                              style: const TextStyle(color: Colors.white54, fontSize: 11),
+                              style: TextStyle(color: context.colors.textFaint, fontSize: 11),
                             ),
                           ],
                         ),
@@ -836,22 +837,22 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Align(
+                Align(
                   alignment: Alignment.centerLeft,
                   child: Text('Additional instructions (optional)',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13)),
+                      style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w900, fontSize: 13)),
                 ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _ctrl,
                   maxLines: 4,
                   minLines: 2,
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.white),
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: context.colors.textPrimary),
                   decoration: InputDecoration(
                     hintText: 'e.g. Emphasise derivations; one worked example per concept.',
-                    hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+                    hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 12),
                     filled: true,
-                    fillColor: Colors.white.withOpacity(0.04),
+                    fillColor: context.colors.surfaceAlt,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -860,7 +861,7 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
                 CheckboxListTile(
                   value: _saveGlobally,
                   onChanged: (val) => setState(() => _saveGlobally = val ?? false),
-                  title: const Text('Save these preferences for all future units in this course', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                  title: Text('Save these preferences for all future units in this course', style: TextStyle(color: context.colors.textSecondary, fontSize: 13)),
                   controlAffinity: ListTileControlAffinity.leading,
                   activeColor: sectionColor,
                   contentPadding: EdgeInsets.zero,
@@ -873,7 +874,7 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
                       style: const TextStyle(fontWeight: FontWeight.w900)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: sectionColor,
-                    foregroundColor: Colors.white,
+                    foregroundColor: context.colors.textPrimary,
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                   ),
                 ),
@@ -938,16 +939,16 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
                 ),
                 child: Icon(Icons.tune, color: sectionColor, size: 26),
               ),
-              const Text(
+              Text(
                 'Confirm units',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
+                style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w900, fontSize: 18),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'The AI has broken this section into the following units. Review the scope before generating lessons.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white60, fontSize: 13, height: 1.4),
+                style: TextStyle(color: context.colors.textFaint, fontSize: 13, height: 1.4),
               ),
               const SizedBox(height: 20),
               
@@ -956,19 +957,19 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.04),
+                    color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.white12),
+                    border: Border.all(color: context.colors.outline),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(unit.title,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14)),
+                          style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w900, fontSize: 14)),
                       if (unit.description.isNotEmpty) ...[
                         const SizedBox(height: 4),
                         Text(unit.description,
-                            style: const TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
+                            style: TextStyle(color: context.colors.textFaint, fontSize: 12, height: 1.4),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis),
                       ],
@@ -981,16 +982,16 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Available lesson formats:',
-                    style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w800, fontSize: 13),
+                    style: TextStyle(color: context.colors.textSecondary, fontWeight: FontWeight.w800, fontSize: 13),
                   ),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       TextButton.icon(
                         style: TextButton.styleFrom(
-                          foregroundColor: Colors.white70,
+                          foregroundColor: context.colors.textSecondary,
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           visualDensity: VisualDensity.compact,
                         ),
@@ -1017,15 +1018,15 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.02),
+                  color: context.colors.surfaceAlt,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.white12),
+                  border: Border.all(color: context.colors.outline),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     for (var i = 0; i < formats.length; i++) ...[
-                      if (i > 0) const Divider(color: Colors.white10, height: 16),
+                      if (i > 0) Divider(color: context.colors.outline, height: 16),
                       Text(
                         formats[i].name,
                         style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 12),
@@ -1033,7 +1034,7 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         formats[i].description,
-                        style: const TextStyle(color: Colors.white54, fontSize: 11, height: 1.4),
+                        style: TextStyle(color: context.colors.textFaint, fontSize: 11, height: 1.4),
                       ),
                     ],
                   ],
@@ -1048,7 +1049,7 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
                     style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: sectionColor,
-                  foregroundColor: Colors.white,
+                  foregroundColor: context.colors.textPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
               ),
@@ -1147,7 +1148,7 @@ class _ActiveGeneratingNodeWrapperState extends State<_ActiveGeneratingNodeWrapp
               value: progress,
               strokeWidth: 4.0,
               color: SectionColors.base(widget.sectionColorStr),
-              backgroundColor: Colors.white.withOpacity(0.1),
+              backgroundColor: context.colors.outline,
             ),
           ),
         ),
