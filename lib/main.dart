@@ -289,6 +289,24 @@ void main() async {
       );
     });
 
+    // Theme mode: hydrate, persist on change, and keep the legacy static
+    // AppTheme.currentBrightness shim in sync (it serves not-yet-migrated
+    // widgets that read AppTheme.background/surface without a context).
+    GlobalState.themeModeNotifier.value = ThemeMode.values.asNameMap()[
+            prefs.getString('theme_mode')] ??
+        ThemeMode.system;
+    _syncCurrentBrightness(GlobalState.themeModeNotifier.value);
+    GlobalState.themeModeNotifier.addListener(() {
+      final mode = GlobalState.themeModeNotifier.value;
+      _syncCurrentBrightness(mode);
+      SharedPreferences.getInstance()
+          .then((p) => p.setString('theme_mode', mode.name));
+    });
+    // Follow OS-level light/dark changes while in system mode.
+    PlatformDispatcher.instance.onPlatformBrightnessChanged = () {
+      _syncCurrentBrightness(GlobalState.themeModeNotifier.value);
+    };
+
     // One-time cleanup: older builds auto-saved `gemini-1.5-flash` into the
     // generic models list / legacy scalar key whenever settings opened with
     // nothing configured. That model is no longer routable on the Gemini
@@ -330,24 +348,41 @@ void main() async {
     return true; // Prevent default app crash behavior
   };
 
-  runApp(const DuoFyApp());
+  runApp(const SiriusApp());
 }
 
 class PopIntent extends Intent {
   const PopIntent();
 }
 
-class DuoFyApp extends StatelessWidget {
-  const DuoFyApp({super.key});
+void _syncCurrentBrightness(ThemeMode mode) {
+  AppTheme.currentBrightness = switch (mode) {
+    ThemeMode.dark => Brightness.dark,
+    ThemeMode.light => Brightness.light,
+    ThemeMode.system => PlatformDispatcher.instance.platformBrightness,
+  };
+}
+
+class SiriusApp extends StatelessWidget {
+  const SiriusApp({super.key});
 
   @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: GlobalState.themeModeNotifier,
+      builder: (context, themeMode, _) => _buildApp(themeMode),
+    );
+  }
+
+  Widget _buildApp(ThemeMode themeMode) {
     return MaterialApp(
       navigatorKey: navigatorKey,
       scaffoldMessengerKey: scaffoldMessengerKey,
-      title: 'DuoFY',
+      title: 'Sirius',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeMode,
       home: const AuthGate(),
       shortcuts: <ShortcutActivator, Intent>{
         ...WidgetsApp.defaultShortcuts,

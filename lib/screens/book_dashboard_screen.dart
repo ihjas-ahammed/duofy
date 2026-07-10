@@ -729,9 +729,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     if (widget.book.modules.isEmpty) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: AppTheme.background,
-        body: Center(child: Text('This book is empty.', style: TextStyle(color: Colors.white54))),
+        body: const Center(child: Text('This book is empty.', style: TextStyle(color: Colors.white54))),
       );
     }
 
@@ -1438,10 +1438,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     );
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         backgroundColor: AppTheme.surface,
-        content: Text('Custom lesson queued with top priority...', style: TextStyle(color: Colors.white)),
-        duration: Duration(seconds: 3),
+        content: const Text('Custom lesson queued with top priority...', style: TextStyle(color: Colors.white)),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
@@ -1908,9 +1908,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return const AlertDialog(
+        return AlertDialog(
           backgroundColor: AppTheme.surface,
-          content: Row(
+          content: const Row(
             children: [
               CircularProgressIndicator(),
               SizedBox(width: 20),

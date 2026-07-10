@@ -28,6 +28,37 @@ bool isSvgCanvas(String content) {
       trimmed.toLowerCase().contains('xmlns="http://www.w3.org/2000/svg"');
 }
 
+/// Aspect ratio (w/h) declared by raw SVG art via its viewBox (or width/
+/// height attributes), clamped to [4:3, 16:9] so extreme shapes can't turn
+/// the art box into a sliver or a tower. Returns 3:2 when the SVG declares
+/// nothing parseable — the historical fixed ratio, kept as the JS-canvas and
+/// fallback shape.
+double svgAspect(String svg) {
+  const fallback = 3 / 2;
+  double? w, h;
+  final viewBox =
+      RegExp(r'viewBox\s*=\s*"([^"]+)"', caseSensitive: false).firstMatch(svg);
+  if (viewBox != null) {
+    final parts = viewBox.group(1)!.trim().split(RegExp(r'[\s,]+'));
+    if (parts.length == 4) {
+      w = double.tryParse(parts[2]);
+      h = double.tryParse(parts[3]);
+    }
+  }
+  if (w == null || h == null) {
+    double? attr(String name) {
+      final m = RegExp('$name\\s*=\\s*"([0-9.]+)', caseSensitive: false)
+          .firstMatch(svg);
+      return m == null ? null : double.tryParse(m.group(1)!);
+    }
+
+    w = attr('width');
+    h = attr('height');
+  }
+  if (w == null || h == null || w <= 0 || h <= 0) return fallback;
+  return (w / h).clamp(4 / 3, 16 / 9).toDouble();
+}
+
 /// Heuristic: program needs THREE.js when it references `THREE.` or uses
 /// the WebGL context name (some models add a manual fallback). Used to
 /// decide whether to pull in the three.js CDN bundle.

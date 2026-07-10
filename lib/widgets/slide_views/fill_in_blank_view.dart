@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../models/app_models.dart';
 import '../../theme/app_theme.dart';
 import '../math_markdown.dart';
@@ -82,7 +83,8 @@ class _FillInBlankViewState extends State<FillInBlankView> {
 
   void _onSuggestionTapped(String word, [int numBlanks = 1, List<String>? userAnswers]) {
     if (widget.isAnswered) return;
-    
+    HapticFeedback.selectionClick();
+
     if (numBlanks <= 1 || userAnswers == null) {
       _controller.text = word;
       widget.onChanged(word);

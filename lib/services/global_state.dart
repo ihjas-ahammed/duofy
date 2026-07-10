@@ -31,6 +31,12 @@ class GlobalState {
   /// OnboardingScreen while this is false.
   static final ValueNotifier<bool> onboardingCompleteNotifier = ValueNotifier<bool>(true);
 
+  /// Selected theme mode (system/light/dark). Hydrated from the
+  /// `theme_mode` pref and persisted by the listener installed in main.dart,
+  /// which also keeps AppTheme.currentBrightness in sync.
+  static final ValueNotifier<ThemeMode> themeModeNotifier =
+      ValueNotifier<ThemeMode>(ThemeMode.system);
+
   /// Power-user mode: reveals per-node generate/schedule menus, model
   /// ladders, concurrency, automation and experiments. Off by default for
   /// new users; migrated existing users keep it on (set in main.dart).

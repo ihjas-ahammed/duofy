@@ -1108,16 +1108,66 @@ class Lesson {
       return s.copyWith(id: sId);
     }).toList();
 
+    // Long theory slides read badly on a card UI. Split anything over
+    // ~110 words into multiple slides at its own separators (`---`, then
+    // blank lines). Runs at parse time so cached/Firestore lessons generated
+    // under the old, looser word cap benefit too.
+    final expandedSlides = [for (final s in slides) ..._splitLongTheory(s)];
+
     return Lesson(
       id: lessonId,
       title: _str(json['title']),
       description: _str(json['description']),
       icon: _str(json['icon'], 'BookOpen'),
-      slides: slides,
+      slides: expandedSlides,
       formatId: _strOpt(json['formatId']),
       canvasPrompt: _strOpt(json['canvasPrompt']),
       canvasSvg: _strOpt(json['canvasSvg']),
     );
+  }
+
+  static int _wordCount(String t) =>
+      t.trim().isEmpty ? 0 : t.trim().split(RegExp(r'\s+')).length;
+
+  /// Splits an over-long theory slide (> ~110 words) into several slides at
+  /// its own `---` separators, falling back to blank-line paragraphs. Parts
+  /// are greedily repacked so each resulting slide stays under the cap.
+  /// Non-theory slides and short theory pass through untouched. Only the
+  /// first piece keeps the canvas art/prompt so a diagram isn't repeated.
+  static List<Slide> _splitLongTheory(Slide s) {
+    const maxWords = 110;
+    if (s.type != 'theory' && s.type != 'theory_group') return [s];
+    if (_wordCount(s.content) <= maxWords) return [s];
+
+    var parts = s.content.split(RegExp(r'\n+\s*---\s*\n+'));
+    if (parts.length == 1) parts = s.content.split(RegExp(r'\n\s*\n'));
+    parts = [for (final p in parts) p.trim()].where((p) => p.isNotEmpty).toList();
+    if (parts.length <= 1) return [s];
+
+    final chunks = <String>[];
+    var current = '';
+    for (final p in parts) {
+      final candidate = current.isEmpty ? p : '$current\n\n$p';
+      if (current.isNotEmpty && _wordCount(candidate) > maxWords) {
+        chunks.add(current);
+        current = p;
+      } else {
+        current = candidate;
+      }
+    }
+    if (current.isNotEmpty) chunks.add(current);
+    if (chunks.length <= 1) return [s];
+
+    return [
+      s.copyWith(content: chunks[0]),
+      for (var i = 1; i < chunks.length; i++)
+        Slide(
+          id: '${s.id}_p$i',
+          type: 'theory',
+          title: s.title,
+          content: chunks[i],
+        ),
+    ];
   }
 
   Map<String, dynamic> toJson() => {
@@ -1270,6 +1320,33 @@ class Slide {
           return QuizOption(id: 'opt', text: 'Option', isCorrect: false, explanation: '');
         }
       }).toList();
+      if (parsedOptions.isNotEmpty) {
+        // The model sometimes repeats an option text; collapse duplicates
+        // (keeping the correct-flagged instance) and reassign positional ids —
+        // missing ids used to fall back to text hashCodes, so two identical
+        // texts shared one id and tapping one selected both.
+        final seen = <String, int>{}; // normalized text -> index in deduped
+        final deduped = <QuizOption>[];
+        for (final o in parsedOptions) {
+          final key = o.text.trim().toLowerCase();
+          final existing = seen[key];
+          if (existing == null) {
+            seen[key] = deduped.length;
+            deduped.add(o);
+          } else if (o.isCorrect && !deduped[existing].isCorrect) {
+            deduped[existing] = o;
+          }
+        }
+        parsedOptions = [
+          for (var i = 0; i < deduped.length; i++)
+            QuizOption(
+              id: 'opt$i',
+              text: deduped[i].text,
+              isCorrect: deduped[i].isCorrect,
+              explanation: deduped[i].explanation,
+            ),
+        ];
+      }
       if (type == 'quiz' && parsedOptions.isNotEmpty) {
         int correctCount = parsedOptions.where((o) => o.isCorrect).length;
         if (correctCount != 1) {
@@ -1292,16 +1369,43 @@ class Slide {
       }
     }
 
+    // fill_in_blank: the generation contract is one comma-separated answer
+    // per `___` blank, but the model sometimes emits mismatched counts, which
+    // made the slide unwinnable (validation compares part-for-part). Normalize
+    // here so blanks == answers: surplus blanks are revealed as an ellipsis,
+    // surplus answers are dropped.
+    var content = _str(json['content']);
+    var blankAnswer = _strOpt(json['blankAnswer']);
+    if (type == 'fill_in_blank' &&
+        blankAnswer != null &&
+        blankAnswer.trim().isNotEmpty) {
+      final blankRe = RegExp(r'___+');
+      final blanks = blankRe.allMatches(content).length;
+      var answers = blankAnswer
+          .split(',')
+          .map((s) => s.trim())
+          .where((s) => s.isNotEmpty)
+          .toList();
+      if (blanks > 0 && answers.length > blanks) {
+        answers = answers.sublist(0, blanks);
+        blankAnswer = answers.join(', ');
+      } else if (blanks > answers.length && answers.isNotEmpty) {
+        var seen = 0;
+        content = content.replaceAllMapped(
+            blankRe, (m) => ++seen <= answers.length ? m.group(0)! : '…');
+      }
+    }
+
     return Slide(
       id: _str(json['id']),
       type: type,
       title: _str(json['title']),
-      content: _str(json['content']),
+      content: content,
       interactiveCanvasHtml: _strOpt(json['interactiveCanvasHtml']),
       options: parsedOptions,
       interactiveSteps: (json['interactiveSteps'] as List?)?.map((s) => InteractiveStep.fromJson(s is Map ? Map<String, dynamic>.from(s) : {})).toList(),
       proofSteps: (json['proofSteps'] as List?)?.map((s) => _str(s)).toList(),
-      blankAnswer: _strOpt(json['blankAnswer']),
+      blankAnswer: blankAnswer,
       blankDistractors: (json['blankDistractors'] as List?)?.map((s) => _str(s)).toList(),
       numericAnswer: _dblOpt(json['numericAnswer']),
       numericTolerance: _dblOpt(json['numericTolerance']) ?? 0.01,

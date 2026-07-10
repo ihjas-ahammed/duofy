@@ -3,6 +3,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_markdown_latex/flutter_markdown_latex.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:markdown/markdown.dart' as md;
+import '../theme/app_theme.dart';
 
 /// GitHub-flavored markdown with inline KaTeX-style math, rendered natively.
 ///
@@ -67,8 +68,10 @@ class MathMarkdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+    final tint = colors.isDark ? Colors.white : Colors.black;
     final baseStyle = textStyle ??
-        const TextStyle(fontSize: 16, color: Colors.white, height: 1.5, fontWeight: FontWeight.w600);
+        TextStyle(fontSize: 16, color: colors.textPrimary, height: 1.5, fontWeight: FontWeight.w600);
 
     final wrapAlign = textAlign == TextAlign.center
         ? WrapAlignment.center
@@ -76,7 +79,7 @@ class MathMarkdown extends StatelessWidget {
             ? WrapAlignment.end
             : WrapAlignment.start;
 
-    final mathStyle = baseStyle.copyWith(color: Colors.white);
+    final mathStyle = baseStyle.copyWith(color: baseStyle.color ?? colors.textPrimary);
 
     final inlineSyntaxes = <md.InlineSyntax>[
       _PermissiveLatexInlineSyntax(),
@@ -112,20 +115,20 @@ class MathMarkdown extends StatelessWidget {
         code: baseStyle.copyWith(
           fontFamily: 'monospace',
           fontSize: (baseStyle.fontSize ?? 16) * 0.92,
-          backgroundColor: Colors.white.withValues(alpha: 0.08),
+          backgroundColor: tint.withValues(alpha: 0.08),
         ),
         codeblockDecoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.06),
+          color: tint.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(8),
         ),
         blockquoteDecoration: BoxDecoration(
-          border: Border(left: BorderSide(color: Colors.white.withValues(alpha: 0.25), width: 3)),
+          border: Border(left: BorderSide(color: tint.withValues(alpha: 0.25), width: 3)),
         ),
-        blockquote: baseStyle.copyWith(color: Colors.white.withValues(alpha: 0.85)),
+        blockquote: baseStyle.copyWith(color: (baseStyle.color ?? colors.textPrimary).withValues(alpha: 0.85)),
         listBullet: baseStyle,
         tableBody: baseStyle,
         tableHead: baseStyle.copyWith(fontWeight: FontWeight.w800),
-        tableBorder: TableBorder.all(color: Colors.white.withValues(alpha: 0.15)),
+        tableBorder: TableBorder.all(color: tint.withValues(alpha: 0.15)),
         tableHeadAlign: TextAlign.left,
       ),
       builders: builders,
@@ -524,8 +527,8 @@ class _InlineBlankFieldState extends State<_InlineBlankField> {
   @override
   Widget build(BuildContext context) {
     final Color answerColor = widget.isAnswered
-        ? (widget.isCorrect ? const Color(0xFF58CC02) : const Color(0xFFFF4B4B))
-        : const Color(0xFFFBBF24);
+        ? (widget.isCorrect ? context.colors.success : context.colors.danger)
+        : context.colors.gold;
 
     final style = TextStyle(
       fontSize: 16,
@@ -551,7 +554,7 @@ class _InlineBlankFieldState extends State<_InlineBlankField> {
           isDense: true,
           contentPadding: const EdgeInsets.symmetric(horizontal: _hPad, vertical: 4),
           filled: true,
-          fillColor: Colors.black45,
+          fillColor: context.colors.isDark ? Colors.black45 : Colors.black12,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(6),
             borderSide: BorderSide.none,

@@ -389,7 +389,8 @@ class _ExperimentPreviewScreenState extends State<ExperimentPreviewScreen> {
   String _blankInput = '';
   String _wordInput = '';
   String _numericInput = '';
-  Map<String, String> _matchingAssignments = {};
+  // Left pair index -> right pair index; correct when key == value.
+  Map<int, int> _matchingAssignments = {};
   List<String> _orderingCurrent = [];
   int? _errorSelection;
 
@@ -433,7 +434,7 @@ class _ExperimentPreviewScreenState extends State<ExperimentPreviewScreen> {
       final pairs = _activeSlide.matchPairs ?? [];
       correct = pairs.isNotEmpty &&
           _matchingAssignments.length == pairs.length &&
-          pairs.every((p) => _matchingAssignments[p.left] == p.right);
+          _matchingAssignments.entries.every((e) => e.key == e.value);
     } else if (_activeSlide.type == 'ordering') {
       final target = _activeSlide.orderItems ?? [];
       correct = target.isNotEmpty && _orderingCurrent.length == target.length;

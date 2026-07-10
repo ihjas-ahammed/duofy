@@ -14,7 +14,7 @@ class _OnboardingPage {
   const _OnboardingPage(this.icon, this.color, this.title, this.body);
 }
 
-/// First-run walkthrough: what DuoFY does, how learning works, how the AI
+/// First-run walkthrough: what Sirius does, how learning works, how the AI
 /// adapts — then the sign-in / guest choice. Shown once (see the
 /// `onboarding_complete` gate in AuthGate); existing users are migrated past
 /// it at boot in main.dart.
@@ -34,7 +34,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       LucideIcons.bookOpen,
       AppTheme.duoGreen,
       'Any PDF becomes a course',
-      'Upload a textbook, handout, or syllabus. DuoFY\'s AI maps its chapters and builds an interactive lesson path — like a language app, but for your own books.',
+      'Upload a textbook, handout, or syllabus. Sirius\'s AI maps its chapters and builds an interactive lesson path — like a language app, but for your own books.',
     ),
     _OnboardingPage(
       LucideIcons.gamepad2,
@@ -46,7 +46,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       LucideIcons.brainCircuit,
       AppTheme.duoViolet,
       'AI that adapts to you',
-      'Rate how confident you feel, reflect after each lesson, and DuoFY tunes lesson difficulty and review timing to how you really learn.',
+      'Rate how confident you feel, reflect after each lesson, and Sirius tunes lesson difficulty and review timing to how you really learn.',
     ),
     _OnboardingPage(
       LucideIcons.rocket,
@@ -91,9 +91,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               duration: const Duration(milliseconds: 350),
                               curve: Curves.easeOut,
                             ),
-                    child: const Text('Skip',
+                    child: Text('Skip',
                         style: TextStyle(
-                            color: Colors.white54, fontWeight: FontWeight.bold)),
+                            color: context.colors.textFaint, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ),
@@ -130,17 +130,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           Text(
                             p.title,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w900,
-                                color: Colors.white),
+                                color: context.colors.textPrimary),
                           ),
                           const SizedBox(height: 16),
                           Text(
                             p.body,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                                fontSize: 14, height: 1.5, color: Colors.white70),
+                            style: TextStyle(
+                                fontSize: 14, height: 1.5, color: context.colors.textSecondary),
                           ),
                         ],
                       ),
@@ -158,7 +158,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       width: i == _page ? 24 : 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: i == _page ? _pages[_page].color : Colors.white24,
+                        color: i == _page ? _pages[_page].color : context.colors.outline,
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),

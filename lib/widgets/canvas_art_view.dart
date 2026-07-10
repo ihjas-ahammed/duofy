@@ -124,7 +124,13 @@ class _CanvasArtViewState extends State<CanvasArtView> {
       child: Stack(
         children: [
           AspectRatio(
-            aspectRatio: 3 / 2,
+            // SVG art declares its own shape via viewBox; hug it (clamped)
+            // instead of letterboxing everything into 3:2. JS-canvas art has
+            // no declared shape, so it keeps the fixed 3:2 frame the
+            // generation prompt designs for.
+            aspectRatio: hasArt && isSvgCanvas(widget.svg!)
+                ? svgAspect(widget.svg!)
+                : 3 / 2,
             child: hasArt
                 // Renders an SVG or a JS canvas draw function depending on what
                 // the model produced. Malformed SVG falls back to the

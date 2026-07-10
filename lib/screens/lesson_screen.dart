@@ -83,7 +83,8 @@ class _LessonScreenState extends State<LessonScreen> {
   String _blankInput = '';
   String _numericInput = '';
   String _wordInput = '';
-  Map<String, String> _matchingAssignments = {};
+  // Left pair index -> right pair index; correct when key == value.
+  Map<int, int> _matchingAssignments = {};
   List<String> _orderingCurrent = [];
   int? _errorSelection;
 
@@ -432,7 +433,11 @@ class _LessonScreenState extends State<LessonScreen> {
           }
         }
       } else {
-        correct = false;
+        // Count mismatch (old cached slides generated before blank/answer
+        // normalization): fall back to comparing the whole answer as one
+        // string so the slide stays winnable.
+        correct = userParts.join(' ').replaceAll(RegExp(r'\s+'), ' ') ==
+            correctParts.join(' ').replaceAll(RegExp(r'\s+'), ' ');
       }
     } else if (slide.type == 'one_word') {
       correct = _wordInput.trim().toLowerCase() == (slide.blankAnswer ?? '').trim().toLowerCase().replaceAll(r'\', '');
@@ -445,7 +450,7 @@ class _LessonScreenState extends State<LessonScreen> {
       final pairs = slide.matchPairs ?? [];
       correct = pairs.isNotEmpty &&
           _matchingAssignments.length == pairs.length &&
-          pairs.every((p) => _matchingAssignments[p.left] == p.right);
+          _matchingAssignments.entries.every((e) => e.key == e.value);
     } else if (slide.type == 'ordering') {
       final target = slide.orderItems ?? [];
       correct = target.isNotEmpty && _orderingCurrent.length == target.length;

@@ -95,7 +95,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppTheme.surface,
+      backgroundColor: context.colors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -111,20 +111,20 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white24,
+                    color: context.colors.outline,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Course Configuration',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 16),
                 ListTile(
                   leading: const Icon(LucideIcons.edit3, color: AppTheme.duoBlue),
-                  title: const Text('Edit Course Structure', style: TextStyle(color: Colors.white)),
-                  subtitle: const Text('Rename components, add modules/sections, or re-map pages', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                  title: Text('Edit Course Structure', style: TextStyle(color: context.colors.textPrimary)),
+                  subtitle: Text('Rename components, add modules/sections, or re-map pages', style: TextStyle(color: context.colors.textFaint, fontSize: 11)),
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.push(
@@ -140,8 +140,8 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                 ),
                 ListTile(
                   leading: const Icon(LucideIcons.list, color: AppTheme.duoViolet),
-                  title: const Text('Lesson Formats', style: TextStyle(color: Colors.white)),
-                  subtitle: const Text('Manage pedagogical structures and AI guidance rules', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                  title: Text('Lesson Formats', style: TextStyle(color: context.colors.textPrimary)),
+                  subtitle: Text('Manage pedagogical structures and AI guidance rules', style: TextStyle(color: context.colors.textFaint, fontSize: 11)),
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.push(
@@ -159,8 +159,8 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                 ),
                 ListTile(
                   leading: const Icon(LucideIcons.arrowUpDown, color: AppTheme.duoOrange),
-                  title: const Text('Repair Page Alignment', style: TextStyle(color: Colors.white)),
-                  subtitle: const Text('Check section↔page mapping against the source PDF and shift all pages if needed', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                  title: Text('Repair Page Alignment', style: TextStyle(color: context.colors.textPrimary)),
+                  subtitle: Text('Check section↔page mapping against the source PDF and shift all pages if needed', style: TextStyle(color: context.colors.textFaint, fontSize: 11)),
                   onTap: () {
                     Navigator.pop(context);
                     showRepairAlignmentFlow(this.context, _currentBook);
@@ -179,11 +179,11 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Publish to Community?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: context.colors.surface,
+        title: Text('Publish to Community?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
         content: const Text('This will make your course available to everyone in the Published Courses.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
@@ -238,8 +238,8 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Sync Changes?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: context.colors.surface,
+        title: Text('Sync Changes?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
         content: const Text('This is a published course. Would you like to sync the new changes/content to the community database?'),
         actions: [
           TextButton(
@@ -247,7 +247,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
               _isSyncPromptOpen = false;
               Navigator.pop(ctx);
             },
-            child: const Text('Later', style: TextStyle(color: Colors.white54)),
+            child: Text('Later', style: TextStyle(color: context.colors.textFaint)),
           ),
           TextButton(
             onPressed: () async {
@@ -321,7 +321,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
           children: [
             // Desktop Left Sidebar (SideNav equivalent)
             _buildDesktopSidebar(canSyncOrPublish),
-            Container(width: 1, color: Colors.white.withOpacity(0.08)),
+            Container(width: 1, color: context.colors.outline),
             // Desktop Main Content
             Expanded(
               child: Center(
@@ -343,12 +343,12 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                                     : _currentIndex == 3
                                         ? 'PYQ Analyzer'
                                         : 'Video Class Finder',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Nunito',
                           fontWeight: FontWeight.w900,
                           fontSize: 22,
                           letterSpacing: 1.0,
-                          color: Colors.white,
+                          color: context.colors.textPrimary,
                         ),
                       ),
                     ),
@@ -368,7 +368,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     return Scaffold(
       extendBody: true, 
       appBar: _currentIndex == 0 ? null : AppBar(
-        backgroundColor: AppTheme.background.withOpacity(0.9),
+        backgroundColor: context.colors.background.withOpacity(0.9),
         flexibleSpace: ClipRRect(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -378,18 +378,18 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
         centerTitle: true,
         title: Text(
           _currentBook.title,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w900,
             fontSize: 18,
             letterSpacing: 1.0,
-            color: Colors.white,
+            color: context.colors.textPrimary,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
           IconButton(
-            icon: const Icon(LucideIcons.settings, size: 22, color: Colors.white70),
+            icon: Icon(LucideIcons.settings, size: 22, color: context.colors.textSecondary),
             tooltip: 'Course Configuration',
             onPressed: _openCourseSettings,
           ),
@@ -442,7 +442,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   Widget _buildDesktopSidebar(bool canSyncOrPublish) {
     return Container(
       width: 280,
-      color: Colors.black.withOpacity(0.4),
+      color: context.colors.glassStrong,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -457,22 +457,22 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'DuoFY',
+                    Text(
+                      'Sirius',
                       style: TextStyle(
                         fontFamily: 'Nunito',
                         fontWeight: FontWeight.w900,
-                        color: Colors.white,
+                        color: context.colors.textPrimary,
                         fontSize: 20,
                         letterSpacing: -0.5,
                       ),
                     ),
                     Text(
                       _currentBook.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Nunito',
                         fontWeight: FontWeight.bold,
-                        color: Colors.white54,
+                        color: context.colors.textFaint,
                         fontSize: 12,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -536,7 +536,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
           children: [
             Icon(
               icon,
-              color: isActive ? AppTheme.duoBlue : Colors.white60,
+              color: isActive ? AppTheme.duoBlue : context.colors.textFaint,
               size: 24,
             ),
             const SizedBox(width: 16),
@@ -547,7 +547,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                 fontWeight: FontWeight.w900,
                 fontSize: 14,
                 letterSpacing: 0.8,
-                color: isActive ? AppTheme.duoBlue : Colors.white70,
+                color: isActive ? AppTheme.duoBlue : context.colors.textSecondary,
               ),
             ),
           ],
@@ -561,22 +561,23 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     required String label,
     String? subtitle,
     required VoidCallback onTap,
-    Color iconColor = Colors.white70,
+    Color? iconColor,
   }) {
+    final resolvedIconColor = iconColor ?? context.colors.textSecondary;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          border: Border.all(color: context.colors.outline),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           children: [
             Icon(
               icon,
-              color: iconColor,
+              color: resolvedIconColor,
               size: 24,
             ),
             const SizedBox(width: 16),
@@ -587,21 +588,21 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                 children: [
                   Text(
                     label,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Nunito',
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
-                      color: Colors.white70,
+                      color: context.colors.textSecondary,
                     ),
                   ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Nunito',
                         fontSize: 11,
-                        color: Colors.white38,
+                        color: context.colors.textFaint,
                       ),
                     ),
                   ],
