@@ -91,9 +91,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               duration: const Duration(milliseconds: 350),
                               curve: Curves.easeOut,
                             ),
-                    child: const Text('Skip',
+                    child: Text('Skip',
                         style: TextStyle(
-                            color: Colors.white54, fontWeight: FontWeight.bold)),
+                            color: context.colors.textFaint, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ),
@@ -130,17 +130,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           Text(
                             p.title,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w900,
-                                color: Colors.white),
+                                color: context.colors.textPrimary),
                           ),
                           const SizedBox(height: 16),
                           Text(
                             p.body,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                                fontSize: 14, height: 1.5, color: Colors.white70),
+                            style: TextStyle(
+                                fontSize: 14, height: 1.5, color: context.colors.textSecondary),
                           ),
                         ],
                       ),
@@ -158,7 +158,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       width: i == _page ? 24 : 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: i == _page ? _pages[_page].color : Colors.white24,
+                        color: i == _page ? _pages[_page].color : context.colors.outline,
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),

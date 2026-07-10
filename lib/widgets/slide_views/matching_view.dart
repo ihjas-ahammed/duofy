@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../models/app_models.dart';
 import '../../theme/app_theme.dart';
@@ -114,6 +115,7 @@ class _MatchingViewState extends State<MatchingView> {
 
   void _tapLeft(int leftIndex) {
     if (widget.isAnswered) return;
+    HapticFeedback.selectionClick();
     setState(() {
       // Selecting never unbinds — a bound left can be selected and re-pointed
       // at a different right; tapping the selected left deselects it.
@@ -124,6 +126,7 @@ class _MatchingViewState extends State<MatchingView> {
 
   void _tapRight(int rightIndex) {
     if (widget.isAnswered) return;
+    HapticFeedback.selectionClick();
     setState(() {
       if (_selectedLeft != null) {
         // Selection wins: (re)assign, stealing this right from any other left.
@@ -152,18 +155,26 @@ class _MatchingViewState extends State<MatchingView> {
   }) {
     final border = resultColor ??
         (bound ? color : (highlighted ? Colors.amber : Colors.white12));
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        decoration: BoxDecoration(
-          color: bound ? color.withOpacity(0.12) : Colors.white.withOpacity(0.04),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: border, width: 2),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            constraints: const BoxConstraints(minHeight: 48),
+            alignment: Alignment.centerLeft,
+            decoration: BoxDecoration(
+              color: bound ? color.withOpacity(0.12) : Colors.white.withOpacity(0.04),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: border, width: 2),
+            ),
+            child: child,
+          ),
         ),
-        child: child,
       ),
     );
   }

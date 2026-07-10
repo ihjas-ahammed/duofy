@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../models/app_models.dart';
 import '../../theme/app_theme.dart';
 import '../math_markdown.dart';
@@ -110,11 +111,18 @@ class QuizView extends StatelessWidget {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: InkWell(
-                        onTap: isAnswered ? null : () => onSelect(opt.id),
+                        onTap: isAnswered
+                            ? null
+                            : () {
+                                HapticFeedback.selectionClick();
+                                onSelect(opt.id);
+                              },
                         onDoubleTap: onUpdateSlide == null ? null : () => _editOption(context, opt),
                         borderRadius: BorderRadius.circular(16),
                         child: Container(
                           padding: const EdgeInsets.all(16),
+                          constraints: const BoxConstraints(minHeight: 48),
+                          alignment: Alignment.centerLeft,
                           decoration: BoxDecoration(
                             color: bgColor,
                             border: Border.all(color: borderColor, width: 2),

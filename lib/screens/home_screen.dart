@@ -232,11 +232,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final bool? result = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Delete Course?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: const Text('Are you sure you want to delete this course from your local library?', style: TextStyle(color: Colors.white70)),
+        backgroundColor: context.colors.surface,
+        title: Text('Delete Course?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        content: Text('Are you sure you want to delete this course from your local library?', style: TextStyle(color: context.colors.textSecondary)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx, true);
@@ -261,11 +261,11 @@ class _HomeScreenState extends State<HomeScreen> {
         Padding(
           padding: const EdgeInsets.only(right: 8),
           child: TextButton.icon(
-            icon: const Icon(LucideIcons.logIn, size: 20, color: Colors.white),
-            label: const Text(
+            icon: Icon(LucideIcons.logIn, size: 20, color: context.colors.textPrimary),
+            label: Text(
               'LOG IN',
               style: TextStyle(
-                color: Colors.white,
+                color: context.colors.textPrimary,
                 fontWeight: FontWeight.w900,
                 fontSize: 13,
                 letterSpacing: 1.0,
@@ -308,24 +308,24 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.04),
+                color: context.colors.surfaceAlt,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.08), width: 1.2),
+                border: Border.all(color: context.colors.outline, width: 1.2),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  const Icon(LucideIcons.search, color: Colors.white54, size: 20),
+                  Icon(LucideIcons.search, color: context.colors.textFaint, size: 20),
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextField(
                       controller: controller,
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      style: TextStyle(color: context.colors.textPrimary, fontSize: 14),
                       textInputAction: TextInputAction.search,
                       onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
                       decoration: InputDecoration(
                         hintText: hintText,
-                        hintStyle: const TextStyle(color: Colors.white30),
+                        hintStyle: TextStyle(color: context.colors.textFaint),
                         border: InputBorder.none,
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(vertical: 12),
@@ -337,7 +337,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       onTap: () {
                         controller.clear();
                       },
-                      child: const Icon(LucideIcons.x, color: Colors.white54, size: 18),
+                      child: Icon(LucideIcons.x, color: context.colors.textFaint, size: 18),
                     ),
                 ],
               ),
@@ -558,32 +558,32 @@ class _HomeScreenState extends State<HomeScreen> {
                               ],
                             ),
                           ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 4),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
                             child: Text(
                               '/',
-                              style: TextStyle(fontSize: 14, color: Colors.white30),
+                              style: TextStyle(fontSize: 14, color: context.colors.textFaint),
                             ),
                           ),
                           Flexible(
                             child: Text(
                               folderName ?? '',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
-                                color: Colors.white,
+                                color: context.colors.textPrimary,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ] else ...[
-                          const Text(
+                          Text(
                             'Your Library',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
-                              color: Colors.white,
+                              color: context.colors.textPrimary,
                             ),
                           ),
                         ],
@@ -601,13 +601,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 hintText: 'Search your courses...',
                 trailing: _selectedFolderId == null
                     ? IconButton(
-                        icon: const Icon(LucideIcons.folderPlus, color: Colors.white, size: 24),
+                        icon: Icon(LucideIcons.folderPlus, color: context.colors.textPrimary, size: 24),
                         onPressed: _showCreateFolderDialog,
                         style: IconButton.styleFrom(
-                          backgroundColor: Colors.white.withOpacity(0.04),
+                          backgroundColor: context.colors.surfaceAlt,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(color: Colors.white.withOpacity(0.08), width: 1.2),
+                            side: BorderSide(color: context.colors.outline, width: 1.2),
                           ),
                           padding: const EdgeInsets.all(12),
                         ),
@@ -663,12 +663,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         ? Container(
                             height: 180,
                             margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(24)),
+                            decoration: BoxDecoration(color: context.colors.surfaceAlt, borderRadius: BorderRadius.circular(24)),
                             alignment: Alignment.center,
-                            child: const Text(
+                            child: Text(
                               'This folder is empty.\nGo back and drag courses here!',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold),
+                              style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold),
                             ),
                           )
                         : _buildFirstCourseCta())
@@ -677,17 +677,17 @@ class _HomeScreenState extends State<HomeScreen> {
             if (isSearching)
               SliverToBoxAdapter(
                 child: searchResults.isEmpty
-                    ? Container(
+                     ? Container(
                         height: 200,
                         alignment: Alignment.center,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(LucideIcons.search, color: Colors.white24, size: 40),
+                            Icon(LucideIcons.search, color: context.colors.outline, size: 40),
                             const SizedBox(height: 16),
-                            const Text(
+                            Text(
                               'No matching courses or content found.',
-                              style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold),
+                              style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
@@ -758,7 +758,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       padding: const EdgeInsets.all(24),
-      decoration: AppTheme.glassDecoration,
+      decoration: AppTheme.glassOf(context),
       child: Column(
         children: [
           Container(
@@ -772,15 +772,15 @@ class _HomeScreenState extends State<HomeScreen> {
             child: const Icon(LucideIcons.sparkles, color: AppTheme.duoGreen, size: 40),
           ),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             'Create your first course',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
+            style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w900, fontSize: 18),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Pick any PDF — a textbook, notes, or a handout — and the AI turns it into an interactive lesson path.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white60, fontSize: 13, height: 1.4),
+            style: TextStyle(color: context.colors.textFaint, fontSize: 13, height: 1.4),
           ),
           const SizedBox(height: 20),
           if (!kIsWeb)
@@ -817,13 +817,13 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          backgroundColor: AppTheme.background,
+          backgroundColor: context.colors.background,
           elevation: 0,
           centerTitle: false,
           titleSpacing: 24,
-          title: const Text(
+          title: Text(
             'Analytics',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.white),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: context.colors.textPrimary),
           ),
           actions: _buildAppBarActions(),
         ),
@@ -852,13 +852,13 @@ class _HomeScreenState extends State<HomeScreen> {
             SliverAppBar(
               floating: true,
               pinned: true,
-              backgroundColor: AppTheme.background,
+              backgroundColor: context.colors.background,
               elevation: 0,
               centerTitle: false,
               titleSpacing: 24,
-              title: const Text(
+              title: Text(
                 'Published',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.white),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: context.colors.textPrimary),
               ),
               actions: _buildAppBarActions(),
             ),
@@ -874,9 +874,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? Container(
                       height: 180,
                       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(24)),
+                      decoration: BoxDecoration(color: context.colors.surfaceAlt, borderRadius: BorderRadius.circular(24)),
                       alignment: Alignment.center,
-                      child: const Text('No published courses yet.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                      child: Text('No published courses yet.', textAlign: TextAlign.center, style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold)),
                     )
                   : const SizedBox.shrink(),
             ),
@@ -885,9 +885,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? Container(
                       height: 120,
                       alignment: Alignment.center,
-                      child: const Text(
+                      child: Text(
                         'No matching published courses.',
-                        style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold),
                       ),
                     )
                   : const SizedBox.shrink(),
@@ -920,11 +920,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           final confirm = await showDialog<bool>(
                             context: context,
                             builder: (ctx) => AlertDialog(
-                              backgroundColor: AppTheme.surface,
-                              title: const Text('Unpublish Course?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                              content: const Text('Are you sure you want to unpublish this course from Published Courses? This won\'t delete your local copy if you have one.', style: TextStyle(color: Colors.white70)),
+                              backgroundColor: context.colors.surface,
+                              title: Text('Unpublish Course?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+                              content: Text('Are you sure you want to unpublish this course from Published Courses? This won\'t delete your local copy if you have one.', style: TextStyle(color: context.colors.textSecondary)),
                               actions: [
-                                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+                                TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
                                 TextButton(
                                   onPressed: () => Navigator.pop(ctx, true),
                                   child: const Text('Unpublish', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
@@ -985,8 +985,8 @@ class _HomeScreenState extends State<HomeScreen> {
             filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
-                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                color: context.colors.glassStrong,
+                border: Border.all(color: context.colors.outline),
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
               ),
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
@@ -1025,8 +1025,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 const SizedBox(height: 2),
                                 Text(
                                   book.title,
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: context.colors.textPrimary,
                                     fontSize: 18,
                                     fontWeight: FontWeight.w900,
                                   ),
@@ -1060,11 +1060,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             final confirm = await showDialog<bool>(
                               context: context,
                               builder: (ctx) => AlertDialog(
-                                backgroundColor: AppTheme.surface,
-                                title: const Text('Unpublish Course?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                content: const Text('Are you sure you want to unpublish this course from Published Courses? This won\'t delete your local copy if you have one.', style: TextStyle(color: Colors.white70)),
+                                backgroundColor: context.colors.surface,
+                                title: Text('Unpublish Course?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+                                content: Text('Are you sure you want to unpublish this course from Published Courses? This won\'t delete your local copy if you have one.', style: TextStyle(color: context.colors.textSecondary)),
                                 actions: [
-                                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+                                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
                                   TextButton(
                                     onPressed: () => Navigator.pop(ctx, true),
                                     child: const Text('Unpublish', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
@@ -1083,10 +1083,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       TextButton(
                         onPressed: () => Navigator.pop(ctx),
-                        child: const Text(
+                        child: Text(
                           'CANCEL',
                           style: TextStyle(
-                            color: Color(0xFF94A3B8),
+                            color: context.colors.textSecondary,
                             fontWeight: FontWeight.w900,
                             fontSize: 13,
                             letterSpacing: 1.4,
@@ -1116,19 +1116,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
         if (isLoading) {
           return Scaffold(
-            backgroundColor: AppTheme.background,
+            backgroundColor: context.colors.background,
             body: const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue)),
           );
         }
 
         if (isDesktop) {
           return Scaffold(
-            backgroundColor: AppTheme.background,
+            backgroundColor: context.colors.background,
             body: Row(
               children: [
                 // Desktop Left Sidebar (Navigation)
                 _buildDesktopSidebar(),
-                Container(width: 1, color: Colors.white.withOpacity(0.08)),
+                Container(width: 1, color: context.colors.outline),
                 // Desktop Main Content
                 Expanded(
                   child: IndexedStack(
@@ -1148,7 +1148,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         return Scaffold(
           extendBody: true,
-          backgroundColor: AppTheme.background,
+          backgroundColor: context.colors.background,
           body: IndexedStack(
             index: _selectedTabIndex,
             children: [
@@ -1200,22 +1200,22 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = FbAuth.instance.currentUser;
     return Container(
       width: 280,
-      color: Colors.black.withOpacity(0.4),
+      color: context.colors.glassStrong,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Branding Header
           Row(
-            children: const [
-              Icon(LucideIcons.bookOpen, size: 30, color: AppTheme.duoBlue),
-              SizedBox(width: 12),
+            children: [
+              const Icon(LucideIcons.bookOpen, size: 30, color: AppTheme.duoBlue),
+              const SizedBox(width: 12),
               Text(
                 'Sirius',
                 style: TextStyle(
                   fontFamily: 'Nunito',
                   fontWeight: FontWeight.w900,
-                  color: Colors.white,
+                  color: context.colors.textPrimary,
                   fontSize: 20,
                   letterSpacing: -0.5,
                 ),
@@ -1240,9 +1240,9 @@ class _HomeScreenState extends State<HomeScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.03),
+                color: context.colors.surfaceAlt,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.05)),
+                border: Border.all(color: context.colors.outline),
               ),
               child: Row(
                 children: [
@@ -1260,8 +1260,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(user?.displayName ?? 'User', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13, overflow: TextOverflow.ellipsis)),
-                        Text(user?.email ?? '', style: const TextStyle(color: Colors.white30, fontSize: 10, overflow: TextOverflow.ellipsis)),
+                        Text(user?.displayName ?? 'User', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13, overflow: TextOverflow.ellipsis)),
+                        Text(user?.email ?? '', style: TextStyle(color: context.colors.textFaint, fontSize: 10, overflow: TextOverflow.ellipsis)),
                       ],
                     ),
                   ),
@@ -1299,7 +1299,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Icon(
               icon,
-              color: isActive ? AppTheme.duoGreen : Colors.white60,
+              color: isActive ? AppTheme.duoGreen : context.colors.textFaint,
               size: 24,
             ),
             const SizedBox(width: 16),
@@ -1310,7 +1310,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 fontWeight: FontWeight.w900,
                 fontSize: 14,
                 letterSpacing: 0.8,
-                color: isActive ? AppTheme.duoGreen : Colors.white70,
+                color: isActive ? AppTheme.duoGreen : context.colors.textSecondary,
               ),
             ),
           ],
@@ -1330,26 +1330,26 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          border: Border.all(color: context.colors.outline),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           children: [
             Icon(
               icon,
-              color: Colors.white70,
+              color: context.colors.textSecondary,
               size: 24,
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
                 label.toUpperCase(),
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Nunito',
                   fontWeight: FontWeight.w900,
                   fontSize: 14,
                   letterSpacing: 0.8,
-                  color: Colors.white70,
+                  color: context.colors.textSecondary,
                 ),
               ),
             ),
@@ -1514,9 +1514,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 20),
                   ],
                   if (folders.isNotEmpty) ...[
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      child: Text('FOLDERS', style: TextStyle(color: Colors.white30, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.0)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      child: Text('FOLDERS', style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.0)),
                     ),
                     const SizedBox(height: 8),
                     _buildFoldersList(),
@@ -1593,32 +1593,32 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ],
                                     ),
                                   ),
-                                  const Padding(
-                                    padding: EdgeInsets.symmetric(horizontal: 4),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
                                     child: Text(
                                       '/',
-                                      style: TextStyle(fontSize: 14, color: Colors.white30),
+                                      style: TextStyle(fontSize: 14, color: context.colors.textFaint),
                                     ),
                                   ),
                                   Flexible(
                                     child: Text(
                                       folderName ?? '',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
-                                        color: Colors.white,
+                                        color: context.colors.textPrimary,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ] else ...[
-                                  const Text(
+                                  Text(
                                     'Your Library',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w900,
                                       fontSize: 22,
-                                      color: Colors.white,
+                                      color: context.colors.textPrimary,
                                     ),
                                   ),
                                 ],
@@ -1654,13 +1654,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 hintText: 'Search your courses...',
                 trailing: _selectedFolderId == null
                     ? IconButton(
-                        icon: const Icon(LucideIcons.folderPlus, color: Colors.white, size: 24),
+                        icon: Icon(LucideIcons.folderPlus, color: context.colors.textPrimary, size: 24),
                         onPressed: _showCreateFolderDialog,
                         style: IconButton.styleFrom(
-                          backgroundColor: Colors.white.withOpacity(0.04),
+                          backgroundColor: context.colors.surfaceAlt,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(color: Colors.white.withOpacity(0.08), width: 1.2),
+                            side: BorderSide(color: context.colors.outline, width: 1.2),
                           ),
                           padding: const EdgeInsets.all(12),
                         ),
@@ -1682,12 +1682,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             alignment: Alignment.center,
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Icon(LucideIcons.search, color: Colors.white24, size: 40),
-                                SizedBox(height: 16),
+                              children: [
+                                Icon(LucideIcons.search, color: context.colors.outline, size: 40),
+                                const SizedBox(height: 16),
                                 Text(
                                   'No matching courses or content found.',
-                                  style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold),
+                                  style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold),
                                 ),
                               ],
                             ),
@@ -1704,9 +1704,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                       ] else ...[
                         if (activeTasks.isNotEmpty && !kIsWeb) ...[
-                          const Padding(
-                            padding: EdgeInsets.only(bottom: 12),
-                            child: Text('GENERATING COURSES', style: TextStyle(color: Colors.white30, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.0)),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Text('GENERATING COURSES', style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.0)),
                           ),
                           ListView.builder(
                             shrinkWrap: true,
@@ -1738,19 +1738,19 @@ class _HomeScreenState extends State<HomeScreen> {
                           (_selectedFolderId != null
                               ? Container(
                                   height: 180,
-                                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(24)),
+                                  decoration: BoxDecoration(color: context.colors.surfaceAlt, borderRadius: BorderRadius.circular(24)),
                                   alignment: Alignment.center,
-                                  child: const Text(
+                                  child: Text(
                                     'This folder is empty.\nGo back and drag courses here!',
                                     textAlign: TextAlign.center,
-                                    style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold),
+                                    style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold),
                                   ),
                                 )
                               : _buildFirstCourseCta())
                         else ...[
-                          const Padding(
-                            padding: EdgeInsets.only(bottom: 12),
-                            child: Text('COURSES', style: TextStyle(color: Colors.white30, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.0)),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Text('COURSES', style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.0)),
                           ),
                           LayoutBuilder(
                             builder: (context, constraints) {
@@ -1822,8 +1822,8 @@ class _HomeScreenState extends State<HomeScreen> {
             filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
-                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                color: context.colors.glassStrong,
+                border: Border.all(color: context.colors.outline),
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
               ),
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
@@ -1862,8 +1862,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 const SizedBox(height: 2),
                                 Text(
                                   book.title,
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: context.colors.textPrimary,
                                     fontSize: 18,
                                     fontWeight: FontWeight.w900,
                                   ),
@@ -1907,11 +1907,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             context,
                             MaterialPageRoute(
                               builder: (_) => CourseEditStructureScreen(
-                                book: book,
-                                onBookUpdated: (updatedBook) {
-                                  _loadAllData(force: false);
-                                },
-                              ),
+                                  book: book,
+                                  onBookUpdated: (updatedBook) {
+                                    _loadAllData(force: false);
+                                  },
+                                ),
                             ),
                           );
                         },
@@ -1975,10 +1975,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       TextButton(
                         onPressed: () => Navigator.pop(ctx),
-                        child: const Text(
+                        child: Text(
                           'CANCEL',
                           style: TextStyle(
-                            color: Color(0xFF94A3B8),
+                            color: context.colors.textSecondary,
                             fontWeight: FontWeight.w900,
                             fontSize: 13,
                             letterSpacing: 1.4,
@@ -2000,11 +2000,11 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Reset Progress?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: Text('Are you sure you want to clear all completion progress for "${book.title}"?', style: const TextStyle(color: Colors.white70)),
+        backgroundColor: context.colors.surface,
+        title: Text('Reset Progress?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        content: Text('Are you sure you want to clear all completion progress for "${book.title}"?', style: TextStyle(color: context.colors.textSecondary)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
@@ -2027,17 +2027,17 @@ class _HomeScreenState extends State<HomeScreen> {
     final wantsGraphics = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: Text(isScheduled ? 'Schedule Course Generation' : 'Generate Course Contents', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: const Text(
+        backgroundColor: context.colors.surface,
+        title: Text(isScheduled ? 'Schedule Course Generation' : 'Generate Course Contents', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        content: Text(
           'Choose what kind of content to generate for all modules and sections in this course.',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: context.colors.textSecondary),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Text only', style: TextStyle(color: Colors.white54)),
+            child: Text('Text only', style: TextStyle(color: context.colors.textFaint)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -2057,10 +2057,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: AppTheme.surface,
+        backgroundColor: context.colors.surface,
         content: Text(
           isScheduled ? 'Course generation scheduled!' : 'Course generation queued!',
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: context.colors.textPrimary),
         ),
       ),
     );
@@ -2083,9 +2083,9 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.04),
+              color: context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white12),
+              border: Border.all(color: context.colors.outline),
             ),
             child: Row(
               children: [
@@ -2097,8 +2097,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: context.colors.textPrimary,
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                         ),
@@ -2106,8 +2106,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
-                        style: const TextStyle(
-                          color: Colors.white54,
+                        style: TextStyle(
+                          color: context.colors.textFaint,
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
                         ),
@@ -2115,7 +2115,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
-                const Icon(LucideIcons.chevronRight, size: 16, color: Colors.white24),
+                Icon(LucideIcons.chevronRight, size: 16, color: context.colors.outline),
               ],
             ),
           ),
@@ -2237,7 +2237,7 @@ class _HomeScreenState extends State<HomeScreen> {
             : (!isOpen ? LucideIcons.lock : LucideIcons.bookOpen);
         color = isCompleted 
             ? AppTheme.duoGreen 
-            : (!isOpen ? Colors.white38 : AppTheme.duoGreen);
+            : (!isOpen ? context.colors.textFaint : AppTheme.duoGreen);
         typeLabel = isCompleted 
             ? 'Lesson (Completed)' 
             : (!isOpen ? 'Lesson (Locked)' : 'Lesson');
@@ -2249,7 +2249,7 @@ class _HomeScreenState extends State<HomeScreen> {
             : (!isOpen ? LucideIcons.lock : LucideIcons.fileText);
         color = isCompleted 
             ? AppTheme.duoGreen 
-            : (!isOpen ? Colors.white38 : Colors.white70);
+            : (!isOpen ? context.colors.textFaint : context.colors.textSecondary);
         typeLabel = isCompleted 
             ? 'Lesson Text (Completed)' 
             : (!isOpen ? 'Lesson Text (Locked)' : 'Lesson Text');
@@ -2267,11 +2267,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 showDialog(
                   context: context,
                   builder: (ctx) => AlertDialog(
-                    backgroundColor: AppTheme.surface,
-                    title: const Text('Lesson Locked', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    content: const Text(
+                    backgroundColor: context.colors.surface,
+                    title: Text('Lesson Locked', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+                    content: Text(
                       'Finish the previous lessons in this unit to unlock this one.',
-                      style: TextStyle(color: Colors.white70),
+                      style: TextStyle(color: context.colors.textSecondary),
                     ),
                     actions: [
                       TextButton(
@@ -2322,7 +2322,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.02),
+              color: context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: color.withOpacity(0.15), width: 1),
             ),
@@ -2362,7 +2362,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Expanded(
                             child: Text(
                               result.context,
-                              style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11),
+                              style: TextStyle(color: context.colors.textFaint, fontSize: 11),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -2373,7 +2373,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       _highlightedText(
                         result.title,
                         query,
-                        const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                        TextStyle(color: context.colors.textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
                         TextStyle(color: color, fontWeight: FontWeight.bold, backgroundColor: color.withOpacity(0.1)),
                       ),
                       if (result.snippet != null && result.snippet!.isNotEmpty) ...[
@@ -2381,7 +2381,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         _highlightedText(
                           result.snippet!,
                           query,
-                          TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12, height: 1.3),
+                          TextStyle(color: context.colors.textSecondary, fontSize: 12, height: 1.3),
                           TextStyle(color: color, fontWeight: FontWeight.bold, backgroundColor: color.withOpacity(0.1)),
                         ),
                       ],
@@ -2391,7 +2391,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(width: 8),
                 Icon(
                   LucideIcons.chevronRight,
-                  color: Colors.white.withOpacity(0.15),
+                  color: context.colors.outline,
                   size: 16,
                 ),
               ],
@@ -2420,24 +2420,24 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
+        backgroundColor: context.colors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('New Folder', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('New Folder', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
         content: TextField(
           controller: textController,
           autofocus: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
+          style: TextStyle(color: context.colors.textPrimary),
+          decoration: InputDecoration(
             hintText: 'Folder Name',
-            hintStyle: TextStyle(color: Colors.white38),
-            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.duoBlue)),
+            hintStyle: TextStyle(color: context.colors.textFaint),
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: context.colors.outline)),
+            focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.duoBlue)),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
           ),
           TextButton(
             onPressed: () async {
@@ -2471,8 +2471,8 @@ class _HomeScreenState extends State<HomeScreen> {
           filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.7),
-              border: Border.all(color: Colors.white.withOpacity(0.08)),
+              color: context.colors.glassStrong,
+              border: Border.all(color: context.colors.outline),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             ),
             padding: const EdgeInsets.all(24),
@@ -2483,7 +2483,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Text(
                     folder.name,
-                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: context.colors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
                   _buildMenuItem(
@@ -2506,11 +2506,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       final confirm = await showDialog<bool>(
                         context: context,
                         builder: (alertCtx) => AlertDialog(
-                          backgroundColor: AppTheme.surface,
-                          title: const Text('Delete Folder?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                          content: const Text('Are you sure you want to delete this folder? The courses inside will not be deleted.', style: TextStyle(color: Colors.white70)),
+                          backgroundColor: context.colors.surface,
+                          title: Text('Delete Folder?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+                          content: Text('Are you sure you want to delete this folder? The courses inside will not be deleted.', style: TextStyle(color: context.colors.textSecondary)),
                           actions: [
-                            TextButton(onPressed: () => Navigator.pop(alertCtx, false), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+                            TextButton(onPressed: () => Navigator.pop(alertCtx, false), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
                             TextButton(
                               onPressed: () => Navigator.pop(alertCtx, true),
                               child: const Text('Delete', style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
@@ -2542,21 +2542,21 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Rename Folder', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: context.colors.surface,
+        title: Text('Rename Folder', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
         content: TextField(
           controller: textController,
           autofocus: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
+          style: TextStyle(color: context.colors.textPrimary),
+          decoration: InputDecoration(
             hintText: 'Folder Name',
-            hintStyle: TextStyle(color: Colors.white38),
-            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.duoBlue)),
+            hintStyle: TextStyle(color: context.colors.textFaint),
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: context.colors.outline)),
+            focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.duoBlue)),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
           TextButton(
             onPressed: () async {
               final newName = textController.text.trim();
@@ -2632,12 +2632,12 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               color: isHovered 
                   ? AppTheme.duoBlue.withOpacity(0.15) 
-                  : Colors.white.withOpacity(0.04),
+                  : context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isHovered 
                     ? AppTheme.duoBlue 
-                    : Colors.white.withOpacity(0.08), 
+                    : context.colors.outline, 
                 width: 1.2,
               ),
             ),
@@ -2653,7 +2653,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: CircularProgressIndicator(
                         value: progress,
                         strokeWidth: 3.5,
-                        backgroundColor: Colors.white.withOpacity(0.05),
+                        backgroundColor: context.colors.surfaceAlt,
                         valueColor: AlwaysStoppedAnimation<Color>(
                           progress == 1.0 ? AppTheme.duoGreen : AppTheme.duoBlue,
                         ),
@@ -2661,7 +2661,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     Icon(
                       LucideIcons.folderClosed,
-                      color: progress == 1.0 ? AppTheme.duoGreen : Colors.white70,
+                      color: progress == 1.0 ? AppTheme.duoGreen : context.colors.textSecondary,
                       size: 20,
                     ),
                   ],
@@ -2669,8 +2669,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 8),
                 Text(
                   folder.name,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: context.colors.textPrimary,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
@@ -2683,8 +2683,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   folder.bookIds.length == 1 
                       ? '1 course' 
                       : '${folder.bookIds.length} courses',
-                  style: const TextStyle(
-                    color: Colors.white38,
+                  style: TextStyle(
+                    color: context.colors.textFaint,
                     fontSize: 8,
                   ),
                   textAlign: TextAlign.center,
@@ -2707,7 +2707,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: AppTheme.surface,
+              color: context.colors.surface,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppTheme.duoBlue, width: 1.2),
             ),
@@ -2718,8 +2718,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(width: 8),
                 Text(
                   book.title,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: context.colors.textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                     decoration: TextDecoration.none,
@@ -2735,7 +2735,7 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.all(4),
         child: Icon(
           LucideIcons.gripVertical,
-          color: Colors.white.withOpacity(0.3),
+          color: context.colors.textFaint,
           size: 20,
         ),
       ),
@@ -2746,11 +2746,11 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
+        backgroundColor: context.colors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Move to Folder', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('Move to Folder', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
         content: folders.isEmpty
-            ? const Text('No folders created yet. Create a folder first!', style: TextStyle(color: Colors.white70))
+            ? Text('No folders created yet. Create a folder first!', style: TextStyle(color: context.colors.textSecondary))
             : SizedBox(
                 width: double.maxFinite,
                 child: ListView.builder(
@@ -2760,7 +2760,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     final folder = folders[idx];
                     final isAlreadyIn = folder.bookIds.contains(book.id);
                     return ListTile(
-                      title: Text(folder.name, style: const TextStyle(color: Colors.white)),
+                      title: Text(folder.name, style: TextStyle(color: context.colors.textPrimary)),
                       trailing: isAlreadyIn 
                           ? const Icon(LucideIcons.check, color: AppTheme.duoGreen) 
                           : null,
@@ -2782,7 +2782,7 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
           ),
           if (folders.isEmpty)
             TextButton(

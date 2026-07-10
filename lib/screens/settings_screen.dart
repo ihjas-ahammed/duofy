@@ -347,18 +347,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final List<String> current = _listForSlot(slotName);
     await showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.surface,
+      backgroundColor: context.colors.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Add Fallback Model for $slotName', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white)),
+            Text('Add Fallback Model for $slotName', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: context.colors.textPrimary)),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Models are tried in the order you list them. The first one that succeeds wins.',
-              style: TextStyle(color: Colors.white54, fontSize: 12),
+              style: TextStyle(color: context.colors.textFaint, fontSize: 12),
             ),
             const SizedBox(height: 12),
             Expanded(
@@ -370,9 +370,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   return ListTile(
                     leading: Icon(alreadyIn ? LucideIcons.checkCircle : LucideIcons.bot,
                         color: alreadyIn ? AppTheme.duoGreen : AppTheme.duoBlue),
-                    title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                    title: Text(name, style: TextStyle(fontWeight: FontWeight.bold, color: context.colors.textPrimary)),
                     subtitle: alreadyIn
-                        ? const Text('Already in this slot', style: TextStyle(color: Colors.white38, fontSize: 11))
+                        ? Text('Already in this slot', style: TextStyle(color: context.colors.textFaint, fontSize: 11))
                         : null,
                     onTap: () {
                       setState(() {
@@ -441,9 +441,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: context.colors.outline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -456,9 +456,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white)),
+                    Text(title, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: context.colors.textPrimary)),
                     const SizedBox(height: 4),
-                    Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
+                    Text(subtitle, style: TextStyle(color: context.colors.textFaint, fontSize: 11, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
@@ -486,9 +486,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 margin: const EdgeInsets.only(bottom: 6),
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.black38,
+                  color: context.colors.shadow,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: isPrimary ? AppTheme.duoBlue.withOpacity(0.6) : Colors.white10),
+                  border: Border.all(color: isPrimary ? AppTheme.duoBlue.withOpacity(0.6) : context.colors.outline),
                 ),
                 child: Row(
                   children: [
@@ -497,12 +497,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       height: 22,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: isPrimary ? AppTheme.duoBlue : Colors.white12,
+                        color: isPrimary ? AppTheme.duoBlue : context.colors.outline,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text('${i + 1}',
                           style: TextStyle(
-                            color: isPrimary ? Colors.white : Colors.white70,
+                            color: isPrimary ? Colors.white : context.colors.textSecondary,
                             fontWeight: FontWeight.w900,
                             fontSize: 11,
                           )),
@@ -514,23 +514,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         style: TextStyle(
                           fontFamily: 'monospace',
                           fontSize: 12,
-                          color: isPrimary ? Colors.amber : Colors.white70,
+                          color: isPrimary ? Colors.amber : context.colors.textSecondary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
                     if (models.length > 1)
                       IconButton(
-                        icon: const Icon(LucideIcons.trash2, size: 16, color: Colors.white38),
+                        icon: Icon(LucideIcons.trash2, size: 16, color: context.colors.textFaint),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         onPressed: () => _removeFromSlot(slotName, i),
                       ),
                     ReorderableDragStartListener(
                       index: i,
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 4),
-                        child: Icon(LucideIcons.gripVertical, size: 16, color: Colors.white38),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Icon(LucideIcons.gripVertical, size: 16, color: context.colors.textFaint),
                       ),
                     ),
                   ],
@@ -547,9 +547,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _cloudSync ? AppTheme.duoBlue.withOpacity(0.5) : Colors.white12),
+        border: Border.all(color: _cloudSync ? AppTheme.duoBlue.withOpacity(0.5) : context.colors.outline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -557,11 +557,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Row(
             children: [
               Icon(_cloudSync ? LucideIcons.cloud : LucideIcons.cloudOff,
-                  color: _cloudSync ? AppTheme.duoBlue : Colors.white54, size: 28),
+                  color: _cloudSync ? AppTheme.duoBlue : context.colors.textFaint, size: 28),
               const SizedBox(width: 16),
-              const Expanded(
+              Expanded(
                 child: Text('Cloud Backup & Sync',
-                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white)),
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: context.colors.textPrimary)),
               ),
               Switch(
                 value: _cloudSync,
@@ -584,11 +584,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 : _cloudSync
                     ? 'Your courses and settings are backed up to your account and synced across devices. Local storage stays the source of truth.'
                     : 'Off — courses are stored only on this device (no network used). Turn on to back up and sync across devices, and to publish to the community.',
-            style: const TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
+            style: TextStyle(color: context.colors.textFaint, fontSize: 12, height: 1.4),
           ),
           if (_cloudSync && !_isGuest) ...[
             const SizedBox(height: 16),
-            const Divider(color: Colors.white10, height: 1),
+            Divider(color: context.colors.outline, height: 1),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -596,10 +596,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'LAST SYNCED',
                       style: TextStyle(
-                        color: Colors.white38,
+                        color: context.colors.textFaint,
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.0,
@@ -610,8 +610,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       _lastSyncTime == null || _lastSyncTime == 0
                           ? 'Never synced'
                           : formatTime(_lastSyncTime),
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: context.colors.textSecondary,
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -660,30 +660,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: context.colors.outline),
       ),
       child: Row(
         children: [
           const Icon(LucideIcons.gauge, color: AppTheme.duoBlue, size: 28),
           const SizedBox(width: 16),
-          const Expanded(
+          Expanded(
             child: Text('Parallel requests',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white)),
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: context.colors.textPrimary)),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: Colors.black38,
+              color: context.colors.shadow,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.white10),
+              border: Border.all(color: context.colors.outline),
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: options.containsKey(_genConcurrency) ? _genConcurrency : 'auto',
-                dropdownColor: AppTheme.surface,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                dropdownColor: context.colors.surface,
+                style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
                 items: options.entries
                     .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
                     .toList(),
@@ -702,21 +702,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: context.colors.outline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(LucideIcons.cpu, color: AppTheme.duoBlue, size: 28),
-              SizedBox(width: 16),
+              const Icon(LucideIcons.cpu, color: AppTheme.duoBlue, size: 28),
+              const SizedBox(width: 16),
               Expanded(
                 child: Text(
                   'Automation Settings',
-                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white),
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: context.colors.textPrimary),
                 ),
               ),
             ],
@@ -728,14 +728,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Auto-fetch Reference Books',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: context.colors.textPrimary),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Extract mentioned books from syllabus and download them from the marketplace automatically.',
-                      style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11),
+                      style: TextStyle(color: context.colors.textFaint, fontSize: 11),
                     ),
                   ],
                 ),
@@ -750,21 +750,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
           ),
-          const Divider(color: Colors.white10, height: 24),
+          Divider(color: context.colors.outline, height: 24),
           Row(
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'AI Mapping Verification',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                    Text(
+                      'AI Verification Verification',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: context.colors.textPrimary),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Verify page ranges automatically using AI and proceed without manual confirmation.',
-                      style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11),
+                      style: TextStyle(color: context.colors.textFaint, fontSize: 11),
                     ),
                   ],
                 ),
@@ -779,21 +779,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
           ),
-          const Divider(color: Colors.white10, height: 24),
+          Divider(color: context.colors.outline, height: 24),
           Row(
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Auto-generate Module 1',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: context.colors.textPrimary),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Create outlines for Module 1 sections and auto-generate the first unit with diagrams.',
-                      style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11),
+                      style: TextStyle(color: context.colors.textFaint, fontSize: 11),
                     ),
                   ],
                 ),
@@ -816,9 +816,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildAiQueueCard() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: context.colors.outline),
       ),
       child: Material(
         color: Colors.transparent,
@@ -843,23 +843,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: const Icon(LucideIcons.cpu, color: AppTheme.duoBlue, size: 20),
                 ),
                 const SizedBox(width: 16),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'AI Request Queue',
-                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white),
+                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: context.colors.textPrimary),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
                         'Monitor active, queued, and scheduled lesson generation tasks.',
-                        style: TextStyle(color: Colors.white54, fontSize: 11),
+                        style: TextStyle(color: context.colors.textFaint, fontSize: 11),
                       ),
                     ],
                   ),
                 ),
-                const Icon(LucideIcons.chevronRight, color: Colors.white30, size: 20),
+                Icon(LucideIcons.chevronRight, color: context.colors.textFaint, size: 20),
               ],
             ),
           ),
@@ -871,9 +871,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildExperimentsCard() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: context.colors.outline),
       ),
       child: Material(
         color: Colors.transparent,
@@ -898,23 +898,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: const Icon(LucideIcons.flaskConical, color: AppTheme.duoViolet, size: 20),
                 ),
                 const SizedBox(width: 16),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Experiments / Slide Testing',
-                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white),
+                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: context.colors.textPrimary),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
                         'Load slide presets or paste custom slide JSON to test rendering live.',
-                        style: TextStyle(color: Colors.white54, fontSize: 11),
+                        style: TextStyle(color: context.colors.textFaint, fontSize: 11),
                       ),
                     ],
                   ),
                 ),
-                const Icon(LucideIcons.chevronRight, color: Colors.white30, size: 20),
+                Icon(LucideIcons.chevronRight, color: context.colors.textFaint, size: 20),
               ],
             ),
           ),
@@ -935,9 +935,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: context.colors.outline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -946,9 +946,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               const Icon(LucideIcons.calendarRange, color: AppTheme.duoBlue, size: 28),
               const SizedBox(width: 16),
-              const Expanded(
+              Expanded(
                 child: Text('Auto-schedule hours',
-                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white)),
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: context.colors.textPrimary)),
               ),
             ],
           ),
@@ -959,7 +959,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Start Time', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text('Start Time', style: TextStyle(color: context.colors.textFaint, fontSize: 12, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 6),
                   ElevatedButton(
                     onPressed: () async {
@@ -970,11 +970,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       if (time != null) setState(() => _scheduleStart = time);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black38,
-                      foregroundColor: Colors.white,
+                      backgroundColor: context.colors.shadow,
+                      foregroundColor: context.colors.textPrimary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
-                        side: const BorderSide(color: Colors.white10),
+                        side: BorderSide(color: context.colors.outline),
                       ),
                     ),
                     child: Text(_formatTimeOfDay(_scheduleStart)),
@@ -984,7 +984,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('End Time', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text('End Time', style: TextStyle(color: context.colors.textFaint, fontSize: 12, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 6),
                   ElevatedButton(
                     onPressed: () async {
@@ -995,11 +995,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       if (time != null) setState(() => _scheduleEnd = time);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black38,
-                      foregroundColor: Colors.white,
+                      backgroundColor: context.colors.shadow,
+                      foregroundColor: context.colors.textPrimary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
-                        side: const BorderSide(color: Colors.white10),
+                        side: BorderSide(color: context.colors.outline),
                       ),
                     ),
                     child: Text(_formatTimeOfDay(_scheduleEnd)),
@@ -1017,43 +1017,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: context.colors.outline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: const [
-              Icon(LucideIcons.messageSquare, color: AppTheme.duoBlue, size: 28),
-              SizedBox(width: 16),
+            children: [
+              const Icon(LucideIcons.messageSquare, color: AppTheme.duoBlue, size: 28),
+              const SizedBox(width: 16),
               Text(
                 'Chat System Prompt',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white),
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: context.colors.textPrimary),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             'This prompt is appended to the tutor\'s instructions in both live and standard chat modes. Use it to specify custom personas, topics, or explanation guidelines.',
-            style: TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
+            style: TextStyle(color: context.colors.textFaint, fontSize: 12, height: 1.4),
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _customPromptController,
             maxLines: 4,
             minLines: 2,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.white),
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: context.colors.textPrimary),
             decoration: InputDecoration(
               hintText: 'e.g. Always explain concepts using analogies to space exploration. Keep tone humorous.',
-              hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+              hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 12),
               filled: true,
-              fillColor: Colors.black26,
+              fillColor: context.colors.shadow,
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.white12),
+                borderSide: BorderSide(color: context.colors.outline),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -1072,7 +1072,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: AppTheme.glassDecoration,
+      decoration: AppTheme.glassOf(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1080,10 +1080,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               const Icon(LucideIcons.brain, color: AppTheme.duoBlue, size: 24),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Writing Style Personalized',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                  style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 15),
                 ),
               ),
               if (hasProfile)
@@ -1100,9 +1100,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildProfileRow('Pacing & Rhythm', profile['pacing_and_rhythm']?.toString() ?? 'Flowing prose'),
             _buildProfileRow('Transitions Favored', (profile['transitional_mechanics'] as List?)?.join(', ') ?? 'however, furthermore'),
           ] else ...[
-            const Text(
+            Text(
               'No custom writing style profile is set yet. Sirius is currently generating lessons in standard academic style.',
-              style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.4),
+              style: TextStyle(color: context.colors.textFaint, fontSize: 13, height: 1.4),
             ),
           ],
           const SizedBox(height: 20),
@@ -1147,13 +1147,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             width: 150,
             child: Text(
               label,
-              style: const TextStyle(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.bold),
+              style: TextStyle(color: context.colors.textFaint, fontSize: 12, fontWeight: FontWeight.bold),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+              style: TextStyle(color: context.colors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -1174,7 +1174,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (isDesktop) {
       return Scaffold(
-        backgroundColor: const Color(0xFF0B0F19),
+        backgroundColor: context.colors.background,
         appBar: AppBar(
           title: const Text('Settings', style: TextStyle(fontWeight: FontWeight.w900)),
           backgroundColor: Colors.transparent,
@@ -1194,7 +1194,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     margin: const EdgeInsets.only(bottom: 24),
-                    decoration: AppTheme.glassDecoration,
+                    decoration: AppTheme.glassOf(context),
                     child: Row(
                       children: [
                         CircleAvatar(
@@ -1210,8 +1210,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(user?.displayName ?? 'Guest User', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Colors.white, overflow: TextOverflow.ellipsis)),
-                              Text(user?.email ?? 'Not logged in', style: const TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, fontSize: 10, overflow: TextOverflow.ellipsis)),
+                              Text(user?.displayName ?? 'Guest User', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: context.colors.textPrimary, overflow: TextOverflow.ellipsis)),
+                              Text(user?.email ?? 'Not logged in', style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold, fontSize: 10, overflow: TextOverflow.ellipsis)),
                             ],
                           ),
                         )
@@ -1264,7 +1264,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
             ),
-            Container(width: 1, color: Colors.white.withOpacity(0.08)),
+            Container(width: 1, color: context.colors.outline),
 
             // Right side: scrollable contents of selected category
             Expanded(
@@ -1295,7 +1295,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               margin: const EdgeInsets.only(bottom: 32),
-              decoration: AppTheme.glassDecoration,
+              decoration: AppTheme.glassOf(context),
               child: Row(
                 children: [
                   CircleAvatar(
@@ -1311,8 +1311,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(user?.displayName ?? 'Guest User', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white)),
-                        Text(user?.email ?? 'Not logged in', style: const TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, fontSize: 12)),
+                        Text(user?.displayName ?? 'Guest User', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: context.colors.textPrimary)),
+                        Text(user?.email ?? 'Not logged in', style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold, fontSize: 12)),
                       ],
                     ),
                   )
@@ -1322,24 +1322,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             const Text('Appearance', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
-            const Text('Follow the system, or pick light/dark explicitly.',
-                style: TextStyle(color: Colors.white54, fontSize: 12)),
+            Text('Follow the system, or pick light/dark explicitly.',
+                style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
             const SizedBox(height: 16),
             _buildAppearanceCard(),
             const SizedBox(height: 32),
 
             const Text('Learning', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
-            const Text('Set a daily XP goal and an optional study reminder.',
-                style: TextStyle(color: Colors.white54, fontSize: 12)),
+            Text('Set a daily XP goal and an optional study reminder.',
+                style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
             const SizedBox(height: 16),
             const DailyGoalCard(),
             const SizedBox(height: 32),
 
             const Text('Personalization', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
-            const Text('Optional: tune the generated content to your writing and learning style.',
-                style: TextStyle(color: Colors.white54, fontSize: 12)),
+            Text('Optional: tune the generated content to your writing and learning style.',
+                style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
             const SizedBox(height: 16),
             const LearnerProfileCard(),
             const SizedBox(height: 16),
@@ -1348,15 +1348,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             const Text('Storage', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
-            const Text('Courses are saved on this device first. Cloud sync is optional.',
-                style: TextStyle(color: Colors.white54, fontSize: 12)),
+            Text('Courses are saved on this device first. Cloud sync is optional.',
+                style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
             const SizedBox(height: 16),
             _buildCloudSyncCard(),
             const SizedBox(height: 32),
 
             const Text('API Keys', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
-            const Text('Add multiple keys to fall back automatically if rate-limited.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            Text('Add multiple keys to fall back automatically if rate-limited.', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
             const SizedBox(height: 16),
             StringListManager(
               key: _keysManagerKey,
@@ -1369,15 +1369,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             // ---- Advanced mode gate: everything below is power-user tooling.
             Container(
-              decoration: AppTheme.glassDecoration,
+              decoration: AppTheme.glassOf(context),
               child: SwitchListTile(
                 value: GlobalState.advancedModeNotifier.value,
                 activeColor: AppTheme.duoViolet,
-                title: const Text('Advanced mode',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
-                subtitle: const Text(
+                title: Text('Advanced mode',
+                    style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w800)),
+                subtitle: Text(
                   'Model ladders, concurrency, automation, experiments, and per-node generation menus.',
-                  style: TextStyle(color: Colors.white54, fontSize: 11),
+                  style: TextStyle(color: context.colors.textFaint, fontSize: 11),
                 ),
                 onChanged: (v) => setState(() => GlobalState.advancedModeNotifier.value = v),
               ),
@@ -1400,7 +1400,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               const Text('AI Model Assignments', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
               const SizedBox(height: 8),
-              const Text('Select specialized models for text, graphics, and light-weight tasks.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              Text('Select specialized models for text, graphics, and light-weight tasks.', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
               const SizedBox(height: 16),
 
               _buildModelSlotCard(
@@ -1437,7 +1437,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 32),
               const Text('Generation', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
               const SizedBox(height: 8),
-              const Text('How many lessons to generate at once. Higher is faster but uses more bandwidth and may hit rate limits.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              Text('How many lessons to generate at once. Higher is faster but uses more bandwidth and may hit rate limits.', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
               const SizedBox(height: 16),
               _buildConcurrencyCard(),
               const SizedBox(height: 16),
@@ -1452,7 +1452,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 32),
               const Text('Live Chat Assistant', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
               const SizedBox(height: 8),
-              const Text('Customize the behavior and system instructions for the real-time AI helper.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              Text('Customize the behavior and system instructions for the real-time AI helper.', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
               const SizedBox(height: 16),
               _buildLiveChatPromptCard(),
             ],
@@ -1528,7 +1528,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             Icon(
               icon,
-              color: isSelected ? AppTheme.duoBlue : Colors.white60,
+              color: isSelected ? AppTheme.duoBlue : context.colors.textSecondary,
               size: 20,
             ),
             const SizedBox(width: 12),
@@ -1538,7 +1538,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 fontFamily: 'Nunito',
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
-                color: isSelected ? AppTheme.duoBlue : Colors.white70,
+                color: isSelected ? AppTheme.duoBlue : context.colors.textSecondary,
               ),
             ),
           ],
@@ -1549,7 +1549,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildAppearanceCard() {
     return Container(
-      decoration: AppTheme.glassDecoration,
+      decoration: AppTheme.glassOf(context),
       padding: const EdgeInsets.all(16),
       child: ValueListenableBuilder<ThemeMode>(
         valueListenable: GlobalState.themeModeNotifier,
@@ -1595,31 +1595,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           const Text('Appearance', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
           const SizedBox(height: 8),
-          const Text('Follow the system, or pick light/dark explicitly.',
-              style: TextStyle(color: Colors.white54, fontSize: 12)),
+          Text('Follow the system, or pick light/dark explicitly.',
+              style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
           const SizedBox(height: 16),
           _buildAppearanceCard(),
           const SizedBox(height: 32),
 
           const Text('Learning Goal', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
           const SizedBox(height: 8),
-          const Text('Set a daily XP goal and an optional study reminder.',
-              style: TextStyle(color: Colors.white54, fontSize: 12)),
+          Text('Set a daily XP goal and an optional study reminder.',
+              style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
           const SizedBox(height: 16),
           const DailyGoalCard(),
           const SizedBox(height: 32),
 
           const Text('Storage & Sync', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
           const SizedBox(height: 8),
-          const Text('Courses are saved on this device first. Cloud sync is optional.',
-              style: TextStyle(color: Colors.white54, fontSize: 12)),
+          Text('Courses are saved on this device first. Cloud sync is optional.',
+              style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
           const SizedBox(height: 16),
           _buildCloudSyncCard(),
           const SizedBox(height: 32),
 
           const Text('API Keys', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
           const SizedBox(height: 8),
-          const Text('Add multiple keys to fall back automatically if rate-limited.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+          Text('Add multiple keys to fall back automatically if rate-limited.', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
           const SizedBox(height: 16),
           StringListManager(
             key: _keysManagerKey,
@@ -1636,8 +1636,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           const Text('Personalization', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
           const SizedBox(height: 8),
-          const Text('Optional: tune the generated content to your writing and learning style.',
-              style: TextStyle(color: Colors.white54, fontSize: 12)),
+          Text('Optional: tune the generated content to your writing and learning style.',
+              style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
           const SizedBox(height: 16),
           const LearnerProfileCard(),
           const SizedBox(height: 16),
@@ -1646,7 +1646,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const Text('Live Chat Assistant', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
           const SizedBox(height: 8),
-          const Text('Customize the behavior and system instructions for the real-time AI helper.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+          Text('Customize the behavior and system instructions for the real-time AI helper.', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
           const SizedBox(height: 16),
           _buildLiveChatPromptCard(),
         ],
@@ -1657,18 +1657,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           const Text('Advanced Options', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
           const SizedBox(height: 8),
-          const Text('Enable Advanced Mode to configure AI models, concurrency settings, and execute experiments.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+          Text('Enable Advanced Mode to configure AI models, concurrency settings, and execute experiments.', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
           const SizedBox(height: 16),
           Container(
-            decoration: AppTheme.glassDecoration,
+            decoration: AppTheme.glassOf(context),
             child: SwitchListTile(
               value: GlobalState.advancedModeNotifier.value,
               activeColor: AppTheme.duoViolet,
-              title: const Text('Advanced mode',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
-              subtitle: const Text(
+              title: Text('Advanced mode',
+                  style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w800)),
+              subtitle: Text(
                 'Model ladders, concurrency, automation, experiments, and per-node generation menus.',
-                style: TextStyle(color: Colors.white54, fontSize: 11),
+                style: TextStyle(color: context.colors.textFaint, fontSize: 11),
               ),
               onChanged: (v) => setState(() => GlobalState.advancedModeNotifier.value = v),
             ),
@@ -1691,7 +1691,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             const Text('AI Model Assignments', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
-            const Text('Select specialized models for text, graphics, and light-weight tasks.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            Text('Select specialized models for text, graphics, and light-weight tasks.', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
             const SizedBox(height: 16),
 
             _buildModelSlotCard(
@@ -1728,7 +1728,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 32),
             const Text('Generation Settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
-            const Text('How many lessons to generate at once, task queueing, schedule settings, and automated rules.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            Text('How many lessons to generate at once, task queueing, schedule settings, and automated rules.', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
             const SizedBox(height: 16),
             _buildConcurrencyCard(),
             const SizedBox(height: 16),
@@ -1742,12 +1742,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ] else
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: AppTheme.glassDecoration,
+              decoration: AppTheme.glassOf(context),
               alignment: Alignment.center,
-              child: const Text(
+              child: Text(
                 'Please enable Advanced Mode above to unlock model slot configurations and scheduling details.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white38, fontSize: 12),
+                style: TextStyle(color: context.colors.textFaint, fontSize: 12),
               ),
             ),
         ],
