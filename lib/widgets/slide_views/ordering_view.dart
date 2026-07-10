@@ -69,13 +69,13 @@ class _OrderingViewState extends State<OrderingView> {
         children: [
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: AppTheme.glassDecoration,
+            decoration: AppTheme.glassOf(context),
             child: MathMarkdown(
               data: widget.slide.content.isNotEmpty
                   ? widget.slide.content
                   : 'Drag the steps into the correct order.',
-              textStyle: const TextStyle(
-                  fontSize: 17, color: Colors.white, fontWeight: FontWeight.bold),
+              textStyle: TextStyle(
+                  fontSize: 17, color: context.colors.textPrimary, fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(height: 16),
@@ -105,10 +105,10 @@ class _OrderingViewState extends State<OrderingView> {
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.04),
+                    color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                        color: resultColor ?? Colors.white12, width: 2),
+                        color: resultColor ?? context.colors.outline, width: 2),
                   ),
                   child: Row(
                     children: [
@@ -132,15 +132,15 @@ class _OrderingViewState extends State<OrderingView> {
                       Expanded(
                         child: MathMarkdown(
                           data: item,
-                          textStyle: const TextStyle(
+                          textStyle: TextStyle(
                               fontSize: 14,
-                              color: Colors.white,
+                              color: context.colors.textPrimary,
                               fontWeight: FontWeight.bold),
                         ),
                       ),
                       if (!widget.isAnswered)
-                        const Icon(LucideIcons.gripVertical,
-                            color: Colors.white24, size: 18),
+                        Icon(LucideIcons.gripVertical,
+                            color: context.colors.textFaint, size: 18),
                     ],
                   ),
                 );

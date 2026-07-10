@@ -51,20 +51,20 @@ class NumericalView extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.all(20),
-                  decoration: AppTheme.glassDecoration,
-                  child: MathMarkdown(data: slide.content, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                  decoration: AppTheme.glassOf(context),
+                  child: MathMarkdown(data: slide.content, textStyle: TextStyle(fontSize: 18, color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
                 ),
                 const SizedBox(height: 32),
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.white12, width: 2),
+                    border: Border.all(color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : context.colors.outline, width: 2),
                   ),
                   child: Column(
                     children: [
-                      const Text('ENTER NUMBER', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.5)),
+                      Text('ENTER NUMBER', style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.5)),
                       const SizedBox(height: 12),
                       TextField(
                         enabled: !isAnswered,
@@ -78,9 +78,9 @@ class NumericalView extends StatelessWidget {
                         ),
                         decoration: InputDecoration(
                           hintText: placeholder,
-                          hintStyle: const TextStyle(color: Colors.white24),
+                          hintStyle: TextStyle(color: context.colors.textFaint),
                           filled: true,
-                          fillColor: Colors.black45,
+                          fillColor: context.colors.surfaceAlt,
                           contentPadding: const EdgeInsets.symmetric(vertical: 12),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                           focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.amber, width: 2)),

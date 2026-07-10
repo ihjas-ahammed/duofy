@@ -78,8 +78,8 @@ class _MatchingViewState extends State<MatchingView> {
       data: widget.slide.content.isNotEmpty
           ? widget.slide.content
           : 'Match each item with its pair.',
-      textStyle: const TextStyle(
-          fontSize: 17, color: Colors.white, fontWeight: FontWeight.bold),
+      textStyle: TextStyle(
+          fontSize: 17, color: context.colors.textPrimary, fontWeight: FontWeight.bold),
     );
 
     _leftChips = [
@@ -87,8 +87,8 @@ class _MatchingViewState extends State<MatchingView> {
         MathMarkdown(
           key: ValueKey('left_${widget.slide.id}_$i'),
           data: _pairs[i].left,
-          textStyle: const TextStyle(
-              fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
+          textStyle: TextStyle(
+              fontSize: 14, color: context.colors.textPrimary, fontWeight: FontWeight.bold),
         ),
     ];
     _rightChips = [
@@ -96,8 +96,8 @@ class _MatchingViewState extends State<MatchingView> {
         MathMarkdown(
           key: ValueKey('right_${widget.slide.id}_$i'),
           data: _pairs[i].right,
-          textStyle: const TextStyle(
-              fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
+          textStyle: TextStyle(
+              fontSize: 14, color: context.colors.textPrimary, fontWeight: FontWeight.bold),
         ),
     ];
   }
@@ -154,7 +154,7 @@ class _MatchingViewState extends State<MatchingView> {
     required VoidCallback onTap,
   }) {
     final border = resultColor ??
-        (bound ? color : (highlighted ? Colors.amber : Colors.white12));
+        (bound ? color : (highlighted ? Colors.amber : context.colors.outline));
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
@@ -168,7 +168,7 @@ class _MatchingViewState extends State<MatchingView> {
             constraints: const BoxConstraints(minHeight: 48),
             alignment: Alignment.centerLeft,
             decoration: BoxDecoration(
-              color: bound ? color.withOpacity(0.12) : Colors.white.withOpacity(0.04),
+              color: bound ? color.withOpacity(0.12) : context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: border, width: 2),
             ),
@@ -192,7 +192,7 @@ class _MatchingViewState extends State<MatchingView> {
               children: [
                 Container(
                   padding: const EdgeInsets.all(20),
-                  decoration: AppTheme.glassDecoration,
+                  decoration: AppTheme.glassOf(context),
                   child: _titleWidget,
                 ),
                 const SizedBox(height: 20),
@@ -232,7 +232,7 @@ class _MatchingViewState extends State<MatchingView> {
                                 bound: boundLeft != null,
                                 color: boundLeft != null
                                     ? _pairColor(boundLeft)
-                                    : Colors.white12,
+                                    : context.colors.outline,
                                 highlighted: false,
                                 resultColor: widget.isAnswered && boundLeft != null
                                     ? (_isPairCorrect(boundLeft)

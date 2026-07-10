@@ -40,27 +40,27 @@ class OneWordView extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.all(20),
-                  decoration: AppTheme.glassDecoration,
+                  decoration: AppTheme.glassOf(context),
                   child: MathMarkdown(
                     data: slide.content,
-                    textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                    textStyle: TextStyle(fontSize: 18, color: context.colors.textPrimary, fontWeight: FontWeight.bold),
                   ),
                 ),
                 const SizedBox(height: 32),
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.white12,
+                      color: isAnswered ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : context.colors.outline,
                       width: 2,
                     ),
                   ),
                   child: Column(
                     children: [
-                      const Text('TYPE YOUR ANSWER',
-                          style: TextStyle(color: Colors.white54, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.5)),
+                      Text('TYPE YOUR ANSWER',
+                          style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.5)),
                       const SizedBox(height: 12),
                       TextField(
                         enabled: !isAnswered,
@@ -75,9 +75,9 @@ class OneWordView extends StatelessWidget {
                         ),
                         decoration: InputDecoration(
                           hintText: 'answer',
-                          hintStyle: const TextStyle(color: Colors.white24),
+                          hintStyle: TextStyle(color: context.colors.textFaint),
                           filled: true,
-                          fillColor: Colors.black45,
+                          fillColor: context.colors.surfaceAlt,
                           contentPadding: const EdgeInsets.symmetric(vertical: 12),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                           focusedBorder: OutlineInputBorder(
