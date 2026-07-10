@@ -390,7 +390,7 @@ class _SafePdfViewerState extends State<SafePdfViewer> {
           child: Container(
             padding: const EdgeInsets.all(24.0),
             decoration: BoxDecoration(
-              color: AppTheme.surface,
+              color: context.colors.surface,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.redAccent.withOpacity(0.3), width: 1.5),
             ),
@@ -399,15 +399,15 @@ class _SafePdfViewerState extends State<SafePdfViewer> {
               children: [
                 const Icon(Icons.error_outline, color: Colors.redAccent, size: 48),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Failed to load PDF document',
-                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: context.colors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   _errorMessage,
-                  style: const TextStyle(color: Colors.white60, fontSize: 13),
+                  style: TextStyle(color: context.colors.textFaint, fontSize: 13),
                   textAlign: TextAlign.center,
                 ),
               ],

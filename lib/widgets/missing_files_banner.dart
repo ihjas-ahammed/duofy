@@ -41,17 +41,17 @@ class MissingFilesBanner extends StatelessWidget {
         children: [
           const Icon(LucideIcons.fileWarning, color: AppTheme.duoOrange, size: 28),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Missing Source Files',
                   style: TextStyle(fontWeight: FontWeight.w900, color: AppTheme.duoOrange, fontSize: 13),
                 ),
                 Text(
                   'Upload original files to restore generation capabilities across devices.',
-                  style: TextStyle(color: Colors.white70, fontSize: 11),
+                  style: TextStyle(color: context.colors.textSecondary, fontSize: 11),
                 ),
               ],
             ),
@@ -65,7 +65,7 @@ class MissingFilesBanner extends StatelessWidget {
                 color: AppTheme.duoOrange,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text('Restore', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+              child: Text('Restore', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 12)),
             ),
           )
         ],

@@ -17,7 +17,7 @@ class QpCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: AppTheme.surface,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: AppTheme.duoBlue.withOpacity(0.3), width: 2),
           boxShadow: [
@@ -46,14 +46,14 @@ class QpCard extends StatelessWidget {
                 children: [
                   Text(
                     qp.title,
-                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white),
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: context.colors.textPrimary),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '$totalQuestions Solved Questions',
-                    style: const TextStyle(fontSize: 12, color: Colors.white54, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 12, color: context.colors.textFaint, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),

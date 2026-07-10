@@ -80,14 +80,14 @@ class SmartReviewCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Smart Review',
+                          Text('Smart Review',
                               style: TextStyle(
-                                  color: Colors.white,
+                                  color: context.colors.textPrimary,
                                   fontWeight: FontWeight.w800,
                                   fontSize: 14)),
                           Text(
                             '$due item${due == 1 ? '' : 's'} due — 5 minutes well spent',
-                            style: const TextStyle(color: Colors.white54, fontSize: 11),
+                            style: TextStyle(color: context.colors.textFaint, fontSize: 11),
                           ),
                         ],
                       ),

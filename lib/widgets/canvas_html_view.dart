@@ -321,7 +321,7 @@ class _CanvasFullScreenScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final isSvg = isSvgCanvas(content);
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0F19),
+      backgroundColor: context.colors.background,
       body: SafeArea(
         child: Stack(
           children: [
@@ -512,7 +512,7 @@ void showCanvasCodeDialog(BuildContext context, String code) {
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.duoBlue,
-                        foregroundColor: Colors.white,
+                        foregroundColor: context.colors.textPrimary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
