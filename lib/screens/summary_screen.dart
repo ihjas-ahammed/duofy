@@ -441,14 +441,14 @@ class _SummaryScreenState extends State<SummaryScreen> {
           slivers: [
 
             if (currentModule == null || currentSection == null)
-              const SliverFillRemaining(
+              SliverFillRemaining(
                 hasScrollBody: false,
                 child: Center(
                   child: Padding(
-                    padding: EdgeInsets.all(24.0),
+                    padding: const EdgeInsets.all(24.0),
                     child: Text(
                       'No active section selected.\nGo to the Learning Path tab and open a section first.',
-                      style: TextStyle(color: Colors.white54, height: 1.4),
+                      style: TextStyle(color: context.colors.textFaint, height: 1.4),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -461,7 +461,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                   padding: const EdgeInsets.all(16.0),
                   child: Container(
                     padding: const EdgeInsets.all(16),
-                    decoration: AppTheme.glassDecoration,
+                    decoration: AppTheme.glassOf(context),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -492,8 +492,8 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                   const SizedBox(height: 2),
                                   Text(
                                     currentSection.title,
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: context.colors.textPrimary,
                                       fontWeight: FontWeight.w900,
                                       fontSize: 16,
                                       fontFamily: 'Nunito',
@@ -510,7 +510,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                           const SizedBox(height: 12),
                           Text(
                             currentSection.description,
-                            style: const TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
+                            style: TextStyle(color: context.colors.textFaint, fontSize: 12, height: 1.4),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -527,17 +527,17 @@ class _SummaryScreenState extends State<SummaryScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                   child: Container(
                     padding: const EdgeInsets.all(16),
-                    decoration: AppTheme.glassDecoration,
+                    decoration: AppTheme.glassOf(context),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Row(
+                        Row(
                           children: [
-                            Icon(LucideIcons.playCircle, color: AppTheme.duoBlue, size: 22),
-                            SizedBox(width: 8),
+                            const Icon(LucideIcons.playCircle, color: AppTheme.duoBlue, size: 22),
+                            const SizedBox(width: 8),
                             Text(
                               'Section Video Class Finder',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                              style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
                             ),
                           ],
                         ),
@@ -548,17 +548,17 @@ class _SummaryScreenState extends State<SummaryScreen> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.05),
+                                  color: context.colors.surfaceAlt,
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: Colors.white.withOpacity(0.08)),
+                                  border: Border.all(color: context.colors.outline),
                                 ),
                                 child: TextField(
                                   controller: _sectionSearchController,
-                                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                                  decoration: const InputDecoration(
+                                  style: TextStyle(color: context.colors.textPrimary, fontSize: 12),
+                                  decoration: InputDecoration(
                                     border: InputBorder.none,
                                     hintText: 'Search section videos...',
-                                    hintStyle: TextStyle(color: Colors.white30, fontSize: 12),
+                                    hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 12),
                                   ),
                                 ),
                               ),
@@ -567,7 +567,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppTheme.duoBlue,
-                                foregroundColor: Colors.white,
+                                foregroundColor: context.colors.textPrimary,
                                 padding: const EdgeInsets.symmetric(horizontal: 16),
                                 minimumSize: const Size(0, 42),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -575,12 +575,12 @@ class _SummaryScreenState extends State<SummaryScreen> {
                               ),
                               onPressed: _loadingSectionVideos ? null : () => _searchVideosForSection(currentSection!),
                               child: _loadingSectionVideos
-                                  ? const SizedBox(
+                                  ? SizedBox(
                                       width: 16,
                                       height: 16,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        valueColor: AlwaysStoppedAnimation<Color>(context.colors.textPrimary),
                                       ),
                                     )
                                   : const Icon(LucideIcons.search, size: 16),
@@ -588,12 +588,12 @@ class _SummaryScreenState extends State<SummaryScreen> {
                           ],
                         ),
                         if (_loadingSectionVideos)
-                          const Padding(
-                            padding: EdgeInsets.only(top: 20.0),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 20.0),
                             child: Center(
                               child: Text(
                                 'Searching YouTube...',
-                                style: TextStyle(color: Colors.white30, fontSize: 12),
+                                style: TextStyle(color: context.colors.textFaint, fontSize: 12),
                               ),
                             ),
                           )
@@ -608,15 +608,15 @@ class _SummaryScreenState extends State<SummaryScreen> {
                           )
                         else if (_sectionVideos != null && _sectionVideos!.isNotEmpty) ...[
                           const SizedBox(height: 16),
-                          const Divider(color: Colors.white10, height: 1),
+                          Divider(color: context.colors.outline, height: 1),
                           const SizedBox(height: 12),
                           ..._sectionVideos!.map((video) => _buildVideoCard(context, video)),
                         ] else if (_sectionVideos != null)
-                          const Padding(
-                            padding: EdgeInsets.only(top: 16.0),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16.0),
                             child: Text(
                               'No lectures found for this section.',
-                              style: TextStyle(color: Colors.white30, fontSize: 11),
+                              style: TextStyle(color: context.colors.textFaint, fontSize: 11),
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -632,11 +632,11 @@ class _SummaryScreenState extends State<SummaryScreen> {
                   padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 8),
                   child: Text(
                     'Search Classes by Unit'.toUpperCase(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 11,
                       letterSpacing: 1.0,
-                      color: Colors.white38,
+                      color: context.colors.textFaint,
                     ),
                   ),
                 ),
@@ -644,12 +644,12 @@ class _SummaryScreenState extends State<SummaryScreen> {
 
               // Unit searches listing
               currentSection.units.isEmpty
-                  ? const SliverFillRemaining(
+                  ? SliverFillRemaining(
                       hasScrollBody: false,
                       child: Center(
                         child: Text(
                           'No units available in this section.',
-                          style: TextStyle(color: Colors.white38),
+                          style: TextStyle(color: context.colors.textFaint),
                         ),
                       ),
                     )
@@ -667,7 +667,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                             return Container(
                               margin: const EdgeInsets.only(bottom: 16),
                               padding: const EdgeInsets.all(16),
-                              decoration: AppTheme.glassDecoration,
+                              decoration: AppTheme.glassOf(context),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
@@ -678,10 +678,10 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                       Container(
                                         padding: const EdgeInsets.all(8),
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.05),
+                                          color: context.colors.surfaceAlt,
                                           shape: BoxShape.circle,
                                         ),
-                                        child: const Icon(LucideIcons.playCircle, color: Colors.white70, size: 20),
+                                        child: Icon(LucideIcons.playCircle, color: context.colors.textSecondary, size: 20),
                                       ),
                                       const SizedBox(width: 12),
                                       Expanded(
@@ -690,8 +690,8 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                           children: [
                                             Text(
                                               unit.title,
-                                              style: const TextStyle(
-                                                color: Colors.white,
+                                              style: TextStyle(
+                                                color: context.colors.textPrimary,
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 14,
                                                 fontFamily: 'Nunito',
@@ -700,7 +700,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                             const SizedBox(height: 2),
                                             Text(
                                               unit.description,
-                                              style: const TextStyle(color: Colors.white54, fontSize: 11),
+                                              style: TextStyle(color: context.colors.textFaint, fontSize: 11),
                                               maxLines: 2,
                                               overflow: TextOverflow.ellipsis,
                                             ),
@@ -720,17 +720,17 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                             height: 42,
                                             padding: const EdgeInsets.symmetric(horizontal: 12),
                                             decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(0.04),
+                                              color: context.colors.surfaceAlt,
                                               borderRadius: BorderRadius.circular(10),
-                                              border: Border.all(color: Colors.white.withOpacity(0.08)),
+                                              border: Border.all(color: context.colors.outline),
                                             ),
                                             child: TextField(
                                               controller: controller,
-                                              style: const TextStyle(color: Colors.white, fontSize: 12),
-                                              decoration: const InputDecoration(
+                                              style: TextStyle(color: context.colors.textPrimary, fontSize: 12),
+                                              decoration: InputDecoration(
                                                 border: InputBorder.none,
                                                 hintText: 'Enter search keywords...',
-                                                hintStyle: TextStyle(color: Colors.white30, fontSize: 12),
+                                                hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 12),
                                               ),
                                             ),
                                           ),
@@ -739,7 +739,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                         ElevatedButton(
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: AppTheme.duoBlue,
-                                            foregroundColor: Colors.white,
+                                            foregroundColor: context.colors.textPrimary,
                                             padding: const EdgeInsets.symmetric(horizontal: 16),
                                             minimumSize: const Size(0, 42),
                                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -747,12 +747,12 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                           ),
                                           onPressed: isLoading ? null : () => _searchVideosForUnit(unit),
                                           child: isLoading
-                                              ? const SizedBox(
+                                              ? SizedBox(
                                                   width: 16,
                                                   height: 16,
                                                   child: CircularProgressIndicator(
                                                     strokeWidth: 2,
-                                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                    valueColor: AlwaysStoppedAnimation<Color>(context.colors.textPrimary),
                                                   ),
                                                 )
                                               : const Icon(LucideIcons.search, size: 16),
@@ -762,12 +762,12 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                   
                                   // Results Area
                                   if (isLoading)
-                                    const Padding(
-                                      padding: EdgeInsets.only(top: 20.0),
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 20.0),
                                       child: Center(
                                         child: Text(
                                           'Searching YouTube...',
-                                          style: TextStyle(color: Colors.white30, fontSize: 12),
+                                          style: TextStyle(color: context.colors.textFaint, fontSize: 12),
                                         ),
                                       ),
                                     )
@@ -782,15 +782,15 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                     )
                                   else if (videos != null && videos.isNotEmpty) ...[
                                     const SizedBox(height: 16),
-                                    const Divider(color: Colors.white10, height: 1),
+                                    Divider(color: context.colors.outline, height: 1),
                                     const SizedBox(height: 12),
                                     ...videos.map((video) => _buildVideoCard(context, video)),
                                   ] else if (videos != null)
-                                    const Padding(
-                                      padding: EdgeInsets.only(top: 16.0),
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 16.0),
                                       child: Text(
                                         'No lectures found for this query.',
-                                        style: TextStyle(color: Colors.white30, fontSize: 11),
+                                        style: TextStyle(color: context.colors.textFaint, fontSize: 11),
                                         textAlign: TextAlign.center,
                                       ),
                                     ),
@@ -816,9 +816,9 @@ class _SummaryScreenState extends State<SummaryScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.02),
+        color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white.withOpacity(0.04)),
+        border: Border.all(color: context.colors.outline),
       ),
       child: Material(
         color: Colors.transparent,
@@ -835,7 +835,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                       width: 90,
                       height: 50,
                       decoration: BoxDecoration(
-                        color: Colors.black38,
+                        color: context.colors.surfaceAlt,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: ClipRRect(
@@ -844,8 +844,8 @@ class _SummaryScreenState extends State<SummaryScreen> {
                           video.thumbnailUrl,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
-                            return const Center(
-                              child: Icon(LucideIcons.video, color: Colors.white24, size: 16),
+                            return Center(
+                              child: Icon(LucideIcons.video, color: context.colors.textFaint, size: 16),
                             );
                           },
                         ),
@@ -887,8 +887,8 @@ class _SummaryScreenState extends State<SummaryScreen> {
                     children: [
                       Text(
                         video.title,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: context.colors.textPrimary,
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
                           fontFamily: 'Nunito',
@@ -902,7 +902,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                           Expanded(
                             child: Text(
                               video.channelTitle,
-                              style: const TextStyle(color: Colors.white54, fontSize: 10),
+                              style: TextStyle(color: context.colors.textFaint, fontSize: 10),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -910,7 +910,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                           const SizedBox(width: 6),
                           Text(
                             video.views,
-                            style: const TextStyle(color: Colors.white30, fontSize: 9),
+                            style: TextStyle(color: context.colors.textFaint, fontSize: 9),
                           ),
                         ],
                       ),
