@@ -719,10 +719,10 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(
+      builder: (context) => Center(
         child: Card(
           color: AppTheme.surface,
-          child: Padding(
+          child: const Padding(
             padding: EdgeInsets.all(24.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,

@@ -1115,9 +1115,9 @@ class _HomeScreenState extends State<HomeScreen> {
         final activeTasks = GenerationManager.instance.activeTasks;
 
         if (isLoading) {
-          return const Scaffold(
+          return Scaffold(
             backgroundColor: AppTheme.background,
-            body: Center(child: CircularProgressIndicator(color: AppTheme.duoBlue)),
+            body: const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue)),
           );
         }
 

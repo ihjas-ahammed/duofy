@@ -1320,6 +1320,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
 
+            const Text('Appearance', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            const Text('Follow the system, or pick light/dark explicitly.',
+                style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 16),
+            _buildAppearanceCard(),
+            const SizedBox(height: 32),
+
             const Text('Learning', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
             const Text('Set a daily XP goal and an optional study reminder.',
@@ -1539,11 +1547,60 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildAppearanceCard() {
+    return Container(
+      decoration: AppTheme.glassDecoration,
+      padding: const EdgeInsets.all(16),
+      child: ValueListenableBuilder<ThemeMode>(
+        valueListenable: GlobalState.themeModeNotifier,
+        builder: (context, mode, _) => Row(
+          children: [
+            Icon(
+              mode == ThemeMode.dark
+                  ? LucideIcons.moon
+                  : mode == ThemeMode.light
+                      ? LucideIcons.sun
+                      : LucideIcons.monitor,
+              size: 20,
+              color: context.colors.textSecondary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text('Theme',
+                  style: TextStyle(
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.w800)),
+            ),
+            SegmentedButton<ThemeMode>(
+              segments: const [
+                ButtonSegment(value: ThemeMode.system, label: Text('Auto')),
+                ButtonSegment(value: ThemeMode.light, label: Text('Light')),
+                ButtonSegment(value: ThemeMode.dark, label: Text('Dark')),
+              ],
+              selected: {mode},
+              showSelectedIcon: false,
+              onSelectionChanged: (s) =>
+                  GlobalState.themeModeNotifier.value = s.first,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildCategoryContent() {
     if (_selectedCategory == 'general') {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const Text('Appearance', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 8),
+          const Text('Follow the system, or pick light/dark explicitly.',
+              style: TextStyle(color: Colors.white54, fontSize: 12)),
+          const SizedBox(height: 16),
+          _buildAppearanceCard(),
+          const SizedBox(height: 32),
+
           const Text('Learning Goal', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
           const SizedBox(height: 8),
           const Text('Set a daily XP goal and an optional study reminder.',
