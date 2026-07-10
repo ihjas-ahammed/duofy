@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
 class MiniProgressBar extends StatelessWidget {
   final int percentage;
@@ -63,7 +64,7 @@ class MiniProgressBar extends StatelessWidget {
                 Container(
                   height: height,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
+                    color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(9999),
                   ),
                 ),

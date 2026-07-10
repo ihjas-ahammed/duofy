@@ -86,7 +86,7 @@ class CompactBookCard extends StatelessWidget {
           onLongPress: onLongPress,
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.03),
+              color: context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: mostUsedColor.withOpacity(0.22), width: 1.2),
             ),
@@ -115,7 +115,7 @@ class CompactBookCard extends StatelessWidget {
                         style: TextStyle(
                           fontWeight: FontWeight.bold, 
                           fontSize: fontSize, 
-                          color: Colors.white.withOpacity(0.9),
+                          color: context.colors.textPrimary.withOpacity(0.9),
                           height: 1.15,
                         ),
                         maxLines: 2,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
 class DuoButton extends StatefulWidget {
   final String text;
@@ -58,7 +59,7 @@ class _DuoButtonState extends State<DuoButton> {
           child: widget.child ?? Text(
             widget.text.toUpperCase(),
             style: TextStyle(
-              color: widget.isOutline ? widget.color : Colors.white,
+              color: widget.isOutline ? widget.color : context.colors.textPrimary,
               fontWeight: FontWeight.w900,
               fontSize: 16,
               letterSpacing: 1.2,
