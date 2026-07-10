@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <!-- Deep-space background -->
+    <radialGradient id="space" cx="50%" cy="42%" r="75%">
+      <stop offset="0%" stop-color="#141b33"/>
+      <stop offset="55%" stop-color="#0b101f"/>
+      <stop offset="100%" stop-color="#05070d"/>
+    </radialGradient>
+    <!-- Accretion disk: warm gold sweeping to cyan -->
+    <linearGradient id="disk" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="35%" stop-color="#5b8cff"/>
+      <stop offset="70%" stop-color="#ffc94d"/>
+      <stop offset="100%" stop-color="#ff9d3d"/>
+    </linearGradient>
+    <linearGradient id="diskBack" x1="100%" y1="50%" x2="0%" y2="50%">
+      <stop offset="0%" stop-color="#ff9d3d"/>
+      <stop offset="45%" stop-color="#5b8cff"/>
+      <stop offset="100%" stop-color="#22d3ee"/>
+    </linearGradient>
+    <!-- Photon-ring glow around the event horizon -->
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffd98a" stop-opacity="0"/>
+      <stop offset="62%" stop-color="#ffd98a" stop-opacity="0"/>
+      <stop offset="78%" stop-color="#ffc94d" stop-opacity="0.85"/>
+      <stop offset="88%" stop-color="#ff8a3d" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#ff8a3d" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="blurS" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+    <filter id="blurM" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="22"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="0" fill="url(#space)"/>
+
+  <!-- Star specks -->
+  <g fill="#ffffff">
+    <circle cx="142" cy="176" r="4" opacity="0.9"/>
+    <circle cx="256" cy="98" r="2.5" opacity="0.55"/>
+    <circle cx="868" cy="150" r="3.5" opacity="0.8"/>
+    <circle cx="932" cy="300" r="2.5" opacity="0.5"/>
+    <circle cx="90" cy="520" r="2.5" opacity="0.5"/>
+    <circle cx="180" cy="840" r="3.5" opacity="0.7"/>
+    <circle cx="820" cy="870" r="4" opacity="0.85"/>
+    <circle cx="920" cy="700" r="2.5" opacity="0.5"/>
+    <circle cx="700" cy="80" r="2.5" opacity="0.6"/>
+    <circle cx="360" cy="920" r="2.5" opacity="0.55"/>
+  </g>
+  <!-- Sirius: one bright 4-point star, upper right -->
+  <g transform="translate(806,208)">
+    <circle r="16" fill="#ffffff"/>
+    <path d="M0,-64 L10,-12 L64,0 L10,12 L0,64 L-10,12 L-64,0 L-10,-12 Z" fill="#ffffff" opacity="0.95"/>
+    <circle r="34" fill="#9db8ff" opacity="0.35" filter="url(#blurS)"/>
+  </g>
+
+  <!-- Black hole, slightly above center -->
+  <g transform="translate(512,500)">
+    <!-- Back arc of the disk (rises behind the horizon) -->
+    <g filter="url(#blurS)">
+      <path d="M -318 6 A 318 96 0 0 1 318 6" fill="none"
+            stroke="url(#diskBack)" stroke-width="34" stroke-linecap="round"
+            transform="rotate(-14) translate(0,-26)"/>
+    </g>
+
+    <!-- Photon ring glow -->
+    <circle r="230" fill="url(#glow)"/>
+
+    <!-- Event horizon -->
+    <circle r="150" fill="#000000"/>
+    <circle r="150" fill="none" stroke="#ffd98a" stroke-width="7" opacity="0.95"/>
+    <circle r="162" fill="none" stroke="#ffb45e" stroke-width="4" opacity="0.35" filter="url(#blurS)"/>
+
+    <!-- Front arc of the accretion disk (passes in front) -->
+    <g transform="rotate(-14)">
+      <path d="M -330 20 A 330 104 0 0 0 330 20" fill="none"
+            stroke="url(#disk)" stroke-width="52" stroke-linecap="round"/>
+      <path d="M -330 20 A 330 104 0 0 0 330 20" fill="none"
+            stroke="url(#disk)" stroke-width="52" stroke-linecap="round"
+            opacity="0.55" filter="url(#blurM)"/>
+      <!-- Hot inner edge -->
+      <path d="M -282 14 A 282 84 0 0 0 282 14" fill="none"
+            stroke="#fff3d6" stroke-width="10" stroke-linecap="round" opacity="0.8"/>
+    </g>
+  </g>
+</svg>
