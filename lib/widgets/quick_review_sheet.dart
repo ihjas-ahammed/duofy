@@ -145,9 +145,9 @@ class _QuickReviewSheetState extends State<QuickReviewSheet> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0F172A).withOpacity(0.95),
+        color: context.colors.background.withOpacity(0.95),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: context.colors.outline),
       ),
       child: SafeArea(
         child: Padding(
@@ -163,7 +163,7 @@ class _QuickReviewSheetState extends State<QuickReviewSheet> {
                   height: 4,
                   margin: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white24,
+                    color: context.colors.textFaint,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -189,8 +189,8 @@ class _QuickReviewSheetState extends State<QuickReviewSheet> {
                         const SizedBox(height: 2),
                         Text(
                           widget.module.title,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: context.colors.textPrimary,
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
                           ),
@@ -202,7 +202,7 @@ class _QuickReviewSheetState extends State<QuickReviewSheet> {
                   ),
                   if (_reviewItems != null && _reviewItems!.isNotEmpty && !_isGenerating)
                     IconButton(
-                      icon: const Icon(LucideIcons.refreshCw, color: Colors.white70, size: 20),
+                      icon: Icon(LucideIcons.refreshCw, color: context.colors.textSecondary, size: 20),
                       onPressed: _generateReview,
                     ),
                 ],
@@ -271,15 +271,15 @@ class _EmptyReviewPanel extends StatelessWidget {
             child: const Icon(LucideIcons.sparkles, color: AppTheme.duoBlue, size: 36),
           ),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             'No Quick Review Sheet Yet',
-            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(color: context.colors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Generate a summary of key concepts, equations, and definitions directly from the module\'s textbook sections.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.4),
+            style: TextStyle(color: context.colors.textFaint, fontSize: 13, height: 1.4),
           ),
           const SizedBox(height: 24),
           SizedBox(
@@ -287,7 +287,7 @@ class _EmptyReviewPanel extends StatelessWidget {
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.duoBlue,
-                foregroundColor: Colors.white,
+                foregroundColor: context.colors.textPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
@@ -354,12 +354,12 @@ class _LoadingPanelState extends State<_LoadingPanel> {
           const SizedBox(height: 24),
           Text(
             _statuses[_statusIdx],
-            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+            style: TextStyle(color: context.colors.textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'This might take up to a minute depending on document size.',
-            style: TextStyle(color: Colors.white38, fontSize: 12),
+            style: TextStyle(color: context.colors.textFaint, fontSize: 12),
           ),
         ],
       ),
@@ -382,10 +382,10 @@ class _ReviewItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      color: Colors.white.withOpacity(0.03),
+      color: context.colors.surfaceAlt,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Colors.white10),
+        side: BorderSide(color: context.colors.outline),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -419,7 +419,7 @@ class _ReviewItemCard extends StatelessWidget {
                   Expanded(
                     child: MathMarkdown(
                       data: item.statement,
-                      textStyle: const TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
+                      textStyle: TextStyle(color: context.colors.textPrimary, fontSize: 14, height: 1.5),
                     ),
                   ),
                 ],
@@ -429,17 +429,17 @@ class _ReviewItemCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(LucideIcons.bookOpen, color: Colors.white54, size: 12),
+                      Icon(LucideIcons.bookOpen, color: context.colors.textFaint, size: 12),
                       const SizedBox(width: 4),
                       Text(
                         item.relatedLessonTitle,
-                        style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: context.colors.textFaint, fontSize: 11, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -541,10 +541,10 @@ class _StatementDetailSheetState extends State<_StatementDetailSheet> {
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.75,
-      decoration: const BoxDecoration(
-        color: Color(0xFF0F172A),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border(top: BorderSide(color: Colors.white10)),
+      decoration: BoxDecoration(
+        color: context.colors.background,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border(top: BorderSide(color: context.colors.outline)),
       ),
       child: SafeArea(
         child: Padding(
@@ -559,7 +559,7 @@ class _StatementDetailSheetState extends State<_StatementDetailSheet> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: Colors.white24,
+                    color: context.colors.textFaint,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -575,7 +575,7 @@ class _StatementDetailSheetState extends State<_StatementDetailSheet> {
                       widget.item.relatedLessonTitle.isNotEmpty
                           ? widget.item.relatedLessonTitle
                           : 'Concept Explanation',
-                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: context.colors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -586,13 +586,13 @@ class _StatementDetailSheetState extends State<_StatementDetailSheet> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.03),
+                  color: context.colors.surfaceAlt,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white10),
+                  border: Border.all(color: context.colors.outline),
                 ),
                 child: MathMarkdown(
                   data: widget.item.statement,
-                  textStyle: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+                  textStyle: TextStyle(color: context.colors.textSecondary, fontSize: 13, height: 1.4),
                 ),
               ),
               const SizedBox(height: 20),
@@ -600,13 +600,13 @@ class _StatementDetailSheetState extends State<_StatementDetailSheet> {
               // Explanation body
               Expanded(
                 child: _isLoading
-                    ? const Center(
+                    ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppTheme.duoGreen)),
-                            SizedBox(height: 16),
-                            Text('AI is writing detailed explanation...', style: TextStyle(color: Colors.white54, fontSize: 13)),
+                            const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppTheme.duoGreen)),
+                            const SizedBox(height: 16),
+                            Text('AI is writing detailed explanation...', style: TextStyle(color: context.colors.textFaint, fontSize: 13)),
                           ],
                         ),
                       )
@@ -614,7 +614,7 @@ class _StatementDetailSheetState extends State<_StatementDetailSheet> {
                         physics: const BouncingScrollPhysics(),
                         child: MathMarkdown(
                           data: _explanation,
-                          textStyle: const TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
+                          textStyle: TextStyle(color: context.colors.textPrimary, fontSize: 14, height: 1.5),
                         ),
                       ),
               ),
@@ -625,7 +625,7 @@ class _StatementDetailSheetState extends State<_StatementDetailSheet> {
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.duoGreen,
-                    foregroundColor: Colors.white,
+                    foregroundColor: context.colors.textPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
@@ -636,8 +636,8 @@ class _StatementDetailSheetState extends State<_StatementDetailSheet> {
               else
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white10,
-                    foregroundColor: Colors.white,
+                    backgroundColor: context.colors.surfaceAlt,
+                    foregroundColor: context.colors.textPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
