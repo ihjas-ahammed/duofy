@@ -191,16 +191,16 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Regenerate Unit?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: const Text(
+        backgroundColor: context.colors.surface,
+        title: Text('Regenerate Unit?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        content: Text(
           'This will permanently delete the AI-generated lessons for this unit, allowing you to generate it fresh.',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: context.colors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
           ),
           TextButton(
             onPressed: () async {
@@ -252,11 +252,11 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              backgroundColor: AppTheme.surface,
+              backgroundColor: context.colors.surface,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              title: const Text(
+              title: Text(
                 'Regenerate Lesson',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+                style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 20),
               ),
               content: SingleChildScrollView(
                 child: Column(
@@ -265,23 +265,23 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   children: [
                     Text(
                       'Replace "${lesson.title}" with a fresh version generated from the source PDF.',
-                      style: const TextStyle(color: Colors.white70, fontSize: 13),
+                      style: TextStyle(color: context.colors.textSecondary, fontSize: 13),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'CUSTOM INSTRUCTIONS (OPTIONAL)',
-                      style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      style: TextStyle(color: context.colors.textFaint, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                     ),
                     const SizedBox(height: 6),
                     TextField(
                       controller: customPromptController,
                       maxLines: 3,
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      style: TextStyle(color: context.colors.textPrimary, fontSize: 14),
                       decoration: InputDecoration(
                         hintText: 'e.g. Focus more on proofs, make explanation simpler, add more examples...',
-                        hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
+                        hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 13),
                         filled: true,
-                        fillColor: Colors.white.withOpacity(0.05),
+                        fillColor: context.colors.surfaceAlt,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -290,24 +290,24 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'LESSON FORMAT',
-                      style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      style: TextStyle(color: context.colors.textFaint, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                     ),
                     const SizedBox(height: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
+                        color: context.colors.surfaceAlt,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           value: selectedFormatId,
-                          dropdownColor: AppTheme.surface,
+                          dropdownColor: context.colors.surface,
                           isExpanded: true,
-                          icon: const Icon(Icons.arrow_drop_down, color: Colors.white54),
-                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                          icon: Icon(Icons.arrow_drop_down, color: context.colors.textFaint),
+                          style: TextStyle(color: context.colors.textPrimary, fontSize: 14),
                           items: sectionFormats.map((f) {
                             return DropdownMenuItem<String>(
                               value: f.id,
@@ -327,9 +327,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        const Text(
+                        Text(
                           'Generate diagrams',
-                          style: TextStyle(color: Colors.white70, fontSize: 14),
+                          style: TextStyle(color: context.colors.textSecondary, fontSize: 14),
                         ),
                         const Spacer(),
                         Switch(
@@ -349,7 +349,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+                  child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
                 ),
                 TextButton(
                   onPressed: () {
@@ -380,8 +380,8 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: AppTheme.surface,
-        content: Text('Regenerating "${lesson.title}"…', style: const TextStyle(color: Colors.white)),
+        backgroundColor: context.colors.surface,
+        content: Text('Regenerating "${lesson.title}"…', style: TextStyle(color: context.colors.textPrimary)),
         duration: const Duration(seconds: 3),
       ),
     );
@@ -400,7 +400,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: AppTheme.duoRed.withOpacity(0.85),
-            content: Text(msg, style: const TextStyle(color: Colors.white)),
+            content: Text(msg, style: TextStyle(color: context.colors.textPrimary)),
           ),
         );
       },
@@ -414,16 +414,16 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     final Map<String, dynamic>? result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Generate Lesson', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: const Text(
+        backgroundColor: context.colors.surface,
+        title: Text('Generate Lesson', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        content: Text(
           'Choose when and how to generate lessons for this unit.',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: context.colors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
           ),
           PopupMenuButton<Map<String, dynamic>>(
             onSelected: (val) => Navigator.pop(ctx, val),
@@ -477,10 +477,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: AppTheme.surface,
+        backgroundColor: context.colors.surface,
         content: Text(
           scheduled ? 'Lesson generation scheduled!' : 'Lesson generation queued!',
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: context.colors.textPrimary),
         ),
       ),
     );
@@ -594,7 +594,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
+        backgroundColor: context.colors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
           children: [
@@ -602,7 +602,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
             const SizedBox(width: 12),
             Text(
               chunkError != null ? 'Section PDF Failed' : 'Missing Reference PDF',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+              style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
             ),
           ],
         ),
@@ -610,12 +610,12 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
           chunkError != null
               ? 'This section\'s PDF could not be created: $chunkError\n\nRestore the source PDF(s) to re-split, or use "Repair Page Alignment" in course settings if pages look shifted.'
               : 'The source PDF file for this section is missing on this device. Would you like to select and restore the source PDF(s) to view it?',
-          style: const TextStyle(color: Colors.white70, fontSize: 14),
+          style: TextStyle(color: context.colors.textSecondary, fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
           ),
           TextButton(
             onPressed: () {
@@ -687,7 +687,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                     builder: (_) => Scaffold(
                       appBar: AppBar(
                         title: Text('${widget.book.title} - Syllabus', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                        backgroundColor: const Color(0xFF0B0F19),
+                        backgroundColor: context.colors.background,
                       ),
                       body: SafePdfViewer(file: File(widget.book.syllabusPath!)),
                     ),
@@ -730,8 +730,8 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
   Widget build(BuildContext context) {
     if (widget.book.modules.isEmpty) {
       return Scaffold(
-        backgroundColor: AppTheme.background,
-        body: const Center(child: Text('This book is empty.', style: TextStyle(color: Colors.white54))),
+        backgroundColor: context.colors.background,
+        body: Center(child: Text('This book is empty.', style: TextStyle(color: context.colors.textFaint))),
       );
     }
 
@@ -746,7 +746,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
         activeSec != null ? SectionColors.base(activeSec.color) : AppTheme.duoBlue;
 
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: context.colors.background,
       body: Stack(
         children: [
           // Lesson path content
@@ -759,8 +759,8 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                     animation: GenerationManager.instance,
                     builder: (context, _) {
                       if (activeSec == null) {
-                        return const Center(
-                          child: Text('No sections available.', style: TextStyle(color: Colors.white54)),
+                        return Center(
+                          child: Text('No sections available.', style: TextStyle(color: context.colors.textFaint)),
                         );
                       }
                       // New-flow sections carry their own PDF chunk but don't
@@ -863,15 +863,15 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.03),
+                            color: context.colors.surfaceAlt,
                             border: Border(
-                              left: BorderSide(color: Colors.white.withOpacity(0.08)),
-                              right: BorderSide(color: Colors.white.withOpacity(0.08)),
-                              bottom: BorderSide(color: Colors.white.withOpacity(0.08)),
+                              left: BorderSide(color: context.colors.outline),
+                              right: BorderSide(color: context.colors.outline),
+                              bottom: BorderSide(color: context.colors.outline),
                             ),
                             borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
                             boxShadow: [
-                              BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 30, offset: const Offset(0, 4)),
+                              BoxShadow(color: context.colors.shadow, blurRadius: 30, offset: const Offset(0, 4)),
                             ],
                           ),
                           padding: const EdgeInsets.all(8),
@@ -915,7 +915,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.05),
+                                          color: context.colors.surfaceAlt,
                                           borderRadius: BorderRadius.circular(12),
                                           border: Border(
                                             bottom: BorderSide(color: sectionColor, width: 2),
@@ -926,8 +926,8 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                             Expanded(
                                               child: Text(
                                                 activeSec.title.toUpperCase(),
-                                                style: const TextStyle(
-                                                  color: Colors.white,
+                                                style: TextStyle(
+                                                  color: context.colors.textPrimary,
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.w900,
                                                   letterSpacing: 1.6,
@@ -964,7 +964,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                   return Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.3),
+                                      color: context.colors.surfaceAlt,
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Row(
@@ -1167,31 +1167,31 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              backgroundColor: AppTheme.surface,
+              backgroundColor: context.colors.surface,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              title: const Text(
+              title: Text(
                 'Create Custom Lesson',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+                style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 20),
               ),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'LESSON INSTRUCTIONS & TOPIC',
-                      style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      style: TextStyle(color: context.colors.textFaint, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                     ),
                     const SizedBox(height: 6),
                     TextField(
                       controller: promptController,
                       maxLines: 3,
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      style: TextStyle(color: context.colors.textPrimary, fontSize: 14),
                       decoration: InputDecoration(
                         hintText: 'What should this custom lesson cover?',
-                        hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
+                        hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 13),
                         filled: true,
-                        fillColor: Colors.white.withOpacity(0.05),
+                        fillColor: context.colors.surfaceAlt,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -1200,9 +1200,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'REFERENCE FILES (PDF/IMAGES)',
-                      style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      style: TextStyle(color: context.colors.textFaint, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                     ),
                     const SizedBox(height: 6),
                     Row(
@@ -1213,7 +1213,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                 ? 'No files selected'
                                 : '${selectedFiles.length} file(s) added',
                             style: TextStyle(
-                              color: selectedFiles.isEmpty ? Colors.white38 : AppTheme.duoGreen,
+                              color: selectedFiles.isEmpty ? context.colors.textFaint : AppTheme.duoGreen,
                               fontSize: 13,
                             ),
                           ),
@@ -1245,7 +1245,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                       Container(
                         constraints: const BoxConstraints(maxHeight: 120),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.02),
+                          color: context.colors.surfaceAlt,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: ListView.builder(
@@ -1256,7 +1256,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                             final name = f.path.split('/').last;
                             return ListTile(
                               dense: true,
-                              title: Text(name, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                              title: Text(name, style: TextStyle(color: context.colors.textSecondary, fontSize: 12)),
                               trailing: IconButton(
                                 icon: const Icon(LucideIcons.trash2, size: 14, color: AppTheme.duoRed),
                                 onPressed: () {
@@ -1271,9 +1271,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                       ),
                     ],
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'SLIDES FORMAT',
-                      style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      style: TextStyle(color: context.colors.textFaint, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                     ),
                     const SizedBox(height: 6),
                     Row(
@@ -1282,16 +1282,16 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.05),
+                              color: context.colors.surfaceAlt,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<LessonFormat>(
                                 value: selectedFormat,
-                                dropdownColor: AppTheme.surface,
+                                dropdownColor: context.colors.surface,
                                 isExpanded: true,
-                                icon: const Icon(Icons.arrow_drop_down, color: Colors.white54),
-                                style: const TextStyle(color: Colors.white, fontSize: 13),
+                                icon: Icon(Icons.arrow_drop_down, color: context.colors.textFaint),
+                                style: TextStyle(color: context.colors.textPrimary, fontSize: 13),
                                 items: sectionFormats.map((f) {
                                   return DropdownMenuItem<LessonFormat>(
                                     value: f,
@@ -1352,7 +1352,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+                  child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
                 ),
                 TextButton(
                   onPressed: () {
@@ -1439,8 +1439,8 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: AppTheme.surface,
-        content: const Text('Custom lesson queued with top priority...', style: TextStyle(color: Colors.white)),
+        backgroundColor: context.colors.surface,
+        content: Text('Custom lesson queued with top priority...', style: TextStyle(color: context.colors.textPrimary)),
         duration: const Duration(seconds: 3),
       ),
     );
@@ -1540,16 +1540,16 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Reset Section Plan?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: context.colors.surface,
+        title: Text('Reset Section Plan?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
         content: Text(
           'This will permanently delete all units, lessons, and custom lesson formats for "${section.title}". Any progress in these lessons will be cleared. This action cannot be undone.',
-          style: const TextStyle(color: Colors.white70),
+          style: TextStyle(color: context.colors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -1600,17 +1600,17 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     final wantsGraphics = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: Text(isScheduled ? 'Schedule Section Generation' : 'Generate Section Contents', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: const Text(
+        backgroundColor: context.colors.surface,
+        title: Text(isScheduled ? 'Schedule Section Generation' : 'Generate Section Contents', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        content: Text(
           'Choose what kind of content to generate. This will automatically plan the section units and generate them sequentially.',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: context.colors.textSecondary),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Text only', style: TextStyle(color: Colors.white54)),
+            child: Text('Text only', style: TextStyle(color: context.colors.textFaint)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -1631,10 +1631,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: AppTheme.surface,
+        backgroundColor: context.colors.surface,
         content: Text(
           isScheduled ? 'Section generation scheduled!' : 'Section generation queued!',
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: context.colors.textPrimary),
         ),
       ),
     );
@@ -1724,17 +1724,17 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     final wantsGraphics = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: Text(isScheduled ? 'Schedule Module Generation' : 'Generate Module Contents', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: const Text(
+        backgroundColor: context.colors.surface,
+        title: Text(isScheduled ? 'Schedule Module Generation' : 'Generate Module Contents', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        content: Text(
           'Choose what kind of content to generate for all sections in this module.',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: context.colors.textSecondary),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Text only', style: TextStyle(color: Colors.white54)),
+            child: Text('Text only', style: TextStyle(color: context.colors.textFaint)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -1754,10 +1754,10 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: AppTheme.surface,
+        backgroundColor: context.colors.surface,
         content: Text(
           isScheduled ? 'Module generation scheduled!' : 'Module generation queued!',
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: context.colors.textPrimary),
         ),
       ),
     );
@@ -1777,8 +1777,8 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
           filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.7),
-              border: Border.all(color: Colors.white.withOpacity(0.08)),
+              color: context.colors.glassStrong,
+              border: Border.all(color: context.colors.outline),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             ),
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
@@ -1816,8 +1816,8 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                             const SizedBox(height: 2),
                             Text(
                               title,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: context.colors.textPrimary,
                                 fontSize: 18,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -1841,9 +1841,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.04),
+                              color: context.colors.surfaceAlt,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.white12),
+                              border: Border.all(color: context.colors.outline),
                             ),
                             child: Row(
                               children: [
@@ -1855,8 +1855,8 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                     children: [
                                       Text(
                                         item.title,
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: context.colors.textPrimary,
                                           fontSize: 15,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -1864,8 +1864,8 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                       const SizedBox(height: 2),
                                       Text(
                                         item.subtitle,
-                                        style: const TextStyle(
-                                          color: Colors.white54,
+                                        style: TextStyle(
+                                          color: context.colors.textFaint,
                                           fontSize: 12,
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -1873,7 +1873,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                     ],
                                   ),
                                 ),
-                                const Icon(LucideIcons.chevronRight, size: 16, color: Colors.white24),
+                                Icon(LucideIcons.chevronRight, size: 16, color: context.colors.textFaint),
                               ],
                             ),
                           ),
@@ -1909,14 +1909,14 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: AppTheme.surface,
-          content: const Row(
+          backgroundColor: context.colors.surface,
+          content: Row(
             children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 20),
+              const CircularProgressIndicator(),
+              const SizedBox(width: 20),
               Expanded(
                 child: Text('AI is analyzing section PDF and generating custom formats...',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -1963,9 +1963,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: AppTheme.surface,
-          title: const Text('Generation Failed', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          content: Text(e.toString(), style: const TextStyle(color: Colors.white70)),
+          backgroundColor: context.colors.surface,
+          title: Text('Generation Failed', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+          content: Text(e.toString(), style: TextStyle(color: context.colors.textSecondary)),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
@@ -1982,16 +1982,16 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
+        backgroundColor: context.colors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: const Row(
+        content: Row(
           children: [
-            CircularProgressIndicator(color: AppTheme.duoBlue),
-            SizedBox(width: 20),
+            const CircularProgressIndicator(color: AppTheme.duoBlue),
+            const SizedBox(width: 20),
             Expanded(
               child: Text(
                 'Searching for dependencies across all courses...',
-                style: TextStyle(color: Colors.white, fontSize: 14),
+                style: TextStyle(color: context.colors.textPrimary, fontSize: 14),
               ),
             ),
           ],
@@ -2043,21 +2043,21 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          backgroundColor: AppTheme.surface,
+          backgroundColor: context.colors.surface,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           title: Text(
             'Prerequisites for "${unit.title}"',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+            style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
           ),
           content: prereqs.isEmpty
-              ? const Column(
+              ? Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(LucideIcons.checkCircle, color: AppTheme.duoGreen, size: 40),
-                    SizedBox(height: 12),
+                    const Icon(LucideIcons.checkCircle, color: AppTheme.duoGreen, size: 40),
+                    const SizedBox(height: 12),
                     Text(
                       'No prerequisites found! You\'re ready to start this unit.',
-                      style: TextStyle(color: Colors.white70, fontSize: 13),
+                      style: TextStyle(color: context.colors.textSecondary, fontSize: 13),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -2068,11 +2068,11 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 12.0),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12.0),
                         child: Text(
                           'Tap on a prerequisite to navigate to that unit.',
-                          style: TextStyle(color: Colors.white54, fontSize: 12, fontStyle: FontStyle.italic),
+                          style: TextStyle(color: context.colors.textFaint, fontSize: 12, fontStyle: FontStyle.italic),
                         ),
                       ),
                       Flexible(
@@ -2094,9 +2094,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                   child: Container(
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.04),
+                                      color: context.colors.surfaceAlt,
                                       borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(color: Colors.white.withOpacity(0.08)),
+                                      border: Border.all(color: context.colors.outline),
                                     ),
                                     child: Row(
                                       children: [
@@ -2106,8 +2106,8 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                             children: [
                                               Text(
                                                 p.unitTitle,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
+                                                style: TextStyle(
+                                                  color: context.colors.textPrimary,
                                                   fontWeight: FontWeight.bold,
                                                   fontSize: 14,
                                                 ),
@@ -2115,7 +2115,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                               const SizedBox(height: 4),
                                               Text(
                                                 '${p.bookTitle} / ${p.moduleTitle} / ${p.sectionTitle}',
-                                                style: const TextStyle(color: Colors.white54, fontSize: 10),
+                                                style: TextStyle(color: context.colors.textFaint, fontSize: 10),
                                               ),
                                               const SizedBox(height: 8),
                                               Row(
@@ -2125,7 +2125,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                                       borderRadius: BorderRadius.circular(4),
                                                       child: LinearProgressIndicator(
                                                         value: p.completionRate,
-                                                        backgroundColor: Colors.white.withOpacity(0.08),
+                                                        backgroundColor: context.colors.surfaceAlt,
                                                         valueColor: AlwaysStoppedAnimation<Color>(
                                                           p.completionRate >= 1.0
                                                               ? AppTheme.duoGreen
@@ -2141,7 +2141,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                                     style: TextStyle(
                                                       color: p.completionRate >= 1.0
                                                           ? AppTheme.duoGreen
-                                                          : Colors.white70,
+                                                          : context.colors.textSecondary,
                                                       fontSize: 10,
                                                       fontWeight: FontWeight.bold,
                                                     ),
@@ -2152,9 +2152,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                           ),
                                         ),
                                         const SizedBox(width: 8),
-                                        const Icon(
+                                        Icon(
                                           LucideIcons.chevronRight,
-                                          color: Colors.white30,
+                                          color: context.colors.textFaint,
                                           size: 16,
                                         ),
                                       ],
@@ -2179,7 +2179,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Close', style: TextStyle(color: Colors.white54)),
+              child: Text('Close', style: TextStyle(color: context.colors.textFaint)),
             ),
           ],
         );
