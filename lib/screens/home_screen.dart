@@ -557,7 +557,7 @@ class _HomeScreenState extends State<HomeScreen> {
             SliverAppBar(
               floating: true,
               pinned: true,
-              backgroundColor: AppTheme.background,
+              backgroundColor: context.colors.background,
               elevation: 0,
               centerTitle: false,
               titleSpacing: 24,
@@ -783,7 +783,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: Colors.red.shade900.withOpacity(0.8),
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: const Icon(LucideIcons.trash2, color: Colors.white, size: 20),
+                          child: Icon(LucideIcons.trash2, color: context.colors.textPrimary, size: 20),
                         ),
                         confirmDismiss: (direction) async {
                           return await _deleteLocalBook(book);
@@ -973,7 +973,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: Colors.red.shade900.withOpacity(0.8),
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: const Icon(LucideIcons.trash2, color: Colors.white, size: 20),
+                          child: Icon(LucideIcons.trash2, color: context.colors.textPrimary, size: 20),
                         ),
                         confirmDismiss: (direction) async {
                           final confirm = await showDialog<bool>(
@@ -1243,7 +1243,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ? FloatingActionButton(
                   heroTag: 'home_fab',
                   backgroundColor: AppTheme.duoGreen,
-                  child: const Icon(LucideIcons.plus, color: Colors.white, size: 32),
+                  child: Icon(LucideIcons.plus, color: context.colors.textPrimary, size: 32),
                   onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const GenerateBookScreen())
@@ -1310,7 +1310,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     backgroundColor: AppTheme.duoBlue,
                     child: Text(
                       user?.displayName?.isNotEmpty == true ? user!.displayName![0].toUpperCase() : 'U', 
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.white)
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: context.colors.textPrimary)
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -1836,7 +1836,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         color: Colors.red.shade900.withOpacity(0.8),
                                         borderRadius: BorderRadius.circular(16),
                                       ),
-                                      child: const Icon(LucideIcons.trash2, color: Colors.white, size: 20),
+                                      child: Icon(LucideIcons.trash2, color: context.colors.textPrimary, size: 20),
                                     ),
                                     confirmDismiss: (direction) async {
                                       return await _deleteLocalBook(book);

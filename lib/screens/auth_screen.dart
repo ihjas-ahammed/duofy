@@ -63,7 +63,7 @@ class _AuthScreenState extends State<AuthScreen> {
               const SizedBox(height: 24),
               Text(
                 _isSignUp ? 'Create your\nprofile' : 'Enter your\ndetails',
-                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.white, height: 1.2),
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: context.colors.textPrimary, height: 1.2),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 40),
@@ -76,7 +76,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     style: const TextStyle(fontWeight: FontWeight.bold),
                     decoration: InputDecoration(
                       filled: true,
-                      fillColor: Colors.black26,
+                      fillColor: context.colors.surfaceAlt,
                       hintText: 'Username',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
@@ -90,7 +90,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 style: const TextStyle(fontWeight: FontWeight.bold),
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: Colors.black26,
+                  fillColor: context.colors.surfaceAlt,
                   hintText: 'Email address',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
@@ -104,7 +104,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 style: const TextStyle(fontWeight: FontWeight.bold),
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: Colors.black26,
+                  fillColor: context.colors.surfaceAlt,
                   hintText: 'Password',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
@@ -136,9 +136,9 @@ class _AuthScreenState extends State<AuthScreen> {
                   GlobalState.isGuestNotifier.value = true;
                   GlobalState.forceShowAuthScreen.value = false;
                 },
-                child: const Text(
+                child: Text(
                   'CONTINUE AS GUEST',
-                  style: TextStyle(color: Colors.white54, fontWeight: FontWeight.w900, letterSpacing: 1.2),
+                  style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.w900, letterSpacing: 1.2),
                 ),
               )
             ],

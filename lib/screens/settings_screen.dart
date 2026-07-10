@@ -502,7 +502,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       child: Text('${i + 1}',
                           style: TextStyle(
-                            color: isPrimary ? Colors.white : context.colors.textSecondary,
+                            color: isPrimary ? context.colors.textPrimary : context.colors.textSecondary,
                             fontWeight: FontWeight.w900,
                             fontSize: 11,
                           )),
@@ -1128,7 +1128,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
               child: Text(
                 hasProfile ? 'Re-evaluate Writing Style' : 'Set Up Writing Style Profile',
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
               ),
             ),
           ),
@@ -1202,7 +1202,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           backgroundColor: AppTheme.duoBlue,
                           child: Text(
                             user?.displayName?.isNotEmpty == true ? user!.displayName![0].toUpperCase() : 'U', 
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.white)
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: context.colors.textPrimary)
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -1303,7 +1303,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     backgroundColor: AppTheme.duoBlue,
                     child: Text(
                       user?.displayName?.isNotEmpty == true ? user!.displayName![0].toUpperCase() : 'U', 
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white)
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: context.colors.textPrimary)
                     ),
                   ),
                   const SizedBox(width: 16),

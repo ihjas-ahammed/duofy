@@ -500,7 +500,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     if (_queue.isEmpty) {
       return Scaffold(
         appBar: AppBar(),
-        body: const Center(child: Text('No practice questions available for this type.', style: TextStyle(color: Colors.white54))),
+        body: Center(child: Text('No practice questions available for this type.', style: TextStyle(color: context.colors.textFaint))),
       );
     }
 
@@ -515,7 +515,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
         ),
         title: LinearProgressIndicator(
           value: progress,
-          backgroundColor: Colors.white12,
+          backgroundColor: context.colors.outline,
           color: AppTheme.duoViolet,
           minHeight: 12,
           borderRadius: BorderRadius.circular(6),
@@ -546,7 +546,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
                     ? (_isCorrect ? AppTheme.duoGreen.withOpacity(0.15) : AppTheme.duoRed.withOpacity(0.15))
                     : Colors.transparent,
                   border: Border(top: BorderSide(
-                    color: _answered ? (_isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.white10, 
+                    color: _answered ? (_isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : context.colors.outline, 
                     width: 2)
                   ),
                 ),
