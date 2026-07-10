@@ -677,9 +677,9 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF0F172A), // Premium dark background
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: context.colors.background, // Premium dark background
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -695,7 +695,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
               width: 44,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: context.colors.textFaint,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -731,8 +731,8 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                                     ? "Live Chat Active"
                                     : (_isConnecting ? "Connecting Live..." : "Live Offline"))
                                 : "Complex REST Model",
-                            style: const TextStyle(
-                              color: Colors.white70,
+                            style: TextStyle(
+                              color: context.colors.textSecondary,
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
                             ),
@@ -742,8 +742,8 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                       const SizedBox(height: 2),
                       Text(
                         "Study Helper (Slide: ${widget.currentSlide.title})",
-                        style: const TextStyle(
-                          color: Colors.white38,
+                        style: TextStyle(
+                          color: context.colors.textFaint,
                           fontSize: 10,
                         ),
                       ),
@@ -776,7 +776,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                       IconButton(
                         icon: Icon(
                           _voiceOutputEnabled ? LucideIcons.volume2 : LucideIcons.volumeX,
-                          color: _voiceOutputEnabled ? AppTheme.duoViolet : Colors.white38,
+                          color: _voiceOutputEnabled ? AppTheme.duoViolet : context.colors.textFaint,
                           size: 20,
                         ),
                         tooltip: _voiceOutputEnabled ? "Mute Voice Output" : "Enable Voice Output",
@@ -798,7 +798,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                         },
                       ),
                       IconButton(
-                        icon: const Icon(LucideIcons.x, color: Colors.white60, size: 20),
+                        icon: Icon(LucideIcons.x, color: context.colors.textFaint, size: 20),
                         onPressed: () => Navigator.pop(context),
                       ),
                     ],
@@ -806,7 +806,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                 ],
               ),
             ),
-            const Divider(color: Colors.white10, height: 24),
+            Divider(color: context.colors.outline, height: 24),
 
             // Message History Window
             Flexible(
@@ -814,10 +814,10 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                 constraints: const BoxConstraints(maxHeight: 400),
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _messages.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text(
                           "Ask a question about this slide or lesson!",
-                          style: TextStyle(color: Colors.white38, fontSize: 13),
+                          style: TextStyle(color: context.colors.textFaint, fontSize: 13),
                         ),
                       )
                     : ListView.builder(
@@ -832,8 +832,8 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                               child: Center(
                                 child: Text(
                                   msg.text,
-                                  style: const TextStyle(
-                                    color: Colors.white38,
+                                  style: TextStyle(
+                                    color: context.colors.textFaint,
                                     fontSize: 11,
                                     fontStyle: FontStyle.italic,
                                   ),
@@ -851,7 +851,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                               decoration: BoxDecoration(
                                 color: isUser
                                     ? AppTheme.duoBlue.withOpacity(0.15)
-                                    : Colors.white.withOpacity(0.05),
+                                    : context.colors.surfaceAlt,
                                 borderRadius: BorderRadius.only(
                                   topLeft: const Radius.circular(16),
                                   topRight: const Radius.circular(16),
@@ -861,7 +861,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                                 border: Border.all(
                                   color: isUser
                                       ? AppTheme.duoBlue.withOpacity(0.3)
-                                      : Colors.white10,
+                                      : context.colors.outline,
                                 ),
                               ),
                               child: Column(
@@ -870,8 +870,8 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                                 children: [
                                   MathMarkdown(
                                     data: msg.text,
-                                    textStyle: const TextStyle(
-                                      color: Colors.white,
+                                    textStyle: TextStyle(
+                                      color: context.colors.textPrimary,
                                       fontSize: 14,
                                       height: 1.4,
                                     ),
@@ -914,7 +914,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                       ),
               ),
             ),
-            const Divider(color: Colors.white10, height: 24),
+            Divider(color: context.colors.outline, height: 24),
 
             // Input Panel
             Padding(
@@ -935,15 +935,15 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                             shape: BoxShape.circle,
                             color: _isRecording
                                 ? Colors.red.withOpacity(0.2 + 0.3 * _pulsingController.value)
-                                : Colors.white.withOpacity(0.05),
+                                : context.colors.surfaceAlt,
                             border: Border.all(
-                              color: _isRecording ? Colors.red : Colors.white12,
+                              color: _isRecording ? Colors.red : context.colors.outline,
                               width: 2,
                             ),
                           ),
                           child: Icon(
                             _isRecording ? LucideIcons.mic : LucideIcons.micOff,
-                            color: _isRecording ? Colors.red : Colors.white70,
+                            color: _isRecording ? Colors.red : context.colors.textSecondary,
                             size: 20,
                           ),
                         );
@@ -957,17 +957,17 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                     child: Container(
                       height: 48,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
+                        color: context.colors.surfaceAlt,
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: Colors.white10),
+                        border: Border.all(color: context.colors.outline),
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: TextField(
                         controller: _textController,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
-                        decoration: const InputDecoration(
+                        style: TextStyle(color: context.colors.textPrimary, fontSize: 14),
+                        decoration: InputDecoration(
                           hintText: "Type message or hold mic...",
-                          hintStyle: TextStyle(color: Colors.white30, fontSize: 13),
+                          hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 13),
                           border: InputBorder.none,
                         ),
                         onSubmitted: _sendTextMessage,
@@ -986,9 +986,9 @@ class _LessonAssistantChatState extends State<LessonAssistantChat> with SingleTi
                         shape: BoxShape.circle,
                         color: AppTheme.duoBlue,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         LucideIcons.send,
-                        color: Colors.white,
+                        color: context.colors.textPrimary,
                         size: 18,
                       ),
                     ),
