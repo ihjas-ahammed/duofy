@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../models/app_models.dart';
+import '../../theme/app_theme.dart';
 import '../../utils/progress_utils.dart';
 import '../mini_progress_bar.dart';
 
@@ -90,8 +91,8 @@ class _SectionBottomSheetState extends State<SectionBottomSheet> {
           filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.03),
-              border: Border.all(color: Colors.white.withOpacity(0.08)),
+              color: context.colors.surfaceAlt,
+              border: Border.all(color: context.colors.outline),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             ),
             child: Column(
@@ -102,7 +103,7 @@ class _SectionBottomSheetState extends State<SectionBottomSheet> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     border: Border(
-                      bottom: BorderSide(color: Colors.white.withOpacity(0.05)),
+                      bottom: BorderSide(color: context.colors.outline),
                     ),
                   ),
                   child: Center(
@@ -124,13 +125,13 @@ class _SectionBottomSheetState extends State<SectionBottomSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Padding(
-                          padding: EdgeInsets.only(bottom: 12),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
                           child: Text(
                             'Sections',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: Colors.white,
+                              color: context.colors.textPrimary,
                               fontSize: 18,
                               fontWeight: FontWeight.w900,
                             ),
@@ -160,9 +161,9 @@ class _SectionBottomSheetState extends State<SectionBottomSheet> {
                 ),
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.4),
+                    color: context.colors.surfaceAlt,
                     border: Border(
-                      top: BorderSide(color: Colors.white.withOpacity(0.05)),
+                      top: BorderSide(color: context.colors.outline),
                     ),
                   ),
                   padding: EdgeInsets.fromLTRB(16, 8, 16, 8 + media.padding.bottom),
@@ -225,13 +226,13 @@ class _SectionCard extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            color: isActive ? color.withOpacity(0.2) :  Colors.white.withOpacity(0.05),
+            color: isActive ? color.withOpacity(0.2) : context.colors.surfaceAlt,
             borderRadius: BorderRadius.circular(16),
             border: Border(
-              top: BorderSide(color: Colors.white.withOpacity(0.1), width: 1.5),
-              left: BorderSide(color: Colors.white.withOpacity(0.1), width: 1.5),
-              right: BorderSide(color: Colors.white.withOpacity(0.1), width: 1.5),
-              bottom: BorderSide(color: Colors.white.withOpacity(0.1), width: 3),
+              top: BorderSide(color: context.colors.outline, width: 1.5),
+              left: BorderSide(color: context.colors.outline, width: 1.5),
+              right: BorderSide(color: context.colors.outline, width: 1.5),
+              bottom: BorderSide(color: context.colors.outline, width: 3),
             ),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -247,7 +248,7 @@ class _SectionCard extends StatelessWidget {
                         Text(
                           section.title,
                           style: TextStyle(
-                            color: isActive ? Colors.white : const Color(0xFFCBD5E1),
+                            color: isActive ? context.colors.textPrimary : const Color(0xFFCBD5E1),
                             fontWeight: FontWeight.w800,
                             fontSize: 14,
                           ),
@@ -257,7 +258,7 @@ class _SectionCard extends StatelessWidget {
                           Text(
                             section.description,
                             style: TextStyle(
-                              color: isActive ? Colors.white.withOpacity(0.8) : const Color(0xFF64748B),
+                              color: isActive ? context.colors.textSecondary : const Color(0xFF64748B),
                               fontWeight: FontWeight.w600,
                               fontSize: 11,
                             ),
@@ -273,14 +274,14 @@ class _SectionCard extends StatelessWidget {
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color: isActive
-                          ? Colors.white.withOpacity(0.1)
-                          : Colors.white.withOpacity(0.05),
+                          ? context.colors.surfaceAlt
+                          : context.colors.surfaceAlt,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       LucideIcons.chevronRight,
                       size: 16,
-                      color: isActive ? Colors.white : const Color(0xFF64748B),
+                      color: isActive ? context.colors.textPrimary : const Color(0xFF64748B),
                     ),
                   ),
                 ],
