@@ -49,7 +49,7 @@ class SectionSelector extends StatelessWidget {
                 color: isActive ? color.withOpacity(0.2) : Colors.transparent,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isActive ? color : Colors.white10, 
+                  color: isActive ? color : context.colors.outline, 
                   width: 2
                 ),
               ),
@@ -59,7 +59,7 @@ class SectionSelector extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13, 
                   fontWeight: FontWeight.bold,
-                  color: isActive ? Colors.white : Colors.white54
+                  color: isActive ? context.colors.textPrimary : context.colors.textFaint
                 )
               ),
             ),

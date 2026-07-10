@@ -90,11 +90,11 @@ class ModuleSelectorSheet extends StatelessWidget {
                     type: MaterialType.transparency,
                     child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.03),
+                      color: context.colors.surfaceAlt,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withOpacity(0.08)),
+                      border: Border.all(color: context.colors.outline),
                       boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 30, offset: const Offset(0, 4)),
+                        BoxShadow(color: context.colors.shadow, blurRadius: 30, offset: const Offset(0, 4)),
                       ],
                     ),
                     child: Column(
@@ -103,14 +103,14 @@ class ModuleSelectorSheet extends StatelessWidget {
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(16),
-                         
-                          child: const Padding(
-                          padding: EdgeInsets.only(bottom: 0),
+                          
+                          child: Padding(
+                          padding: const EdgeInsets.only(bottom: 0),
                           child: Text(
                             'MODULES',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: Colors.white,
+                              color: context.colors.textPrimary,
                               fontSize: 24,
                               fontWeight: FontWeight.w900,
                             ),
@@ -187,7 +187,7 @@ class _ModuleRow extends StatelessWidget {
           decoration: BoxDecoration(
             color: isActive
                 ? AppTheme.duoBlue.withOpacity(0.18)
-                : Colors.white.withOpacity(0.05),
+                : context.colors.surfaceAlt,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isActive ? AppTheme.duoBlue : Colors.transparent,
@@ -205,7 +205,7 @@ class _ModuleRow extends StatelessWidget {
                 child: Icon(
                   LucideIcons.bookOpen,
                   size: 22,
-                  color: isActive ? Colors.white : const Color(0xFF94A3B8),
+                  color: isActive ? context.colors.textPrimary : const Color(0xFF94A3B8),
                 ),
               ),
               const SizedBox(width: 14),

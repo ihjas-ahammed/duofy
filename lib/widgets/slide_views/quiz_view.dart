@@ -33,23 +33,23 @@ class QuizView extends StatelessWidget {
     final newText = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Edit option', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: context.colors.surface,
+        title: Text('Edit option', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
         content: TextField(
           controller: ctrl,
           maxLines: null,
           autofocus: true,
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: context.colors.textPrimary),
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.black26,
+            fillColor: context.colors.surfaceAlt,
             hintText: 'Option text (Markdown / LaTeX supported)',
-            hintStyle: const TextStyle(color: Colors.white38),
+            hintStyle: TextStyle(color: context.colors.textFaint),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
           TextButton(
             onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
             child: const Text('Save', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
@@ -80,8 +80,8 @@ class QuizView extends StatelessWidget {
                 if (slide.content.isNotEmpty)
                   Container(
                     padding: const EdgeInsets.all(20),
-                    decoration: AppTheme.glassDecoration,
-                    child: MathMarkdown(data: slide.content, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                    decoration: AppTheme.glassOf(context),
+                    child: MathMarkdown(data: slide.content, textStyle: TextStyle(fontSize: 18, color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
                   ),
     
                 if (slide.content.isNotEmpty)
@@ -91,8 +91,8 @@ class QuizView extends StatelessWidget {
                   ...slide.options!.map((opt) {
                     final isSelected = selectedOptionId == opt.id;
     
-                    Color borderColor = Colors.white12;
-                    Color bgColor = Colors.white.withOpacity(0.05);
+                    Color borderColor = context.colors.outline;
+                    Color bgColor = context.colors.surfaceAlt;
     
                     if (isAnswered) {
                       if (opt.isCorrect) {
@@ -134,7 +134,7 @@ class QuizView extends StatelessWidget {
                               child: MathMarkdown(
                                 data: opt.text,
                                 selectable: false,
-                                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                                textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.colors.textPrimary),
                               ),
                             ),
                           ),
@@ -145,7 +145,7 @@ class QuizView extends StatelessWidget {
                               child: IgnorePointer(
                                 child: Tooltip(
                                   message: 'Double-tap to edit',
-                                  child: Icon(LucideIcons.edit2, size: 14, color: Colors.white38),
+                                  child: Icon(LucideIcons.edit2, size: 14, color: context.colors.textFaint),
                                 ),
                               ),
                             ),
