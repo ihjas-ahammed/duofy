@@ -137,23 +137,23 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
     final newText = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: context.colors.surface,
+        title: Text(label, style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
         content: TextField(
           controller: ctrl,
           maxLines: null,
           autofocus: true,
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: context.colors.textPrimary),
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.black26,
+            fillColor: context.colors.surfaceAlt,
             hintText: 'Markdown / LaTeX supported',
-            hintStyle: const TextStyle(color: Colors.white38),
+            hintStyle: TextStyle(color: context.colors.textFaint),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
           TextButton(
             onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
             child: const Text('Save', style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold)),
@@ -247,7 +247,7 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                     padding: const EdgeInsets.only(bottom: 16.0),
                     child: Text(
                       widget.slide.title,
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white),
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: context.colors.textPrimary),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -266,8 +266,8 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     margin: const EdgeInsets.only(bottom: 24),
-                    decoration: AppTheme.glassDecoration,
-                    child: MathMarkdown(data: widget.slide.content, textStyle: const TextStyle(fontSize: 16, color: Colors.white)),
+                    decoration: AppTheme.glassOf(context),
+                    child: MathMarkdown(data: widget.slide.content, textStyle: TextStyle(fontSize: 16, color: context.colors.textPrimary)),
                   ),
 
                 ..._revealedSteps.asMap().entries.map((entry) {
@@ -297,7 +297,7 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                               padding: EdgeInsets.only(top: 2, right: 12),
                               child: Icon(LucideIcons.checkCircle2, color: AppTheme.duoGreen, size: 20),
                             ),
-                            Expanded(child: MathMarkdown(data: stepText, textStyle: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold))),
+                            Expanded(child: MathMarkdown(data: stepText, textStyle: TextStyle(fontSize: 16, color: context.colors.textPrimary, fontWeight: FontWeight.bold))),
                           ],
                         ),
                       ),
@@ -337,7 +337,7 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                                         initial: currentStep.prompt!,
                                         onSave: (v) => _saveStepPrompt(_currentStepIndex, v),
                                       ),
-                              child: MathMarkdown(data: currentStep.prompt!, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                              child: MathMarkdown(data: currentStep.prompt!, textStyle: TextStyle(fontSize: 18, color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
                             ),
                           )
                         else if (hasOptions && currentStep.stepText != null && currentStep.stepText!.isNotEmpty)
@@ -352,7 +352,7 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                                         initial: currentStep.stepText!,
                                         onSave: (v) => _saveStepText(_currentStepIndex, v),
                                       ),
-                              child: MathMarkdown(data: currentStep.stepText!, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                              child: MathMarkdown(data: currentStep.stepText!, textStyle: TextStyle(fontSize: 18, color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
                             ),
                           )
                         else if (!hasOptions && currentStep.stepText != null && currentStep.stepText!.isNotEmpty)
@@ -364,14 +364,14 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                                       initial: currentStep.stepText!,
                                       onSave: (v) => _saveStepText(_currentStepIndex, v),
                                     ),
-                            child: MathMarkdown(data: currentStep.stepText!, textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                            child: MathMarkdown(data: currentStep.stepText!, textStyle: TextStyle(fontSize: 18, color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
                           ),
 
                         if (hasOptions)
                           ...currentStep.options!.map((opt) {
                             final isSelected = _selectedOptionId == opt.id;
-                            Color borderColor = Colors.white12;
-                            Color bgColor = Colors.white.withOpacity(0.05);
+                            Color borderColor = context.colors.outline;
+                            Color bgColor = context.colors.surfaceAlt;
 
                             if (_isSubmitted) {
                               if (opt.isCorrect) {
@@ -407,7 +407,7 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                                     border: Border.all(color: borderColor, width: 2),
                                     borderRadius: BorderRadius.circular(16),
                                   ),
-                                  child: MathMarkdown(data: opt.text, selectable: false, textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                                  child: MathMarkdown(data: opt.text, selectable: false, textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.colors.textPrimary)),
                                 ),
                               ),
                             );
@@ -429,7 +429,7 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
               ? (_isCorrect ? AppTheme.duoGreen.withOpacity(0.15) : AppTheme.duoRed.withOpacity(0.15))
               : Colors.transparent,
             border: Border(top: BorderSide(
-              color: _isSubmitted ? (_isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : Colors.white10, 
+              color: _isSubmitted ? (_isCorrect ? AppTheme.duoGreen : AppTheme.duoRed) : context.colors.outline, 
               width: 2)
             ),
           ),
@@ -445,7 +445,7 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(color: _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed, shape: BoxShape.circle),
-                        child: Icon(_isCorrect ? LucideIcons.check : LucideIcons.x, color: Colors.white, size: 24),
+                        child: Icon(_isCorrect ? LucideIcons.check : LucideIcons.x, color: context.colors.textPrimary, size: 24),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
