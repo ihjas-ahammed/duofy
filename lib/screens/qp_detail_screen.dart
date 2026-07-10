@@ -13,14 +13,14 @@ class QpDetailScreen extends StatelessWidget {
   Widget _buildQuestionCard(BuildContext context, QpQuestion q, int sIdx, int qIdx) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16, left: 24, right: 24),
-      decoration: AppTheme.glassDecoration.copyWith(
+      decoration: AppTheme.glassOf(context).copyWith(
         border: Border.all(color: AppTheme.duoBlue.withOpacity(0.3), width: 2),
       ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           iconColor: AppTheme.duoOrange,
-          collapsedIconColor: Colors.white54,
+          collapsedIconColor: context.colors.textFaint,
           tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           childrenPadding: const EdgeInsets.all(16),
           title: Column(
@@ -37,7 +37,7 @@ class QpDetailScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              MathMarkdown(data: q.questionText, textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+              MathMarkdown(data: q.questionText, textStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: context.colors.textPrimary)),
             ],
           ),
           children: [
@@ -65,7 +65,7 @@ class QpDetailScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   MathMarkdown(
                     data: q.solutionText,
-                    textStyle: const TextStyle(fontSize: 15, color: Colors.white, height: 1.5),
+                    textStyle: TextStyle(fontSize: 15, color: context.colors.textPrimary, height: 1.5),
                   ),
                 ],
               ),
@@ -89,12 +89,12 @@ class QpDetailScreen extends StatelessWidget {
               qp.title, 
               style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
             ),
-            backgroundColor: AppTheme.background,
+            backgroundColor: context.colors.background,
           ),
           if (qp.sections.isEmpty)
-            const SliverFillRemaining(
+            SliverFillRemaining(
               child: Center(
-                child: Text('No questions found in this paper.', style: TextStyle(color: Colors.white54)),
+                child: Text('No questions found in this paper.', style: TextStyle(color: context.colors.textFaint)),
               ),
             )
           else

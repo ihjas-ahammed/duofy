@@ -123,20 +123,20 @@ class _ReferencePdfViewerScreenState extends State<ReferencePdfViewerScreen> {
     final currentSection = _pdfSections[_currentIndex];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0F19),
+      backgroundColor: context.colors.background,
       appBar: AppBar(
         titleSpacing: 0,
-        backgroundColor: const Color(0xFF0D1220),
+        backgroundColor: context.colors.background,
         elevation: 1,
-        shadowColor: Colors.black26,
+        shadowColor: context.colors.shadow,
         leading: IconButton(
-          icon: const Icon(LucideIcons.arrowLeft, color: Colors.white70),
+          icon: Icon(LucideIcons.arrowLeft, color: context.colors.textSecondary),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           currentSection.title,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: context.colors.textPrimary,
             fontSize: 15,
             fontWeight: FontWeight.w700,
             fontFamily: 'Nunito',
@@ -147,12 +147,12 @@ class _ReferencePdfViewerScreenState extends State<ReferencePdfViewerScreen> {
         actions: [
           // Share Action
           IconButton(
-            icon: const Icon(LucideIcons.share2, color: Colors.white70, size: 20),
+            icon: Icon(LucideIcons.share2, color: context.colors.textSecondary, size: 20),
             tooltip: 'Share PDF',
             onPressed: _isDocumentLoaded ? _sharePdf : null,
           ),
-          const VerticalDivider(
-            color: Colors.white12,
+          VerticalDivider(
+            color: context.colors.outline,
             thickness: 1,
             width: 16,
             indent: 12,
@@ -163,13 +163,13 @@ class _ReferencePdfViewerScreenState extends State<ReferencePdfViewerScreen> {
             icon: const Icon(LucideIcons.chevronUp, size: 22),
             tooltip: 'Previous Reference PDF (Up)',
             onPressed: _currentIndex > 0 ? _goToPreviousSection : null,
-            color: _currentIndex > 0 ? AppTheme.duoBlue : Colors.white30,
+            color: _currentIndex > 0 ? AppTheme.duoBlue : context.colors.textFaint,
           ),
           IconButton(
             icon: const Icon(LucideIcons.chevronDown, size: 22),
             tooltip: 'Next Reference PDF (Down)',
             onPressed: _currentIndex < _pdfSections.length - 1 ? _goToNextSection : null,
-            color: _currentIndex < _pdfSections.length - 1 ? AppTheme.duoBlue : Colors.white30,
+            color: _currentIndex < _pdfSections.length - 1 ? AppTheme.duoBlue : context.colors.textFaint,
           ),
           const SizedBox(width: 8),
         ],

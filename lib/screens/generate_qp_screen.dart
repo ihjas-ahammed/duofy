@@ -92,22 +92,22 @@ class _GenerateQpScreenState extends State<GenerateQpScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text(
+                    Text(
                        "Upload PDFs or photos of past exams. The AI will extract the questions and solve them interactively. You can safely minimize the app during processing.",
-                      style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
+                      style: TextStyle(color: context.colors.textFaint, fontSize: 13, height: 1.5),
                     ),
                     const SizedBox(height: 24),
 
-                    const Text('Exam Name', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
+                    Text('Exam Name', style: TextStyle(fontWeight: FontWeight.w900, color: context.colors.textPrimary)),
                     const SizedBox(height: 8),
                     Container(
-                      decoration: AppTheme.glassDecoration,
+                      decoration: AppTheme.glassOf(context),
                       child: TextField(
                         controller: _titleCtrl,
-                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: context.colors.textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
                         decoration: InputDecoration(
                           hintText: "e.g. Midterm 2023",
-                          hintStyle: const TextStyle(color: Colors.white38, fontSize: 13, fontWeight: FontWeight.normal),
+                          hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 13, fontWeight: FontWeight.normal),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                           contentPadding: const EdgeInsets.all(16),
                         ),
@@ -115,18 +115,18 @@ class _GenerateQpScreenState extends State<GenerateQpScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    const Text('Custom Prompt / Generation Instructions', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
+                    Text('Custom Prompt / Generation Instructions', style: TextStyle(fontWeight: FontWeight.w900, color: context.colors.textPrimary)),
                     const SizedBox(height: 8),
                     Container(
-                      decoration: AppTheme.glassDecoration,
+                      decoration: AppTheme.glassOf(context),
                       child: TextField(
                         controller: _customPromptCtrl,
                         maxLines: 4,
                         minLines: 2,
-                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: context.colors.textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
                         decoration: InputDecoration(
                           hintText: "e.g. Focus on multiple choice questions, explain formula derivations.",
-                          hintStyle: const TextStyle(color: Colors.white38, fontSize: 13, fontWeight: FontWeight.normal),
+                          hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 13, fontWeight: FontWeight.normal),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                           contentPadding: const EdgeInsets.all(16),
                         ),

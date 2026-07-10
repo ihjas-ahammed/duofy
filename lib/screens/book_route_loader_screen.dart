@@ -67,25 +67,25 @@ class _BookRouteLoaderScreenState extends State<BookRouteLoaderScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: context.colors.background,
       body: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 400),
           padding: const EdgeInsets.all(24),
           child: _isLoading
-              ? const Column(
+              ? Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(color: AppTheme.duoBlue),
-                    SizedBox(height: 20),
+                    const CircularProgressIndicator(color: AppTheme.duoBlue),
+                    const SizedBox(height: 20),
                     Text(
                       "Loading course...",
-                      style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(color: context.colors.textSecondary, fontWeight: FontWeight.bold, fontSize: 16),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       "Fetching from community library",
-                      style: TextStyle(color: Colors.white38, fontSize: 12),
+                      style: TextStyle(color: context.colors.textFaint, fontSize: 12),
                     ),
                   ],
                 )
@@ -95,15 +95,15 @@ class _BookRouteLoaderScreenState extends State<BookRouteLoaderScreen> {
                   children: [
                     const Icon(Icons.error_outline_rounded, size: 64, color: AppTheme.duoRed),
                     const SizedBox(height: 24),
-                    const Text(
+                    Text(
                       "Failed to Open Course",
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20),
+                      style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w900, fontSize: 20),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       _error ?? "Unknown error occurred",
-                      style: const TextStyle(color: Colors.white60, fontSize: 14, height: 1.4),
+                      style: TextStyle(color: context.colors.textSecondary, fontSize: 14, height: 1.4),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 32),
@@ -111,7 +111,7 @@ class _BookRouteLoaderScreenState extends State<BookRouteLoaderScreen> {
                       onPressed: () => Navigator.pushReplacementNamed(context, '/'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.duoBlue,
-                        foregroundColor: Colors.white,
+                        foregroundColor: context.colors.textPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),

@@ -178,11 +178,11 @@ class _PdfFolderScreenState extends State<PdfFolderScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Delete File?', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: context.colors.surface,
+        title: Text('Delete File?', style: TextStyle(fontWeight: FontWeight.bold, color: context.colors.textPrimary)),
         content: Text('Are you sure you want to delete the PDF for ${meta.unitName}?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
@@ -207,7 +207,7 @@ class _PdfFolderScreenState extends State<PdfFolderScreen> {
         child: _isLoading
           ? const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue))
           : _files.isEmpty
-              ? const Center(child: Text('This folder is empty.', style: TextStyle(color: Colors.white54)))
+              ? Center(child: Text('This folder is empty.', style: TextStyle(color: context.colors.textFaint)))
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: _files.length,
@@ -216,7 +216,7 @@ class _PdfFolderScreenState extends State<PdfFolderScreen> {
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
-                      decoration: AppTheme.glassDecoration,
+                      decoration: AppTheme.glassOf(context),
                       child: Material(
                         color: Colors.transparent,
                         borderRadius: BorderRadius.circular(20),
@@ -229,16 +229,16 @@ class _PdfFolderScreenState extends State<PdfFolderScreen> {
                             decoration: BoxDecoration(color: AppTheme.duoViolet.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
                             child: const Icon(LucideIcons.fileText, color: AppTheme.duoViolet, size: 20),
                           ),
-                          title: Text(meta.unitName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white)),
+                          title: Text(meta.unitName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: context.colors.textPrimary)),
                           subtitle: Padding(
                             padding: const EdgeInsets.only(top: 4.0),
-                            child: Text('${meta.sizeKb} KB', style: const TextStyle(fontSize: 11, color: Colors.white54)),
+                            child: Text('${meta.sizeKb} KB', style: TextStyle(fontSize: 11, color: context.colors.textFaint)),
                           ),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
-                                icon: const Icon(LucideIcons.share, color: Colors.white70, size: 20),
+                                icon: Icon(LucideIcons.share, color: context.colors.textSecondary, size: 20),
                                 onPressed: () => _sharePdf(meta),
                               ),
                               IconButton(
