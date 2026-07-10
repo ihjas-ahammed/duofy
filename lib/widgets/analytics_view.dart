@@ -214,7 +214,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
           return Center(
             child: Text(
               'Error loading analytics: ${snapshot.error}',
-              style: const TextStyle(color: Colors.white70),
+              style: TextStyle(color: context.colors.textSecondary),
             ),
           );
         }
@@ -248,7 +248,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                   // Header Card
                   AppTheme.applyGlassBlur(
                     borderRadius: 24,
-                    color: Colors.black.withOpacity(0.3),
+                    color: context.colors.glassStrong,
                     child: Padding(
                       padding: const EdgeInsets.all(20),
                       child: Row(
@@ -279,8 +279,8 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                                 const SizedBox(height: 4),
                                 Text(
                                   widget.courseId == null ? 'Your Learning Analytics' : 'Course Progress Stats',
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: context.colors.textPrimary,
                                     fontWeight: FontWeight.w900,
                                     fontSize: 20,
                                     fontFamily: 'Nunito',
@@ -342,7 +342,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                   // Last 7 Days XP Graph Card
                   AppTheme.applyGlassBlur(
                     borderRadius: 24,
-                    color: Colors.black.withOpacity(0.3),
+                    color: context.colors.glassStrong,
                     child: Padding(
                       padding: const EdgeInsets.all(20),
                       child: Column(
@@ -351,16 +351,16 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text(
+                              Text(
                                 'XP ACTIVITY (LAST 7 DAYS)',
                                 style: TextStyle(
-                                  color: Colors.white54,
+                                  color: context.colors.textFaint,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 11,
                                   letterSpacing: 0.8,
                                 ),
                               ),
-                              Icon(LucideIcons.activity, color: Colors.white54, size: 16),
+                              Icon(LucideIcons.activity, color: context.colors.textFaint, size: 16),
                             ],
                           ),
                           const SizedBox(height: 24),
@@ -405,8 +405,8 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                                                   AppTheme.duoViolet.withOpacity(0.9),
                                                 ]
                                               : [
-                                                  Colors.white.withOpacity(0.05),
-                                                  Colors.white.withOpacity(0.1),
+                                                  context.colors.surfaceAlt,
+                                                  context.colors.surfaceAlt,
                                                 ],
                                         ),
                                         boxShadow: xp > 0
@@ -424,7 +424,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                                     Text(
                                       dayStr,
                                       style: TextStyle(
-                                        color: xp > 0 ? Colors.white : Colors.white38,
+                                        color: xp > 0 ? context.colors.textPrimary : context.colors.textFaint,
                                         fontWeight: xp > 0 ? FontWeight.bold : FontWeight.normal,
                                         fontSize: 10,
                                       ),
@@ -442,12 +442,12 @@ class _AnalyticsViewState extends State<AnalyticsView> {
 
                   // Section 3: Course Breakdown (overall) OR Activity Logs (course-specific)
                   if (widget.courseId == null) ...[
-                    const Padding(
-                      padding: EdgeInsets.only(left: 4, bottom: 12),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 12),
                       child: Text(
                         'COURSE BREAKDOWN',
                         style: TextStyle(
-                          color: Colors.white60,
+                          color: context.colors.textFaint,
                           fontWeight: FontWeight.w900,
                           fontSize: 11,
                           letterSpacing: 1.0,
@@ -458,7 +458,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                       Container(
                         padding: const EdgeInsets.symmetric(vertical: 24),
                         alignment: Alignment.center,
-                        child: const Text('No courses found in library.', style: TextStyle(color: Colors.white38)),
+                        child: Text('No courses found in library.', style: TextStyle(color: context.colors.textFaint)),
                       )
                     else
                       ...courseStats.map((stat) {
@@ -471,7 +471,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                           margin: const EdgeInsets.only(bottom: 12),
                           child: AppTheme.applyGlassBlur(
                             borderRadius: 20,
-                            color: Colors.black.withOpacity(0.25),
+                            color: context.colors.glassStrong,
                             child: Padding(
                               padding: const EdgeInsets.all(16),
                               child: Column(
@@ -482,10 +482,10 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                                       Container(
                                         padding: const EdgeInsets.all(10),
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.06),
+                                          color: context.colors.surfaceAlt,
                                           borderRadius: BorderRadius.circular(12),
                                         ),
-                                        child: Icon(_getBookIcon(book.icon), color: Colors.white, size: 20),
+                                        child: Icon(_getBookIcon(book.icon), color: context.colors.textPrimary, size: 20),
                                       ),
                                       const SizedBox(width: 14),
                                       Expanded(
@@ -494,8 +494,8 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                                           children: [
                                             Text(
                                               book.title,
-                                              style: const TextStyle(
-                                                color: Colors.white,
+                                              style: TextStyle(
+                                                color: context.colors.textPrimary,
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 15,
                                               ),
@@ -505,8 +505,8 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                                             const SizedBox(height: 2),
                                             Text(
                                               'Accuracy: $acc%  •  XP: $xp',
-                                              style: const TextStyle(
-                                                color: Colors.white54,
+                                              style: TextStyle(
+                                                color: context.colors.textFaint,
                                                 fontSize: 12,
                                               ),
                                             ),
@@ -530,7 +530,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                                     child: LinearProgressIndicator(
                                       value: progress,
                                       minHeight: 6,
-                                      backgroundColor: Colors.white12,
+                                      backgroundColor: context.colors.outline,
                                       valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.duoBlue),
                                     ),
                                   ),
@@ -541,12 +541,12 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                         );
                       }).toList(),
                   ] else ...[
-                    const Padding(
-                      padding: EdgeInsets.only(left: 4, bottom: 12),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 12),
                       child: Text(
                         'RECENT ACTIVITY LOGS',
                         style: TextStyle(
-                          color: Colors.white60,
+                          color: context.colors.textFaint,
                           fontWeight: FontWeight.w900,
                           fontSize: 11,
                           letterSpacing: 1.0,
@@ -557,7 +557,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                       Container(
                         padding: const EdgeInsets.symmetric(vertical: 24),
                         alignment: Alignment.center,
-                        child: const Text('No activities completed in this course yet.', style: TextStyle(color: Colors.white38)),
+                        child: Text('No activities completed in this course yet.', style: TextStyle(color: context.colors.textFaint)),
                       )
                     else
                       ...logs.take(15).map((log) {
@@ -571,7 +571,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                           margin: const EdgeInsets.only(bottom: 8),
                           child: AppTheme.applyGlassBlur(
                             borderRadius: 16,
-                            color: Colors.black.withOpacity(0.25),
+                            color: context.colors.glassStrong,
                             child: ListTile(
                               dense: true,
                               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -591,11 +591,11 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                               ),
                               title: Text(
                                 actType == 'practice' ? 'Practice Arena' : 'Lesson Completed',
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
                               ),
                               subtitle: Text(
                                 '$dateStr  •  Acc: $acc%  •  Time: ${_formatTimeSpent(timeSec)}',
-                                style: const TextStyle(color: Colors.white54, fontSize: 11),
+                                style: TextStyle(color: context.colors.textFaint, fontSize: 11),
                               ),
                               trailing: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -635,7 +635,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
   }) {
     return AppTheme.applyGlassBlur(
       borderRadius: 20,
-      color: Colors.black.withOpacity(0.3),
+      color: context.colors.glassStrong,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
@@ -647,8 +647,8 @@ class _AnalyticsViewState extends State<AnalyticsView> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: Colors.white38,
+                  style: TextStyle(
+                    color: context.colors.textFaint,
                     fontWeight: FontWeight.w900,
                     fontSize: 9,
                     letterSpacing: 0.8,
@@ -669,8 +669,8 @@ class _AnalyticsViewState extends State<AnalyticsView> {
               children: [
                 Text(
                   value,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: context.colors.textPrimary,
                     fontWeight: FontWeight.w900,
                     fontSize: 16,
                   ),
