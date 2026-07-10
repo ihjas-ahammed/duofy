@@ -39,6 +39,25 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
   void initState() {
     super.initState();
     _loadPreferences();
+    // The Continue button's enabled state depends on these fields (a text
+    // prompt alone is enough to generate), so rebuild as the user types.
+    _titleController.addListener(_onTextChanged);
+    _customPromptController.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    if (mounted) setState(() {});
+  }
+
+  /// Files are optional outside handout mode: a syllabus or a text prompt
+  /// (title / instructions) is enough — the AI then generates the course
+  /// from its own knowledge.
+  bool get _canStart {
+    if (_mode == GenerationMode.handout) return _selectedFiles.isNotEmpty;
+    return _selectedFiles.isNotEmpty ||
+        _syllabusFiles.isNotEmpty ||
+        _titleController.text.trim().isNotEmpty ||
+        _customPromptController.text.trim().isNotEmpty;
   }
 
   Future<void> _loadPreferences() async {
@@ -870,16 +889,14 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
   }
 
   void _generate() {
-    if (_selectedFiles.isEmpty) {
+    if (!_canStart) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select the required file(s).')),
-      );
-      return;
-    }
-    if (_mode == GenerationMode.course && _syllabusFiles.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a syllabus file for the course.'),
+        SnackBar(
+          content: Text(
+            _mode == GenerationMode.handout
+                ? 'Please select the required file(s).'
+                : 'Add files, a syllabus, or describe the course in the title/instructions.',
+          ),
         ),
       );
       return;
@@ -920,8 +937,11 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
         if (!mounted) return;
         Navigator.of(context).pop(); // dismiss loading dialog
 
-        final firstPdf = _selectedFiles.first;
-        final filename = firstPdf.path.split(RegExp(r'[\\/]')).last;
+        final String filename = _selectedFiles.isNotEmpty
+            ? _selectedFiles.first.path.split(RegExp(r'[\\/]')).last
+            : (_syllabusFiles.isNotEmpty
+                  ? _syllabusFiles.first.path.split(RegExp(r'[\\/]')).last
+                  : 'New Course');
 
         final customPrompt = _customPromptController.text.trim();
         final presetTitle = _titleController.text.trim().isEmpty
@@ -1140,7 +1160,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                         Row(
                           children: [
                             Text(
-                              'SYLLABUS (PDF)',
+                              'SYLLABUS (PDF, OPTIONAL)',
                               style: TextStyle(
                                 color: context.colors.textFaint,
                                 fontSize: 12,
@@ -1206,7 +1226,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                         ),
                         const SizedBox(height: 24),
                         Text(
-                          'REFERENCE BOOKS (PDF)',
+                          'REFERENCE BOOKS (PDF, OPTIONAL)',
                           style: TextStyle(
                             color: context.colors.textFaint,
                             fontSize: 12,
@@ -1216,7 +1236,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                         ),
                       ] else if (_mode == GenerationMode.book) ...[
                         Text(
-                          'TEXTBOOK (PDF)',
+                          'TEXTBOOK (PDF, OPTIONAL)',
                           style: TextStyle(
                             color: context.colors.textFaint,
                             fontSize: 12,
@@ -1244,6 +1264,18 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                         onRemove: (idx) =>
                             setState(() => _selectedFiles.removeAt(idx)),
                       ),
+                      if (_mode != GenerationMode.handout &&
+                          _selectedFiles.isEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'No files? The AI will generate the course from the syllabus and/or your title & instructions alone.',
+                          style: TextStyle(
+                            color: context.colors.textFaint,
+                            fontSize: 12,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
 
                       const SizedBox(height: 24),
                       Text(
@@ -1295,16 +1327,8 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                 child: DuoButton(
                   text: 'Continue',
                   onPressed: _generate,
-                  color:
-                      _selectedFiles.isNotEmpty &&
-                          (_mode != GenerationMode.course ||
-                              _syllabusFiles.isNotEmpty)
-                      ? AppTheme.duoGreen
-                      : Colors.grey.shade700,
-                  shadowColor:
-                      _selectedFiles.isNotEmpty &&
-                          (_mode != GenerationMode.course ||
-                              _syllabusFiles.isNotEmpty)
+                  color: _canStart ? AppTheme.duoGreen : Colors.grey.shade700,
+                  shadowColor: _canStart
                       ? AppTheme.duoGreenDark
                       : Colors.grey.shade800,
                 ),

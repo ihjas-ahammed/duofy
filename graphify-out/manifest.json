@@ -15,8 +15,8 @@
     "semantic_hash": ""
   },
   "lib/models/app_models.dart": {
-    "mtime": 1783688207.7916136,
-    "ast_hash": "979079c31a7f4b7c9c3c1cf552203e82",
+    "mtime": 1783689647.2734947,
+    "ast_hash": "1882c8acc43caa40302fd7a400718365",
     "semantic_hash": ""
   },
   "lib/screens/main_layout_screen.dart": {
@@ -25,8 +25,8 @@
     "semantic_hash": ""
   },
   "lib/screens/book_dashboard_screen.dart": {
-    "mtime": 1783688213.4637272,
-    "ast_hash": "ea752e94d4625564644ecef752227be3",
+    "mtime": 1783689647.458494,
+    "ast_hash": "20ded3c1232d9f4bf3018e63506f30e9",
     "semantic_hash": ""
   },
   "lib/screens/practice_session_screen.dart": {
@@ -110,8 +110,8 @@
     "semantic_hash": ""
   },
   "lib/screens/generate_book_screen.dart": {
-    "mtime": 1783688213.7507331,
-    "ast_hash": "7d0651906bf23fbcb4f4ecff67f14dda",
+    "mtime": 1783689604.6257405,
+    "ast_hash": "83498984f0781a7a21aedab4319994a3",
     "semantic_hash": ""
   },
   "lib/screens/course_edit_structure_screen.dart": {
@@ -150,8 +150,8 @@
     "semantic_hash": ""
   },
   "lib/screens/source_pdf_upload_screen.dart": {
-    "mtime": 1783688214.7037523,
-    "ast_hash": "adfbd0e740a875c34e9358311c7f4ce7",
+    "mtime": 1783689711.7132444,
+    "ast_hash": "bbdbac4d5910b8b9a82bcccf0107be4f",
     "semantic_hash": ""
   },
   "lib/widgets/compact_book_card.dart": {
@@ -345,18 +345,18 @@
     "semantic_hash": "b6525142d239a41b8f5d653bfd3344fb"
   },
   "lib/services/generation_manager.dart": {
-    "mtime": 1783688207.8016136,
-    "ast_hash": "5d9a3845b28ee47e0a064477d7c69c19",
+    "mtime": 1783689647.231495,
+    "ast_hash": "9f38d37da701382c669427867f74629c",
     "semantic_hash": ""
   },
   "lib/services/ai_service.dart": {
-    "mtime": 1783688207.8006136,
-    "ast_hash": "c4def8a17b1af16762c4f0e76e56c792",
+    "mtime": 1783689647.1784952,
+    "ast_hash": "019f36eb56296ef87db2cd930967b3e2",
     "semantic_hash": ""
   },
   "lib/services/prompt_service.dart": {
-    "mtime": 1783688207.8026137,
-    "ast_hash": "b6cf2b16603b62a030d4dba3558c6c64",
+    "mtime": 1783689647.1854951,
+    "ast_hash": "81205b405cfa7b890a20e300e051ae25",
     "semantic_hash": ""
   },
   "lib/services/notification_service.dart": {

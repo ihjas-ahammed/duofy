@@ -41,7 +41,11 @@ class AiService {
     List<String> keys = prefs.getStringList('gemini_api_keys_list') ?? [];
     if (keys.isEmpty) {
       final keysString = prefs.getString('gemini_api_keys') ?? '';
-      keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      keys = keysString
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
     }
     if (keys.isNotEmpty) return keys;
 
@@ -51,10 +55,13 @@ class AiService {
       _usingDefaultKey = true;
       return defaultKeys;
     }
-    throw Exception('No API Keys configured. Go to Settings to add your Gemini API key, or sign in to use the shared keys.');
+    throw Exception(
+      'No API Keys configured. Go to Settings to add your Gemini API key, or sign in to use the shared keys.',
+    );
   }
 
-  Future<List<String>> getKeys({String? forcedApiKey}) => _getKeys(forcedApiKey: forcedApiKey);
+  Future<List<String>> getKeys({String? forcedApiKey}) =>
+      _getKeys(forcedApiKey: forcedApiKey);
 
   /// Returns true when the error looks like a rate-limit / quota error.
   bool _isRateLimitError(Object e) {
@@ -69,7 +76,11 @@ class AiService {
   /// the legacy single-string key when the new list key is empty so older
   /// installs keep working without migration. The returned list is never
   /// empty — the caller can safely iterate it as a model-fallback ladder.
-  Future<List<String>> _getModelsForSlot(String slotKey, String legacyKey, List<String> fallbackList) async {
+  Future<List<String>> _getModelsForSlot(
+    String slotKey,
+    String legacyKey,
+    List<String> fallbackList,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     final list = prefs.getStringList(slotKey) ?? [];
     if (list.isNotEmpty) return list;
@@ -79,16 +90,39 @@ class AiService {
   }
 
   Future<List<String>> _getPrimaryTextModels() =>
-      _getModelsForSlot('model_primary_text_list', 'model_primary_text', const ['gemini-flash-lite-latest', 'gemini-2.5-flash-lite', 'gemma-4-26b-a4b-it', 'gemma-4-31b-it']);
+      _getModelsForSlot('model_primary_text_list', 'model_primary_text', const [
+        'gemini-flash-lite-latest',
+        'gemini-2.5-flash-lite',
+        'gemma-4-26b-a4b-it',
+        'gemma-4-31b-it',
+      ]);
 
-  Future<List<String>> _getPrimaryGraphicsModels() =>
-      _getModelsForSlot('model_primary_graphics_list', 'model_primary_graphics', const ['gemini-3.5-flash', 'gemini-3-flash-preview', 'gemini-2.5-flash', 'gemma-4-31b-it']);
+  Future<List<String>> _getPrimaryGraphicsModels() => _getModelsForSlot(
+    'model_primary_graphics_list',
+    'model_primary_graphics',
+    const [
+      'gemini-3.5-flash',
+      'gemini-3-flash-preview',
+      'gemini-2.5-flash',
+      'gemma-4-31b-it',
+    ],
+  );
 
   Future<List<String>> _getLiteModels() =>
-      _getModelsForSlot('model_lite_list', 'model_lite', const ['gemini-flash-lite-latest', 'gemini-3.1-flash-lite', 'gemini-3.1-flash-lite-preview', 'gemini-2.5-flash-lite', 'gemma-4-26b-a4b-it', 'gemini-2.0-flash-lite']);
+      _getModelsForSlot('model_lite_list', 'model_lite', const [
+        'gemini-flash-lite-latest',
+        'gemini-3.1-flash-lite',
+        'gemini-3.1-flash-lite-preview',
+        'gemini-2.5-flash-lite',
+        'gemma-4-26b-a4b-it',
+        'gemini-2.0-flash-lite',
+      ]);
 
-  Future<List<String>> _getLiveModels() =>
-      _getModelsForSlot('model_live_list', 'model_live', const ['gemini-3.1-flash-live-preview']);
+  Future<List<String>> _getLiveModels() => _getModelsForSlot(
+    'model_live_list',
+    'model_live',
+    const ['gemini-3.1-flash-live-preview'],
+  );
 
   Future<String> getLiveModelName() async {
     final list = await _getLiveModels();
@@ -125,8 +159,12 @@ class AiService {
     final int end = cleaned.lastIndexOf('}');
 
     if (start == -1 || end == -1 || end < start) {
-      final preview = cleaned.length > 200 ? '${cleaned.substring(0, 200)}…' : cleaned;
-      throw Exception('AI response did not contain a JSON object. Got: $preview');
+      final preview = cleaned.length > 200
+          ? '${cleaned.substring(0, 200)}…'
+          : cleaned;
+      throw Exception(
+        'AI response did not contain a JSON object. Got: $preview',
+      );
     }
 
     cleaned = cleaned.substring(start, end + 1);
@@ -134,7 +172,9 @@ class AiService {
     try {
       final decoded = jsonDecode(cleaned);
       if (decoded is! Map<String, dynamic>) {
-        throw Exception('Expected a JSON Object (Map), but got ${decoded.runtimeType}.');
+        throw Exception(
+          'Expected a JSON Object (Map), but got ${decoded.runtimeType}.',
+        );
       }
       return decoded;
     } catch (e1) {
@@ -143,12 +183,18 @@ class AiService {
         final agg = cleaned.replaceAll('\n', '\\n').replaceAll('\r', '');
         final decoded = jsonDecode(agg);
         if (decoded is! Map<String, dynamic>) {
-          throw Exception('Expected a JSON Object after sanitization, got ${decoded.runtimeType}.');
+          throw Exception(
+            'Expected a JSON Object after sanitization, got ${decoded.runtimeType}.',
+          );
         }
         return decoded;
       } catch (e2) {
-        final preview = cleaned.length > 200 ? '${cleaned.substring(0, 200)}…' : cleaned;
-        throw Exception('Failed to parse AI JSON. First parse: $e1. After sanitization: $e2. Snippet: $preview');
+        final preview = cleaned.length > 200
+            ? '${cleaned.substring(0, 200)}…'
+            : cleaned;
+        throw Exception(
+          'Failed to parse AI JSON. First parse: $e1. After sanitization: $e2. Snippet: $preview',
+        );
       }
     }
   }
@@ -156,7 +202,10 @@ class AiService {
   /// Reads "TOTAL_LESSONS: N" from the first non-empty lines of the plan, or
   /// falls back to the highest "Lesson N" index found in the text.
   int _parseLessonCount(String plan) {
-    final headerRe = RegExp(r'TOTAL[_ ]?LESSONS\s*[:=]\s*(\d+)', caseSensitive: false);
+    final headerRe = RegExp(
+      r'TOTAL[_ ]?LESSONS\s*[:=]\s*(\d+)',
+      caseSensitive: false,
+    );
     for (final line in plan.split('\n').take(5)) {
       final m = headerRe.firstMatch(line);
       if (m != null) {
@@ -211,19 +260,29 @@ class AiService {
   /// into one opaque "failed" message.
   String _classifyError(Object e) {
     final s = e.toString().toLowerCase();
-    if (s.contains('internal error') || s.contains('500') || s.contains('internal server')) {
+    if (s.contains('internal error') ||
+        s.contains('500') ||
+        s.contains('internal server')) {
       return 'Model internal error';
     }
-    if (s.contains('429') || s.contains('rate limit') || s.contains('resource exhausted') || s.contains('quota')) {
+    if (s.contains('429') ||
+        s.contains('rate limit') ||
+        s.contains('resource exhausted') ||
+        s.contains('quota')) {
       return 'Rate limited / quota exceeded';
     }
-    if (s.contains('overloaded') || s.contains('503') || s.contains('unavailable')) {
+    if (s.contains('overloaded') ||
+        s.contains('503') ||
+        s.contains('unavailable')) {
       return 'Model overloaded';
     }
     if (s.contains('timeout') || s.contains('deadline exceeded')) {
       return 'Request timed out';
     }
-    if (s.contains('api key') || s.contains('permission') || s.contains('401') || s.contains('403')) {
+    if (s.contains('api key') ||
+        s.contains('permission') ||
+        s.contains('401') ||
+        s.contains('403')) {
       return 'API key / permission error';
     }
     if (s.contains('json') || s.contains('parse')) {
@@ -242,9 +301,12 @@ class AiService {
     final s = e.toString();
     final lower = s.toLowerCase();
     if (lower.contains('<html') || lower.contains('doctype html')) {
-      if (lower.contains('502')) return '$category — server 502 (Bad Gateway), model temporarily unavailable.';
-      if (lower.contains('503')) return '$category — server 503, model overloaded.';
-      if (lower.contains('504')) return '$category — server 504, upstream timeout.';
+      if (lower.contains('502'))
+        return '$category — server 502 (Bad Gateway), model temporarily unavailable.';
+      if (lower.contains('503'))
+        return '$category — server 503, model overloaded.';
+      if (lower.contains('504'))
+        return '$category — server 504, upstream timeout.';
       return '$category — upstream returned an HTML error page (model unavailable).';
     }
     return '$category: $s';
@@ -260,18 +322,26 @@ class AiService {
           final model = GenerativeModel(
             model: modelName,
             apiKey: apiKey,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+            generationConfig: GenerationConfig(
+              responseMimeType: 'application/json',
+            ),
           );
           final resp = await _retryTransient(
-            () => model.generateContent([Content.text(promptText)]).timeout(const Duration(minutes: 1)),
-            onRetry: (a, e) => print('[AiService] Offset crosscheck transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+            () => model
+                .generateContent([Content.text(promptText)])
+                .timeout(const Duration(minutes: 1)),
+            onRetry: (a, e) => print(
+              '[AiService] Offset crosscheck transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
+            ),
           );
           if (resp.text != null) {
             map = _cleanAndDecodeJson(resp.text!);
             break;
           }
         } catch (e) {
-          print('[AiService] Offset crosscheck failed on $modelName: ${_cleanErrMsg(e)}');
+          print(
+            '[AiService] Offset crosscheck failed on $modelName: ${_cleanErrMsg(e)}',
+          );
         }
       }
       if (map != null) break;
@@ -314,7 +384,11 @@ class AiService {
     throw last ?? Exception('Retry exhausted');
   }
 
-  Future<List<Part>> _buildFileParts(List<dynamic> files, {bool extractText = false, List<String>? fileLabels}) async {
+  Future<List<Part>> _buildFileParts(
+    List<dynamic> files, {
+    bool extractText = false,
+    List<String>? fileLabels,
+  }) async {
     List<Part> parts = [];
     for (int idx = 0; idx < files.length; idx++) {
       final f = files[idx];
@@ -347,9 +421,13 @@ class AiService {
         if (useTextOnly) {
           final text = await PdfService().extractTextFromPdfBytes(bytes);
           if (text.trim().isNotEmpty) {
-            parts.add(TextPart(extractText
-                ? '--- SYLLABUS CONTENT START ---\n$text\n--- SYLLABUS CONTENT END ---'
-                : '--- CONTENT START ---\n$text\n--- CONTENT END ---'));
+            parts.add(
+              TextPart(
+                extractText
+                    ? '--- SYLLABUS CONTENT START ---\n$text\n--- SYLLABUS CONTENT END ---'
+                    : '--- CONTENT START ---\n$text\n--- CONTENT END ---',
+              ),
+            );
           }
         } else {
           try {
@@ -371,7 +449,9 @@ class AiService {
             // Last resort: extract text if image conversion fails
             final text = await PdfService().extractTextFromPdfBytes(bytes);
             if (text.trim().isNotEmpty) {
-              parts.add(TextPart('--- CONTENT START ---\n$text\n--- CONTENT END ---'));
+              parts.add(
+                TextPart('--- CONTENT START ---\n$text\n--- CONTENT END ---'),
+              );
             }
           }
         }
@@ -389,49 +469,64 @@ class AiService {
     return null;
   }
 
-
-
   Future<Map<String, dynamic>?> extractWritingStyleProfile({
     required List<String> answers,
     String? forcedApiKey,
   }) async {
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getLiteModels();
-    
-    final formattedAnswers = answers.asMap().entries.map((e) => "Question ${e.key + 1}: ${e.value}").join('\n\n');
-    final prompt = PromptService.extractWritingStyleProfilePrompt.replaceAll('%user_answers%', formattedAnswers);
-    
+
+    final formattedAnswers = answers
+        .asMap()
+        .entries
+        .map((e) => "Question ${e.key + 1}: ${e.value}")
+        .join('\n\n');
+    final prompt = PromptService.extractWritingStyleProfilePrompt.replaceAll(
+      '%user_answers%',
+      formattedAnswers,
+    );
+
     for (var key in keys) {
       for (var modelName in modelsToTry) {
         try {
           final model = GenerativeModel(
             model: modelName,
             apiKey: key,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+            generationConfig: GenerationConfig(
+              responseMimeType: 'application/json',
+            ),
           );
           final response = await _retryTransient(
-            () => model.generateContent([Content.text(prompt)]).timeout(const Duration(minutes: 2)),
+            () => model
+                .generateContent([Content.text(prompt)])
+                .timeout(const Duration(minutes: 2)),
           );
           if (response.text != null) {
             return _cleanAndDecodeJson(response.text!);
           }
         } catch (e) {
-          print('[AiService] extractWritingStyleProfile ($modelName) failed: ${_cleanErrMsg(e)}');
+          print(
+            '[AiService] extractWritingStyleProfile ($modelName) failed: ${_cleanErrMsg(e)}',
+          );
         }
       }
     }
     return null;
   }
 
-
-
-  Future<Map<String, dynamic>?> scanIndexChunk(File chunkPdf, int startPage, int endPage, {String? forcedApiKey}) async {
+  Future<Map<String, dynamic>?> scanIndexChunk(
+    File chunkPdf,
+    int startPage,
+    int endPage, {
+    String? forcedApiKey,
+  }) async {
     await _checkPause();
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getLiteModels();
     final pdfBytes = await chunkPdf.readAsBytes();
 
-    final prompt = '''
+    final prompt =
+        '''
 Analyze the attached PDF chunk (which represents physical pages $startPage to $endPage of a textbook).
 Identify if this chunk contains the Table of Contents / Index. If so, return the absolute page numbers.
 Also identify if this chunk contains the exact start of "Chapter 1" (or the first main content chapter). If so, return its absolute page number.
@@ -453,20 +548,31 @@ Important Rules:
           final model = GenerativeModel(
             model: modelName,
             apiKey: key,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+            generationConfig: GenerationConfig(
+              responseMimeType: 'application/json',
+            ),
           );
           final response = await _retryTransient(
-            () => model.generateContent([
-              Content.multi([TextPart(prompt), DataPart('application/pdf', pdfBytes)])
-            ]).timeout(const Duration(minutes: 2)),
-            onRetry: (a, e) => print('[AiService] Index scan transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+            () => model
+                .generateContent([
+                  Content.multi([
+                    TextPart(prompt),
+                    DataPart('application/pdf', pdfBytes),
+                  ]),
+                ])
+                .timeout(const Duration(minutes: 2)),
+            onRetry: (a, e) => print(
+              '[AiService] Index scan transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
+            ),
           );
 
           if (response.text != null) {
             return _cleanAndDecodeJson(response.text!);
           }
         } catch (e) {
-          print('[AiService] scanIndexChunk ($modelName) failed: ${_cleanErrMsg(e)}');
+          print(
+            '[AiService] scanIndexChunk ($modelName) failed: ${_cleanErrMsg(e)}',
+          );
         }
       }
     }
@@ -487,6 +593,20 @@ Important Rules:
   /// offset correction. [onProgress] reports REAL progress — null fraction
   /// during the single chapter call (indeterminate), then chapters-completed /
   /// total as sections fill in.
+  /// Context parts for knowledge-mode generation (no PDF chunk): the book's
+  /// saved syllabus when it exists on disk, otherwise nothing — keeping the
+  /// prompt grounded in whatever the user actually provided.
+  Future<List<Part>> _knowledgeContextParts(Book bookContext) async {
+    final path = bookContext.syllabusPath;
+    if (path != null && path.isNotEmpty) {
+      final f = File(path);
+      if (f.existsSync()) {
+        return _buildFileParts([f], extractText: true);
+      }
+    }
+    return const [];
+  }
+
   Future<Book?> generateBookSkeleton(
     List<File> indexFiles,
     String filename, {
@@ -502,8 +622,10 @@ Important Rules:
     await _checkPause();
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getLiteModels();
-    final instructionsBlock = PromptService.instructionsBlock(customInstructions);
-    
+    final instructionsBlock = PromptService.instructionsBlock(
+      customInstructions,
+    );
+
     // Create the labels for files. Deliberately no absolute-page hints here:
     // the model must report printed TOC numbers verbatim (PageMapping does
     // the printed→absolute conversion in code).
@@ -512,22 +634,27 @@ Important Rules:
       final name = indexFiles[i].path.split(RegExp(r'[\\/]')).last;
       fileLabels.add('\n--- INDEX FOR BOOK $i: "$name" ---\n');
     }
-    
+
     final fileParts = await _buildFileParts(indexFiles, fileLabels: fileLabels);
-    final syllabusParts = await _buildFileParts(syllabusFiles, extractText: true);
+    final syllabusParts = await _buildFileParts(
+      syllabusFiles,
+      extractText: true,
+    );
 
     // Chapter Starts Mode (Method Two)
     if (chapterStarts != null && chapterStarts.isNotEmpty) {
       onProgress?.call('Mapping chapter starts…', null);
-      
+
       String multiBookInstruction = '';
       if (indexFiles.length > 1) {
         final bookDescriptions = List.generate(
           indexFiles.length,
-          (i) => 'Book $i: "${indexFiles[i].path.split(RegExp(r'[\\/]')).last}"'
+          (i) =>
+              'Book $i: "${indexFiles[i].path.split(RegExp(r'[\\/]')).last}"',
         ).join('\n');
 
-        multiBookInstruction = '''
+        multiBookInstruction =
+            '''
 IMPORTANT: We are using MULTIPLE reference textbooks. Here is the list of books and their indices:
 $bookDescriptions
 
@@ -538,7 +665,10 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
 
       final chapterPrompt = PromptService.chapterStartsList
           .replaceAll('%filename%', filename)
-          .replaceAll('%custom_instructions%', '$instructionsBlock\n$multiBookInstruction');
+          .replaceAll(
+            '%custom_instructions%',
+            '$instructionsBlock\n$multiBookInstruction',
+          );
 
       Map<String, dynamic>? meta;
       Exception? lastException;
@@ -548,26 +678,43 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
             final model = GenerativeModel(
               model: modelName,
               apiKey: apiKey,
-              generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+              generationConfig: GenerationConfig(
+                responseMimeType: 'application/json',
+              ),
             );
             final response = await _retryTransient(
-              () => model.generateContent([Content.multi([TextPart(chapterPrompt), ...syllabusParts, ...fileParts])])
+              () => model
+                  .generateContent([
+                    Content.multi([
+                      TextPart(chapterPrompt),
+                      ...syllabusParts,
+                      ...fileParts,
+                    ]),
+                  ])
                   .timeout(const Duration(minutes: 4)),
-              onRetry: (a, e) => print('[AiService] Chapter starts transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+              onRetry: (a, e) => print(
+                '[AiService] Chapter starts transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
+              ),
             );
             if (response.text != null) {
               meta = _cleanAndDecodeJson(response.text!);
               break;
             }
           } on TimeoutException {
-            lastException = Exception('Chapter starts mapping timed out ($modelName).');
+            lastException = Exception(
+              'Chapter starts mapping timed out ($modelName).',
+            );
           } catch (e) {
-            lastException = Exception('Chapter starts mapping failed ($modelName): ${_cleanErrMsg(e)}');
+            lastException = Exception(
+              'Chapter starts mapping failed ($modelName): ${_cleanErrMsg(e)}',
+            );
           }
         }
         if (meta != null) break;
       }
-      if (meta == null) throw lastException ?? Exception('Failed to map chapters. All models/keys exhausted.');
+      if (meta == null)
+        throw lastException ??
+            Exception('Failed to map chapters. All models/keys exhausted.');
 
       final rawChapters = (meta['chapters'] ?? meta['modules']) as List?;
       if (rawChapters == null || rawChapters.isEmpty) {
@@ -585,16 +732,18 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
 
       // Iterate through AI-returned chapters and match
       for (var i = 0; i < rawChapters.length; i++) {
-        final c = rawChapters[i] is Map ? Map<String, dynamic>.from(rawChapters[i]) : <String, dynamic>{};
+        final c = rawChapters[i] is Map
+            ? Map<String, dynamic>.from(rawChapters[i])
+            : <String, dynamic>{};
         int bookIdx = _asInt(c['bookIndex']) ?? 0;
         if (bookIdx < 0 || bookIdx >= indexFiles.length) {
           bookIdx = 0;
         }
-        
+
         final starts = bookStarts[bookIdx]!;
         final currentMatchedList = matchedChaptersByBook[bookIdx]!;
         final int matchedCount = currentMatchedList.length;
-        
+
         int? startPage;
         int? endPage;
         if (matchedCount < starts.length) {
@@ -618,9 +767,11 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
           startPage = starts.isNotEmpty ? starts.last : 1;
           endPage = startPage + 20;
         }
-        
-        final cid = (c['id']?.toString().trim().isNotEmpty ?? false) ? c['id'].toString() : 'm${i + 1}';
-        
+
+        final cid = (c['id']?.toString().trim().isNotEmpty ?? false)
+            ? c['id'].toString()
+            : 'm${i + 1}';
+
         currentMatchedList.add({
           'id': cid,
           'title': c['title']?.toString() ?? 'Chapter ${i + 1}',
@@ -630,7 +781,7 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
           'bookIndex': bookIdx,
         });
       }
-      
+
       // Assemble the flattened chapters
       final chapters = <Map<String, dynamic>>[];
       for (int i = 0; i < indexFiles.length; i++) {
@@ -640,7 +791,8 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
       final assembled = <String, dynamic>{
         'id': 'book-${DateTime.now().millisecondsSinceEpoch}',
         'title': meta['title']?.toString() ?? filename,
-        'description': meta['description']?.toString() ?? 'Auto-generated course',
+        'description':
+            meta['description']?.toString() ?? 'Auto-generated course',
         'icon': meta['icon']?.toString() ?? 'Book',
         if (meta['systemPrompt'] != null) 'systemPrompt': meta['systemPrompt'],
         'modules': [
@@ -658,13 +810,15 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
                   'startPage': chapters[i]['startPage'],
                   'endPage': chapters[i]['endPage'],
                   'bookIndex': chapters[i]['bookIndex'] ?? 0,
-                }
+                },
               ],
-            }
+            },
         ],
       };
       onProgress?.call('Finalizing structure…', 1.0);
-      return Book.fromJson(assembled).copyWith(customInstructions: customInstructions);
+      return Book.fromJson(
+        assembled,
+      ).copyWith(customInstructions: customInstructions);
     }
 
     if (isHandout) {
@@ -691,44 +845,68 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
             final model = GenerativeModel(
               model: modelName,
               apiKey: apiKey,
-              generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+              generationConfig: GenerationConfig(
+                responseMimeType: 'application/json',
+              ),
             );
             final response = await _retryTransient(
-              () => model.generateContent([Content.multi([TextPart(handoutPrompt), ...fileParts])])
+              () => model
+                  .generateContent([
+                    Content.multi([TextPart(handoutPrompt), ...fileParts]),
+                  ])
                   .timeout(const Duration(minutes: 4)),
-              onRetry: (a, e) => print('[AiService] Handout skeleton transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+              onRetry: (a, e) => print(
+                '[AiService] Handout skeleton transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
+              ),
             );
             if (response.text != null) {
               handoutMeta = _cleanAndDecodeJson(response.text!);
               break;
             }
           } on TimeoutException {
-            lastException = Exception('Handout analysis timed out ($modelName).');
+            lastException = Exception(
+              'Handout analysis timed out ($modelName).',
+            );
           } catch (e) {
-            lastException = Exception('Handout analysis failed ($modelName): ${_cleanErrMsg(e)}');
+            lastException = Exception(
+              'Handout analysis failed ($modelName): ${_cleanErrMsg(e)}',
+            );
           }
         }
         if (handoutMeta != null) break;
       }
-      if (handoutMeta == null) throw lastException ?? Exception('Failed to analyze handout. All models/keys exhausted.');
+      if (handoutMeta == null)
+        throw lastException ??
+            Exception('Failed to analyze handout. All models/keys exhausted.');
 
       onProgress?.call('Finalizing handout structure…', 1.0);
-      return Book.fromJson(handoutMeta).copyWith(customInstructions: customInstructions);
+      return Book.fromJson(
+        handoutMeta,
+      ).copyWith(customInstructions: customInstructions);
     }
 
     // ---- Stage 1: chapter list (one focused call → indeterminate) ----------
     onProgress?.call('Mapping chapters…', null);
     final bool isCourse = syllabusFiles.isNotEmpty;
-    final promptTemplate = isCourse ? PromptService.syllabusChapterList : PromptService.chapterList;
+    // Knowledge-only flow: no reference textbook attached. The skeleton comes
+    // from the syllabus (when attached) and/or the model's own subject
+    // knowledge, and carries no page mappings at all.
+    final bool noReference = indexFiles.isEmpty;
+    final promptTemplate = noReference
+        ? PromptService.knowledgeChapterList
+        : (isCourse
+              ? PromptService.syllabusChapterList
+              : PromptService.chapterList);
 
     String multiBookInstruction = '';
     if (indexFiles.length > 1) {
       final bookDescriptions = List.generate(
         indexFiles.length,
-        (i) => 'Book $i: "${indexFiles[i].path.split(RegExp(r'[\\/]')).last}"'
+        (i) => 'Book $i: "${indexFiles[i].path.split(RegExp(r'[\\/]')).last}"',
       ).join('\n');
 
-      multiBookInstruction = '''
+      multiBookInstruction =
+          '''
 IMPORTANT: We are using MULTIPLE reference textbooks. Here is the list of books and their indices:
 $bookDescriptions
 
@@ -739,7 +917,10 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
 
     final chapterPrompt = promptTemplate
         .replaceAll('%filename%', filename)
-        .replaceAll('%custom_instructions%', '$instructionsBlock\n$multiBookInstruction');
+        .replaceAll(
+          '%custom_instructions%',
+          '$instructionsBlock\n$multiBookInstruction',
+        );
 
     Map<String, dynamic>? meta;
     Exception? lastException;
@@ -749,12 +930,23 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
           final model = GenerativeModel(
             model: modelName,
             apiKey: apiKey,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+            generationConfig: GenerationConfig(
+              responseMimeType: 'application/json',
+            ),
           );
           final response = await _retryTransient(
-            () => model.generateContent([Content.multi([TextPart(chapterPrompt), ...syllabusParts, ...fileParts])])
+            () => model
+                .generateContent([
+                  Content.multi([
+                    TextPart(chapterPrompt),
+                    ...syllabusParts,
+                    ...fileParts,
+                  ]),
+                ])
                 .timeout(const Duration(minutes: 4)),
-            onRetry: (a, e) => print('[AiService] Chapter list transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+            onRetry: (a, e) => print(
+              '[AiService] Chapter list transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
+            ),
           );
           if (response.text != null) {
             meta = _cleanAndDecodeJson(response.text!);
@@ -763,16 +955,22 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
         } on TimeoutException {
           lastException = Exception('Chapter mapping timed out ($modelName).');
         } catch (e) {
-          lastException = Exception('Chapter mapping failed ($modelName): ${_cleanErrMsg(e)}');
+          lastException = Exception(
+            'Chapter mapping failed ($modelName): ${_cleanErrMsg(e)}',
+          );
         }
       }
       if (meta != null) break;
     }
-    if (meta == null) throw lastException ?? Exception('Failed to map chapters. All models/keys exhausted.');
+    if (meta == null)
+      throw lastException ??
+          Exception('Failed to map chapters. All models/keys exhausted.');
 
     final rawChapters = (meta['chapters'] ?? meta['modules']) as List?;
     if (rawChapters == null || rawChapters.isEmpty) {
-      throw Exception('The model returned no chapters for this table of contents.');
+      throw Exception(
+        'The model returned no chapters for this table of contents.',
+      );
     }
 
     // Normalize: stable ids + the printed TOC number the model read out.
@@ -781,15 +979,21 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     // whatever the prompt asked for, i.e. printed numbers).
     final chapters = <Map<String, dynamic>>[];
     for (var i = 0; i < rawChapters.length; i++) {
-      final c = rawChapters[i] is Map ? Map<String, dynamic>.from(rawChapters[i]) : <String, dynamic>{};
-      final cid = (c['id']?.toString().trim().isNotEmpty ?? false) ? c['id'].toString() : 'm${i + 1}';
+      final c = rawChapters[i] is Map
+          ? Map<String, dynamic>.from(rawChapters[i])
+          : <String, dynamic>{};
+      final cid = (c['id']?.toString().trim().isNotEmpty ?? false)
+          ? c['id'].toString()
+          : 'm${i + 1}';
       final rawBookIdx = _asInt(c['bookIndex']) ?? 0;
       chapters.add({
         'id': cid,
         'title': c['title']?.toString() ?? 'Chapter ${i + 1}',
         'description': c['description']?.toString() ?? '',
         'printedStart': _asInt(c['printedStartPage'] ?? c['startPage']),
-        'bookIndex': (rawBookIdx >= 0 && rawBookIdx < indexFiles.length) ? rawBookIdx : 0,
+        'bookIndex': (rawBookIdx >= 0 && rawBookIdx < indexFiles.length)
+            ? rawBookIdx
+            : 0,
       });
     }
 
@@ -798,48 +1002,65 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     // twice, skipped, or hallucinated. The anchor is the model's own
     // first-chapter printed number vs the user-confirmed absolute start of
     // chapter 1, so a model that (wrongly) emitted absolute numbers
-    // self-corrects to offset 0.
-    final byBook = <int, List<int>>{};
-    for (var i = 0; i < chapters.length; i++) {
-      byBook.putIfAbsent(chapters[i]['bookIndex'] as int, () => []).add(i);
-    }
-    for (final entry in byBook.entries) {
-      final bookIdx = entry.key;
-      final idxs = entry.value;
-      final ch1Abs = bookIdx < chapter1AbsolutePages.length ? chapter1AbsolutePages[bookIdx] : 1;
-      final printedStarts = [for (final i in idxs) chapters[i]['printedStart'] as int?];
-      final ch1Printed = printedStarts.firstWhere((p) => p != null, orElse: () => 1) ?? 1;
-      final offset = PageMapping.computeOffset(chapter1AbsPage: ch1Abs, chapter1PrintedPage: ch1Printed);
-      int totalPages = 0;
-      if (sourceFiles != null && bookIdx < sourceFiles.length) {
-        try {
-          totalPages = await PdfService().getPageCount(sourceFiles[bookIdx]);
-        } catch (e) {
-          print('[AiService] getPageCount failed for book $bookIdx: ${_cleanErrMsg(e)}');
+    // self-corrects to offset 0. Knowledge-only books skip this entirely:
+    // their sections carry no page ranges and are never split.
+    if (!noReference) {
+      final byBook = <int, List<int>>{};
+      for (var i = 0; i < chapters.length; i++) {
+        byBook.putIfAbsent(chapters[i]['bookIndex'] as int, () => []).add(i);
+      }
+      for (final entry in byBook.entries) {
+        final bookIdx = entry.key;
+        final idxs = entry.value;
+        final ch1Abs = bookIdx < chapter1AbsolutePages.length
+            ? chapter1AbsolutePages[bookIdx]
+            : 1;
+        final printedStarts = [
+          for (final i in idxs) chapters[i]['printedStart'] as int?,
+        ];
+        final ch1Printed =
+            printedStarts.firstWhere((p) => p != null, orElse: () => 1) ?? 1;
+        final offset = PageMapping.computeOffset(
+          chapter1AbsPage: ch1Abs,
+          chapter1PrintedPage: ch1Printed,
+        );
+        int totalPages = 0;
+        if (sourceFiles != null && bookIdx < sourceFiles.length) {
+          try {
+            totalPages = await PdfService().getPageCount(sourceFiles[bookIdx]);
+          } catch (e) {
+            print(
+              '[AiService] getPageCount failed for book $bookIdx: ${_cleanErrMsg(e)}',
+            );
+          }
         }
-      }
-      if (totalPages <= 0) {
-        // No source page count available: leave generous room past the last
-        // chapter; the splitter clamps to the real page count anyway.
-        var maxPrinted = ch1Printed;
-        for (final p in printedStarts) {
-          if (p != null && p > maxPrinted) maxPrinted = p;
+        if (totalPages <= 0) {
+          // No source page count available: leave generous room past the last
+          // chapter; the splitter clamps to the real page count anyway.
+          var maxPrinted = ch1Printed;
+          for (final p in printedStarts) {
+            if (p != null && p > maxPrinted) maxPrinted = p;
+          }
+          totalPages = maxPrinted + offset + 30;
         }
-        totalPages = maxPrinted + offset + 30;
-      }
-      final resolved = PageMapping.resolveChapterRanges(printedStarts, offset: offset, totalPages: totalPages);
-      for (var k = 0; k < idxs.length; k++) {
-        chapters[idxs[k]]['startPage'] = resolved.ranges[k].start;
-        chapters[idxs[k]]['endPage'] = resolved.ranges[k].end;
-        chapters[idxs[k]]['pageOffset'] = offset;
-      }
-      for (final note in resolved.corrections) {
-        print('[AiService] Page mapping (book $bookIdx): $note');
+        final resolved = PageMapping.resolveChapterRanges(
+          printedStarts,
+          offset: offset,
+          totalPages: totalPages,
+        );
+        for (var k = 0; k < idxs.length; k++) {
+          chapters[idxs[k]]['startPage'] = resolved.ranges[k].start;
+          chapters[idxs[k]]['endPage'] = resolved.ranges[k].end;
+          chapters[idxs[k]]['pageOffset'] = offset;
+        }
+        for (final note in resolved.corrections) {
+          print('[AiService] Page mapping (book $bookIdx): $note');
+        }
       }
     }
 
     // Stage 1.5 (AI crosscheck) has been moved to GenerationManager after splitting.
-    
+
     // ---- Stage 2: sections per chapter (real progress, bounded concurrency) -
     final int chapterCount = chapters.length;
     onProgress?.call('Mapping sections (0/$chapterCount)…', 0);
@@ -847,7 +1068,10 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
         List<List<Map<String, dynamic>>?>.filled(chapterCount, null);
     int done = 0;
     int nextIdx = 0;
-    final int concurrency = (await _resolveConcurrency()).clamp(1, chapterCount);
+    final int concurrency = (await _resolveConcurrency()).clamp(
+      1,
+      chapterCount,
+    );
 
     Future<void> worker() async {
       while (true) {
@@ -855,11 +1079,21 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
         if (i >= chapterCount) break;
         nextIdx++;
         final ch = chapters[i];
-        
-        final int bookIdx = ch['bookIndex'] as int? ?? 0;
-        final File specificIndexFile = (bookIdx >= 0 && bookIdx < indexFiles.length) ? indexFiles[bookIdx] : indexFiles.first;
-        final name = specificIndexFile.path.split(RegExp(r'[\\/]')).last;
-        final specificFileParts = await _buildFileParts([specificIndexFile], fileLabels: ['\n--- INDEX FOR BOOK $bookIdx: "$name" ---\n']);
+
+        String name = filename;
+        List<Part> specificFileParts = const [];
+        if (!noReference) {
+          final int bookIdx = ch['bookIndex'] as int? ?? 0;
+          final File specificIndexFile =
+              (bookIdx >= 0 && bookIdx < indexFiles.length)
+              ? indexFiles[bookIdx]
+              : indexFiles.first;
+          name = specificIndexFile.path.split(RegExp(r'[\\/]')).last;
+          specificFileParts = await _buildFileParts(
+            [specificIndexFile],
+            fileLabels: ['\n--- INDEX FOR BOOK $bookIdx: "$name" ---\n'],
+          );
+        }
 
         List<Map<String, dynamic>>? secs;
         try {
@@ -873,9 +1107,12 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
             keys: keys,
             isCourse: isCourse,
             syllabusParts: syllabusParts,
+            noReference: noReference,
           );
         } catch (e) {
-          print('[AiService] Sections for chapter ${ch['id']} failed: ${_cleanErrMsg(e)}');
+          print(
+            '[AiService] Sections for chapter ${ch['id']} failed: ${_cleanErrMsg(e)}',
+          );
         }
         // Never drop a chapter: fall back to one whole-chapter section.
         if (secs == null || secs.isEmpty) {
@@ -887,12 +1124,15 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
               'color': 'duo-blue',
               if (ch['startPage'] != null) 'startPage': ch['startPage'],
               if (ch['endPage'] != null) 'endPage': ch['endPage'],
-            }
+            },
           ];
         }
         sectionSlots[i] = secs;
         done++;
-        onProgress?.call('Mapping sections ($done/$chapterCount)…', done / chapterCount);
+        onProgress?.call(
+          'Mapping sections ($done/$chapterCount)…',
+          done / chapterCount,
+        );
       }
     }
 
@@ -916,16 +1156,15 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
             'description': chapters[i]['description'],
             'sections': [
               for (var s in (sectionSlots[i] ?? const <Map<String, dynamic>>[]))
-                {
-                  ...s,
-                  'bookIndex': chapters[i]['bookIndex'] ?? 0,
-                }
+                {...s, 'bookIndex': chapters[i]['bookIndex'] ?? 0},
             ],
-          }
+          },
       ],
     };
     onProgress?.call('Finalizing structure…', 1.0);
-    return Book.fromJson(assembled).copyWith(customInstructions: customInstructions);
+    return Book.fromJson(
+      assembled,
+    ).copyWith(customInstructions: customInstructions);
   }
 
   /// Stage-2 helper: details the sections of ONE [chapter] via
@@ -947,16 +1186,27 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     required List<String> keys,
     bool isCourse = false,
     List<Part> syllabusParts = const [],
+    bool noReference = false,
   }) async {
-    final promptTemplate = isCourse ? PromptService.syllabusSectionList : PromptService.sectionList;
+    final promptTemplate = noReference
+        ? PromptService.knowledgeSectionList
+        : (isCourse
+              ? PromptService.syllabusSectionList
+              : PromptService.sectionList);
     final int? chStart = chapter['startPage'] as int?;
     final int? chEnd = chapter['endPage'] as int?;
     final prompt = promptTemplate
         .replaceAll('%filename%', filename)
         .replaceAll('%custom_instructions%', instructionsBlock)
         .replaceAll('%chapter_title%', chapter['title']?.toString() ?? '')
-        .replaceAll('%chapter_start%', chStart != null ? '${chStart - pageOffset}' : '?')
-        .replaceAll('%chapter_end%', chEnd != null ? '${chEnd - pageOffset}' : '?');
+        .replaceAll(
+          '%chapter_start%',
+          chStart != null ? '${chStart - pageOffset}' : '?',
+        )
+        .replaceAll(
+          '%chapter_end%',
+          chEnd != null ? '${chEnd - pageOffset}' : '?',
+        );
 
     final parts = <Part>[TextPart(prompt), ...syllabusParts, ...fileParts];
     Object? lastErr;
@@ -966,11 +1216,17 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
           final model = GenerativeModel(
             model: modelName,
             apiKey: apiKey,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+            generationConfig: GenerationConfig(
+              responseMimeType: 'application/json',
+            ),
           );
           final response = await _retryTransient(
-            () => model.generateContent([Content.multi(parts)]).timeout(const Duration(minutes: 3)),
-            onRetry: (a, e) => print('[AiService] Sections (${chapter['id']}) transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+            () => model
+                .generateContent([Content.multi(parts)])
+                .timeout(const Duration(minutes: 3)),
+            onRetry: (a, e) => print(
+              '[AiService] Sections (${chapter['id']}) transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
+            ),
           );
           final text = response.text;
           if (text == null || text.trim().isEmpty) continue;
@@ -980,8 +1236,12 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
           final out = <Map<String, dynamic>>[];
           final rawBounds = <({int? start, int? end})>[];
           for (var j = 0; j < rawSecs.length; j++) {
-            final s = rawSecs[j] is Map ? Map<String, dynamic>.from(rawSecs[j]) : <String, dynamic>{};
-            final sid = (s['id']?.toString().trim().isNotEmpty ?? false) ? s['id'].toString() : 's${j + 1}';
+            final s = rawSecs[j] is Map
+                ? Map<String, dynamic>.from(rawSecs[j])
+                : <String, dynamic>{};
+            final sid = (s['id']?.toString().trim().isNotEmpty ?? false)
+                ? s['id'].toString()
+                : 's${j + 1}';
             out.add({
               'id': '${chapter['id']}-$sid',
               'title': s['title']?.toString() ?? 'Section ${j + 1}',
@@ -1020,7 +1280,9 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
       }
     }
     if (lastErr != null) {
-      print('[AiService] Sections (${chapter['id']}) exhausted: ${_cleanErrMsg(lastErr)}');
+      print(
+        '[AiService] Sections (${chapter['id']}) exhausted: ${_cleanErrMsg(lastErr)}',
+      );
     }
     return null;
   }
@@ -1046,7 +1308,8 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
   Future<Unit> generateUnitContent(
     Unit unit,
     Book bookContext,
-    void Function(String status, {double? progress, int? plannedLessons}) onProgress, {
+    void Function(String status, {double? progress, int? plannedLessons})
+    onProgress, {
     String? sectionPdfPath,
     Unit? previousUnit,
     Unit? nextUnit,
@@ -1061,29 +1324,51 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     final liteModelsToTry = await _getLiteModels();
 
     // New-flow units share the section\'s PDF chunk; old-flow units have
-    // their own pdfPath. Either way, we need a real, on-disk file.
+    // their own pdfPath. Knowledge-only units have neither: lessons are then
+    // authored from the syllabus (when saved) and the model's own knowledge.
     final String? chunkPath = unit.pdfPath ?? sectionPdfPath;
-    if (chunkPath == null) throw Exception("No PDF/Image chunk available for this unit.");
-    final chunkFile = File(chunkPath);
-    if (!chunkFile.existsSync()) {
-      throw Exception("Local file missing. Tap 'Restore' on the warning banner to re-link source files.");
+    final bool noSource = chunkPath == null;
+    List<Part> contextParts = const [];
+    if (!noSource) {
+      final chunkFile = File(chunkPath);
+      if (!chunkFile.existsSync()) {
+        throw Exception(
+          "Local file missing. Tap 'Restore' on the warning banner to re-link source files.",
+        );
+      }
+      contextParts = await _buildFileParts([chunkFile]);
+    } else {
+      contextParts = await _knowledgeContextParts(bookContext);
     }
 
     // Build a layout descriptor of all available lesson formats in the book.
     // Different lessons in the same unit can follow different formats.
-    final String formatsLayoutString = bookContext.lessonFormats.map((f) {
-      final slidesStr = f.slides
-          .map((t) => "  * Type: ${t.type} | Condition: ${t.condition} | Instructions: ${t.description}")
-          .join('\n');
-      return "- Format: ${f.id} (${f.name}) — ${f.description}\n$slidesStr";
-    }).join('\n\n');
+    final String formatsLayoutString = bookContext.lessonFormats
+        .map((f) {
+          final slidesStr = f.slides
+              .map(
+                (t) =>
+                    "  * Type: ${t.type} | Condition: ${t.condition} | Instructions: ${t.description}",
+              )
+              .join('\n');
+          return "- Format: ${f.id} (${f.name}) — ${f.description}\n$slidesStr";
+        })
+        .join('\n\n');
 
     // Context shared by the plan + per-lesson prompts: the unit's neighbours
     // (so generation stays inside this unit's slice of the shared section PDF)
     // and a summary of already-generated units (so material isn't repeated).
-    final String neighborContext = _buildNeighborContext(previousUnit, unit, nextUnit);
-    final String previousUnitsContent = _buildPreviousUnitsContent(previousGeneratedUnits);
-    final String instructionsBlock = PromptService.instructionsBlock(bookContext.customInstructions);
+    final String neighborContext = _buildNeighborContext(
+      previousUnit,
+      unit,
+      nextUnit,
+    );
+    final String previousUnitsContent = _buildPreviousUnitsContent(
+      previousGeneratedUnits,
+    );
+    final String instructionsBlock =
+        (noSource ? '${PromptService.noSourceContentNote}\n' : '') +
+        PromptService.instructionsBlock(bookContext.customInstructions);
 
     // --- Stage 1: lesson plan (lite-model fallback ladder) ----------------
     // The plan is a small text outline; a lite model that hasn't answered in
@@ -1099,14 +1384,16 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
         .replaceAll('%custom_instructions%', instructionsBlock)
         .replaceAll('%neighbor_context%', neighborContext);
 
-    final compiledMetacognitiveSystemPrompt = await PersonalizationService.compileSystemPrompt(
-      baseSystemPrompt: bookContext.systemPrompt ?? 'You are an expert tutor.',
-      bloomLevel: bookContext.bloomLevel,
-      book: bookContext,
-      unitId: unit.id,
-    );
+    final compiledMetacognitiveSystemPrompt =
+        await PersonalizationService.compileSystemPrompt(
+          baseSystemPrompt:
+              bookContext.systemPrompt ?? 'You are an expert tutor.',
+          bloomLevel: bookContext.bloomLevel,
+          book: bookContext,
+          unitId: unit.id,
+        );
 
-    final planFileParts = await _buildFileParts([chunkFile]);
+    final planFileParts = contextParts;
     String? lessonPlan;
     Exception? planError;
     for (final liteModel in liteModelsToTry) {
@@ -1115,17 +1402,26 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
           final modelText = GenerativeModel(
             model: liteModel,
             apiKey: apiKey,
-            systemInstruction: Content.system(compiledMetacognitiveSystemPrompt),
+            systemInstruction: Content.system(
+              compiledMetacognitiveSystemPrompt,
+            ),
           );
           final planResponse = await _retryTransient(
             () => modelText
-                .generateContent([Content.multi([TextPart(hydratedPlanPrompt), ...planFileParts])])
+                .generateContent([
+                  Content.multi([
+                    TextPart(hydratedPlanPrompt),
+                    ...planFileParts,
+                  ]),
+                ])
                 .timeout(planTimeout),
             maxAttempts: 2,
             baseDelay: const Duration(seconds: 1),
             retryTimeouts: false,
             onRetry: (a, e) {
-              print('[AiService] Unit plan transient ($liteModel) attempt $a: ${_cleanErrMsg(e)}');
+              print(
+                '[AiService] Unit plan transient ($liteModel) attempt $a: ${_cleanErrMsg(e)}',
+              );
               onProgress('Server hiccup — retrying...');
             },
           );
@@ -1135,12 +1431,17 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
             break;
           }
         } on TimeoutException {
-          planError = Exception('Plan timed out on "$liteModel" after ${planTimeout.inSeconds}s.');
-          print('[AiService] Unit plan TIMEOUT ($liteModel) — switching to next model/key.');
+          planError = Exception(
+            'Plan timed out on "$liteModel" after ${planTimeout.inSeconds}s.',
+          );
+          print(
+            '[AiService] Unit plan TIMEOUT ($liteModel) — switching to next model/key.',
+          );
           onProgress('"$liteModel" is slow — trying another model...');
         } catch (e) {
           planError = Exception('Plan failed ($liteModel): ${_cleanErrMsg(e)}');
-          if (_isTransient(e)) onProgress('Model busy — trying another model...');
+          if (_isTransient(e))
+            onProgress('Model busy — trying another model...');
         }
       }
       if (lessonPlan != null) break;
@@ -1154,7 +1455,9 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
 
     int lessonCount = _parseLessonCount(planText);
     if (lessonCount <= 0) {
-      throw Exception('Could not determine lesson count from plan. Expected a "TOTAL_LESSONS: N" line.');
+      throw Exception(
+        'Could not determine lesson count from plan. Expected a "TOTAL_LESSONS: N" line.',
+      );
     }
     // Soft cap so a hallucinated count of, say, 99 doesn't blow up the unit.
     if (lessonCount > 30) lessonCount = 30;
@@ -1166,9 +1469,11 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     // Lessons already on [unit] (an interrupted/resumed run) are pre-seeded and
     // shown immediately, and only the gaps (missing lessons / missing art) are
     // filled, so we continue from where we left off.
-    final lessonFileParts = await _buildFileParts([chunkFile]);
+    final lessonFileParts = contextParts;
     final List<Lesson> existing = List.of(unit.lessons);
-    final int total = lessonCount > existing.length ? lessonCount : existing.length;
+    final int total = lessonCount > existing.length
+        ? lessonCount
+        : existing.length;
     final List<Lesson?> slots = List<Lesson?>.filled(total, null);
     for (int i = 0; i < existing.length && i < total; i++) {
       slots[i] = existing[i];
@@ -1186,11 +1491,14 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     // has a prompt but no rendered canvas yet.
     bool needsArt(Lesson l) {
       bool empty(String? s) => s == null || s.trim().isEmpty;
-      if ((l.canvasPrompt?.trim().isNotEmpty ?? false) && empty(l.canvasSvg)) return true;
-      return l.slides.any((s) =>
-          (s.type == 'proof' || s.type == 'step_by_step') &&
-          (s.canvasPrompt?.trim().isNotEmpty ?? false) &&
-          empty(s.canvasSvg));
+      if ((l.canvasPrompt?.trim().isNotEmpty ?? false) && empty(l.canvasSvg))
+        return true;
+      return l.slides.any(
+        (s) =>
+            (s.type == 'proof' || s.type == 'step_by_step') &&
+            (s.canvasPrompt?.trim().isNotEmpty ?? false) &&
+            empty(s.canvasSvg),
+      );
     }
 
     for (int i = 0; i < total; i++) {
@@ -1214,26 +1522,41 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
           );
         } catch (e) {
           lastLessonError = e;
-          print('[AiService] Lesson ${i + 1} failed permanently: ${_cleanErrMsg(e)}');
+          print(
+            '[AiService] Lesson ${i + 1} failed permanently: ${_cleanErrMsg(e)}',
+          );
         }
         if (lesson != null) slots[i] = lesson;
       }
       doneSteps++;
-      onProgress('Generating lessons (${collected().length}/$total)...', progress: doneSteps / totalSteps, plannedLessons: total);
+      onProgress(
+        'Generating lessons (${collected().length}/$total)...',
+        progress: doneSteps / totalSteps,
+        plannedLessons: total,
+      );
       onLessonGenerated?.call(collected()); // show this lesson right away
 
       // 2. This lesson's diagram(s), then stream the lesson again with its art.
       if (generateGraphics) {
         if (lesson != null && needsArt(lesson)) {
           try {
-            slots[i] = await _attachArtToLesson(lesson, forcedApiKey: forcedApiKey);
+            slots[i] = await _attachArtToLesson(
+              lesson,
+              forcedApiKey: forcedApiKey,
+            );
             onLessonGenerated?.call(collected());
           } catch (e) {
-            print('[AiService] Art for lesson ${i + 1} failed: ${_cleanErrMsg(e)}');
+            print(
+              '[AiService] Art for lesson ${i + 1} failed: ${_cleanErrMsg(e)}',
+            );
           }
         }
         doneSteps++; // counted even when skipped/failed so totals reconcile
-        onProgress('Rendering diagrams (${i + 1}/$total)...', progress: doneSteps / totalSteps, plannedLessons: total);
+        onProgress(
+          'Rendering diagrams (${i + 1}/$total)...',
+          progress: doneSteps / totalSteps,
+          plannedLessons: total,
+        );
       }
     }
 
@@ -1251,13 +1574,19 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
   /// belongs to it (and which neighbouring units to leave alone).
   String _buildNeighborContext(Unit? prev, Unit current, Unit? next) {
     final b = StringBuffer();
-    b.writeln('- CURRENT unit (generate ONLY this): "${current.title}" — ${current.description}');
-    b.writeln(prev != null
-        ? '- PREVIOUS unit (already handled — do NOT cover): "${prev.title}" — ${prev.description}'
-        : '- PREVIOUS unit: (none — this is the first unit in the section)');
-    b.writeln(next != null
-        ? '- NEXT unit (handled separately later — do NOT cover): "${next.title}" — ${next.description}'
-        : '- NEXT unit: (none — this is the last unit in the section)');
+    b.writeln(
+      '- CURRENT unit (generate ONLY this): "${current.title}" — ${current.description}',
+    );
+    b.writeln(
+      prev != null
+          ? '- PREVIOUS unit (already handled — do NOT cover): "${prev.title}" — ${prev.description}'
+          : '- PREVIOUS unit: (none — this is the first unit in the section)',
+    );
+    b.writeln(
+      next != null
+          ? '- NEXT unit (handled separately later — do NOT cover): "${next.title}" — ${next.description}'
+          : '- NEXT unit: (none — this is the last unit in the section)',
+    );
     return b.toString().trim();
   }
 
@@ -1317,15 +1646,20 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     required List<String> textModels,
     required List<String> keys,
   }) async {
-    final compiledMetacognitiveSystemPrompt = await PersonalizationService.compileSystemPrompt(
-      baseSystemPrompt: bookContext.systemPrompt ?? 'You are an expert tutor.',
-      bloomLevel: bookContext.bloomLevel,
-      book: bookContext,
-      unitId: unit.id,
-    );
+    final compiledMetacognitiveSystemPrompt =
+        await PersonalizationService.compileSystemPrompt(
+          baseSystemPrompt:
+              bookContext.systemPrompt ?? 'You are an expert tutor.',
+          bloomLevel: bookContext.bloomLevel,
+          book: bookContext,
+          unitId: unit.id,
+        );
 
     final prompt = PromptService.singleLessonJson
-        .replaceAll('%system_prompt%', bookContext.systemPrompt ?? 'You are an expert tutor.')
+        .replaceAll(
+          '%system_prompt%',
+          bookContext.systemPrompt ?? 'You are an expert tutor.',
+        )
         .replaceAll('%custom_instructions%', instructionsBlock)
         .replaceAll('%unit_title%', unit.title)
         .replaceAll('%lesson_plan%', lessonPlan)
@@ -1343,8 +1677,12 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
           final model = GenerativeModel(
             model: modelName,
             apiKey: apiKey,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
-            systemInstruction: Content.system(compiledMetacognitiveSystemPrompt),
+            generationConfig: GenerationConfig(
+              responseMimeType: 'application/json',
+            ),
+            systemInstruction: Content.system(
+              compiledMetacognitiveSystemPrompt,
+            ),
           );
           final response = await _retryTransient(
             () => _generateContentWithTiming(
@@ -1354,7 +1692,9 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
               requestType: 'lesson_gen',
               targetId: '${unit.id}-pending-${index - 1}',
             ).timeout(const Duration(minutes: 3)),
-            onRetry: (a, e) => print('[AiService] Lesson $index transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+            onRetry: (a, e) => print(
+              '[AiService] Lesson $index transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
+            ),
           );
           final text = response.text;
           if (text == null || text.trim().isEmpty) {
@@ -1362,16 +1702,22 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
           }
           final jsonMap = _cleanAndDecodeJson(text);
           final lesson = Lesson.fromJson(jsonMap);
-          final uniqueLessonId = '${unit.id}-${lesson.id.isNotEmpty ? lesson.id : 'l$index'}';
+          final uniqueLessonId =
+              '${unit.id}-${lesson.id.isNotEmpty ? lesson.id : 'l$index'}';
           final claimedFormat = lesson.formatId;
-          final acceptedFormat = (claimedFormat != null && validFormatIds.contains(claimedFormat))
+          final acceptedFormat =
+              (claimedFormat != null && validFormatIds.contains(claimedFormat))
               ? claimedFormat
               : bookContext.defaultFormatId;
           int slideIdx = 1;
           final Set<String> seenSuffixes = {};
           final updatedSlides = lesson.slides.map((s) {
             var suffix = s.id.split('-').last.trim();
-            if (suffix.isEmpty || suffix == '%slide_id%' || suffix == 'null' || suffix == s.id || seenSuffixes.contains(suffix)) {
+            if (suffix.isEmpty ||
+                suffix == '%slide_id%' ||
+                suffix == 'null' ||
+                suffix == s.id ||
+                seenSuffixes.contains(suffix)) {
               suffix = 's${slideIdx++}';
               while (seenSuffixes.contains(suffix)) {
                 suffix = 's${slideIdx++}';
@@ -1417,19 +1763,30 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final textModels = await _getPrimaryTextModels();
 
+    // Knowledge-only units have no chunk: regenerate from the syllabus (when
+    // saved) and the model's own knowledge, like initial generation.
     final String? chunkPath = unit.pdfPath ?? sectionPdfPath;
-    if (chunkPath == null) {
-      throw Exception('No PDF chunk available for this unit — cannot regenerate.');
-    }
-    final chunkFile = File(chunkPath);
-    if (!chunkFile.existsSync()) {
-      throw Exception("Local file missing. Tap 'Restore' on the warning banner to re-link source files.");
+    final bool noSource = chunkPath == null;
+    List<Part> contextParts = const [];
+    if (!noSource) {
+      final chunkFile = File(chunkPath);
+      if (!chunkFile.existsSync()) {
+        throw Exception(
+          "Local file missing. Tap 'Restore' on the warning banner to re-link source files.",
+        );
+      }
+      contextParts = await _buildFileParts([chunkFile]);
+    } else {
+      contextParts = await _knowledgeContextParts(bookContext);
     }
 
     final neighborContext = _buildNeighborContext(previousUnit, unit, nextUnit);
-    final instructionsBlock = PromptService.instructionsBlock(bookContext.customInstructions);
+    final instructionsBlock =
+        (noSource ? '${PromptService.noSourceContentNote}\n' : '') +
+        PromptService.instructionsBlock(bookContext.customInstructions);
 
-    final String targetFormatId = newFormatId ?? lesson.formatId ?? bookContext.defaultFormatId;
+    final String targetFormatId =
+        newFormatId ?? lesson.formatId ?? bookContext.defaultFormatId;
 
     // Synthesise a one-lesson plan so the model regenerates THIS lesson
     // specifically rather than picking a new topic.
@@ -1441,11 +1798,15 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
       synthPlan.writeln('Diagram: ${lesson.canvasPrompt!.trim()}');
     }
     if (customPrompt != null && customPrompt.trim().isNotEmpty) {
-      synthPlan.writeln('User request/guidelines for this regeneration: ${customPrompt.trim()}');
+      synthPlan.writeln(
+        'User request/guidelines for this regeneration: ${customPrompt.trim()}',
+      );
     }
-    synthPlan.writeln('Cover the same pedagogical point. Use the lesson format "$targetFormatId" and a similar slide structure.');
+    synthPlan.writeln(
+      'Cover the same pedagogical point. Use the lesson format "$targetFormatId" and a similar slide structure.',
+    );
 
-    final fileParts = await _buildFileParts([chunkFile]);
+    final fileParts = contextParts;
     Lesson? fresh;
     try {
       fresh = await _generateOneLesson(
@@ -1454,7 +1815,8 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
         bookContext: bookContext,
         lessonPlan: synthPlan.toString(),
         neighborContext: neighborContext,
-        previousUnitsContent: '(regeneration of an existing lesson — no prior-unit context needed)',
+        previousUnitsContent:
+            '(regeneration of an existing lesson — no prior-unit context needed)',
         instructionsBlock: instructionsBlock,
         fileParts: fileParts,
         textModels: textModels,
@@ -1504,11 +1866,13 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final textModels = await _getPrimaryTextModels();
 
-    final compiledMetacognitiveSystemPrompt = await PersonalizationService.compileSystemPrompt(
-      baseSystemPrompt: bookContext.systemPrompt ?? 'You are an expert tutor.',
-      bloomLevel: bookContext.bloomLevel,
-      book: bookContext,
-    );
+    final compiledMetacognitiveSystemPrompt =
+        await PersonalizationService.compileSystemPrompt(
+          baseSystemPrompt:
+              bookContext.systemPrompt ?? 'You are an expert tutor.',
+          bloomLevel: bookContext.bloomLevel,
+          book: bookContext,
+        );
 
     final noteLine = (note?.trim().isNotEmpty ?? false)
         ? 'USER STEERING NOTE FOR THIS REGENERATION: ${note!.trim()}\n'
@@ -1517,8 +1881,14 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
         ? screenSizeInfo
         : 'not specified (make it responsive to standard mobile/desktop screen sizes)';
     final prompt = PromptService.singleSlideJson
-        .replaceAll('%system_prompt%', bookContext.systemPrompt ?? 'You are an expert tutor.')
-        .replaceAll('%custom_instructions%', PromptService.instructionsBlock(bookContext.customInstructions))
+        .replaceAll(
+          '%system_prompt%',
+          bookContext.systemPrompt ?? 'You are an expert tutor.',
+        )
+        .replaceAll(
+          '%custom_instructions%',
+          PromptService.instructionsBlock(bookContext.customInstructions),
+        )
         .replaceAll('%lesson_title%', lesson.title)
         .replaceAll('%unit_title%', lesson.title)
         .replaceAll('%slide_type%', targetType ?? slide.type)
@@ -1543,12 +1913,20 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
           final model = GenerativeModel(
             model: modelName,
             apiKey: apiKey,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
-            systemInstruction: Content.system(compiledMetacognitiveSystemPrompt),
+            generationConfig: GenerationConfig(
+              responseMimeType: 'application/json',
+            ),
+            systemInstruction: Content.system(
+              compiledMetacognitiveSystemPrompt,
+            ),
           );
           final response = await _retryTransient(
-            () => model.generateContent([Content.multi(parts)]).timeout(const Duration(minutes: 3)),
-            onRetry: (a, e) => print('[AiService] Slide regen transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+            () => model
+                .generateContent([Content.multi(parts)])
+                .timeout(const Duration(minutes: 3)),
+            onRetry: (a, e) => print(
+              '[AiService] Slide regen transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
+            ),
           );
           final text = response.text;
           if (text == null || text.trim().isEmpty) continue;
@@ -1556,17 +1934,25 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
           final fresh = Slide.fromJson(jsonMap);
           // Preserve the slide's identity and type; the model only supplies
           // the new content/options. Keep any existing diagram SVG.
-          return fresh.copyWith(id: slide.id, type: targetType ?? slide.type, canvasSvg: slide.canvasSvg);
+          return fresh.copyWith(
+            id: slide.id,
+            type: targetType ?? slide.type,
+            canvasSvg: slide.canvasSvg,
+          );
         } catch (e) {
           lastErr = e;
         }
       }
     }
     if (lastErr != null) {
-      print('[AiService] Slide regen exhausted all models. Last: ${_cleanErrMsg(lastErr)}');
+      print(
+        '[AiService] Slide regen exhausted all models. Last: ${_cleanErrMsg(lastErr)}',
+      );
       throw lastErr is Exception ? lastErr : Exception(_cleanErrMsg(lastErr));
     }
-    throw Exception('Failed to regenerate slide: AI returned an empty response.');
+    throw Exception(
+      'Failed to regenerate slide: AI returned an empty response.',
+    );
   }
 
   /// Asks the AI to break a section\'s PDF chunk into a list of units
@@ -1583,7 +1969,8 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
   /// [contextText] is a short snippet of the surrounding lesson content so
   /// the model can keep the diagram thematically consistent (e.g. variable
   /// names, units). Pass an empty string when not relevant.
-  Future<String?> generateCanvasArt(String canvasPrompt, {
+  Future<String?> generateCanvasArt(
+    String canvasPrompt, {
     String contextText = '',
     String? errorContext,
     String? forcedApiKey,
@@ -1598,7 +1985,10 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     }
 
     if (!skipReuse) {
-      final reused = await findReusableCanvasArt(canvasPrompt, forcedApiKey: forcedApiKey);
+      final reused = await findReusableCanvasArt(
+        canvasPrompt,
+        forcedApiKey: forcedApiKey,
+      );
       if (reused != null) return reused;
     }
 
@@ -1606,13 +1996,16 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     final modelsToTry = await _getPrimaryGraphicsModels();
     // Cap context to keep prompts small — the SVG diagram doesn't need the
     // entire lesson, only a few sentences for tone matching.
-    final trimmedContext = contextText.length > 800 ? contextText.substring(0, 800) : contextText;
+    final trimmedContext = contextText.length > 800
+        ? contextText.substring(0, 800)
+        : contextText;
     String hydrated = PromptService.canvasArt
         .replaceAll('%canvas_prompt%', canvasPrompt.trim())
         .replaceAll('%lesson_context%', trimmedContext);
 
     if (errorContext != null && errorContext.isNotEmpty) {
-      hydrated += '\n\nPREVIOUS ATTEMPT FAILED WITH JAVASCRIPT ERROR:\n$errorContext\nFix the code so it doesn\'t throw this error.';
+      hydrated +=
+          '\n\nPREVIOUS ATTEMPT FAILED WITH JAVASCRIPT ERROR:\n$errorContext\nFix the code so it doesn\'t throw this error.';
     }
 
     Object? lastErr;
@@ -1628,7 +2021,9 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
               requestType: 'diagram_gen',
               targetId: targetId,
             ).timeout(const Duration(minutes: 2)),
-            onRetry: (a, e) => print('[AiService] Canvas art transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+            onRetry: (a, e) => print(
+              '[AiService] Canvas art transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
+            ),
           );
           final text = response.text;
           if (text == null || text.trim().isEmpty) continue;
@@ -1636,12 +2031,16 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
           if (drawFn != null) return drawFn;
         } catch (e) {
           lastErr = e;
-          print('[AiService] Canvas art failed ($modelName): ${_cleanErrMsg(e)}');
+          print(
+            '[AiService] Canvas art failed ($modelName): ${_cleanErrMsg(e)}',
+          );
         }
       }
     }
     if (lastErr != null) {
-      print('[AiService] Canvas art exhausted all models. Last: ${_cleanErrMsg(lastErr)}');
+      print(
+        '[AiService] Canvas art exhausted all models. Last: ${_cleanErrMsg(lastErr)}',
+      );
     }
     return null;
   }
@@ -1653,7 +2052,11 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
   String? _extractDrawFunction(String raw) {
     var s = raw.trim();
     // Strip code fences if present.
-    final fence = RegExp(r'```(?:js|javascript|svg|xml|html)?\s*([\s\S]*?)```', caseSensitive: false, multiLine: true);
+    final fence = RegExp(
+      r'```(?:js|javascript|svg|xml|html)?\s*([\s\S]*?)```',
+      caseSensitive: false,
+      multiLine: true,
+    );
     final fenceMatch = fence.firstMatch(s);
     if (fenceMatch != null) s = fenceMatch.group(1)!.trim();
 
@@ -1689,7 +2092,10 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     return null; // unbalanced — discard rather than embed broken JS
   }
 
-  Future<String?> findReusableCanvasArt(String newPrompt, {String? forcedApiKey}) async {
+  Future<String?> findReusableCanvasArt(
+    String newPrompt, {
+    String? forcedApiKey,
+  }) async {
     try {
       final books = await DatabaseService().fetchBooks(forceRefresh: false);
       final Map<String, String> candidates = {};
@@ -1702,14 +2108,16 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
                     lesson.canvasPrompt!.trim().isNotEmpty &&
                     lesson.canvasSvg != null &&
                     lesson.canvasSvg!.trim().isNotEmpty) {
-                  candidates[lesson.canvasPrompt!.trim()] = lesson.canvasSvg!.trim();
+                  candidates[lesson.canvasPrompt!.trim()] = lesson.canvasSvg!
+                      .trim();
                 }
                 for (final slide in lesson.slides) {
                   if (slide.canvasPrompt != null &&
                       slide.canvasPrompt!.trim().isNotEmpty &&
                       slide.canvasSvg != null &&
                       slide.canvasSvg!.trim().isNotEmpty) {
-                    candidates[slide.canvasPrompt!.trim()] = slide.canvasSvg!.trim();
+                    candidates[slide.canvasPrompt!.trim()] = slide.canvasSvg!
+                        .trim();
                   }
                 }
               }
@@ -1725,7 +2133,8 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
       final liteModels = await _getLiteModels();
       if (keys.isEmpty || liteModels.isEmpty) return null;
 
-      final keywordPrompt = '''
+      final keywordPrompt =
+          '''
 You are a keyword extractor. Extract 1-2 core technical keywords or short phrases from this canvas art prompt.
 These keywords will be used to run a fast pre-filter on existing diagram prompts.
 Be extremely specific to the concept (e.g. for "draw a resistor and capacitor circuit", extract "resistor, capacitor").
@@ -1739,7 +2148,9 @@ Prompt: $newPrompt
         for (final apiKey in keys) {
           try {
             final model = GenerativeModel(model: modelName, apiKey: apiKey);
-            final response = await model.generateContent([Content.text(keywordPrompt)]);
+            final response = await model.generateContent([
+              Content.text(keywordPrompt),
+            ]);
             if (response.text != null && response.text!.trim().isNotEmpty) {
               keywordsStr = response.text!.trim();
               break;
@@ -1778,11 +2189,18 @@ Prompt: $newPrompt
       if (filtered.isEmpty) return null;
 
       // Limit to top 10
-      final List<MapEntry<String, String>> topFiltered = filtered.take(10).toList();
+      final List<MapEntry<String, String>> topFiltered = filtered
+          .take(10)
+          .toList();
 
       // Ask Lite model if there is a match
-      final candidateListStr = topFiltered.asMap().entries.map((e) => 'Candidate ${e.key}: "${e.value.key}"').join('\n');
-      final matchPrompt = '''
+      final candidateListStr = topFiltered
+          .asMap()
+          .entries
+          .map((e) => 'Candidate ${e.key}: "${e.value.key}"')
+          .join('\n');
+      final matchPrompt =
+          '''
 You are a diagram matching system. We have a new diagram to create:
 New Prompt: "$newPrompt"
 
@@ -1802,7 +2220,9 @@ Do not include any explanation or other text.
         for (final apiKey in keys) {
           try {
             final model = GenerativeModel(model: modelName, apiKey: apiKey);
-            final response = await model.generateContent([Content.text(matchPrompt)]);
+            final response = await model.generateContent([
+              Content.text(matchPrompt),
+            ]);
             if (response.text != null && response.text!.trim().isNotEmpty) {
               matchResult = response.text!.trim();
               break;
@@ -1816,7 +2236,9 @@ Do not include any explanation or other text.
         final indexStr = matchResult.substring(6).trim();
         final idx = int.tryParse(indexStr);
         if (idx != null && idx >= 0 && idx < topFiltered.length) {
-          print('[AiService] Found reusable canvas art for "$newPrompt" matching candidate "${topFiltered[idx].key}"');
+          print(
+            '[AiService] Found reusable canvas art for "$newPrompt" matching candidate "${topFiltered[idx].key}"',
+          );
           return topFiltered[idx].value;
         }
       }
@@ -1831,13 +2253,22 @@ Do not include any explanation or other text.
   /// is missing (a non-null `canvasSvg` is left as-is). Failures are tolerated
   /// — a lesson simply renders without that diagram. Called per-lesson right
   /// after the lesson's text is generated, so visuals appear incrementally.
-  Future<Lesson> _attachArtToLesson(Lesson lesson, {String? forcedApiKey}) async {
+  Future<Lesson> _attachArtToLesson(
+    Lesson lesson, {
+    String? forcedApiKey,
+  }) async {
     // 1. Lesson-level diagram. Use the first slide's content as context so the
     //    art stays thematically consistent with the lesson.
     String? lessonArt = lesson.canvasSvg;
-    if (lessonArt == null && (lesson.canvasPrompt?.trim().isNotEmpty ?? false)) {
+    if (lessonArt == null &&
+        (lesson.canvasPrompt?.trim().isNotEmpty ?? false)) {
       final ctx = lesson.slides.isNotEmpty ? lesson.slides.first.content : '';
-      lessonArt = await generateCanvasArt(lesson.canvasPrompt!, contextText: ctx, forcedApiKey: forcedApiKey, targetId: lesson.id);
+      lessonArt = await generateCanvasArt(
+        lesson.canvasPrompt!,
+        contextText: ctx,
+        forcedApiKey: forcedApiKey,
+        targetId: lesson.id,
+      );
     }
 
     // 2. Per-slide diagrams for proof / step_by_step slides only.
@@ -1845,16 +2276,21 @@ Do not include any explanation or other text.
     for (final slide in lesson.slides) {
       final isProofLike = slide.type == 'proof' || slide.type == 'step_by_step';
       String? slideArt = slide.canvasSvg;
-      if (isProofLike && slideArt == null && (slide.canvasPrompt?.trim().isNotEmpty ?? false)) {
-        slideArt = await generateCanvasArt(slide.canvasPrompt!, contextText: slide.content, forcedApiKey: forcedApiKey, targetId: slide.id);
+      if (isProofLike &&
+          slideArt == null &&
+          (slide.canvasPrompt?.trim().isNotEmpty ?? false)) {
+        slideArt = await generateCanvasArt(
+          slide.canvasPrompt!,
+          contextText: slide.content,
+          forcedApiKey: forcedApiKey,
+          targetId: slide.id,
+        );
       }
       updatedSlides.add(slide.copyWith(canvasSvg: slideArt));
     }
 
     return lesson.copyWith(canvasSvg: lessonArt, slides: updatedSlides);
   }
-
-
 
   Future<List<LessonFormat>> generateSectionFormats(
     Section section, {
@@ -1865,7 +2301,9 @@ Do not include any explanation or other text.
     }
     final chunkFile = File(section.pdfPath!);
     if (!chunkFile.existsSync()) {
-      throw Exception("Local file missing. Tap 'Restore' on the warning banner to re-link source files.");
+      throw Exception(
+        "Local file missing. Tap 'Restore' on the warning banner to re-link source files.",
+      );
     }
 
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
@@ -1875,7 +2313,10 @@ Do not include any explanation or other text.
         .replaceAll('%section_title%', section.title)
         .replaceAll('%section_description%', section.description);
 
-    final parts = <Part>[TextPart(hydratedPrompt), ...await _buildFileParts([chunkFile])];
+    final parts = <Part>[
+      TextPart(hydratedPrompt),
+      ...await _buildFileParts([chunkFile]),
+    ];
 
     Exception? lastException;
     for (final modelName in modelsToTry) {
@@ -1884,12 +2325,17 @@ Do not include any explanation or other text.
           final model = GenerativeModel(
             model: modelName,
             apiKey: apiKey,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+            generationConfig: GenerationConfig(
+              responseMimeType: 'application/json',
+            ),
           );
           final response = await _retryTransient(
-            () => model.generateContent([Content.multi(parts)])
+            () => model
+                .generateContent([Content.multi(parts)])
                 .timeout(const Duration(minutes: 3)),
-            onRetry: (a, e) => print('[AiService] Lesson formats transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+            onRetry: (a, e) => print(
+              '[AiService] Lesson formats transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
+            ),
           );
           final text = response.text;
           if (text == null) continue;
@@ -1898,7 +2344,11 @@ Do not include any explanation or other text.
           final formatsJson = decoded['lessonFormats'] as List?;
           if (formatsJson != null) {
             return formatsJson
-                .map((f) => LessonFormat.fromJson(f is Map ? Map<String, dynamic>.from(f) : {}))
+                .map(
+                  (f) => LessonFormat.fromJson(
+                    f is Map ? Map<String, dynamic>.from(f) : {},
+                  ),
+                )
                 .toList();
           }
         } catch (e) {
@@ -1918,12 +2368,20 @@ Do not include any explanation or other text.
     String? customInstructions,
     String? forcedApiKey,
   }) async {
-    if (section.pdfPath == null) {
-      throw Exception('Section has no PDF chunk — cannot generate unit manifest.');
-    }
-    final chunkFile = File(section.pdfPath!);
-    if (!chunkFile.existsSync()) {
-      throw Exception("Local file missing. Tap 'Restore' on the warning banner to re-link source files.");
+    // Knowledge-only sections have no PDF chunk: the manifest is generated
+    // from the book's syllabus (when saved) and the model's own knowledge.
+    final bool noSource = section.pdfPath == null;
+    List<Part> contextParts = const [];
+    if (!noSource) {
+      final chunkFile = File(section.pdfPath!);
+      if (!chunkFile.existsSync()) {
+        throw Exception(
+          "Local file missing. Tap 'Restore' on the warning banner to re-link source files.",
+        );
+      }
+      contextParts = await _buildFileParts([chunkFile]);
+    } else {
+      contextParts = await _knowledgeContextParts(bookContext);
     }
 
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
@@ -1936,14 +2394,19 @@ Do not include any explanation or other text.
         .map((f) => '- ${f.id} :: ${f.name} — ${f.description}')
         .join('\n');
 
-    final hydratedPrompt = PromptService.unitManifest
-        .replaceAll('%section_title%', section.title)
-        .replaceAll('%section_description%', section.description)
-        .replaceAll('%format_catalog%', formatCatalog)
-        .replaceAll('%bloom_level%', bookContext.bloomLevel)
-        .replaceAll('%custom_instructions%', PromptService.instructionsBlock(customInstructions));
+    final hydratedPrompt =
+        ((noSource ? '${PromptService.noSourceContentNote}\n' : '') +
+                PromptService.unitManifest)
+            .replaceAll('%section_title%', section.title)
+            .replaceAll('%section_description%', section.description)
+            .replaceAll('%format_catalog%', formatCatalog)
+            .replaceAll('%bloom_level%', bookContext.bloomLevel)
+            .replaceAll(
+              '%custom_instructions%',
+              PromptService.instructionsBlock(customInstructions),
+            );
 
-    final parts = <Part>[TextPart(hydratedPrompt), ...await _buildFileParts([chunkFile])];
+    final parts = <Part>[TextPart(hydratedPrompt), ...contextParts];
 
     Exception? lastException;
     for (final modelName in modelsToTry) {
@@ -1952,12 +2415,17 @@ Do not include any explanation or other text.
           final model = GenerativeModel(
             model: modelName,
             apiKey: apiKey,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+            generationConfig: GenerationConfig(
+              responseMimeType: 'application/json',
+            ),
           );
           final response = await _retryTransient(
-            () => model.generateContent([Content.multi(parts)])
+            () => model
+                .generateContent([Content.multi(parts)])
                 .timeout(const Duration(minutes: 3)),
-            onRetry: (a, e) => print('[AiService] Unit manifest transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+            onRetry: (a, e) => print(
+              '[AiService] Unit manifest transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
+            ),
           );
 
           final text = response.text;
@@ -1976,18 +2444,21 @@ Do not include any explanation or other text.
             if (raw is! Map) continue;
             final base = Unit.fromJson(Map<String, dynamic>.from(raw));
             final id = base.id.isNotEmpty ? base.id : 'u${i + 1}';
-            units.add(base.copyWith(
-              id: '${section.id}-$id',
-              isGenerated: false,
-              lessons: const [],
-              // The unit shares the section's PDF chunk — it does not get
-              // its own pdfPath or page range.
-              pdfPath: null,
-              startPage: null,
-              endPage: null,
-            ));
+            units.add(
+              base.copyWith(
+                id: '${section.id}-$id',
+                isGenerated: false,
+                lessons: const [],
+                // The unit shares the section's PDF chunk — it does not get
+                // its own pdfPath or page range.
+                pdfPath: null,
+                startPage: null,
+                endPage: null,
+              ),
+            );
           }
-          if (units.isEmpty) throw Exception('Unit manifest had no usable entries.');
+          if (units.isEmpty)
+            throw Exception('Unit manifest had no usable entries.');
 
           final newFormats = <LessonFormat>[];
           final formatsData = jsonMap['newLessonFormats'] as List?;
@@ -1995,7 +2466,9 @@ Do not include any explanation or other text.
             for (final f in formatsData) {
               if (f is Map) {
                 try {
-                  newFormats.add(LessonFormat.fromJson(Map<String, dynamic>.from(f)));
+                  newFormats.add(
+                    LessonFormat.fromJson(Map<String, dynamic>.from(f)),
+                  );
                 } catch (_) {}
               }
             }
@@ -2003,23 +2476,42 @@ Do not include any explanation or other text.
 
           return UnitManifestResult(units: units, newFormats: newFormats);
         } on TimeoutException {
-          lastException = Exception('Unit manifest request timed out ($modelName).');
+          lastException = Exception(
+            'Unit manifest request timed out ($modelName).',
+          );
         } catch (e) {
-          lastException = Exception('Unit manifest failed ($modelName): ${_cleanErrMsg(e)}');
+          lastException = Exception(
+            'Unit manifest failed ($modelName): ${_cleanErrMsg(e)}',
+          );
         }
       }
     }
-    throw lastException ?? Exception('Failed to generate unit manifest. All models/keys exhausted.');
+    throw lastException ??
+        Exception(
+          'Failed to generate unit manifest. All models/keys exhausted.',
+        );
   }
 
-  Future<QuestionPaper> generateQuestionPaper(List<File> files, String qpTitle, String? systemPrompt, {String? customInstructions, String? forcedApiKey}) async {
+  Future<QuestionPaper> generateQuestionPaper(
+    List<File> files,
+    String qpTitle,
+    String? systemPrompt, {
+    String? customInstructions,
+    String? forcedApiKey,
+  }) async {
     await _checkPause();
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getPrimaryTextModels();
 
     final hydratedPrompt = PromptService.qpJson
-        .replaceAll('%system_prompt%', systemPrompt ?? "You are an expert tutor.")
-        .replaceAll('%custom_instructions%', PromptService.instructionsBlock(customInstructions));
+        .replaceAll(
+          '%system_prompt%',
+          systemPrompt ?? "You are an expert tutor.",
+        )
+        .replaceAll(
+          '%custom_instructions%',
+          PromptService.instructionsBlock(customInstructions),
+        );
 
     List<Part> parts = [TextPart(hydratedPrompt)];
     parts.addAll(await _buildFileParts(files));
@@ -2032,26 +2524,33 @@ Do not include any explanation or other text.
           final model = GenerativeModel(
             model: modelName,
             apiKey: apiKey,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+            generationConfig: GenerationConfig(
+              responseMimeType: 'application/json',
+            ),
           );
 
           final response = await _retryTransient(
-            () => model.generateContent([Content.multi(parts)])
+            () => model
+                .generateContent([Content.multi(parts)])
                 .timeout(const Duration(minutes: 6)),
-            onRetry: (a, e) => print('[AiService] QP transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+            onRetry: (a, e) => print(
+              '[AiService] QP transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
+            ),
           );
 
           if (response.text != null) {
             final jsonMap = _cleanAndDecodeJson(response.text!);
             final qp = QuestionPaper.fromJson(jsonMap);
             return QuestionPaper(
-                id: qp.id,
-                title: qpTitle.isNotEmpty ? qpTitle : qp.title,
-                sections: qp.sections
+              id: qp.id,
+              title: qpTitle.isNotEmpty ? qpTitle : qp.title,
+              sections: qp.sections,
             );
           }
         } catch (e) {
-          lastException = Exception('QP Generation failed ($modelName): ${_cleanErrMsg(e)}');
+          lastException = Exception(
+            'QP Generation failed ($modelName): ${_cleanErrMsg(e)}',
+          );
         }
       }
     }
@@ -2069,7 +2568,7 @@ Do not include any explanation or other text.
     await _checkPause();
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getLiteModels();
-    
+
     final prompt = PromptService.getPyqExtractionPrompt(
       sectionTitle: section.title,
       sectionDesc: section.description,
@@ -2089,13 +2588,18 @@ Do not include any explanation or other text.
           final model = GenerativeModel(
             model: modelName,
             apiKey: apiKey,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+            generationConfig: GenerationConfig(
+              responseMimeType: 'application/json',
+            ),
           );
 
           final response = await _retryTransient(
-            () => model.generateContent([Content.multi(parts)])
+            () => model
+                .generateContent([Content.multi(parts)])
                 .timeout(const Duration(minutes: 5)),
-            onRetry: (a, e) => print('[AiService] PYQ extract transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+            onRetry: (a, e) => print(
+              '[AiService] PYQ extract transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
+            ),
           );
 
           if (response.text != null) {
@@ -2109,13 +2613,20 @@ Do not include any explanation or other text.
             // questions can never masquerade as real exam questions.
             return questionsList.map((q) {
               final map = Map<String, dynamic>.from(q);
-              final declared = (map['source'] ?? '').toString().trim().toLowerCase();
-              final source = declared == 'extracted' ? 'extracted' : 'generated';
+              final declared = (map['source'] ?? '')
+                  .toString()
+                  .trim()
+                  .toLowerCase();
+              final source = declared == 'extracted'
+                  ? 'extracted'
+                  : 'generated';
               return Slide.fromJson(map).copyWith(source: source);
             }).toList();
           }
         } catch (e) {
-          lastException = Exception('PYQ extraction failed ($modelName): ${_cleanErrMsg(e)}');
+          lastException = Exception(
+            'PYQ extraction failed ($modelName): ${_cleanErrMsg(e)}',
+          );
         }
       }
     }
@@ -2129,8 +2640,10 @@ Do not include any explanation or other text.
     await _checkPause();
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getLiteModels();
-    
-    final prompt = PromptService.getPyqGradingPrompt(answersToGrade: answersToGrade);
+
+    final prompt = PromptService.getPyqGradingPrompt(
+      answersToGrade: answersToGrade,
+    );
 
     Exception? lastException;
     for (var modelName in modelsToTry) {
@@ -2139,13 +2652,18 @@ Do not include any explanation or other text.
           final model = GenerativeModel(
             model: modelName,
             apiKey: apiKey,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+            generationConfig: GenerationConfig(
+              responseMimeType: 'application/json',
+            ),
           );
 
           final response = await _retryTransient(
-            () => model.generateContent([Content.text(prompt)])
+            () => model
+                .generateContent([Content.text(prompt)])
                 .timeout(const Duration(minutes: 3)),
-            onRetry: (a, e) => print('[AiService] PYQ grading transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+            onRetry: (a, e) => print(
+              '[AiService] PYQ grading transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
+            ),
           );
 
           if (response.text != null) {
@@ -2155,7 +2673,9 @@ Do not include any explanation or other text.
             return results.map((r) => Map<String, dynamic>.from(r)).toList();
           }
         } catch (e) {
-          lastException = Exception('PYQ grading failed ($modelName): ${_cleanErrMsg(e)}');
+          lastException = Exception(
+            'PYQ grading failed ($modelName): ${_cleanErrMsg(e)}',
+          );
         }
       }
     }
@@ -2180,9 +2700,10 @@ Do not include any explanation or other text.
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final liteModels = await _getLiteModels(); // We use lite model as requested
 
-    final neighborContext = slidesSoFar.isEmpty 
-        ? 'No slides generated yet.' 
-        : 'Slides generated so far: ' + jsonEncode(slidesSoFar.map((s) => s.toJson()).toList());
+    final neighborContext = slidesSoFar.isEmpty
+        ? 'No slides generated yet.'
+        : 'Slides generated so far: ' +
+              jsonEncode(slidesSoFar.map((s) => s.toJson()).toList());
 
     final sizeCtx = screenSizeInfo != null && screenSizeInfo.isNotEmpty
         ? screenSizeInfo
@@ -2196,7 +2717,10 @@ Do not include any explanation or other text.
         .replaceAll('%slides_so_far%', neighborContext)
         .replaceAll('%slide_index%', '$slideIndex')
         .replaceAll('%total_slides%', '$totalSlides')
-        .replaceAll('%slide_id%', '${lessonTitle.replaceAll(RegExp(r'\s+'), '_').toLowerCase()}_s$slideIndex')
+        .replaceAll(
+          '%slide_id%',
+          '${lessonTitle.replaceAll(RegExp(r'\s+'), '_').toLowerCase()}_s$slideIndex',
+        )
         .replaceAll('%screen_size_info%', sizeCtx);
 
     final fileParts = await _buildFileParts(attachedFiles);
@@ -2209,11 +2733,17 @@ Do not include any explanation or other text.
           final model = GenerativeModel(
             model: modelName,
             apiKey: apiKey,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+            generationConfig: GenerationConfig(
+              responseMimeType: 'application/json',
+            ),
           );
           final response = await _retryTransient(
-            () => model.generateContent([Content.multi(parts)]).timeout(const Duration(minutes: 3)),
-            onRetry: (a, e) => print('[AiService] Custom slide $slideIndex transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+            () => model
+                .generateContent([Content.multi(parts)])
+                .timeout(const Duration(minutes: 3)),
+            onRetry: (a, e) => print(
+              '[AiService] Custom slide $slideIndex transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
+            ),
           );
           final text = response.text;
           if (text == null || text.trim().isEmpty) {
@@ -2248,11 +2778,14 @@ Do not include any explanation or other text.
         }
       }
     }
-    
+
     // Estimate duration
-    final double estSecs = AiEstimator.estimateDurationSync(modelName, payloadSize);
+    final double estSecs = AiEstimator.estimateDurationSync(
+      modelName,
+      payloadSize,
+    );
     final estDuration = Duration(milliseconds: (estSecs * 1000).toInt());
-    
+
     // Register active request if targetId is provided
     if (targetId != null) {
       final info = ActiveRequestInfo(
@@ -2263,15 +2796,20 @@ Do not include any explanation or other text.
       AiEstimator.activeRequests[targetId] = info;
       AiEstimator.onRegisterActiveRequest?.call(targetId, info);
     }
-    
+
     try {
       final response = await model.generateContent(contents);
       final endTime = DateTime.now();
       final actualDuration = endTime.difference(startTime);
-      
+
       // Record timing
-      await AiEstimator.recordRequest(modelName, payloadSize, actualDuration, requestType: requestType);
-      
+      await AiEstimator.recordRequest(
+        modelName,
+        payloadSize,
+        actualDuration,
+        requestType: requestType,
+      );
+
       return response;
     } finally {
       if (targetId != null) {
@@ -2295,8 +2833,11 @@ Do not include any explanation or other text.
             if (book.id == targetBook.id && unit.id == targetUnit.id) {
               continue;
             }
-            final String uniqueId = '${book.id}::${module.id}::${section.id}::${unit.id}';
-            availableStrings.add('- Book: "${book.title}", Module: "${module.title}", Section: "${section.title}", Unit: "${unit.title}" (ID: $uniqueId)');
+            final String uniqueId =
+                '${book.id}::${module.id}::${section.id}::${unit.id}';
+            availableStrings.add(
+              '- Book: "${book.title}", Module: "${module.title}", Section: "${section.title}", Unit: "${unit.title}" (ID: $uniqueId)',
+            );
           }
         }
       }
@@ -2309,7 +2850,8 @@ Do not include any explanation or other text.
       buffer.writeln(s);
     }
 
-    final prompt = """
+    final prompt =
+        """
 You are an educational planner. Identify which of the available units are direct prerequisites (must-know concepts) for the target unit.
 Only return units that are genuinely necessary to understand the target concept.
 
@@ -2330,17 +2872,21 @@ Do not output markdown code fences, comments, or any extra text. Just the plain 
 
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final liteModels = await _getLiteModels();
-    
+
     for (final modelName in liteModels) {
       for (final apiKey in keys) {
         try {
           final model = GenerativeModel(model: modelName, apiKey: apiKey);
-          final response = await model.generateContent([Content.text(prompt)])
+          final response = await model
+              .generateContent([Content.text(prompt)])
               .timeout(const Duration(seconds: 30));
           final text = response.text?.trim() ?? '';
           if (text.isEmpty) continue;
-          
-          final cleanText = text.replaceAll('```json', '').replaceAll('```', '').trim();
+
+          final cleanText = text
+              .replaceAll('```json', '')
+              .replaceAll('```', '')
+              .trim();
           final List<dynamic> decoded = jsonDecode(cleanText);
           return decoded.cast<String>();
         } catch (e) {
@@ -2361,7 +2907,8 @@ Do not output markdown code fences, comments, or any extra text. Just the plain 
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final liteModels = await _getLiteModels();
 
-    final prompt = '''You are an expert grading assistant.
+    final prompt =
+        '''You are an expert grading assistant.
 Below is a descriptive question from a lesson, followed by the user's answer (which may consist of text and optional uploaded images/photos).
 Analyze the user's answer and determine if it is correct. Be constructive but accurate.
 
@@ -2390,13 +2937,18 @@ Return ONLY a JSON object matching this schema:
           final model = GenerativeModel(
             model: modelName,
             apiKey: apiKey,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+            generationConfig: GenerationConfig(
+              responseMimeType: 'application/json',
+            ),
           );
 
           final response = await _retryTransient(
-            () => model.generateContent([Content.multi(parts)])
+            () => model
+                .generateContent([Content.multi(parts)])
                 .timeout(const Duration(seconds: 25)),
-            onRetry: (a, e) => print('[AiService] Descriptive analysis transient ($modelName) attempt $a: ${_cleanErrMsg(e)}'),
+            onRetry: (a, e) => print(
+              '[AiService] Descriptive analysis transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
+            ),
           );
 
           if (response.text != null) {
@@ -2404,23 +2956,29 @@ Return ONLY a JSON object matching this schema:
             return Map<String, dynamic>.from(jsonMap);
           }
         } catch (e) {
-          lastException = Exception('Descriptive analysis failed ($modelName): ${_cleanErrMsg(e)}');
+          lastException = Exception(
+            'Descriptive analysis failed ($modelName): ${_cleanErrMsg(e)}',
+          );
         }
       }
     }
     throw lastException ?? Exception('Failed to analyze descriptive answer.');
   }
 
-  Future<List<Map<String, String>>?> extractSyllabusBooks(String syllabusText, {String? forcedApiKey}) async {
+  Future<List<Map<String, String>>?> extractSyllabusBooks(
+    String syllabusText, {
+    String? forcedApiKey,
+  }) async {
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getLiteModels();
-    
+
     String truncatedText = syllabusText;
     if (truncatedText.length > 30000) {
       truncatedText = truncatedText.substring(0, 30000);
     }
-    
-    final prompt = '''
+
+    final prompt =
+        '''
 Analyze the following text extracted from a syllabus.
 Identify all reference books, textbooks, or reading materials mentioned in the course syllabus.
 Look for titles and authors, even if they are only partially mentioned (e.g. only title or only author).
@@ -2447,15 +3005,23 @@ $truncatedText
           final model = GenerativeModel(
             model: modelName,
             apiKey: key,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+            generationConfig: GenerationConfig(
+              responseMimeType: 'application/json',
+            ),
           );
           final response = await _retryTransient(
-            () => model.generateContent([Content.text(prompt)]).timeout(const Duration(minutes: 2)),
-            onRetry: (a, e) => print('[AiService] Syllabus book extraction attempt $a: ${_cleanErrMsg(e)}'),
+            () => model
+                .generateContent([Content.text(prompt)])
+                .timeout(const Duration(minutes: 2)),
+            onRetry: (a, e) => print(
+              '[AiService] Syllabus book extraction attempt $a: ${_cleanErrMsg(e)}',
+            ),
           );
 
           if (response.text != null) {
-            print('[AiService] Syllabus book extraction response: ${response.text}');
+            print(
+              '[AiService] Syllabus book extraction response: ${response.text}',
+            );
             final jsonMap = _cleanAndDecodeJson(response.text!);
             List? booksList;
             if (jsonMap['books'] is List) {
@@ -2487,11 +3053,16 @@ $truncatedText
     return null;
   }
 
-  Future<Map<String, dynamic>?> verifyPageRole(String pageText, int pageNumber, {String? apiKey}) async {
+  Future<Map<String, dynamic>?> verifyPageRole(
+    String pageText,
+    int pageNumber, {
+    String? apiKey,
+  }) async {
     final keys = await _getKeys(forcedApiKey: apiKey);
     final modelsToTry = await _getLiteModels();
-    
-    final prompt = '''
+
+    final prompt =
+        '''
 Analyze the following text from page $pageNumber of a textbook.
 Determine if this page is:
 1. Part of the Table of Contents (Contents / TOC).
@@ -2513,11 +3084,16 @@ $pageText
           final model = GenerativeModel(
             model: modelName,
             apiKey: key,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+            generationConfig: GenerationConfig(
+              responseMimeType: 'application/json',
+            ),
           );
           final response = await _retryTransient(
-            () => model.generateContent([Content.text(prompt)]).timeout(const Duration(seconds: 30)),
-            onRetry: (a, e) => print('[AiService] Page role verification attempt $a: $e'),
+            () => model
+                .generateContent([Content.text(prompt)])
+                .timeout(const Duration(seconds: 30)),
+            onRetry: (a, e) =>
+                print('[AiService] Page role verification attempt $a: $e'),
           );
           if (response.text != null) {
             return _cleanAndDecodeJson(response.text!);
@@ -2534,12 +3110,17 @@ $pageText
   /// `{'indexPages': List, 'chapter1StartPage': int}` or null on failure.
   /// Callers must sanity-check the reply; a null return is non-fatal.
   Future<Map<String, dynamic>?> optimizeIndexResult(
-      String tocText, List<int> indexPages, int? chapter1StartPage, int pageCount,
-      {String? apiKey}) async {
+    String tocText,
+    List<int> indexPages,
+    int? chapter1StartPage,
+    int pageCount, {
+    String? apiKey,
+  }) async {
     final keys = await _getKeys(forcedApiKey: apiKey);
     final modelsToTry = await _getLiteModels();
 
-    final prompt = '''
+    final prompt =
+        '''
 A textbook PDF has $pageCount pages. Automatic analysis detected:
 - Table of contents on absolute PDF pages: $indexPages
 - Chapter 1 content starting on absolute PDF page: $chapter1StartPage
@@ -2564,11 +3145,16 @@ $tocText
           final model = GenerativeModel(
             model: modelName,
             apiKey: key,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+            generationConfig: GenerationConfig(
+              responseMimeType: 'application/json',
+            ),
           );
           final response = await _retryTransient(
-            () => model.generateContent([Content.text(prompt)]).timeout(const Duration(seconds: 30)),
-            onRetry: (a, e) => print('[AiService] optimizeIndexResult attempt $a: $e'),
+            () => model
+                .generateContent([Content.text(prompt)])
+                .timeout(const Duration(seconds: 30)),
+            onRetry: (a, e) =>
+                print('[AiService] optimizeIndexResult attempt $a: $e'),
           );
           if (response.text != null) {
             return _cleanAndDecodeJson(response.text!);
@@ -2581,11 +3167,18 @@ $tocText
     return null;
   }
 
-  Future<bool> verifySectionMapping(String pageText, int pageNumber, String sectionTitle, String sectionDescription, {String? apiKey}) async {
+  Future<bool> verifySectionMapping(
+    String pageText,
+    int pageNumber,
+    String sectionTitle,
+    String sectionDescription, {
+    String? apiKey,
+  }) async {
     final keys = await _getKeys(forcedApiKey: apiKey);
     final modelsToTry = await _getLiteModels();
-    
-    final prompt = '''
+
+    final prompt =
+        '''
 Analyze the text of page $pageNumber from the textbook.
 We want to verify if this page corresponds to the start of the following section:
 Section Title: "$sectionTitle"
@@ -2607,11 +3200,17 @@ $pageText
           final model = GenerativeModel(
             model: modelName,
             apiKey: key,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+            generationConfig: GenerationConfig(
+              responseMimeType: 'application/json',
+            ),
           );
           final response = await _retryTransient(
-            () => model.generateContent([Content.text(prompt)]).timeout(const Duration(seconds: 30)),
-            onRetry: (a, e) => print('[AiService] Section mapping verification attempt $a: $e'),
+            () => model
+                .generateContent([Content.text(prompt)])
+                .timeout(const Duration(seconds: 30)),
+            onRetry: (a, e) => print(
+              '[AiService] Section mapping verification attempt $a: $e',
+            ),
           );
           if (response.text != null) {
             final decoded = _cleanAndDecodeJson(response.text!);
@@ -2632,15 +3231,20 @@ $pageText
     String? apiKey,
   }) async {
     if (candidateBooks.isEmpty) return null;
-    
+
     final keys = await _getKeys(forcedApiKey: apiKey);
     final modelsToTry = await _getLiteModels();
-    
-    final candidateListString = candidateBooks.asMap().entries.map((e) {
-      return 'Index: ${e.key} | Title: "${e.value['title']}" | Author: "${e.value['author']}"';
-    }).join('\n');
-    
-    final prompt = '''
+
+    final candidateListString = candidateBooks
+        .asMap()
+        .entries
+        .map((e) {
+          return 'Index: ${e.key} | Title: "${e.value['title']}" | Author: "${e.value['author']}"';
+        })
+        .join('\n');
+
+    final prompt =
+        '''
 We are trying to match a reference book mentioned in a syllabus to a textbook in our database.
 Target Syllabus Book:
 Title: "$syllabusBookTitle"
@@ -2666,11 +3270,16 @@ Respond strictly in JSON format:
           final model = GenerativeModel(
             model: modelName,
             apiKey: key,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+            generationConfig: GenerationConfig(
+              responseMimeType: 'application/json',
+            ),
           );
           final response = await _retryTransient(
-            () => model.generateContent([Content.text(prompt)]).timeout(const Duration(seconds: 25)),
-            onRetry: (a, e) => print('[AiService] Syllabus book matching attempt $a: $e'),
+            () => model
+                .generateContent([Content.text(prompt)])
+                .timeout(const Duration(seconds: 25)),
+            onRetry: (a, e) =>
+                print('[AiService] Syllabus book matching attempt $a: $e'),
           );
           if (response.text != null) {
             final decoded = _cleanAndDecodeJson(response.text!);
@@ -2680,7 +3289,9 @@ Respond strictly in JSON format:
             }
           }
         } catch (e) {
-          print('[AiService] matchSyllabusBookToMarketplace error with $modelName: $e');
+          print(
+            '[AiService] matchSyllabusBookToMarketplace error with $modelName: $e',
+          );
         }
       }
     }
@@ -2700,7 +3311,9 @@ Respond strictly in JSON format:
     for (final sec in module.sections) {
       if (sec.pdfPath != null && File(sec.pdfPath!).existsSync()) {
         try {
-          final text = await PdfService().extractTextFromPdf(File(sec.pdfPath!));
+          final text = await PdfService().extractTextFromPdf(
+            File(sec.pdfPath!),
+          );
           if (text.trim().isNotEmpty) {
             textContent += '\n\n--- SECTION: ${sec.title} ---\n$text';
           }
@@ -2712,9 +3325,11 @@ Respond strictly in JSON format:
 
     // Fallback if no text extracted
     if (textContent.trim().isEmpty) {
-      textContent = 'Module Title: ${module.title}\nDescription: ${module.description}\n';
+      textContent =
+          'Module Title: ${module.title}\nDescription: ${module.description}\n';
       for (final sec in module.sections) {
-        textContent += '\nSection: ${sec.title}\nDescription: ${sec.description}\n';
+        textContent +=
+            '\nSection: ${sec.title}\nDescription: ${sec.description}\n';
         for (final unit in sec.units) {
           textContent += ' - Unit: ${unit.title}\n';
           for (final lesson in unit.lessons) {
@@ -2729,7 +3344,8 @@ Respond strictly in JSON format:
       textContent = textContent.substring(0, 120000) + '... [truncated]';
     }
 
-    final prompt = '''You are an expert academic assistant.
+    final prompt =
+        '''You are an expert academic assistant.
 Your task is to generate a comprehensive "Quick Review" sheet for a study module.
 Based on the textbook/course content provided below, extract a list of key theory statements, definitions, laws, principles, and equations.
 
@@ -2757,20 +3373,33 @@ Return ONLY a JSON array of objects matching this exact schema:
           final model = GenerativeModel(
             model: modelName,
             apiKey: key,
-            generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+            generationConfig: GenerationConfig(
+              responseMimeType: 'application/json',
+            ),
           );
           final response = await _retryTransient(
-            () => model.generateContent([Content.text(prompt)]).timeout(const Duration(seconds: 45)),
-            onRetry: (a, e) => print('[AiService] Quick review generation attempt $a: $e'),
+            () => model
+                .generateContent([Content.text(prompt)])
+                .timeout(const Duration(seconds: 45)),
+            onRetry: (a, e) =>
+                print('[AiService] Quick review generation attempt $a: $e'),
           );
           if (response.text != null) {
             final decoded = jsonDecode(_cleanJsonText(response.text!));
             if (decoded is List) {
-              return decoded.map((item) => QuickReviewItem.fromJson(Map<String, dynamic>.from(item))).toList();
+              return decoded
+                  .map(
+                    (item) => QuickReviewItem.fromJson(
+                      Map<String, dynamic>.from(item),
+                    ),
+                  )
+                  .toList();
             }
           }
         } catch (e) {
-          print('[AiService] generateQuickReviewForModule error with $modelName: $e');
+          print(
+            '[AiService] generateQuickReviewForModule error with $modelName: $e',
+          );
         }
       }
     }
@@ -2786,7 +3415,8 @@ Return ONLY a JSON array of objects matching this exact schema:
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getLiteModels();
 
-    final prompt = '''You are an expert tutor.
+    final prompt =
+        '''You are an expert tutor.
 Explain the following concept/statement in detail.
 Provide a clear, intuitive explanation in 2-3 paragraphs.
 Explain any equations, variables, physical/mathematical meaning, and a real-world application if relevant.
@@ -2804,19 +3434,21 @@ Return ONLY the markdown explanation.
     for (var key in keys) {
       for (var modelName in modelsToTry) {
         try {
-          final model = GenerativeModel(
-            model: modelName,
-            apiKey: key,
-          );
+          final model = GenerativeModel(model: modelName, apiKey: key);
           final response = await _retryTransient(
-            () => model.generateContent([Content.text(prompt)]).timeout(const Duration(seconds: 25)),
-            onRetry: (a, e) => print('[AiService] Statement explanation attempt $a: $e'),
+            () => model
+                .generateContent([Content.text(prompt)])
+                .timeout(const Duration(seconds: 25)),
+            onRetry: (a, e) =>
+                print('[AiService] Statement explanation attempt $a: $e'),
           );
           if (response.text != null) {
             return response.text!.trim();
           }
         } catch (e) {
-          print('[AiService] explainQuickReviewStatement error with $modelName: $e');
+          print(
+            '[AiService] explainQuickReviewStatement error with $modelName: $e',
+          );
         }
       }
     }

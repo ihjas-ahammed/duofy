@@ -122,8 +122,9 @@ LATEX / MARKDOWN-MATH GUIDE (READ CAREFULLY — most generation errors come from
   /// Joins rules with automatic numbering so the list can never drift or
   /// duplicate (the old hand-numbered copies had two different rules both
   /// labelled "9." after years of edits).
-  static String _numbered(List<String> rules) =>
-      [for (var i = 0; i < rules.length; i++) '${i + 1}. ${rules[i]}'].join('\n');
+  static String _numbered(List<String> rules) => [
+    for (var i = 0; i < rules.length; i++) '${i + 1}. ${rules[i]}',
+  ].join('\n');
 
   /// Per-type schema rules shared by every lesson/slide JSON prompt. One
   /// source of truth: edit here and all four generation prompts stay in sync.
@@ -154,12 +155,17 @@ LATEX / MARKDOWN-MATH GUIDE (READ CAREFULLY — most generation errors come from
   ];
 
   /// The numbered rule block for whole-lesson JSON prompts.
-  static final String lessonRulesBlock =
-      _numbered([..._coreSlideRules, '"custom_html" slides: $_customHtmlGuide', ..._lessonLevelRules]);
+  static final String lessonRulesBlock = _numbered([
+    ..._coreSlideRules,
+    '"custom_html" slides: $_customHtmlGuide',
+    ..._lessonLevelRules,
+  ]);
 
   /// The numbered rule block for single-slide prompts (regenerate / custom).
-  static final String slideRulesBlock =
-      _numbered([..._coreSlideRules, '"custom_html" slides: $_customHtmlGuide']);
+  static final String slideRulesBlock = _numbered([
+    ..._coreSlideRules,
+    '"custom_html" slides: $_customHtmlGuide',
+  ]);
 
   /// Learning-science guidance applied when planning and generating lessons.
   /// Schema rules say WHAT each type looks like; this says HOW to teach.
@@ -208,7 +214,8 @@ Report page numbers EXACTLY as printed in the table of contents. Do NOT convert,
   /// chapters, and silently merging adjacent chapters. Here the model has one
   /// job — list every chapter, in order, with absolute page ranges — and the
   /// per-chapter [sectionList] call fills in subtopics afterwards.
-  static const String chapterList = '''You are an expert curriculum designer. The attached PDF contains ONLY the table of contents / index pages of a textbook named "%filename%".
+  static const String chapterList =
+      '''You are an expert curriculum designer. The attached PDF contains ONLY the table of contents / index pages of a textbook named "%filename%".
 %custom_instructions%
 $_printedPagesBlock
 
@@ -237,7 +244,8 @@ Return ONLY valid JSON matching this exact structure:
 }''';
 
   /// Handout course skeleton generator (one-shot).
-  static const String handoutSkeleton = '''You are an expert curriculum designer. The attached file contains a handout / document named "%filename%".
+  static const String handoutSkeleton =
+      '''You are an expert curriculum designer. The attached file contains a handout / document named "%filename%".
 This handout has a total of %total_pages% pages.
 %custom_instructions%
 
@@ -270,7 +278,8 @@ Return ONLY valid JSON matching this exact structure:
 }''';
 
   /// Extracted chapter titles and descriptions when the user selects chapter start pages.
-  static const String chapterStartsList = '''You are an expert curriculum designer. The attached PDF contains ONLY the first page of each chapter in a textbook named "%filename%".
+  static const String chapterStartsList =
+      '''You are an expert curriculum designer. The attached PDF contains ONLY the first page of each chapter in a textbook named "%filename%".
 These pages are in sequential order.
 %custom_instructions%
 
@@ -299,7 +308,8 @@ Return ONLY valid JSON matching this exact structure:
 }''';
 
   /// Stage 1 of the syllabus-based course flow: enumerate chapters based on the syllabus.
-  static const String syllabusChapterList = '''You are an expert curriculum designer. We are designing a structured study course based on the attached SYLLABUS.
+  static const String syllabusChapterList =
+      '''You are an expert curriculum designer. We are designing a structured study course based on the attached SYLLABUS.
 The reference textbook named "%filename%" has its table of contents / index pages attached.
 
 TASK: Generate the top-level modules/chapters for this course.
@@ -332,7 +342,8 @@ Return ONLY valid JSON matching this exact structure:
 }''';
 
   /// Stage 2 of the syllabus-based course flow: detail sections for a chapter based on the syllabus.
-  static const String syllabusSectionList = '''You are an expert curriculum designer. We are detailing sections for the chapter "%chapter_title%" (printed pages %chapter_start% to %chapter_end% in reference textbook "%filename%") based on the attached SYLLABUS.
+  static const String syllabusSectionList =
+      '''You are an expert curriculum designer. We are detailing sections for the chapter "%chapter_title%" (printed pages %chapter_start% to %chapter_end% in reference textbook "%filename%") based on the attached SYLLABUS.
 
 TASK: Identify the subtopics/sections from the SYLLABUS that belong to this chapter.
 For each subtopic/section, report where it starts in the reference textbook using the page number printed in the textbook's TOC.
@@ -352,12 +363,76 @@ Return ONLY valid JSON matching this exact structure (no "units" array):
   ]
 }''';
 
+  /// Stage 1 of the knowledge-only flow — no reference textbook attached.
+  /// The skeleton comes from the syllabus (attached when available) and/or
+  /// the course title + custom instructions, using the model's own subject
+  /// knowledge. No page numbers exist anywhere in this flow.
+  static const String knowledgeChapterList =
+      '''You are an expert curriculum designer. We are designing a structured study course titled "%filename%".
+NO reference textbook is attached. A SYLLABUS document may be attached — if so, the modules/chapters MUST follow it strictly. Otherwise design the course from the title and the instructions below using your expert knowledge of the subject.
+%custom_instructions%
+
+TASK: List EVERY top-level module/chapter this course should contain, in teaching order. Do NOT break them into sub-topics yet. Do NOT include any page numbers — there is no source PDF.
+
+For each chapter provide:
+- "title": the module/chapter heading (e.g. "Module 1: Title").
+- "description": a one-line summary of the chapter.
+
+Also generate, for the whole course:
+- a professional `title`,
+- an `icon` reflecting the subject matter,
+- a `description`,
+- a `systemPrompt` for a tutor AI that STRICTLY instructs it to use double-escaped backslashes for all LaTeX (e.g. \\\\frac instead of \\frac).
+
+Return ONLY valid JSON matching this exact structure:
+{
+  "title": "Generated Course Title Here",
+  "icon": "Book",
+  "description": "Auto-generated course overview",
+  "systemPrompt": "You are an expert tutor...",
+  "chapters": [
+    { "id": "m1", "title": "Module 1: Title", "description": "..." }
+  ]
+}''';
+
+  /// Stage 2 of the knowledge-only flow: detail the sections of ONE chapter,
+  /// again without any source PDF or page numbers.
+  static const String knowledgeSectionList =
+      '''You are an expert curriculum designer designing a study course WITHOUT a reference textbook. A SYLLABUS document may be attached — if so, follow it strictly; otherwise use your expert knowledge of the subject.
+%custom_instructions%
+
+We are now detailing exactly ONE chapter:
+- Chapter: "%chapter_title%"
+
+TASK: List the sub-topics / sections that belong ONLY to this chapter, in teaching order. Rules:
+1. Do NOT include sub-topics from any other chapter.
+2. Do NOT merge two sub-topics into one entry — keep them separate.
+3. Do NOT include any page numbers — there is no source PDF.
+4. Include a final practice/exercises section when appropriate for the subject.
+
+For each section provide "title", "description", and a "color" (one of: duo-blue, duo-green, duo-violet, duo-orange, duo-red).
+
+Return ONLY valid JSON matching this exact structure (no "units" array):
+{
+  "sections": [
+    { "id": "s1", "title": "Section Title", "description": "...", "color": "duo-blue" }
+  ]
+}''';
+
+  /// Prepended to content prompts (unit manifest / lesson plan / lessons /
+  /// regeneration) when the section has no PDF chunk, so the model authors
+  /// the material from its own knowledge instead of an attached source.
+  static const String noSourceContentNote = '''NOTE — NO SOURCE PDF ATTACHED:
+No textbook/reference chunk is attached for this content. Author the material yourself from your expert knowledge of the subject, guided by the course/section/unit titles and descriptions, the attached syllabus (if any), and the custom instructions. Write with the rigor, precision, notation, and completeness of a high-quality textbook on this subject. Ignore any wording below that assumes an attached source PDF.
+''';
+
   /// Stage 2 of the batched TOC flow: detail the sections of ONE chapter.
   ///
   /// Called once per chapter returned by [chapterList], with that chapter's
   /// absolute page bounds inlined so the model keeps every section strictly
   /// inside the chapter (no bleeding into neighbours, no merging subtopics).
-  static const String sectionList = '''You are an expert curriculum designer. The attached PDF contains ONLY the table of contents / index pages of the textbook "%filename%".
+  static const String sectionList =
+      '''You are an expert curriculum designer. The attached PDF contains ONLY the table of contents / index pages of the textbook "%filename%".
 %custom_instructions%
 $_printedPagesBlock
 
@@ -392,7 +467,8 @@ Return ONLY valid JSON matching this exact structure (no "units" array):
   /// pedagogical content (theory recap, worked example, proof, etc.). The
   /// user then confirms / edits those assignments before lessons are
   /// generated.
-  static const String generateLessonFormatsPrompt = '''You are an expert curriculum designer. The attached PDF is the content of ONE section of a textbook:
+  static const String generateLessonFormatsPrompt =
+      '''You are an expert curriculum designer. The attached PDF is the content of ONE section of a textbook:
 Section title: "%section_title%"
 Section description: "%section_description%"
 
@@ -420,7 +496,8 @@ Return ONLY valid JSON matching this exact structure (do NOT wrap in markdown co
   ]
 }
 ''';
-  static const String unitManifest = '''You are an expert curriculum designer. The attached PDF is the content of ONE section of a textbook:
+  static const String unitManifest =
+      '''You are an expert curriculum designer. The attached PDF is the content of ONE section of a textbook:
 Section title: "%section_title%"
 Section description: "%section_description%"
 
@@ -468,7 +545,8 @@ Return ONLY valid JSON matching this exact structure:
   ]
 }''';
 
-  static const String plan = '''You are an expert curriculum designer. Analyze the attached chunk for the unit: "%unit_title%".
+  static const String plan =
+      '''You are an expert curriculum designer. Analyze the attached chunk for the unit: "%unit_title%".
 Design a pedagogical lesson plan in PLAIN TEXT (do NOT output JSON yet).
 Break this unit down into multiple logical lessons based on the content.
 %custom_instructions%
@@ -498,7 +576,8 @@ For the chosen format, evaluate its slide templates. You can include a slide mul
 5. AVAILABLE SLIDE TYPES you may plan with (respect each format's own templates first): theory, concept_pieces, quiz, fill_in_blank, one_word, numerical, proof, step_by_step, matching, ordering, error_spotting, flashcard, descriptive, custom_html. Prefer matching for term↔definition sets, ordering for procedures, error_spotting to probe misconceptions after a worked example, and flashcard for must-memorize facts and formulas.
 ''';
 
-  static final String json = '''SYSTEM PROMPT:
+  static final String json =
+      '''SYSTEM PROMPT:
 %system_prompt%
 
 TASK:
@@ -532,7 +611,8 @@ YOU MUST RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
 
   /// Used by Gemma path which generates one lesson at a time to keep each
   /// request small and reduce the chance of malformed or truncated JSON output.
-  static final String singleLessonJson = '''SYSTEM PROMPT:
+  static final String singleLessonJson =
+      '''SYSTEM PROMPT:
 %system_prompt%
 %custom_instructions%
 TASK:
@@ -576,7 +656,8 @@ RETURN ONLY VALID JSON FOR THIS ONE LESSON (no wrapping array, no other keys):
   /// feed the lesson title, the slide's current type + content, and the
   /// source chunk back in, and ask for one fresh slide JSON object of the
   /// same `type`.
-  static final String singleSlideJson = '''SYSTEM PROMPT:
+  static final String singleSlideJson =
+      '''SYSTEM PROMPT:
 %system_prompt%
 %custom_instructions%
 TASK:
@@ -600,7 +681,8 @@ $slideRulesBlock
 RETURN ONLY VALID JSON FOR THIS ONE SLIDE (no wrapping array, no other keys). Make sure to include all fields required for the slide type matching the schema of the current slide:
 $slideSchemaExamples''';
 
-  static final String customSlideJson = '''You are an expert tutor.
+  static final String customSlideJson =
+      '''You are an expert tutor.
 TASK:
 You are generating slide index %slide_index% out of %total_slides% for a custom lesson titled "%lesson_title%" (part of the unit "%unit_title%").
 
@@ -637,7 +719,8 @@ $slideSchemaExamples''';
   ///   - `function sketch(canvas, W, H)` for INTERACTIVE 2D and/or 3D
   ///     (animation loops, mouse/touch input, WebGL via THREE.js).
   /// The model only ever supplies the drawing logic, never the page scaffold.
-  static const String canvasArt = '''You are a diagram artist who renders explanatory graphics with the HTML5 Canvas API, THREE.js (for 3D), or RAW SVG (for still pictures/circuits). Write a SINGLE JavaScript program OR output a raw `<svg>` block that renders the concept below as a clear, visually strong diagram.
+  static const String canvasArt =
+      '''You are a diagram artist who renders explanatory graphics with the HTML5 Canvas API, THREE.js (for 3D), or RAW SVG (for still pictures/circuits). Write a SINGLE JavaScript program OR output a raw `<svg>` block that renders the concept below as a clear, visually strong diagram.
 
 Think VISUALLY: the goal is a strong diagrammatic representation — shapes, structure, spatial relationships, arrows and colour that convey the idea at a glance. Words are a last resort, not the content.
 
@@ -847,11 +930,18 @@ RULES:
   }) {
     final existingBlocks = existingQuestions.isEmpty
         ? "None"
-        : existingQuestions.map((q) => "- [ID: ${q.id}] Title: ${q.title}\n  Content/Question: ${q.content}").join("\n");
+        : existingQuestions
+              .map(
+                (q) =>
+                    "- [ID: ${q.id}] Title: ${q.title}\n  Content/Question: ${q.content}",
+              )
+              .join("\n");
 
     final otherSectionsBlocks = otherSections.isEmpty
         ? "None"
-        : otherSections.map((s) => "- ID: ${s['id']}, Title: ${s['title']}").join("\n");
+        : otherSections
+              .map((s) => "- ID: ${s['id']}, Title: ${s['title']}")
+              .join("\n");
 
     final instBlock = instructionsBlock(customInstructions);
 
@@ -946,7 +1036,8 @@ Return ONLY a JSON object matching this schema:
 }''';
   }
 
-  static const String extractWritingStyleProfilePrompt = '''You are an expert computational linguist. Analyze the following descriptive answers written by a user to profile their native writing style.
+  static const String extractWritingStyleProfilePrompt =
+      '''You are an expert computational linguist. Analyze the following descriptive answers written by a user to profile their native writing style.
 
 We need to construct a "best possible version" of their writing style. Your task is to extract stylometric and linguistic parameters into the requested JSON format.
 
@@ -963,4 +1054,5 @@ Return ONLY valid JSON matching this schema:
   "transitional_mechanics": ["List of favorite transition/function words found, e.g. 'furthermore', 'however', 'consequently'"],
   "tone_and_register": "informal" | "formal" | "objective" | "casual"
 }
-''';}
+''';
+}

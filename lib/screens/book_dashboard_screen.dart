@@ -781,122 +781,129 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
 
   Widget _buildSectionPdfBar(Section sec) {
     final isMissing = _isSectionPdfMissing(sec);
+    // Knowledge-only sections never had a reference PDF — showing a
+    // "missing reference" warning for them would be wrong.
+    final hasReference = sec.hasSourceMapping;
     final hasSyllabus =
         widget.book.syllabusPath != null &&
         widget.book.syllabusPath!.isNotEmpty;
+    final syllabusAvailable =
+        hasSyllabus && File(widget.book.syllabusPath!).existsSync();
+
+    if (!hasReference && !syllabusAvailable) {
+      return const SizedBox.shrink();
+    }
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Row(
         children: [
-          Expanded(
-            child: InkWell(
-              onTap: () => _onSectionPdfPressed(sec),
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 10,
-                  horizontal: 16,
-                ),
-                decoration: BoxDecoration(
-                  color: (isMissing ? AppTheme.duoOrange : AppTheme.duoBlue)
-                      .withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: (isMissing ? AppTheme.duoOrange : AppTheme.duoBlue)
-                        .withOpacity(0.35),
+          if (hasReference)
+            Expanded(
+              child: InkWell(
+                onTap: () => _onSectionPdfPressed(sec),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 10,
+                    horizontal: 16,
                   ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      isMissing
-                          ? LucideIcons.fileWarning
-                          : LucideIcons.fileText,
-                      size: 16,
-                      color: isMissing ? AppTheme.duoOrange : AppTheme.duoBlue,
+                  decoration: BoxDecoration(
+                    color: (isMissing ? AppTheme.duoOrange : AppTheme.duoBlue)
+                        .withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: (isMissing ? AppTheme.duoOrange : AppTheme.duoBlue)
+                          .withOpacity(0.35),
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      isMissing ? 'MISSING REFERENCE' : 'VIEW REFERENCE',
-                      style: TextStyle(
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        isMissing
+                            ? LucideIcons.fileWarning
+                            : LucideIcons.fileText,
+                        size: 16,
                         color: isMissing
                             ? AppTheme.duoOrange
                             : AppTheme.duoBlue,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.8,
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          if (hasSyllabus && File(widget.book.syllabusPath!).existsSync()) ...[
-            const SizedBox(width: 8),
-            InkWell(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => Scaffold(
-                      appBar: AppBar(
-                        title: Text(
-                          '${widget.book.title} - Syllabus',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      const SizedBox(width: 8),
+                      Text(
+                        isMissing ? 'MISSING REFERENCE' : 'VIEW REFERENCE',
+                        style: TextStyle(
+                          color: isMissing
+                              ? AppTheme.duoOrange
+                              : AppTheme.duoBlue,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.8,
                         ),
-                        backgroundColor: context.colors.background,
                       ),
-                      body: SafePdfViewer(
-                        file: File(widget.book.syllabusPath!),
-                      ),
-                    ),
+                    ],
                   ),
-                );
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 10,
-                  horizontal: 16,
-                ),
-                decoration: BoxDecoration(
-                  color: AppTheme.duoGreen.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppTheme.duoGreen.withOpacity(0.35),
-                  ),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      LucideIcons.scroll,
-                      size: 16,
-                      color: AppTheme.duoGreen,
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      'SYLLABUS',
-                      style: TextStyle(
-                        color: AppTheme.duoGreen,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                  ],
                 ),
               ),
             ),
+          if (syllabusAvailable) ...[
+            if (hasReference) const SizedBox(width: 8),
+            _buildSyllabusButton(expand: !hasReference),
           ],
         ],
       ),
     );
+  }
+
+  Widget _buildSyllabusButton({required bool expand}) {
+    final button = InkWell(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => Scaffold(
+              appBar: AppBar(
+                title: Text(
+                  '${widget.book.title} - Syllabus',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                backgroundColor: context.colors.background,
+              ),
+              body: SafePdfViewer(file: File(widget.book.syllabusPath!)),
+            ),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+        decoration: BoxDecoration(
+          color: AppTheme.duoGreen.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppTheme.duoGreen.withOpacity(0.35)),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(LucideIcons.scroll, size: 16, color: AppTheme.duoGreen),
+            SizedBox(width: 8),
+            Text(
+              'SYLLABUS',
+              style: TextStyle(
+                color: AppTheme.duoGreen,
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    return expand ? Expanded(child: button) : button;
   }
 
   @override

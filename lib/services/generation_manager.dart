@@ -37,12 +37,12 @@ class GenerationTask {
   final String? bloomLevel;
 
   GenerationTask({
-    required this.id, 
-    required this.title, 
+    required this.id,
+    required this.title,
     required this.sourceFiles,
     this.syllabusFiles = const [],
     this.state = BookGenState.extracting,
-    this.statusMessage = 'Extracting Metadata & Planning...', 
+    this.statusMessage = 'Extracting Metadata & Planning...',
     required this.estimatedDuration,
     required this.startTime,
     this.plannerQuestions,
@@ -78,11 +78,11 @@ class QpGenTask {
 class GenerationManager extends ChangeNotifier {
   static final GenerationManager instance = GenerationManager._internal();
   static final Map<String, List<PlatformFile>> _inMemoryPyqFiles = {};
-  
+
   GenerationManager._internal() {
     _loadQueueFromPrefs();
     _startQueueTimer();
-    
+
     AiEstimator.onRegisterActiveRequest = (targetId, info) {
       notifyListeners();
     };
@@ -92,15 +92,14 @@ class GenerationManager extends ChangeNotifier {
   }
 
   final List<GenerationTask> activeTasks = [];
-  final Map<String, UnitGenTask> activeUnitGenerations = {}; 
-  final Map<String, QpGenTask> activeQpTasks = {}; 
-  final Map<String, QpGenTask> activePyqTasks = {}; 
+  final Map<String, UnitGenTask> activeUnitGenerations = {};
+  final Map<String, QpGenTask> activeQpTasks = {};
+  final Map<String, QpGenTask> activePyqTasks = {};
 
   // New queue system variables
   final List<AiTask> queue = [];
   Timer? _queueTimer;
   bool _isProcessing = false;
-
 
   final PdfService _pdfService = PdfService();
   final DatabaseService _dbService = DatabaseService();
@@ -108,16 +107,19 @@ class GenerationManager extends ChangeNotifier {
 
   String _cachedTextModel = 'gemini-flash-lite-latest';
   String _cachedGraphicsModel = 'gemini-3.5-flash';
-  
+
   Future<void> _cacheModels() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      _cachedTextModel = prefs.getString('model_primary_text') ?? 'gemini-flash-lite-latest';
-      _cachedGraphicsModel = prefs.getString('model_primary_graphics') ?? 'gemini-3.5-flash';
+      _cachedTextModel =
+          prefs.getString('model_primary_text') ?? 'gemini-flash-lite-latest';
+      _cachedGraphicsModel =
+          prefs.getString('model_primary_graphics') ?? 'gemini-3.5-flash';
     } catch (_) {}
   }
 
-  final StreamController<Book> _bookUpdateController = StreamController<Book>.broadcast();
+  final StreamController<Book> _bookUpdateController =
+      StreamController<Book>.broadcast();
   Stream<Book> get bookUpdates => _bookUpdateController.stream;
 
   void triggerBookUpdate(Book book) {
@@ -170,11 +172,13 @@ class GenerationManager extends ChangeNotifier {
       if (messenger == null) return;
       var reason = task.errorMessage ?? 'Unknown error';
       if (reason.length > 120) reason = '${reason.substring(0, 120)}…';
-      messenger.showSnackBar(SnackBar(
-        content: Text('AI task failed: ${task.title}\n$reason'),
-        backgroundColor: const Color(0xFFB00020),
-        duration: const Duration(seconds: 5),
-      ));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('AI task failed: ${task.title}\n$reason'),
+          backgroundColor: const Color(0xFFB00020),
+          duration: const Duration(seconds: 5),
+        ),
+      );
     } catch (_) {}
   }
 
@@ -196,7 +200,9 @@ class GenerationManager extends ChangeNotifier {
       if (jsonStr != null && jsonStr.isNotEmpty) {
         final List decoded = jsonDecode(jsonStr);
         queue.clear();
-        queue.addAll(decoded.map((e) => AiTask.fromJson(Map<String, dynamic>.from(e))));
+        queue.addAll(
+          decoded.map((e) => AiTask.fromJson(Map<String, dynamic>.from(e))),
+        );
 
         // Convert running to queued if interrupted; they auto-resume.
         for (final t in queue) {
@@ -230,22 +236,27 @@ class GenerationManager extends ChangeNotifier {
     activeSectionManifests.clear();
     activeQpTasks.clear();
     activePyqTasks.clear();
-    
+
     for (final task in queue) {
       if (task.status == 'queued' || task.status == 'running') {
         final isError = task.status == 'failed';
-        final statusMsg = task.status == 'running' ? task.statusMessage : 'Queued';
-        
+        final statusMsg = task.status == 'running'
+            ? task.statusMessage
+            : 'Queued';
+
         if (task.type == 'unit') {
           if (task.unitId != null) {
-            final int? plannedLessonsCount = task.params['plannedLessonsCount'] as int?;
+            final int? plannedLessonsCount =
+                task.params['plannedLessonsCount'] as int?;
             final double estSecs = AiEstimator.estimateUnitDurationSync(
               textModel: _cachedTextModel,
               graphicsModel: _cachedGraphicsModel,
               generateGraphics: task.generateGraphics,
               plannedLessonsCount: plannedLessonsCount,
             );
-            final Duration estDuration = Duration(milliseconds: (estSecs * 1000).toInt());
+            final Duration estDuration = Duration(
+              milliseconds: (estSecs * 1000).toInt(),
+            );
             task.estimatedDuration = estDuration;
 
             activeUnitGenerations[task.unitId!] = UnitGenTask(
@@ -259,8 +270,13 @@ class GenerationManager extends ChangeNotifier {
           }
         } else if (task.type == 'manifest') {
           if (task.sectionId != null) {
-            final double estSecs = AiEstimator.estimateDurationSync(_cachedTextModel, 20000);
-            final Duration estDuration = Duration(milliseconds: (estSecs * 1000).toInt());
+            final double estSecs = AiEstimator.estimateDurationSync(
+              _cachedTextModel,
+              20000,
+            );
+            final Duration estDuration = Duration(
+              milliseconds: (estSecs * 1000).toInt(),
+            );
             task.estimatedDuration = estDuration;
 
             activeSectionManifests[task.sectionId!] = UnitGenTask(
@@ -311,10 +327,10 @@ class GenerationManager extends ChangeNotifier {
     await _cacheModels();
 
     _isProcessing = true;
-    
+
     try {
       final prefs = await SharedPreferences.getInstance();
-      
+
       // Load concurrency limit
       final setting = prefs.getString('gen_concurrency') ?? 'auto';
       int limit = 2;
@@ -324,33 +340,33 @@ class GenerationManager extends ChangeNotifier {
       } else {
         limit = await _resolveConcurrency();
       }
-      
+
       // Load schedule hours
       final startHour = prefs.getInt('schedule_start_hour') ?? 21;
       final startMinute = prefs.getInt('schedule_start_minute') ?? 0;
       final endHour = prefs.getInt('schedule_end_hour') ?? 9;
       final endMinute = prefs.getInt('schedule_end_minute') ?? 0;
-      
+
       final now = DateTime.now();
       final nowMin = now.hour * 60 + now.minute;
       final startMin = startHour * 60 + startMinute;
       final endMin = endHour * 60 + endMinute;
-      
+
       bool isWithinHours = false;
       if (startMin <= endMin) {
         isWithinHours = nowMin >= startMin && nowMin < endMin;
       } else {
         isWithinHours = nowMin >= startMin || nowMin < endMin;
       }
-      
+
       final runningTasks = queue.where((t) => t.status == 'running').toList();
       final queuedTasks = queue.where((t) => t.status == 'queued').toList();
-      
+
       if (queuedTasks.isEmpty) {
         _isProcessing = false;
         return;
       }
-      
+
       // Fetch available keys
       List<String> keys = [];
       try {
@@ -358,15 +374,18 @@ class GenerationManager extends ChangeNotifier {
       } catch (e) {
         print('[GenerationManager] Error fetching API keys: $e');
       }
-      
+
       // Execute all 'canvas_regen' tasks immediately
-      final canvasRegens = queuedTasks.where((t) => t.type == 'canvas_regen').toList();
+      final canvasRegens = queuedTasks
+          .where((t) => t.type == 'canvas_regen')
+          .toList();
       if (canvasRegens.isNotEmpty) {
         if (keys.isEmpty) {
           for (final t in canvasRegens) {
             t.status = 'failed';
             t.statusMessage = 'Failed';
-            t.errorMessage = 'No API Keys configured. Please add keys in Settings.';
+            t.errorMessage =
+                'No API Keys configured. Please add keys in Settings.';
             t.endTime = DateTime.now();
             t.completer.completeError(Exception('No API Keys configured.'));
             _notifyTaskFailure(t);
@@ -383,27 +402,35 @@ class GenerationManager extends ChangeNotifier {
         notifyListeners();
         _saveQueueToPrefs();
       }
-      
-      final remainingQueued = queuedTasks.where((t) => t.type != 'canvas_regen').toList();
+
+      final remainingQueued = queuedTasks
+          .where((t) => t.type != 'canvas_regen')
+          .toList();
       if (remainingQueued.isEmpty) {
         _isProcessing = false;
         return;
       }
-      
-      int availableSlots = limit - runningTasks.where((t) => t.type != 'canvas_regen').length;
+
+      int availableSlots =
+          limit - runningTasks.where((t) => t.type != 'canvas_regen').length;
       if (availableSlots <= 0) {
         _isProcessing = false;
         return;
       }
-      
+
       // Select next tasks to run
-      final nextTasks = _getNextTasksToRun(remainingQueued, isWithinHours, availableSlots);
-      
+      final nextTasks = _getNextTasksToRun(
+        remainingQueued,
+        isWithinHours,
+        availableSlots,
+      );
+
       if (keys.isEmpty) {
         for (final t in nextTasks) {
           t.status = 'failed';
           t.statusMessage = 'Failed';
-          t.errorMessage = 'No API Keys configured. Please add keys in Settings.';
+          t.errorMessage =
+              'No API Keys configured. Please add keys in Settings.';
           t.endTime = DateTime.now();
           t.completer.completeError(Exception('No API Keys configured.'));
           _notifyTaskFailure(t);
@@ -414,17 +441,17 @@ class GenerationManager extends ChangeNotifier {
         _isProcessing = false;
         return;
       }
-      
+
       for (final task in nextTasks) {
         final assignedKey = _selectApiKeyForTask(task, keys, runningTasks);
         task.params['assignedApiKey'] = assignedKey;
-        
+
         // Execute task asynchronously
         _executeTask(task);
-        
+
         runningTasks.add(task);
       }
-      
+
       _syncActiveMapsWithQueue();
       notifyListeners();
       _saveQueueToPrefs();
@@ -435,37 +462,45 @@ class GenerationManager extends ChangeNotifier {
     }
   }
 
-  List<AiTask> _getNextTasksToRun(List<AiTask> queuedTasks, bool isWithinHours, int availableSlots) {
+  List<AiTask> _getNextTasksToRun(
+    List<AiTask> queuedTasks,
+    bool isWithinHours,
+    int availableSlots,
+  ) {
     final List<AiTask> toRun = [];
-    
+
     // First, high-priority non-scheduled tasks
     final nonScheduled = queuedTasks.where((t) => !t.isScheduled).toList();
     toRun.addAll(nonScheduled.take(availableSlots));
-    
+
     // Then, scheduled tasks if within schedule hours
     if (isWithinHours && toRun.length < availableSlots) {
       final scheduled = queuedTasks.where((t) => t.isScheduled).toList();
       toRun.addAll(scheduled.take(availableSlots - toRun.length));
     }
-    
+
     return toRun;
   }
 
-  String _selectApiKeyForTask(AiTask task, List<String> allKeys, List<AiTask> runningTasks) {
+  String _selectApiKeyForTask(
+    AiTask task,
+    List<String> allKeys,
+    List<AiTask> runningTasks,
+  ) {
     if (allKeys.isEmpty) throw Exception("No API keys available");
     if (allKeys.length == 1) return allKeys.first;
-    
+
     final inUseKeys = runningTasks
         .map((t) => t.params['assignedApiKey'] as String?)
         .whereType<String>()
         .toSet();
-    
+
     for (final key in allKeys) {
       if (!inUseKeys.contains(key)) {
         return key;
       }
     }
-    
+
     return allKeys[runningTasks.length % allKeys.length];
   }
 
@@ -482,7 +517,7 @@ class GenerationManager extends ChangeNotifier {
       task.statusMessage = 'Starting AI execution...';
       notifyListeners();
       _saveQueueToPrefs();
-      
+
       switch (task.type) {
         case 'book_skeleton':
           await _runBookSkeletonForTask(task, apiKey);
@@ -495,7 +530,15 @@ class GenerationManager extends ChangeNotifier {
           final book = await _dbService.getBookFromCache(bookId);
           if (book == null) throw Exception("Course not found");
           final unit = book.modules[modIdx].sections[secIdx].units[unitIdx];
-          await _runUnitGenerationForTask(task, unit, book, modIdx, secIdx, unitIdx, apiKey);
+          await _runUnitGenerationForTask(
+            task,
+            unit,
+            book,
+            modIdx,
+            secIdx,
+            unitIdx,
+            apiKey,
+          );
           break;
         case 'manifest':
           final bookId = task.bookId;
@@ -503,7 +546,8 @@ class GenerationManager extends ChangeNotifier {
           final secIdx = task.params['secIdx'] as int;
           final instructions = task.params['instructions'] as String?;
           final saveGlobally = task.params['saveGlobally'] as bool? ?? false;
-          final selectedQuestions = (task.params['selectedQuestions'] as List?)?.cast<String>();
+          final selectedQuestions = (task.params['selectedQuestions'] as List?)
+              ?.cast<String>();
           final book = await _dbService.getBookFromCache(bookId);
           if (book == null) throw Exception("Course not found");
           await _runManifestGenerationForTask(
@@ -518,10 +562,21 @@ class GenerationManager extends ChangeNotifier {
           );
           break;
         case 'section':
-          await _runSectionGenerationForTask(task, task.bookId, task.params['modIdx'] as int, task.params['secIdx'] as int, apiKey);
+          await _runSectionGenerationForTask(
+            task,
+            task.bookId,
+            task.params['modIdx'] as int,
+            task.params['secIdx'] as int,
+            apiKey,
+          );
           break;
         case 'module':
-          await _runModuleGenerationForTask(task, task.bookId, task.params['modIdx'] as int, apiKey);
+          await _runModuleGenerationForTask(
+            task,
+            task.bookId,
+            task.params['modIdx'] as int,
+            apiKey,
+          );
           break;
         case 'book_content':
           await _runBookContentGenerationForTask(task, task.bookId, apiKey);
@@ -533,7 +588,14 @@ class GenerationManager extends ChangeNotifier {
           final instructions = task.params['instructions'] as String?;
           final book = await _dbService.getBookFromCache(task.bookId);
           if (book == null) throw Exception("Course not found");
-          await _runQpGenerationForTask(task, files, title, book, instructions, apiKey);
+          await _runQpGenerationForTask(
+            task,
+            files,
+            title,
+            book,
+            instructions,
+            apiKey,
+          );
           break;
         case 'pyq':
           List<dynamic> files = [];
@@ -547,7 +609,14 @@ class GenerationManager extends ChangeNotifier {
           final moduleIndex = task.params['moduleIndex'] as int?;
           final book = await _dbService.getBookFromCache(task.bookId);
           if (book == null) throw Exception("Course not found");
-          await _runPyqGenerationForTask(task, files, book, instructions, apiKey, moduleIndex: moduleIndex);
+          await _runPyqGenerationForTask(
+            task,
+            files,
+            book,
+            instructions,
+            apiKey,
+            moduleIndex: moduleIndex,
+          );
           break;
         case 'lesson_regen':
           final modIdx = task.params['modIdx'] as int;
@@ -556,8 +625,21 @@ class GenerationManager extends ChangeNotifier {
           final lessonIdx = task.params['lessonIdx'] as int;
           final book = await _dbService.getBookFromCache(task.bookId);
           if (book == null) throw Exception("Course not found");
-          final lesson = book.modules[modIdx].sections[secIdx].units[unitIdx].lessons[lessonIdx];
-          await _runLessonRegenForTask(task, book, modIdx, secIdx, unitIdx, lessonIdx, lesson, apiKey);
+          final lesson = book
+              .modules[modIdx]
+              .sections[secIdx]
+              .units[unitIdx]
+              .lessons[lessonIdx];
+          await _runLessonRegenForTask(
+            task,
+            book,
+            modIdx,
+            secIdx,
+            unitIdx,
+            lessonIdx,
+            lesson,
+            apiKey,
+          );
           break;
         case 'slide_regen':
           await _runSlideRegenForTask(task, apiKey);
@@ -571,12 +653,19 @@ class GenerationManager extends ChangeNotifier {
           final unitIdx = task.params['unitIdx'] as int;
           final book = await _dbService.getBookFromCache(task.bookId);
           if (book == null) throw Exception("Course not found");
-          await _runCustomLessonGenForTask(task, book, modIdx, secIdx, unitIdx, apiKey);
+          await _runCustomLessonGenForTask(
+            task,
+            book,
+            modIdx,
+            secIdx,
+            unitIdx,
+            apiKey,
+          );
           break;
         default:
           throw Exception("Unknown task type: ${task.type}");
       }
-      
+
       task.status = 'completed';
       task.progress = 1.0;
       task.statusMessage = 'Completed';
@@ -590,7 +679,8 @@ class GenerationManager extends ChangeNotifier {
       _notifyTaskFailure(task);
     } finally {
       if (isCanvasRegen) {
-        AiService.activeCanvasRegensCount = (AiService.activeCanvasRegensCount - 1).clamp(0, 9999);
+        AiService.activeCanvasRegensCount =
+            (AiService.activeCanvasRegensCount - 1).clamp(0, 9999);
       }
       _syncActiveMapsWithQueue();
       notifyListeners();
@@ -634,7 +724,9 @@ class GenerationManager extends ChangeNotifier {
     String? customTaskId,
     bool highPriority = false,
   }) {
-    final taskId = customTaskId ?? '${type}_${DateTime.now().millisecondsSinceEpoch}_${unitId ?? sectionId ?? moduleId ?? bookId}';
+    final taskId =
+        customTaskId ??
+        '${type}_${DateTime.now().millisecondsSinceEpoch}_${unitId ?? sectionId ?? moduleId ?? bookId}';
     final task = AiTask(
       id: taskId,
       title: title,
@@ -685,10 +777,15 @@ class GenerationManager extends ChangeNotifier {
     return result as Book?;
   }
 
-  Future<String?> generateCanvasArtTask(String canvasPrompt, {String contextText = '', String? errorContext}) async {
+  Future<String?> generateCanvasArtTask(
+    String canvasPrompt, {
+    String contextText = '',
+    String? errorContext,
+  }) async {
     final task = AiTask(
       id: 'canvas_${DateTime.now().millisecondsSinceEpoch}_${canvasPrompt.hashCode}',
-      title: 'Generate Graphic: ${canvasPrompt.length > 20 ? canvasPrompt.substring(0, 20) + "..." : canvasPrompt}',
+      title:
+          'Generate Graphic: ${canvasPrompt.length > 20 ? canvasPrompt.substring(0, 20) + "..." : canvasPrompt}',
       bookId: 'canvas',
       type: 'canvas_regen',
       generateGraphics: true,
@@ -716,7 +813,7 @@ class GenerationManager extends ChangeNotifier {
     Slide? result;
     try {
       _pauseAllOtherTasks();
-      
+
       final task = AiTask(
         id: 'slide_${DateTime.now().millisecondsSinceEpoch}_${slide.id}',
         title: 'Regenerate Slide text',
@@ -747,13 +844,19 @@ class GenerationManager extends ChangeNotifier {
   // ---------------------------------------------------------------------------
   Future<void> _runBookSkeletonForTask(AiTask task, String apiKey) async {
     final indexFilesPaths = List<String>.from(task.params['indexFilesPaths']);
-    final syllabusFilesPaths = List<String>.from(task.params['syllabusFilesPaths'] ?? []);
-    final sourceFilesPaths = List<String>.from(task.params['sourceFilesPaths'] ?? []);
+    final syllabusFilesPaths = List<String>.from(
+      task.params['syllabusFilesPaths'] ?? [],
+    );
+    final sourceFilesPaths = List<String>.from(
+      task.params['sourceFilesPaths'] ?? [],
+    );
     final filename = task.params['filename'] as String;
-    final chapter1AbsolutePages = List<int>.from(task.params['chapter1AbsolutePages'] ?? []);
+    final chapter1AbsolutePages = List<int>.from(
+      task.params['chapter1AbsolutePages'] ?? [],
+    );
     final customInstructions = task.params['customInstructions'] as String?;
     final isHandout = task.params['isHandout'] as bool? ?? false;
-    
+
     final chapterStartsRaw = task.params['chapterStarts'] as List?;
     final List<List<int>>? chapterStarts = chapterStartsRaw != null
         ? chapterStartsRaw.map((list) => List<int>.from(list as List)).toList()
@@ -772,7 +875,7 @@ class GenerationManager extends ChangeNotifier {
       void updateProgress(String status, double progress) {
         task.statusMessage = status;
         task.progress = progress;
-        
+
         final parentTaskId = task.params['parentTaskId'] as String?;
         if (parentTaskId != null) {
           final parentIdx = activeTasks.indexWhere((t) => t.id == parentTaskId);
@@ -781,7 +884,7 @@ class GenerationManager extends ChangeNotifier {
             activeTasks[parentIdx].progress = progress;
           }
         }
-        
+
         _syncActiveMapsWithQueue();
         notifyListeners();
       }
@@ -789,15 +892,21 @@ class GenerationManager extends ChangeNotifier {
       for (int i = 0; i < sourceFiles.length; i++) {
         final pdfFile = sourceFiles[i];
         final pdfName = pdfFile.path.split(RegExp(r'[\\/]')).last;
-        
-        updateProgress('Scanning $pdfName for index...', 0.05 + 0.15 * (i / sourceFiles.length));
-        
-        final result = await autoIndexService.findIndexAndChapter1(
-          pdfFile,
-          (status, progress) {
-            updateProgress('$status ($pdfName)', 0.05 + 0.15 * ((i + progress) / sourceFiles.length));
-          },
+
+        updateProgress(
+          'Scanning $pdfName for index...',
+          0.05 + 0.15 * (i / sourceFiles.length),
         );
+
+        final result = await autoIndexService.findIndexAndChapter1(pdfFile, (
+          status,
+          progress,
+        ) {
+          updateProgress(
+            '$status ($pdfName)',
+            0.05 + 0.15 * ((i + progress) / sourceFiles.length),
+          );
+        });
 
         int ch1 = result.chapter1StartPage ?? 1;
         List<int> idxPages = result.indexPages;
@@ -811,7 +920,7 @@ class GenerationManager extends ChangeNotifier {
         }
 
         backgroundCh1Pages.add(ch1);
-        
+
         final indexPdf = await _pdfService.extractPages(
           pdfFile,
           idxPages,
@@ -819,7 +928,7 @@ class GenerationManager extends ChangeNotifier {
         );
         backgroundIndexFiles.add(indexPdf);
       }
-      
+
       indexFiles = backgroundIndexFiles;
       ch1Pages = backgroundCh1Pages;
     }
@@ -836,7 +945,7 @@ class GenerationManager extends ChangeNotifier {
       onProgress: (status, progress) {
         task.statusMessage = status;
         task.progress = progress;
-        
+
         final parentTaskId = task.params['parentTaskId'] as String?;
         if (parentTaskId != null) {
           final parentIdx = activeTasks.indexWhere((t) => t.id == parentTaskId);
@@ -845,7 +954,7 @@ class GenerationManager extends ChangeNotifier {
             activeTasks[parentIdx].progress = progress;
           }
         }
-        
+
         _syncActiveMapsWithQueue();
         notifyListeners();
       },
@@ -858,8 +967,14 @@ class GenerationManager extends ChangeNotifier {
     final canvasPrompt = task.params['canvasPrompt'] as String;
     final contextText = task.params['contextText'] as String? ?? '';
     final errorContext = task.params['errorContext'] as String?;
-    
-    final result = await _aiService.generateCanvasArt(canvasPrompt, contextText: contextText, errorContext: errorContext, forcedApiKey: apiKey, isHighPriority: true);
+
+    final result = await _aiService.generateCanvasArt(
+      canvasPrompt,
+      contextText: contextText,
+      errorContext: errorContext,
+      forcedApiKey: apiKey,
+      isHighPriority: true,
+    );
     task.completer.complete(result);
   }
 
@@ -871,7 +986,7 @@ class GenerationManager extends ChangeNotifier {
     final note = task.params['note'] as String?;
     final targetType = task.params['targetType'] as String?;
     final screenSizeInfo = task.params['screenSizeInfo'] as String?;
-    
+
     final result = await _aiService.regenerateSlide(
       slide: Slide.fromJson(slideJson),
       lesson: Lesson.fromJson(lessonJson),
@@ -896,11 +1011,18 @@ class GenerationManager extends ChangeNotifier {
   ) async {
     final avgUnitMs = await _getAverageRunTime('unit_gen_history', 90000);
     final notifId = unit.id.hashCode;
-    
-    await NotificationService.showProgress(notifId, "Generating Lesson", "AI is crafting content...", indeterminate: true);
-    
+
+    await NotificationService.showProgress(
+      notifId,
+      "Generating Lesson",
+      "AI is crafting content...",
+      indeterminate: true,
+    );
+
     Book applyUnit(Book base, Unit u) {
-      final List<Unit> uns = List.from(base.modules[modIdx].sections[secIdx].units);
+      final List<Unit> uns = List.from(
+        base.modules[modIdx].sections[secIdx].units,
+      );
       uns[unitIdx] = u;
       final List<Section> secs = List.from(base.modules[modIdx].sections);
       secs[secIdx] = secs[secIdx].copyWith(units: uns);
@@ -908,36 +1030,52 @@ class GenerationManager extends ChangeNotifier {
       mods[modIdx] = mods[modIdx].copyWith(sections: secs);
       return base.copyWith(modules: mods);
     }
-    
+
     try {
       final stopwatch = Stopwatch()..start();
-      final String? sectionPdfPath = book.modules[modIdx].sections[secIdx].pdfPath;
-      
+      final String? sectionPdfPath =
+          book.modules[modIdx].sections[secIdx].pdfPath;
+
       final Book ctxBook = (await _dbService.getBookFromCache(book.id)) ?? book;
-      final List<Unit> sectionUnits = ctxBook.modules[modIdx].sections[secIdx].units;
+      final List<Unit> sectionUnits =
+          ctxBook.modules[modIdx].sections[secIdx].units;
       final Unit? previousUnit = unitIdx > 0 ? sectionUnits[unitIdx - 1] : null;
-      final Unit? nextUnit = unitIdx < sectionUnits.length - 1 ? sectionUnits[unitIdx + 1] : null;
-      
+      final Unit? nextUnit = unitIdx < sectionUnits.length - 1
+          ? sectionUnits[unitIdx + 1]
+          : null;
+
       final List<Unit> previousGeneratedUnits = [];
-      for (int i = unitIdx - 1; i >= 0 && previousGeneratedUnits.length < 2; i--) {
+      for (
+        int i = unitIdx - 1;
+        i >= 0 && previousGeneratedUnits.length < 2;
+        i--
+      ) {
         final u = sectionUnits[i];
-        if (u.isGenerated && u.lessons.isNotEmpty) previousGeneratedUnits.insert(0, u);
+        if (u.isGenerated && u.lessons.isNotEmpty)
+          previousGeneratedUnits.insert(0, u);
       }
-      
+
       Future<void> saveChain = Future.value();
       void onLessonGenerated(List<Lesson> lessonsSoFar) {
         final snapshot = List<Lesson>.from(lessonsSoFar);
         if (snapshot.isEmpty) return;
-        saveChain = saveChain.then((_) async {
-          final base = (await _dbService.getBookFromCache(book.id)) ?? book;
-          final partial = applyUnit(base, unit.copyWith(isGenerated: false, lessons: snapshot));
-          await _dbService.saveGeneratedBook(partial);
-          _bookUpdateController.add(partial);
-        }).catchError((e) {
-          print('[GenerationManager] Streaming save failed for ${unit.id}: $e');
-        });
+        saveChain = saveChain
+            .then((_) async {
+              final base = (await _dbService.getBookFromCache(book.id)) ?? book;
+              final partial = applyUnit(
+                base,
+                unit.copyWith(isGenerated: false, lessons: snapshot),
+              );
+              await _dbService.saveGeneratedBook(partial);
+              _bookUpdateController.add(partial);
+            })
+            .catchError((e) {
+              print(
+                '[GenerationManager] Streaming save failed for ${unit.id}: $e',
+              );
+            });
       }
-      
+
       final updatedUnit = await _aiService.generateUnitContent(
         unit,
         ctxBook,
@@ -977,20 +1115,30 @@ class GenerationManager extends ChangeNotifier {
       );
       stopwatch.stop();
       await _recordRunTime('unit_gen_history', stopwatch.elapsedMilliseconds);
-      
+
       await saveChain;
-      
+
       Book baseBook = (await _dbService.getBookFromCache(book.id)) ?? book;
       final finalBook = applyUnit(baseBook, updatedUnit);
       await _dbService.saveGeneratedBook(finalBook);
       _bookUpdateController.add(finalBook);
-      
+
       await NotificationService.cancel(notifId);
-      await NotificationService.showActionable(notifId, "Lesson Ready!", "Tap to start learning.", "open_home|");
+      await NotificationService.showActionable(
+        notifId,
+        "Lesson Ready!",
+        "Tap to start learning.",
+        "open_home|",
+      );
       task.completer.complete(updatedUnit);
     } catch (e) {
       await NotificationService.cancel(notifId);
-      await NotificationService.showActionable(notifId, "Generation Failed", "Failed to generate lesson.", "error");
+      await NotificationService.showActionable(
+        notifId,
+        "Generation Failed",
+        "Failed to generate lesson.",
+        "error",
+      );
       rethrow;
     }
   }
@@ -1012,11 +1160,16 @@ class GenerationManager extends ChangeNotifier {
 
     final String? effectiveInstructions =
         (instructions?.trim().isNotEmpty ?? false)
-            ? instructions!.trim()
-            : (section.customInstructions ?? book.customInstructions);
+        ? instructions!.trim()
+        : (section.customInstructions ?? book.customInstructions);
 
     final notifId = section.id.hashCode;
-    await NotificationService.showProgress(notifId, 'Planning section', 'Generating unit list...', indeterminate: true);
+    await NotificationService.showProgress(
+      notifId,
+      'Planning section',
+      'Generating unit list...',
+      indeterminate: true,
+    );
 
     try {
       final manifestResult = await _aiService.generateUnitManifest(
@@ -1034,8 +1187,10 @@ class GenerationManager extends ChangeNotifier {
 
       final List<LessonFormat> updatedSectionFormats = [];
       for (final nf in newFormats) {
-        final alreadyExists = updatedSectionFormats.any((lf) =>
-            lf.id == nf.id || lf.name.toLowerCase() == nf.name.toLowerCase());
+        final alreadyExists = updatedSectionFormats.any(
+          (lf) =>
+              lf.id == nf.id || lf.name.toLowerCase() == nf.name.toLowerCase(),
+        );
         if (!alreadyExists) {
           updatedSectionFormats.add(nf);
         }
@@ -1045,15 +1200,20 @@ class GenerationManager extends ChangeNotifier {
         units: units,
         unitsGenerated: true,
         customInstructions: effectiveInstructions,
-        selectedQuestions: selectedQuestions ?? sections[secIdx].selectedQuestions,
+        selectedQuestions:
+            selectedQuestions ?? sections[secIdx].selectedQuestions,
         lessonFormats: updatedSectionFormats,
       );
       modules[modIdx] = modules[modIdx].copyWith(sections: sections);
 
       final newBook = baseBook.copyWith(
         modules: modules,
-        selectedQuestions: saveGlobally ? (selectedQuestions ?? baseBook.selectedQuestions) : baseBook.selectedQuestions,
-        customInstructions: saveGlobally ? effectiveInstructions : baseBook.customInstructions,
+        selectedQuestions: saveGlobally
+            ? (selectedQuestions ?? baseBook.selectedQuestions)
+            : baseBook.selectedQuestions,
+        customInstructions: saveGlobally
+            ? effectiveInstructions
+            : baseBook.customInstructions,
       );
 
       await _dbService.saveGeneratedBook(newBook);
@@ -1062,7 +1222,12 @@ class GenerationManager extends ChangeNotifier {
       task.completer.complete(manifestResult);
     } catch (e) {
       await NotificationService.cancel(notifId);
-      await NotificationService.showActionable(notifId, 'Section Planning Failed', 'Could not generate units.', 'error');
+      await NotificationService.showActionable(
+        notifId,
+        'Section Planning Failed',
+        'Could not generate units.',
+        'error',
+      );
       rethrow;
     }
   }
@@ -1076,35 +1241,45 @@ class GenerationManager extends ChangeNotifier {
   ) async {
     Book? book = await _dbService.getBookFromCache(bookId);
     if (book == null) throw Exception("Course not found");
-    
+
     Section section = book.modules[modIdx].sections[secIdx];
-    
+
     if (section.needsUnitManifest) {
       task.statusMessage = 'Planning section units...';
       task.progress = 0.1;
       _syncActiveMapsWithQueue();
       notifyListeners();
-      
-      await _runManifestGenerationForTask(task, book, modIdx, secIdx, null, false, apiKey);
-      
+
+      await _runManifestGenerationForTask(
+        task,
+        book,
+        modIdx,
+        secIdx,
+        null,
+        false,
+        apiKey,
+      );
+
       book = await _dbService.getBookFromCache(bookId);
       if (book == null) throw Exception("Course not found after planning");
       section = book.modules[modIdx].sections[secIdx];
-      
+
       if (!section.unitFormatsConfirmed && section.units.isNotEmpty) {
         final modules = List<Module>.from(book.modules);
         final secs = List<Section>.from(modules[modIdx].sections);
-        secs[secIdx] = secs[secIdx].copyWith(
-          unitFormatsConfirmed: true,
-        );
+        secs[secIdx] = secs[secIdx].copyWith(unitFormatsConfirmed: true);
         modules[modIdx] = modules[modIdx].copyWith(sections: secs);
         book = book.copyWith(modules: modules);
         await _dbService.saveGeneratedBook(book);
         _bookUpdateController.add(book);
       }
     }
-    
-    final unitsToGen = section.units.asMap().entries.where((entry) => !entry.value.isGenerated).toList();
+
+    final unitsToGen = section.units
+        .asMap()
+        .entries
+        .where((entry) => !entry.value.isGenerated)
+        .toList();
     if (unitsToGen.isEmpty) {
       task.statusMessage = 'All units already generated';
       task.progress = 1.0;
@@ -1112,12 +1287,12 @@ class GenerationManager extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    
+
     for (int i = 0; i < unitsToGen.length; i++) {
       final entry = unitsToGen[i];
       final unitIdx = entry.key;
       final unit = entry.value;
-      
+
       await startUnitGeneration(
         unit,
         book!,
@@ -1134,11 +1309,16 @@ class GenerationManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _runModuleGenerationForTask(AiTask task, String bookId, int modIdx, String apiKey) async {
+  Future<void> _runModuleGenerationForTask(
+    AiTask task,
+    String bookId,
+    int modIdx,
+    String apiKey,
+  ) async {
     final book = await _dbService.getBookFromCache(bookId);
     if (book == null) throw Exception("Course not found");
     final module = book.modules[modIdx];
-    
+
     for (int i = 0; i < module.sections.length; i++) {
       await startSectionGeneration(
         book,
@@ -1154,10 +1334,14 @@ class GenerationManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _runBookContentGenerationForTask(AiTask task, String bookId, String apiKey) async {
+  Future<void> _runBookContentGenerationForTask(
+    AiTask task,
+    String bookId,
+    String apiKey,
+  ) async {
     final book = await _dbService.getBookFromCache(bookId);
     if (book == null) throw Exception("Course not found");
-    
+
     for (int i = 0; i < book.modules.length; i++) {
       await startModuleGeneration(
         book,
@@ -1181,8 +1365,13 @@ class GenerationManager extends ChangeNotifier {
     String apiKey,
   ) async {
     final notifId = book.id.hashCode + 1;
-    await NotificationService.showProgress(notifId, "Analyzing Exam", "Extracting and solving questions natively...", indeterminate: true);
-    
+    await NotificationService.showProgress(
+      notifId,
+      "Analyzing Exam",
+      "Extracting and solving questions natively...",
+      indeterminate: true,
+    );
+
     try {
       final qp = await _aiService.generateQuestionPaper(
         files,
@@ -1191,20 +1380,30 @@ class GenerationManager extends ChangeNotifier {
         customInstructions: customInstructions,
         forcedApiKey: apiKey,
       );
-      
+
       final baseBook = (await _dbService.getBookFromCache(book.id)) ?? book;
       final updatedBook = baseBook.copyWith(
         questionPapers: [...baseBook.questionPapers, qp],
       );
-      
+
       await _dbService.saveGeneratedBook(updatedBook);
       _bookUpdateController.add(updatedBook);
       await NotificationService.cancel(notifId);
-      await NotificationService.showActionable(notifId, "Exam Ready", "Past paper solved interactively!", "open_home|");
+      await NotificationService.showActionable(
+        notifId,
+        "Exam Ready",
+        "Past paper solved interactively!",
+        "open_home|",
+      );
       task.completer.complete(qp);
     } catch (e) {
       await NotificationService.cancel(notifId);
-      await NotificationService.showActionable(notifId, "Analysis Failed", "Failed to solve past paper.", "error");
+      await NotificationService.showActionable(
+        notifId,
+        "Analysis Failed",
+        "Failed to solve past paper.",
+        "error",
+      );
       rethrow;
     }
   }
@@ -1218,7 +1417,12 @@ class GenerationManager extends ChangeNotifier {
     int? moduleIndex,
   }) async {
     final notifId = book.id.hashCode + 2;
-    await NotificationService.showProgress(notifId, "Analyzing PYQ", "Extracting and splitting questions...", indeterminate: true);
+    await NotificationService.showProgress(
+      notifId,
+      "Analyzing PYQ",
+      "Extracting and splitting questions...",
+      indeterminate: true,
+    );
 
     try {
       Book freshestBook = (await _dbService.getBookFromCache(book.id)) ?? book;
@@ -1227,21 +1431,27 @@ class GenerationManager extends ChangeNotifier {
       // user has open on the Path tab). Questions stay within that module — the
       // cross-section spread below is also limited to its sections.
       final List<Module> scopedModules =
-          (moduleIndex != null && moduleIndex >= 0 && moduleIndex < freshestBook.modules.length)
-              ? [freshestBook.modules[moduleIndex]]
-              : freshestBook.modules;
+          (moduleIndex != null &&
+              moduleIndex >= 0 &&
+              moduleIndex < freshestBook.modules.length)
+          ? [freshestBook.modules[moduleIndex]]
+          : freshestBook.modules;
 
       List<Section> activeSections = [];
       for (final m in scopedModules) {
         for (final s in m.sections) {
-          final hasLessons = s.units.any((u) => u.isGenerated && u.lessons.isNotEmpty);
+          final hasLessons = s.units.any(
+            (u) => u.isGenerated && u.lessons.isNotEmpty,
+          );
           if (hasLessons) {
             activeSections.add(s);
           }
         }
       }
       if (activeSections.isEmpty) {
-        throw Exception("This module has no sections with generated lessons yet. Please generate lessons first.");
+        throw Exception(
+          "This module has no sections with generated lessons yet. Please generate lessons first.",
+        );
       }
 
       final Map<String, List<Slide>> newSlidesForSections = {};
@@ -1255,26 +1465,29 @@ class GenerationManager extends ChangeNotifier {
           .expand((m) => m.sections)
           .map((s) => {'id': s.id, 'title': s.title})
           .toList();
-          
+
       for (int i = 0; i < activeSections.length; i++) {
         final sec = activeSections[i];
-        task.statusMessage = 'Extracting questions for: ${sec.title} (${i+1}/${activeSections.length})...';
+        task.statusMessage =
+            'Extracting questions for: ${sec.title} (${i + 1}/${activeSections.length})...';
         task.progress = i / activeSections.length;
         notifyListeners();
-        
+
         final existingInSec = List<Slide>.from(sec.pyqQuestions);
         final newlyExtractedInSec = newSlidesForSections[sec.id] ?? [];
         final totalExisting = [...existingInSec, ...newlyExtractedInSec];
-        
+
         final extracted = await _aiService.extractPyqQuestionsForSection(
           files: files,
           section: sec,
           existingQuestions: totalExisting,
-          otherSections: otherSectionsMeta.where((s) => s['id'] != sec.id).toList(),
+          otherSections: otherSectionsMeta
+              .where((s) => s['id'] != sec.id)
+              .toList(),
           customInstructions: customInstructions,
           forcedApiKey: apiKey,
         );
-        
+
         for (final q in extracted) {
           if (!isDuplicate(q, totalExisting)) {
             newSlidesForSections[sec.id]!.add(q);
@@ -1283,15 +1496,26 @@ class GenerationManager extends ChangeNotifier {
           if (otherIds != null) {
             for (final otherIdRaw in otherIds) {
               final otherId = otherIdRaw.toString();
-              final hasSection = freshestBook.modules.expand((m) => m.sections).any((s) => s.id == otherId);
+              final hasSection = freshestBook.modules
+                  .expand((m) => m.sections)
+                  .any((s) => s.id == otherId);
               if (hasSection) {
-                final otherSec = freshestBook.modules.expand((m) => m.sections).firstWhere((s) => s.id == otherId);
-                final otherHasLessons = otherSec.units.any((u) => u.isGenerated && u.lessons.isNotEmpty);
+                final otherSec = freshestBook.modules
+                    .expand((m) => m.sections)
+                    .firstWhere((s) => s.id == otherId);
+                final otherHasLessons = otherSec.units.any(
+                  (u) => u.isGenerated && u.lessons.isNotEmpty,
+                );
                 if (otherHasLessons) {
                   newSlidesForSections.putIfAbsent(otherId, () => []);
-                  final existingInOther = List<Slide>.from(otherSec.pyqQuestions);
+                  final existingInOther = List<Slide>.from(
+                    otherSec.pyqQuestions,
+                  );
                   final newlyExtractedInOther = newSlidesForSections[otherId]!;
-                  final totalExistingOther = [...existingInOther, ...newlyExtractedInOther];
+                  final totalExistingOther = [
+                    ...existingInOther,
+                    ...newlyExtractedInOther,
+                  ];
                   if (!isDuplicate(q, totalExistingOther)) {
                     newSlidesForSections[otherId]!.add(q);
                   }
@@ -1301,7 +1525,7 @@ class GenerationManager extends ChangeNotifier {
           }
         }
       }
-      
+
       final updatedModules = freshestBook.modules.map((m) {
         final updatedSecs = m.sections.map((s) {
           final newSlides = newSlidesForSections[s.id];
@@ -1312,7 +1536,7 @@ class GenerationManager extends ChangeNotifier {
         }).toList();
         return m.copyWith(sections: updatedSecs);
       }).toList();
-      
+
       final finalBook = freshestBook.copyWith(modules: updatedModules);
       await _dbService.saveGeneratedBook(finalBook);
       _bookUpdateController.add(finalBook);
@@ -1320,7 +1544,12 @@ class GenerationManager extends ChangeNotifier {
       task.completer.complete(null);
     } catch (e) {
       await NotificationService.cancel(notifId);
-      await NotificationService.showActionable(notifId, "PYQ Analysis Failed", "Failed to extract exam questions.", "error");
+      await NotificationService.showActionable(
+        notifId,
+        "PYQ Analysis Failed",
+        "Failed to extract exam questions.",
+        "error",
+      );
       rethrow;
     }
   }
@@ -1336,19 +1565,27 @@ class GenerationManager extends ChangeNotifier {
     String apiKey,
   ) async {
     final notifId = ('regen_${lesson.id}').hashCode;
-    await NotificationService.showProgress(notifId, 'Regenerating lesson', lesson.title, indeterminate: true);
-    
+    await NotificationService.showProgress(
+      notifId,
+      'Regenerating lesson',
+      lesson.title,
+      indeterminate: true,
+    );
+
     try {
       final ctxBook = (await _dbService.getBookFromCache(book.id)) ?? book;
       final sectionUnits = ctxBook.modules[modIdx].sections[secIdx].units;
       final unit = sectionUnits[unitIdx];
       final Unit? previousUnit = unitIdx > 0 ? sectionUnits[unitIdx - 1] : null;
-      final Unit? nextUnit = unitIdx < sectionUnits.length - 1 ? sectionUnits[unitIdx + 1] : null;
-      final String? sectionPdfPath = ctxBook.modules[modIdx].sections[secIdx].pdfPath;
-      
+      final Unit? nextUnit = unitIdx < sectionUnits.length - 1
+          ? sectionUnits[unitIdx + 1]
+          : null;
+      final String? sectionPdfPath =
+          ctxBook.modules[modIdx].sections[secIdx].pdfPath;
+
       final String? customPrompt = task.params['customPrompt'];
       final String? newFormatId = task.params['newFormatId'];
-      
+
       final fresh = await _aiService.regenerateLesson(
         lesson: lesson,
         unit: unit,
@@ -1362,9 +1599,11 @@ class GenerationManager extends ChangeNotifier {
         newFormatId: newFormatId,
       );
       if (fresh == null) {
-        throw Exception('Lesson regeneration failed. The previous lesson is kept.');
+        throw Exception(
+          'Lesson regeneration failed. The previous lesson is kept.',
+        );
       }
-      
+
       final base = (await _dbService.getBookFromCache(book.id)) ?? book;
       final mods = List<Module>.from(base.modules);
       final secs = List<Section>.from(mods[modIdx].sections);
@@ -1375,7 +1614,7 @@ class GenerationManager extends ChangeNotifier {
       secs[secIdx] = secs[secIdx].copyWith(units: uns);
       mods[modIdx] = mods[modIdx].copyWith(sections: secs);
       final newBook = base.copyWith(modules: mods);
-      
+
       await ProgressService.clearLessonProgress(lesson.id, book.id);
       await _dbService.saveGeneratedBook(newBook);
       _bookUpdateController.add(newBook);
@@ -1396,16 +1635,24 @@ class GenerationManager extends ChangeNotifier {
     String apiKey,
   ) async {
     final String prompt = task.params['prompt'] as String;
-    final List<String> filePaths = List<String>.from(task.params['filePaths'] ?? []);
+    final List<String> filePaths = List<String>.from(
+      task.params['filePaths'] ?? [],
+    );
     final List<File> files = filePaths.map((p) => File(p)).toList();
-    final Map<String, dynamic> formatJson = task.params['format'] as Map<String, dynamic>;
+    final Map<String, dynamic> formatJson =
+        task.params['format'] as Map<String, dynamic>;
     final format = LessonFormat.fromJson(formatJson);
     final String lessonId = task.params['lessonId'] as String;
 
     final String? screenSizeInfo = task.params['screenSizeInfo'] as String?;
 
     final notifId = ('custom_gen_$lessonId').hashCode;
-    await NotificationService.showProgress(notifId, 'Creating custom lesson', 'Preparing...', indeterminate: true);
+    await NotificationService.showProgress(
+      notifId,
+      'Creating custom lesson',
+      'Preparing...',
+      indeterminate: true,
+    );
 
     try {
       final ctxBook = (await _dbService.getBookFromCache(book.id)) ?? book;
@@ -1415,7 +1662,7 @@ class GenerationManager extends ChangeNotifier {
 
       for (int i = 0; i < totalSlides; i++) {
         final template = format.slides[i];
-        
+
         await NotificationService.showProgress(
           notifId,
           'Creating custom lesson',
@@ -1447,24 +1694,26 @@ class GenerationManager extends ChangeNotifier {
           final uniqueSlideId = '$lessonId-s${i + 1}';
           final updatedSlide = slide.copyWith(id: uniqueSlideId);
           generatedSlides.add(updatedSlide);
-          
+
           final base = (await _dbService.getBookFromCache(book.id)) ?? book;
           final mods = List<Module>.from(base.modules);
           final secs = List<Section>.from(mods[modIdx].sections);
           final uns = List<Unit>.from(secs[secIdx].units);
           final lessons = List<Lesson>.from(uns[unitIdx].lessons);
-          
+
           final lessonIndex = lessons.indexWhere((l) => l.id == lessonId);
           if (lessonIndex != -1) {
             lessons[lessonIndex] = lessons[lessonIndex].copyWith(
               slides: List.from(generatedSlides),
-              title: generatedSlides.isNotEmpty ? generatedSlides.first.title : 'Custom Lesson',
+              title: generatedSlides.isNotEmpty
+                  ? generatedSlides.first.title
+                  : 'Custom Lesson',
             );
             uns[unitIdx] = uns[unitIdx].copyWith(lessons: lessons);
             secs[secIdx] = secs[secIdx].copyWith(units: uns);
             mods[modIdx] = mods[modIdx].copyWith(sections: secs);
             final newBook = base.copyWith(modules: mods);
-            
+
             await _dbService.saveGeneratedBook(newBook);
             _bookUpdateController.add(newBook);
           }
@@ -1532,11 +1781,16 @@ class GenerationManager extends ChangeNotifier {
     final notifId = taskId.hashCode;
 
     double totalSize = 0;
-    for (var f in sourceFiles) { totalSize += await f.length(); }
+    for (var f in sourceFiles) {
+      totalSize += await f.length();
+    }
 
     final uploadSecs = (totalSize / 500000).ceil();
     final avgAiMs = await _getAverageRunTime('meta_gen_history', 120000);
-    final estimatedDuration = Duration(seconds: uploadSecs, milliseconds: avgAiMs);
+    final estimatedDuration = Duration(
+      seconds: uploadSecs,
+      milliseconds: avgAiMs,
+    );
 
     final task = GenerationTask(
       id: taskId,
@@ -1553,11 +1807,16 @@ class GenerationManager extends ChangeNotifier {
     activeTasks.add(task);
     notifyListeners();
 
-    await NotificationService.showProgress(notifId, "Analyzing Source", "Extracting metadata...", indeterminate: true);
+    await NotificationService.showProgress(
+      notifId,
+      "Analyzing Source",
+      "Extracting metadata...",
+      indeterminate: true,
+    );
 
     try {
       final stopwatch = Stopwatch()..start();
-      
+
       // Route skeleton generation through queue!
       final skeletonBook = await startBookSkeletonGenerationTask(
         indexFiles,
@@ -1570,7 +1829,7 @@ class GenerationManager extends ChangeNotifier {
         sourceFiles: sourceFiles,
         parentTaskId: taskId,
       );
-      
+
       stopwatch.stop();
       await _recordRunTime('meta_gen_history', stopwatch.elapsedMilliseconds);
 
@@ -1582,22 +1841,41 @@ class GenerationManager extends ChangeNotifier {
           final autoVerify = prefs.getBool('auto_verify_mappings') ?? true;
 
           Book bookToSplit = skeletonBook;
-          bool verificationPassed = false;
-          if (autoVerify) {
+          // Knowledge-only books (no source PDFs) have no page mappings to
+          // verify or review — save them straight away.
+          bool verificationPassed = sourceFiles.isEmpty;
+          if (autoVerify && sourceFiles.isNotEmpty) {
             task.statusMessage = 'Verifying page mappings...';
             notifyListeners();
             void onStatus(String s) {
               task.statusMessage = s;
               notifyListeners();
             }
+
             try {
-              final verifier = MappingVerifier(pdfService: _pdfService, aiService: _aiService);
-              var report = await verifier.verify(sourceFiles, bookToSplit, onStatus: onStatus);
+              final verifier = MappingVerifier(
+                pdfService: _pdfService,
+                aiService: _aiService,
+              );
+              var report = await verifier.verify(
+                sourceFiles,
+                bookToSplit,
+                onStatus: onStatus,
+              );
               if (!report.pass && report.suggestedShift != null) {
                 final shift = report.suggestedShift!;
-                onStatus('Auto-correcting a ${shift > 0 ? '+$shift' : '$shift'} page shift…');
-                final shifted = MappingVerifier.applyGlobalShift(bookToSplit, shift);
-                report = await verifier.verify(sourceFiles, shifted, onStatus: onStatus);
+                onStatus(
+                  'Auto-correcting a ${shift > 0 ? '+$shift' : '$shift'} page shift…',
+                );
+                final shifted = MappingVerifier.applyGlobalShift(
+                  bookToSplit,
+                  shift,
+                );
+                report = await verifier.verify(
+                  sourceFiles,
+                  shifted,
+                  onStatus: onStatus,
+                );
                 if (report.pass) bookToSplit = shifted;
               }
               verificationPassed = report.pass;
@@ -1611,9 +1889,14 @@ class GenerationManager extends ChangeNotifier {
           }
 
           if (verificationPassed) {
-            print('[GenerationManager] Mapping verification passed. Proceeding automatically...');
+            print(
+              '[GenerationManager] Mapping verification passed. Proceeding automatically...',
+            );
             await startBackgroundSplitAndSave(
-                taskId, sourceFiles, bookToSplit.copyWith(mappingVerified: true));
+              taskId,
+              sourceFiles,
+              bookToSplit.copyWith(mappingVerified: true),
+            );
           } else {
             task.skeletonBook = bookToSplit;
             task.state = BookGenState.review;
@@ -1621,7 +1904,12 @@ class GenerationManager extends ChangeNotifier {
             notifyListeners();
 
             await NotificationService.cancel(notifId);
-            await NotificationService.showActionable(notifId, "Course Skeleton Ready", "Tap to review page splits.", "review_split|$taskId");
+            await NotificationService.showActionable(
+              notifId,
+              "Course Skeleton Ready",
+              "Tap to review page splits.",
+              "review_split|$taskId",
+            );
           }
         }
       }
@@ -1630,17 +1918,28 @@ class GenerationManager extends ChangeNotifier {
       task.errorMessage = e.toString();
       task.statusMessage = 'Failed to generate structure';
       notifyListeners();
-      
-      final shortError = e.toString().length > 200 ? "${e.toString().substring(0, 200)}..." : e.toString();
+
+      final shortError = e.toString().length > 200
+          ? "${e.toString().substring(0, 200)}..."
+          : e.toString();
       await NotificationService.cancel(notifId);
-      await NotificationService.showActionable(notifId, "Generation Failed", shortError, "error");
+      await NotificationService.showActionable(
+        notifId,
+        "Generation Failed",
+        shortError,
+        "error",
+      );
     }
   }
 
-  Future<void> startBackgroundSplitAndSave(String taskId, List<File> sourceFiles, Book offsetBook) async {
+  Future<void> startBackgroundSplitAndSave(
+    String taskId,
+    List<File> sourceFiles,
+    Book offsetBook,
+  ) async {
     final taskIndex = activeTasks.indexWhere((t) => t.id == taskId);
     if (taskIndex == -1) return;
-    
+
     final task = activeTasks[taskIndex];
     task.state = BookGenState.chunking;
     task.statusMessage = 'Native Vector Splitting...';
@@ -1650,26 +1949,44 @@ class GenerationManager extends ChangeNotifier {
     notifyListeners();
 
     final notifId = taskId.hashCode;
-    await NotificationService.showProgress(notifId, "Chunking Pages", "Processing natively...", indeterminate: true);
+    await NotificationService.showProgress(
+      notifId,
+      "Chunking Pages",
+      "Processing natively...",
+      indeterminate: true,
+    );
 
     try {
-      final completeBook = await _pdfService.splitBookPdf(sourceFiles, offsetBook, (status, progress) {
-        task.statusMessage = status;
-        task.progress = progress;
-        notifyListeners();
-        NotificationService.showProgress(notifId, "Chunking Document", status, indeterminate: true);
-      });
+      // Knowledge-only books have no source PDFs — nothing to split.
+      final completeBook = sourceFiles.isEmpty
+          ? offsetBook
+          : await _pdfService.splitBookPdf(sourceFiles, offsetBook, (
+              status,
+              progress,
+            ) {
+              task.statusMessage = status;
+              task.progress = progress;
+              notifyListeners();
+              NotificationService.showProgress(
+                notifId,
+                "Chunking Document",
+                status,
+                indeterminate: true,
+              );
+            });
 
       task.state = BookGenState.saving;
       task.statusMessage = 'Saving to Database...';
       notifyListeners();
-      
+
       Book finalBook = completeBook;
       if (task.plannerQuestions != null) {
         finalBook = finalBook.copyWith(plannerQuestions: task.plannerQuestions);
       }
       if (task.selectedQuestions != null) {
-        finalBook = finalBook.copyWith(selectedQuestions: task.selectedQuestions);
+        finalBook = finalBook.copyWith(
+          selectedQuestions: task.selectedQuestions,
+        );
       }
       if (task.bloomLevel != null) {
         finalBook = finalBook.copyWith(bloomLevel: task.bloomLevel);
@@ -1686,7 +2003,9 @@ class GenerationManager extends ChangeNotifier {
           if (task.syllabusFiles.length == 1) {
             finalSyllabusFile = task.syllabusFiles.first;
           } else {
-            finalSyllabusFile = await _pdfService.mergeFiles(task.syllabusFiles);
+            finalSyllabusFile = await _pdfService.mergeFiles(
+              task.syllabusFiles,
+            );
           }
           if (await finalSyllabusFile.exists()) {
             final ext = finalSyllabusFile.path.split('.').last;
@@ -1700,10 +2019,10 @@ class GenerationManager extends ChangeNotifier {
       }
 
       await _dbService.saveGeneratedBook(finalBook);
-      
+
       activeTasks.remove(task);
       notifyListeners();
-      
+
       _bookUpdateController.add(finalBook);
       onBookGenerated?.call();
 
@@ -1715,15 +2034,25 @@ class GenerationManager extends ChangeNotifier {
       }
 
       await NotificationService.cancel(notifId);
-      await NotificationService.showActionable(notifId, "Course Created!", "Your book is ready.", "open_home|");
+      await NotificationService.showActionable(
+        notifId,
+        "Course Created!",
+        "Your book is ready.",
+        "open_home|",
+      );
     } catch (e) {
       task.state = BookGenState.error;
       task.statusMessage = 'Error chunking file';
       task.errorMessage = e.toString();
       notifyListeners();
-      
+
       await NotificationService.cancel(notifId);
-      await NotificationService.showActionable(notifId, "Error", "Failed to split file.", "error");
+      await NotificationService.showActionable(
+        notifId,
+        "Error",
+        "Failed to split file.",
+        "error",
+      );
     }
   }
 
@@ -1746,23 +2075,42 @@ class GenerationManager extends ChangeNotifier {
     activeTasks.add(task);
     notifyListeners();
 
-    await NotificationService.showProgress(notifId, "Restoring Files", "Re-splitting source natively...", indeterminate: true);
+    await NotificationService.showProgress(
+      notifId,
+      "Restoring Files",
+      "Re-splitting source natively...",
+      indeterminate: true,
+    );
 
     try {
       List<File> finalSourceFiles = sourceFiles;
-      final bool isMultiBookCourse = book.modules.any((m) => m.sections.any((s) => (s.bookIndex ?? 0) > 0));
+      final bool isMultiBookCourse = book.modules.any(
+        (m) => m.sections.any((s) => (s.bookIndex ?? 0) > 0),
+      );
       if (!isMultiBookCourse) {
-        if (sourceFiles.length > 1 || (sourceFiles.isNotEmpty && !sourceFiles.first.path.toLowerCase().endsWith('.pdf'))) {
+        if (sourceFiles.length > 1 ||
+            (sourceFiles.isNotEmpty &&
+                !sourceFiles.first.path.toLowerCase().endsWith('.pdf'))) {
           finalSourceFiles = [await _pdfService.mergeFiles(sourceFiles)];
         }
       }
 
-      final completeBook = await _pdfService.splitBookPdf(finalSourceFiles, book, (status, progress) {
-        task.statusMessage = status;
-        task.progress = progress;
-        notifyListeners();
-        NotificationService.showProgress(notifId, "Restoring Document", status, indeterminate: true);
-      }, preserveLessons: true);
+      final completeBook = await _pdfService.splitBookPdf(
+        finalSourceFiles,
+        book,
+        (status, progress) {
+          task.statusMessage = status;
+          task.progress = progress;
+          notifyListeners();
+          NotificationService.showProgress(
+            notifId,
+            "Restoring Document",
+            status,
+            indeterminate: true,
+          );
+        },
+        preserveLessons: true,
+      );
 
       task.state = BookGenState.saving;
       task.statusMessage = 'Saving to Database...';
@@ -1776,7 +2124,12 @@ class GenerationManager extends ChangeNotifier {
       _bookUpdateController.add(completeBook);
 
       await NotificationService.cancel(notifId);
-      await NotificationService.showActionable(notifId, "Files Restored!", "Your course is ready for generation.", "open_home|");
+      await NotificationService.showActionable(
+        notifId,
+        "Files Restored!",
+        "Your course is ready for generation.",
+        "open_home|",
+      );
     } catch (e) {
       task.state = BookGenState.error;
       task.statusMessage = 'Error restoring files';
@@ -1784,7 +2137,12 @@ class GenerationManager extends ChangeNotifier {
       notifyListeners();
 
       await NotificationService.cancel(notifId);
-      await NotificationService.showActionable(notifId, "Error", "Failed to restore files.", "error");
+      await NotificationService.showActionable(
+        notifId,
+        "Error",
+        "Failed to restore files.",
+        "error",
+      );
     }
   }
 
@@ -1797,10 +2155,14 @@ class GenerationManager extends ChangeNotifier {
     bool generateGraphics = true,
     bool isScheduled = false,
   }) async {
-    if (queue.any((t) => t.unitId == unit.id && (t.status == 'queued' || t.status == 'running'))) {
+    if (queue.any(
+      (t) =>
+          t.unitId == unit.id &&
+          (t.status == 'queued' || t.status == 'running'),
+    )) {
       return;
     }
-    
+
     _enqueue(
       title: 'Unit: ${unit.title}',
       type: 'unit',
@@ -1810,11 +2172,7 @@ class GenerationManager extends ChangeNotifier {
       unitId: unit.id,
       generateGraphics: generateGraphics,
       isScheduled: isScheduled,
-      params: {
-        'modIdx': modIdx,
-        'secIdx': secIdx,
-        'unitIdx': unitIdx,
-      },
+      params: {'modIdx': modIdx, 'secIdx': secIdx, 'unitIdx': unitIdx},
     );
   }
 
@@ -1835,10 +2193,15 @@ class GenerationManager extends ChangeNotifier {
     bool isScheduled = false,
   }) async {
     final section = book.modules[modIdx].sections[secIdx];
-    if (queue.any((t) => t.sectionId == section.id && t.type == 'manifest' && (t.status == 'queued' || t.status == 'running'))) {
+    if (queue.any(
+      (t) =>
+          t.sectionId == section.id &&
+          t.type == 'manifest' &&
+          (t.status == 'queued' || t.status == 'running'),
+    )) {
       return;
     }
-    
+
     _enqueue(
       title: 'Plan Manifest: ${section.title}',
       type: 'manifest',
@@ -1865,10 +2228,15 @@ class GenerationManager extends ChangeNotifier {
     bool isScheduled = false,
   }) async {
     final section = book.modules[modIdx].sections[secIdx];
-    if (queue.any((t) => t.sectionId == section.id && t.type == 'section' && (t.status == 'queued' || t.status == 'running'))) {
+    if (queue.any(
+      (t) =>
+          t.sectionId == section.id &&
+          t.type == 'section' &&
+          (t.status == 'queued' || t.status == 'running'),
+    )) {
       return;
     }
-    
+
     _enqueue(
       title: 'Section Contents: ${section.title}',
       type: 'section',
@@ -1877,10 +2245,7 @@ class GenerationManager extends ChangeNotifier {
       sectionId: section.id,
       generateGraphics: generateGraphics,
       isScheduled: isScheduled,
-      params: {
-        'modIdx': modIdx,
-        'secIdx': secIdx,
-      },
+      params: {'modIdx': modIdx, 'secIdx': secIdx},
     );
   }
 
@@ -1891,10 +2256,15 @@ class GenerationManager extends ChangeNotifier {
     bool isScheduled = false,
   }) async {
     final module = book.modules[modIdx];
-    if (queue.any((t) => t.moduleId == module.id && t.type == 'module' && (t.status == 'queued' || t.status == 'running'))) {
+    if (queue.any(
+      (t) =>
+          t.moduleId == module.id &&
+          t.type == 'module' &&
+          (t.status == 'queued' || t.status == 'running'),
+    )) {
       return;
     }
-    
+
     _enqueue(
       title: 'Module Contents: ${module.title}',
       type: 'module',
@@ -1902,9 +2272,7 @@ class GenerationManager extends ChangeNotifier {
       moduleId: module.id,
       generateGraphics: generateGraphics,
       isScheduled: isScheduled,
-      params: {
-        'modIdx': modIdx,
-      },
+      params: {'modIdx': modIdx},
     );
   }
 
@@ -1913,10 +2281,15 @@ class GenerationManager extends ChangeNotifier {
     bool generateGraphics = true,
     bool isScheduled = false,
   }) async {
-    if (queue.any((t) => t.bookId == book.id && t.type == 'book_content' && (t.status == 'queued' || t.status == 'running'))) {
+    if (queue.any(
+      (t) =>
+          t.bookId == book.id &&
+          t.type == 'book_content' &&
+          (t.status == 'queued' || t.status == 'running'),
+    )) {
       return;
     }
-    
+
     _enqueue(
       title: 'Course Contents: ${book.title}',
       type: 'book_content',
@@ -1935,14 +2308,19 @@ class GenerationManager extends ChangeNotifier {
     required int lessonIdx,
     String? errorContext,
   }) async {
-    final lesson = book.modules[modIdx].sections[secIdx].units[unitIdx].lessons[lessonIdx];
-    if ((lesson.canvasPrompt?.trim().isEmpty ?? true) || activeCanvasRegens.contains(lesson.id)) return;
+    final lesson =
+        book.modules[modIdx].sections[secIdx].units[unitIdx].lessons[lessonIdx];
+    if ((lesson.canvasPrompt?.trim().isEmpty ?? true) ||
+        activeCanvasRegens.contains(lesson.id))
+      return;
     activeCanvasRegens.add(lesson.id);
     notifyListeners();
     try {
       final svg = await generateCanvasArtTask(
         lesson.canvasPrompt!,
-        contextText: lesson.slides.isNotEmpty ? lesson.slides.first.content : '',
+        contextText: lesson.slides.isNotEmpty
+            ? lesson.slides.first.content
+            : '',
         errorContext: errorContext,
       );
       if (svg == null) return;
@@ -1973,8 +2351,15 @@ class GenerationManager extends ChangeNotifier {
     required int slideIdx,
     String? errorContext,
   }) async {
-    final slide = book.modules[modIdx].sections[secIdx].units[unitIdx].lessons[lessonIdx].slides[slideIdx];
-    if ((slide.canvasPrompt?.trim().isEmpty ?? true) || activeCanvasRegens.contains(slide.id)) return;
+    final slide = book
+        .modules[modIdx]
+        .sections[secIdx]
+        .units[unitIdx]
+        .lessons[lessonIdx]
+        .slides[slideIdx];
+    if ((slide.canvasPrompt?.trim().isEmpty ?? true) ||
+        activeCanvasRegens.contains(slide.id))
+      return;
     activeCanvasRegens.add(slide.id);
     notifyListeners();
     try {
@@ -2044,15 +2429,15 @@ class GenerationManager extends ChangeNotifier {
     final uns = List<Unit>.from(secs[secIdx].units);
     final lessons = List<Lesson>.from(uns[unitIdx].lessons);
     final slides = List<Slide>.from(lessons[lessonIdx].slides);
-    
+
     slides.removeAt(slideIdx);
-    
+
     lessons[lessonIdx] = lessons[lessonIdx].copyWith(slides: slides);
     uns[unitIdx] = uns[unitIdx].copyWith(lessons: lessons);
     secs[secIdx] = secs[secIdx].copyWith(units: uns);
     mods[modIdx] = mods[modIdx].copyWith(sections: secs);
     final newBook = base.copyWith(modules: mods);
-    
+
     await _dbService.saveGeneratedBook(newBook);
     _bookUpdateController.add(newBook);
     notifyListeners();
@@ -2070,11 +2455,16 @@ class GenerationManager extends ChangeNotifier {
     String? customPrompt,
     String? newFormatId,
   }) async {
-    final lesson = book.modules[modIdx].sections[secIdx].units[unitIdx].lessons[lessonIdx];
-    if (queue.any((t) => t.params['lessonId'] == lesson.id && (t.status == 'queued' || t.status == 'running'))) {
+    final lesson =
+        book.modules[modIdx].sections[secIdx].units[unitIdx].lessons[lessonIdx];
+    if (queue.any(
+      (t) =>
+          t.params['lessonId'] == lesson.id &&
+          (t.status == 'queued' || t.status == 'running'),
+    )) {
       return;
     }
-    
+
     _enqueue(
       title: 'Regen Lesson: ${lesson.title}',
       type: 'lesson_regen',
@@ -2109,7 +2499,8 @@ class GenerationManager extends ChangeNotifier {
   }) async {
     final base = (await _dbService.getBookFromCache(book.id)) ?? book;
 
-    final lesson = book.modules[modIdx].sections[secIdx].units[unitIdx].lessons[lessonIdx];
+    final lesson =
+        book.modules[modIdx].sections[secIdx].units[unitIdx].lessons[lessonIdx];
     final slide = lesson.slides[slideIdx];
 
     int targetModIdx = -1;
@@ -2136,21 +2527,33 @@ class GenerationManager extends ChangeNotifier {
       }
     }
 
-    if (targetModIdx == -1 || targetSecIdx == -1 || targetUnitIdx == -1 || targetLessonIdx == -1) {
+    if (targetModIdx == -1 ||
+        targetSecIdx == -1 ||
+        targetUnitIdx == -1 ||
+        targetLessonIdx == -1) {
       targetModIdx = modIdx;
       targetSecIdx = secIdx;
       targetUnitIdx = unitIdx;
       targetLessonIdx = lessonIdx;
     }
 
-    final freshLesson = base.modules[targetModIdx].sections[targetSecIdx].units[targetUnitIdx].lessons[targetLessonIdx];
+    final freshLesson = base
+        .modules[targetModIdx]
+        .sections[targetSecIdx]
+        .units[targetUnitIdx]
+        .lessons[targetLessonIdx];
 
     if (activeSlideRegens.contains(slide.id)) return;
     activeSlideRegens.add(slide.id);
     notifyListeners();
 
     try {
-      final String? chunkPath = base.modules[targetModIdx].sections[targetSecIdx].units[targetUnitIdx].pdfPath ??
+      final String? chunkPath =
+          base
+              .modules[targetModIdx]
+              .sections[targetSecIdx]
+              .units[targetUnitIdx]
+              .pdfPath ??
           base.modules[targetModIdx].sections[targetSecIdx].pdfPath;
 
       final fresh = await regenerateSlideTask(
@@ -2179,7 +2582,9 @@ class GenerationManager extends ChangeNotifier {
       }
 
       slides[targetSlideIdx] = fresh;
-      lessons[targetLessonIdx] = lessons[targetLessonIdx].copyWith(slides: slides);
+      lessons[targetLessonIdx] = lessons[targetLessonIdx].copyWith(
+        slides: slides,
+      );
       uns[targetUnitIdx] = uns[targetUnitIdx].copyWith(lessons: lessons);
       secs[targetSecIdx] = secs[targetSecIdx].copyWith(units: uns);
       mods[targetModIdx] = mods[targetModIdx].copyWith(sections: secs);
@@ -2206,12 +2611,17 @@ class GenerationManager extends ChangeNotifier {
     String? customInstructions,
     bool isScheduled = false,
   }) async {
-    if (queue.any((t) => t.bookId == bookId && t.type == 'qp' && (t.status == 'queued' || t.status == 'running'))) {
+    if (queue.any(
+      (t) =>
+          t.bookId == bookId &&
+          t.type == 'qp' &&
+          (t.status == 'queued' || t.status == 'running'),
+    )) {
       return;
     }
-    
+
     final filePaths = files.map((f) => f.path).toList();
-    
+
     _enqueue(
       title: 'Exam: $qpTitle',
       type: 'qp',
@@ -2249,19 +2659,24 @@ class GenerationManager extends ChangeNotifier {
     bool isScheduled = false,
     int? moduleIndex,
   }) async {
-    if (queue.any((t) => t.bookId == bookId && t.type == 'pyq' && (t.status == 'queued' || t.status == 'running'))) {
+    if (queue.any(
+      (t) =>
+          t.bookId == bookId &&
+          t.type == 'pyq' &&
+          (t.status == 'queued' || t.status == 'running'),
+    )) {
       return;
     }
-    
+
     final taskId = 'pyq_${DateTime.now().millisecondsSinceEpoch}_$bookId';
-    
+
     final platformFiles = files.whereType<PlatformFile>().toList();
     if (platformFiles.isNotEmpty) {
       _inMemoryPyqFiles[taskId] = platformFiles;
     }
-    
+
     final filePaths = files.whereType<File>().map((f) => f.path).toList();
-    
+
     _enqueue(
       customTaskId: taskId,
       title: 'PYQ: ${currentBook.title}',
@@ -2302,11 +2717,15 @@ class GenerationManager extends ChangeNotifier {
         NotificationService.cancel(task.bookId.hashCode + 1);
       } else if (task.type == 'pyq') {
         NotificationService.cancel(task.bookId.hashCode + 2);
-      } else if (task.type == 'lesson_regen' && task.params['lessonId'] != null) {
-        NotificationService.cancel(('regen_${task.params['lessonId']}').hashCode);
+      } else if (task.type == 'lesson_regen' &&
+          task.params['lessonId'] != null) {
+        NotificationService.cancel(
+          ('regen_${task.params['lessonId']}').hashCode,
+        );
       } else if (task.type == 'book_skeleton') {
         final timestampStr = task.id.replaceAll('skeleton_', '');
-        final notifId = int.tryParse(timestampStr)?.hashCode ?? task.id.hashCode;
+        final notifId =
+            int.tryParse(timestampStr)?.hashCode ?? task.id.hashCode;
         NotificationService.cancel(notifId);
         NotificationService.cancel(task.id.hashCode);
         activeTasks.removeWhere((t) => t.id == timestampStr);
@@ -2320,7 +2739,11 @@ class GenerationManager extends ChangeNotifier {
 
   void _pauseAllOtherTasks() {
     final otherTasks = queue
-        .where((t) => t.type != 'slide_regen' && (t.status == 'running' || t.status == 'queued'))
+        .where(
+          (t) =>
+              t.type != 'slide_regen' &&
+              (t.status == 'running' || t.status == 'queued'),
+        )
         .toList();
 
     for (final t in otherTasks) {
@@ -2333,9 +2756,13 @@ class GenerationManager extends ChangeNotifier {
       _clearTaskNotification(t);
       _pausedTasks.add(t);
     }
-    
-    queue.removeWhere((t) => t.type != 'slide_regen' && (t.status == 'running' || t.status == 'queued'));
-    
+
+    queue.removeWhere(
+      (t) =>
+          t.type != 'slide_regen' &&
+          (t.status == 'running' || t.status == 'queued'),
+    );
+
     _syncActiveMapsWithQueue();
     notifyListeners();
     _saveQueueToPrefs();
@@ -2377,7 +2804,9 @@ class GenerationManager extends ChangeNotifier {
   }
 
   void cancelAllTasks() {
-    final cancellableTasks = queue.where((t) => t.status == 'running' || t.status == 'queued').toList();
+    final cancellableTasks = queue
+        .where((t) => t.status == 'running' || t.status == 'queued')
+        .toList();
     for (final task in cancellableTasks) {
       _clearTaskNotification(task);
     }
@@ -2420,23 +2849,24 @@ class GenerationManager extends ChangeNotifier {
       bookId = task.skeletonBook?.id;
       activeTasks.removeAt(taskIndex);
     }
-    
+
     try {
       await NotificationService.cancel(taskId.hashCode);
     } catch (_) {}
-    
+
     final List<AiTask> toRemove = [];
     for (final t in queue) {
-      final match = t.id == taskId || 
-                    t.bookId == taskId || 
-                    (bookId != null && t.bookId == bookId) || 
-                    (bookId == null && t.bookId == 'new_book') ||
-                    t.params['taskId'] == taskId;
+      final match =
+          t.id == taskId ||
+          t.bookId == taskId ||
+          (bookId != null && t.bookId == bookId) ||
+          (bookId == null && t.bookId == 'new_book') ||
+          t.params['taskId'] == taskId;
       if (match) {
         toRemove.add(t);
       }
     }
-    
+
     for (final t in toRemove) {
       if (t.status == 'running' || t.status == 'queued') {
         t.status = 'failed';
@@ -2448,7 +2878,7 @@ class GenerationManager extends ChangeNotifier {
       }
       queue.remove(t);
     }
-    
+
     _syncActiveMapsWithQueue();
     notifyListeners();
     _saveQueueToPrefs();
@@ -2474,7 +2904,7 @@ class GenerationManager extends ChangeNotifier {
     task.skeletonBook = skeletonBook;
     task.state = BookGenState.review;
     task.statusMessage = 'Action Required: Review Splits';
-    
+
     activeTasks.add(task);
     _syncActiveMapsWithQueue();
     notifyListeners();
@@ -2487,24 +2917,33 @@ class GenerationManager extends ChangeNotifier {
     List<File> sourceFiles, {
     void Function(String status)? onStatus,
   }) {
-    final verifier = MappingVerifier(pdfService: _pdfService, aiService: _aiService);
+    final verifier = MappingVerifier(
+      pdfService: _pdfService,
+      aiService: _aiService,
+    );
     return verifier.verify(sourceFiles, book, onStatus: onStatus);
   }
 
   /// Shifts every mapped page range of [book] by [shift] pages, then
   /// re-splits the source PDFs (preserving generated lessons) and saves.
-  Future<void> repairPageAlignment(Book book, List<File> sourceFiles, int shift) async {
+  Future<void> repairPageAlignment(
+    Book book,
+    List<File> sourceFiles,
+    int shift,
+  ) async {
     if (shift == 0) return;
-    final shifted =
-        MappingVerifier.applyGlobalShift(book, shift).copyWith(mappingVerified: true);
+    final shifted = MappingVerifier.applyGlobalShift(
+      book,
+      shift,
+    ).copyWith(mappingVerified: true);
     await restoreBookFiles(shifted, sourceFiles);
   }
 
   Future<void> autoGenerateModule1Contents(Book book) async {
     if (book.modules.isEmpty || book.modules.first.sections.isEmpty) return;
-    
+
     final firstSection = book.modules.first.sections.first;
-    
+
     final task = AiTask(
       id: 'manifest_${DateTime.now().millisecondsSinceEpoch}_${firstSection.id}',
       title: 'Plan Manifest: ${firstSection.title}',
@@ -2521,17 +2960,16 @@ class GenerationManager extends ChangeNotifier {
         'saveGlobally': false,
       },
     );
-    
+
     _enqueueTaskObject(task);
-    
+
     try {
       await task.completer.future;
-      
+
       final updatedBook = await _dbService.getBookFromCache(book.id);
       if (updatedBook != null &&
           updatedBook.modules.isNotEmpty &&
           updatedBook.modules.first.sections.isNotEmpty) {
-        
         final updatedFirstSec = updatedBook.modules.first.sections.first;
         if (updatedFirstSec.units.isNotEmpty) {
           final firstUnit = updatedFirstSec.units.first;
@@ -2549,7 +2987,7 @@ class GenerationManager extends ChangeNotifier {
     } catch (e) {
       print('Error auto-generating first unit manifest: $e');
     }
-    
+
     for (int i = 1; i < book.modules.first.sections.length; i++) {
       startSectionUnitManifest(
         book,
