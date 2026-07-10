@@ -22,6 +22,8 @@ class GlassyNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+    final bubbleTint = colors.isDark ? Colors.white : Colors.black;
     final itemCount = icons.length;
     // Align index from -1.0 (leftmost) to 1.0 (rightmost)
     final double alignmentX = itemCount > 1
@@ -37,7 +39,7 @@ class GlassyNavBar extends StatelessWidget {
           borderRadius: BorderRadius.circular(32),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.12),
+              color: colors.shadow,
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -50,10 +52,10 @@ class GlassyNavBar extends StatelessWidget {
             child: Container(
               padding: EdgeInsets.zero,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.02),
+                color: colors.glassFill,
                 borderRadius: BorderRadius.circular(32),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.15),
+                  color: colors.outline,
                   width: 1,
                 ),
               ),
@@ -69,10 +71,10 @@ class GlassyNavBar extends StatelessWidget {
                       child: Container(
                         margin: EdgeInsets.zero,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.08),
+                          color: bubbleTint.withOpacity(0.08),
                           borderRadius: BorderRadius.circular(32),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.08),
+                            color: bubbleTint.withOpacity(0.08),
                             width: 1,
                           ),
                         ),
@@ -99,7 +101,7 @@ class GlassyNavBar extends StatelessWidget {
                                 curve: Curves.easeInOut,
                                 child: Icon(
                                   icon,
-                                  color: isActive ? activeColor : Colors.white60,
+                                  color: isActive ? activeColor : colors.textFaint,
                                   size: 24,
                                 ),
                               ),
