@@ -64,13 +64,13 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        title: const Text('Cancel All Tasks?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: const Text('Are you sure you want to cancel all currently running and queued generation tasks? This will stop all active AI generations.', style: TextStyle(color: Colors.white70)),
+        backgroundColor: context.colors.surface,
+        title: Text('Cancel All Tasks?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+        content: Text('Are you sure you want to cancel all currently running and queued generation tasks? This will stop all active AI generations.', style: TextStyle(color: context.colors.textSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('No', style: TextStyle(color: Colors.white54)),
+            child: Text('No', style: TextStyle(color: context.colors.textFaint)),
           ),
           TextButton(
             onPressed: () {
@@ -134,9 +134,9 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.03),
+          color: context.colors.surfaceAlt,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          border: Border.all(color: context.colors.outline),
         ),
         child: Row(
           children: [
@@ -147,11 +147,11 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
               children: [
                 Text(
                   count,
-                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white),
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: context.colors.textPrimary),
                 ),
                 Text(
                   title,
-                  style: const TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: context.colors.textFaint, fontSize: 10, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -170,10 +170,10 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
     final card = Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppTheme.surface.withOpacity(0.4),
+        color: context.colors.surface.withOpacity(0.4),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isRunning ? AppTheme.duoBlue.withOpacity(0.3) : Colors.white12, 
+          color: isRunning ? AppTheme.duoBlue.withOpacity(0.3) : context.colors.outline, 
           width: isRunning ? 2 : 1
         ),
       ),
@@ -202,7 +202,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                       children: [
                         Text(
                           task.title,
-                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: Colors.white),
+                          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: context.colors.textPrimary),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -248,7 +248,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                   ),
                   if (isRunning || isQueued)
                     IconButton(
-                      icon: const Icon(LucideIcons.xCircle, color: Colors.white30, size: 22),
+                      icon: Icon(LucideIcons.xCircle, color: context.colors.textFaint, size: 22),
                       onPressed: () {
                         GenerationManager.instance.cancelQueuedTask(task.id);
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -261,7 +261,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
               const SizedBox(height: 12),
               Text(
                 task.statusMessage,
-                style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+                style: TextStyle(color: context.colors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
               ),
               if (isRunning) ...[
                 const SizedBox(height: 10),
@@ -277,10 +277,10 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'Waiting for auto-schedule hours...',
-                        style: TextStyle(color: Colors.white38, fontSize: 10, fontStyle: FontStyle.italic),
+                        style: TextStyle(color: context.colors.textFaint, fontSize: 10, fontStyle: FontStyle.italic),
                       ),
                     ),
                     TextButton.icon(
@@ -348,11 +348,11 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                   children: [
                     Text(
                       'Duration: ${task.endTime!.difference(task.startTime!).inSeconds}s',
-                      style: const TextStyle(color: Colors.white30, fontSize: 10),
+                      style: TextStyle(color: context.colors.textFaint, fontSize: 10),
                     ),
                     Text(
                       'Finished: ${task.endTime!.hour.toString().padLeft(2, '0')}:${task.endTime!.minute.toString().padLeft(2, '0')}',
-                      style: const TextStyle(color: Colors.white30, fontSize: 10),
+                      style: TextStyle(color: context.colors.textFaint, fontSize: 10),
                     ),
                   ],
                 ),
@@ -389,8 +389,8 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
             Expanded(
               child: Text(
                 title.toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: context.colors.textPrimary,
                   fontWeight: FontWeight.w900,
                   fontSize: 13,
                   letterSpacing: 1.0,
@@ -407,9 +407,9 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: AppTheme.surface.withOpacity(0.2),
+        color: context.colors.surface.withOpacity(0.2),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: context.colors.outline),
       ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -418,14 +418,14 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
           leading: const Icon(LucideIcons.package, color: AppTheme.duoBlue, size: 20),
           title: Text(
             title,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: context.colors.textPrimary,
               fontWeight: FontWeight.w900,
               fontSize: 14,
             ),
           ),
           iconColor: AppTheme.duoBlue,
-          collapsedIconColor: Colors.white54,
+          collapsedIconColor: context.colors.textFaint,
           childrenPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           expandedAlignment: Alignment.topLeft,
           expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
@@ -439,9 +439,9 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: AppTheme.surface.withOpacity(0.15),
+        color: context.colors.surface.withOpacity(0.15),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: context.colors.outline),
       ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -450,14 +450,14 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
           leading: const Icon(LucideIcons.layers, color: AppTheme.duoViolet, size: 18),
           title: Text(
             title,
-            style: const TextStyle(
-              color: Colors.white70,
+            style: TextStyle(
+              color: context.colors.textSecondary,
               fontWeight: FontWeight.bold,
               fontSize: 13,
             ),
           ),
           iconColor: AppTheme.duoViolet,
-          collapsedIconColor: Colors.white38,
+          collapsedIconColor: context.colors.textFaint,
           childrenPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           expandedAlignment: Alignment.topLeft,
           expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
@@ -470,12 +470,12 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
   List<Widget> _buildHierarchicalList(List<AiTask> filteredTasks) {
     if (filteredTasks.isEmpty) {
       return [
-        const Center(
+        Center(
           child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 48.0),
+            padding: const EdgeInsets.symmetric(vertical: 48.0),
             child: Text(
               'No tasks in this category.',
-              style: TextStyle(color: Colors.white30, fontWeight: FontWeight.bold),
+              style: TextStyle(color: context.colors.textFaint, fontWeight: FontWeight.bold),
             ),
           ),
         )
@@ -675,7 +675,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
           final finished = queue.where((t) => t.status == 'completed' || t.status == 'failed').toList();
 
           return Scaffold(
-            backgroundColor: AppTheme.background,
+            backgroundColor: context.colors.background,
             appBar: AppBar(
               title: const Text('AI Requests', style: TextStyle(fontWeight: FontWeight.w900)),
               actions: [
@@ -723,11 +723,11 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                             children: [
                               Text(
                                 _scheduleText,
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
                               ),
-                              const Text(
+                              Text(
                                 'Scheduled tasks run with lowest priority during these hours.',
-                                style: TextStyle(color: Colors.white54, fontSize: 10),
+                                style: TextStyle(color: context.colors.textFaint, fontSize: 10),
                               ),
                             ],
                           ),
@@ -751,15 +751,15 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                   ),
                   
                   // Tabs for Active / Queued / History
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                     child: TabBar(
                       indicatorColor: AppTheme.duoBlue,
                       indicatorSize: TabBarIndicatorSize.tab,
-                      labelColor: Colors.white,
-                      unselectedLabelColor: Colors.white38,
-                      labelStyle: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.8),
-                      tabs: [
+                      labelColor: context.colors.textPrimary,
+                      unselectedLabelColor: context.colors.textFaint,
+                      labelStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.8),
+                      tabs: const [
                         Tab(text: 'ACTIVE'),
                         Tab(text: 'QUEUED'),
                         Tab(text: 'HISTORY'),
