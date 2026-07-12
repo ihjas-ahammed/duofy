@@ -75,6 +75,64 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int? _lastSyncTime;
   final GlobalKey<StringListManagerState> _keysManagerKey =
       GlobalKey<StringListManagerState>();
+  List<String> _groqKeys = [];
+  List<String> _groqModelPrimaryText = [
+    'llama-3.3-70b-versatile',
+    'groq/compound',
+  ];
+  List<String> _groqModelPrimaryGraphics = [
+    'llama-3.3-70b-versatile',
+    'groq/compound',
+  ];
+  List<String> _groqModelLite = [
+    'llama-3.1-8b-instant',
+    'groq/compound-mini',
+  ];
+  List<String> _groqModelLive = [
+    'llama-3.1-8b-instant',
+    'groq/compound-mini',
+  ];
+  final GlobalKey<StringListManagerState> _groqKeysManagerKey =
+      GlobalKey<StringListManagerState>();
+
+  List<String> _cerebrasKeys = [];
+  List<String> _cerebrasModelPrimaryText = [
+    'llama-3.3-70b',
+    'llama-3.1-70b',
+  ];
+  List<String> _cerebrasModelPrimaryGraphics = [
+    'llama-3.3-70b',
+    'llama-3.1-70b',
+  ];
+  List<String> _cerebrasModelLite = [
+    'llama-3.1-8b',
+  ];
+  List<String> _cerebrasModelLive = [
+    'llama-3.1-8b',
+  ];
+  final GlobalKey<StringListManagerState> _cerebrasKeysManagerKey =
+      GlobalKey<StringListManagerState>();
+
+  List<String> _openrouterKeys = [];
+  List<String> _openrouterModelPrimaryText = [
+    'meta-llama/llama-3.3-70b-instruct',
+    'google/gemini-2.5-pro',
+  ];
+  List<String> _openrouterModelPrimaryGraphics = [
+    'meta-llama/llama-3.3-70b-instruct',
+    'google/gemini-2.5-pro',
+  ];
+  List<String> _openrouterModelLite = [
+    'meta-llama/llama-3.1-8b-instruct',
+    'google/gemini-2.5-flash',
+  ];
+  List<String> _openrouterModelLive = [
+    'meta-llama/llama-3.1-8b-instruct',
+    'google/gemini-2.5-flash',
+  ];
+  final GlobalKey<StringListManagerState> _openrouterKeysManagerKey =
+      GlobalKey<StringListManagerState>();
+
   final DatabaseService _db = DatabaseService();
   final TextEditingController _customPromptController = TextEditingController();
   Map<String, dynamic>? _writingStyleProfile;
@@ -167,8 +225,102 @@ class _SettingsScreenState extends State<SettingsScreen> {
       const ['gemini-3.1-flash-live-preview'],
     );
 
+    List<String> groqKeys = prefs.getStringList('groq_api_keys_list') ?? [];
+    if (groqKeys.isEmpty) {
+      final keysString = prefs.getString('groq_api_keys') ?? '';
+      groqKeys = keysString
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    }
+    List<String> groqPT = await _loadModelList(
+      prefs,
+      'groq_model_primary_text_list',
+      'groq_model_primary_text',
+      const ['llama-3.3-70b-versatile', 'groq/compound'],
+    );
+    List<String> groqPG = await _loadModelList(
+      prefs,
+      'groq_model_primary_graphics_list',
+      'groq_model_primary_graphics',
+      const ['llama-3.3-70b-versatile', 'groq/compound'],
+    );
+    List<String> groqLite = await _loadModelList(
+      prefs,
+      'groq_model_lite_list',
+      'groq_model_lite',
+      const ['llama-3.1-8b-instant', 'groq/compound-mini'],
+    );
+    List<String> groqLive = await _loadModelList(
+      prefs,
+      'groq_model_live_list',
+      'groq_model_live',
+      const ['llama-3.1-8b-instant', 'groq/compound-mini'],
+    );
+
+    List<String> cerebrasKeys = prefs.getStringList('cerebras_api_keys_list') ?? [];
+    if (cerebrasKeys.isEmpty) {
+      final keysString = prefs.getString('cerebras_api_keys') ?? '';
+      cerebrasKeys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    }
+    List<String> cerebrasPT = await _loadModelList(
+      prefs,
+      'cerebras_model_primary_text_list',
+      'cerebras_model_primary_text',
+      const ['llama-3.3-70b', 'llama-3.1-70b'],
+    );
+    List<String> cerebrasPG = await _loadModelList(
+      prefs,
+      'cerebras_model_primary_graphics_list',
+      'cerebras_model_primary_graphics',
+      const ['llama-3.3-70b', 'llama-3.1-70b'],
+    );
+    List<String> cerebrasLite = await _loadModelList(
+      prefs,
+      'cerebras_model_lite_list',
+      'cerebras_model_lite',
+      const ['llama-3.1-8b'],
+    );
+    List<String> cerebrasLive = await _loadModelList(
+      prefs,
+      'cerebras_model_live_list',
+      'cerebras_model_live',
+      const ['llama-3.1-8b'],
+    );
+
+    List<String> openrouterKeys = prefs.getStringList('openrouter_api_keys_list') ?? [];
+    if (openrouterKeys.isEmpty) {
+      final keysString = prefs.getString('openrouter_api_keys') ?? '';
+      openrouterKeys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    }
+    List<String> openrouterPT = await _loadModelList(
+      prefs,
+      'openrouter_model_primary_text_list',
+      'openrouter_model_primary_text',
+      const ['meta-llama/llama-3.3-70b-instruct', 'google/gemini-2.5-pro'],
+    );
+    List<String> openrouterPG = await _loadModelList(
+      prefs,
+      'openrouter_model_primary_graphics_list',
+      'openrouter_model_primary_graphics',
+      const ['meta-llama/llama-3.3-70b-instruct', 'google/gemini-2.5-pro'],
+    );
+    List<String> openrouterLite = await _loadModelList(
+      prefs,
+      'openrouter_model_lite_list',
+      'openrouter_model_lite',
+      const ['meta-llama/llama-3.1-8b-instruct', 'google/gemini-2.5-flash'],
+    );
+    List<String> openrouterLive = await _loadModelList(
+      prefs,
+      'openrouter_model_live_list',
+      'openrouter_model_live',
+      const ['meta-llama/llama-3.1-8b-instruct', 'google/gemini-2.5-flash'],
+    );
+
     // Hydrate from Firestore if local is empty.
-    if (keys.isEmpty || models.isEmpty) {
+    if (keys.isEmpty || models.isEmpty || groqKeys.isEmpty || cerebrasKeys.isEmpty || openrouterKeys.isEmpty) {
       final remote = await _db.fetchUserSettings();
       if (remote != null) {
         if (keys.isEmpty &&
@@ -209,6 +361,86 @@ class _SettingsScreenState extends State<SettingsScreen> {
           live = List<String>.from(remoteLive);
           await prefs.setStringList('model_live_list', live);
         }
+        if (groqKeys.isEmpty &&
+            remote['groqApiKeys'] != null &&
+            (remote['groqApiKeys'] as List).isNotEmpty) {
+          groqKeys = List<String>.from(remote['groqApiKeys']!);
+          await prefs.setStringList('groq_api_keys_list', groqKeys);
+        }
+        final remoteGroqPT = remote['groqModelPrimaryTextList'] as List? ?? const [];
+        if (remoteGroqPT.isNotEmpty) {
+          groqPT = List<String>.from(remoteGroqPT);
+          await prefs.setStringList('groq_model_primary_text_list', groqPT);
+        }
+        final remoteGroqPG = remote['groqModelPrimaryGraphicsList'] as List? ?? const [];
+        if (remoteGroqPG.isNotEmpty) {
+          groqPG = List<String>.from(remoteGroqPG);
+          await prefs.setStringList('groq_model_primary_graphics_list', groqPG);
+        }
+        final remoteGroqLite = remote['groqModelLiteList'] as List? ?? const [];
+        if (remoteGroqLite.isNotEmpty) {
+          groqLite = List<String>.from(remoteGroqLite);
+          await prefs.setStringList('groq_model_lite_list', groqLite);
+        }
+        final remoteGroqLive = remote['groqModelLiveList'] as List? ?? const [];
+        if (remoteGroqLive.isNotEmpty) {
+          groqLive = List<String>.from(remoteGroqLive);
+          await prefs.setStringList('groq_model_live_list', groqLive);
+        }
+
+        if (cerebrasKeys.isEmpty &&
+            remote['cerebrasApiKeys'] != null &&
+            (remote['cerebrasApiKeys'] as List).isNotEmpty) {
+          cerebrasKeys = List<String>.from(remote['cerebrasApiKeys']!);
+          await prefs.setStringList('cerebras_api_keys_list', cerebrasKeys);
+        }
+        final remoteCerebrasPT = remote['cerebrasModelPrimaryTextList'] as List? ?? const [];
+        if (remoteCerebrasPT.isNotEmpty) {
+          cerebrasPT = List<String>.from(remoteCerebrasPT);
+          await prefs.setStringList('cerebras_model_primary_text_list', cerebrasPT);
+        }
+        final remoteCerebrasPG = remote['cerebrasModelPrimaryGraphicsList'] as List? ?? const [];
+        if (remoteCerebrasPG.isNotEmpty) {
+          cerebrasPG = List<String>.from(remoteCerebrasPG);
+          await prefs.setStringList('cerebras_model_primary_graphics_list', cerebrasPG);
+        }
+        final remoteCerebrasLite = remote['cerebrasModelLiteList'] as List? ?? const [];
+        if (remoteCerebrasLite.isNotEmpty) {
+          cerebrasLite = List<String>.from(remoteCerebrasLite);
+          await prefs.setStringList('cerebras_model_lite_list', cerebrasLite);
+        }
+        final remoteCerebrasLive = remote['cerebrasModelLiveList'] as List? ?? const [];
+        if (remoteCerebrasLive.isNotEmpty) {
+          cerebrasLive = List<String>.from(remoteCerebrasLive);
+          await prefs.setStringList('cerebras_model_live_list', cerebrasLive);
+        }
+
+        if (openrouterKeys.isEmpty &&
+            remote['openrouterApiKeys'] != null &&
+            (remote['openrouterApiKeys'] as List).isNotEmpty) {
+          openrouterKeys = List<String>.from(remote['openrouterApiKeys']!);
+          await prefs.setStringList('openrouter_api_keys_list', openrouterKeys);
+        }
+        final remoteOpenrouterPT = remote['openrouterModelPrimaryTextList'] as List? ?? const [];
+        if (remoteOpenrouterPT.isNotEmpty) {
+          openrouterPT = List<String>.from(remoteOpenrouterPT);
+          await prefs.setStringList('openrouter_model_primary_text_list', openrouterPT);
+        }
+        final remoteOpenrouterPG = remote['openrouterModelPrimaryGraphicsList'] as List? ?? const [];
+        if (remoteOpenrouterPG.isNotEmpty) {
+          openrouterPG = List<String>.from(remoteOpenrouterPG);
+          await prefs.setStringList('openrouter_model_primary_graphics_list', openrouterPG);
+        }
+        final remoteOpenrouterLite = remote['openrouterModelLiteList'] as List? ?? const [];
+        if (remoteOpenrouterLite.isNotEmpty) {
+          openrouterLite = List<String>.from(remoteOpenrouterLite);
+          await prefs.setStringList('openrouter_model_lite_list', openrouterLite);
+        }
+        final remoteOpenrouterLive = remote['openrouterModelLiveList'] as List? ?? const [];
+        if (remoteOpenrouterLive.isNotEmpty) {
+          openrouterLive = List<String>.from(remoteOpenrouterLive);
+          await prefs.setStringList('openrouter_model_live_list', openrouterLive);
+        }
       }
     }
 
@@ -218,6 +450,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _modelPrimaryGraphics = primaryGraphics;
     _modelLite = lite;
     _modelLive = live;
+    _groqKeys = List.from(groqKeys);
+    _groqModelPrimaryText = groqPT;
+    _groqModelPrimaryGraphics = groqPG;
+    _groqModelLite = groqLite;
+    _groqModelLive = groqLive;
+    _cerebrasKeys = List.from(cerebrasKeys);
+    _cerebrasModelPrimaryText = cerebrasPT;
+    _cerebrasModelPrimaryGraphics = cerebrasPG;
+    _cerebrasModelLite = cerebrasLite;
+    _cerebrasModelLive = cerebrasLive;
+    _openrouterKeys = List.from(openrouterKeys);
+    _openrouterModelPrimaryText = openrouterPT;
+    _openrouterModelPrimaryGraphics = openrouterPG;
+    _openrouterModelLite = openrouterLite;
+    _openrouterModelLive = openrouterLive;
     _genConcurrency = prefs.getString('gen_concurrency') ?? 'auto';
     final startHour = prefs.getInt('schedule_start_hour') ?? 21;
     final startMinute = prefs.getInt('schedule_start_minute') ?? 0;
@@ -298,6 +545,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _saveSettings() async {
     // Commit any pending text in the API-key input field before reading the list.
     _keysManagerKey.currentState?.commitPending();
+    _groqKeysManagerKey.currentState?.commitPending();
+    _cerebrasKeysManagerKey.currentState?.commitPending();
+    _openrouterKeysManagerKey.currentState?.commitPending();
 
     final prefs = await SharedPreferences.getInstance();
     final keysSaved = await prefs.setStringList('gemini_api_keys_list', _keys);
@@ -315,6 +565,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     final liteSaved = await prefs.setStringList('model_lite_list', _modelLite);
     final liveSaved = await prefs.setStringList('model_live_list', _modelLive);
+
+    final groqKeysSaved = await prefs.setStringList('groq_api_keys_list', _groqKeys);
+    final groqPT = await prefs.setStringList('groq_model_primary_text_list', _groqModelPrimaryText);
+    final groqPG = await prefs.setStringList('groq_model_primary_graphics_list', _groqModelPrimaryGraphics);
+    final groqLite = await prefs.setStringList('groq_model_lite_list', _groqModelLite);
+    final groqLive = await prefs.setStringList('groq_model_live_list', _groqModelLive);
+
+    final cerebrasKeysSaved = await prefs.setStringList('cerebras_api_keys_list', _cerebrasKeys);
+    final cerebrasPT = await prefs.setStringList('cerebras_model_primary_text_list', _cerebrasModelPrimaryText);
+    final cerebrasPG = await prefs.setStringList('cerebras_model_primary_graphics_list', _cerebrasModelPrimaryGraphics);
+    final cerebrasLite = await prefs.setStringList('cerebras_model_lite_list', _cerebrasModelLite);
+    final cerebrasLive = await prefs.setStringList('cerebras_model_live_list', _cerebrasModelLive);
+
+    final openrouterKeysSaved = await prefs.setStringList('openrouter_api_keys_list', _openrouterKeys);
+    final openrouterPT = await prefs.setStringList('openrouter_model_primary_text_list', _openrouterModelPrimaryText);
+    final openrouterPG = await prefs.setStringList('openrouter_model_primary_graphics_list', _openrouterModelPrimaryGraphics);
+    final openrouterLite = await prefs.setStringList('openrouter_model_lite_list', _openrouterModelLite);
+    final openrouterLive = await prefs.setStringList('openrouter_model_live_list', _openrouterModelLive);
+
     await prefs.setString('gen_concurrency', _genConcurrency);
     await prefs.setInt('schedule_start_hour', _scheduleStart.hour);
     await prefs.setInt('schedule_start_minute', _scheduleStart.minute);
@@ -344,12 +613,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (_modelLive.isNotEmpty)
       await prefs.setString('model_live', _modelLive.first);
 
+    if (_groqModelPrimaryText.isNotEmpty)
+      await prefs.setString('groq_model_primary_text', _groqModelPrimaryText.first);
+    if (_groqModelPrimaryGraphics.isNotEmpty)
+      await prefs.setString('groq_model_primary_graphics', _groqModelPrimaryGraphics.first);
+    if (_groqModelLite.isNotEmpty)
+      await prefs.setString('groq_model_lite', _groqModelLite.first);
+    if (_groqModelLive.isNotEmpty)
+      await prefs.setString('groq_model_live', _groqModelLive.first);
+
+    if (_cerebrasModelPrimaryText.isNotEmpty)
+      await prefs.setString('cerebras_model_primary_text', _cerebrasModelPrimaryText.first);
+    if (_cerebrasModelPrimaryGraphics.isNotEmpty)
+      await prefs.setString('cerebras_model_primary_graphics', _cerebrasModelPrimaryGraphics.first);
+    if (_cerebrasModelLite.isNotEmpty)
+      await prefs.setString('cerebras_model_lite', _cerebrasModelLite.first);
+    if (_cerebrasModelLive.isNotEmpty)
+      await prefs.setString('cerebras_model_live', _cerebrasModelLive.first);
+
+    if (_openrouterModelPrimaryText.isNotEmpty)
+      await prefs.setString('openrouter_model_primary_text', _openrouterModelPrimaryText.first);
+    if (_openrouterModelPrimaryGraphics.isNotEmpty)
+      await prefs.setString('openrouter_model_primary_graphics', _openrouterModelPrimaryGraphics.first);
+    if (_openrouterModelLite.isNotEmpty)
+      await prefs.setString('openrouter_model_lite', _openrouterModelLite.first);
+    if (_openrouterModelLive.isNotEmpty)
+      await prefs.setString('openrouter_model_live', _openrouterModelLive.first);
+
     if (!keysSaved ||
         !modelsSaved ||
         !pTextSaved ||
         !pGraphicsSaved ||
         !liteSaved ||
-        !liveSaved) {
+        !liveSaved ||
+        !groqKeysSaved ||
+        !groqPT ||
+        !groqPG ||
+        !groqLite ||
+        !groqLive ||
+        !cerebrasKeysSaved ||
+        !cerebrasPT ||
+        !cerebrasPG ||
+        !cerebrasLite ||
+        !cerebrasLive ||
+        !openrouterKeysSaved ||
+        !openrouterPT ||
+        !openrouterPG ||
+        !openrouterLite ||
+        !openrouterLive) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -366,6 +677,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
       modelPrimaryGraphicsList: _modelPrimaryGraphics,
       modelLiteList: _modelLite,
       modelLiveList: _modelLive,
+      groqApiKeys: _groqKeys,
+      groqModelPrimaryTextList: _groqModelPrimaryText,
+      groqModelPrimaryGraphicsList: _groqModelPrimaryGraphics,
+      groqModelLiteList: _groqModelLite,
+      groqModelLiveList: _groqModelLive,
+      cerebrasApiKeys: _cerebrasKeys,
+      cerebrasModelPrimaryTextList: _cerebrasModelPrimaryText,
+      cerebrasModelPrimaryGraphicsList: _cerebrasModelPrimaryGraphics,
+      cerebrasModelLiteList: _cerebrasModelLite,
+      cerebrasModelLiveList: _cerebrasModelLive,
+      openrouterApiKeys: _openrouterKeys,
+      openrouterModelPrimaryTextList: _openrouterModelPrimaryText,
+      openrouterModelPrimaryGraphicsList: _openrouterModelPrimaryGraphics,
+      openrouterModelLiteList: _openrouterModelLite,
+      openrouterModelLiveList: _openrouterModelLive,
     );
 
     if (mounted) {
@@ -430,26 +756,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return fetchedModels;
   }
 
-  /// Opens the picker sheet for a slot and appends the chosen model to that
-  /// slot\'s ordered list. Skips duplicates and bumps an existing entry to
-  /// the front if the user re-picks it.
   Future<void> _addModelToSlot(String slotName) async {
-    if (_keys.isEmpty) {
+    final isGroq = slotName.startsWith('Groq');
+    final isCerebras = slotName.startsWith('Cerebras');
+    final isOpenRouter = slotName.startsWith('OpenRouter');
+    final isGemini = !isGroq && !isCerebras && !isOpenRouter;
+
+    if (isGemini && _keys.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please add an API key first.')),
       );
       return;
     }
     List<String> fetched;
-    try {
-      fetched = await _fetchAvailableModels();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    if (isGroq) {
+      fetched = const [
+        'llama-3.3-70b-versatile',
+        'llama-3.1-8b-instant',
+        'groq/compound',
+        'groq/compound-mini',
+      ];
+    } else if (isCerebras) {
+      fetched = const [
+        'llama-3.3-70b',
+        'llama-3.1-70b',
+        'llama-3.1-8b',
+      ];
+    } else if (isOpenRouter) {
+      fetched = const [
+        'meta-llama/llama-3.3-70b-instruct',
+        'meta-llama/llama-3.1-8b-instruct',
+        'google/gemini-2.5-pro',
+        'google/gemini-2.5-flash',
+        'google/gemma-2-9b-it:free',
+      ];
+    } else {
+      try {
+        fetched = await _fetchAvailableModels();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        }
+        return;
       }
-      return;
     }
     if (!mounted || fetched.isEmpty) return;
 
@@ -536,6 +887,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return _modelLite;
       case 'Live':
         return _modelLive;
+      case 'Groq - Primary - Text':
+        return _groqModelPrimaryText;
+      case 'Groq - Primary - Graphics':
+        return _groqModelPrimaryGraphics;
+      case 'Groq - Lite':
+        return _groqModelLite;
+      case 'Groq - Live':
+        return _groqModelLive;
+      case 'Cerebras - Primary - Text':
+        return _cerebrasModelPrimaryText;
+      case 'Cerebras - Primary - Graphics':
+        return _cerebrasModelPrimaryGraphics;
+      case 'Cerebras - Lite':
+        return _cerebrasModelLite;
+      case 'Cerebras - Live':
+        return _cerebrasModelLive;
+      case 'OpenRouter - Primary - Text':
+        return _openrouterModelPrimaryText;
+      case 'OpenRouter - Primary - Graphics':
+        return _openrouterModelPrimaryGraphics;
+      case 'OpenRouter - Lite':
+        return _openrouterModelLite;
+      case 'OpenRouter - Live':
+        return _openrouterModelLive;
       default:
         return [];
     }
@@ -1630,11 +2005,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     'Profile & Style',
                   ),
                   const SizedBox(height: 8),
-                  _buildCategoryMenuItem(
-                    'advanced',
-                    LucideIcons.cpu,
-                    'Advanced Config',
-                  ),
+                  if (GlobalState.developerModeNotifier.value) ...[
+                    _buildCategoryMenuItem(
+                      'advanced',
+                      LucideIcons.cpu,
+                      'Advanced Config',
+                    ),
+                  ],
 
                   const Spacer(),
 
@@ -1809,50 +2186,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildCloudSyncCard(),
               const SizedBox(height: 32),
 
-              const Text(
-                'API Keys',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Add multiple keys to fall back automatically if rate-limited.',
-                style: TextStyle(color: context.colors.textFaint, fontSize: 12),
-              ),
-              const SizedBox(height: 16),
-              StringListManager(
-                key: _keysManagerKey,
-                initialItems: _keys,
-                hintText: 'Enter Gemini API Key',
-                itemIcon: LucideIcons.key,
-                onChanged: (newKeys) => setState(() => _keys = newKeys),
-              ),
-              const SizedBox(height: 32),
-
-              Container(
-                decoration: AppTheme.glassOf(context),
-                child: SwitchListTile(
-                  value: GlobalState.advancedModeNotifier.value,
-                  activeColor: AppTheme.duoViolet,
-                  title: Text(
-                    'Advanced mode',
-                    style: TextStyle(
-                      color: context.colors.textPrimary,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'Model ladders, concurrency, automation, experiments, and per-node generation menus.',
-                    style: TextStyle(
-                      color: context.colors.textFaint,
-                      fontSize: 11,
-                    ),
-                  ),
-                  onChanged: (v) => setState(
-                    () => GlobalState.advancedModeNotifier.value = v,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
               Container(
                 decoration: AppTheme.glassOf(context),
                 child: SwitchListTile(
@@ -1872,12 +2205,118 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       fontSize: 11,
                     ),
                   ),
-                  onChanged: (v) => setState(
-                    () => GlobalState.developerModeNotifier.value = v,
-                  ),
+                  onChanged: (v) => setState(() {
+                    GlobalState.developerModeNotifier.value = v;
+                    if (!v) {
+                      GlobalState.advancedModeNotifier.value = false;
+                    }
+                  }),
                 ),
               ),
               const SizedBox(height: 32),
+              if (GlobalState.developerModeNotifier.value) ...[
+                const Text(
+                  'API Keys (Gemini)',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Add multiple Gemini keys to fall back automatically if rate-limited.',
+                  style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+                ),
+                const SizedBox(height: 16),
+                StringListManager(
+                  key: _keysManagerKey,
+                  initialItems: _keys,
+                  hintText: 'Enter Gemini API Key',
+                  itemIcon: LucideIcons.key,
+                  onChanged: (newKeys) => setState(() => _keys = newKeys),
+                ),
+                const SizedBox(height: 32),
+
+                const Text(
+                  'API Keys (Groq)',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Add Groq keys to fall back automatically when Gemini rate-limits.',
+                  style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+                ),
+                const SizedBox(height: 16),
+                StringListManager(
+                  key: _groqKeysManagerKey,
+                  initialItems: _groqKeys,
+                  hintText: 'Enter Groq API Key',
+                  itemIcon: LucideIcons.key,
+                  onChanged: (newKeys) => setState(() => _groqKeys = newKeys),
+                ),
+                const SizedBox(height: 32),
+
+                const Text(
+                  'API Keys (Cerebras)',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Add Cerebras keys to fall back automatically when Gemini and Groq rate-limit.',
+                  style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+                ),
+                const SizedBox(height: 16),
+                StringListManager(
+                  key: _cerebrasKeysManagerKey,
+                  initialItems: _cerebrasKeys,
+                  hintText: 'Enter Cerebras API Key',
+                  itemIcon: LucideIcons.key,
+                  onChanged: (newKeys) => setState(() => _cerebrasKeys = newKeys),
+                ),
+                const SizedBox(height: 32),
+
+                const Text(
+                  'API Keys (OpenRouter)',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Add OpenRouter keys to fall back automatically when Gemini, Groq, and Cerebras rate-limit.',
+                  style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+                ),
+                const SizedBox(height: 16),
+                StringListManager(
+                  key: _openrouterKeysManagerKey,
+                  initialItems: _openrouterKeys,
+                  hintText: 'Enter OpenRouter API Key',
+                  itemIcon: LucideIcons.key,
+                  onChanged: (newKeys) => setState(() => _openrouterKeys = newKeys),
+                ),
+                const SizedBox(height: 32),
+
+                Container(
+                  decoration: AppTheme.glassOf(context),
+                  child: SwitchListTile(
+                    value: GlobalState.advancedModeNotifier.value,
+                    activeColor: AppTheme.duoViolet,
+                    title: Text(
+                      'Advanced mode',
+                      style: TextStyle(
+                        color: context.colors.textPrimary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Model ladders, concurrency, automation, experiments, and per-node generation menus.',
+                      style: TextStyle(
+                        color: context.colors.textFaint,
+                        fontSize: 11,
+                      ),
+                    ),
+                    onChanged: (v) => setState(
+                      () => GlobalState.advancedModeNotifier.value = v,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+              ],
 
               if (GlobalState.advancedModeNotifier.value) ...[
                 SizedBox(
@@ -1899,12 +2338,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 32),
 
                 const Text(
-                  'AI Model Assignments',
+                  'AI Model Assignments (Gemini)',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Select specialized models for text, graphics, and light-weight tasks.',
+                  'Select specialized Gemini models for text, graphics, and light-weight tasks.',
                   style: TextStyle(
                     color: context.colors.textFaint,
                     fontSize: 12,
@@ -1942,8 +2381,146 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   slotName: 'Live',
                   icon: LucideIcons.mic,
                 ),
-
                 const SizedBox(height: 32),
+
+                const Text(
+                  'AI Model Assignments (Groq Fallback)',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Select specialized Groq models for text, graphics, and light-weight fallback tasks.',
+                  style: TextStyle(
+                    color: context.colors.textFaint,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                _buildModelSlotCard(
+                  title: 'Groq - Primary - Text',
+                  subtitle: 'Fallback model for lessons & quizzes.',
+                  slotName: 'Groq - Primary - Text',
+                  icon: LucideIcons.fileText,
+                ),
+                const SizedBox(height: 16),
+
+                _buildModelSlotCard(
+                  title: 'Groq - Primary - Graphics',
+                  subtitle: 'Fallback model for canvas diagrams & proofs.',
+                  slotName: 'Groq - Primary - Graphics',
+                  icon: LucideIcons.image,
+                ),
+                const SizedBox(height: 16),
+
+                _buildModelSlotCard(
+                  title: 'Groq - Lite',
+                  subtitle: 'Fallback model for skeletons and outlines.',
+                  slotName: 'Groq - Lite',
+                  icon: LucideIcons.zap,
+                ),
+                const SizedBox(height: 16),
+
+                _buildModelSlotCard(
+                  title: 'Groq - Live',
+                  subtitle: 'Fallback model for live voice & chat assistance.',
+                  slotName: 'Groq - Live',
+                  icon: LucideIcons.mic,
+                ),
+                const SizedBox(height: 32),
+
+                const Text(
+                  'AI Model Assignments (Cerebras Fallback)',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Select specialized Cerebras models for text, graphics, and light-weight fallback tasks.',
+                  style: TextStyle(
+                    color: context.colors.textFaint,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                _buildModelSlotCard(
+                  title: 'Cerebras - Primary - Text',
+                  subtitle: 'Fallback model for lessons & quizzes.',
+                  slotName: 'Cerebras - Primary - Text',
+                  icon: LucideIcons.fileText,
+                ),
+                const SizedBox(height: 16),
+
+                _buildModelSlotCard(
+                  title: 'Cerebras - Primary - Graphics',
+                  subtitle: 'Fallback model for canvas diagrams & proofs.',
+                  slotName: 'Cerebras - Primary - Graphics',
+                  icon: LucideIcons.image,
+                ),
+                const SizedBox(height: 16),
+
+                _buildModelSlotCard(
+                  title: 'Cerebras - Lite',
+                  subtitle: 'Fallback model for skeletons and outlines.',
+                  slotName: 'Cerebras - Lite',
+                  icon: LucideIcons.zap,
+                ),
+                const SizedBox(height: 16),
+
+                _buildModelSlotCard(
+                  title: 'Cerebras - Live',
+                  subtitle: 'Fallback model for live voice & chat assistance.',
+                  slotName: 'Cerebras - Live',
+                  icon: LucideIcons.mic,
+                ),
+                const SizedBox(height: 32),
+
+                const Text(
+                  'AI Model Assignments (OpenRouter Fallback)',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Select specialized OpenRouter models for text, graphics, and light-weight fallback tasks.',
+                  style: TextStyle(
+                    color: context.colors.textFaint,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                _buildModelSlotCard(
+                  title: 'OpenRouter - Primary - Text',
+                  subtitle: 'Fallback model for lessons & quizzes.',
+                  slotName: 'OpenRouter - Primary - Text',
+                  icon: LucideIcons.fileText,
+                ),
+                const SizedBox(height: 16),
+
+                _buildModelSlotCard(
+                  title: 'OpenRouter - Primary - Graphics',
+                  subtitle: 'Fallback model for canvas diagrams & proofs.',
+                  slotName: 'OpenRouter - Primary - Graphics',
+                  icon: LucideIcons.image,
+                ),
+                const SizedBox(height: 16),
+
+                _buildModelSlotCard(
+                  title: 'OpenRouter - Lite',
+                  subtitle: 'Fallback model for skeletons and outlines.',
+                  slotName: 'OpenRouter - Lite',
+                  icon: LucideIcons.zap,
+                ),
+                const SizedBox(height: 16),
+
+                _buildModelSlotCard(
+                  title: 'OpenRouter - Live',
+                  subtitle: 'Fallback model for live voice & chat assistance.',
+                  slotName: 'OpenRouter - Live',
+                  icon: LucideIcons.mic,
+                ),
+                const SizedBox(height: 32),
+
                 const Text(
                   'Generation',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
@@ -2171,21 +2748,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 32),
 
           const Text(
-            'API Keys',
+            'Developer Mode',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 8),
           Text(
-            'Add multiple keys to fall back automatically if rate-limited.',
+            'Unlock developer tools, lesson editing, and model ladders.',
             style: TextStyle(color: context.colors.textFaint, fontSize: 12),
           ),
           const SizedBox(height: 16),
-          StringListManager(
-            key: _keysManagerKey,
-            initialItems: _keys,
-            hintText: 'Enter Gemini API Key',
-            itemIcon: LucideIcons.key,
-            onChanged: (newKeys) => setState(() => _keys = newKeys),
+          Container(
+            decoration: AppTheme.glassOf(context),
+            child: SwitchListTile(
+              value: GlobalState.developerModeNotifier.value,
+              activeColor: AppTheme.duoRed,
+              title: Text(
+                'Developer mode',
+                style: TextStyle(
+                  color: context.colors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              subtitle: Text(
+                'Unlock lesson editing, slide deletion, lesson deletion, and manual content regeneration.',
+                style: TextStyle(color: context.colors.textFaint, fontSize: 11),
+              ),
+              onChanged: (v) => setState(() {
+                GlobalState.developerModeNotifier.value = v;
+                if (!v) {
+                  GlobalState.advancedModeNotifier.value = false;
+                  _selectedCategory = 'general';
+                }
+              }),
+            ),
           ),
         ],
       );
@@ -2226,6 +2821,82 @@ class _SettingsScreenState extends State<SettingsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
+            'API Keys (Gemini)',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Add multiple Gemini keys to fall back automatically if rate-limited.',
+            style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          StringListManager(
+            key: _keysManagerKey,
+            initialItems: _keys,
+            hintText: 'Enter Gemini API Key',
+            itemIcon: LucideIcons.key,
+            onChanged: (newKeys) => setState(() => _keys = newKeys),
+          ),
+          const SizedBox(height: 32),
+
+          const Text(
+            'API Keys (Groq)',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Add Groq keys to fall back automatically when Gemini rate-limits.',
+            style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          StringListManager(
+            key: _groqKeysManagerKey,
+            initialItems: _groqKeys,
+            hintText: 'Enter Groq API Key',
+            itemIcon: LucideIcons.key,
+            onChanged: (newKeys) => setState(() => _groqKeys = newKeys),
+          ),
+          const SizedBox(height: 32),
+
+          const Text(
+            'API Keys (Cerebras)',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Add Cerebras keys to fall back automatically when Gemini and Groq rate-limit.',
+            style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          StringListManager(
+            key: _cerebrasKeysManagerKey,
+            initialItems: _cerebrasKeys,
+            hintText: 'Enter Cerebras API Key',
+            itemIcon: LucideIcons.key,
+            onChanged: (newKeys) => setState(() => _cerebrasKeys = newKeys),
+          ),
+          const SizedBox(height: 32),
+
+          const Text(
+            'API Keys (OpenRouter)',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Add OpenRouter keys to fall back automatically when Gemini, Groq, and Cerebras rate-limit.',
+            style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          StringListManager(
+            key: _openrouterKeysManagerKey,
+            initialItems: _openrouterKeys,
+            hintText: 'Enter OpenRouter API Key',
+            itemIcon: LucideIcons.key,
+            onChanged: (newKeys) => setState(() => _openrouterKeys = newKeys),
+          ),
+          const SizedBox(height: 32),
+
+          const Text(
             'Advanced Options',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
           ),
@@ -2255,27 +2926,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   setState(() => GlobalState.advancedModeNotifier.value = v),
             ),
           ),
-          const SizedBox(height: 16),
-          Container(
-            decoration: AppTheme.glassOf(context),
-            child: SwitchListTile(
-              value: GlobalState.developerModeNotifier.value,
-              activeColor: AppTheme.duoRed,
-              title: Text(
-                'Developer mode',
-                style: TextStyle(
-                  color: context.colors.textPrimary,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              subtitle: Text(
-                'Unlock lesson editing, slide deletion, lesson deletion, and manual content regeneration.',
-                style: TextStyle(color: context.colors.textFaint, fontSize: 11),
-              ),
-              onChanged: (v) =>
-                  setState(() => GlobalState.developerModeNotifier.value = v),
-            ),
-          ),
           const SizedBox(height: 32),
 
           if (GlobalState.advancedModeNotifier.value) ...[
@@ -2296,12 +2946,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 32),
 
             const Text(
-              'AI Model Assignments',
+              'AI Model Assignments (Gemini)',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 8),
             Text(
-              'Select specialized models for text, graphics, and light-weight tasks.',
+              'Select specialized Gemini models for text, graphics, and light-weight tasks.',
               style: TextStyle(color: context.colors.textFaint, fontSize: 12),
             ),
             const SizedBox(height: 16),
@@ -2336,8 +2986,137 @@ class _SettingsScreenState extends State<SettingsScreen> {
               slotName: 'Live',
               icon: LucideIcons.mic,
             ),
-
             const SizedBox(height: 32),
+
+            const Text(
+              'AI Model Assignments (Groq Fallback)',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Select specialized Groq models for text, graphics, and light-weight fallback tasks.',
+              style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+
+            _buildModelSlotCard(
+              title: 'Groq - Primary - Text',
+              subtitle: 'Fallback model for lessons & quizzes.',
+              slotName: 'Groq - Primary - Text',
+              icon: LucideIcons.fileText,
+            ),
+            const SizedBox(height: 16),
+
+            _buildModelSlotCard(
+              title: 'Groq - Primary - Graphics',
+              subtitle: 'Fallback model for canvas diagrams & proofs.',
+              slotName: 'Groq - Primary - Graphics',
+              icon: LucideIcons.image,
+            ),
+            const SizedBox(height: 16),
+
+            _buildModelSlotCard(
+              title: 'Groq - Lite',
+              subtitle: 'Fallback model for skeletons and outlines.',
+              slotName: 'Groq - Lite',
+              icon: LucideIcons.zap,
+            ),
+            const SizedBox(height: 16),
+
+            _buildModelSlotCard(
+              title: 'Groq - Live',
+              subtitle: 'Fallback model for live voice & chat assistance.',
+              slotName: 'Groq - Live',
+              icon: LucideIcons.mic,
+            ),
+            const SizedBox(height: 32),
+
+            const Text(
+              'AI Model Assignments (Cerebras Fallback)',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 8),
+             Text(
+              'Select specialized Cerebras models for text, graphics, and light-weight fallback tasks.',
+              style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+
+            _buildModelSlotCard(
+              title: 'Cerebras - Primary - Text',
+              subtitle: 'Fallback model for lessons & quizzes.',
+              slotName: 'Cerebras - Primary - Text',
+              icon: LucideIcons.fileText,
+            ),
+            const SizedBox(height: 16),
+
+            _buildModelSlotCard(
+              title: 'Cerebras - Primary - Graphics',
+              subtitle: 'Fallback model for canvas diagrams & proofs.',
+              slotName: 'Cerebras - Primary - Graphics',
+              icon: LucideIcons.image,
+            ),
+            const SizedBox(height: 16),
+
+            _buildModelSlotCard(
+              title: 'Cerebras - Lite',
+              subtitle: 'Fallback model for skeletons and outlines.',
+              slotName: 'Cerebras - Lite',
+              icon: LucideIcons.zap,
+            ),
+            const SizedBox(height: 16),
+
+            _buildModelSlotCard(
+              title: 'Cerebras - Live',
+              subtitle: 'Fallback model for live voice & chat assistance.',
+              slotName: 'Cerebras - Live',
+              icon: LucideIcons.mic,
+            ),
+            const SizedBox(height: 32),
+
+            const Text(
+              'AI Model Assignments (OpenRouter Fallback)',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Select specialized OpenRouter models for text, graphics, and light-weight fallback tasks.',
+              style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+
+            _buildModelSlotCard(
+              title: 'OpenRouter - Primary - Text',
+              subtitle: 'Fallback model for lessons & quizzes.',
+              slotName: 'OpenRouter - Primary - Text',
+              icon: LucideIcons.fileText,
+            ),
+            const SizedBox(height: 16),
+
+            _buildModelSlotCard(
+              title: 'OpenRouter - Primary - Graphics',
+              subtitle: 'Fallback model for canvas diagrams & proofs.',
+              slotName: 'OpenRouter - Primary - Graphics',
+              icon: LucideIcons.image,
+            ),
+            const SizedBox(height: 16),
+
+            _buildModelSlotCard(
+              title: 'OpenRouter - Lite',
+              subtitle: 'Fallback model for skeletons and outlines.',
+              slotName: 'OpenRouter - Lite',
+              icon: LucideIcons.zap,
+            ),
+            const SizedBox(height: 16),
+
+            _buildModelSlotCard(
+              title: 'OpenRouter - Live',
+              subtitle: 'Fallback model for live voice & chat assistance.',
+              slotName: 'OpenRouter - Live',
+              icon: LucideIcons.mic,
+            ),
+            const SizedBox(height: 32),
+
             const Text(
               'Generation Settings',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),

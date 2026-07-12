@@ -156,44 +156,47 @@ class ProgressService {
 
   static Future<double> getBookProgress(Book book) async {
     final completed = await getCompletedLessons();
-
-    // First pass: count actual lessons in generated units and figure out
-    // the average lessons-per-unit so we can estimate ungenerated ones.
-    int generatedUnitCount = 0;
-    int generatedLessonCount = 0;
-    int ungeneratedUnitCount = 0;
-    int done = 0;
-
-    for (var m in book.modules) {
-      for (var s in m.sections) {
-        for (var u in s.units) {
-          if (u.isGenerated && u.lessons.isNotEmpty) {
-            generatedUnitCount++;
-            generatedLessonCount += u.lessons.length;
-            for (var l in u.lessons) {
-              if (completed.contains(l.id)) done++;
-            }
-          } else if (u.lessons.isNotEmpty) {
-            // Partially generated / interrupted — count actual lessons.
-            generatedLessonCount += u.lessons.length;
-            generatedUnitCount++;
-            for (var l in u.lessons) {
-              if (completed.contains(l.id)) done++;
-            }
-          } else {
-            ungeneratedUnitCount++;
-          }
-        }
-      }
+    if (completed.contains(book.id)) {
+      return 1.0;
     }
-
-    // Estimate: average lessons per generated unit, or 4 as a sensible default.
-    final avgLessons = generatedUnitCount > 0
-        ? (generatedLessonCount / generatedUnitCount).round()
-        : 4;
-
-    final total = generatedLessonCount + (ungeneratedUnitCount * avgLessons);
-    return total == 0 ? 0.0 : (done / total);
+    if (book.modules.isEmpty) {
+      return 0.0;
+    }
+    double totalProgress = 0.0;
+    for (var m in book.modules) {
+      if (completed.contains(m.id)) {
+        totalProgress += 1.0;
+        continue;
+      }
+      if (m.sections.isEmpty) {
+        continue;
+      }
+      double moduleProgress = 0.0;
+      for (var s in m.sections) {
+        if (completed.contains(s.id)) {
+          moduleProgress += 1.0;
+          continue;
+        }
+        if (s.units.isEmpty) {
+          continue;
+        }
+        double sectionProgress = 0.0;
+        for (var u in s.units) {
+          if (completed.contains(u.id)) {
+            sectionProgress += 1.0;
+            continue;
+          }
+          if (!u.isGenerated || u.lessons.isEmpty) {
+            continue;
+          }
+          final done = u.lessons.where((l) => completed.contains(l.id)).length;
+          sectionProgress += (done / u.lessons.length);
+        }
+        moduleProgress += (sectionProgress / s.units.length);
+      }
+      totalProgress += (moduleProgress / m.sections.length);
+    }
+    return totalProgress / book.modules.length;
   }
 
   static Future<void> clearLessonProgress(String lessonId, String bookId) async {
@@ -222,17 +225,21 @@ class ProgressService {
 
   static Future<void> markUnitCompleted(Unit unit, String bookId) async {
     final ids = unit.lessons.map((l) => l.id).toList();
+    ids.add(unit.id);
     await markLessonsCompleted(ids, bookId);
   }
 
   static Future<void> clearUnitProgress(Unit unit, String bookId) async {
     final ids = unit.lessons.map((l) => l.id).toList();
+    ids.add(unit.id);
     await clearLessonsProgress(ids, bookId);
   }
 
   static Future<void> markSectionCompleted(Section section, String bookId) async {
     final ids = <String>[];
+    ids.add(section.id);
     for (var u in section.units) {
+      ids.add(u.id);
       ids.addAll(u.lessons.map((l) => l.id));
     }
     await markLessonsCompleted(ids, bookId);
@@ -240,7 +247,9 @@ class ProgressService {
 
   static Future<void> clearSectionProgress(Section section, String bookId) async {
     final ids = <String>[];
+    ids.add(section.id);
     for (var u in section.units) {
+      ids.add(u.id);
       ids.addAll(u.lessons.map((l) => l.id));
     }
     await clearLessonsProgress(ids, bookId);
@@ -248,8 +257,11 @@ class ProgressService {
 
   static Future<void> markModuleCompleted(Module module, String bookId) async {
     final ids = <String>[];
+    ids.add(module.id);
     for (var s in module.sections) {
+      ids.add(s.id);
       for (var u in s.units) {
+        ids.add(u.id);
         ids.addAll(u.lessons.map((l) => l.id));
       }
     }
@@ -258,8 +270,11 @@ class ProgressService {
 
   static Future<void> clearModuleProgress(Module module, String bookId) async {
     final ids = <String>[];
+    ids.add(module.id);
     for (var s in module.sections) {
+      ids.add(s.id);
       for (var u in s.units) {
+        ids.add(u.id);
         ids.addAll(u.lessons.map((l) => l.id));
       }
     }

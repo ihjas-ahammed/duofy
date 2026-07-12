@@ -2,6 +2,7 @@ import 'dart:convert';
 import '../platform/io_shim.dart';
 import 'dart:async';
 import 'dart:typed_data';
+import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
@@ -62,6 +63,287 @@ class AiService {
 
   Future<List<String>> getKeys({String? forcedApiKey}) =>
       _getKeys(forcedApiKey: forcedApiKey);
+
+  Future<String> _callGroq({
+    required String prompt,
+    required String slotName,
+    bool responseJson = false,
+    List<Uint8List>? attachedImages,
+    String? systemPrompt,
+  }) async {
+    final keys = await SecretsService.instance.groqKeys();
+    if (keys.isEmpty) {
+      throw Exception("No Groq API Keys available.");
+    }
+    final apiKey = keys.first;
+
+    final prefs = await SharedPreferences.getInstance();
+    List<String> models = [];
+    if (slotName == 'Primary - Text') {
+      models = prefs.getStringList('groq_model_primary_text_list') ?? const ['llama-3.3-70b-versatile', 'groq/compound'];
+    } else if (slotName == 'Primary - Graphics') {
+      models = prefs.getStringList('groq_model_primary_graphics_list') ?? const ['llama-3.3-70b-versatile', 'groq/compound'];
+    } else if (slotName == 'Lite') {
+      models = prefs.getStringList('groq_model_lite_list') ?? const ['llama-3.1-8b-instant', 'groq/compound-mini'];
+    } else if (slotName == 'Live') {
+      models = prefs.getStringList('groq_model_live_list') ?? const ['llama-3.1-8b-instant', 'groq/compound-mini'];
+    }
+    if (models.isEmpty) {
+      models = const ['llama-3.3-70b-versatile'];
+    }
+    final modelName = models.first;
+
+    final url = Uri.parse('https://api.groq.com/openai/v1/chat/completions');
+
+    final List<Map<String, dynamic>> messages = [];
+    if (systemPrompt != null && systemPrompt.trim().isNotEmpty) {
+      messages.add({
+        "role": "system",
+        "content": systemPrompt.trim(),
+      });
+    }
+
+    final List<Map<String, dynamic>> contentParts = [];
+    contentParts.add({
+      "type": "text",
+      "text": prompt,
+    });
+
+    if (attachedImages != null) {
+      for (final img in attachedImages) {
+        final base64Img = base64Encode(img);
+        contentParts.add({
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/jpeg;base64,$base64Img",
+          }
+        });
+      }
+    }
+
+    messages.add({
+      "role": "user",
+      "content": contentParts.length == 1 ? prompt : contentParts,
+    });
+
+    final Map<String, dynamic> body = {
+      "model": modelName,
+      "messages": messages,
+    };
+    if (responseJson) {
+      body["response_format"] = {
+        "type": "json_object"
+      };
+    }
+
+    final response = await http.post(
+      url,
+      headers: {
+        "Authorization": "Bearer $apiKey",
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode(body),
+    ).timeout(const Duration(minutes: 2));
+
+    if (response.statusCode != 200) {
+      throw Exception("Groq API error (${response.statusCode}): ${response.body}");
+    }
+
+    final jsonMap = jsonDecode(response.body);
+    final String? text = jsonMap["choices"]?[0]?["message"]?["content"] as String?;
+    if (text == null || text.trim().isEmpty) {
+      throw Exception("Empty response from Groq model $modelName");
+    }
+    return text;
+  }
+
+  Future<String> _callCerebras({
+    required String prompt,
+    required String slotName,
+    bool responseJson = false,
+    List<Uint8List>? attachedImages,
+    String? systemPrompt,
+  }) async {
+    final keys = await SecretsService.instance.cerebrasKeys();
+    if (keys.isEmpty) {
+      throw Exception("No Cerebras API Keys available.");
+    }
+    final apiKey = keys.first;
+
+    final prefs = await SharedPreferences.getInstance();
+    List<String> models = [];
+    if (slotName == 'Primary - Text') {
+      models = prefs.getStringList('cerebras_model_primary_text_list') ?? const ['llama-3.3-70b', 'llama-3.1-70b'];
+    } else if (slotName == 'Primary - Graphics') {
+      models = prefs.getStringList('cerebras_model_primary_graphics_list') ?? const ['llama-3.3-70b', 'llama-3.1-70b'];
+    } else if (slotName == 'Lite') {
+      models = prefs.getStringList('cerebras_model_lite_list') ?? const ['llama-3.1-8b'];
+    } else if (slotName == 'Live') {
+      models = prefs.getStringList('cerebras_model_live_list') ?? const ['llama-3.1-8b'];
+    }
+    if (models.isEmpty) {
+      models = const ['llama-3.3-70b'];
+    }
+    final modelName = models.first;
+
+    final url = Uri.parse('https://api.cerebras.ai/v1/chat/completions');
+
+    final List<Map<String, dynamic>> messages = [];
+    if (systemPrompt != null && systemPrompt.trim().isNotEmpty) {
+      messages.add({
+        "role": "system",
+        "content": systemPrompt.trim(),
+      });
+    }
+
+    final List<Map<String, dynamic>> contentParts = [];
+    contentParts.add({
+      "type": "text",
+      "text": prompt,
+    });
+
+    if (attachedImages != null) {
+      for (final img in attachedImages) {
+        final base64Img = base64Encode(img);
+        contentParts.add({
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/jpeg;base64,$base64Img",
+          }
+        });
+      }
+    }
+
+    messages.add({
+      "role": "user",
+      "content": contentParts.length == 1 ? prompt : contentParts,
+    });
+
+    final Map<String, dynamic> body = {
+      "model": modelName,
+      "messages": messages,
+    };
+    if (responseJson) {
+      body["response_format"] = {
+        "type": "json_object"
+      };
+    }
+
+    final response = await http.post(
+      url,
+      headers: {
+        "Authorization": "Bearer $apiKey",
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode(body),
+    ).timeout(const Duration(minutes: 2));
+
+    if (response.statusCode != 200) {
+      throw Exception("Cerebras API error (${response.statusCode}): ${response.body}");
+    }
+
+    final jsonMap = jsonDecode(response.body);
+    final String? text = jsonMap["choices"]?[0]?["message"]?["content"] as String?;
+    if (text == null || text.trim().isEmpty) {
+      throw Exception("Empty response from Cerebras model $modelName");
+    }
+    return text;
+  }
+
+  Future<String> _callOpenRouter({
+    required String prompt,
+    required String slotName,
+    bool responseJson = false,
+    List<Uint8List>? attachedImages,
+    String? systemPrompt,
+  }) async {
+    final keys = await SecretsService.instance.openrouterKeys();
+    if (keys.isEmpty) {
+      throw Exception("No OpenRouter API Keys available.");
+    }
+    final apiKey = keys.first;
+
+    final prefs = await SharedPreferences.getInstance();
+    List<String> models = [];
+    if (slotName == 'Primary - Text') {
+      models = prefs.getStringList('openrouter_model_primary_text_list') ?? const ['meta-llama/llama-3.3-70b-instruct', 'google/gemini-2.5-pro'];
+    } else if (slotName == 'Primary - Graphics') {
+      models = prefs.getStringList('openrouter_model_primary_graphics_list') ?? const ['meta-llama/llama-3.3-70b-instruct', 'google/gemini-2.5-pro'];
+    } else if (slotName == 'Lite') {
+      models = prefs.getStringList('openrouter_model_lite_list') ?? const ['meta-llama/llama-3.1-8b-instruct', 'google/gemini-2.5-flash'];
+    } else if (slotName == 'Live') {
+      models = prefs.getStringList('openrouter_model_live_list') ?? const ['meta-llama/llama-3.1-8b-instruct', 'google/gemini-2.5-flash'];
+    }
+    if (models.isEmpty) {
+      models = const ['meta-llama/llama-3.3-70b-instruct'];
+    }
+    final modelName = models.first;
+
+    final url = Uri.parse('https://openrouter.ai/api/v1/chat/completions');
+
+    final List<Map<String, dynamic>> messages = [];
+    if (systemPrompt != null && systemPrompt.trim().isNotEmpty) {
+      messages.add({
+        "role": "system",
+        "content": systemPrompt.trim(),
+      });
+    }
+
+    final List<Map<String, dynamic>> contentParts = [];
+    contentParts.add({
+      "type": "text",
+      "text": prompt,
+    });
+
+    if (attachedImages != null) {
+      for (final img in attachedImages) {
+        final base64Img = base64Encode(img);
+        contentParts.add({
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/jpeg;base64,$base64Img",
+          }
+        });
+      }
+    }
+
+    messages.add({
+      "role": "user",
+      "content": contentParts.length == 1 ? prompt : contentParts,
+    });
+
+    final Map<String, dynamic> body = {
+      "model": modelName,
+      "messages": messages,
+    };
+    if (responseJson) {
+      body["response_format"] = {
+        "type": "json_object"
+      };
+    }
+
+    final response = await http.post(
+      url,
+      headers: {
+        "Authorization": "Bearer $apiKey",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://duofy.app",
+        "X-Title": "Duofy app",
+      },
+      body: jsonEncode(body),
+    ).timeout(const Duration(minutes: 2));
+
+    if (response.statusCode != 200) {
+      throw Exception("OpenRouter API error (${response.statusCode}): ${response.body}");
+    }
+
+    final jsonMap = jsonDecode(response.body);
+    final String? text = jsonMap["choices"]?[0]?["message"]?["content"] as String?;
+    if (text == null || text.trim().isEmpty) {
+      throw Exception("Empty response from OpenRouter model $modelName");
+    }
+    return text;
+  }
 
   /// Returns true when the error looks like a rate-limit / quota error.
   bool _isRateLimitError(Object e) {
@@ -542,41 +824,31 @@ Important Rules:
 2. For "chapter1StartPage", DO NOT return a page from the Table of Contents just because it lists "Chapter 1". You must only return the page where the actual content/text of Chapter 1 begins!
 ''';
 
-    for (var key in keys) {
-      for (var modelName in modelsToTry) {
-        try {
-          final model = GenerativeModel(
-            model: modelName,
-            apiKey: key,
-            generationConfig: GenerationConfig(
-              responseMimeType: 'application/json',
-            ),
-          );
-          final response = await _retryTransient(
-            () => model
-                .generateContent([
-                  Content.multi([
-                    TextPart(prompt),
-                    DataPart('application/pdf', pdfBytes),
-                  ]),
-                ])
-                .timeout(const Duration(minutes: 2)),
-            onRetry: (a, e) => print(
-              '[AiService] Index scan transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
-            ),
-          );
-
-          if (response.text != null) {
-            return _cleanAndDecodeJson(response.text!);
-          }
-        } catch (e) {
-          print(
-            '[AiService] scanIndexChunk ($modelName) failed: ${_cleanErrMsg(e)}',
-          );
-        }
-      }
+    try {
+      final text = await _generateWithGroqFallback(
+        geminiModels: modelsToTry,
+        geminiKeys: keys,
+        contents: [
+          Content.multi([
+            TextPart(prompt),
+            DataPart('application/pdf', pdfBytes),
+          ]),
+        ],
+        slotName: 'Lite',
+        generationConfig: GenerationConfig(
+          responseMimeType: 'application/json',
+        ),
+        onRetry: (a, e) => print(
+          '[AiService] Index scan transient attempt $a: ${_cleanErrMsg(e)}',
+        ),
+      );
+      return _cleanAndDecodeJson(text);
+    } catch (e) {
+      print(
+        '[AiService] scanIndexChunk failed: ${_cleanErrMsg(e)}',
+      );
+      return null;
     }
-    return null;
   }
 
   /// Generates the course skeleton from a TOC-only PDF, in TWO batched stages
@@ -671,50 +943,30 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
           );
 
       Map<String, dynamic>? meta;
-      Exception? lastException;
-      for (final modelName in modelsToTry) {
-        for (final apiKey in keys) {
-          try {
-            final model = GenerativeModel(
-              model: modelName,
-              apiKey: apiKey,
-              generationConfig: GenerationConfig(
-                responseMimeType: 'application/json',
-              ),
-            );
-            final response = await _retryTransient(
-              () => model
-                  .generateContent([
-                    Content.multi([
-                      TextPart(chapterPrompt),
-                      ...syllabusParts,
-                      ...fileParts,
-                    ]),
-                  ])
-                  .timeout(const Duration(minutes: 4)),
-              onRetry: (a, e) => print(
-                '[AiService] Chapter starts transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
-              ),
-            );
-            if (response.text != null) {
-              meta = _cleanAndDecodeJson(response.text!);
-              break;
-            }
-          } on TimeoutException {
-            lastException = Exception(
-              'Chapter starts mapping timed out ($modelName).',
-            );
-          } catch (e) {
-            lastException = Exception(
-              'Chapter starts mapping failed ($modelName): ${_cleanErrMsg(e)}',
-            );
-          }
-        }
-        if (meta != null) break;
+      try {
+        final text = await _generateWithGroqFallback(
+          geminiModels: modelsToTry,
+          geminiKeys: keys,
+          contents: [
+            Content.multi([
+              TextPart(chapterPrompt),
+              ...syllabusParts,
+              ...fileParts,
+            ]),
+          ],
+          slotName: 'Lite',
+          generationConfig: GenerationConfig(
+            responseMimeType: 'application/json',
+          ),
+          timeout: const Duration(minutes: 4),
+          onRetry: (a, e) => print(
+            '[AiService] Chapter starts transient attempt $a: ${_cleanErrMsg(e)}',
+          ),
+        );
+        meta = _cleanAndDecodeJson(text);
+      } catch (e) {
+        throw Exception('Failed to map chapters. Error: $e');
       }
-      if (meta == null)
-        throw lastException ??
-            Exception('Failed to map chapters. All models/keys exhausted.');
 
       final rawChapters = (meta['chapters'] ?? meta['modules']) as List?;
       if (rawChapters == null || rawChapters.isEmpty) {
@@ -838,46 +1090,26 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
           .replaceAll('%custom_instructions%', instructionsBlock);
 
       Map<String, dynamic>? handoutMeta;
-      Exception? lastException;
-      for (final modelName in modelsToTry) {
-        for (final apiKey in keys) {
-          try {
-            final model = GenerativeModel(
-              model: modelName,
-              apiKey: apiKey,
-              generationConfig: GenerationConfig(
-                responseMimeType: 'application/json',
-              ),
-            );
-            final response = await _retryTransient(
-              () => model
-                  .generateContent([
-                    Content.multi([TextPart(handoutPrompt), ...fileParts]),
-                  ])
-                  .timeout(const Duration(minutes: 4)),
-              onRetry: (a, e) => print(
-                '[AiService] Handout skeleton transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
-              ),
-            );
-            if (response.text != null) {
-              handoutMeta = _cleanAndDecodeJson(response.text!);
-              break;
-            }
-          } on TimeoutException {
-            lastException = Exception(
-              'Handout analysis timed out ($modelName).',
-            );
-          } catch (e) {
-            lastException = Exception(
-              'Handout analysis failed ($modelName): ${_cleanErrMsg(e)}',
-            );
-          }
-        }
-        if (handoutMeta != null) break;
+      try {
+        final text = await _generateWithGroqFallback(
+          geminiModels: modelsToTry,
+          geminiKeys: keys,
+          contents: [
+            Content.multi([TextPart(handoutPrompt), ...fileParts]),
+          ],
+          slotName: 'Lite',
+          generationConfig: GenerationConfig(
+            responseMimeType: 'application/json',
+          ),
+          timeout: const Duration(minutes: 4),
+          onRetry: (a, e) => print(
+            '[AiService] Handout skeleton transient attempt $a: ${_cleanErrMsg(e)}',
+          ),
+        );
+        handoutMeta = _cleanAndDecodeJson(text);
+      } catch (e) {
+        throw Exception('Failed to analyze handout. Error: $e');
       }
-      if (handoutMeta == null)
-        throw lastException ??
-            Exception('Failed to analyze handout. All models/keys exhausted.');
 
       onProgress?.call('Finalizing handout structure…', 1.0);
       return Book.fromJson(
@@ -1209,79 +1441,64 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
         );
 
     final parts = <Part>[TextPart(prompt), ...syllabusParts, ...fileParts];
-    Object? lastErr;
-    for (final modelName in models) {
-      for (final apiKey in keys) {
-        try {
-          final model = GenerativeModel(
-            model: modelName,
-            apiKey: apiKey,
-            generationConfig: GenerationConfig(
-              responseMimeType: 'application/json',
-            ),
-          );
-          final response = await _retryTransient(
-            () => model
-                .generateContent([Content.multi(parts)])
-                .timeout(const Duration(minutes: 3)),
-            onRetry: (a, e) => print(
-              '[AiService] Sections (${chapter['id']}) transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
-            ),
-          );
-          final text = response.text;
-          if (text == null || text.trim().isEmpty) continue;
-          final jsonMap = _cleanAndDecodeJson(text);
-          final rawSecs = jsonMap['sections'] as List?;
-          if (rawSecs == null || rawSecs.isEmpty) continue;
-          final out = <Map<String, dynamic>>[];
-          final rawBounds = <({int? start, int? end})>[];
-          for (var j = 0; j < rawSecs.length; j++) {
-            final s = rawSecs[j] is Map
-                ? Map<String, dynamic>.from(rawSecs[j])
-                : <String, dynamic>{};
-            final sid = (s['id']?.toString().trim().isNotEmpty ?? false)
-                ? s['id'].toString()
-                : 's${j + 1}';
-            out.add({
-              'id': '${chapter['id']}-$sid',
-              'title': s['title']?.toString() ?? 'Section ${j + 1}',
-              'description': s['description']?.toString() ?? '',
-              'color': s['color']?.toString() ?? 'duo-blue',
-            });
-            rawBounds.add((
-              start: _asInt(s['printedStartPage'] ?? s['startPage']),
-              end: _asInt(s['printedEndPage'] ?? s['endPage']),
-            ));
-          }
-          if (out.isNotEmpty) {
-            if (chStart != null && chEnd != null) {
-              // Printed→absolute conversion + normalization in code: keep TOC
-              // order, clamp inside the chapter, derive contiguous ends (the
-              // last section always runs to the chapter end).
-              final resolved = PageMapping.resolveSectionRanges(
-                rawBounds,
-                chapterStart: chStart,
-                chapterEnd: chEnd,
-                offset: pageOffset,
-              );
-              for (var j = 0; j < out.length; j++) {
-                out[j]['startPage'] = resolved.ranges[j].start;
-                out[j]['endPage'] = resolved.ranges[j].end;
-              }
-              for (final note in resolved.corrections) {
-                print('[AiService] Sections (${chapter['id']}): $note');
-              }
+    try {
+      final text = await _generateWithGroqFallback(
+        geminiModels: models,
+        geminiKeys: keys,
+        contents: [Content.multi(parts)],
+        slotName: 'Lite',
+        generationConfig: GenerationConfig(
+          responseMimeType: 'application/json',
+        ),
+        onRetry: (a, e) => print(
+          '[AiService] Sections (${chapter['id']}) transient attempt $a: ${_cleanErrMsg(e)}',
+        ),
+      );
+      final jsonMap = _cleanAndDecodeJson(text);
+      final rawSecs = jsonMap['sections'] as List?;
+      if (rawSecs != null && rawSecs.isNotEmpty) {
+        final out = <Map<String, dynamic>>[];
+        final rawBounds = <({int? start, int? end})>[];
+        for (var j = 0; j < rawSecs.length; j++) {
+          final s = rawSecs[j] is Map
+              ? Map<String, dynamic>.from(rawSecs[j])
+              : <String, dynamic>{};
+          final sid = (s['id']?.toString().trim().isNotEmpty ?? false)
+              ? s['id'].toString()
+              : 's${j + 1}';
+          out.add({
+            'id': '${chapter['id']}-$sid',
+            'title': s['title']?.toString() ?? 'Section ${j + 1}',
+            'description': s['description']?.toString() ?? '',
+            'color': s['color']?.toString() ?? 'duo-blue',
+          });
+          rawBounds.add((
+            start: _asInt(s['printedStartPage'] ?? s['startPage']),
+            end: _asInt(s['printedEndPage'] ?? s['endPage']),
+          ));
+        }
+        if (out.isNotEmpty) {
+          if (chStart != null && chEnd != null) {
+            final resolved = PageMapping.resolveSectionRanges(
+              rawBounds,
+              chapterStart: chStart,
+              chapterEnd: chEnd,
+              offset: pageOffset,
+            );
+            for (var j = 0; j < out.length; j++) {
+              out[j]['startPage'] = resolved.ranges[j].start;
+              out[j]['endPage'] = resolved.ranges[j].end;
             }
-            return out;
+            for (final note in resolved.corrections) {
+              print('[AiService] Sections (${chapter['id']}): $note');
+            }
           }
-        } catch (e) {
-          lastErr = e;
+          return out;
         }
       }
-    }
-    if (lastErr != null) {
+    } catch (e) {
       print(
-        '[AiService] Sections (${chapter['id']}) exhausted: ${_cleanErrMsg(lastErr)}',
+        '[AiService] Sections (${chapter['id']}) failed: ${_cleanErrMsg(e)}',
       );
     }
     return null;
@@ -1438,55 +1655,28 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     final planFileParts = contextParts;
     String? lessonPlan;
     Exception? planError;
-    for (final liteModel in liteModelsToTry) {
-      for (final apiKey in keys) {
-        try {
-          final modelText = GenerativeModel(
-            model: liteModel,
-            apiKey: apiKey,
-            systemInstruction: Content.system(
-              compiledMetacognitiveSystemPrompt,
-            ),
-          );
-          final planResponse = await _retryTransient(
-            () => modelText
-                .generateContent([
-                  Content.multi([
-                    TextPart(hydratedPlanPrompt),
-                    ...planFileParts,
-                  ]),
-                ])
-                .timeout(planTimeout),
-            maxAttempts: 2,
-            baseDelay: const Duration(seconds: 1),
-            retryTimeouts: false,
-            onRetry: (a, e) {
-              print(
-                '[AiService] Unit plan transient ($liteModel) attempt $a: ${_cleanErrMsg(e)}',
-              );
-              onProgress('Server hiccup — retrying...');
-            },
-          );
-          final text = planResponse.text ?? '';
-          if (text.trim().isNotEmpty) {
-            lessonPlan = text;
-            break;
-          }
-        } on TimeoutException {
-          planError = Exception(
-            'Plan timed out on "$liteModel" after ${planTimeout.inSeconds}s.',
-          );
+    try {
+      lessonPlan = await _generateWithGroqFallback(
+        geminiModels: liteModelsToTry,
+        geminiKeys: keys,
+        contents: [
+          Content.multi([
+            TextPart(hydratedPlanPrompt),
+            ...planFileParts,
+          ]),
+        ],
+        slotName: 'Lite',
+        timeout: planTimeout,
+        systemInstruction: compiledMetacognitiveSystemPrompt,
+        onRetry: (a, e) {
           print(
-            '[AiService] Unit plan TIMEOUT ($liteModel) — switching to next model/key.',
+            '[AiService] Unit plan transient attempt $a: ${_cleanErrMsg(e)}',
           );
-          onProgress('"$liteModel" is slow — trying another model...');
-        } catch (e) {
-          planError = Exception('Plan failed ($liteModel): ${_cleanErrMsg(e)}');
-          if (_isTransient(e))
-            onProgress('Model busy — trying another model...');
-        }
-      }
-      if (lessonPlan != null) break;
+          onProgress('Server hiccup — retrying...');
+        },
+      );
+    } catch (e) {
+      planError = e as Exception;
     }
     if (lessonPlan == null) {
       throw planError ?? Exception('AI failed to generate a lesson plan.');
@@ -1733,6 +1923,9 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
               contents: [Content.multi(parts)],
               requestType: 'lesson_gen',
               targetId: '${unit.id}-pending-${index - 1}',
+              generationConfig: GenerationConfig(
+                responseMimeType: 'application/json',
+              ),
             ).timeout(const Duration(minutes: 3)),
             onRetry: (a, e) => print(
               '[AiService] Lesson $index transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
@@ -2361,42 +2554,32 @@ Do not include any explanation or other text.
     ];
 
     Exception? lastException;
-    for (final modelName in modelsToTry) {
-      for (final apiKey in keys) {
-        try {
-          final model = GenerativeModel(
-            model: modelName,
-            apiKey: apiKey,
-            generationConfig: GenerationConfig(
-              responseMimeType: 'application/json',
-            ),
-          );
-          final response = await _retryTransient(
-            () => model
-                .generateContent([Content.multi(parts)])
-                .timeout(const Duration(minutes: 3)),
-            onRetry: (a, e) => print(
-              '[AiService] Lesson formats transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
-            ),
-          );
-          final text = response.text;
-          if (text == null) continue;
-
-          final decoded = _cleanAndDecodeJson(text);
-          final formatsJson = decoded['lessonFormats'] as List?;
-          if (formatsJson != null) {
-            return formatsJson
-                .map(
-                  (f) => LessonFormat.fromJson(
-                    f is Map ? Map<String, dynamic>.from(f) : {},
-                  ),
-                )
-                .toList();
-          }
-        } catch (e) {
-          lastException = e as Exception;
-        }
+    try {
+      final text = await _generateWithGroqFallback(
+        geminiModels: modelsToTry,
+        geminiKeys: keys,
+        contents: [Content.multi(parts)],
+        slotName: 'Lite',
+        generationConfig: GenerationConfig(
+          responseMimeType: 'application/json',
+        ),
+        onRetry: (a, e) => print(
+          '[AiService] Lesson formats transient attempt $a: ${_cleanErrMsg(e)}',
+        ),
+      );
+      final decoded = _cleanAndDecodeJson(text);
+      final formatsJson = decoded['lessonFormats'] as List?;
+      if (formatsJson != null) {
+        return formatsJson
+            .map(
+              (f) => LessonFormat.fromJson(
+                f is Map ? Map<String, dynamic>.from(f) : {},
+              ),
+            )
+            .toList();
       }
+    } catch (e) {
+      lastException = e as Exception;
     }
     throw lastException ?? Exception('Failed to generate lesson formats.');
   }
@@ -2451,82 +2634,62 @@ Do not include any explanation or other text.
     final parts = <Part>[TextPart(hydratedPrompt), ...contextParts];
 
     Exception? lastException;
-    for (final modelName in modelsToTry) {
-      for (final apiKey in keys) {
-        try {
-          final model = GenerativeModel(
-            model: modelName,
-            apiKey: apiKey,
-            generationConfig: GenerationConfig(
-              responseMimeType: 'application/json',
-            ),
-          );
-          final response = await _retryTransient(
-            () => model
-                .generateContent([Content.multi(parts)])
-                .timeout(const Duration(minutes: 3)),
-            onRetry: (a, e) => print(
-              '[AiService] Unit manifest transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
-            ),
-          );
+    try {
+      final text = await _generateWithGroqFallback(
+        geminiModels: modelsToTry,
+        geminiKeys: keys,
+        contents: [Content.multi(parts)],
+        slotName: 'Lite',
+        generationConfig: GenerationConfig(
+          responseMimeType: 'application/json',
+        ),
+        onRetry: (a, e) => print(
+          '[AiService] Unit manifest transient attempt $a: ${_cleanErrMsg(e)}',
+        ),
+      );
+      final jsonMap = _cleanAndDecodeJson(text);
+      final unitsData = jsonMap['units'] as List?;
+      if (unitsData == null || unitsData.isEmpty) {
+        throw Exception('Unit manifest contained no units.');
+      }
 
-          final text = response.text;
-          if (text == null || text.trim().isEmpty) {
-            throw Exception('Empty response from unit manifest call.');
-          }
-          final jsonMap = _cleanAndDecodeJson(text);
-          final unitsData = jsonMap['units'] as List?;
-          if (unitsData == null || unitsData.isEmpty) {
-            throw Exception('Unit manifest contained no units.');
-          }
+      final units = <Unit>[];
+      for (var i = 0; i < unitsData.length; i++) {
+        final raw = unitsData[i];
+        if (raw is! Map) continue;
+        final base = Unit.fromJson(Map<String, dynamic>.from(raw));
+        final id = base.id.isNotEmpty ? base.id : 'u${i + 1}';
+        units.add(
+          base.copyWith(
+            id: '${section.id}-$id',
+            isGenerated: false,
+            lessons: const [],
+            pdfPath: null,
+            startPage: null,
+            endPage: null,
+          ),
+        );
+      }
+      if (units.isEmpty)
+        throw Exception('Unit manifest had no usable entries.');
 
-          final units = <Unit>[];
-          for (var i = 0; i < unitsData.length; i++) {
-            final raw = unitsData[i];
-            if (raw is! Map) continue;
-            final base = Unit.fromJson(Map<String, dynamic>.from(raw));
-            final id = base.id.isNotEmpty ? base.id : 'u${i + 1}';
-            units.add(
-              base.copyWith(
-                id: '${section.id}-$id',
-                isGenerated: false,
-                lessons: const [],
-                // The unit shares the section's PDF chunk — it does not get
-                // its own pdfPath or page range.
-                pdfPath: null,
-                startPage: null,
-                endPage: null,
-              ),
-            );
+      final newFormats = <LessonFormat>[];
+      final formatsData = jsonMap['newLessonFormats'] as List?;
+      if (formatsData != null) {
+        for (final f in formatsData) {
+          if (f is Map) {
+            try {
+              newFormats.add(
+                LessonFormat.fromJson(Map<String, dynamic>.from(f)),
+              );
+            } catch (_) {}
           }
-          if (units.isEmpty)
-            throw Exception('Unit manifest had no usable entries.');
-
-          final newFormats = <LessonFormat>[];
-          final formatsData = jsonMap['newLessonFormats'] as List?;
-          if (formatsData != null) {
-            for (final f in formatsData) {
-              if (f is Map) {
-                try {
-                  newFormats.add(
-                    LessonFormat.fromJson(Map<String, dynamic>.from(f)),
-                  );
-                } catch (_) {}
-              }
-            }
-          }
-
-          return UnitManifestResult(units: units, newFormats: newFormats);
-        } on TimeoutException {
-          lastException = Exception(
-            'Unit manifest request timed out ($modelName).',
-          );
-        } catch (e) {
-          lastException = Exception(
-            'Unit manifest failed ($modelName): ${_cleanErrMsg(e)}',
-          );
         }
       }
+
+      return UnitManifestResult(units: units, newFormats: newFormats);
+    } catch (e) {
+      lastException = e as Exception;
     }
     throw lastException ??
         Exception(
@@ -2769,37 +2932,120 @@ Do not include any explanation or other text.
     final parts = <Part>[TextPart(prompt), ...fileParts];
 
     Object? lastErr;
-    for (final modelName in liteModels) {
-      for (final apiKey in keys) {
+    try {
+      final text = await _generateWithGroqFallback(
+        geminiModels: liteModels,
+        geminiKeys: keys,
+        contents: [Content.multi(parts)],
+        slotName: 'Lite',
+        generationConfig: GenerationConfig(
+          responseMimeType: 'application/json',
+        ),
+        onRetry: (a, e) => print(
+          '[AiService] Custom slide $slideIndex transient attempt $a: ${_cleanErrMsg(e)}',
+        ),
+      );
+      final jsonMap = _cleanAndDecodeJson(text);
+      final slide = Slide.fromJson(jsonMap);
+      return slide;
+    } catch (e) {
+      lastErr = e;
+    }
+    throw lastErr ?? Exception('Failed to generate custom slide $slideIndex.');
+  }
+
+  Future<String> _generateWithGroqFallback({
+    required List<String> geminiModels,
+    required List<String> geminiKeys,
+    required List<Content> contents,
+    required String slotName,
+    GenerationConfig? generationConfig,
+    List<SafetySetting>? safetySettings,
+    Duration timeout = const Duration(minutes: 3),
+    void Function(int attempt, Object err)? onRetry,
+    String? systemInstruction,
+  }) async {
+    Object? lastErr;
+    for (final modelName in geminiModels) {
+      for (final apiKey in geminiKeys) {
         try {
           final model = GenerativeModel(
             model: modelName,
             apiKey: apiKey,
-            generationConfig: GenerationConfig(
-              responseMimeType: 'application/json',
-            ),
+            generationConfig: generationConfig,
+            safetySettings: safetySettings ?? const [],
+            systemInstruction: systemInstruction != null ? Content.system(systemInstruction) : null,
           );
           final response = await _retryTransient(
-            () => model
-                .generateContent([Content.multi(parts)])
-                .timeout(const Duration(minutes: 3)),
-            onRetry: (a, e) => print(
-              '[AiService] Custom slide $slideIndex transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
-            ),
+            () => model.generateContent(contents).timeout(timeout),
+            onRetry: onRetry,
           );
           final text = response.text;
           if (text == null || text.trim().isEmpty) {
-            throw Exception('Empty response for custom slide $slideIndex.');
+            throw Exception('Empty response from model $modelName');
           }
-          final jsonMap = _cleanAndDecodeJson(text);
-          final slide = Slide.fromJson(jsonMap);
-          return slide;
+          return text;
         } catch (e) {
           lastErr = e;
         }
       }
     }
-    throw lastErr ?? Exception('Failed to generate custom slide $slideIndex.');
+
+    // Google Gemini failed! Fall back to Groq, then Cerebras, then OpenRouter
+    print('[AiService] Google Gemini failed ($lastErr). Falling back to Groq...');
+    final buffer = StringBuffer();
+    List<Uint8List> attachedImages = [];
+    for (final c in contents) {
+      for (final p in c.parts) {
+        if (p is TextPart) {
+          buffer.writeln(p.text);
+        } else if (p is DataPart) {
+          attachedImages.add(p.bytes);
+        }
+      }
+    }
+    final promptText = buffer.toString();
+
+    Object? groqErr;
+    try {
+      return await _callGroq(
+        prompt: promptText,
+        slotName: slotName,
+        responseJson: generationConfig?.responseMimeType == 'application/json',
+        attachedImages: attachedImages.isNotEmpty ? attachedImages : null,
+        systemPrompt: systemInstruction,
+      );
+    } catch (e) {
+      groqErr = e;
+      print('[AiService] Groq fallback failed: $e. Falling back to Cerebras...');
+    }
+
+    Object? cerebrasErr;
+    try {
+      return await _callCerebras(
+        prompt: promptText,
+        slotName: slotName,
+        responseJson: generationConfig?.responseMimeType == 'application/json',
+        attachedImages: attachedImages.isNotEmpty ? attachedImages : null,
+        systemPrompt: systemInstruction,
+      );
+    } catch (e) {
+      cerebrasErr = e;
+      print('[AiService] Cerebras fallback failed: $e. Falling back to OpenRouter...');
+    }
+
+    try {
+      return await _callOpenRouter(
+        prompt: promptText,
+        slotName: slotName,
+        responseJson: generationConfig?.responseMimeType == 'application/json',
+        attachedImages: attachedImages.isNotEmpty ? attachedImages : null,
+        systemPrompt: systemInstruction,
+      );
+    } catch (openRouterErr) {
+      print('[AiService] OpenRouter fallback failed: $openRouterErr');
+      throw lastErr ?? groqErr ?? cerebrasErr ?? openRouterErr;
+    }
   }
 
   Future<GenerateContentResponse> _generateContentWithTiming({
@@ -2808,6 +3054,7 @@ Do not include any explanation or other text.
     required List<Content> contents,
     required String? targetId,
     String? requestType,
+    GenerationConfig? generationConfig,
   }) async {
     final startTime = DateTime.now();
     int payloadSize = 0;
@@ -2840,7 +3087,26 @@ Do not include any explanation or other text.
     }
 
     try {
-      final response = await model.generateContent(contents);
+      // Find keys for fallback
+      final prefs = await SharedPreferences.getInstance();
+      List<String> keys = prefs.getStringList('gemini_api_keys_list') ?? [];
+      if (keys.isEmpty) {
+        final keysString = prefs.getString('gemini_api_keys') ?? '';
+        keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      }
+      if (keys.isEmpty) {
+        keys = await SecretsService.instance.geminiKeys();
+      }
+
+      // Try with fallback logic
+      final text = await _generateWithGroqFallback(
+        geminiModels: [modelName],
+        geminiKeys: keys,
+        contents: contents,
+        slotName: requestType == 'Lesson Content Generation' || requestType == 'Slide Generation' ? 'Primary - Text' : 'Lite',
+        generationConfig: generationConfig,
+      );
+
       final endTime = DateTime.now();
       final actualDuration = endTime.difference(startTime);
 
@@ -2852,7 +3118,9 @@ Do not include any explanation or other text.
         requestType: requestType,
       );
 
-      return response;
+      return GenerateContentResponse([
+        Candidate(Content.model([TextPart(text)]), null, null, null, null)
+      ], null);
     } finally {
       if (targetId != null) {
         AiEstimator.activeRequests.remove(targetId);

@@ -2,20 +2,51 @@ import 'package:flutter/material.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 
+double calculateUnitProgress(Unit unit, List<String> completedLessons) {
+  if (completedLessons.contains(unit.id)) {
+    return 1.0;
+  }
+  if (!unit.isGenerated || unit.lessons.isEmpty) {
+    return 0.0;
+  }
+  final done = unit.lessons.where((l) => completedLessons.contains(l.id)).length;
+  return done / unit.lessons.length;
+}
+
+double calculateSectionProgressDouble(Section section, List<String> completedLessons) {
+  if (completedLessons.contains(section.id)) {
+    return 1.0;
+  }
+  if (section.units.isEmpty) {
+    return 0.0;
+  }
+  double totalProgress = 0.0;
+  for (final unit in section.units) {
+    totalProgress += calculateUnitProgress(unit, completedLessons);
+  }
+  return totalProgress / section.units.length;
+}
+
 int calculateSectionProgress(Section section, List<String> completedLessons) {
-  final allLessons = section.units.expand((u) => u.lessons).toList();
-  if (allLessons.isEmpty) return 0;
-  final done = allLessons.where((l) => completedLessons.contains(l.id)).length;
-  return ((done / allLessons.length) * 100).round();
+  return (calculateSectionProgressDouble(section, completedLessons) * 100).round();
+}
+
+double calculateModuleProgressDouble(Module module, List<String> completedLessons) {
+  if (completedLessons.contains(module.id)) {
+    return 1.0;
+  }
+  if (module.sections.isEmpty) {
+    return 0.0;
+  }
+  double totalProgress = 0.0;
+  for (final section in module.sections) {
+    totalProgress += calculateSectionProgressDouble(section, completedLessons);
+  }
+  return totalProgress / module.sections.length;
 }
 
 int calculateModuleProgress(Module module, List<String> completedLessons) {
-  final allLessons = module.sections
-      .expand((s) => s.units.expand((u) => u.lessons))
-      .toList();
-  if (allLessons.isEmpty) return 0;
-  final done = allLessons.where((l) => completedLessons.contains(l.id)).length;
-  return ((done / allLessons.length) * 100).round();
+  return (calculateModuleProgressDouble(module, completedLessons) * 100).round();
 }
 
 class SectionColors {

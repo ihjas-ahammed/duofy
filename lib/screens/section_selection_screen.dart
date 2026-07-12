@@ -151,21 +151,8 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                                 section.color,
                               );
 
-                              // Calculate progress for this section
-                              int totalLessons = 0;
-                              int completedCount = 0;
-                              for (final unit in section.units) {
-                                totalLessons += unit.lessons.length;
-                                for (final lesson in unit.lessons) {
-                                  if (_completedLessons.contains(lesson.id)) {
-                                    completedCount++;
-                                  }
-                                }
-                              }
-
-                              final progress = totalLessons > 0
-                                  ? (completedCount / totalLessons)
-                                  : 0.0;
+                              final progress = calculateSectionProgressDouble(section, _completedLessons);
+                              final totalLessons = section.units.fold<int>(0, (sum, u) => sum + u.lessons.length);
 
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 16),

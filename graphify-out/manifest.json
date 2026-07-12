@@ -55,8 +55,8 @@
     "semantic_hash": ""
   },
   "lib/screens/settings_screen.dart": {
-    "mtime": 1783867319.1350555,
-    "ast_hash": "b2260c8f792b13adf8a23e71ae760075",
+    "mtime": 1783869980.895964,
+    "ast_hash": "fd7e46e064964d42db8087e5a8f165ff",
     "semantic_hash": ""
   },
   "lib/screens/bookmarks_screen.dart": {
@@ -350,8 +350,8 @@
     "semantic_hash": ""
   },
   "lib/services/ai_service.dart": {
-    "mtime": 1783866932.3505933,
-    "ast_hash": "f8e61053c33ea7ce4c4b8a7ea91d8d0c",
+    "mtime": 1783869440.2553022,
+    "ast_hash": "a89279db83d056ea37ff8316e5ffc9ab",
     "semantic_hash": ""
   },
   "lib/services/prompt_service.dart": {
@@ -390,13 +390,13 @@
     "semantic_hash": ""
   },
   "lib/services/database_service.dart": {
-    "mtime": 1783688207.8016136,
-    "ast_hash": "44958fb7a797ae266f8e19cf941e6740",
+    "mtime": 1783869402.3409073,
+    "ast_hash": "93f40c69322d7fb654540a3fb31a2a01",
     "semantic_hash": ""
   },
   "lib/services/progress_service.dart": {
-    "mtime": 1783688207.8026137,
-    "ast_hash": "47917753022dd5c1abedf5db509a2504",
+    "mtime": 1783870175.9120646,
+    "ast_hash": "02e367c0095a7a26d39d226b191ed892",
     "semantic_hash": ""
   },
   "lib/services/fb/fb_core.dart": {
@@ -420,9 +420,9 @@
     "semantic_hash": ""
   },
   "lib/utils/progress_utils.dart": {
-    "mtime": 1783688207.8036137,
-    "ast_hash": "65eec5b5d38e8fdcbbfed9b736feac5c",
-    "semantic_hash": "65eec5b5d38e8fdcbbfed9b736feac5c"
+    "mtime": 1783870179.8221638,
+    "ast_hash": "e8b82c1b59b777d4cc5adec0a41580b4",
+    "semantic_hash": ""
   },
   ".claude/settings.json": {
     "mtime": 1783177376.2013469,
@@ -555,8 +555,8 @@
     "semantic_hash": ""
   },
   "lib/screens/module_selection_screen.dart": {
-    "mtime": 1783867191.213096,
-    "ast_hash": "19eb01b4fab0dc2c5f5e65a39ca87301",
+    "mtime": 1783870337.260089,
+    "ast_hash": "efbdb80e57cfd22421d1eb53b828c7b5",
     "semantic_hash": ""
   },
   "lib/screens/reference_pdf_viewer_screen.dart": {
@@ -565,8 +565,8 @@
     "semantic_hash": ""
   },
   "lib/screens/section_selection_screen.dart": {
-    "mtime": 1783867211.4517484,
-    "ast_hash": "d55140edead6d0f0a92d13892c7e7d15",
+    "mtime": 1783870342.6642213,
+    "ast_hash": "e1e56d6dc5c39c2f0c230c86d12718a7",
     "semantic_hash": ""
   },
   "lib/services/ai_estimator.dart": {
@@ -6662,6 +6662,11 @@
   "assets/images/icon_foreground.png": {
     "mtime": 1783651524.709016,
     "ast_hash": "d78fb9faaf39aaa4fed7aa26f2066a7f",
+    "semantic_hash": ""
+  },
+  "scratch/update_groq.dart": {
+    "mtime": 1783868540.7415712,
+    "ast_hash": "78a40c476ccc25b94f528ac170c5a165",
     "semantic_hash": ""
   }
 }

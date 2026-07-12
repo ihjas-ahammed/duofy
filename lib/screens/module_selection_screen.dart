@@ -7,6 +7,7 @@ import '../services/progress_service.dart';
 import 'dart:ui';
 import '../services/global_state.dart';
 import '../services/generation_manager.dart';
+import '../utils/progress_utils.dart';
 import 'section_selection_screen.dart';
 import 'main_layout_screen.dart';
 
@@ -300,24 +301,8 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                         final module = widget.book.modules[index];
 
                         // Calculate totals
-                        int totalLessons = 0;
-                        int completedCount = 0;
-                        int totalUnits = 0;
-                        for (final sec in module.sections) {
-                          totalUnits += sec.units.length;
-                          for (final unit in sec.units) {
-                            totalLessons += unit.lessons.length;
-                            for (final lesson in unit.lessons) {
-                              if (_completedLessons.contains(lesson.id)) {
-                                completedCount++;
-                              }
-                            }
-                          }
-                        }
-
-                        final progress = totalLessons > 0
-                            ? (completedCount / totalLessons)
-                            : 0.0;
+                        final progress = calculateModuleProgressDouble(module, _completedLessons);
+                        final totalUnits = module.sections.fold<int>(0, (sum, sec) => sum + sec.units.length);
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 16),

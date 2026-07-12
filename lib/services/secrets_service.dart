@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'b2_service.dart' show B2Credentials;
 import 'fb/fb_firestore.dart';
@@ -53,6 +54,75 @@ class SecretsService {
     if (raw is String && raw.trim().isNotEmpty) {
       return raw.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
     }
+    return const [];
+  }
+
+  /// Shared or user-supplied Groq keys, falling back to the global key.
+  Future<List<String>> groqKeys() async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> keys = prefs.getStringList('groq_api_keys_list') ?? [];
+    if (keys.isEmpty) {
+      final keysString = prefs.getString('groq_api_keys') ?? '';
+      keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    }
+    if (keys.isNotEmpty) return keys;
+
+    final data = await _load();
+    final raw = data?['GROQ'];
+    List<String> shared = [];
+    if (raw is List) {
+      shared = raw.map((e) => e?.toString().trim() ?? '').where((e) => e.isNotEmpty).toList();
+    } else if (raw is String && raw.trim().isNotEmpty) {
+      shared = raw.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    }
+    if (shared.isNotEmpty) return shared;
+
+    return const [];
+  }
+
+  /// Shared or user-supplied Cerebras keys, falling back to the global key.
+  Future<List<String>> cerebrasKeys() async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> keys = prefs.getStringList('cerebras_api_keys_list') ?? [];
+    if (keys.isEmpty) {
+      final keysString = prefs.getString('cerebras_api_keys') ?? '';
+      keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    }
+    if (keys.isNotEmpty) return keys;
+
+    final data = await _load();
+    final raw = data?['CEREBRAS'];
+    List<String> shared = [];
+    if (raw is List) {
+      shared = raw.map((e) => e?.toString().trim() ?? '').where((e) => e.isNotEmpty).toList();
+    } else if (raw is String && raw.trim().isNotEmpty) {
+      shared = raw.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    }
+    if (shared.isNotEmpty) return shared;
+
+    return const [];
+  }
+
+  /// Shared or user-supplied OpenRouter keys, falling back to the global key.
+  Future<List<String>> openrouterKeys() async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> keys = prefs.getStringList('openrouter_api_keys_list') ?? [];
+    if (keys.isEmpty) {
+      final keysString = prefs.getString('openrouter_api_keys') ?? '';
+      keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    }
+    if (keys.isNotEmpty) return keys;
+
+    final data = await _load();
+    final raw = data?['OPENROUTER'];
+    List<String> shared = [];
+    if (raw is List) {
+      shared = raw.map((e) => e?.toString().trim() ?? '').where((e) => e.isNotEmpty).toList();
+    } else if (raw is String && raw.trim().isNotEmpty) {
+      shared = raw.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    }
+    if (shared.isNotEmpty) return shared;
+
     return const [];
   }
 
