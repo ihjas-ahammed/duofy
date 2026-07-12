@@ -300,6 +300,49 @@ class MappingVerifier {
     return best;
   }
 
+  Future<bool> verifyPostCreateFirstChunk(
+    List<File> sourceFiles,
+    Book book, {
+    String? apiKey,
+  }) async {
+    Section? firstSec;
+    for (final m in book.modules) {
+      for (final s in m.sections) {
+        if (s.startPage != null && s.startPage! >= 1) {
+          firstSec = s;
+          break;
+        }
+      }
+      if (firstSec != null) break;
+    }
+    if (firstSec == null || sourceFiles.isEmpty) return true;
+    final fileIdx = firstSec.bookIndex ?? 0;
+    if (fileIdx < 0 || fileIdx >= sourceFiles.length) return true;
+
+    final start = firstSec.startPage!;
+    final end = firstSec.endPage ?? start;
+    final pagesToExtract = <int>{};
+    for (int p = start; p <= math.min(start + 2, end); p++) {
+      pagesToExtract.add(p - 1);
+    }
+
+    try {
+      final pageTexts = await _pdfService.extractPagesText(sourceFiles[fileIdx], pagesToExtract);
+      final text = pageTexts.values.join('\n');
+      if (text.trim().isEmpty) return true; // Can't verify empty text
+
+      return await _aiService.verifyFirstChunkMatch(
+        text,
+        firstSec.title,
+        firstSec.description,
+        apiKey: apiKey,
+      );
+    } catch (e) {
+      print('[MappingVerifier] Post-create verification error: $e');
+      return false;
+    }
+  }
+
   /// Picks up to [count] samples evenly spread across [items] (first, last,
   /// and evenly spaced between), preserving order.
   static List<T> _spread<T>(List<T> items, int count) {

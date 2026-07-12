@@ -63,6 +63,45 @@ double svgAspect(String svg) {
   return (w / h).clamp(4 / 3, 16 / 9).toDouble();
 }
 
+double canvasAspect(String content) {
+  if (isSvgCanvas(content)) {
+    return svgAspect(content);
+  }
+  final trimmed = content.trim();
+  final match = RegExp(
+    r'//\s*(?:ASPECT_RATIO|aspect_ratio|aspectRatio|AspectRatio)\s*:\s*([0-9.:/]+)',
+    caseSensitive: false,
+  ).firstMatch(trimmed);
+  if (match != null) {
+    final val = match.group(1)!.trim();
+    if (val.contains(':')) {
+      final parts = val.split(':');
+      if (parts.length == 2) {
+        final w = double.tryParse(parts[0]);
+        final h = double.tryParse(parts[1]);
+        if (w != null && h != null && h > 0) {
+          return (w / h).clamp(4 / 3, 16 / 9).toDouble();
+        }
+      }
+    } else if (val.contains('/')) {
+      final parts = val.split('/');
+      if (parts.length == 2) {
+        final w = double.tryParse(parts[0]);
+        final h = double.tryParse(parts[1]);
+        if (w != null && h != null && h > 0) {
+          return (w / h).clamp(4 / 3, 16 / 9).toDouble();
+        }
+      }
+    } else {
+      final parsed = double.tryParse(val);
+      if (parsed != null && parsed > 0) {
+        return parsed.clamp(4 / 3, 16 / 9).toDouble();
+      }
+    }
+  }
+  return 3 / 2;
+}
+
 /// Heuristic: program needs THREE.js when it references `THREE.` or uses
 /// the WebGL context name (some models add a manual fallback). Used to
 /// decide whether to pull in the three.js CDN bundle.
@@ -91,14 +130,16 @@ String buildCanvasHtml(String userJs) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
   html, body { margin: 0; padding: 0; height: 100%; background: transparent; overflow: hidden; touch-action: none; }
-  #c { display: block; width: 100vw; height: 100vh; }
+  #c, #s { display: block; width: 100vw; height: 100vh; }
 </style>
 $threeTag
 </head>
 <body>
 <canvas id="c"></canvas>
+<svg id="s" style="display:none;"></svg>
 <script>
 const canvas = document.getElementById('c');
+const svg = document.getElementById('s');
 const ctx = canvas.getContext('2d');
 let __setupRan = false;
 function _sizeCanvas() {
@@ -159,6 +200,24 @@ function _render() {
   }
   if (typeof draw === 'function') {
     try {
+      const drawStr = draw.toString();
+      const isSvgDraw = /^\s*(function\s+)?draw\s*\(\s*svg\b/.test(drawStr) || 
+                        /\(\s*svg\b/.test(drawStr) ||
+                        /svg/i.test(drawStr.split(')')[0]);
+      if (isSvgDraw) {
+        canvas.style.display = 'none';
+        svg.style.display = 'block';
+        svg.setAttribute('width', W);
+        svg.setAttribute('height', H);
+        svg.setAttribute('viewBox', `0 0 \${W} \${H}`);
+        svg.innerHTML = '';
+        draw(svg, W, H);
+        return;
+      }
+
+      canvas.style.display = 'block';
+      svg.style.display = 'none';
+
       // --- Auto-fit: render offscreen, measure bounds, re-render scaled ---
       const REF = Math.max(W, H, 800);
       const off = document.createElement('canvas');
@@ -352,7 +411,7 @@ class _CanvasFullScreenScreen extends StatelessWidget {
                             showCanvasCodeDialog(context, content),
                         child: Center(
                           child: AspectRatio(
-                            aspectRatio: 3 / 2,
+                            aspectRatio: canvasAspect(content),
                             child: CanvasHtmlView(drawFunction: content),
                           ),
                         ),

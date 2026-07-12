@@ -976,6 +976,22 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                           _loadProgress();
                           widget.onBookUpdated(widget.book);
                         },
+                        onMoveToNextSection: () {
+                          final activeMod = widget.book.modules[_activeModuleIdx];
+                          if (_activeSectionIdx + 1 < activeMod.sections.length) {
+                            setState(() {
+                              _activeSectionIdx++;
+                            });
+                            widget.activeSection?.value = _activeSectionIdx;
+                          } else if (_activeModuleIdx + 1 < widget.book.modules.length) {
+                            setState(() {
+                              _activeModuleIdx++;
+                              _activeSectionIdx = 0;
+                            });
+                            widget.activeModule?.value = _activeModuleIdx;
+                            widget.activeSection?.value = _activeSectionIdx;
+                          }
+                        },
                         onGenerateUnit: (unit, unitIdx) {
                           _promptAndGenerateUnit(unit, mIdx, sIdx, unitIdx);
                         },
@@ -1310,7 +1326,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   widget.onBookUpdated(widget.book);
                 },
               ),
-            if (GlobalState.advancedModeNotifier.value)
+            if (GlobalState.developerModeNotifier.value)
               _MenuActionItem(
                 icon: LucideIcons.refreshCw,
                 title: 'Regenerate Lesson',
@@ -1419,7 +1435,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   widget.onBookUpdated(widget.book);
                 },
               ),
-            if (GlobalState.advancedModeNotifier.value &&
+            if (GlobalState.developerModeNotifier.value &&
                 unit.isGenerated &&
                 unit.lessons.isNotEmpty)
               _MenuActionItem(
@@ -1919,7 +1935,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   widget.onBookUpdated(widget.book);
                 },
               ),
-            if (GlobalState.advancedModeNotifier.value &&
+            if (GlobalState.developerModeNotifier.value &&
                 (section.units.isNotEmpty || section.unitsGenerated))
               _MenuActionItem(
                 icon: LucideIcons.rotateCcw,

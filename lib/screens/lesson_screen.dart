@@ -118,7 +118,8 @@ class _LessonScreenState extends State<LessonScreen> {
       widget.modIdx != null &&
       widget.secIdx != null &&
       widget.unitIdx != null &&
-      widget.lessonIdx != null;
+      widget.lessonIdx != null &&
+      GlobalState.developerModeNotifier.value;
 
   @override
   void initState() {
@@ -143,11 +144,111 @@ class _LessonScreenState extends State<LessonScreen> {
         if (_canRegenerateCanvas) {
           _triggerBackgroundCanvasGeneration();
         }
+        _checkAndPromptNextUnitGeneration();
       }
     });
     // Bookmark state + stamp last-opened time if this lesson is bookmarked.
     _loadBookmarkState();
     BookmarkService.markOpened(widget.lesson.id);
+  }
+
+  void _checkAndPromptNextUnitGeneration() {
+    if (widget.book == null ||
+        widget.modIdx == null ||
+        widget.secIdx == null ||
+        widget.unitIdx == null) return;
+
+    final book = widget.book!;
+    final modIdx = widget.modIdx!;
+    final secIdx = widget.secIdx!;
+    final unitIdx = widget.unitIdx!;
+
+    Unit? nextUnit;
+    int nextModIdx = modIdx;
+    int nextSecIdx = secIdx;
+    int nextUnitIdx = unitIdx + 1;
+
+    // Check current section
+    if (nextUnitIdx < book.modules[modIdx].sections[secIdx].units.length) {
+      nextUnit = book.modules[modIdx].sections[secIdx].units[nextUnitIdx];
+    } else {
+      // Check next section in current module
+      nextSecIdx = secIdx + 1;
+      nextUnitIdx = 0;
+      if (nextSecIdx < book.modules[modIdx].sections.length) {
+        if (book.modules[modIdx].sections[nextSecIdx].units.isNotEmpty) {
+          nextUnit = book.modules[modIdx].sections[nextSecIdx].units[nextUnitIdx];
+        }
+      } else {
+        // Check next module
+        nextModIdx = modIdx + 1;
+        nextSecIdx = 0;
+        nextUnitIdx = 0;
+        if (nextModIdx < book.modules.length) {
+          if (book.modules[nextModIdx].sections.isNotEmpty &&
+              book.modules[nextModIdx].sections.first.units.isNotEmpty) {
+            nextUnit = book.modules[nextModIdx].sections.first.units.first;
+          }
+        }
+      }
+    }
+
+    if (nextUnit != null && !nextUnit.isGenerated) {
+      final inQueue = GenerationManager.instance.queue.any(
+        (t) => t.unitId == nextUnit!.id && (t.status == 'queued' || t.status == 'running'),
+      );
+      if (inQueue) return;
+
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: context.colors.surface,
+          title: Text(
+            'Generate Next Unit?',
+            style: TextStyle(
+              color: context.colors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'The next unit "${nextUnit!.title}" is not generated yet.\n\n'
+            'Would you like to auto-generate it in the background now so it is ready when you get there?',
+            style: TextStyle(color: context.colors.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(
+                'Later',
+                style: TextStyle(color: context.colors.textFaint),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                GenerationManager.instance.startUnitGeneration(
+                  nextUnit!,
+                  book,
+                  nextModIdx,
+                  nextSecIdx,
+                  nextUnitIdx,
+                );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Generation for "${nextUnit.title}" started in the background.'),
+                    backgroundColor: AppTheme.duoBlue,
+                  ),
+                );
+              },
+              child: const Text(
+                'Generate',
+                style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   void _triggerBackgroundCanvasGeneration() {
@@ -1689,7 +1790,7 @@ class _LessonScreenState extends State<LessonScreen> {
                             ? _buildSlideContent(slide, bottomBar)
                             : GestureDetector(
                                 behavior: HitTestBehavior.translucent,
-                                onDoubleTap: () {
+                                onDoubleTap: !GlobalState.developerModeNotifier.value ? null : () {
                                   setState(() {
                                     _editController.text = slide.content;
                                     _isEditingMode = true;

@@ -1879,6 +1879,18 @@ class GenerationManager extends ChangeNotifier {
                 if (report.pass) bookToSplit = shifted;
               }
               verificationPassed = report.pass;
+              if (verificationPassed) {
+                onStatus('Running post-create AI verification...');
+                final match = await verifier.verifyPostCreateFirstChunk(
+                  sourceFiles,
+                  bookToSplit,
+                );
+                if (!match) {
+                  print('[GenerationManager] Post-create AI verification failed.');
+                  verificationPassed = false;
+                  task.statusMessage = 'Action Required: AI verification failed. Adjust offset.';
+                }
+              }
               print('[GenerationManager] ${report.describe()}');
             } catch (e) {
               // Verification is advisory: an internal failure routes to manual
@@ -2986,16 +2998,6 @@ class GenerationManager extends ChangeNotifier {
       }
     } catch (e) {
       print('Error auto-generating first unit manifest: $e');
-    }
-
-    for (int i = 1; i < book.modules.first.sections.length; i++) {
-      startSectionUnitManifest(
-        book,
-        0,
-        i,
-        instructions: null,
-        isScheduled: false,
-      );
     }
   }
 }

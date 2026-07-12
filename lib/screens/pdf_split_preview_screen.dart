@@ -64,6 +64,44 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
     );
 
     _initControllers();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final taskIdx = GenerationManager.instance.activeTasks
+          .indexWhere((t) => t.id == widget.taskId);
+      if (taskIdx != -1) {
+        final task = GenerationManager.instance.activeTasks[taskIdx];
+        if (task.statusMessage.contains('AI verification failed') ||
+            task.statusMessage.contains('first chunk mismatch')) {
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: context.colors.surface,
+              title: Text(
+                'AI Mapping Verification Failed',
+                style: TextStyle(
+                  color: context.colors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              content: Text(
+                'The AI check on the first chunk of this book failed, indicating the page mapping is likely shifted.\n\n'
+                'Please review the page ranges below and adjust the offset if needed.',
+                style: TextStyle(color: context.colors.textSecondary),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text(
+                    'OK',
+                    style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+      }
+    });
   }
 
   void _initControllers() {

@@ -1370,6 +1370,47 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
         (noSource ? '${PromptService.noSourceContentNote}\n' : '') +
         PromptService.instructionsBlock(bookContext.customInstructions);
 
+    int modIdx = -1;
+    int secIdx = -1;
+    int unitIdx = -1;
+    for (int m = 0; m < bookContext.modules.length; m++) {
+      for (int s = 0; s < bookContext.modules[m].sections.length; s++) {
+        for (int u = 0; u < bookContext.modules[m].sections[s].units.length; u++) {
+          if (bookContext.modules[m].sections[s].units[u].id == unit.id) {
+            modIdx = m;
+            secIdx = s;
+            unitIdx = u;
+            break;
+          }
+        }
+        if (unitIdx != -1) break;
+      }
+      if (unitIdx != -1) break;
+    }
+
+    final layoutBuffer = StringBuffer();
+    for (int m = 0; m < bookContext.modules.length; m++) {
+      final module = bookContext.modules[m];
+      layoutBuffer.writeln('Module ${m + 1}: ${module.title}');
+      for (int s = 0; s < module.sections.length; s++) {
+        final section = module.sections[s];
+        layoutBuffer.writeln('  Section ${s + 1}: ${section.title}');
+        for (int u = 0; u < section.units.length; u++) {
+          final targetUnit = section.units[u];
+          final isCurrent = (m == modIdx && s == secIdx && u == unitIdx);
+          final currentMarker = isCurrent ? ' [CURRENT UNIT WE ARE PLANNING NOW]' : '';
+          layoutBuffer.writeln('    Unit ${u + 1}: ${targetUnit.title}$currentMarker');
+          if (targetUnit.lessons.isNotEmpty) {
+            layoutBuffer.writeln('      Existing Lessons:');
+            for (final l in targetUnit.lessons) {
+              layoutBuffer.writeln('        - ${l.title}: ${l.description}');
+            }
+          }
+        }
+      }
+    }
+    final String entireLayout = layoutBuffer.toString().trim();
+
     // --- Stage 1: lesson plan (lite-model fallback ladder) ----------------
     // The plan is a small text outline; a lite model that hasn't answered in
     // ~120s is misbehaving (overloaded / stuck), so we cap the wait and jump to
@@ -1382,7 +1423,8 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
         .replaceAll('%unit_title%', unit.title)
         .replaceAll('%formats_layout%', formatsLayoutString)
         .replaceAll('%custom_instructions%', instructionsBlock)
-        .replaceAll('%neighbor_context%', neighborContext);
+        .replaceAll('%neighbor_context%', neighborContext)
+        .replaceAll('%entire_layout%', entireLayout);
 
     final compiledMetacognitiveSystemPrompt =
         await PersonalizationService.compileSystemPrompt(
@@ -3218,6 +3260,61 @@ $pageText
           }
         } catch (e) {
           print('[AiService] verifySectionMapping error with $modelName: $e');
+        }
+      }
+    }
+    return false;
+  }
+
+  Future<bool> verifyFirstChunkMatch(
+    String chunkText,
+    String topicTitle,
+    String topicDescription, {
+    String? apiKey,
+  }) async {
+    final keys = await _getKeys(forcedApiKey: apiKey);
+    final modelsToTry = await _getLiteModels();
+
+    final prompt = '''
+Analyze the text of the first page(s) of a book chunk.
+We want to verify if this text matches the mapped topic:
+Topic Title: "$topicTitle"
+Topic Description: "$topicDescription"
+
+Answer with a JSON object:
+{
+  "isMatch": true/false
+}
+Set "isMatch" to true if the text discusses, introduces, or corresponds to this topic. Set "isMatch" to false if the text does not contain or correspond to this topic (meaning the page mapping is incorrect or shifted).
+
+Text:
+$chunkText
+''';
+
+    for (var key in keys) {
+      for (var modelName in modelsToTry) {
+        try {
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: key,
+            generationConfig: GenerationConfig(
+              responseMimeType: 'application/json',
+            ),
+          );
+          final response = await _retryTransient(
+            () => model
+                .generateContent([Content.text(prompt)])
+                .timeout(const Duration(seconds: 30)),
+            onRetry: (a, e) => print(
+              '[AiService] First chunk verification attempt $a: $e',
+            ),
+          );
+          if (response.text != null) {
+            final decoded = _cleanAndDecodeJson(response.text!);
+            return decoded['isMatch'] == true;
+          }
+        } catch (e) {
+          print('[AiService] verifyFirstChunkMatch error with $modelName: $e');
         }
       }
     }

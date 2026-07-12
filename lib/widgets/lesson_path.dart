@@ -10,6 +10,7 @@ import '../utils/progress_utils.dart';
 import 'lesson_node.dart';
 import 'unit_header.dart';
 import 'missing_files_banner.dart';
+import 'duo_button.dart';
 
 /// LessonPath mirrors the React component:
 /// - max width 400 px, centered
@@ -60,6 +61,7 @@ class LessonPath extends StatefulWidget {
   final VoidCallback? onEditFormats;
   final bool hasMissingFiles;
   final Widget? topHeader;
+  final VoidCallback? onMoveToNextSection;
 
   const LessonPath({
     super.key,
@@ -81,6 +83,7 @@ class LessonPath extends StatefulWidget {
     this.onEditFormats,
     required this.hasMissingFiles,
     this.topHeader,
+    this.onMoveToNextSection,
   });
 
   @override
@@ -173,6 +176,36 @@ class _LessonPathState extends State<LessonPath> {
           duration: const Duration(milliseconds: 1000),
           curve: Curves.easeInOutCubic,
         );
+
+        // Auto-open next lesson after scroll animation
+        if (targetElement.kind == _ElementKind.lesson && targetElement.lesson != null) {
+          final lesson = targetElement.lesson!;
+          final el = targetElement;
+          Future.delayed(const Duration(milliseconds: 1100), () async {
+            if (!mounted) return;
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('last_lesson_id_${widget.book.id}', lesson.id);
+            await prefs.setInt('last_mod_idx_${widget.book.id}', widget.modIdx);
+            await prefs.setInt('last_sec_idx_${widget.book.id}', widget.secIdx);
+
+            if (mounted) {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => LessonScreen(
+                    lesson: lesson,
+                    book: widget.book,
+                    modIdx: widget.modIdx,
+                    secIdx: widget.secIdx,
+                    unitIdx: el.unitIdx!,
+                    lessonIdx: el.lessonIdx!,
+                  ),
+                ),
+              );
+              widget.onLessonFinished();
+            }
+          });
+        }
       }
     }
   }
@@ -219,6 +252,13 @@ class _LessonPathState extends State<LessonPath> {
   @override
   Widget build(BuildContext context) {
     final color = SectionColors.base(widget.section.color);
+
+    final allLessons = widget.section.units.expand((u) => u.lessons).toList();
+    final bool allLessonsFinished = allLessons.isNotEmpty &&
+        allLessons.every((l) => widget.completedLessons.contains(l.id));
+    final bool hasNextSection =
+        (widget.secIdx + 1 < widget.book.modules[widget.modIdx].sections.length) ||
+        (widget.modIdx + 1 < widget.book.modules.length);
 
     // New-flow section that hasn\'t produced its units yet — show a manifest
     // panel instead of the (empty) lesson path. Status comes from the
@@ -583,6 +623,20 @@ class _LessonPathState extends State<LessonPath> {
                   );
                 },
               ),
+              if (allLessonsFinished && hasNextSection) ...[
+                const SizedBox(height: 32),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: DuoButton(
+                    text: 'Move to Next Section',
+                    color: AppTheme.duoBlue,
+                    shadowColor: AppTheme.duoBlueDark,
+                    onPressed: () {
+                      widget.onMoveToNextSection?.call();
+                    },
+                  ),
+                ),
+              ],
             ],
           ),
         ),

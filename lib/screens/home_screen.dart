@@ -107,6 +107,8 @@ class _HomeScreenState extends State<HomeScreen> {
     GenerationManager.instance.onBookGenerated = () =>
         _loadAllData(force: false);
 
+    GlobalState.progressNotifier.addListener(_handleProgressChange);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (startupError != null) {
         showGlobalErrorAlert(startupError!, null);
@@ -124,7 +126,14 @@ class _HomeScreenState extends State<HomeScreen> {
     _publishedSearchController.dispose();
     GenerationManager.instance.removeListener(_handleGenerationTasksChange);
     _bookUpdateSubscription?.cancel();
+    GlobalState.progressNotifier.removeListener(_handleProgressChange);
     super.dispose();
+  }
+
+  void _handleProgressChange() {
+    if (mounted) {
+      _loadAllData(force: false);
+    }
   }
 
   void _handleGenerationTasksChange() {

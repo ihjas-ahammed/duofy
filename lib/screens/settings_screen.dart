@@ -1828,7 +1828,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 32),
 
-              // ---- Advanced mode gate: everything below is power-user tooling.
               Container(
                 decoration: AppTheme.glassOf(context),
                 child: SwitchListTile(
@@ -1850,6 +1849,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   onChanged: (v) => setState(
                     () => GlobalState.advancedModeNotifier.value = v,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                decoration: AppTheme.glassOf(context),
+                child: SwitchListTile(
+                  value: GlobalState.developerModeNotifier.value,
+                  activeColor: AppTheme.duoRed,
+                  title: Text(
+                    'Developer mode',
+                    style: TextStyle(
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Unlock lesson editing, slide deletion, lesson deletion, and manual content regeneration.',
+                    style: TextStyle(
+                      color: context.colors.textFaint,
+                      fontSize: 11,
+                    ),
+                  ),
+                  onChanged: (v) => setState(
+                    () => GlobalState.developerModeNotifier.value = v,
                   ),
                 ),
               ),
@@ -2229,6 +2253,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               onChanged: (v) =>
                   setState(() => GlobalState.advancedModeNotifier.value = v),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            decoration: AppTheme.glassOf(context),
+            child: SwitchListTile(
+              value: GlobalState.developerModeNotifier.value,
+              activeColor: AppTheme.duoRed,
+              title: Text(
+                'Developer mode',
+                style: TextStyle(
+                  color: context.colors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              subtitle: Text(
+                'Unlock lesson editing, slide deletion, lesson deletion, and manual content regeneration.',
+                style: TextStyle(color: context.colors.textFaint, fontSize: 11),
+              ),
+              onChanged: (v) =>
+                  setState(() => GlobalState.developerModeNotifier.value = v),
             ),
           ),
           const SizedBox(height: 32),

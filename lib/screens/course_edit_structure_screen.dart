@@ -8,6 +8,8 @@ import '../models/app_models.dart';
 import '../services/generation_manager.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
+import 'package:path_provider/path_provider.dart';
+import '../services/b2_service.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/responsive_center.dart';
 
@@ -998,19 +1000,29 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                 Expanded(
                   child: DuoButton(
                     text: _uploadedPdfs.isNotEmpty
-                        ? 'Change PDF(s)'
-                        : 'Upload Source PDF(s)',
+                        ? 'Change Local'
+                        : 'Upload Local',
                     color: context.colors.surface,
                     shadowColor: Colors.black,
                     isOutline: true,
                     onPressed: _pickPdfs,
                   ),
                 ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: DuoButton(
+                    text: 'Marketplace',
+                    color: context.colors.surface,
+                    shadowColor: Colors.black,
+                    isOutline: true,
+                    onPressed: _selectFromMarketplace,
+                  ),
+                ),
                 if (_uploadedPdfs.isNotEmpty) ...[
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: DuoButton(
-                      text: _showPdfPreview ? 'Hide Preview' : 'Show Preview',
+                      text: _showPdfPreview ? 'Hide' : 'Preview',
                       color: AppTheme.duoBlue,
                       shadowColor: AppTheme.duoBlueDark,
                       onPressed: () {
@@ -1458,6 +1470,232 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _selectFromMarketplace() async {
+    final b2 = B2Service.instance;
+    if (!await b2.isConfigured()) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: context.colors.surface,
+          title: Text('Marketplace Not Configured', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+          content: Text('Please configure B2 credentials in Settings to access the marketplace.', style: TextStyle(color: context.colors.textSecondary)),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK', style: TextStyle(color: AppTheme.duoBlue))),
+          ],
+        ),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.colors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          maxChildSize: 0.9,
+          minChildSize: 0.4,
+          expand: false,
+          builder: (context, scrollController) {
+            return FutureBuilder<List<B2Object>>(
+              future: b2.listObjects(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator(color: AppTheme.duoBlue));
+                }
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text('Error loading marketplace: ${snapshot.error}', style: TextStyle(color: context.colors.textPrimary)),
+                    ),
+                  );
+                }
+                final allObjs = snapshot.data ?? [];
+                final pdfObjs = allObjs.where((obj) => obj.key.toLowerCase().endsWith('.pdf')).toList();
+
+                if (pdfObjs.isEmpty) {
+                  return Center(
+                    child: Text('No PDFs available in the marketplace.', style: TextStyle(color: context.colors.textSecondary)),
+                  );
+                }
+
+                return Column(
+                  children: [
+                    const SizedBox(height: 12),
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(color: context.colors.outline, borderRadius: BorderRadius.circular(2)),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('Select PDF from Marketplace', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: ListView.builder(
+                        controller: scrollController,
+                        itemCount: pdfObjs.length,
+                        itemBuilder: (context, index) {
+                          final obj = pdfObjs[index];
+                          final filename = obj.key.split('/').last;
+                          final sizeMB = (obj.size / (1024 * 1024)).toStringAsFixed(1);
+                          return ListTile(
+                            leading: const Icon(LucideIcons.fileText, color: AppTheme.duoBlue),
+                            title: Text(filename, style: TextStyle(color: context.colors.textPrimary)),
+                            subtitle: Text('$sizeMB MB', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
+                            onTap: () async {
+                              Navigator.pop(ctx);
+                              final file = await showDialog<File>(
+                                context: this.context,
+                                barrierDismissible: false,
+                                builder: (context) => _DownloadProgressDialog(b2Obj: obj),
+                              );
+                              if (file != null && file.existsSync()) {
+                                setState(() {
+                                  _uploadedPdfs = [file];
+                                  _selectedFileIndex = 0;
+                                  _showPdfPreview = true;
+                                });
+                              }
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _DownloadProgressDialog extends StatefulWidget {
+  final B2Object b2Obj;
+
+  const _DownloadProgressDialog({required this.b2Obj});
+
+  @override
+  State<_DownloadProgressDialog> createState() =>
+      _DownloadProgressDialogState();
+}
+
+class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
+  double _progress = 0.0;
+  bool _cancelled = false;
+  String _errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _startDownload();
+  }
+
+  Future<void> _startDownload() async {
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final cacheDir = Directory('${appDir.path}/b2_cache');
+      final localFile = File('${cacheDir.path}/${widget.b2Obj.key}');
+
+      final bytes = await B2Service.instance.downloadObject(
+        widget.b2Obj.key,
+        onProgress: (p) {
+          if (_cancelled) {
+            throw Exception('Cancelled');
+          }
+          if (mounted) {
+            setState(() {
+              _progress = p;
+            });
+          }
+        },
+      );
+
+      if (_cancelled) return;
+
+      if (!await localFile.parent.exists()) {
+        await localFile.parent.create(recursive: true);
+      }
+      await localFile.writeAsBytes(bytes);
+
+      if (mounted) {
+        Navigator.pop(context, localFile);
+      }
+    } catch (e) {
+      if (mounted && !_cancelled) {
+        setState(() {
+          _errorMessage = e.toString();
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: context.colors.surface,
+      title: Text(
+        _errorMessage.isNotEmpty ? 'Download Failed' : 'Downloading File',
+        style: TextStyle(
+          color: context.colors.textPrimary,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_errorMessage.isNotEmpty)
+            Text(
+              _errorMessage,
+              style: const TextStyle(color: AppTheme.duoRed),
+            )
+          else ...[
+            LinearProgressIndicator(
+              value: _progress,
+              backgroundColor: context.colors.outline,
+              valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.duoBlue),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '${(_progress * 100).toInt()}% downloaded',
+              style: TextStyle(color: context.colors.textSecondary),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        if (_errorMessage.isNotEmpty)
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _errorMessage = '';
+                _progress = 0.0;
+              });
+              _startDownload();
+            },
+            child: const Text('Retry', style: TextStyle(color: AppTheme.duoBlue)),
+          ),
+        TextButton(
+          onPressed: () {
+            _cancelled = true;
+            Navigator.pop(context, null);
+          },
+          child: Text(
+            _errorMessage.isNotEmpty ? 'Close' : 'Cancel',
+            style: TextStyle(color: context.colors.textFaint),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -559,6 +559,10 @@ UNIT SCOPE (CRITICAL — the attached PDF is shared by several units, so stay st
 %neighbor_context%
 Only plan lessons for the content belonging to "%unit_title%". Do NOT plan lessons that belong to the previous or next unit listed above — those are generated separately and duplicating them creates repeated lessons.
 
+ENTIRE COURSE LAYOUT AND EXISTING GENERATED LESSONS:
+Use the following layout to prevent duplicate lesson concepts, topics, or names. Do NOT duplicate or plan lessons that cover topics already present in other units' generated lessons:
+%entire_layout%
+
 OUTPUT FORMAT (STRICT):
 - The VERY FIRST line of your response MUST be exactly: "TOTAL_LESSONS: <N>" where <N> is an integer.
 - Then list each lesson, starting each one on its own line with: "Lesson <i>: <title>" (i is the 1-based index).
@@ -720,9 +724,9 @@ $slideSchemaExamples''';
   ///     (animation loops, mouse/touch input, WebGL via THREE.js).
   /// The model only ever supplies the drawing logic, never the page scaffold.
   static const String canvasArt =
-      '''You are a diagram artist who renders explanatory graphics with the HTML5 Canvas API, THREE.js (for 3D), or RAW SVG (for still pictures/circuits). Write a SINGLE JavaScript program OR output a raw `<svg>` block that renders the concept below as a clear, visually strong diagram.
+      '''You are a diagram artist who renders explanatory graphics with the HTML5 Canvas API, THREE.js (for 3D), or RAW SVG / JS-generated SVG. Write a SINGLE JavaScript program OR output a raw `<svg>` block that renders the concept below as a clear, visually strong diagram.
 
-Think VISUALLY: the goal is a strong diagrammatic representation — shapes, structure, spatial relationships, arrows and colour that convey the idea at a glance. Words are a last resort, not the content.
+Think VISUALLY and GRAPHICALLY: the goal is a premium, high-impact graphic design. Do NOT write blocks of text, paragraphs, or bullet points in the diagram. Use pure geometric shapes, gradients, icons, circuit components, structural nodes, or smooth animations to convey the concept. Text labels must be minimal (1-3 words max), sparse, and used only for essential annotations. Promote clean visual graphics over text-dense screens.
 
 CONCEPT TO ILLUSTRATE:
 %canvas_prompt%
@@ -731,42 +735,41 @@ LESSON CONTEXT (for tone and reference only — do NOT add unrelated decoration)
 %lesson_context%
 
 RENDERING SURFACE & OPTIMIZATION FOR SMALL VIEWPORTS:
-- Your drawing is shown inside a fixed card with aspect ratio ~3:2 (landscape; roughly 1.5× wider than tall). Design FOR THAT FRAME — do NOT design for a full-screen / portrait window.
-- The host already creates the canvas, scales it for devicePixelRatio, and clears to a dark transparent background BEFORE calling your function. Never resize the canvas yourself, never set a fixed size in CSS, never create a second canvas.
-- `W` and `H` are the canvas CSS-pixel width and height of THAT 3:2 card. Compute every coordinate relative to `W`/`H` so the drawing dynamically scales and fills the frame.
+- The drawing viewport can have a dynamic aspect ratio. By default, it is 3:2. If a different aspect ratio fits your diagram structure better (e.g. 16:9 for wide diagrams, 4:3, or 1:1), declare it at the very top of your JS code with a comment like:
+  `// ASPECT_RATIO: 16:9` (or `// ASPECT_RATIO: 4:3`, etc.). Any ratio between 4:3 and 16:9 is supported.
+- The host already creates the canvas/svg, scales it for devicePixelRatio, and clears to a dark transparent background BEFORE calling your function. Never resize the canvas yourself, never set a fixed size in CSS, never create a second canvas.
+- `W` and `H` are the CSS-pixel width and height of the rendering box. Compute every coordinate relative to `W`/`H` so the drawing dynamically scales and fills the frame.
 - **Design for Small Mobile Preview by Default**: On mobile screens, the preview card size is very small (W is ~300px to ~450px CSS pixels). Design everything to be highly legible and touch-friendly at this small scale:
   - **Thick Lines**: Do NOT use thin 1px/2px strokes. Use `ctx.lineWidth = 3` to `5` for primary paths, vectors, graphs, and borders.
   - **Large Text**: Use readable font sizes like `ctx.font = "14px sans-serif"` or `ctx.font = "15px sans-serif"` (or scale font size dynamically with `H * 0.07`). Keep labels short and sparse.
   - **Touch Hitboxes**: If the canvas is interactive (pointer events), interactive knobs/handles must have a visual radius of at least `12px` to `16px` and a touch hit-detection radius of at least `18px` to `25px` so they are easily draggable with a finger on a mobile screen.
-  - **Simplified Preview**: Keep the default preview clean, bold, and uncluttered.
-- **Full Screen Prompt (For High-Detail/Complex Diagrams)**: If the diagram requires high detail, complex geometric coordinate mappings, or multi-parameter drag-and-drop interactions that are hard to navigate on a small card:
-  - Draw a beautiful, simplified layout in the small view.
-  - **ADD TO OUTPUT**: Draw a clear visual indicator/label on the canvas (e.g., in a corner or centered along the bottom, e.g., at `H * 0.9` or `H * 0.15` using `ctx.textAlign = "right"` or `"center"`) prompting the user to view in full screen. For example:
-    `ctx.fillStyle = "#94A3B8"; ctx.font = "12px sans-serif"; ctx.fillText("Tap ⛶ for Full Screen", W * 0.95, H * 0.15);` (adjust position and alignment to fit beautifully).
 
 PICK THE RIGHT ENTRY POINT — define EXACTLY ONE of the following (no others). The host detects which is present.
 
-  (A) STATIC 2D — default. Output one function:
+  (A) STATIC 2D CANVAS — Output one function:
         function draw(ctx, W, H) { /* … */ }
       `ctx` is a CanvasRenderingContext2D. Use this for anything that is fundamentally a single frame: free-body diagrams, vector triangles, function graphs, geometry, flowcharts, labeled illustrations.
 
-  (B) INTERACTIVE / ANIMATED 2D — use when the concept benefits from motion or user input (oscillation, particle motion, draggable parameter, click-to-add-point). Output one function:
+  (B) INTERACTIVE / ANIMATED 2D CANVAS — use when the concept benefits from motion or user input (oscillation, particle motion, draggable parameter, click-to-add-point). Output one function:
         function sketch(canvas, W, H) { /* … */ }
       Inside it: get `canvas.getContext('2d')`, attach `canvas.addEventListener('pointermove' | 'pointerdown' | ...)`, drive animation with `requestAnimationFrame`. You MUST clear the canvas at the top of each frame (`ctx.clearRect(0, 0, W, H)`). Animation should be smooth and bounded — do NOT spawn unbounded objects. Your content MUST fill the canvas: keep every element inside [0,W]×[0,H] but leave no more than ~10% empty margin on any side.
 
-  (C) 3D — use when the concept is inherently three-dimensional (rotatable solid, molecule, vector field in 3-space, orbiting body). Output one function:
+  (C) 3D CANVAS (WebGL) — use when the concept is inherently three-dimensional (rotatable solid, molecule, vector field in 3-space, orbiting body). Output one function:
         function sketch(canvas, W, H) { /* … */ }
       Inside it use the globally-available `THREE` (the host pre-loads three.js r150 on `window.THREE`). Create a `WebGLRenderer({ canvas, alpha: true, antialias: true })`, a `PerspectiveCamera` with `aspect = W/H`, a `Scene`, lights, the geometry, and a render loop with `requestAnimationFrame`. Set `renderer.setSize(W, H, false)` ONCE (the host handles devicePixelRatio). Frame the camera so the subject fills most of the view — no more than ~10% empty margin around it.
 
-  (D) RAW SVG — Use when the concept is a still picture, electric circuit schematic, block diagram, or simple static shape diagram. Output a single, clean raw `<svg>` markup block with an explicit viewBox. Default to viewBox="0 0 300 200" (3:2); you may pick another aspect that suits the diagram as long as it stays between 4:3 and 16:9 (the display card adapts to your viewBox — content outside it is cropped, undeclared sizes get letterboxed). Use light-on-dark/harmonious colors matching theme: stroke "#E2E8F0" or "#3B82F6", accent "#58CC02", text "#F8FAFC".
+  (D) STATIC SVG WITH JS MATH — Use when you want to render a still picture, electrical circuit schematic, block diagram, or shape diagram, and construct crisp SVG elements dynamically using JS calculations. Output one function:
+        function draw(svg, W, H) { /* … */ }
+      `svg` is a DOM `<svg>` element. You can append SVG elements created with `document.createElementNS("http://www.w3.org/2000/svg", ...)` or manipulate `svg.innerHTML` directly using template literals to compute coordinates relative to W and H. Use light-on-dark/harmonious colors: stroke "#E2E8F0" or "#3B82F6", accent "#58CC02", text "#F8FAFC".
 
-STYLE RULES (apply to A, B, C, D):
+  (E) RAW SVG — Use when you want to output a raw, static SVG markup block directly. Output a single, clean raw `<svg>` markup block with an explicit viewBox. Default to viewBox="0 0 300 200" (3:2); you may pick another aspect that suits the diagram as long as it stays between 4:3 and 16:9 (the display card adapts to your viewBox). Use light-on-dark/harmonious colors matching theme: stroke "#E2E8F0" or "#3B82F6", accent "#58CC02", text "#F8FAFC".
+
+STYLE RULES (apply to A, B, C, D, E):
 1. Dark, already-cleared background. Light-on-dark colors: primary strokes `#E2E8F0`, accents `#3B82F6` (blue), `#58CC02` (green), `#FBBF24` (amber), `#F472B6` (pink). Label text `#F8FAFC`. Never assume a white page.
-2. Text is SECONDARY. Do NOT draw a title, heading, caption, or sentences. Add at most a few SHORT labels (axis names, a key variable, a single value) only where the diagram is unreadable without them. Use `ctx.font = "14px sans-serif"` or larger. Carry meaning with the drawing itself, not words.
-3. No external images, no `fetch`, no `XMLHttpRequest`, no DOM mutation outside the canvas, no popups, no `alert`, no `setInterval` (use `requestAnimationFrame`).
-4. Output ONLY the JavaScript — no HTML, no `<script>` tags, no Markdown fences, no prose, no `import` statements.
+2. Text is SECONDARY. Do NOT draw a title, heading, caption, or sentences. Add at most a few SHORT labels (axis names, a key variable, a single value) only where the diagram is unreadable without them. Carry meaning with the drawing itself, not words.
+3. No external images, no `fetch`, no `XMLHttpRequest`, no DOM mutation outside the canvas/svg, no popups, no `alert`, no `setInterval` (use `requestAnimationFrame`).
+4. Output ONLY the JavaScript (or raw SVG) — no HTML (unless returning raw SVG), no `<script>` tags, no Markdown fences, no prose, no `import` statements.
 5. Keep the program SMALL (≲ 120 lines). Prefer clear math over fancy shaders. Pure functions, no globals besides the one entry-point function.
-6. If higher detail or complex interactions are needed, draw a prompt directly on the canvas asking the user to view in full screen (e.g. "Tap ⛶ for Full Screen").
 
 EXAMPLE A — STATIC 2D (y = x²):
 function draw(ctx, W, H) {

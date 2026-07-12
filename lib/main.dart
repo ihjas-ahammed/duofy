@@ -289,6 +289,13 @@ void main() async {
       );
     });
 
+    GlobalState.developerModeNotifier.value = prefs.getBool('developer_mode') ?? false;
+    GlobalState.developerModeNotifier.addListener(() {
+      SharedPreferences.getInstance().then(
+        (p) => p.setBool('developer_mode', GlobalState.developerModeNotifier.value),
+      );
+    });
+
     // Theme mode: hydrate, persist on change, and keep the legacy static
     // AppTheme.currentBrightness shim in sync (it serves not-yet-migrated
     // widgets that read AppTheme.background/surface without a context).

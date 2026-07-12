@@ -43,6 +43,10 @@ class GlobalState {
   /// Persisted by the listener installed in main.dart.
   static final ValueNotifier<bool> advancedModeNotifier = ValueNotifier<bool>(false);
 
+  /// Developer Mode: enables lesson editing, slide deletion, lesson deletion,
+  /// and content regeneration. Off by default.
+  static final ValueNotifier<bool> developerModeNotifier = ValueNotifier<bool>(false);
+
   static Future<void> completeOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_complete', true);
