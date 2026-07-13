@@ -15,7 +15,7 @@ import '../widgets/duo_button.dart';
 import '../widgets/learner_profile_card.dart';
 import '../widgets/string_list_manager.dart';
 import '../widgets/responsive_center.dart';
-import '../widgets/sync_conflict_dialog.dart';
+
 import '../models/app_models.dart';
 import 'pdf_browser_screen.dart';
 import 'metacognition_setup_screen.dart';
@@ -513,11 +513,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
     try {
       final prefs = await SharedPreferences.getInstance();
-      await _db.fetchBooks(
-        forceRefresh: true,
-        onConflict: (Book local, Book remote) =>
-            showSyncConflictDialog(context, local, remote),
-      );
+      await _db.fetchBooks(forceRefresh: true);
       final now = DateTime.now().millisecondsSinceEpoch;
       await prefs.setInt('last_db_sync_time', now);
       setState(() {

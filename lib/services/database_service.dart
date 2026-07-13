@@ -411,21 +411,10 @@ class DatabaseService {
           merged[localBook.id] = localBook;
           toPush.add(localBook);
         } else if (localBook.updatedAt != remoteBook.updatedAt) {
-          // Conflict!
+          // Conflict! Auto take the latest version: newer wins
           final localTime = localBook.updatedAt ?? 0;
           final remoteTime = remoteBook.updatedAt ?? 0;
-          final diff = (localTime - remoteTime).abs();
-
-          bool keepLocal = true;
-          if (diff > const Duration(hours: 1).inMilliseconds) {
-            // Auto take the latest version
-            keepLocal = localTime > remoteTime;
-          } else if (onConflict != null) {
-            keepLocal = await onConflict(localBook, remoteBook);
-          } else {
-            // Default: newer wins
-            keepLocal = localTime > remoteTime;
-          }
+          final keepLocal = localTime >= remoteTime;
           if (keepLocal) {
             merged[localBook.id] = localBook;
             toPush.add(localBook);

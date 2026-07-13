@@ -45,8 +45,8 @@
     "semantic_hash": ""
   },
   "lib/screens/home_screen.dart": {
-    "mtime": 1783867118.6594274,
-    "ast_hash": "242e8b7060ca841c5e928f249dac2934",
+    "mtime": 1783955721.4202473,
+    "ast_hash": "7cb30b7612e1c64d9f22a551fbd88a3b",
     "semantic_hash": ""
   },
   "lib/screens/pyq_tab_screen.dart": {
@@ -55,8 +55,8 @@
     "semantic_hash": ""
   },
   "lib/screens/settings_screen.dart": {
-    "mtime": 1783937523.95514,
-    "ast_hash": "0014d4a9546008a594990e2fd3b219a0",
+    "mtime": 1783955725.086985,
+    "ast_hash": "bf9b81e919303d78897a177b1d152c3b",
     "semantic_hash": ""
   },
   "lib/screens/bookmarks_screen.dart": {
@@ -169,11 +169,6 @@
     "ast_hash": "52faf1778811b421aec073843560b586",
     "semantic_hash": ""
   },
-  "lib/widgets/sync_conflict_dialog.dart": {
-    "mtime": 1783688215.4597673,
-    "ast_hash": "b7dcea5e3ecf5d2dc822c24c8a4a1842",
-    "semantic_hash": ""
-  },
   "lib/widgets/canvas_art_view.dart": {
     "mtime": 1783867272.2857616,
     "ast_hash": "a1e930e8efbe61f090fc19dcd0e4058c",
@@ -270,8 +265,8 @@
     "semantic_hash": ""
   },
   "lib/widgets/canvas_html_view.dart": {
-    "mtime": 1783938334.3164926,
-    "ast_hash": "3b90dce025e916c560bed9f03a144ccd",
+    "mtime": 1783955785.1820421,
+    "ast_hash": "e764afc0fe7fb79be0475fa14ac7735f",
     "semantic_hash": ""
   },
   "lib/widgets/unit_header.dart": {
@@ -390,8 +385,8 @@
     "semantic_hash": ""
   },
   "lib/services/database_service.dart": {
-    "mtime": 1783869402.3409073,
-    "ast_hash": "93f40c69322d7fb654540a3fb31a2a01",
+    "mtime": 1783955697.2300475,
+    "ast_hash": "376a8d460084722b88934c82783e81d7",
     "semantic_hash": ""
   },
   "lib/services/progress_service.dart": {
@@ -6670,8 +6665,8 @@
     "semantic_hash": ""
   },
   "lib/services/usage_limit_service.dart": {
-    "mtime": 1783937300.7481132,
-    "ast_hash": "c3f532f924ac1b753b098084695b5449",
+    "mtime": 1783955625.8191707,
+    "ast_hash": "e573719c29816af0d96d854613c05618",
     "semantic_hash": ""
   }
 }

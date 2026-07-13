@@ -18,7 +18,7 @@ import '../widgets/generating_book_card.dart';
 import '../widgets/next_up_card.dart';
 import '../widgets/smart_review_card.dart';
 import '../widgets/responsive_center.dart';
-import '../widgets/sync_conflict_dialog.dart';
+
 import 'package:flutter/foundation.dart';
 import 'main_layout_screen.dart';
 import 'module_selection_screen.dart';
@@ -196,12 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
           anyFailed = true;
           return false;
         }),
-        _db
-            .fetchBooks(
-              forceRefresh: true,
-              onConflict: (local, remote) =>
-                  showSyncConflictDialog(context, local, remote),
-            )
+        _db.fetchBooks(forceRefresh: true)
             .catchError((e) {
               print("[HomeScreen] fetchBooks error: $e");
               anyFailed = true;

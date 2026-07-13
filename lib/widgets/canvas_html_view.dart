@@ -22,12 +22,7 @@ import 'platform_webview.dart';
 
 /// True when [content] is legacy raw SVG markup rather than a JS program.
 bool isSvgCanvas(String content) {
-  final trimmed = content.trim();
-  if (trimmed.isEmpty) return false;
-  // Match SVG starting tags, HTML comments, or XML headers at the beginning of the string.
-  // This prevents JS code with `<` operators (e.g. `x < svgWidth`) from being misclassified as SVG.
-  final hasSvgStart = RegExp(r'^\s*(?:<\?xml|<!DOCTYPE|<!--|<svg)', caseSensitive: false);
-  return hasSvgStart.hasMatch(trimmed);
+  return content.trim().startsWith('<');
 }
 
 /// Aspect ratio (w/h) declared by raw SVG art via its viewBox (or width/
