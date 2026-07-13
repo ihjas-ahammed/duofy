@@ -114,7 +114,14 @@ class DeadlineService {
       final module = book.modules[mIdx];
       for (var sIdx = 0; sIdx < module.sections.length; sIdx++) {
         final section = module.sections[sIdx];
-        final totalLessons = section.units.fold<int>(0, (sum, u) => sum + u.lessons.length);
+        int totalLessons = 0;
+        if (section.units.isEmpty) {
+          totalLessons = 12;
+        } else {
+          for (var u in section.units) {
+            totalLessons += u.lessons.isEmpty ? 4 : u.lessons.length;
+          }
+        }
         final completedInSec = section.units.fold<int>(0, (sum, u) {
           return sum + u.lessons.where((l) => completedLessons.contains(l.id)).length;
         });
