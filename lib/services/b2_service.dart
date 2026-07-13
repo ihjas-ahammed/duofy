@@ -37,6 +37,22 @@ class B2Object {
       return null;
     }
   }
+
+  String? get course {
+    final parts = key.split('/');
+    if (parts.length >= 4 && parts[0] == 'syllabus') {
+      return parts[1];
+    }
+    return null;
+  }
+
+  String? get semester {
+    final parts = key.split('/');
+    if (parts.length >= 4 && parts[0] == 'syllabus') {
+      return parts[2];
+    }
+    return null;
+  }
 }
 
 class B2Credentials {
@@ -185,6 +201,15 @@ class B2Service {
     );
 
     final docId = mainFilename.replaceAll('/', '_');
+    String? course;
+    String? semester;
+    if (folder == 'syllabus') {
+      final pathParts = mainFilename.split('/');
+      if (pathParts.length >= 4) {
+        course = pathParts[1];
+        semester = pathParts[2];
+      }
+    }
     
     await FbFirestore.instance.collection('document_store').doc(docId).set({
       'name': mainFilename.split('/').last,
@@ -193,6 +218,8 @@ class B2Service {
       'category': folder,
       'partsCount': parts.length,
       'uploadedAt': DateTime.now().toUtc().toIso8601String(),
+      if (course != null) 'course': course,
+      if (semester != null) 'semester': semester,
     });
   }
 
@@ -422,6 +449,16 @@ class B2Service {
 
     // Update Firestore records
     final newDocId = newFilename.replaceAll('/', '_');
+    String? course;
+    String? semester;
+    if (newFolder == 'syllabus') {
+      final pathParts = newFilename.split('/');
+      if (pathParts.length >= 4) {
+        course = pathParts[1];
+        semester = pathParts[2];
+      }
+    }
+    
     await FbFirestore.instance.collection('document_store').doc(newDocId).set({
       'name': data['name'] ?? oldFilename.split('/').last,
       'key': newFilename,
@@ -429,6 +466,8 @@ class B2Service {
       'category': newFolder,
       'partsCount': partsCount,
       'uploadedAt': data['uploadedAt'] ?? DateTime.now().toUtc().toIso8601String(),
+      if (course != null) 'course': course,
+      if (semester != null) 'semester': semester,
     });
     
     await FbFirestore.instance.collection('document_store').doc(oldDocId).delete();

@@ -10,6 +10,8 @@ import '../services/generation_manager.dart';
 import '../utils/progress_utils.dart';
 import 'section_selection_screen.dart';
 import 'main_layout_screen.dart';
+import '../services/deadline_service.dart';
+
 
 class ModuleSelectionScreen extends StatefulWidget {
   final Book book;
@@ -23,6 +25,7 @@ class ModuleSelectionScreen extends StatefulWidget {
 class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
   List<String> _completedLessons = [];
   bool _isLoading = true;
+  Map<String, dynamic>? _mostUrgentTarget;
   String? _lastLessonTitle;
   int? _lastModIdx;
   int? _lastSecIdx;
@@ -40,6 +43,16 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
       if (mounted) {
         setState(() {
           _completedLessons = completed;
+        });
+      }
+      final urgent = await DeadlineService.instance.getMostUrgentActiveTarget(
+        widget.book.id,
+        widget.book,
+        _completedLessons,
+      );
+      if (mounted) {
+        setState(() {
+          _mostUrgentTarget = urgent;
           _isLoading = false;
         });
       }
@@ -96,6 +109,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
+      floatingActionButton: _buildFloatingTargetButton(),
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(color: AppTheme.duoBlue),
@@ -745,6 +759,47 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget? _buildFloatingTargetButton() {
+    if (_mostUrgentTarget == null) return null;
+
+    final metrics = _mostUrgentTarget!['metrics'] as Map<String, dynamic>;
+    final targetLeft = metrics['targetLeftToday'] as int;
+    final moduleIdx = _mostUrgentTarget!['moduleIdx'] as int;
+    final sectionIdx = _mostUrgentTarget!['sectionIdx'] as int;
+
+    final section = widget.book.modules[moduleIdx].sections[sectionIdx];
+    final color = SectionColors.base(section.color);
+
+    final text = targetLeft > 0 
+        ? "Today's Target: $targetLeft lessons left"
+        : "Today's Target Completed! 🎉";
+
+    return FloatingActionButton.extended(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SectionSelectionScreen(
+              book: widget.book,
+              moduleIdx: moduleIdx,
+              module: widget.book.modules[moduleIdx],
+              initialHighlightSectionIdx: sectionIdx,
+            ),
+          ),
+        ).then((_) => _loadProgress());
+      },
+      backgroundColor: color,
+      icon: const Icon(LucideIcons.target, color: Colors.white),
+      label: Text(
+        text,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );

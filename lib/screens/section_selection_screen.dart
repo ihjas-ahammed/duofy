@@ -8,17 +8,20 @@ import 'dart:ui';
 import '../services/global_state.dart';
 import '../services/generation_manager.dart';
 import 'main_layout_screen.dart';
+import '../services/deadline_service.dart';
 
 class SectionSelectionScreen extends StatefulWidget {
   final Book book;
   final int moduleIdx;
   final Module module;
+  final int? initialHighlightSectionIdx;
 
   const SectionSelectionScreen({
     super.key,
     required this.book,
     required this.moduleIdx,
     required this.module,
+    this.initialHighlightSectionIdx,
   });
 
   @override
@@ -28,6 +31,10 @@ class SectionSelectionScreen extends StatefulWidget {
 class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
   List<String> _completedLessons = [];
   bool _isLoading = true;
+  Map<int, Map<String, dynamic>> _sectionTargets = {};
+  int? _highlightedSectionIdx;
+  final ScrollController _scrollController = ScrollController();
+  final Map<int, GlobalKey> _sectionKeys = {};
 
   @override
   void initState() {
@@ -41,7 +48,19 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
       if (mounted) {
         setState(() {
           _completedLessons = completed;
+        });
+      }
+      await _loadDeadlines();
+      if (mounted) {
+        setState(() {
           _isLoading = false;
+        });
+      }
+      if (widget.initialHighlightSectionIdx != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Future.delayed(const Duration(milliseconds: 400), () {
+            _scrollToAndHighlight(widget.initialHighlightSectionIdx!);
+          });
         });
       }
     } catch (e) {
@@ -49,6 +68,53 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  Future<void> _loadDeadlines() async {
+    final targets = <int, Map<String, dynamic>>{};
+    for (var sIdx = 0; sIdx < widget.module.sections.length; sIdx++) {
+      final section = widget.module.sections[sIdx];
+      final totalLessons = section.units.fold<int>(0, (sum, u) => sum + u.lessons.length);
+      final completedInSec = section.units.fold<int>(0, (sum, u) {
+        return sum + u.lessons.where((l) => _completedLessons.contains(l.id)).length;
+      });
+
+      final metrics = await DeadlineService.instance.calculateSectionTarget(
+        bookId: widget.book.id,
+        moduleIdx: widget.moduleIdx,
+        sectionIdx: sIdx,
+        totalLessons: totalLessons,
+        currentCompleted: completedInSec,
+      );
+      targets[sIdx] = metrics;
+    }
+    if (mounted) {
+      setState(() {
+        _sectionTargets = targets;
+      });
+    }
+  }
+
+  void _scrollToAndHighlight(int sectionIdx) {
+    final key = _sectionKeys[sectionIdx];
+    if (key == null) return;
+    final context = key.currentContext;
+    if (context == null) return;
+    Scrollable.ensureVisible(
+      context,
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.easeInOut,
+    );
+    setState(() {
+      _highlightedSectionIdx = sectionIdx;
+    });
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted) {
+        setState(() {
+          _highlightedSectionIdx = null;
+        });
+      }
+    });
   }
 
   @override
@@ -63,18 +129,19 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
+      floatingActionButton: _buildFloatingTargetButton(),
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(color: AppTheme.duoBlue),
             )
           : SafeArea(
               child: SingleChildScrollView(
+                controller: _scrollController,
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Module Header Info
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -116,7 +183,6 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-
                     Text(
                       'SECTIONS IN THIS MODULE',
                       style: TextStyle(
@@ -127,8 +193,6 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-
-                    // Section Cards List
                     widget.module.sections.isEmpty
                         ? Center(
                             child: Padding(
@@ -154,209 +218,286 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                               final progress = calculateSectionProgressDouble(section, _completedLessons);
                               final totalLessons = section.units.fold<int>(0, (sum, u) => sum + u.lessons.length);
 
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 16),
-                                decoration: BoxDecoration(
-                                  color: context.colors.surfaceAlt,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: context.colors.outline,
-                                  ),
+                              _sectionKeys.putIfAbsent(index, () => GlobalKey());
+                              final key = _sectionKeys[index]!;
+                              final isHighlighted = _highlightedSectionIdx == index;
+
+                              final metrics = _sectionTargets[index] ?? {'hasDeadline': false};
+                              final hasDeadline = metrics['hasDeadline'] == true;
+                              final daysLeft = metrics['daysLeft'] as int? ?? 0;
+                              final targetLeft = metrics['targetLeftToday'] as int? ?? 0;
+
+                              return TweenAnimationBuilder<double>(
+                                tween: Tween<double>(
+                                  begin: 1.0,
+                                  end: isHighlighted ? 1.05 : 1.0,
                                 ),
-                                clipBehavior: Clip.antiAlias,
-                                child: InkWell(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => MainLayoutScreen(
-                                          book: widget.book,
-                                          initialModuleIdx: widget.moduleIdx,
-                                          initialSectionIdx: index,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  onLongPress: () =>
-                                      _showSectionLongPressMenu(widget.moduleIdx, index),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(20),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Container(
-                                              width: 12,
-                                              height: 12,
-                                              decoration: BoxDecoration(
-                                                color: sectionColor,
-                                                shape: BoxShape.circle,
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: sectionColor
-                                                        .withValues(alpha: 0.4),
-                                                    blurRadius: 8,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: Text(
-                                                section.title,
-                                                style: TextStyle(
-                                                  color: context
-                                                      .colors
-                                                      .textPrimary,
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w900,
-                                                ),
-                                              ),
-                                            ),
-                                            if (progress >= 1.0)
-                                              const Icon(
-                                                LucideIcons.checkCircle2,
-                                                color: AppTheme.duoGreen,
-                                                size: 20,
-                                              ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          section.description,
-                                          style: TextStyle(
-                                            color: context.colors.textFaint,
-                                            fontSize: 12,
-                                            height: 1.4,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                                builder: (context, scale, child) {
+                                  return Transform.scale(
+                                    scale: scale,
+                                    child: child,
+                                  );
+                                },
+                                child: Container(
+                                  key: key,
+                                  margin: const EdgeInsets.only(bottom: 16),
+                                  decoration: BoxDecoration(
+                                    color: context.colors.surfaceAlt,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: isHighlighted ? AppTheme.duoViolet : context.colors.outline,
+                                      width: isHighlighted ? 2 : 1,
+                                    ),
+                                  ),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: InkWell(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => MainLayoutScreen(
+                                            book: widget.book,
+                                            initialModuleIdx: widget.moduleIdx,
+                                            initialSectionIdx: index,
                                           ),
                                         ),
-
-                                        // Display units inside the section (so the user knows there are multiple units!)
-                                        if (section.units.isNotEmpty) ...[
-                                          const SizedBox(height: 16),
-                                          Container(
-                                            padding: const EdgeInsets.all(12),
-                                            decoration: BoxDecoration(
-                                              color: context.colors.surfaceAlt,
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  'UNITS IN THIS SECTION:',
+                                      ).then((_) => _loadProgress());
+                                    },
+                                    onLongPress: () =>
+                                        _showSectionLongPressMenu(widget.moduleIdx, index),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(20),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Container(
+                                                width: 12,
+                                                height: 12,
+                                                decoration: BoxDecoration(
+                                                  color: sectionColor,
+                                                  shape: BoxShape.circle,
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: sectionColor
+                                                          .withValues(alpha: 0.4),
+                                                      blurRadius: 8,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  section.title,
                                                   style: TextStyle(
                                                     color: context
                                                         .colors
-                                                        .textFaint,
-                                                    fontSize: 9,
+                                                        .textPrimary,
+                                                    fontSize: 16,
                                                     fontWeight: FontWeight.w900,
-                                                    letterSpacing: 1.1,
                                                   ),
                                                 ),
-                                                const SizedBox(height: 8),
-                                                ...section.units.map((unit) {
-                                                  final unitProgress =
-                                                      unit.lessons.isEmpty
-                                                      ? 0.0
-                                                      : (unit.lessons
-                                                                .where(
-                                                                  (
-                                                                    l,
-                                                                  ) => _completedLessons
-                                                                      .contains(
-                                                                        l.id,
-                                                                      ),
-                                                                )
-                                                                .length /
-                                                            unit
-                                                                .lessons
-                                                                .length);
-                                                  return Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                          bottom: 6,
-                                                        ),
-                                                    child: Row(
-                                                      children: [
-                                                        Icon(
-                                                          unitProgress >= 1.0
-                                                              ? LucideIcons
-                                                                    .checkCircle2
-                                                              : LucideIcons
-                                                                    .circle,
-                                                          color:
-                                                              unitProgress >=
-                                                                  1.0
-                                                              ? AppTheme
-                                                                    .duoGreen
-                                                              : context
+                                              ),
+                                              if (progress >= 1.0)
+                                                const Icon(
+                                                  LucideIcons.checkCircle2,
+                                                  color: AppTheme.duoGreen,
+                                                  size: 20,
+                                                ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            section.description,
+                                            style: TextStyle(
+                                              color: context.colors.textSecondary,
+                                              fontSize: 13,
+                                              height: 1.4,
+                                            ),
+                                          ),
+                                          if (section.units.isNotEmpty) ...[
+                                            const SizedBox(height: 16),
+                                            Container(
+                                              padding: const EdgeInsets.all(12),
+                                              decoration: BoxDecoration(
+                                                color: context.colors.background,
+                                                borderRadius: BorderRadius.circular(12),
+                                                border: Border.all(
+                                                  color: context.colors.outline,
+                                                ),
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'UNITS IN THIS SECTION:',
+                                                    style: TextStyle(
+                                                      color: context
+                                                          .colors
+                                                          .textFaint,
+                                                      fontSize: 9,
+                                                      fontWeight: FontWeight.w900,
+                                                      letterSpacing: 1.1,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  ...section.units.map((unit) {
+                                                    final unitProgress =
+                                                        unit.lessons.isEmpty
+                                                        ? 0.0
+                                                        : (unit.lessons
+                                                                  .where(
+                                                                    (l) => _completedLessons.contains(l.id),
+                                                                  )
+                                                                  .length /
+                                                              unit.lessons.length);
+                                                    return Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                            bottom: 6,
+                                                          ),
+                                                      child: Row(
+                                                        children: [
+                                                          Icon(
+                                                            unitProgress >= 1.0
+                                                                ? LucideIcons.checkCircle2
+                                                                : LucideIcons.circle,
+                                                            color:
+                                                                unitProgress >= 1.0
+                                                                ? AppTheme.duoGreen
+                                                                : context.colors.textFaint,
+                                                            size: 14,
+                                                          ),
+                                                          const SizedBox(
+                                                            width: 8,
+                                                          ),
+                                                          Expanded(
+                                                            child: Text(
+                                                              unit.title,
+                                                              style: TextStyle(
+                                                                color: context
                                                                     .colors
-                                                                    .textFaint,
-                                                          size: 14,
-                                                        ),
-                                                        const SizedBox(
-                                                          width: 8,
-                                                        ),
-                                                        Expanded(
-                                                          child: Text(
-                                                            unit.title,
-                                                            style: TextStyle(
-                                                              color: context
-                                                                  .colors
-                                                                  .textSecondary,
-                                                              fontSize: 12,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
+                                                                    .textSecondary,
+                                                                fontSize: 12,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                              ),
+                                                              maxLines: 1,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
                                                             ),
-                                                            maxLines: 1,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .ellipsis,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    );
+                                                  }),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                          if (hasDeadline && progress < 1.0) ...[
+                                            const SizedBox(height: 12),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                              decoration: BoxDecoration(
+                                                color: AppTheme.duoViolet.withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(12),
+                                                border: Border.all(color: AppTheme.duoViolet.withOpacity(0.2)),
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  const Icon(LucideIcons.calendarClock, color: AppTheme.duoViolet, size: 16),
+                                                  const SizedBox(width: 8),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        Text(
+                                                          'Deadline: ${metrics['deadline'].toLocal().toString().substring(0, 10)} ($daysLeft days left)',
+                                                          style: const TextStyle(
+                                                            color: AppTheme.duoViolet,
+                                                            fontWeight: FontWeight.bold,
+                                                            fontSize: 11,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(height: 2),
+                                                        Text(
+                                                          targetLeft > 0 
+                                                              ? "Today's Target: $targetLeft lessons left"
+                                                              : "Today's Target Completed! 🎉",
+                                                          style: TextStyle(
+                                                            color: targetLeft > 0 ? context.colors.textPrimary : AppTheme.duoGreen,
+                                                            fontSize: 10,
+                                                            fontWeight: FontWeight.w600,
                                                           ),
                                                         ),
                                                       ],
                                                     ),
-                                                  );
-                                                }),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-
-                                        const SizedBox(height: 20),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              '${section.units.length} Units • $totalLessons Lessons',
-                                              style: TextStyle(
-                                                color: context.colors.textFaint,
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.bold,
+                                                  ),
+                                                  IconButton(
+                                                    icon: const Icon(LucideIcons.edit2, size: 14),
+                                                    onPressed: () => _showDeadlineMenu(index),
+                                                    padding: EdgeInsets.zero,
+                                                    constraints: const BoxConstraints(),
+                                                    color: context.colors.textFaint,
+                                                  ),
+                                                ],
                                               ),
                                             ),
-                                            Text(
-                                              '${(progress * 100).toInt()}% Done',
-                                              style: TextStyle(
-                                                color: progress >= 1.0
-                                                    ? AppTheme.duoGreen
-                                                    : context
-                                                          .colors
-                                                          .textSecondary,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w900,
+                                          ] else if (progress < 1.0) ...[
+                                            const SizedBox(height: 12),
+                                            Align(
+                                              alignment: Alignment.centerRight,
+                                              child: TextButton.icon(
+                                                style: TextButton.styleFrom(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                                  minimumSize: Size.zero,
+                                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                ),
+                                                icon: Icon(LucideIcons.calendarPlus, size: 14, color: context.colors.textFaint),
+                                                label: Text(
+                                                  'Set Deadline',
+                                                  style: TextStyle(color: context.colors.textFaint, fontSize: 11, fontWeight: FontWeight.bold),
+                                                ),
+                                                onPressed: () => _showDeadlineMenu(index),
                                               ),
                                             ),
                                           ],
-                                        ),
-                                      ],
+                                          const SizedBox(height: 20),
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                '${section.units.length} Units • $totalLessons Lessons',
+                                                style: TextStyle(
+                                                  color: context.colors.textFaint,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              Text(
+                                                '${(progress * 100).toInt()}% Done',
+                                                style: TextStyle(
+                                                  color: progress >= 1.0
+                                                      ? AppTheme.duoGreen
+                                                      : context.colors.textSecondary,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w900,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -367,6 +508,137 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                 ),
               ),
             ),
+    );
+  }
+
+  Future<void> _selectSectionDeadline(BuildContext context, int sectionIdx) async {
+    final currentDeadline = await DeadlineService.instance.getSectionDeadline(
+      widget.book.id,
+      widget.moduleIdx,
+      sectionIdx,
+    );
+
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: currentDeadline ?? DateTime.now().add(const Duration(days: 7)),
+      firstDate: DateTime.now().subtract(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.dark(
+              primary: AppTheme.duoViolet,
+              onPrimary: Colors.white,
+              surface: context.colors.surface,
+              onSurface: context.colors.textPrimary,
+            ),
+            dialogBackgroundColor: context.colors.surface,
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      await DeadlineService.instance.setSectionDeadline(
+        widget.book.id,
+        widget.moduleIdx,
+        sectionIdx,
+        picked,
+      );
+      await _loadDeadlines();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Deadline set to ${picked.toLocal().toString().substring(0, 10)}')),
+      );
+    }
+  }
+
+  Future<void> _showDeadlineMenu(int sectionIdx) async {
+    final metrics = _sectionTargets[sectionIdx];
+    final hasDeadline = metrics != null && metrics['hasDeadline'] == true;
+
+    if (!hasDeadline) {
+      await _selectSectionDeadline(context, sectionIdx);
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.colors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(LucideIcons.calendarRange, color: AppTheme.duoViolet),
+                title: const Text('Change Deadline'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _selectSectionDeadline(this.context, sectionIdx);
+                },
+              ),
+              ListTile(
+                leading: const Icon(LucideIcons.trash2, color: AppTheme.duoRed),
+                title: const Text('Clear Deadline'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await DeadlineService.instance.clearSectionDeadline(
+                    widget.book.id,
+                    widget.moduleIdx,
+                    sectionIdx,
+                  );
+                  await _loadDeadlines();
+                  ScaffoldMessenger.of(this.context).showSnackBar(
+                    const SnackBar(content: Text('Deadline cleared')),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget? _buildFloatingTargetButton() {
+    Map<String, dynamic>? currentModuleTarget;
+    int? currentSecIdx;
+
+    for (var sIdx = 0; sIdx < widget.module.sections.length; sIdx++) {
+      final metrics = _sectionTargets[sIdx];
+      if (metrics != null && metrics['hasDeadline'] == true && metrics['lessonsLeft'] > 0) {
+        currentModuleTarget = metrics;
+        currentSecIdx = sIdx;
+        break;
+      }
+    }
+
+    if (currentModuleTarget == null) return null;
+
+    final targetLeft = currentModuleTarget['targetLeftToday'] as int;
+    final color = SectionColors.base(widget.module.sections[currentSecIdx!].color);
+
+    final text = targetLeft > 0 
+        ? "Today's Target: $targetLeft lessons left"
+        : "Today's Target Completed! 🎉";
+
+    return FloatingActionButton.extended(
+      onPressed: () {
+        _scrollToAndHighlight(currentSecIdx!);
+      },
+      backgroundColor: color,
+      icon: const Icon(LucideIcons.target, color: Colors.white),
+      label: Text(
+        text,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 
@@ -395,6 +667,16 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
           icon: LucideIcons.layers,
           color: SectionColors.base(section.color),
           items: [
+            _MenuActionItem(
+              icon: LucideIcons.calendarClock,
+              title: 'Set Target Deadline',
+              subtitle: 'Set a completion target date for this section',
+              iconColor: AppTheme.duoViolet,
+              onTap: () {
+                Navigator.pop(ctx);
+                _showDeadlineMenu(secIdx);
+              },
+            ),
             _MenuActionItem(
               icon: LucideIcons.play,
               title: 'Generate Contents',

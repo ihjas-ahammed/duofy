@@ -9,6 +9,7 @@ import 'screens/auth_gate.dart';
 import 'screens/settings_screen.dart';
 import 'screens/book_route_loader_screen.dart';
 import 'services/learning_sync.dart';
+import 'services/usage_limit_service.dart';
 
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
@@ -28,6 +29,11 @@ bool _isGlobalErrorDialogOpen = false;
 /// matched here is treated as potentially fatal and surfaced.
 bool _looksNonFatal(Object error) {
   final s = error.toString().toLowerCase();
+  if (s.contains('handshake') ||
+      s.contains('network_error') ||
+      s.contains('usage limit exceeded') ||
+      s.contains('rate limit reached')) return true;
+
   const benign = [
     // Transient network / IO — recoverable, the feature that needed it
     // already shows its own inline error.
@@ -239,6 +245,7 @@ void main() async {
   
   try {
     await FbCore.initializeApp();
+    await UsageLimitService.instance.init();
   } catch (e, stack) {
     startupError = "Firebase Init Error: $e\n$stack";
   }

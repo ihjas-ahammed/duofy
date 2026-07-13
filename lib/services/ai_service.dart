@@ -18,6 +18,7 @@ import 'secrets_service.dart';
 import 'database_service.dart';
 import 'fb/fb_firestore.dart';
 import 'ai_estimator.dart';
+import 'usage_limit_service.dart';
 
 class AiService {
   static int activeCanvasRegensCount = 0;
@@ -93,6 +94,11 @@ class AiService {
     }
     final modelName = models.first;
 
+    if (await UsageLimitService.instance.isLimitExceeded(modelName)) {
+      showRateLimitDialog();
+      throw Exception('Usage limit exceeded for Groq model $modelName. Please add your own API key in Settings.');
+    }
+
     final url = Uri.parse('https://api.groq.com/openai/v1/chat/completions');
 
     final List<Map<String, dynamic>> messages = [];
@@ -154,6 +160,7 @@ class AiService {
     if (text == null || text.trim().isEmpty) {
       throw Exception("Empty response from Groq model $modelName");
     }
+    await UsageLimitService.instance.incrementUsage(modelName);
     return text;
   }
 
@@ -185,6 +192,11 @@ class AiService {
       models = const ['llama-3.3-70b'];
     }
     final modelName = models.first;
+
+    if (await UsageLimitService.instance.isLimitExceeded(modelName)) {
+      showRateLimitDialog();
+      throw Exception('Usage limit exceeded for Cerebras model $modelName. Please add your own API key in Settings.');
+    }
 
     final url = Uri.parse('https://api.cerebras.ai/v1/chat/completions');
 
@@ -247,6 +259,7 @@ class AiService {
     if (text == null || text.trim().isEmpty) {
       throw Exception("Empty response from Cerebras model $modelName");
     }
+    await UsageLimitService.instance.incrementUsage(modelName);
     return text;
   }
 
@@ -278,6 +291,11 @@ class AiService {
       models = const ['meta-llama/llama-3.3-70b-instruct'];
     }
     final modelName = models.first;
+
+    if (await UsageLimitService.instance.isLimitExceeded(modelName)) {
+      showRateLimitDialog();
+      throw Exception('Usage limit exceeded for OpenRouter model $modelName. Please add your own API key in Settings.');
+    }
 
     final url = Uri.parse('https://openrouter.ai/api/v1/chat/completions');
 
@@ -342,6 +360,7 @@ class AiService {
     if (text == null || text.trim().isEmpty) {
       throw Exception("Empty response from OpenRouter model $modelName");
     }
+    await UsageLimitService.instance.incrementUsage(modelName);
     return text;
   }
 
@@ -2969,6 +2988,11 @@ Do not include any explanation or other text.
     for (final modelName in geminiModels) {
       for (final apiKey in geminiKeys) {
         try {
+          if (await UsageLimitService.instance.isLimitExceeded(modelName)) {
+            showRateLimitDialog();
+            throw Exception('Usage limit exceeded for Gemini model $modelName. Please add your own API key in Settings.');
+          }
+
           final model = GenerativeModel(
             model: modelName,
             apiKey: apiKey,
@@ -2984,6 +3008,7 @@ Do not include any explanation or other text.
           if (text == null || text.trim().isEmpty) {
             throw Exception('Empty response from model $modelName');
           }
+          await UsageLimitService.instance.incrementUsage(modelName);
           return text;
         } catch (e) {
           lastErr = e;

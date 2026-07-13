@@ -1357,6 +1357,8 @@ class _DocumentStorePickerDialogState
   String? _errorMessage;
   List<B2Object> _files = [];
   late DocCategory _selectedCategory;
+  String? _selectedCourseFilter;
+  String? _selectedSemesterFilter;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   String? _cacheDirPath;
@@ -1424,6 +1426,15 @@ class _DocumentStorePickerDialogState
 
       final category = getDocCategory(file);
       if (category != _selectedCategory) return false;
+
+      if (_selectedCategory == DocCategory.syllabus) {
+        if (_selectedCourseFilter != null && file.course != _selectedCourseFilter) {
+          return false;
+        }
+        if (_selectedSemesterFilter != null && file.semester != _selectedSemesterFilter) {
+          return false;
+        }
+      }
 
       if (_searchQuery.isNotEmpty) {
         final displayName = file.key.split('/').last.toLowerCase();
@@ -1550,6 +1561,81 @@ class _DocumentStorePickerDialogState
                 ],
               ),
             ),
+            if (_selectedCategory == DocCategory.syllabus) ...[
+              const SizedBox(height: 12),
+              Builder(
+                builder: (context) {
+                  final syllabusFiles = _files.where((f) => getDocCategory(f) == DocCategory.syllabus).toList();
+                  final courses = syllabusFiles.map((f) => f.course).whereType<String>().toSet().toList()..sort();
+                  final semesters = syllabusFiles.map((f) => f.semester).whereType<String>().toSet().toList()
+                    ..sort((a, b) {
+                      final aNum = int.tryParse(a.replaceAll(RegExp(r'\D'), '')) ?? 0;
+                      final bNum = int.tryParse(b.replaceAll(RegExp(r'\D'), '')) ?? 0;
+                      return aNum.compareTo(bNum);
+                    });
+
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String?>(
+                          value: _selectedCourseFilter,
+                          decoration: InputDecoration(
+                            labelText: 'Course',
+                            labelStyle: TextStyle(color: context.colors.textFaint, fontSize: 11),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          dropdownColor: context.colors.surfaceAlt,
+                          items: [
+                            DropdownMenuItem<String?>(
+                              value: null,
+                              child: Text('All Courses', style: TextStyle(color: context.colors.textPrimary, fontSize: 12)),
+                            ),
+                            ...courses.map((c) => DropdownMenuItem<String?>(
+                              value: c,
+                              child: Text(c, style: TextStyle(color: context.colors.textPrimary, fontSize: 12)),
+                            )),
+                          ],
+                          onChanged: (val) {
+                            setState(() {
+                              _selectedCourseFilter = val;
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: DropdownButtonFormField<String?>(
+                          value: _selectedSemesterFilter,
+                          decoration: InputDecoration(
+                            labelText: 'Semester',
+                            labelStyle: TextStyle(color: context.colors.textFaint, fontSize: 11),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          dropdownColor: context.colors.surfaceAlt,
+                          items: [
+                            DropdownMenuItem<String?>(
+                              value: null,
+                              child: Text('All Semesters', style: TextStyle(color: context.colors.textPrimary, fontSize: 12)),
+                            ),
+                            ...semesters.map((s) => DropdownMenuItem<String?>(
+                              value: s,
+                              child: Text(s, style: TextStyle(color: context.colors.textPrimary, fontSize: 12)),
+                            )),
+                          ],
+                          onChanged: (val) {
+                            setState(() {
+                              _selectedSemesterFilter = val;
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  );
+                }
+              ),
+            ],
             const SizedBox(height: 12),
             // Files List
             Expanded(child: _buildListContent(filtered)),
@@ -1574,6 +1660,8 @@ class _DocumentStorePickerDialogState
       onTap: () {
         setState(() {
           _selectedCategory = category;
+          _selectedCourseFilter = null;
+          _selectedSemesterFilter = null;
         });
       },
       child: Container(

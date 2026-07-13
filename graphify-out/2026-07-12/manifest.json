@@ -555,8 +555,8 @@
     "semantic_hash": ""
   },
   "lib/screens/module_selection_screen.dart": {
-    "mtime": 1783870195.0635502,
-    "ast_hash": "f7118062c689c1586d40cd0a10747ed9",
+    "mtime": 1783870337.260089,
+    "ast_hash": "efbdb80e57cfd22421d1eb53b828c7b5",
     "semantic_hash": ""
   },
   "lib/screens/reference_pdf_viewer_screen.dart": {
@@ -565,8 +565,8 @@
     "semantic_hash": ""
   },
   "lib/screens/section_selection_screen.dart": {
-    "mtime": 1783870204.2597826,
-    "ast_hash": "fbdbfb735c0838d916cd022ad3173116",
+    "mtime": 1783870342.6642213,
+    "ast_hash": "e1e56d6dc5c39c2f0c230c86d12718a7",
     "semantic_hash": ""
   },
   "lib/services/ai_estimator.dart": {

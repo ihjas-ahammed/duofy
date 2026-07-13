@@ -47,6 +47,8 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
   String? _errorMessage;
 
   DocCategory _selectedCategory = DocCategory.reference;
+  String? _selectedCourse;
+  String? _selectedSemester;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   String? _cacheDirPath;
@@ -792,6 +794,8 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                         onCategoryChanged: (category) {
                           setState(() {
                             _selectedCategory = category;
+                            _selectedCourse = null;
+                            _selectedSemester = null;
                           });
                         },
                       ),
@@ -974,44 +978,133 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
     final filtered = _getFilteredFiles();
 
     if (filtered.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      return _buildEmptyState();
+    }
+
+    if (_selectedCategory == DocCategory.syllabus && _searchQuery.isEmpty) {
+      if (_selectedCourse == null) {
+        final courses = filtered.map((f) => f.course).whereType<String>().toSet().toList()..sort();
+        if (courses.isEmpty) {
+          return _buildEmptyState();
+        }
+        int crossAxisCount = screenWidth > 900 ? 5 : (screenWidth > 600 ? 3 : 2);
+        return GridView.builder(
+          padding: const EdgeInsets.only(bottom: 80),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 0.85,
+          ),
+          itemCount: courses.length,
+          itemBuilder: (context, index) {
+            return _buildFolderGridItem(
+              name: courses[index],
+              icon: LucideIcons.folder,
+              iconColor: AppTheme.duoBlue,
+              onTap: () {
+                setState(() {
+                  _selectedCourse = courses[index];
+                });
+              },
+            );
+          },
+        );
+      } else if (_selectedSemester == null) {
+        final semesters = filtered
+            .where((f) => f.course == _selectedCourse)
+            .map((f) => f.semester)
+            .whereType<String>()
+            .toSet()
+            .toList()
+          ..sort((a, b) {
+            final aNum = int.tryParse(a.replaceAll(RegExp(r'\D'), '')) ?? 0;
+            final bNum = int.tryParse(b.replaceAll(RegExp(r'\D'), '')) ?? 0;
+            return aNum.compareTo(bNum);
+          });
+
+        if (semesters.isEmpty) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSyllabusBreadcrumbs(),
+              Expanded(child: _buildEmptyState()),
+            ],
+          );
+        }
+        int crossAxisCount = screenWidth > 900 ? 5 : (screenWidth > 600 ? 3 : 2);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: context.colors.surfaceAlt,
-                shape: BoxShape.circle,
+            _buildSyllabusBreadcrumbs(),
+            Expanded(
+              child: GridView.builder(
+                padding: const EdgeInsets.only(bottom: 80),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 0.85,
+                ),
+                itemCount: semesters.length,
+                itemBuilder: (context, index) {
+                  return _buildFolderGridItem(
+                    name: semesters[index],
+                    icon: LucideIcons.folderClosed,
+                    iconColor: AppTheme.duoViolet,
+                    onTap: () {
+                      setState(() {
+                        _selectedSemester = semesters[index];
+                      });
+                    },
+                  );
+                },
               ),
-              child: Icon(
-                _searchQuery.isNotEmpty
-                    ? LucideIcons.search
-                    : LucideIcons.folderClosed,
-                size: 64,
-                color: context.colors.textFaint,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              _searchQuery.isNotEmpty ? 'No Search Results' : 'No Documents',
-              style: TextStyle(
-                color: context.colors.textPrimary,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _searchQuery.isNotEmpty
-                  ? 'No documents in this category match "$_searchQuery".'
-                  : 'Organize your references here by uploading a PDF document.',
-              style: TextStyle(color: context.colors.textFaint, fontSize: 13),
-              textAlign: TextAlign.center,
             ),
           ],
-        ),
-      );
+        );
+      } else {
+        final semesterFiles = filtered
+            .where((f) => f.course == _selectedCourse && f.semester == _selectedSemester)
+            .toList();
+
+        if (semesterFiles.isEmpty) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSyllabusBreadcrumbs(),
+              Expanded(child: _buildEmptyState()),
+            ],
+          );
+        }
+
+        int crossAxisCount = screenWidth > 900 ? 5 : (screenWidth > 600 ? 3 : 2);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSyllabusBreadcrumbs(),
+            Expanded(
+              child: GridView.builder(
+                padding: const EdgeInsets.only(bottom: 80),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 0.72,
+                ),
+                itemCount: semesterFiles.length,
+                itemBuilder: (context, index) {
+                  final file = semesterFiles[index];
+                  return GestureDetector(
+                    onLongPress: () => _showContextMenu(file),
+                    child: _buildGridFileItem(file),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      }
     }
 
     int crossAxisCount = screenWidth > 900 ? 5 : (screenWidth > 600 ? 3 : 2);
@@ -1033,6 +1126,162 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
           child: _buildGridFileItem(file),
         );
       },
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: context.colors.surfaceAlt,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              _searchQuery.isNotEmpty
+                  ? LucideIcons.search
+                  : LucideIcons.folderClosed,
+              size: 64,
+              color: context.colors.textFaint,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            _searchQuery.isNotEmpty ? 'No Search Results' : 'No Documents',
+            style: TextStyle(
+              color: context.colors.textPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _searchQuery.isNotEmpty
+                ? 'No documents in this category match "$_searchQuery".'
+                : 'Organize your references here by uploading a PDF document.',
+            style: TextStyle(color: context.colors.textFaint, fontSize: 13),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFolderGridItem({
+    required String name,
+    required IconData icon,
+    required Color iconColor,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: context.colors.surfaceAlt,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: context.colors.outline),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 48,
+              color: iconColor,
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Text(
+                name,
+                style: TextStyle(
+                  color: context.colors.textPrimary,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSyllabusBreadcrumbs() {
+    if (_selectedCategory != DocCategory.syllabus || _searchQuery.isNotEmpty) {
+      return const SizedBox.shrink();
+    }
+    if (_selectedCourse == null) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Row(
+        children: [
+          IconButton(
+            icon: Icon(LucideIcons.arrowLeft, color: context.colors.textPrimary),
+            onPressed: () {
+              setState(() {
+                if (_selectedSemester != null) {
+                  _selectedSemester = null;
+                } else {
+                  _selectedCourse = null;
+                }
+              });
+            },
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedCourse = null;
+                _selectedSemester = null;
+              });
+            },
+            child: Text(
+              'Syllabus',
+              style: TextStyle(
+                color: context.colors.textFaint,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          Icon(LucideIcons.chevronRight, color: context.colors.textFaint, size: 16),
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedSemester = null;
+              });
+            },
+            child: Text(
+              _selectedCourse!,
+              style: TextStyle(
+                color: _selectedSemester == null ? context.colors.textPrimary : context.colors.textFaint,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          if (_selectedSemester != null) ...[
+            Icon(LucideIcons.chevronRight, color: context.colors.textFaint, size: 16),
+            Text(
+              _selectedSemester!,
+              style: TextStyle(
+                color: context.colors.textPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 

@@ -8,6 +8,7 @@ import '../services/fb/fb_auth.dart';
 import '../services/global_state.dart';
 import '../services/database_service.dart';
 import '../services/secrets_service.dart';
+import '../services/usage_limit_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/daily_goal_card.dart';
 import '../widgets/duo_button.dart';
@@ -1102,6 +1103,157 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildUsageLimitsSection() {
+    final activeGemini = {
+      if (_modelPrimaryText.isNotEmpty) _modelPrimaryText.first,
+      if (_modelPrimaryGraphics.isNotEmpty) _modelPrimaryGraphics.first,
+      if (_modelLite.isNotEmpty) _modelLite.first,
+      if (_modelLive.isNotEmpty) _modelLive.first,
+    };
+    if (activeGemini.isEmpty) {
+      activeGemini.addAll(['gemini-3.5-flash', 'gemini-flash-lite-latest', 'gemini-3.1-flash-live-preview']);
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.colors.surfaceAlt,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.colors.outline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(LucideIcons.activity, color: AppTheme.duoBlue, size: 24),
+              const SizedBox(width: 12),
+              Text(
+                'API Usage Limits',
+                style: TextStyle(
+                  color: context.colors.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${UsageLimitService.instance.dailyActiveUsers} Active User(s)',
+                style: TextStyle(
+                  color: context.colors.textFaint,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Daily usage limits are calculated based on daily active users sharing the free keys. Add your own key to bypass limits.',
+            style: TextStyle(color: context.colors.textFaint, fontSize: 11),
+          ),
+          const SizedBox(height: 16),
+          ...activeGemini.map((model) {
+            return FutureBuilder<int>(
+              future: UsageLimitService.instance.getUsage(model),
+              builder: (context, snapshot) {
+                final usage = snapshot.data ?? 0;
+                final limit = UsageLimitService.instance.getLimit(model);
+                final double percent = limit > 0 ? (usage / limit).clamp(0.0, 1.0) : 0.0;
+                final isLimitHit = usage >= limit;
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            model,
+                            style: TextStyle(
+                              color: context.colors.textPrimary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            '$usage / $limit reqs',
+                            style: TextStyle(
+                              color: isLimitHit ? AppTheme.duoRed : context.colors.textFaint,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: percent,
+                          backgroundColor: context.colors.outline,
+                          color: isLimitHit ? AppTheme.duoRed : AppTheme.duoBlue,
+                          minHeight: 8,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          }).toList(),
+          FutureBuilder<bool>(
+            future: UsageLimitService.instance.areAllLimitsHit(activeGemini.toList()),
+            builder: (context, snapshot) {
+              final allHit = snapshot.data ?? false;
+              if (allHit) {
+                return Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.duoRed.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppTheme.duoRed.withOpacity(0.3)),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'All limits reached! Please add your own API key to restore service.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: AppTheme.duoRed,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      if (!GlobalState.developerModeNotifier.value)
+                        DuoButton(
+                          text: 'Add API Key',
+                          onPressed: () {
+                            setState(() {
+                              GlobalState.developerModeNotifier.value = true;
+                              _selectedCategory = 'advanced';
+                            });
+                          },
+                          color: AppTheme.duoBlue,
+                          shadowColor: AppTheme.duoBlueDark,
+                          isOutline: true,
+                        ),
+                    ],
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCloudSyncCard() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -2186,6 +2338,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildCloudSyncCard(),
               const SizedBox(height: 32),
 
+              const Text(
+                'API Usage & Limits',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 8),
+              _buildUsageLimitsSection(),
+              const SizedBox(height: 32),
+
               Container(
                 decoration: AppTheme.glassOf(context),
                 child: SwitchListTile(
@@ -2745,6 +2905,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 16),
           _buildCloudSyncCard(),
+          const SizedBox(height: 32),
+
+          const Text(
+            'API Usage & Limits',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 8),
+          _buildUsageLimitsSection(),
           const SizedBox(height: 32),
 
           const Text(
