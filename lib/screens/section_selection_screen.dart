@@ -73,18 +73,8 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
   Future<void> _loadDeadlines() async {
     final targets = <int, Map<String, dynamic>>{};
     for (var sIdx = 0; sIdx < widget.module.sections.length; sIdx++) {
-      final section = widget.module.sections[sIdx];
-      int totalLessons = 0;
-      if (section.units.isEmpty) {
-        totalLessons = 12;
-      } else {
-        for (var u in section.units) {
-          totalLessons += u.lessons.isEmpty ? 4 : u.lessons.length;
-        }
-      }
-      final completedInSec = section.units.fold<int>(0, (sum, u) {
-        return sum + u.lessons.where((l) => _completedLessons.contains(l.id)).length;
-      });
+      final totalLessons = widget.book.getEstimatedLessonsUpToSection(widget.moduleIdx, sIdx);
+      final completedInSec = widget.book.getCompletedLessonsUpToSection(widget.moduleIdx, sIdx, _completedLessons);
 
       final metrics = await DeadlineService.instance.calculateSectionTarget(
         bookId: widget.book.id,
@@ -223,14 +213,8 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                               );
 
                               final progress = calculateSectionProgressDouble(section, _completedLessons);
-                              int totalLessons = 0;
-                              if (section.units.isEmpty) {
-                                totalLessons = 12;
-                              } else {
-                                for (var u in section.units) {
-                                  totalLessons += u.lessons.isEmpty ? 4 : u.lessons.length;
-                                }
-                              }
+                              final totalLessons = widget.book.getEstimatedLessonsForSection(section);
+                              final totalUnits = widget.book.getEstimatedUnitsForSection(section);
 
                               _sectionKeys.putIfAbsent(index, () => GlobalKey());
                               final key = _sectionKeys[index]!;
@@ -444,15 +428,15 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                                                         ),
                                                         const SizedBox(height: 2),
                                                         Text(
-                                                          targetLeft > 0 
-                                                              ? "Today's Target: $targetLeft lessons left"
-                                                              : "Today's Target Completed! 🎉",
-                                                          style: TextStyle(
-                                                            color: targetLeft > 0 ? context.colors.textPrimary : AppTheme.duoGreen,
-                                                            fontSize: 10,
-                                                            fontWeight: FontWeight.w600,
-                                                          ),
-                                                        ),
+                                                           targetLeft > 0 
+                                                               ? "Today's Target: $targetLeft left (Daily: ${metrics['todayTarget']} | Tomorrow: ${metrics['tomorrowTarget'] ?? 0})"
+                                                               : "Today's Target Completed! 🎉 (Tomorrow: ${metrics['tomorrowTarget'] ?? 0})",
+                                                           style: TextStyle(
+                                                             color: targetLeft > 0 ? context.colors.textPrimary : AppTheme.duoGreen,
+                                                             fontSize: 10,
+                                                             fontWeight: FontWeight.w600,
+                                                           ),
+                                                         ),
                                                       ],
                                                     ),
                                                   ),
@@ -491,7 +475,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                                                 MainAxisAlignment.spaceBetween,
                                             children: [
                                               Text(
-                                                '${section.units.length} Units • $totalLessons Lessons',
+                                                '$totalUnits Units • $totalLessons Lessons',
                                                 style: TextStyle(
                                                   color: context.colors.textFaint,
                                                   fontSize: 11,
@@ -637,20 +621,54 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
     final color = SectionColors.base(widget.module.sections[currentSecIdx!].color);
 
     final text = targetLeft > 0 
-        ? "Today's Target: $targetLeft lessons left"
+        ? "Today's Target: $targetLeft left"
         : "Today's Target Completed! 🎉";
 
-    return FloatingActionButton.extended(
-      onPressed: () {
-        _scrollToAndHighlight(currentSecIdx!);
-      },
-      backgroundColor: color,
-      icon: const Icon(LucideIcons.target, color: Colors.white),
-      label: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: color.withOpacity(0.4),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: InkWell(
+            onTap: () {
+              _scrollToAndHighlight(currentSecIdx!);
+            },
+            borderRadius: BorderRadius.circular(24),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(LucideIcons.target, color: color, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    text,
+                    style: TextStyle(
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -658,17 +676,16 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
 
   void _showSectionLongPressMenu(int modIdx, int secIdx) {
     final section = widget.book.modules[modIdx].sections[secIdx];
-    int totalLessons = 0;
+    final totalLessons = widget.book.getEstimatedLessonsForSection(section);
     int completedCount = 0;
     for (var u in section.units) {
       for (var l in u.lessons) {
-        totalLessons++;
         if (_completedLessons.contains(l.id)) {
           completedCount++;
         }
       }
     }
-    int incompleteCount = totalLessons - completedCount;
+    int incompleteCount = (totalLessons - completedCount).clamp(0, totalLessons);
 
     showModalBottomSheet(
       context: context,

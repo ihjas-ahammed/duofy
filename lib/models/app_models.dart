@@ -980,6 +980,109 @@ class Book {
     return formats.first;
   }
 
+  int getEstimatedUnitsForSection(Section section) {
+    if (section.units.isNotEmpty) {
+      return section.units.length;
+    }
+
+    int totalGeneratedUnits = 0;
+    int sectionsWithUnitsCount = 0;
+    int totalPagesOfGeneratedSectionsWithUnits = 0;
+
+    for (var m in modules) {
+      for (var s in m.sections) {
+        if (s.units.isNotEmpty) {
+          totalGeneratedUnits += s.units.length;
+          sectionsWithUnitsCount++;
+          if (s.startPage != null && s.endPage != null) {
+            final pageCount = s.endPage! - s.startPage! + 1;
+            if (pageCount > 0) {
+              totalPagesOfGeneratedSectionsWithUnits += pageCount;
+            }
+          }
+        }
+      }
+    }
+
+    final double avgUnitsPerSection = sectionsWithUnitsCount > 0
+        ? totalGeneratedUnits / sectionsWithUnitsCount
+        : 3.0;
+
+    if (section.startPage != null && section.endPage != null) {
+      final pageCount = section.endPage! - section.startPage! + 1;
+      if (pageCount > 0 && totalPagesOfGeneratedSectionsWithUnits > 0) {
+        final double avgUnitsPerPage = totalGeneratedUnits / totalPagesOfGeneratedSectionsWithUnits;
+        return (pageCount * avgUnitsPerPage).round().clamp(1, 15);
+      }
+    }
+
+    return avgUnitsPerSection.round().clamp(1, 15);
+  }
+
+  int getEstimatedLessonsForSection(Section section) {
+    int totalGeneratedLessons = 0;
+    int unitsWithLessonsCount = 0;
+
+    for (var m in modules) {
+      for (var s in m.sections) {
+        for (var u in s.units) {
+          if (u.lessons.isNotEmpty) {
+            totalGeneratedLessons += u.lessons.length;
+            unitsWithLessonsCount++;
+          }
+        }
+      }
+    }
+
+    final double avgLessonsPerUnit = unitsWithLessonsCount > 0
+        ? totalGeneratedLessons / unitsWithLessonsCount
+        : 4.0;
+
+    if (section.units.isEmpty) {
+      final estimatedUnits = getEstimatedUnitsForSection(section);
+      return (estimatedUnits * avgLessonsPerUnit).round();
+    } else {
+      int count = 0;
+      for (var u in section.units) {
+        count += u.lessons.isEmpty ? avgLessonsPerUnit.round() : u.lessons.length;
+      }
+      return count;
+    }
+  }
+
+  int getEstimatedLessonsUpToSection(int targetModuleIdx, int targetSectionIdx) {
+    int sum = 0;
+    for (var mIdx = 0; mIdx < modules.length; mIdx++) {
+      final module = modules[mIdx];
+      for (var sIdx = 0; sIdx < module.sections.length; sIdx++) {
+        if (mIdx < targetModuleIdx || (mIdx == targetModuleIdx && sIdx <= targetSectionIdx)) {
+          sum += getEstimatedLessonsForSection(module.sections[sIdx]);
+        }
+      }
+    }
+    return sum;
+  }
+
+  int getCompletedLessonsUpToSection(int targetModuleIdx, int targetSectionIdx, List<String> completedLessons) {
+    int sum = 0;
+    for (var mIdx = 0; mIdx < modules.length; mIdx++) {
+      final module = modules[mIdx];
+      for (var sIdx = 0; sIdx < module.sections.length; sIdx++) {
+        if (mIdx < targetModuleIdx || (mIdx == targetModuleIdx && sIdx <= targetSectionIdx)) {
+          final section = module.sections[sIdx];
+          for (var u in section.units) {
+            for (var l in u.lessons) {
+              if (completedLessons.contains(l.id)) {
+                sum++;
+              }
+            }
+          }
+        }
+      }
+    }
+    return sum;
+  }
+
   Book copyWith({
     String? id,
     String? title,

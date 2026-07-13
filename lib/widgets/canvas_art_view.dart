@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../services/ai_estimator.dart';
 import '../theme/app_theme.dart';
@@ -63,6 +64,7 @@ class _CanvasArtViewState extends State<CanvasArtView> {
   }
 
   void _handleJsError(String message) {
+    debugPrint('[CanvasArtView] JS Error received: $message');
     if (mounted) {
       setState(() {
         _hasError = true;
@@ -72,6 +74,7 @@ class _CanvasArtViewState extends State<CanvasArtView> {
   }
 
   void _handleSvgError() {
+    debugPrint('[CanvasArtView] SVG Error received');
     if (mounted) {
       setState(() {
         _hasError = true;
@@ -82,14 +85,71 @@ class _CanvasArtViewState extends State<CanvasArtView> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[CanvasArtView] build - targetId: ${widget.targetId}, hasPrompt: ${widget.hasPrompt}, hasError: $_hasError, svgLength: ${widget.svg?.length ?? 0}, isLoading: ${widget.isLoading}');
+    
     if (_hasError) {
-      return const SizedBox.shrink();
+      debugPrint('[CanvasArtView] Showing error placeholder and terminal debugger trigger');
+      return Container(
+        margin: widget.isStackedWithContent
+            ? EdgeInsets.zero
+            : const EdgeInsets.only(bottom: 16),
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: AppTheme.darkColors.surface,
+          borderRadius: widget.isStackedWithContent
+              ? const BorderRadius.vertical(top: Radius.circular(24))
+              : BorderRadius.circular(16),
+          border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+        ),
+        child: AspectRatio(
+          aspectRatio: 3 / 2,
+          child: Stack(
+            children: [
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(LucideIcons.alertTriangle, color: Colors.redAccent, size: 24),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Diagram execution failed',
+                      style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+              if (widget.onRegenerate != null)
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: Material(
+                    color: Colors.black54,
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: widget.isLoading ? null : () => widget.onRegenerate!(null),
+                      child: const Padding(
+                        padding: EdgeInsets.all(6.0),
+                        child: Icon(
+                          LucideIcons.refreshCcw,
+                          size: 14,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
     }
 
     // No prompt → no slot at all. We don't want an empty rectangle for
     // lessons the text AI decided didn't need a diagram.
     if (!widget.hasPrompt &&
         (widget.svg == null || widget.svg!.trim().isEmpty)) {
+      debugPrint('[CanvasArtView] Hiding canvas: no prompt and empty/null SVG');
       return const SizedBox.shrink();
     }
 
@@ -98,6 +158,7 @@ class _CanvasArtViewState extends State<CanvasArtView> {
     // No art and not actively generating → the diagram either failed or was
     // never generated. Hide it.
     if (!hasArt && !widget.isLoading) {
+      debugPrint('[CanvasArtView] Hiding canvas: no art and not loading');
       return const SizedBox.shrink();
     }
 
@@ -140,6 +201,7 @@ class _CanvasArtViewState extends State<CanvasArtView> {
                       svgPlaceholder: (_) => const SizedBox.shrink(),
                       onJsError: _handleJsError,
                       onSvgError: _handleSvgError,
+                      onMessage: (msg) => debugPrint('[CanvasArtView JS] $msg'),
                     ),
                   )
                 : _CanvasPlaceholder(
@@ -170,6 +232,7 @@ class _CanvasArtViewState extends State<CanvasArtView> {
                 ),
               ),
             ),
+
           if (widget.onRegenerate != null && hasArt)
             Positioned(
               top: 6,

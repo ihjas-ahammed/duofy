@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/app_models.dart';
 
 class DeadlineService {
   DeadlineService._();
@@ -83,10 +84,22 @@ class DeadlineService {
     final daysLeft = diff.isNegative ? 0 : diff.inDays + 1;
 
     final initialRemaining = max(0, totalLessons - startDayCompleted);
-    final todayTarget = daysLeft > 0 ? (initialRemaining / daysLeft).ceil() : initialRemaining;
+    int todayTarget = daysLeft > 0 ? (initialRemaining / daysLeft).round() : initialRemaining;
+    if (initialRemaining > 0 && todayTarget == 0) {
+      todayTarget = 1;
+    }
     final completedToday = max(0, currentCompleted - startDayCompleted);
     final targetLeftToday = max(0, todayTarget - completedToday);
     final lessonsLeft = max(0, totalLessons - currentCompleted);
+
+    int tomorrowTarget = 0;
+    if (daysLeft > 1) {
+      final lessonsLeftAfterToday = max(0, initialRemaining - todayTarget);
+      tomorrowTarget = (lessonsLeftAfterToday / (daysLeft - 1)).round();
+      if (lessonsLeftAfterToday > 0 && tomorrowTarget == 0) {
+        tomorrowTarget = 1;
+      }
+    }
 
     return {
       'hasDeadline': true,
@@ -96,35 +109,26 @@ class DeadlineService {
       'completedToday': completedToday,
       'targetLeftToday': lessonsLeft == 0 ? 0 : targetLeftToday,
       'lessonsLeft': lessonsLeft,
+      'tomorrowTarget': tomorrowTarget,
     };
   }
 
-  /// Finds the earliest/most urgent target section with a deadline in a book.
   Future<Map<String, dynamic>?> getMostUrgentActiveTarget(
     String bookId,
-    dynamic book, // Book model type
+    Book book, // Book model type
     List<String> completedLessons,
   ) async {
     DateTime? earliestDeadline;
     int? targetModuleIdx;
     int? targetSectionIdx;
     Map<String, dynamic>? targetMetrics;
+    int totalTargetLeftToday = 0;
 
     for (var mIdx = 0; mIdx < book.modules.length; mIdx++) {
       final module = book.modules[mIdx];
       for (var sIdx = 0; sIdx < module.sections.length; sIdx++) {
-        final section = module.sections[sIdx];
-        int totalLessons = 0;
-        if (section.units.isEmpty) {
-          totalLessons = 12;
-        } else {
-          for (var u in section.units) {
-            totalLessons += (u.lessons.isEmpty ? 4 : u.lessons.length) as int;
-          }
-        }
-        final completedInSec = section.units.fold<int>(0, (sum, u) {
-          return sum + u.lessons.where((l) => completedLessons.contains(l.id)).length;
-        });
+        final totalLessons = book.getEstimatedLessonsUpToSection(mIdx, sIdx);
+        final completedInSec = book.getCompletedLessonsUpToSection(mIdx, sIdx, completedLessons);
 
         if (completedInSec >= totalLessons) continue; // Already fully completed
 
@@ -137,6 +141,7 @@ class DeadlineService {
         );
 
         if (metrics['hasDeadline'] == true) {
+          totalTargetLeftToday = max(totalTargetLeftToday, metrics['targetLeftToday'] as int);
           final DateTime dl = metrics['deadline'];
           if (earliestDeadline == null || dl.isBefore(earliestDeadline)) {
             earliestDeadline = dl;
@@ -153,6 +158,7 @@ class DeadlineService {
         'moduleIdx': targetModuleIdx,
         'sectionIdx': targetSectionIdx,
         'metrics': targetMetrics,
+        'totalTargetLeftToday': totalTargetLeftToday,
       };
     }
     return null;

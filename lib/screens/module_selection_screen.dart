@@ -768,7 +768,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
     if (_mostUrgentTarget == null) return null;
 
     final metrics = _mostUrgentTarget!['metrics'] as Map<String, dynamic>;
-    final targetLeft = metrics['targetLeftToday'] as int;
+    final targetLeft = _mostUrgentTarget!['totalTargetLeftToday'] as int? ?? (metrics['targetLeftToday'] as int);
     final moduleIdx = _mostUrgentTarget!['moduleIdx'] as int;
     final sectionIdx = _mostUrgentTarget!['sectionIdx'] as int;
 
@@ -776,30 +776,64 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
     final color = SectionColors.base(section.color);
 
     final text = targetLeft > 0 
-        ? "Today's Target: $targetLeft lessons left"
+        ? "Today's Target: $targetLeft left"
         : "Today's Target Completed! 🎉";
 
-    return FloatingActionButton.extended(
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => SectionSelectionScreen(
-              book: widget.book,
-              moduleIdx: moduleIdx,
-              module: widget.book.modules[moduleIdx],
-              initialHighlightSectionIdx: sectionIdx,
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: color.withOpacity(0.4),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SectionSelectionScreen(
+                    book: widget.book,
+                    moduleIdx: moduleIdx,
+                    module: widget.book.modules[moduleIdx],
+                    initialHighlightSectionIdx: sectionIdx,
+                  ),
+                ),
+              ).then((_) => _loadProgress());
+            },
+            borderRadius: BorderRadius.circular(24),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(LucideIcons.target, color: color, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    text,
+                    style: TextStyle(
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ).then((_) => _loadProgress());
-      },
-      backgroundColor: color,
-      icon: const Icon(LucideIcons.target, color: Colors.white),
-      label: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
         ),
       ),
     );

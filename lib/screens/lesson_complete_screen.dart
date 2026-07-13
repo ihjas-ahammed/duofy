@@ -173,7 +173,7 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen>
       // Because pushReplacement is used in both LessonScreen and
       // PracticeSessionScreen, popping exactly once properly returns back
       // to the lesson path or practice menu.
-      onPressed: () => Navigator.pop(context),
+      onPressed: () => Navigator.pop(context, true),
     ),
   );
 

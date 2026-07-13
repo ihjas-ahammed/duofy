@@ -177,36 +177,55 @@ class _LessonPathState extends State<LessonPath> {
           curve: Curves.easeInOutCubic,
         );
 
-        // Auto-open next lesson after scroll animation
-        if (targetElement.kind == _ElementKind.lesson && targetElement.lesson != null) {
-          final lesson = targetElement.lesson!;
-          final el = targetElement;
-          Future.delayed(const Duration(milliseconds: 1100), () async {
-            if (!mounted) return;
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setString('last_lesson_id_${widget.book.id}', lesson.id);
-            await prefs.setInt('last_mod_idx_${widget.book.id}', widget.modIdx);
-            await prefs.setInt('last_sec_idx_${widget.book.id}', widget.secIdx);
-
-            if (mounted) {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => LessonScreen(
-                    lesson: lesson,
-                    book: widget.book,
-                    modIdx: widget.modIdx,
-                    secIdx: widget.secIdx,
-                    unitIdx: el.unitIdx!,
-                    lessonIdx: el.lessonIdx!,
-                  ),
-                ),
-              );
-              widget.onLessonFinished();
-            }
-          });
-        }
+        // No automatic launching of next lesson after scroll anymore
       }
+    }
+  }
+
+  void _launchNextLesson(String completedId) {
+    if (!mounted) return;
+    final currentIdx = _elements.indexWhere(
+      (el) => el.kind == _ElementKind.lesson && el.lesson?.id == completedId,
+    );
+    if (currentIdx == -1) return;
+
+    _Element? nextElement;
+    for (int i = currentIdx + 1; i < _elements.length; i++) {
+      final el = _elements[i];
+      if (el.kind == _ElementKind.lesson) {
+        nextElement = el;
+        break;
+      }
+    }
+
+    if (nextElement != null && nextElement.lesson != null) {
+      final lesson = nextElement.lesson!;
+      final el = nextElement;
+
+      SharedPreferences.getInstance().then((prefs) {
+        prefs.setString('last_lesson_id_${widget.book.id}', lesson.id);
+        prefs.setInt('last_mod_idx_${widget.book.id}', widget.modIdx);
+        prefs.setInt('last_sec_idx_${widget.book.id}', widget.secIdx);
+      });
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => LessonScreen(
+            lesson: lesson,
+            book: widget.book,
+            modIdx: widget.modIdx,
+            secIdx: widget.secIdx,
+            unitIdx: el.unitIdx!,
+            lessonIdx: el.lessonIdx!,
+          ),
+        ),
+      ).then((result) {
+        widget.onLessonFinished();
+        if (result == true) {
+          _launchNextLesson(lesson.id);
+        }
+      });
     }
   }
 
@@ -573,7 +592,7 @@ class _LessonPathState extends State<LessonPath> {
                               );
 
                               if (context.mounted) {
-                                await Navigator.push(
+                                final result = await Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (_) => LessonScreen(
@@ -587,6 +606,9 @@ class _LessonPathState extends State<LessonPath> {
                                   ),
                                 );
                                 widget.onLessonFinished();
+                                if (result == true) {
+                                  _launchNextLesson(lesson.id);
+                                }
                               }
                             },
                             textOnRight: el.textOnRight ?? true,

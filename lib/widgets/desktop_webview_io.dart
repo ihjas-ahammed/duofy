@@ -131,6 +131,7 @@ class _DesktopWebViewState extends State<DesktopWebView> {
   }
 
   Future<void> _loadCef() async {
+    debugPrint('[DesktopWebView] _loadCef started. htmlLength: ${widget.html.length}, controllerIsNull: ${_wcController == null}');
     // First-use init of the global manager. Safe to call repeatedly because
     // the manager is a singleton and `initialize()` is guarded internally.
     await desktopWebViewEnsureInitialized();
@@ -138,13 +139,12 @@ class _DesktopWebViewState extends State<DesktopWebView> {
     // Write HTML content to a temporary file to bypass opaque data URI security restrictions
     final tempDir = Directory.systemTemp;
     final tempFile = File('${tempDir.path}/duofy_webview_${widget.html.hashCode}.html');
-    if (!await tempFile.exists()) {
-      await tempFile.writeAsString(widget.html);
-    }
+    await tempFile.writeAsString(widget.html);
     final fileUrl = 'file://${tempFile.path}';
     debugPrint('[DesktopWebView] CEF fileUrl: $fileUrl');
 
     if (_wcController == null) {
+      debugPrint('[DesktopWebView] Creating new CEF WebViewInstance');
       final c = wc.WebviewManager().createWebView();
 
       // Register listener to inject JS channels on every V8 context change (navigation)
@@ -199,8 +199,10 @@ class _DesktopWebViewState extends State<DesktopWebView> {
         },
       ));
 
+      debugPrint('[DesktopWebView] Initializing WebViewInstance with about:blank...');
       await c.initialize('about:blank');
       if (!mounted) {
+        debugPrint('[DesktopWebView] State unmounted during WebView initialization, disposing...');
         c.dispose();
         return;
       }
@@ -211,14 +213,14 @@ class _DesktopWebViewState extends State<DesktopWebView> {
       });
       widget.onControllerCreated?.call(PlatformWebViewController(
         runJavaScript: (js) {
-          debugPrint('[DesktopWebView] CEF runJavaScript length: ${js.length}');
+          debugPrint('[DesktopWebView] CEF runJavaScript: $js');
           _wcController?.executeJavaScript(js);
         },
       ));
-      debugPrint('[DesktopWebView] Loading fileUrl...');
+      debugPrint('[DesktopWebView] Loading fileUrl: $fileUrl');
       await _wcController!.loadUrl(fileUrl);
     } else {
-      debugPrint('[DesktopWebView] Loading updated fileUrl...');
+      debugPrint('[DesktopWebView] Reusing existing controller to load fileUrl: $fileUrl');
       await _wcController!.loadUrl(fileUrl);
     }
   }

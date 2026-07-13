@@ -126,7 +126,7 @@ String buildCanvasHtml(String userJs) {
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
-  html, body { margin: 0; padding: 0; height: 100%; background: transparent; overflow: hidden; touch-action: none; }
+  html, body { margin: 0; padding: 0; height: 100%; background: #10172a; overflow: hidden; touch-action: none; }
   #c, #s { display: block; width: 100vw; height: 100vh; }
 </style>
 $threeTag
@@ -135,25 +135,94 @@ $threeTag
 <canvas id="c"></canvas>
 <svg id="s" style="display:none;"></svg>
 <script>
-const canvas = document.getElementById('c');
-const svg = document.getElementById('s');
-const ctx = canvas.getContext('2d');
+window.canvas = document.getElementById('c');
+window.svg = document.getElementById('s');
+window.ctx = window.canvas.getContext('2d');
+
+(function() {
+  function setupChannelShim(name) {
+    var channel = window[name];
+    if (channel && typeof channel.postMessage === 'function') {
+      return;
+    }
+    if (typeof channel === 'function') {
+      const original = channel;
+      window[name] = {
+        postMessage: function(msg) {
+          original(msg);
+        }
+      };
+      return;
+    }
+    var pending = [];
+    window[name] = {
+      postMessage: function(msg) {
+        if (typeof window[name] === 'function') {
+          window[name](msg);
+        } else if (typeof window.chrome?.webview?.postMessage === 'function') {
+          window.chrome.webview.postMessage(JSON.stringify({channel: name === 'DuoMessageChannel' ? 'message' : 'error', message: String(msg)}));
+        } else {
+          pending.push(msg);
+        }
+      }
+    };
+    var attempts = 0;
+    var interval = setInterval(function() {
+      attempts++;
+      var current = window[name];
+      if (typeof current === 'function') {
+        const original = current;
+        window[name] = {
+          postMessage: function(msg) {
+            original(msg);
+          }
+        };
+        pending.forEach(function(msg) {
+          original(msg);
+        });
+        clearInterval(interval);
+      }
+      if (attempts > 100) {
+        clearInterval(interval);
+      }
+    }, 50);
+  }
+  setupChannelShim('DuoMessageChannel');
+  setupChannelShim('DuoErrorChannel');
+})();
+
+window.console.log = function() {
+  if (window.DuoMessageChannel && typeof window.DuoMessageChannel.postMessage === 'function') {
+    window.DuoMessageChannel.postMessage('[JS LOG] ' + Array.prototype.slice.call(arguments).join(' '));
+  }
+};
+window.console.error = function() {
+  if (window.DuoErrorChannel && typeof window.DuoErrorChannel.postMessage === 'function') {
+    window.DuoErrorChannel.postMessage('[JS ERROR] ' + Array.prototype.slice.call(arguments).join(' '));
+  }
+};
+
+console.log('HTML wrapper script initialized. devicePixelRatio:', window.devicePixelRatio);
+
 let __setupRan = false;
+let __lastSetupW = 0, __lastSetupH = 0;
 function _sizeCanvas() {
   const dpr = window.devicePixelRatio || 1;
-  const W = window.innerWidth, H = window.innerHeight;
-  canvas.width = Math.floor(W * dpr);
-  canvas.height = Math.floor(H * dpr);
-  canvas.style.width = W + 'px';
-  canvas.style.height = H + 'px';
+  const W = Math.floor(window.innerWidth), H = Math.floor(window.innerHeight);
+  window.canvas.width = Math.floor(W * dpr);
+  window.canvas.height = Math.floor(H * dpr);
+  window.canvas.style.width = W + 'px';
+  window.canvas.style.height = H + 'px';
+  console.log('_sizeCanvas runs. W:', W, 'H:', H, 'dpr:', dpr, 'canvasWidth:', window.canvas.width, 'canvasHeight:', window.canvas.height);
   return { W: W, H: H, dpr: dpr };
 }
 function _showError(msg) {
   try {
+    console.error('showError triggered inside HTML wrapper: ' + msg);
     const { W, H } = _sizeCanvas();
-    const c2 = canvas.getContext('2d');
+    const c2 = window.canvas.getContext('2d');
     c2.setTransform(1, 0, 0, 1, 0, 0);
-    c2.clearRect(0, 0, canvas.width, canvas.height);
+    c2.clearRect(0, 0, window.canvas.width, window.canvas.height);
     c2.fillStyle = '#94A3B8';
     c2.font = '12px sans-serif';
     c2.fillText('Diagram error: ' + msg, 10, 20);
@@ -183,100 +252,59 @@ function _showError(msg) {
 window.addEventListener('error', function(e) { _showError(e.message || 'unknown'); });
 window.addEventListener('unhandledrejection', function(e) { _showError(e.reason || 'unhandled promise rejection'); });
 function _render() {
+  console.log('_render called');
   const { W, H, dpr } = _sizeCanvas();
+  window.canvas.style.display = 'block';
+  window.svg.style.display = 'none';
   if (typeof sketch === 'function') {
-    if (__setupRan) return;
-    __setupRan = true;
+    console.log('_render: sketch function detected');
     try {
       if (typeof window.THREE === 'undefined' || !/WebGLRenderer|new\\s+THREE\\.WebGL/.test(sketch.toString())) {
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        window.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
-      sketch(canvas, W, H);
+    } catch (e) { _showError(e.message || String(e)); }
+    if (__setupRan) {
+      if (Math.abs(W - __lastSetupW) > 8 || Math.abs(H - __lastSetupH) > 8) {
+        console.log('Size changed significantly post-setup. Reloading page. Old:', __lastSetupW, 'x', __lastSetupH, 'New:', W, 'x', H);
+        window.location.reload();
+        return;
+      }
+      console.log('_render: sketch already setup, skipping rerun');
+      return;
+    }
+    __lastSetupW = W;
+    __lastSetupH = H;
+    __setupRan = true;
+    try {
+      console.log('Invoking sketch()...');
+      sketch(window.canvas, W, H);
+      console.log('sketch() successfully invoked');
     } catch (e) { _showError(e.message || String(e)); }
     return;
   }
   if (typeof draw === 'function') {
     try {
       const drawStr = draw.toString();
-      const isSvgDraw = /^\s*(function\s+)?draw\s*\(\s*svg\b/.test(drawStr) || 
-                        /\(\s*svg\b/.test(drawStr) ||
+      const isSvgDraw = /^\\s*(function\\s+)?draw\\s*\\(\\s*svg\\b/.test(drawStr) || 
+                        /\\(\\s*svg\\b/.test(drawStr) ||
                         /svg/i.test(drawStr.split(')')[0]);
       if (isSvgDraw) {
-        canvas.style.display = 'none';
-        svg.style.display = 'block';
-        svg.setAttribute('width', W);
-        svg.setAttribute('height', H);
-        svg.setAttribute('viewBox', `0 0 \${W} \${H}`);
-        svg.innerHTML = '';
-        draw(svg, W, H);
+        window.canvas.style.display = 'none';
+        window.svg.style.display = 'block';
+        window.svg.setAttribute('width', W);
+        window.svg.setAttribute('height', H);
+        window.svg.setAttribute('viewBox', `0 0 \${W} \${H}`);
+        window.svg.innerHTML = '';
+        draw(window.svg, W, H);
         return;
       }
 
-      canvas.style.display = 'block';
-      svg.style.display = 'none';
+      window.canvas.style.display = 'block';
+      window.svg.style.display = 'none';
 
-      // --- Auto-fit: render offscreen, measure bounds, re-render scaled ---
-      const REF = Math.max(W, H, 800);
-      const off = document.createElement('canvas');
-      off.width = REF; off.height = REF;
-      const oc = off.getContext('2d');
-      oc.clearRect(0, 0, REF, REF);
-      draw(oc, REF, REF);
-
-      // Scan pixels to find content bounding box
-      const imgData = oc.getImageData(0, 0, REF, REF);
-      const px = imgData.data;
-      let minX = REF, minY = REF, maxX = 0, maxY = 0;
-      let found = false;
-      // Sample every 2nd pixel for speed
-      for (let y = 0; y < REF; y += 2) {
-        for (let x = 0; x < REF; x += 2) {
-          const i = (y * REF + x) * 4;
-          if (px[i+3] > 10) { // non-transparent pixel
-            if (x < minX) minX = x;
-            if (x > maxX) maxX = x;
-            if (y < minY) minY = y;
-            if (y > maxY) maxY = y;
-            found = true;
-          }
-        }
-      }
-
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, W, H);
-
-      if (!found) {
-        // Nothing drawn, just render normally
-        draw(ctx, W, H);
-      } else {
-        // Add a small padding around the content
-        const pad = 16;
-        minX = Math.max(0, minX - pad);
-        minY = Math.max(0, minY - pad);
-        maxX = Math.min(REF, maxX + pad);
-        maxY = Math.min(REF, maxY + pad);
-
-        const contentW = maxX - minX;
-        const contentH = maxY - minY;
-        if (contentW < 1 || contentH < 1) {
-          draw(ctx, W, H);
-        } else {
-          const scaleX = W / contentW;
-          const scaleY = H / contentH;
-          const scale = Math.min(scaleX, scaleY, 1.5); // cap upscale at 1.5x
-          const drawW = contentW * scale;
-          const drawH = contentH * scale;
-          const offsetX = (W - drawW) / 2;
-          const offsetY = (H - drawH) / 2;
-
-          ctx.save();
-          ctx.translate(offsetX, offsetY);
-          ctx.scale(scale, scale);
-          ctx.translate(-minX, -minY);
-          draw(ctx, REF, REF);
-          ctx.restore();
-        }
-      }
+      window.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      window.ctx.clearRect(0, 0, W, H);
+      draw(window.ctx, W, H);
     } catch (e) { _showError(e.message || String(e)); }
     return;
   }
@@ -290,11 +318,13 @@ $userJs
 let __lastW = 0, __lastH = 0, __stableFrames = 0;
 function _waitForLayout() {
   if (__setupRan) return;
-  const W = window.innerWidth, H = window.innerHeight;
+  const W = Math.floor(window.innerWidth), H = Math.floor(window.innerHeight);
+  console.log('_waitForLayout tick. W:', W, 'H:', H, 'lastW:', __lastW, 'lastH:', __lastH, 'stableFrames:', __stableFrames);
   if (W > 10 && H > 10) {
     if (W === __lastW && H === __lastH) {
       __stableFrames++;
       if (__stableFrames > 2) {
+        console.log('Layout stabilized! Running render loop.');
         _render();
         window.addEventListener('resize', _render);
         return;
@@ -321,14 +351,22 @@ _waitForLayout();
 class CanvasHtmlView extends StatelessWidget {
   final String drawFunction;
   final ValueChanged<String>? onJsError;
+  final ValueChanged<String>? onMessage;
 
-  const CanvasHtmlView({super.key, required this.drawFunction, this.onJsError});
+  const CanvasHtmlView({
+    super.key,
+    required this.drawFunction,
+    this.onJsError,
+    this.onMessage,
+  });
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[CanvasHtmlView] Rendering drawFunction (length: ${drawFunction.length})');
     return PlatformWebView(
       html: buildCanvasHtml(drawFunction),
       onJsError: onJsError,
+      onMessage: onMessage,
     );
   }
 }
@@ -343,21 +381,31 @@ Widget buildCanvasArt(
   WidgetBuilder? svgPlaceholder,
   ValueChanged<String>? onJsError,
   VoidCallback? onSvgError,
+  ValueChanged<String>? onMessage,
 }) {
-  if (isSvgCanvas(content)) {
+  final isSvg = isSvgCanvas(content);
+  debugPrint('[buildCanvasArt] content length: ${content.length}, isSvg: $isSvg');
+  if (isSvg) {
+    debugPrint('[buildCanvasArt] Rendering as SVG picture');
     return SvgPicture.string(
       content,
       fit: fit,
       placeholderBuilder: svgPlaceholder,
       errorBuilder: onSvgError != null
           ? (context, error, stackTrace) {
+              debugPrint('[buildCanvasArt] SvgPicture parsing error: $error');
               WidgetsBinding.instance.addPostFrameCallback((_) => onSvgError());
               return svgPlaceholder?.call(context) ?? const SizedBox.shrink();
             }
           : null,
     );
   }
-  return CanvasHtmlView(drawFunction: content, onJsError: onJsError);
+  debugPrint('[buildCanvasArt] Rendering as CanvasHtmlView');
+  return CanvasHtmlView(
+    drawFunction: content,
+    onJsError: onJsError,
+    onMessage: onMessage,
+  );
 }
 
 /// Opens [content] in a full-screen viewer. SVG art is wrapped in an
@@ -479,6 +527,7 @@ class _CanvasDoubleTapDetectorState extends State<CanvasDoubleTapDetector> {
 
 void showCanvasCodeDialog(BuildContext context, String code) {
   final isSvg = isSvgCanvas(code);
+  final displayText = isSvg ? code : buildCanvasHtml(code);
   showDialog(
     context: context,
     builder: (BuildContext context) {
@@ -570,7 +619,7 @@ void showCanvasCodeDialog(BuildContext context, String code) {
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
                     child: SelectableText(
-                      code.trim(),
+                      displayText.trim(),
                       style: TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 11,
@@ -601,7 +650,7 @@ void showCanvasCodeDialog(BuildContext context, String code) {
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       onPressed: () {
-                        Clipboard.setData(ClipboardData(text: code));
+                        Clipboard.setData(ClipboardData(text: displayText));
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Code copied to clipboard'),
