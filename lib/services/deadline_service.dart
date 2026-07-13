@@ -119,7 +119,7 @@ class DeadlineService {
           totalLessons = 12;
         } else {
           for (var u in section.units) {
-            totalLessons += u.lessons.isEmpty ? 4 : u.lessons.length;
+            totalLessons += (u.lessons.isEmpty ? 4 : u.lessons.length) as int;
           }
         }
         final completedInSec = section.units.fold<int>(0, (sum, u) {
