@@ -9,15 +9,15 @@ class UsageLimitService {
 
   // Default daily request count (capacity) for our free keys per model
   static const Map<String, int> defaultCapacityLimits = {
-    'gemini-3.5-flash': 1500,
-    'gemini-3-flash-preview': 1500,
-    'gemini-2.5-flash': 1500,
-    'gemini-flash-lite-latest': 1500,
-    'gemini-3.1-flash-lite': 1500,
-    'gemini-3.1-flash-lite-preview': 1500,
-    'gemini-2.5-flash-lite': 1500,
-    'gemini-2.0-flash-lite': 1500,
-    'gemini-3.1-flash-live-preview': 1500,
+    'gemini-3.5-flash': 20,
+    'gemini-3-flash-preview': 20,
+    'gemini-2.5-flash': 20,
+    'gemini-flash-lite-latest': 500,
+    'gemini-3.1-flash-lite': 500,
+    'gemini-3.1-flash-lite-preview': 500,
+    'gemini-2.5-flash-lite': 500,
+    'gemini-2.0-flash-lite': 500,
+    'gemini-3.1-flash-live-preview': 20,
     'llama-3.3-70b-versatile': 14400,
     'llama-3.1-8b-instant': 14400,
     'groq/compound': 14400,
@@ -25,7 +25,11 @@ class UsageLimitService {
     'llama-3.3-70b': 1000,
     'llama-3.1-8b': 1000,
     'meta-llama/llama-3.3-70b-instruct': 200,
-    'google/gemini-2.5-flash': 200,
+    'google/gemini-2.5-flash': 20,
+    'gemma-4-26b-a4b-it': 1500,
+    'gemma-4-31b-it': 1500,
+    'google/gemma-2-9b-it:free': 1500,
+    'gemma4': 1500,
   };
 
   int _dailyActiveUsers = 1;
@@ -151,9 +155,31 @@ class UsageLimitService {
     return 'gemini';
   }
 
+  // Get platform-specific raw capacity limit for a model
+  int getCapacity(String modelName) {
+    if (_capacityLimits.containsKey(modelName)) {
+      return _capacityLimits[modelName]!;
+    }
+    if (defaultCapacityLimits.containsKey(modelName)) {
+      return defaultCapacityLimits[modelName]!;
+    }
+    // Dynamic fallbacks based on model names
+    final lower = modelName.toLowerCase();
+    if (lower.contains('flash-lite')) {
+      return 500;
+    }
+    if (lower.contains('flash')) {
+      return 20;
+    }
+    if (lower.contains('gemma')) {
+      return 1500;
+    }
+    return 1500; // global fallback
+  }
+
   // Get daily limit for a model (capacity / daily active users)
   int getLimit(String modelName) {
-    final capacity = _capacityLimits[modelName] ?? defaultCapacityLimits[modelName] ?? 1500;
+    final capacity = getCapacity(modelName);
     return (capacity / _dailyActiveUsers).round();
   }
 
