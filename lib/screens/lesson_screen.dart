@@ -536,7 +536,7 @@ class _LessonScreenState extends State<LessonScreen> {
     }
 
     if (mounted) {
-      Navigator.pushReplacement(
+      final result = await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => LessonCompleteScreen(
@@ -559,6 +559,9 @@ class _LessonScreenState extends State<LessonScreen> {
           ),
         ),
       );
+      if (mounted) {
+        Navigator.pop(context, result);
+      }
     }
   }
 

@@ -70,8 +70,8 @@
     "semantic_hash": ""
   },
   "lib/screens/lesson_screen.dart": {
-    "mtime": 1784020563.1931236,
-    "ast_hash": "3b342d1bf9245192cc0837a7fdd1317c",
+    "mtime": 1784022422.333123,
+    "ast_hash": "531ce16f23ca36f5cffb74377f9925ab",
     "semantic_hash": ""
   },
   "lib/screens/generate_qp_screen.dart": {
@@ -1695,7 +1695,7 @@
     "semantic_hash": ""
   },
   "lib/widgets/slide_views/flashcard_view.dart": {
-    "mtime": 1784020557.7931235,
+    "mtime": 1784020887.4231234,
     "ast_hash": "3ba1c09459ffee5402f39eefebbe23d0",
     "semantic_hash": ""
   },

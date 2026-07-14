@@ -1,16 +1,16 @@
 # Graph Report - duofy  (2026-07-14)
 
 ## Corpus Check
-- 273 files · ~562,048 words
+- 273 files · ~562,058 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 4895 nodes · 6310 edges · 169 communities (139 shown, 30 thin omitted)
+- 4895 nodes · 6311 edges · 169 communities (139 shown, 30 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `39500a41`
+- Built from commit: `25fb4a60`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -281,7 +281,7 @@ Nodes (36): QuickReviewItem, book, build, _changeStatus, createState, _explanati
 
 ### Community 17 - "practice_session_screen.dart & lesson_complete_..."
 Cohesion: 0.03
-Nodes (64): _answered, _applySlideEdit, _attemptedSlideIds, _blankInput, book, build, _buildActionBottomBar, _buildConfidenceRow (+56 more)
+Nodes (63): _answered, _applySlideEdit, _attemptedSlideIds, _blankInput, book, build, _buildActionBottomBar, _buildConfidenceRow (+55 more)
 
 ### Community 18 - "course_settings_screen.dart & _addFormat"
 Cohesion: 0.13
@@ -297,7 +297,7 @@ Nodes (17): calibration_card.dart, AnalyticsView, _AnalyticsViewState, build, _b
 
 ### Community 21 - "bookmark_service.dart & add"
 Cohesion: 0.07
-Nodes (27): build, _navigateToPrerequisite, _onSectionPdfPressed, _showMissingPdfDialog, _openPdfViewer, build, build, _buildAppBarActions (+19 more)
+Nodes (28): build, _navigateToPrerequisite, _onSectionPdfPressed, _showMissingPdfDialog, _openPdfViewer, build, build, _buildAppBarActions (+20 more)
 
 ### Community 22 - "index_picker_screen.dart & course_questionnaire..."
 Cohesion: 0.08
@@ -757,7 +757,7 @@ Cohesion: 0.67
 Nodes (3): _BlankSyntax, _PermissiveLatexInlineSyntax, md.InlineSyntax
 
 ## Knowledge Gaps
-- **4001 isolated node(s):** `mockBooks`, `DefaultFirebaseOptions`, `linuxApiKey`, `linuxProjectId`, `web` (+3996 more)
+- **4000 isolated node(s):** `mockBooks`, `DefaultFirebaseOptions`, `linuxApiKey`, `linuxProjectId`, `web` (+3995 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **30 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -771,7 +771,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Why does `InjectUserScripts` connect `struct_type` to `WebviewCookieVisitor`?**
   _High betweenness centrality (0.005) - this node is a cross-community bridge._
 - **What connects `mockBooks`, `DefaultFirebaseOptions`, `linuxApiKey` to the rest of the system?**
-  _4001 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _4000 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `bookmarks_screen.dart & web_webview_helper.dart` be split into smaller, more focused modules?**
   _Cohesion score 0.04830917874396135 - nodes in this community are weakly interconnected._
 - **Should `course_edit_structure_screen.dart & pdf_folder_...` be split into smaller, more focused modules?**

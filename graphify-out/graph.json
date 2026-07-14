@@ -7204,8 +7204,8 @@
       "source_location": null,
       "_origin": "ast",
       "id": "widgets_slide_views_one_word_view_dart",
-      "community": 1,
-      "community_name": "course_edit_structure_screen.dart & pdf_folder_...",
+      "community": 6,
+      "community_name": "home_screen.dart & ../widgets/compact_book_card...",
       "norm_label": "../widgets/slide_views/one_word_view.dart"
     },
     {
@@ -7215,8 +7215,8 @@
       "source_location": null,
       "_origin": "ast",
       "id": "widgets_slide_views_numerical_view_dart",
-      "community": 6,
-      "community_name": "home_screen.dart & ../widgets/compact_book_card...",
+      "community": 1,
+      "community_name": "course_edit_structure_screen.dart & pdf_folder_...",
       "norm_label": "../widgets/slide_views/numerical_view.dart"
     },
     {
@@ -9943,8 +9943,8 @@
       "source_location": null,
       "_origin": "ast",
       "id": "lib_screens_lesson_screen_finishlesson",
-      "community": 17,
-      "community_name": "practice_session_screen.dart & lesson_complete_...",
+      "community": 21,
+      "community_name": "bookmark_service.dart & add",
       "norm_label": "_finishlesson"
     },
     {
@@ -56934,6 +56934,17 @@
       "weight": 1.0,
       "context": "route_object",
       "source": "lib_screens_home_screen_showbooklongpressmenu",
+      "target": "materialpageroute"
+    },
+    {
+      "relation": "navigates",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/screens/lesson_screen.dart",
+      "source_location": null,
+      "weight": 1.0,
+      "context": "route_object",
+      "source": "lib_screens_lesson_screen_finishlesson",
       "target": "materialpageroute"
     },
     {
@@ -117606,5 +117617,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "39500a41fbba09e5d628dd2f656c9f3a2b687d90"
+  "built_at_commit": "25fb4a602b8bdd62e9e0d4cd8c4f7513495c0e49"
 }
