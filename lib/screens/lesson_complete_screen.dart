@@ -4,6 +4,7 @@ import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import '../models/app_models.dart';
 import '../services/metacognition_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
@@ -19,6 +20,12 @@ class LessonCompleteScreen extends StatefulWidget {
   final String? bookId;
   final String? moduleId;
 
+  final Book? book;
+  final int? modIdx;
+  final int? secIdx;
+  final int? unitIdx;
+  final int? lessonIdx;
+
   const LessonCompleteScreen({
     super.key,
     required this.xpEarned,
@@ -27,6 +34,11 @@ class LessonCompleteScreen extends StatefulWidget {
     this.isPractice = false,
     this.bookId,
     this.moduleId,
+    this.book,
+    this.modIdx,
+    this.secIdx,
+    this.unitIdx,
+    this.lessonIdx,
   });
 
   @override
@@ -164,6 +176,32 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen>
     ),
   );
 
+  bool get _shouldAutoNext {
+    if (widget.isPractice) return false;
+    if (widget.book == null ||
+        widget.modIdx == null ||
+        widget.secIdx == null ||
+        widget.unitIdx == null ||
+        widget.lessonIdx == null) {
+      return false;
+    }
+    final book = widget.book!;
+    if (widget.modIdx! < 0 || widget.modIdx! >= book.modules.length)
+      return false;
+    final module = book.modules[widget.modIdx!];
+    if (widget.secIdx! < 0 || widget.secIdx! >= module.sections.length)
+      return false;
+    final section = module.sections[widget.secIdx!];
+    if (widget.unitIdx! < 0 || widget.unitIdx! >= section.units.length)
+      return false;
+    final unit = section.units[widget.unitIdx!];
+    if (widget.lessonIdx! < 0 || widget.lessonIdx! >= unit.lessons.length)
+      return false;
+
+    // Do not auto next if it is the last lesson of the unit
+    return widget.lessonIdx! < unit.lessons.length - 1;
+  }
+
   Widget get _continueButton => _staggered(
     0.6,
     DuoButton(
@@ -173,7 +211,7 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen>
       // Because pushReplacement is used in both LessonScreen and
       // PracticeSessionScreen, popping exactly once properly returns back
       // to the lesson path or practice menu.
-      onPressed: () => Navigator.pop(context, true),
+      onPressed: () => Navigator.pop(context, _shouldAutoNext),
     ),
   );
 

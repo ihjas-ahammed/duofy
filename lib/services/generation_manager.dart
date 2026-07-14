@@ -1131,6 +1131,7 @@ class GenerationManager extends ChangeNotifier {
         "open_home|",
       );
       task.completer.complete(updatedUnit);
+      _crossCheckUnit(finalBook, modIdx, secIdx, unitIdx, updatedUnit, apiKey);
     } catch (e) {
       await NotificationService.cancel(notifId);
       await NotificationService.showActionable(
@@ -1886,9 +1887,12 @@ class GenerationManager extends ChangeNotifier {
                   bookToSplit,
                 );
                 if (!match) {
-                  print('[GenerationManager] Post-create AI verification failed.');
+                  print(
+                    '[GenerationManager] Post-create AI verification failed.',
+                  );
                   verificationPassed = false;
-                  task.statusMessage = 'Action Required: AI verification failed. Adjust offset.';
+                  task.statusMessage =
+                      'Action Required: AI verification failed. Adjust offset.';
                 }
               }
               print('[GenerationManager] ${report.describe()}');
@@ -2998,6 +3002,113 @@ class GenerationManager extends ChangeNotifier {
       }
     } catch (e) {
       print('Error auto-generating first unit manifest: $e');
+    }
+  }
+
+  Future<void> _crossCheckUnit(
+    Book book,
+    int modIdx,
+    int secIdx,
+    int unitIdx,
+    Unit generatedUnit,
+    String? apiKey,
+  ) async {
+    try {
+      print(
+        '[GenerationManager] Starting AI-CROSS check for unit ${generatedUnit.title} (${generatedUnit.id})',
+      );
+
+      final faultyLessonIds = await _aiService.crossCheckUnitLessons(
+        unit: generatedUnit,
+        bookContext: book,
+        forcedApiKey: apiKey,
+      );
+
+      if (faultyLessonIds.isEmpty) {
+        print('[GenerationManager] AI-CROSS check complete: no faults found.');
+        return;
+      }
+
+      print(
+        '[GenerationManager] AI-CROSS check found faults in lessons: $faultyLessonIds',
+      );
+
+      for (final lessonId in faultyLessonIds) {
+        final lessonIdx = generatedUnit.lessons.indexWhere(
+          (l) => l.id == lessonId,
+        );
+        if (lessonIdx == -1) continue;
+
+        final faultyLesson = generatedUnit.lessons[lessonIdx];
+
+        print(
+          '[GenerationManager] Regenerating faulty lesson: "${faultyLesson.title}" (${faultyLesson.id})',
+        );
+
+        try {
+          final String? sectionPdfPath =
+              book.modules[modIdx].sections[secIdx].pdfPath;
+          final List<Unit> sectionUnits =
+              book.modules[modIdx].sections[secIdx].units;
+          final Unit? previousUnit = unitIdx > 0
+              ? sectionUnits[unitIdx - 1]
+              : null;
+          final Unit? nextUnit = unitIdx < sectionUnits.length - 1
+              ? sectionUnits[unitIdx + 1]
+              : null;
+
+          final fresh = await _aiService.regenerateLesson(
+            lesson: faultyLesson,
+            unit: generatedUnit,
+            bookContext: book,
+            sectionPdfPath: sectionPdfPath,
+            previousUnit: previousUnit,
+            nextUnit: nextUnit,
+            generateGraphics: true,
+            forcedApiKey: apiKey,
+            customPrompt:
+                "The previous version of this lesson had a fault. Please review the questions, slides, and objective choices carefully, and ensure all answers, option correct flags, and explanations are 100% correct.",
+          );
+
+          if (fresh != null) {
+            final currentBook =
+                (await _dbService.getBookFromCache(book.id)) ?? book;
+
+            final mods = List<Module>.from(currentBook.modules);
+            final secs = List<Section>.from(mods[modIdx].sections);
+            final uns = List<Unit>.from(secs[secIdx].units);
+
+            if (unitIdx < uns.length && uns[unitIdx].id == generatedUnit.id) {
+              final lessons = List<Lesson>.from(uns[unitIdx].lessons);
+              final lIdx = lessons.indexWhere((l) => l.id == lessonId);
+              if (lIdx != -1) {
+                lessons[lIdx] = fresh;
+                uns[unitIdx] = uns[unitIdx].copyWith(lessons: lessons);
+                secs[secIdx] = secs[secIdx].copyWith(units: uns);
+                mods[modIdx] = mods[modIdx].copyWith(sections: secs);
+                final updatedBook = currentBook.copyWith(modules: mods);
+
+                await ProgressService.clearLessonProgress(lessonId, book.id);
+                await _dbService.saveGeneratedBook(updatedBook);
+                _bookUpdateController.add(updatedBook);
+                print(
+                  '[GenerationManager] Successfully replaced faulty lesson $lessonId with corrected version.',
+                );
+              }
+            }
+          } else {
+            print(
+              '[GenerationManager] Lesson regeneration returned null for $lessonId',
+            );
+          }
+        } catch (e) {
+          print(
+            '[GenerationManager] Background regeneration failed for faulty lesson $lessonId: $e',
+          );
+        }
+      }
+    } catch (e) {
+      print('[GenerationManager] AI-CROSS check failed: $e');
     }
   }
 }

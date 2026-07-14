@@ -156,7 +156,8 @@ class _LessonScreenState extends State<LessonScreen> {
     if (widget.book == null ||
         widget.modIdx == null ||
         widget.secIdx == null ||
-        widget.unitIdx == null) return;
+        widget.unitIdx == null)
+      return;
 
     final book = widget.book!;
     final modIdx = widget.modIdx!;
@@ -177,7 +178,8 @@ class _LessonScreenState extends State<LessonScreen> {
       nextUnitIdx = 0;
       if (nextSecIdx < book.modules[modIdx].sections.length) {
         if (book.modules[modIdx].sections[nextSecIdx].units.isNotEmpty) {
-          nextUnit = book.modules[modIdx].sections[nextSecIdx].units[nextUnitIdx];
+          nextUnit =
+              book.modules[modIdx].sections[nextSecIdx].units[nextUnitIdx];
         }
       } else {
         // Check next module
@@ -195,7 +197,9 @@ class _LessonScreenState extends State<LessonScreen> {
 
     if (nextUnit != null && !nextUnit.isGenerated) {
       final inQueue = GenerationManager.instance.queue.any(
-        (t) => t.unitId == nextUnit!.id && (t.status == 'queued' || t.status == 'running'),
+        (t) =>
+            t.unitId == nextUnit!.id &&
+            (t.status == 'queued' || t.status == 'running'),
       );
       if (inQueue) return;
 
@@ -235,14 +239,19 @@ class _LessonScreenState extends State<LessonScreen> {
                 );
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Generation for "${nextUnit.title}" started in the background.'),
+                    content: Text(
+                      'Generation for "${nextUnit.title}" started in the background.',
+                    ),
                     backgroundColor: AppTheme.duoBlue,
                   ),
                 );
               },
               child: const Text(
                 'Generate',
-                style: TextStyle(color: AppTheme.duoBlue, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: AppTheme.duoBlue,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -542,6 +551,11 @@ class _LessonScreenState extends State<LessonScreen> {
                     widget.modIdx! < widget.book!.modules.length)
                 ? widget.book!.modules[widget.modIdx!].id
                 : null,
+            book: widget.book,
+            modIdx: widget.modIdx,
+            secIdx: widget.secIdx,
+            unitIdx: widget.unitIdx,
+            lessonIdx: widget.lessonIdx,
           ),
         ),
       );
@@ -1790,12 +1804,15 @@ class _LessonScreenState extends State<LessonScreen> {
                             ? _buildSlideContent(slide, bottomBar)
                             : GestureDetector(
                                 behavior: HitTestBehavior.translucent,
-                                onDoubleTap: !GlobalState.developerModeNotifier.value ? null : () {
-                                  setState(() {
-                                    _editController.text = slide.content;
-                                    _isEditingMode = true;
-                                  });
-                                },
+                                onDoubleTap:
+                                    !GlobalState.developerModeNotifier.value
+                                    ? null
+                                    : () {
+                                        setState(() {
+                                          _editController.text = slide.content;
+                                          _isEditingMode = true;
+                                        });
+                                      },
                                 child: _buildSlideContent(slide, bottomBar),
                               )),
                 ),

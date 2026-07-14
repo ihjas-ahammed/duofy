@@ -223,7 +223,11 @@ class _LessonPathState extends State<LessonPath> {
       ).then((result) {
         widget.onLessonFinished();
         if (result == true) {
-          _launchNextLesson(lesson.id);
+          Future.delayed(const Duration(milliseconds: 1000), () {
+            if (mounted) {
+              _launchNextLesson(lesson.id);
+            }
+          });
         }
       });
     }
@@ -273,10 +277,12 @@ class _LessonPathState extends State<LessonPath> {
     final color = SectionColors.base(widget.section.color);
 
     final allLessons = widget.section.units.expand((u) => u.lessons).toList();
-    final bool allLessonsFinished = allLessons.isNotEmpty &&
+    final bool allLessonsFinished =
+        allLessons.isNotEmpty &&
         allLessons.every((l) => widget.completedLessons.contains(l.id));
     final bool hasNextSection =
-        (widget.secIdx + 1 < widget.book.modules[widget.modIdx].sections.length) ||
+        (widget.secIdx + 1 <
+            widget.book.modules[widget.modIdx].sections.length) ||
         (widget.modIdx + 1 < widget.book.modules.length);
 
     // New-flow section that hasn\'t produced its units yet — show a manifest
@@ -607,7 +613,14 @@ class _LessonPathState extends State<LessonPath> {
                                 );
                                 widget.onLessonFinished();
                                 if (result == true) {
-                                  _launchNextLesson(lesson.id);
+                                  Future.delayed(
+                                    const Duration(milliseconds: 1000),
+                                    () {
+                                      if (context.mounted) {
+                                        _launchNextLesson(lesson.id);
+                                      }
+                                    },
+                                  );
                                 }
                               }
                             },

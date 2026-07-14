@@ -81,13 +81,21 @@ class AiService {
     final prefs = await SharedPreferences.getInstance();
     List<String> models = [];
     if (slotName == 'Primary - Text') {
-      models = prefs.getStringList('groq_model_primary_text_list') ?? const ['llama-3.3-70b-versatile', 'groq/compound'];
+      models =
+          prefs.getStringList('groq_model_primary_text_list') ??
+          const ['llama-3.3-70b-versatile', 'groq/compound'];
     } else if (slotName == 'Primary - Graphics') {
-      models = prefs.getStringList('groq_model_primary_graphics_list') ?? const ['llama-3.3-70b-versatile', 'groq/compound'];
+      models =
+          prefs.getStringList('groq_model_primary_graphics_list') ??
+          const ['llama-3.3-70b-versatile', 'groq/compound'];
     } else if (slotName == 'Lite') {
-      models = prefs.getStringList('groq_model_lite_list') ?? const ['llama-3.1-8b-instant', 'groq/compound-mini'];
+      models =
+          prefs.getStringList('groq_model_lite_list') ??
+          const ['llama-3.1-8b-instant', 'groq/compound-mini'];
     } else if (slotName == 'Live') {
-      models = prefs.getStringList('groq_model_live_list') ?? const ['llama-3.1-8b-instant', 'groq/compound-mini'];
+      models =
+          prefs.getStringList('groq_model_live_list') ??
+          const ['llama-3.1-8b-instant', 'groq/compound-mini'];
     }
     if (models.isEmpty) {
       models = const ['llama-3.3-70b-versatile'];
@@ -96,33 +104,27 @@ class AiService {
 
     if (await UsageLimitService.instance.isLimitExceeded(modelName)) {
       showRateLimitDialog();
-      throw Exception('Usage limit exceeded for Groq model $modelName. Please add your own API key in Settings.');
+      throw Exception(
+        'Usage limit exceeded for Groq model $modelName. Please add your own API key in Settings.',
+      );
     }
 
     final url = Uri.parse('https://api.groq.com/openai/v1/chat/completions');
 
     final List<Map<String, dynamic>> messages = [];
     if (systemPrompt != null && systemPrompt.trim().isNotEmpty) {
-      messages.add({
-        "role": "system",
-        "content": systemPrompt.trim(),
-      });
+      messages.add({"role": "system", "content": systemPrompt.trim()});
     }
 
     final List<Map<String, dynamic>> contentParts = [];
-    contentParts.add({
-      "type": "text",
-      "text": prompt,
-    });
+    contentParts.add({"type": "text", "text": prompt});
 
     if (attachedImages != null) {
       for (final img in attachedImages) {
         final base64Img = base64Encode(img);
         contentParts.add({
           "type": "image_url",
-          "image_url": {
-            "url": "data:image/jpeg;base64,$base64Img",
-          }
+          "image_url": {"url": "data:image/jpeg;base64,$base64Img"},
         });
       }
     }
@@ -137,26 +139,29 @@ class AiService {
       "messages": messages,
     };
     if (responseJson) {
-      body["response_format"] = {
-        "type": "json_object"
-      };
+      body["response_format"] = {"type": "json_object"};
     }
 
-    final response = await http.post(
-      url,
-      headers: {
-        "Authorization": "Bearer $apiKey",
-        "Content-Type": "application/json",
-      },
-      body: jsonEncode(body),
-    ).timeout(const Duration(minutes: 2));
+    final response = await http
+        .post(
+          url,
+          headers: {
+            "Authorization": "Bearer $apiKey",
+            "Content-Type": "application/json",
+          },
+          body: jsonEncode(body),
+        )
+        .timeout(const Duration(minutes: 2));
 
     if (response.statusCode != 200) {
-      throw Exception("Groq API error (${response.statusCode}): ${response.body}");
+      throw Exception(
+        "Groq API error (${response.statusCode}): ${response.body}",
+      );
     }
 
     final jsonMap = jsonDecode(response.body);
-    final String? text = jsonMap["choices"]?[0]?["message"]?["content"] as String?;
+    final String? text =
+        jsonMap["choices"]?[0]?["message"]?["content"] as String?;
     if (text == null || text.trim().isEmpty) {
       throw Exception("Empty response from Groq model $modelName");
     }
@@ -180,13 +185,21 @@ class AiService {
     final prefs = await SharedPreferences.getInstance();
     List<String> models = [];
     if (slotName == 'Primary - Text') {
-      models = prefs.getStringList('cerebras_model_primary_text_list') ?? const ['llama-3.3-70b', 'llama-3.1-70b'];
+      models =
+          prefs.getStringList('cerebras_model_primary_text_list') ??
+          const ['llama-3.3-70b', 'llama-3.1-70b'];
     } else if (slotName == 'Primary - Graphics') {
-      models = prefs.getStringList('cerebras_model_primary_graphics_list') ?? const ['llama-3.3-70b', 'llama-3.1-70b'];
+      models =
+          prefs.getStringList('cerebras_model_primary_graphics_list') ??
+          const ['llama-3.3-70b', 'llama-3.1-70b'];
     } else if (slotName == 'Lite') {
-      models = prefs.getStringList('cerebras_model_lite_list') ?? const ['llama-3.1-8b'];
+      models =
+          prefs.getStringList('cerebras_model_lite_list') ??
+          const ['llama-3.1-8b'];
     } else if (slotName == 'Live') {
-      models = prefs.getStringList('cerebras_model_live_list') ?? const ['llama-3.1-8b'];
+      models =
+          prefs.getStringList('cerebras_model_live_list') ??
+          const ['llama-3.1-8b'];
     }
     if (models.isEmpty) {
       models = const ['llama-3.3-70b'];
@@ -195,33 +208,27 @@ class AiService {
 
     if (await UsageLimitService.instance.isLimitExceeded(modelName)) {
       showRateLimitDialog();
-      throw Exception('Usage limit exceeded for Cerebras model $modelName. Please add your own API key in Settings.');
+      throw Exception(
+        'Usage limit exceeded for Cerebras model $modelName. Please add your own API key in Settings.',
+      );
     }
 
     final url = Uri.parse('https://api.cerebras.ai/v1/chat/completions');
 
     final List<Map<String, dynamic>> messages = [];
     if (systemPrompt != null && systemPrompt.trim().isNotEmpty) {
-      messages.add({
-        "role": "system",
-        "content": systemPrompt.trim(),
-      });
+      messages.add({"role": "system", "content": systemPrompt.trim()});
     }
 
     final List<Map<String, dynamic>> contentParts = [];
-    contentParts.add({
-      "type": "text",
-      "text": prompt,
-    });
+    contentParts.add({"type": "text", "text": prompt});
 
     if (attachedImages != null) {
       for (final img in attachedImages) {
         final base64Img = base64Encode(img);
         contentParts.add({
           "type": "image_url",
-          "image_url": {
-            "url": "data:image/jpeg;base64,$base64Img",
-          }
+          "image_url": {"url": "data:image/jpeg;base64,$base64Img"},
         });
       }
     }
@@ -236,26 +243,29 @@ class AiService {
       "messages": messages,
     };
     if (responseJson) {
-      body["response_format"] = {
-        "type": "json_object"
-      };
+      body["response_format"] = {"type": "json_object"};
     }
 
-    final response = await http.post(
-      url,
-      headers: {
-        "Authorization": "Bearer $apiKey",
-        "Content-Type": "application/json",
-      },
-      body: jsonEncode(body),
-    ).timeout(const Duration(minutes: 2));
+    final response = await http
+        .post(
+          url,
+          headers: {
+            "Authorization": "Bearer $apiKey",
+            "Content-Type": "application/json",
+          },
+          body: jsonEncode(body),
+        )
+        .timeout(const Duration(minutes: 2));
 
     if (response.statusCode != 200) {
-      throw Exception("Cerebras API error (${response.statusCode}): ${response.body}");
+      throw Exception(
+        "Cerebras API error (${response.statusCode}): ${response.body}",
+      );
     }
 
     final jsonMap = jsonDecode(response.body);
-    final String? text = jsonMap["choices"]?[0]?["message"]?["content"] as String?;
+    final String? text =
+        jsonMap["choices"]?[0]?["message"]?["content"] as String?;
     if (text == null || text.trim().isEmpty) {
       throw Exception("Empty response from Cerebras model $modelName");
     }
@@ -279,13 +289,21 @@ class AiService {
     final prefs = await SharedPreferences.getInstance();
     List<String> models = [];
     if (slotName == 'Primary - Text') {
-      models = prefs.getStringList('openrouter_model_primary_text_list') ?? const ['meta-llama/llama-3.3-70b-instruct', 'google/gemini-2.5-pro'];
+      models =
+          prefs.getStringList('openrouter_model_primary_text_list') ??
+          const ['meta-llama/llama-3.3-70b-instruct', 'google/gemini-2.5-pro'];
     } else if (slotName == 'Primary - Graphics') {
-      models = prefs.getStringList('openrouter_model_primary_graphics_list') ?? const ['meta-llama/llama-3.3-70b-instruct', 'google/gemini-2.5-pro'];
+      models =
+          prefs.getStringList('openrouter_model_primary_graphics_list') ??
+          const ['meta-llama/llama-3.3-70b-instruct', 'google/gemini-2.5-pro'];
     } else if (slotName == 'Lite') {
-      models = prefs.getStringList('openrouter_model_lite_list') ?? const ['meta-llama/llama-3.1-8b-instruct', 'google/gemini-2.5-flash'];
+      models =
+          prefs.getStringList('openrouter_model_lite_list') ??
+          const ['meta-llama/llama-3.1-8b-instruct', 'google/gemini-2.5-flash'];
     } else if (slotName == 'Live') {
-      models = prefs.getStringList('openrouter_model_live_list') ?? const ['meta-llama/llama-3.1-8b-instruct', 'google/gemini-2.5-flash'];
+      models =
+          prefs.getStringList('openrouter_model_live_list') ??
+          const ['meta-llama/llama-3.1-8b-instruct', 'google/gemini-2.5-flash'];
     }
     if (models.isEmpty) {
       models = const ['meta-llama/llama-3.3-70b-instruct'];
@@ -294,33 +312,27 @@ class AiService {
 
     if (await UsageLimitService.instance.isLimitExceeded(modelName)) {
       showRateLimitDialog();
-      throw Exception('Usage limit exceeded for OpenRouter model $modelName. Please add your own API key in Settings.');
+      throw Exception(
+        'Usage limit exceeded for OpenRouter model $modelName. Please add your own API key in Settings.',
+      );
     }
 
     final url = Uri.parse('https://openrouter.ai/api/v1/chat/completions');
 
     final List<Map<String, dynamic>> messages = [];
     if (systemPrompt != null && systemPrompt.trim().isNotEmpty) {
-      messages.add({
-        "role": "system",
-        "content": systemPrompt.trim(),
-      });
+      messages.add({"role": "system", "content": systemPrompt.trim()});
     }
 
     final List<Map<String, dynamic>> contentParts = [];
-    contentParts.add({
-      "type": "text",
-      "text": prompt,
-    });
+    contentParts.add({"type": "text", "text": prompt});
 
     if (attachedImages != null) {
       for (final img in attachedImages) {
         final base64Img = base64Encode(img);
         contentParts.add({
           "type": "image_url",
-          "image_url": {
-            "url": "data:image/jpeg;base64,$base64Img",
-          }
+          "image_url": {"url": "data:image/jpeg;base64,$base64Img"},
         });
       }
     }
@@ -335,28 +347,31 @@ class AiService {
       "messages": messages,
     };
     if (responseJson) {
-      body["response_format"] = {
-        "type": "json_object"
-      };
+      body["response_format"] = {"type": "json_object"};
     }
 
-    final response = await http.post(
-      url,
-      headers: {
-        "Authorization": "Bearer $apiKey",
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://duofy.app",
-        "X-Title": "Duofy app",
-      },
-      body: jsonEncode(body),
-    ).timeout(const Duration(minutes: 2));
+    final response = await http
+        .post(
+          url,
+          headers: {
+            "Authorization": "Bearer $apiKey",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://duofy.app",
+            "X-Title": "Duofy app",
+          },
+          body: jsonEncode(body),
+        )
+        .timeout(const Duration(minutes: 2));
 
     if (response.statusCode != 200) {
-      throw Exception("OpenRouter API error (${response.statusCode}): ${response.body}");
+      throw Exception(
+        "OpenRouter API error (${response.statusCode}): ${response.body}",
+      );
     }
 
     final jsonMap = jsonDecode(response.body);
-    final String? text = jsonMap["choices"]?[0]?["message"]?["content"] as String?;
+    final String? text =
+        jsonMap["choices"]?[0]?["message"]?["content"] as String?;
     if (text == null || text.trim().isEmpty) {
       throw Exception("Empty response from OpenRouter model $modelName");
     }
@@ -863,9 +878,7 @@ Important Rules:
       );
       return _cleanAndDecodeJson(text);
     } catch (e) {
-      print(
-        '[AiService] scanIndexChunk failed: ${_cleanErrMsg(e)}',
-      );
+      print('[AiService] scanIndexChunk failed: ${_cleanErrMsg(e)}');
       return null;
     }
   }
@@ -1611,7 +1624,11 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     int unitIdx = -1;
     for (int m = 0; m < bookContext.modules.length; m++) {
       for (int s = 0; s < bookContext.modules[m].sections.length; s++) {
-        for (int u = 0; u < bookContext.modules[m].sections[s].units.length; u++) {
+        for (
+          int u = 0;
+          u < bookContext.modules[m].sections[s].units.length;
+          u++
+        ) {
           if (bookContext.modules[m].sections[s].units[u].id == unit.id) {
             modIdx = m;
             secIdx = s;
@@ -1634,8 +1651,12 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
         for (int u = 0; u < section.units.length; u++) {
           final targetUnit = section.units[u];
           final isCurrent = (m == modIdx && s == secIdx && u == unitIdx);
-          final currentMarker = isCurrent ? ' [CURRENT UNIT WE ARE PLANNING NOW]' : '';
-          layoutBuffer.writeln('    Unit ${u + 1}: ${targetUnit.title}$currentMarker');
+          final currentMarker = isCurrent
+              ? ' [CURRENT UNIT WE ARE PLANNING NOW]'
+              : '';
+          layoutBuffer.writeln(
+            '    Unit ${u + 1}: ${targetUnit.title}$currentMarker',
+          );
           if (targetUnit.lessons.isNotEmpty) {
             layoutBuffer.writeln('      Existing Lessons:');
             for (final l in targetUnit.lessons) {
@@ -1679,10 +1700,7 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
         geminiModels: liteModelsToTry,
         geminiKeys: keys,
         contents: [
-          Content.multi([
-            TextPart(hydratedPlanPrompt),
-            ...planFileParts,
-          ]),
+          Content.multi([TextPart(hydratedPlanPrompt), ...planFileParts]),
         ],
         slotName: 'Lite',
         timeout: planTimeout,
@@ -1992,6 +2010,128 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     }
     if (lastErr != null) throw Exception(_cleanErrMsg(lastErr));
     return null;
+  }
+
+  /// Reviews all lessons in a unit to check for faults, incorrect option flags, etc.
+  /// Returns a list of faulty lesson IDs.
+  Future<List<String>> crossCheckUnitLessons({
+    required Unit unit,
+    required Book bookContext,
+    String? forcedApiKey,
+  }) async {
+    await _checkPause();
+    final keys = await _getKeys(forcedApiKey: forcedApiKey);
+    final textModels = await _getPrimaryTextModels();
+
+    final List<Map<String, dynamic>> serialized = [];
+    for (final lesson in unit.lessons) {
+      final List<Map<String, dynamic>> slides = [];
+      for (final slide in lesson.slides) {
+        slides.add({
+          'id': slide.id,
+          'type': slide.type,
+          'title': slide.title,
+          'content': slide.content,
+          if (slide.options != null)
+            'options': slide.options!
+                .map(
+                  (o) => {
+                    'id': o.id,
+                    'text': o.text,
+                    'isCorrect': o.isCorrect,
+                    'explanation': o.explanation,
+                  },
+                )
+                .toList(),
+          if (slide.blankAnswer != null) 'blankAnswer': slide.blankAnswer,
+          if (slide.blankDistractors != null)
+            'blankDistractors': slide.blankDistractors,
+          if (slide.numericAnswer != null) 'numericAnswer': slide.numericAnswer,
+          if (slide.matchPairs != null)
+            'matchPairs': slide.matchPairs!
+                .map((p) => {'left': p.left, 'right': p.right})
+                .toList(),
+          if (slide.orderItems != null) 'orderItems': slide.orderItems,
+          if (slide.errorIndex != null) 'errorIndex': slide.errorIndex,
+        });
+      }
+      serialized.add({
+        'id': lesson.id,
+        'title': lesson.title,
+        'description': lesson.description,
+        'slides': slides,
+      });
+    }
+
+    final lessonsJson = jsonEncode(serialized);
+
+    final prompt =
+        """
+You are an expert educational quality assurance system. Your task is to review all lessons in the provided unit for factual accuracy, logic errors, and most importantly, incorrect objective choices/answers.
+
+Analyze each slide of every lesson carefully. Look for:
+1. Mismatch between the question asked and the options provided.
+2. Incorrectly marked answers (e.g. `isCorrect` is true for a wrong option, or false for a correct option).
+3. Logic errors in explanations or slide contents.
+4. Mismatch in matching pairs or order items.
+5. Inconsistencies or typos in blank answers or numeric answers.
+
+Here is the unit's title: "${unit.title}"
+And its description: "${unit.description}"
+
+Below is the JSON representation of the lessons in this unit:
+$lessonsJson
+
+If you find a lesson containing any faults, list its ID and describe the faults found.
+If a lesson is completely correct and has no faults, do not include it.
+
+You must respond ONLY with a valid JSON array of objects representing the faulty lessons. Do not include any other text, markdown formatting, or reasoning.
+Format your output exactly as follows:
+[
+  {
+    "lessonId": "lesson_id_here",
+    "faultDescription": "Brief description of what is wrong with the lesson"
+  }
+]
+
+If all lessons are 100% correct, respond with:
+[]
+""";
+
+    try {
+      final responseText = await _generateWithGroqFallback(
+        geminiModels: textModels,
+        geminiKeys: keys,
+        contents: [Content.text(prompt)],
+        slotName: 'QA',
+        systemInstruction:
+            "You are an expert tutor and quality assurance inspector. You only output valid JSON arrays.",
+      );
+
+      // Parse JSON from response. Sometimes models wrap it in markdown block.
+      String cleanJson = responseText.trim();
+      if (cleanJson.startsWith('```')) {
+        final lines = cleanJson.split('\n');
+        if (lines.first.startsWith('```')) lines.removeAt(0);
+        if (lines.isNotEmpty && lines.last.startsWith('```'))
+          lines.removeLast();
+        cleanJson = lines.join('\n').trim();
+      }
+
+      final parsed = jsonDecode(cleanJson);
+      if (parsed is List) {
+        final List<String> faultyIds = [];
+        for (final item in parsed) {
+          if (item is Map && item.containsKey('lessonId')) {
+            faultyIds.add(item['lessonId'].toString());
+          }
+        }
+        return faultyIds;
+      }
+    } catch (e) {
+      print('[AiService] Failed to cross-check unit lessons: $e');
+    }
+    return [];
   }
 
   /// Regenerates a whole [lesson] in [unit]. Synthesises a single-lesson plan
@@ -2990,7 +3130,9 @@ Do not include any explanation or other text.
         try {
           if (await UsageLimitService.instance.isLimitExceeded(modelName)) {
             showRateLimitDialog();
-            throw Exception('Usage limit exceeded for Gemini model $modelName. Please add your own API key in Settings.');
+            throw Exception(
+              'Usage limit exceeded for Gemini model $modelName. Please add your own API key in Settings.',
+            );
           }
 
           final model = GenerativeModel(
@@ -2998,7 +3140,9 @@ Do not include any explanation or other text.
             apiKey: apiKey,
             generationConfig: generationConfig,
             safetySettings: safetySettings ?? const [],
-            systemInstruction: systemInstruction != null ? Content.system(systemInstruction) : null,
+            systemInstruction: systemInstruction != null
+                ? Content.system(systemInstruction)
+                : null,
           );
           final response = await _retryTransient(
             () => model.generateContent(contents).timeout(timeout),
@@ -3017,7 +3161,9 @@ Do not include any explanation or other text.
     }
 
     // Google Gemini failed! Fall back to Groq, then Cerebras, then OpenRouter
-    print('[AiService] Google Gemini failed ($lastErr). Falling back to Groq...');
+    print(
+      '[AiService] Google Gemini failed ($lastErr). Falling back to Groq...',
+    );
     final buffer = StringBuffer();
     List<Uint8List> attachedImages = [];
     for (final c in contents) {
@@ -3042,7 +3188,9 @@ Do not include any explanation or other text.
       );
     } catch (e) {
       groqErr = e;
-      print('[AiService] Groq fallback failed: $e. Falling back to Cerebras...');
+      print(
+        '[AiService] Groq fallback failed: $e. Falling back to Cerebras...',
+      );
     }
 
     Object? cerebrasErr;
@@ -3056,7 +3204,9 @@ Do not include any explanation or other text.
       );
     } catch (e) {
       cerebrasErr = e;
-      print('[AiService] Cerebras fallback failed: $e. Falling back to OpenRouter...');
+      print(
+        '[AiService] Cerebras fallback failed: $e. Falling back to OpenRouter...',
+      );
     }
 
     try {
@@ -3117,7 +3267,11 @@ Do not include any explanation or other text.
       List<String> keys = prefs.getStringList('gemini_api_keys_list') ?? [];
       if (keys.isEmpty) {
         final keysString = prefs.getString('gemini_api_keys') ?? '';
-        keys = keysString.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+        keys = keysString
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
       }
       if (keys.isEmpty) {
         keys = await SecretsService.instance.geminiKeys();
@@ -3128,7 +3282,11 @@ Do not include any explanation or other text.
         geminiModels: [modelName],
         geminiKeys: keys,
         contents: contents,
-        slotName: requestType == 'Lesson Content Generation' || requestType == 'Slide Generation' ? 'Primary - Text' : 'Lite',
+        slotName:
+            requestType == 'Lesson Content Generation' ||
+                requestType == 'Slide Generation'
+            ? 'Primary - Text'
+            : 'Lite',
         generationConfig: generationConfig,
       );
 
@@ -3144,7 +3302,7 @@ Do not include any explanation or other text.
       );
 
       return GenerateContentResponse([
-        Candidate(Content.model([TextPart(text)]), null, null, null, null)
+        Candidate(Content.model([TextPart(text)]), null, null, null, null),
       ], null);
     } finally {
       if (targetId != null) {
@@ -3568,7 +3726,8 @@ $pageText
     final keys = await _getKeys(forcedApiKey: apiKey);
     final modelsToTry = await _getLiteModels();
 
-    final prompt = '''
+    final prompt =
+        '''
 Analyze the text of the first page(s) of a book chunk.
 We want to verify if this text matches the mapped topic:
 Topic Title: "$topicTitle"
@@ -3598,9 +3757,8 @@ $chunkText
             () => model
                 .generateContent([Content.text(prompt)])
                 .timeout(const Duration(seconds: 30)),
-            onRetry: (a, e) => print(
-              '[AiService] First chunk verification attempt $a: $e',
-            ),
+            onRetry: (a, e) =>
+                print('[AiService] First chunk verification attempt $a: $e'),
           );
           if (response.text != null) {
             final decoded = _cleanAndDecodeJson(response.text!);
