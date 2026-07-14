@@ -1519,6 +1519,7 @@ class _LessonScreenState extends State<LessonScreen> {
         );
       case 'flashcard':
         return FlashcardView(
+          key: ValueKey(slide.id),
           slide: slide,
           onSelfGrade: (remembered) {
             _recordFirstAttempt(slide, remembered);

@@ -31,6 +31,15 @@ class _FlashcardViewState extends State<FlashcardView> {
   bool _graded = false;
 
   @override
+  void didUpdateWidget(covariant FlashcardView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.slide.id != widget.slide.id) {
+      _flipped = false;
+      _graded = false;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16),

@@ -1,16 +1,16 @@
 # Graph Report - duofy  (2026-07-14)
 
 ## Corpus Check
-- 273 files · ~561,839 words
+- 273 files · ~562,048 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 4894 nodes · 6309 edges · 160 communities (133 shown, 27 thin omitted)
+- 4895 nodes · 6310 edges · 169 communities (139 shown, 30 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `1e1860b2`
+- Built from commit: `39500a41`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -103,7 +103,16 @@
 - cef_template_util.h
 - CefRefPtr
 - CefTaskRunner
+- ../services/global_state.dart
+- bool get
+- package:flutter/foundation.dart
+- _FileTokenStore
+- SettingsScreen
+- _ActiveGeneratingNodeWrapper
+- LessonPath
+- _SectionManifestPanel
 - safe_pdf_viewer.dart
+- SafePdfViewerController
 - CodeLocation
 - lesson_node.dart
 - CefBaseRefCounted
@@ -200,11 +209,11 @@
 ## Import Cycles
 - None detected.
 
-## Communities (160 total, 27 thin omitted)
+## Communities (169 total, 30 thin omitted)
 
 ### Community 0 - "bookmarks_screen.dart & web_webview_helper.dart"
-Cohesion: 0.06
-Nodes (37): generate_qp_screen.dart, QuestionPaper, _IconHeaderButton, B2PdfViewerScreen, CategoryTabs, book, build, ExamScreen (+29 more)
+Cohesion: 0.05
+Nodes (43): dart:ui, Module, _IconHeaderButton, B2PdfViewerScreen, CategoryTabs, build, module, ModuleSummaryDetailScreen (+35 more)
 
 ### Community 1 - "course_edit_structure_screen.dart & pdf_folder_..."
 Cohesion: 0.05
@@ -216,7 +225,7 @@ Nodes (1194): accessibility, activity, activitySquare, airplay, airVent, alarmCh
 
 ### Community 3 - "screens/settings_screen.dart & ../widgets/strin..."
 Cohesion: 0.03
-Nodes (68): ai_queue_screen.dart, bookmarks_screen.dart, generate_book_screen.dart, book, books, _bookUpdateSubscription, _buildAnalyticsTab, _buildDragHandle (+60 more)
+Nodes (67): bookmarks_screen.dart, generate_book_screen.dart, book, books, _bookUpdateSubscription, _buildAnalyticsTab, _buildDragHandle, _buildFolderCard (+59 more)
 
 ### Community 4 - "prompt_service.dart & lesson_node.dart"
 Cohesion: 0.03
@@ -236,7 +245,7 @@ Nodes (30): Animation, ConfettiController, accuracy, _animController, book, book
 
 ### Community 8 - "../widgets/lesson_path.dart & lesson_accordion...."
 Cohesion: 0.03
-Nodes (77): _ActiveGeneratingNodeWrapper, _ActiveGeneratingNodeWrapperState, _amber, _bgStroke, book, _bottomPad, _centerX, completed (+69 more)
+Nodes (71): _amber, _bgStroke, book, _bottomPad, _centerX, completed, completedLessons, _confirm (+63 more)
 
 ### Community 9 - "lesson_screen.dart & AnimatedContainer"
 Cohesion: 0.07
@@ -248,7 +257,7 @@ Nodes (47): BoxFit, double? w,, let, build, buildCanvasArt, buildCanvasHtml, can
 
 ### Community 11 - "practice_screen.dart & AlertDialog"
 Cohesion: 0.04
-Nodes (45): _activeModule, book, build, _buildModeGrid, _buildRangeBlock, _buildScopeSelector, color, count (+37 more)
+Nodes (47): _activeModule, book, build, _buildModeGrid, _buildRangeBlock, _buildScopeSelector, color, count (+39 more)
 
 ### Community 12 - "pdf_split_preview_screen.dart & services/notifi..."
 Cohesion: 0.03
@@ -263,8 +272,8 @@ Cohesion: 0.04
 Nodes (56): AudioPlayer, AudioRecorder, FlutterTts, WebSocket, _addSystemMessage, _addWavHeader, audioBytes, _audioPlayer (+48 more)
 
 ### Community 15 - "ai_task.dart & Completer"
-Cohesion: 0.04
-Nodes (60): book, build, createState, _customPromptCtrl, dispose, _generate, GenerateQpScreen, _GenerateQpScreenState (+52 more)
+Cohesion: 0.05
+Nodes (42): book, build, createState, _customPromptCtrl, dispose, _generate, GenerateQpScreen, _GenerateQpScreenState (+34 more)
 
 ### Community 16 - "canvas_html_view.dart & buildCanvasArt"
 Cohesion: 0.06
@@ -275,16 +284,16 @@ Cohesion: 0.03
 Nodes (64): _answered, _applySlideEdit, _attemptedSlideIds, _blankInput, book, build, _buildActionBottomBar, _buildConfidenceRow (+56 more)
 
 ### Community 18 - "course_settings_screen.dart & _addFormat"
-Cohesion: 0.08
-Nodes (25): mockBooks, books, build, NextUpCard, onReturn, activeSectionIdx, build, _getColor (+17 more)
+Cohesion: 0.13
+Nodes (14): mockBooks, books, build, NextUpCard, onReturn, activeSectionIdx, build, _getColor (+6 more)
 
 ### Community 19 - "../services/ai_service.dart & package:google_ge..."
-Cohesion: 0.04
-Nodes (51): int?, Slide, bottomBar, bubbleSize, build, ConceptPiecesView, hasCanvas, index (+43 more)
+Cohesion: 0.05
+Nodes (46): int?, Slide, bottomBar, build, ErrorSpottingView, isAnswered, isCorrect, selectedIndex (+38 more)
 
 ### Community 20 - "pyq_tab_screen.dart & AnimatedBuilder"
-Cohesion: 0.07
-Nodes (26): calibration_card.dart, Color, AnalyticsView, _AnalyticsViewState, build, _buildStatCard, _calculateAvgAccuracy, _calculateStreak (+18 more)
+Cohesion: 0.12
+Nodes (17): calibration_card.dart, AnalyticsView, _AnalyticsViewState, build, _buildStatCard, _calculateAvgAccuracy, _calculateStreak, courseId (+9 more)
 
 ### Community 21 - "bookmark_service.dart & add"
 Cohesion: 0.07
@@ -303,20 +312,20 @@ Cohesion: 0.08
 Nodes (25): _assigned, bottomBar, _boundLeftFor, build, _chip, createState, didUpdateWidget, _initSlide (+17 more)
 
 ### Community 25 - "app_models.dart & Book"
-Cohesion: 0.08
-Nodes (22): bool get, fd_backend.dart, ../../firebase_options.dart, android, DefaultFirebaseOptions, ios, linuxApiKey, linuxProjectId (+14 more)
+Cohesion: 0.18
+Nodes (10): android, DefaultFirebaseOptions, ios, linuxApiKey, linuxProjectId, macos, web, windows (+2 more)
 
 ### Community 26 - "source_pdf_upload_screen.dart & _clearSlot"
 Cohesion: 0.03
-Nodes (67): activeModule, _activeModuleIdx, activeSection, _activeSectionIdx, book, bookId, bookTitle, _buildLongPressMenu (+59 more)
+Nodes (69): activeModule, _activeModuleIdx, activeSection, _activeSectionIdx, book, BookDashboardScreen, _BookDashboardScreenState, bookId (+61 more)
 
 ### Community 27 - "generate_book_screen.dart & auto_index_screen.dart"
 Cohesion: 0.03
-Nodes (75): experiments_screen.dart, _addModelToSlot, _autoFetchBooks, _autoGenerateModule1, _autoVerifyMappings, _buildAppearanceCard, _buildAutomationCard, _buildCategoryMenuItem (+67 more)
+Nodes (74): ai_queue_screen.dart, experiments_screen.dart, _addModelToSlot, _autoFetchBooks, _autoGenerateModule1, _autoVerifyMappings, _buildAppearanceCard, _buildAutomationCard (+66 more)
 
 ### Community 28 - "lesson_complete_screen.dart & _buildDesktop"
 Cohesion: 0.09
-Nodes (24): Directory, File, FileSystemEntity, build, createState, _deleteFile, directory, file (+16 more)
+Nodes (23): Directory, File, FileSystemEntity, build, createState, _deleteFile, directory, file (+15 more)
 
 ### Community 29 - "main.dart & AlertDialog"
 Cohesion: 0.08
@@ -324,7 +333,7 @@ Nodes (24): _answerController, _attachedPhotos, build, _checkAnswer, createState
 
 ### Community 30 - "fb_firestore.dart & _CfCollection"
 Cohesion: 0.09
-Nodes (23): book, build, createState, _currentIndex, dispose, _goToNextSection, _goToPreviousSection, initialSection (+15 more)
+Nodes (22): book, build, createState, _currentIndex, dispose, _goToNextSection, _goToPreviousSection, initialSection (+14 more)
 
 ### Community 31 - "../services/pdf_service.dart & dart:typed_data"
 Cohesion: 0.08
@@ -332,7 +341,7 @@ Nodes (23): children, extractBookmarks, extractPages, extractPagesText, extractP
 
 ### Community 32 - "../widgets/canvas_art_view.dart & canvas_html_v..."
 Cohesion: 0.09
-Nodes (21): Unit, GenerationTask, UnitGenTask, build, GeneratingBookCard, onTap, task, book (+13 more)
+Nodes (22): Unit, GenerationTask, UnitGenTask, build, GeneratingBookCard, onTap, task, book (+14 more)
 
 ### Community 33 - "../widgets/slide_views/fill_in_blank_view.dart ..."
 Cohesion: 0.08
@@ -351,20 +360,20 @@ Cohesion: 0.03
 Nodes (57): AppColors get, Brightness, AppColors, applyGlassBlur, AppTheme, background, brightness, colors (+49 more)
 
 ### Community 37 - "../services/fb/fb_auth.dart & fb_core.dart"
-Cohesion: 0.05
-Nodes (36): fd.TokenStore, authStateChanges, _bootstrap, collection, createUserWithEmailAndPassword, _ctrl, _current, currentUser (+28 more)
+Cohesion: 0.06
+Nodes (34): authStateChanges, _bootstrap, collection, createUserWithEmailAndPassword, _ctrl, _current, currentUser, delete (+26 more)
 
 ### Community 38 - "services/global_state.dart & package:shared_pre..."
 Cohesion: 0.10
-Nodes (20): dart:ui, Module, build, module, ModuleSummaryDetailScreen, activeModuleIdx, build, completedLessons (+12 more)
+Nodes (19): generate_qp_screen.dart, QuestionPaper, book, build, ExamScreen, _openQp, build, _buildQuestionCard (+11 more)
 
 ### Community 39 - "../widgets/bottom_sheets/section_bottom_sheet.d..."
 Cohesion: 0.10
-Nodes (20): Section, activeModuleIdx, activeSectionIdx, book, build, completedLessons, createState, dispose (+12 more)
+Nodes (21): Section, activeModuleIdx, activeSectionIdx, book, build, completedLessons, createState, dispose (+13 more)
 
 ### Community 40 - "pdf_browser_screen.dart & _deleteFolder"
-Cohesion: 0.10
-Nodes (19): bookId, BookRouteLoaderScreen, _BookRouteLoaderScreenState, build, createState, _error, initState, _isLoading (+11 more)
+Cohesion: 0.18
+Nodes (11): bookId, BookRouteLoaderScreen, _BookRouteLoaderScreenState, build, createState, _error, initState, _isLoading (+3 more)
 
 ### Community 41 - "package:flutter/foundation.dart & services/fb/f..."
 Cohesion: 0.11
@@ -391,8 +400,8 @@ Cohesion: 0.12
 Nodes (17): desktop_webview_io.dart, build, createState, didUpdateWidget, ensureInitialized, html, initState, _load (+9 more)
 
 ### Community 48 - "math_markdown.dart & interactive_webview.dart"
-Cohesion: 0.12
-Nodes (16): duo_button.dart, interactive_proof_view.dart, build, createState, FlashcardView, _FlashcardViewState, _flipped, _graded (+8 more)
+Cohesion: 0.10
+Nodes (20): dart:math, build, createState, didUpdateWidget, FlashcardView, _FlashcardViewState, _flipped, _graded (+12 more)
 
 ### Community 49 - "../services/database_service.dart & fb/fb_fires..."
 Cohesion: 0.11
@@ -427,8 +436,8 @@ Cohesion: 0.02
 Nodes (117): auto_index_service.dart, activeCanvasRegens, activeLessonRegens, activePyqTasks, activeQpTasks, activeSectionGenerations, activeSectionManifests, activeSlideRegens (+109 more)
 
 ### Community 57 - "dart:convert & services/learning_sync.dart"
-Cohesion: 0.12
-Nodes (15): base, calculateModuleProgress, calculateModuleProgressDouble, calculateSectionProgress, calculateSectionProgressDouble, calculateUnitProgress, dark, done (+7 more)
+Cohesion: 0.18
+Nodes (10): base, calculateModuleProgress, calculateModuleProgressDouble, calculateSectionProgress, calculateSectionProgressDouble, calculateUnitProgress, dark, done (+2 more)
 
 ### Community 58 - "book_card.dart & BookCard"
 Cohesion: 0.12
@@ -451,16 +460,16 @@ Cohesion: 0.13
 Nodes (13): compileSystemPrompt, _moduleIdOfUnit, PersonalizationService, prefExamplesFirst, prefLanguageLevel, prefTone, metacognition_service.dart, package:duofy/services/metacognition_service.dart (+5 more)
 
 ### Community 63 - "../widgets/slide_views/one_word_view.dart & Fun..."
-Cohesion: 0.15
-Nodes (13): , build, charset, createState, CustomHtmlView, _CustomHtmlViewState, didUpdateWidget, _handleMessage (+5 more)
+Cohesion: 0.09
+Nodes (22): , duo_button.dart, interactive_proof_view.dart, build, charset, createState, CustomHtmlView, _CustomHtmlViewState (+14 more)
 
 ### Community 64 - "../utils/progress_utils.dart & base"
 Cohesion: 0.15
 Nodes (13): lesson_screen.dart, BookmarksScreen, _BookmarksScreenState, build, _buildEmpty, _buildTile, createState, _formatDate (+5 more)
 
 ### Community 65 - "package:lucide_icons/lucide_icons.dart & ../wid..."
-Cohesion: 0.15
-Nodes (12): dart:math, calculateSectionTarget, clearSectionDeadline, DeadlineService, _getDeadlineKey, getMostUrgentActiveTarget, getSectionDeadline, _getStartDayCompletedKey (+4 more)
+Cohesion: 0.17
+Nodes (11): calculateSectionTarget, clearSectionDeadline, DeadlineService, _getDeadlineKey, getMostUrgentActiveTarget, getSectionDeadline, _getStartDayCompletedKey, _getTodayStr (+3 more)
 
 ### Community 66 - "sync_conflict_dialog.dart & return result ??"
 Cohesion: 0.15
@@ -483,8 +492,8 @@ Cohesion: 0.15
 Nodes (12): package:webview_cef/src/webview.dart, LoadStartCb, LoadStopCb, OnConsoleMessage, onLoadEnd, onLoadStart, onTitleChanged, onUrlChanged (+4 more)
 
 ### Community 71 - "mock_books.dart & draw"
-Cohesion: 0.17
-Nodes (11): Map, package:duofy/services/ai_service.dart, package:duofy/services/mapping_verifier.dart, book, extractPagesText, files, headings, main (+3 more)
+Cohesion: 0.11
+Nodes (17): MappingReport, color, context, delta, error, files, headline, icon (+9 more)
 
 ### Community 72 - "CefBrowserViewCToCpp"
 Cohesion: 0.22
@@ -499,8 +508,8 @@ Cohesion: 0.20
 Nodes (9): add, injectTime, InjectUserScripts, retrieveLoadEndInjectScripts, retrieveLoadStartInjectScripts, script, ScriptInjectTime, UserScript (+1 more)
 
 ### Community 75 - "CefScrollViewCToCpp"
-Cohesion: 0.22
-Nodes (8): fb_auth.dart, fb_firestore.dart, _CfFirestore, FbFirestore, FdFirestoreBackend, FdFirestoreBackend, initializeFiredart, noSuchMethod
+Cohesion: 0.15
+Nodes (12): fb_auth.dart, fb_firestore.dart, _FaAuth, FbAuth, _CfFirestore, FbFirestore, FdAuthBackend, FdFirestoreBackend (+4 more)
 
 ### Community 76 - "V8RendererTest"
 Cohesion: 0.22
@@ -522,9 +531,33 @@ Nodes (5): MethodChannel, package:webview_cef/webview_cef_method_channel.dart, c
 Cohesion: 0.50
 Nodes (4): DeltaTextInputClient, WebeViewTextInput, WebView, WebViewState
 
+### Community 82 - "CallbackResourceHandler"
+Cohesion: 0.14
+Nodes (13): bottomBar, bubbleSize, build, ConceptPiecesView, hasCanvas, index, isLast, lessonCanvas (+5 more)
+
+### Community 83 - "CefMessageRouterBrowserSideImpl"
+Cohesion: 0.15
+Nodes (10): dart:typed_data, file_image_io.dart, io_shim.dart, io_stub.dart, fileImageProvider, fileImageProvider, fileImageProvider, _transparentPng (+2 more)
+
+### Community 86 - "CefRefPtr"
+Cohesion: 0.20
+Nodes (9): Color, activeColor, blur, build, currentIndex, GlassyNavBar, icons, onTap (+1 more)
+
+### Community 89 - "../services/global_state.dart"
+Cohesion: 0.22
+Nodes (8): auth_screen.dart, home_screen.dart, AuthGate, build, _buildAuthFlow, onboarding/onboarding_screen.dart, ../services/fb/fb_auth.dart, ../services/global_state.dart
+
+### Community 90 - "bool get"
+Cohesion: 0.22
+Nodes (8): bool get, fd_backend.dart, ../../firebase_options.dart, FbCore, initializeApp, _initialized, useFiredart, static bool
+
+### Community 91 - "package:flutter/foundation.dart"
+Cohesion: 0.40
+Nodes (4): package:flutter/foundation.dart, getPlatformVersion, methodChannel, webview_cef_platform_interface.dart
+
 ### Community 97 - "safe_pdf_viewer.dart"
 Cohesion: 0.03
-Nodes (60): _activeSearchResult, addEventListener, _base64Data, build, canShowScrollHead, canShowScrollStatus, charset, clear (+52 more)
+Nodes (62): _activeSearchResult, addEventListener, _base64Data, build, canShowScrollHead, canShowScrollStatus, charset, clear (+54 more)
 
 ### Community 99 - "CodeLocation"
 Cohesion: 0.04
@@ -539,8 +572,8 @@ Cohesion: 0.06
 Nodes (34): _addSection, _addUnit, _bookIndices, build, _buildEditorRow, _commitSplits, createState, dispose (+26 more)
 
 ### Community 128 - "NetNotifyTestHandler"
-Cohesion: 0.05
-Nodes (37): dart:typed_data, io_stub.dart, fileImageProvider, _transparentPng, applicationKey, B2Credentials, B2Object, B2Service (+29 more)
+Cohesion: 0.06
+Nodes (32): applicationKey, B2Credentials, B2Object, B2Service, bucketName, _copyObjectDirect, deleteObject, _deletePartDirect (+24 more)
 
 ### Community 129 - "Rhs"
 Cohesion: 0.07
@@ -571,8 +604,8 @@ Cohesion: 0.11
 Nodes (19): Color get, double?, build, _color, createState, didUpdateWidget, dispose, estimatedDuration (+11 more)
 
 ### Community 171 - "TEST"
-Cohesion: 0.10
-Nodes (19): auth_screen.dart, home_screen.dart, AuthGate, build, _buildAuthFlow, AuthScreen, _AuthScreenState, build (+11 more)
+Cohesion: 0.18
+Nodes (11): AuthScreen, _AuthScreenState, build, createState, _emailCtrl, _isLoading, _isSignUp, _passwordCtrl (+3 more)
 
 ### Community 172 - "MatcherBase"
 Cohesion: 0.07
@@ -587,8 +620,8 @@ Cohesion: 0.09
 Nodes (24): CollectionReference, DocumentReference, fb_core.dart, FirebaseFirestore, _CfCollection, _CfDoc, collection, _data (+16 more)
 
 ### Community 216 - "cef_export.h"
-Cohesion: 0.08
-Nodes (25): FbUser? get, authStateChanges, createUserWithEmailAndPassword, currentUser, displayName, email, _FaAuth, _FaUser (+17 more)
+Cohesion: 0.10
+Nodes (21): FbUser? get, authStateChanges, createUserWithEmailAndPassword, currentUser, displayName, email, _FaUser, FbUser (+13 more)
 
 ### Community 251 - "RoutingTestHandler"
 Cohesion: 0.05
@@ -615,8 +648,8 @@ Cohesion: 0.10
 Nodes (20): add, bookId, Bookmark, bookmarkedAt, BookmarkService, bookTitle, copyWith, fromJson (+12 more)
 
 ### Community 284 - "G_DECLARE_INTERFACE"
-Cohesion: 0.10
-Nodes (19): Offset, OverlayEntry?, OverlayState, _box, _buildOverlayEntry, cursorOffset, _eStatus, hide (+11 more)
+Cohesion: 0.11
+Nodes (18): OverlayEntry?, OverlayState, _box, _buildOverlayEntry, cursorOffset, _eStatus, hide, _overlayEntry (+10 more)
 
 ### Community 300 - "_cef_resource_read_callback_t"
 Cohesion: 0.07
@@ -643,8 +676,8 @@ Cohesion: 0.09
 Nodes (22): Completer, AiTask, bookId, completer, endTime, errorMessage, estimatedDuration, fromJson (+14 more)
 
 ### Community 385 - "CefZipReader"
-Cohesion: 0.10
-Nodes (16): AutofillScope?, dart:io, file_image_io.dart, io_shim.dart, fileImageProvider, fileImageProvider, package:duofy/services/pdf_service.dart, package:flutter/painting.dart (+8 more)
+Cohesion: 0.08
+Nodes (22): AutofillScope?, dart:io, Map, package:duofy/services/ai_service.dart, package:duofy/services/mapping_verifier.dart, package:duofy/services/pdf_service.dart, package:flutter/services.dart, currentAutofillScope (+14 more)
 
 ### Community 388 - "ResourceManagerTestHandler"
 Cohesion: 0.10
@@ -724,23 +757,23 @@ Cohesion: 0.67
 Nodes (3): _BlankSyntax, _PermissiveLatexInlineSyntax, md.InlineSyntax
 
 ## Knowledge Gaps
-- **4000 isolated node(s):** `mockBooks`, `DefaultFirebaseOptions`, `linuxApiKey`, `linuxProjectId`, `web` (+3995 more)
+- **4001 isolated node(s):** `mockBooks`, `DefaultFirebaseOptions`, `linuxApiKey`, `linuxProjectId`, `web` (+3996 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **27 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **30 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Book` connect `RoutingTestHandler` to `bookmarks_screen.dart & web_webview_helper.dart`, `course_edit_structure_screen.dart & pdf_folder_...`, `Rhs`, `CefResourceManager`, `screens/settings_screen.dart & ../widgets/strin...`, `CefDisplayHandlerCppToC`, `book_dashboard_screen.dart & AlertDialog`, `../widgets/lesson_path.dart & lesson_accordion....`, `practice_screen.dart & AlertDialog`, `../widgets/lesson_assistant_chat.dart & _addSys...`, `ai_task.dart & Completer`, `canvas_html_view.dart & buildCanvasArt`, `practice_session_screen.dart & lesson_complete_...`, `CefX509CertPrincipal`, `index_picker_screen.dart & course_questionnaire...`, `WebSocketTestHandler`, `source_pdf_upload_screen.dart & _clearSlot`, `lesson_complete_screen.dart & _buildDesktop`, `fb_firestore.dart & _CfCollection`, `../widgets/canvas_art_view.dart & canvas_html_v...`, `platform_webview.dart & buildWebWebView`, `../widgets/bottom_sheets/section_bottom_sheet.d...`, `_cef_resource_read_callback_t`, `auto_index_screen.dart & index_picker_screen.dart`, `dart:async & ../services/auto_index_service.dart`, `sync_conflict_dialog.dart & return result ??`, `mini_progress_bar.dart & MiniProgressBar`, `CefBaseRefCounted`?**
+- **Why does `Book` connect `RoutingTestHandler` to `course_edit_structure_screen.dart & pdf_folder_...`, `Rhs`, `CefResourceManager`, `screens/settings_screen.dart & ../widgets/strin...`, `CefDisplayHandlerCppToC`, `book_dashboard_screen.dart & AlertDialog`, `../widgets/lesson_path.dart & lesson_accordion....`, `practice_screen.dart & AlertDialog`, `../widgets/lesson_assistant_chat.dart & _addSys...`, `ai_task.dart & Completer`, `canvas_html_view.dart & buildCanvasArt`, `practice_session_screen.dart & lesson_complete_...`, `CefX509CertPrincipal`, `index_picker_screen.dart & course_questionnaire...`, `WebSocketTestHandler`, `source_pdf_upload_screen.dart & _clearSlot`, `lesson_complete_screen.dart & _buildDesktop`, `fb_firestore.dart & _CfCollection`, `../widgets/canvas_art_view.dart & canvas_html_v...`, `platform_webview.dart & buildWebWebView`, `services/global_state.dart & package:shared_pre...`, `../widgets/bottom_sheets/section_bottom_sheet.d...`, `_cef_resource_read_callback_t`, `auto_index_screen.dart & index_picker_screen.dart`, `dart:async & ../services/auto_index_service.dart`, `sync_conflict_dialog.dart & return result ??`, `mini_progress_bar.dart & MiniProgressBar`, `CefBaseRefCounted`?**
   _High betweenness centrality (0.016) - this node is a cross-community bridge._
 - **Why does `File` connect `lesson_complete_screen.dart & _buildDesktop` to `safe_pdf_viewer.dart`, `CodeLocation`, `CefResourceManager`, `../services/fb/fb_auth.dart & fb_core.dart`, `ai_queue_screen.dart & ../models/ai_task.dart`, `dart:async & ../services/auto_index_service.dart`, `HandleExceptionsInMethodIfSupported`, `ResponseFilterTestHandler`?**
   _High betweenness centrality (0.008) - this node is a cross-community bridge._
 - **Why does `InjectUserScripts` connect `struct_type` to `WebviewCookieVisitor`?**
   _High betweenness centrality (0.005) - this node is a cross-community bridge._
 - **What connects `mockBooks`, `DefaultFirebaseOptions`, `linuxApiKey` to the rest of the system?**
-  _4000 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _4001 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `bookmarks_screen.dart & web_webview_helper.dart` be split into smaller, more focused modules?**
-  _Cohesion score 0.05512820512820513 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.04830917874396135 - nodes in this community are weakly interconnected._
 - **Should `course_edit_structure_screen.dart & pdf_folder_...` be split into smaller, more focused modules?**
   _Cohesion score 0.05128205128205128 - nodes in this community are weakly interconnected._
 - **Should `../services/generation_manager.dart & applyUnit` be split into smaller, more focused modules?**
