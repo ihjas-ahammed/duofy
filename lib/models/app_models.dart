@@ -1011,7 +1011,8 @@ class Book {
     if (section.startPage != null && section.endPage != null) {
       final pageCount = section.endPage! - section.startPage! + 1;
       if (pageCount > 0 && totalPagesOfGeneratedSectionsWithUnits > 0) {
-        final double avgUnitsPerPage = totalGeneratedUnits / totalPagesOfGeneratedSectionsWithUnits;
+        final double avgUnitsPerPage =
+            totalGeneratedUnits / totalPagesOfGeneratedSectionsWithUnits;
         return (pageCount * avgUnitsPerPage).round().clamp(1, 15);
       }
     }
@@ -1044,18 +1045,24 @@ class Book {
     } else {
       int count = 0;
       for (var u in section.units) {
-        count += u.lessons.isEmpty ? avgLessonsPerUnit.round() : u.lessons.length;
+        count += u.lessons.isEmpty
+            ? avgLessonsPerUnit.round()
+            : u.lessons.length;
       }
       return count;
     }
   }
 
-  int getEstimatedLessonsUpToSection(int targetModuleIdx, int targetSectionIdx) {
+  int getEstimatedLessonsUpToSection(
+    int targetModuleIdx,
+    int targetSectionIdx,
+  ) {
     int sum = 0;
     for (var mIdx = 0; mIdx < modules.length; mIdx++) {
       final module = modules[mIdx];
       for (var sIdx = 0; sIdx < module.sections.length; sIdx++) {
-        if (mIdx < targetModuleIdx || (mIdx == targetModuleIdx && sIdx <= targetSectionIdx)) {
+        if (mIdx < targetModuleIdx ||
+            (mIdx == targetModuleIdx && sIdx <= targetSectionIdx)) {
           sum += getEstimatedLessonsForSection(module.sections[sIdx]);
         }
       }
@@ -1063,24 +1070,82 @@ class Book {
     return sum;
   }
 
-  int getCompletedLessonsUpToSection(int targetModuleIdx, int targetSectionIdx, List<String> completedLessons) {
-    int sum = 0;
+  int getCompletedLessonsUpToSection(
+    int targetModuleIdx,
+    int targetSectionIdx,
+    List<String> completedLessons,
+  ) {
+    final totalLessons = getEstimatedLessonsUpToSection(
+      targetModuleIdx,
+      targetSectionIdx,
+    );
+
+    // Find average lessons per unit for imaginary numbering
+    int totalGeneratedLessons = 0;
+    int unitsWithLessonsCount = 0;
+    for (var m in modules) {
+      for (var s in m.sections) {
+        for (var u in s.units) {
+          if (u.lessons.isNotEmpty) {
+            totalGeneratedLessons += u.lessons.length;
+            unitsWithLessonsCount++;
+          }
+        }
+      }
+    }
+    final int avgLessonsPerUnit = unitsWithLessonsCount > 0
+        ? (totalGeneratedLessons / unitsWithLessonsCount).round().clamp(1, 15)
+        : 4;
+
+    // Generate absolute sequence of lesson IDs (real or placeholder)
+    final List<String> sequence = [];
+    int imaginaryCounter = 0;
+
     for (var mIdx = 0; mIdx < modules.length; mIdx++) {
       final module = modules[mIdx];
       for (var sIdx = 0; sIdx < module.sections.length; sIdx++) {
-        if (mIdx < targetModuleIdx || (mIdx == targetModuleIdx && sIdx <= targetSectionIdx)) {
-          final section = module.sections[sIdx];
-          for (var u in section.units) {
-            for (var l in u.lessons) {
-              if (completedLessons.contains(l.id)) {
-                sum++;
+        final section = module.sections[sIdx];
+        if (section.units.isNotEmpty) {
+          for (var uIdx = 0; uIdx < section.units.length; uIdx++) {
+            final unit = section.units[uIdx];
+            if (unit.lessons.isNotEmpty) {
+              for (var lIdx = 0; lIdx < unit.lessons.length; lIdx++) {
+                sequence.add(unit.lessons[lIdx].id);
               }
+            } else {
+              for (var i = 0; i < avgLessonsPerUnit; i++) {
+                sequence.add('imaginary_unit_${unit.id}_$imaginaryCounter');
+                imaginaryCounter++;
+              }
+            }
+          }
+        } else {
+          final estimatedUnits = getEstimatedUnitsForSection(section);
+          for (var u = 0; u < estimatedUnits; u++) {
+            for (var i = 0; i < avgLessonsPerUnit; i++) {
+              sequence.add(
+                'imaginary_sec_${section.id}_${u}_$imaginaryCounter',
+              );
+              imaginaryCounter++;
             }
           }
         }
       }
     }
-    return sum;
+
+    // Find the maximum index of a completed lesson in the entire sequence
+    int lastCompletedIdx = -1;
+    for (int i = 0; i < sequence.length; i++) {
+      if (completedLessons.contains(sequence[i])) {
+        lastCompletedIdx = i;
+      }
+    }
+
+    int currentCompleted = lastCompletedIdx + 1;
+    if (currentCompleted > totalLessons) {
+      currentCompleted = totalLessons;
+    }
+    return currentCompleted;
   }
 
   Book copyWith({
