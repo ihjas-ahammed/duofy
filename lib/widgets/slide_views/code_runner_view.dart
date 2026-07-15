@@ -177,6 +177,19 @@ $bodyHtml
 ''';
     final script = '''
 <script>
+// Global error diagnostics for WebView environment
+window.onerror = function(message, source, lineno, colno, error) {
+  var errLog = 'Script error: ' + message;
+  if (source) errLog += ' at ' + source.split('/').last();
+  if (lineno) errLog += ':' + lineno;
+  if (error && error.stack) errLog += '\nStack: ' + error.stack;
+  console.error(errLog);
+  var outEl = document.getElementById('out');
+  if (outEl) {
+    outEl.innerText = (outEl.innerText || '') + '\n' + errLog;
+  }
+};
+
 const PACKAGES = $pkgsJson;
 const PYODIDE_URL = 'https://cdn.jsdelivr.net/pyodide/$pyodideVersion/full/pyodide.js';
 let pyodide = null;
@@ -194,8 +207,14 @@ window.__initRunner = async function(){
   \$('editor').value = window.__STARTER__ || '';
   \$('run').onclick = runCode;
   try {
+    if (typeof WebAssembly === 'undefined') {
+      throw new Error("WebAssembly is not supported or enabled in this browser/WebView.");
+    }
+
     let getLoadPyodide = function() {
       if (typeof window.loadPyodide === 'function') return window.loadPyodide;
+      if (typeof globalThis !== 'undefined' && typeof globalThis.loadPyodide === 'function') return globalThis.loadPyodide;
+      if (typeof self !== 'undefined' && typeof self.loadPyodide === 'function') return self.loadPyodide;
       if (typeof loadPyodide === 'function') return loadPyodide;
       return null;
     };
