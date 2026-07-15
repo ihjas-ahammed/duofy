@@ -637,12 +637,13 @@ class _LessonScreenState extends State<LessonScreen> {
       correct = _errorSelection != null && _errorSelection == slide.errorIndex;
     }
 
-    _recordFirstAttempt(slide, correct);
+    setState(() {
+      _answered = true;
+      _isCorrect = correct;
+      if (correct) _correctAttempts++;
+    });
 
-    if (correct) {
-      HapticFeedback.heavyImpact();
-    } else {
-      HapticFeedback.vibrate();
+    if (!correct) {
       final fails = (_failCounts[slide.id] ?? 0) + 1;
       _failCounts[slide.id] = fails;
       // Every wrong answer adds one to the interactive total, so accuracy is
@@ -655,10 +656,14 @@ class _LessonScreenState extends State<LessonScreen> {
       }
     }
 
-    setState(() {
-      _answered = true;
-      _isCorrect = correct;
-      if (correct) _correctAttempts++;
+    // Run haptics and telemetry logging in the next frame to prevent frame drops
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (correct) {
+        HapticFeedback.heavyImpact();
+      } else {
+        HapticFeedback.vibrate();
+      }
+      _recordFirstAttempt(slide, correct);
     });
   }
 
@@ -1401,28 +1406,32 @@ class _LessonScreenState extends State<LessonScreen> {
           slide: slide,
           lessonCanvas: _buildLessonCanvas(),
           onComplete: () {
-            HapticFeedback.heavyImpact();
-            _recordFirstAttempt(slide, true);
             setState(() {
               _isCorrect = true;
               _answered = true;
               _correctAttempts++;
             });
             _nextSlide();
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              HapticFeedback.heavyImpact();
+              _recordFirstAttempt(slide, true);
+            });
           },
         );
       case 'custom_html':
         return CustomHtmlView(
           slide: slide,
           onComplete: () {
-            HapticFeedback.heavyImpact();
-            _recordFirstAttempt(slide, true);
             setState(() {
               _isCorrect = true;
               _answered = true;
               _correctAttempts++;
             });
             _nextSlide();
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              HapticFeedback.heavyImpact();
+              _recordFirstAttempt(slide, true);
+            });
           },
         );
       case 'step_by_step':
@@ -1446,13 +1455,15 @@ class _LessonScreenState extends State<LessonScreen> {
               : null,
           onUpdateSlide: _applySlideEdit,
           onComplete: () {
-            HapticFeedback.heavyImpact();
             setState(() {
               _isCorrect = true;
               _answered = true;
               _correctAttempts++;
             });
             _nextSlide();
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              HapticFeedback.heavyImpact();
+            });
           },
         );
       case 'quiz':
@@ -1525,26 +1536,32 @@ class _LessonScreenState extends State<LessonScreen> {
           key: ValueKey(slide.id),
           slide: slide,
           onSelfGrade: (remembered) {
-            _recordFirstAttempt(slide, remembered);
-            if (remembered) {
-              HapticFeedback.heavyImpact();
-              setState(() {
-                _isCorrect = true;
-                _answered = true;
+            setState(() {
+              _isCorrect = remembered;
+              _answered = true;
+              if (remembered) {
                 _correctAttempts++;
-              });
-            } else {
-              HapticFeedback.vibrate();
+              }
+            });
+            if (!remembered) {
               final fails = (_failCounts[slide.id] ?? 0) + 1;
               _failCounts[slide.id] = fails;
               _totalInteractive++;
-              if (fails < 2) _slideQueue.add(slide);
-              setState(() {
-                _isCorrect = false;
-                _answered = true;
-              });
+              if (fails < 2) {
+                _slideQueue.add(slide);
+              }
             }
-            _nextSlide();
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (remembered) {
+                HapticFeedback.heavyImpact();
+              } else {
+                HapticFeedback.vibrate();
+              }
+              _recordFirstAttempt(slide, remembered);
+            });
+            if (remembered) {
+              _nextSlide();
+            }
           },
         );
       case 'concept_pieces':

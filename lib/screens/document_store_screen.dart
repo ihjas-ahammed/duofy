@@ -14,7 +14,7 @@ import '../services/pdf_service.dart';
 import '../services/ai_service.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
-enum DocCategory { reference, syllabus }
+enum DocCategory { reference, syllabus, pyq }
 
 DocCategory getDocCategory(B2Object obj) {
   if (obj.key.startsWith('syllabus/')) {
@@ -23,10 +23,16 @@ DocCategory getDocCategory(B2Object obj) {
   if (obj.key.startsWith('reference/')) {
     return DocCategory.reference;
   }
+  if (obj.key.startsWith('pyq/')) {
+    return DocCategory.pyq;
+  }
   // Fallback for legacy files
   final lowerKey = obj.key.toLowerCase();
   if (lowerKey.contains('syllabus')) {
     return DocCategory.syllabus;
+  }
+  if (lowerKey.contains('pyq')) {
+    return DocCategory.pyq;
   }
   return DocCategory.reference;
 }
@@ -206,6 +212,35 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
               ),
               onTap: () => Navigator.pop(ctx, DocCategory.syllabus),
             ),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.duoGreen.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  LucideIcons.helpCircle,
+                  color: AppTheme.duoGreen,
+                ),
+              ),
+              title: Text(
+                'Previous Year Question (PYQ)',
+                style: TextStyle(
+                  color: context.colors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              subtitle: Text(
+                'Previous year exam questions and papers',
+                style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              onTap: () => Navigator.pop(ctx, DocCategory.pyq),
+            ),
           ],
         ),
         actions: [
@@ -251,9 +286,14 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
       if (confirmedName == null || confirmedName.isEmpty) return;
 
       final bytes = await file.readAsBytes();
-      final folder = category == DocCategory.syllabus
-          ? 'syllabus'
-          : 'reference';
+      final String folder;
+      if (category == DocCategory.syllabus) {
+        folder = 'syllabus';
+      } else if (category == DocCategory.pyq) {
+        folder = 'pyq';
+      } else {
+        folder = 'reference';
+      }
       final objectKey = '$folder/$confirmedName';
 
       setState(() {
@@ -493,18 +533,28 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                   Text(
                     category == DocCategory.reference
                         ? 'Current Category: Reference Book'
-                        : 'Current Category: Syllabus',
+                        : (category == DocCategory.syllabus ? 'Current Category: Syllabus' : 'Current Category: PYQ'),
                     style: TextStyle(
                       color: category == DocCategory.reference
                           ? AppTheme.duoBlue
-                          : AppTheme.duoOrange,
+                          : (category == DocCategory.syllabus ? AppTheme.duoOrange : AppTheme.duoGreen),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
-                  if (category == DocCategory.reference)
+                  if (category != DocCategory.reference)
+                    _buildContextActionItem(
+                      icon: LucideIcons.bookOpen,
+                      label: 'Change Type to Reference Book',
+                      color: AppTheme.duoBlue,
+                      onTap: () {
+                        Navigator.pop(context);
+                        _changeDocumentCategory(file, DocCategory.reference);
+                      },
+                    ),
+                  if (category != DocCategory.syllabus)
                     _buildContextActionItem(
                       icon: LucideIcons.fileSpreadsheet,
                       label: 'Change Type to Syllabus',
@@ -513,15 +563,15 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                         Navigator.pop(context);
                         _changeDocumentCategory(file, DocCategory.syllabus);
                       },
-                    )
-                  else
+                    ),
+                  if (category != DocCategory.pyq)
                     _buildContextActionItem(
-                      icon: LucideIcons.bookOpen,
-                      label: 'Change Type to Reference Book',
-                      color: AppTheme.duoBlue,
+                      icon: LucideIcons.helpCircle,
+                      label: 'Change Type to PYQ',
+                      color: AppTheme.duoGreen,
                       onTap: () {
                         Navigator.pop(context);
-                        _changeDocumentCategory(file, DocCategory.reference);
+                        _changeDocumentCategory(file, DocCategory.pyq);
                       },
                     ),
                   const SizedBox(height: 8),
@@ -583,7 +633,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
     final filenameOnly = oldKey.split('/').last;
     final newKey = targetCategory == DocCategory.syllabus
         ? 'syllabus/$filenameOnly'
-        : 'reference/$filenameOnly';
+        : (targetCategory == DocCategory.pyq ? 'pyq/$filenameOnly' : 'reference/$filenameOnly');
 
     try {
       await B2Service.instance.moveObject(oldKey, newKey);
@@ -615,7 +665,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Successfully changed document type to ${targetCategory == DocCategory.syllabus ? "Syllabus" : "Reference Book"}.',
+              'Successfully changed document type to ${targetCategory == DocCategory.syllabus ? "Syllabus" : (targetCategory == DocCategory.pyq ? "PYQ" : "Reference Book")}.',
             ),
             backgroundColor: AppTheme.duoGreen,
           ),
@@ -981,24 +1031,17 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
       return _buildEmptyState();
     }
 
-    if (_selectedCategory == DocCategory.syllabus && _searchQuery.isEmpty) {
+    if ((_selectedCategory == DocCategory.syllabus || _selectedCategory == DocCategory.pyq) && _searchQuery.isEmpty) {
       if (_selectedCourse == null) {
         final courses = filtered.map((f) => f.course).whereType<String>().toSet().toList()..sort();
         if (courses.isEmpty) {
           return _buildEmptyState();
         }
-        int crossAxisCount = screenWidth > 900 ? 5 : (screenWidth > 600 ? 3 : 2);
-        return GridView.builder(
-          padding: const EdgeInsets.only(bottom: 80),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 0.85,
-          ),
+        return ListView.builder(
+          padding: const EdgeInsets.only(bottom: 80, left: 4, right: 4),
           itemCount: courses.length,
           itemBuilder: (context, index) {
-            return _buildFolderGridItem(
+            return _buildFolderListItem(
               name: courses[index],
               icon: LucideIcons.folder,
               iconColor: AppTheme.duoBlue,
@@ -1032,23 +1075,17 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
             ],
           );
         }
-        int crossAxisCount = screenWidth > 900 ? 5 : (screenWidth > 600 ? 3 : 2);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildSyllabusBreadcrumbs(),
+            const SizedBox(height: 12),
             Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.only(bottom: 80),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossAxisCount,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 0.85,
-                ),
+              child: ListView.builder(
+                padding: const EdgeInsets.only(bottom: 80, left: 4, right: 4),
                 itemCount: semesters.length,
                 itemBuilder: (context, index) {
-                  return _buildFolderGridItem(
+                  return _buildFolderListItem(
                     name: semesters[index],
                     icon: LucideIcons.folderClosed,
                     iconColor: AppTheme.duoViolet,
@@ -1213,13 +1250,59 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
     );
   }
 
+  Widget _buildFolderListItem({
+    required String name,
+    required IconData icon,
+    required Color iconColor,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: context.colors.surfaceAlt,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.colors.outline),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: iconColor.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            icon,
+            size: 28,
+            color: iconColor,
+          ),
+        ),
+        title: Text(
+          name,
+          style: TextStyle(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.w900,
+            fontSize: 15,
+          ),
+        ),
+        trailing: Icon(
+          LucideIcons.chevronRight,
+          color: context.colors.textFaint,
+          size: 18,
+        ),
+        onTap: onTap,
+      ),
+    );
+  }
+
   Widget _buildSyllabusBreadcrumbs() {
-    if (_selectedCategory != DocCategory.syllabus || _searchQuery.isNotEmpty) {
+    if ((_selectedCategory != DocCategory.syllabus && _selectedCategory != DocCategory.pyq) || _searchQuery.isNotEmpty) {
       return const SizedBox.shrink();
     }
     if (_selectedCourse == null) {
       return const SizedBox.shrink();
     }
+    final categoryName = _selectedCategory == DocCategory.syllabus ? 'Syllabus' : 'PYQs';
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Row(
@@ -1245,7 +1328,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
               });
             },
             child: Text(
-              'Syllabus',
+              categoryName,
               style: TextStyle(
                 color: context.colors.textFaint,
                 fontWeight: FontWeight.bold,
@@ -1932,6 +2015,14 @@ class CategoryTabs extends StatelessWidget {
               category: DocCategory.syllabus,
               label: 'Syllabus',
               icon: LucideIcons.fileSpreadsheet,
+            ),
+          ),
+          Expanded(
+            child: _buildTab(
+              context,
+              category: DocCategory.pyq,
+              label: 'PYQs',
+              icon: LucideIcons.helpCircle,
             ),
           ),
         ],

@@ -25,8 +25,8 @@
     "semantic_hash": ""
   },
   "lib/screens/book_dashboard_screen.dart": {
-    "mtime": 1784085231.5699751,
-    "ast_hash": "f9edf59fdeab621851df91e0dc104c83",
+    "mtime": 1784085586.425238,
+    "ast_hash": "841acc260469e032b2d3f6772b59adaa",
     "semantic_hash": ""
   },
   "lib/screens/practice_session_screen.dart": {
@@ -45,18 +45,18 @@
     "semantic_hash": ""
   },
   "lib/screens/home_screen.dart": {
-    "mtime": 1784084364.6985967,
-    "ast_hash": "64bb394818666a096c60865cc64ef6ef",
+    "mtime": 1784086155.5508442,
+    "ast_hash": "504f9da7c5a17110cf10db0e296119e2",
     "semantic_hash": ""
   },
   "lib/screens/pyq_tab_screen.dart": {
-    "mtime": 1783688214.4037461,
-    "ast_hash": "bbd17b97ee2760dc4a97fe7fef9c320e",
+    "mtime": 1784088136.371573,
+    "ast_hash": "8a71b82149c5aab3da78e402281cbac2",
     "semantic_hash": ""
   },
   "lib/screens/settings_screen.dart": {
-    "mtime": 1783955725.086985,
-    "ast_hash": "bf9b81e919303d78897a177b1d152c3b",
+    "mtime": 1784086679.0308444,
+    "ast_hash": "9c5605200b736d7ad040da22018b738b",
     "semantic_hash": ""
   },
   "lib/screens/bookmarks_screen.dart": {
@@ -70,8 +70,8 @@
     "semantic_hash": ""
   },
   "lib/screens/lesson_screen.dart": {
-    "mtime": 1784029465.2820115,
-    "ast_hash": "531ce16f23ca36f5cffb74377f9925ab",
+    "mtime": 1784088589.4926593,
+    "ast_hash": "ee99647d55744ee73e7f98fc49eb6656",
     "semantic_hash": ""
   },
   "lib/screens/generate_qp_screen.dart": {
@@ -110,8 +110,8 @@
     "semantic_hash": ""
   },
   "lib/screens/generate_book_screen.dart": {
-    "mtime": 1783938010.4010546,
-    "ast_hash": "b3dc2084f7d6f41bb95b4e2a8ec64f3f",
+    "mtime": 1784087328.0767932,
+    "ast_hash": "f49bd88d038e17ad6c7aac54a0a6ce5e",
     "semantic_hash": ""
   },
   "lib/screens/course_edit_structure_screen.dart": {
@@ -150,8 +150,8 @@
     "semantic_hash": ""
   },
   "lib/screens/source_pdf_upload_screen.dart": {
-    "mtime": 1783689711.7132444,
-    "ast_hash": "bbdbac4d5910b8b9a82bcccf0107be4f",
+    "mtime": 1784088044.0461724,
+    "ast_hash": "4d68c62399576e7b8e5ef300b44962ae",
     "semantic_hash": ""
   },
   "lib/widgets/compact_book_card.dart": {
@@ -195,8 +195,8 @@
     "semantic_hash": ""
   },
   "lib/widgets/file_selection_list.dart": {
-    "mtime": 1783688214.943757,
-    "ast_hash": "a8977b5682f1615e9c0ad6e28339499b",
+    "mtime": 1784088118.541665,
+    "ast_hash": "b6ffadea4d65d9f5fdc2289d9c1cbfcc",
     "semantic_hash": ""
   },
   "lib/widgets/lesson_path.dart": {
@@ -240,8 +240,8 @@
     "semantic_hash": ""
   },
   "lib/widgets/platform_webview.dart": {
-    "mtime": 1783688207.8066137,
-    "ast_hash": "57b4a95544bb765d79ff6083be1179a6",
+    "mtime": 1784088359.4244983,
+    "ast_hash": "3041f1e4aca87e15f3c79491218584a1",
     "semantic_hash": ""
   },
   "lib/widgets/lesson_accordion.dart": {
@@ -345,8 +345,8 @@
     "semantic_hash": ""
   },
   "lib/services/ai_service.dart": {
-    "mtime": 1784029465.2820115,
-    "ast_hash": "7980099d0960520a23685f0143cc315f",
+    "mtime": 1784087551.1341674,
+    "ast_hash": "06a3c41ddd5647ba14b3d0db5374a8f5",
     "semantic_hash": ""
   },
   "lib/services/prompt_service.dart": {
@@ -530,8 +530,8 @@
     "semantic_hash": ""
   },
   "lib/screens/document_store_screen.dart": {
-    "mtime": 1783937910.624707,
-    "ast_hash": "3de1f0396fbe1bc4dcdcb05d4d4ad5bc",
+    "mtime": 1784088097.6387837,
+    "ast_hash": "e45d807067db60d880b12cdf7496f5be",
     "semantic_hash": ""
   },
   "lib/screens/experiments_screen.dart": {
@@ -545,8 +545,8 @@
     "semantic_hash": ""
   },
   "lib/screens/module_selection_screen.dart": {
-    "mtime": 1784084324.8312953,
-    "ast_hash": "e495af6a36825f4b53accc5e7afd2076",
+    "mtime": 1784085945.142161,
+    "ast_hash": "e53bf8d99d9096447864fe9d50f80c94",
     "semantic_hash": ""
   },
   "lib/screens/reference_pdf_viewer_screen.dart": {
@@ -555,8 +555,8 @@
     "semantic_hash": ""
   },
   "lib/screens/section_selection_screen.dart": {
-    "mtime": 1784084334.353071,
-    "ast_hash": "de482325eda611ae79d5d44d8a1d2193",
+    "mtime": 1784085954.9466438,
+    "ast_hash": "91a9e46e6b8212b900ed56d18429bbf4",
     "semantic_hash": ""
   },
   "lib/services/ai_estimator.dart": {
@@ -585,8 +585,8 @@
     "semantic_hash": ""
   },
   "lib/widgets/analytics_view.dart": {
-    "mtime": 1783688214.845755,
-    "ast_hash": "ec9096e6371c36aaad5192030b8429d5",
+    "mtime": 1784087745.1660316,
+    "ast_hash": "01a039285a128d285f3559c6ca9be655",
     "semantic_hash": ""
   },
   "lib/widgets/compact_book_list_item.dart": {
@@ -1285,8 +1285,8 @@
     "semantic_hash": ""
   },
   "pubspec.yaml": {
-    "mtime": 1783870492.1008363,
-    "ast_hash": "d5a32d8479405ab139f2e1bb56f3e557",
+    "mtime": 1784087418.6704605,
+    "ast_hash": "99c874de80edc8b309c1c91a949e3689",
     "semantic_hash": ""
   },
   "update.md": {
@@ -1845,8 +1845,8 @@
     "semantic_hash": ""
   },
   "lib/services/usage_limit_service.dart": {
-    "mtime": 1783955625.8191707,
-    "ast_hash": "e573719c29816af0d96d854613c05618",
+    "mtime": 1784086411.305475,
+    "ast_hash": "f10cc1eb4897abd25a33946bf4367b42",
     "semantic_hash": ""
   },
   "lib/services/secrets_service.dart": {
@@ -6672,6 +6672,11 @@
   "packages/webview_cef/third/cef/tests/shared/resources/window_icon.2x.png": {
     "mtime": 1779953082.476881,
     "ast_hash": "77635b08d816099a4bee592ec354dbcf",
+    "semantic_hash": ""
+  },
+  "lib/screens/ai_providers_screen.dart": {
+    "mtime": 1784086795.9126134,
+    "ast_hash": "8433ef42ae29fb7a95711d7cc9d5556c",
     "semantic_hash": ""
   }
 }

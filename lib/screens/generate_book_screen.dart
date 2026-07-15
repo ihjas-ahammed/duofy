@@ -1579,13 +1579,14 @@ class _DocumentStorePickerDialogState
                       Expanded(
                         child: DropdownButtonFormField<String?>(
                           value: _selectedCourseFilter,
+                          isExpanded: true,
                           decoration: InputDecoration(
                             labelText: 'Course',
                             labelStyle: TextStyle(color: context.colors.textFaint, fontSize: 11),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                           ),
-                          dropdownColor: context.colors.surfaceAlt,
+                          dropdownColor: context.colors.surface,
                           items: [
                             DropdownMenuItem<String?>(
                               value: null,
@@ -1607,13 +1608,14 @@ class _DocumentStorePickerDialogState
                       Expanded(
                         child: DropdownButtonFormField<String?>(
                           value: _selectedSemesterFilter,
+                          isExpanded: true,
                           decoration: InputDecoration(
                             labelText: 'Semester',
                             labelStyle: TextStyle(color: context.colors.textFaint, fontSize: 11),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                           ),
-                          dropdownColor: context.colors.surfaceAlt,
+                          dropdownColor: context.colors.surface,
                           items: [
                             DropdownMenuItem<String?>(
                               value: null,

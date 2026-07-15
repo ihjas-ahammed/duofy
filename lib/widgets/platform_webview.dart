@@ -56,26 +56,34 @@ class _PlatformWebViewState extends State<PlatformWebView> {
 
   void _load() {
     if (kIsWeb || useDesktopWebView) return; // handled by their own widgets
-    _wfController = wf.WebViewController()
-      ..setJavaScriptMode(wf.JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0x00000000))
-      ..addJavaScriptChannel(
-        'DuoErrorChannel',
-        onMessageReceived: (wf.JavaScriptMessage message) {
-          widget.onJsError?.call(message.message);
-        },
-      )
-      ..addJavaScriptChannel(
-        'DuoMessageChannel',
-        onMessageReceived: (wf.JavaScriptMessage message) {
-          widget.onMessage?.call(message.message);
-        },
-      )
-      ..loadHtmlString(widget.html);
+    
+    bool created = false;
+    if (_wfController == null) {
+      _wfController = wf.WebViewController()
+        ..setJavaScriptMode(wf.JavaScriptMode.unrestricted)
+        ..setBackgroundColor(const Color(0x00000000))
+        ..addJavaScriptChannel(
+          'DuoErrorChannel',
+          onMessageReceived: (wf.JavaScriptMessage message) {
+            widget.onJsError?.call(message.message);
+          },
+        )
+        ..addJavaScriptChannel(
+          'DuoMessageChannel',
+          onMessageReceived: (wf.JavaScriptMessage message) {
+            widget.onMessage?.call(message.message);
+          },
+        );
+      created = true;
+    }
 
-    widget.onControllerCreated?.call(PlatformWebViewController(
-      runJavaScript: (js) => _wfController?.runJavaScript(js),
-    ));
+    _wfController!.loadHtmlString(widget.html);
+
+    if (created) {
+      widget.onControllerCreated?.call(PlatformWebViewController(
+        runJavaScript: (js) => _wfController?.runJavaScript(js),
+      ));
+    }
   }
 
   @override

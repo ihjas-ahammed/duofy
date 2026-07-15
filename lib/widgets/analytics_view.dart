@@ -31,6 +31,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
   Future<Map<String, dynamic>> _fetchAnalyticsData() async {
     final logs = await ProgressService.getActivityLogs();
     final books = await DatabaseService().fetchBooks(forceRefresh: false);
+    final folders = await DatabaseService().fetchFolders();
 
     // 1. Filter logs
     final filteredLogs = widget.courseId == null
@@ -128,6 +129,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
       'graphData': graphData,
       'courseStats': courseStats,
       'logs': filteredLogs.reversed.toList(), // show newest first
+      'folders': folders,
     };
   }
 
@@ -250,6 +252,39 @@ class _AnalyticsViewState extends State<AnalyticsView> {
         final List<Map<String, dynamic>> graphData = data['graphData'];
         final List<Map<String, dynamic>> courseStats = data['courseStats'];
         final List<dynamic> logs = data['logs'];
+
+        final List<CourseFolder> folders = List<CourseFolder>.from(data['folders'] ?? []);
+
+        // Group and sort courses by virtual folders and completed percentage
+        final Map<String, List<Map<String, dynamic>>> groupedStats = {};
+        for (final stat in courseStats) {
+          final Book book = stat['book'];
+          final folderObj = folders.cast<CourseFolder?>().firstWhere(
+            (f) => f != null && f.bookIds.contains(book.id),
+            orElse: () => null,
+          );
+          final String folderName = folderObj != null ? folderObj.name : 'Other Courses';
+          groupedStats.putIfAbsent(folderName, () => []).add(stat);
+        }
+
+        // Sort courses inside each folder by progress descending
+        groupedStats.forEach((folder, stats) {
+          stats.sort((a, b) {
+            final double progressA = a['progress'] ?? 0.0;
+            final double progressB = b['progress'] ?? 0.0;
+            return progressB.compareTo(progressA);
+          });
+        });
+
+        // Sort folders by maximum progress descending
+        final sortedFolders = groupedStats.keys.toList()
+          ..sort((a, b) {
+            final maxA = groupedStats[a]!.map((s) => s['progress'] as double).fold(0.0, (m, v) => v > m ? v : m);
+            final maxB = groupedStats[b]!.map((s) => s['progress'] as double).fold(0.0, (m, v) => v > m ? v : m);
+            final cmp = maxB.compareTo(maxA);
+            if (cmp != 0) return cmp;
+            return a.compareTo(b);
+          });
 
         // Determine max XP in graph to scale height
         final maxXP = graphData
@@ -515,92 +550,121 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                       ),
                     )
                   else
-                    ...courseStats.map((stat) {
-                      final Book book = stat['book'];
-                      final int xp = stat['xp'];
-                      final double progress = stat['progress'];
-                      final int acc = stat['accuracy'];
+                    ...sortedFolders.expand((folder) {
+                      final stats = groupedStats[folder]!;
+                      return [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8, bottom: 12, left: 4),
+                          child: Row(
+                            children: [
+                              Icon(
+                                LucideIcons.folder,
+                                size: 16,
+                                color: folder == 'Other Courses'
+                                    ? context.colors.textFaint
+                                    : AppTheme.duoBlue,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                folder.toUpperCase(),
+                                style: TextStyle(
+                                  color: context.colors.textPrimary,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 13,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        ...stats.map((stat) {
+                          final Book book = stat['book'];
+                          final int xp = stat['xp'];
+                          final double progress = stat['progress'];
+                          final int acc = stat['accuracy'];
 
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: AppTheme.applyGlassBlur(
-                          borderRadius: 20,
-                          color: context.colors.glassStrong,
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Row(
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            child: AppTheme.applyGlassBlur(
+                              borderRadius: 20,
+                              color: context.colors.glassStrong,
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
                                   children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: context.colors.surfaceAlt,
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Icon(
-                                        _getBookIcon(book.icon),
-                                        color: context.colors.textPrimary,
-                                        size: 20,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 14),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            book.title,
-                                            style: TextStyle(
-                                              color: context.colors.textPrimary,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 15,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(10),
+                                          decoration: BoxDecoration(
+                                            color: context.colors.surfaceAlt,
+                                            borderRadius: BorderRadius.circular(12),
                                           ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            'Accuracy: $acc%  •  XP: $xp',
-                                            style: TextStyle(
-                                              color: context.colors.textFaint,
-                                              fontSize: 12,
-                                            ),
+                                          child: Icon(
+                                            _getBookIcon(book.icon),
+                                            color: context.colors.textPrimary,
+                                            size: 20,
                                           ),
-                                        ],
-                                      ),
+                                        ),
+                                        const SizedBox(width: 14),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                book.title,
+                                                style: TextStyle(
+                                                  color: context.colors.textPrimary,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 15,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                'Accuracy: $acc%  •  XP: $xp',
+                                                style: TextStyle(
+                                                  color: context.colors.textFaint,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          '${(progress * 100).round()}%',
+                                          style: const TextStyle(
+                                            color: AppTheme.duoBlue,
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      '${(progress * 100).round()}%',
-                                      style: const TextStyle(
-                                        color: AppTheme.duoBlue,
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 14,
+                                    const SizedBox(height: 12),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: LinearProgressIndicator(
+                                        value: progress,
+                                        minHeight: 6,
+                                        backgroundColor: context.colors.outline,
+                                        valueColor:
+                                            const AlwaysStoppedAnimation<Color>(
+                                              AppTheme.duoBlue,
+                                            ),
                                       ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 12),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: LinearProgressIndicator(
-                                    value: progress,
-                                    minHeight: 6,
-                                    backgroundColor: context.colors.outline,
-                                    valueColor:
-                                        const AlwaysStoppedAnimation<Color>(
-                                          AppTheme.duoBlue,
-                                        ),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
-                          ),
-                        ),
-                      );
+                          );
+                        }).toList(),
+                      ];
                     }).toList(),
                 ] else ...[
                   Padding(

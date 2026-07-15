@@ -2,6 +2,7 @@ import '../platform/io_shim.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:path_provider/path_provider.dart';
 import '../models/app_models.dart';
 import '../services/generation_manager.dart';
 import '../services/database_service.dart';
@@ -10,6 +11,7 @@ import '../widgets/duo_button.dart';
 import '../widgets/file_selection_list.dart';
 import '../widgets/responsive_center.dart';
 import '../widgets/math_markdown.dart';
+import 'source_pdf_upload_screen.dart';
 
 class PyqTabScreen extends StatefulWidget {
   final Book book;
@@ -34,6 +36,54 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
   final List<PlatformFile> _selectedFiles = [];
   String? _selectedSectionId;
   final TextEditingController _customPromptCtrl = TextEditingController();
+  String? _cacheDirPath;
+
+  @override
+  void initState() {
+    super.initState();
+    _initCacheDir();
+  }
+
+  Future<void> _initCacheDir() async {
+    final appDir = await getApplicationDocumentsDirectory();
+    if (mounted) {
+      setState(() {
+        _cacheDirPath = '${appDir.path}/b2_cache';
+      });
+    }
+  }
+
+  void _selectFromStore() {
+    if (_cacheDirPath == null) return;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return FractionallySizedBox(
+          heightFactor: 0.85,
+          child: DocumentStorePickerDialog(
+            cacheDirPath: _cacheDirPath!,
+            prefixFilter: 'pyq/',
+            onFileSelected: (file) {
+              final bytes = file.readAsBytesSync();
+              final name = file.path.split('/').last.split('\\').last;
+              final pFile = PlatformFile(
+                path: file.path,
+                name: name,
+                size: bytes.length,
+                bytes: bytes,
+              );
+              setState(() {
+                _selectedFiles.add(pFile);
+              });
+            },
+          ),
+        );
+      },
+    );
+  }
 
   // Fallback when no shared notifier is supplied (e.g. previews/tests).
   ValueNotifier<int>? _ownModuleNotifier;
@@ -527,6 +577,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                         FileSelectionList(
                           files: _selectedFiles,
                           onAddMore: _pickFiles,
+                          onSelectFromStore: _selectFromStore,
                           onRemove: (idx) =>
                               setState(() => _selectedFiles.removeAt(idx)),
                         ),

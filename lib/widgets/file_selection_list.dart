@@ -68,6 +68,14 @@ class FileSelectionList extends StatelessWidget {
                                 color: AppTheme.duoViolet,
                               ),
                               SizedBox(width: 4),
+                              Text(
+                                'Store',
+                                style: TextStyle(
+                                  color: AppTheme.duoViolet,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
                             ],
                           ),
                         ),

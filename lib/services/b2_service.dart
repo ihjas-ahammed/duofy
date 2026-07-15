@@ -40,7 +40,7 @@ class B2Object {
 
   String? get course {
     final parts = key.split('/');
-    if (parts.length >= 4 && parts[0] == 'syllabus') {
+    if (parts.length >= 4 && (parts[0] == 'syllabus' || parts[0] == 'pyq')) {
       return parts[1];
     }
     return null;
@@ -48,7 +48,7 @@ class B2Object {
 
   String? get semester {
     final parts = key.split('/');
-    if (parts.length >= 4 && parts[0] == 'syllabus') {
+    if (parts.length >= 4 && (parts[0] == 'syllabus' || parts[0] == 'pyq')) {
       return parts[2];
     }
     return null;
@@ -203,7 +203,7 @@ class B2Service {
     final docId = mainFilename.replaceAll('/', '_');
     String? course;
     String? semester;
-    if (folder == 'syllabus') {
+    if (folder == 'syllabus' || folder == 'pyq') {
       final pathParts = mainFilename.split('/');
       if (pathParts.length >= 4) {
         course = pathParts[1];
@@ -451,7 +451,7 @@ class B2Service {
     final newDocId = newFilename.replaceAll('/', '_');
     String? course;
     String? semester;
-    if (newFolder == 'syllabus') {
+    if (newFolder == 'syllabus' || newFolder == 'pyq') {
       final pathParts = newFilename.split('/');
       if (pathParts.length >= 4) {
         course = pathParts[1];

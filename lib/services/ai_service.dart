@@ -3062,7 +3062,7 @@ Do not include any explanation or other text.
   }) async {
     await _checkPause();
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
-    final liteModels = await _getLiteModels(); // We use lite model as requested
+    final graphicsModels = await _getPrimaryGraphicsModels();
 
     final neighborContext = slidesSoFar.isEmpty
         ? 'No slides generated yet.'
@@ -3093,10 +3093,10 @@ Do not include any explanation or other text.
     Object? lastErr;
     try {
       final text = await _generateWithGroqFallback(
-        geminiModels: liteModels,
+        geminiModels: graphicsModels,
         geminiKeys: keys,
         contents: [Content.multi(parts)],
-        slotName: 'Lite',
+        slotName: 'Primary - Graphics',
         generationConfig: GenerationConfig(
           responseMimeType: 'application/json',
         ),

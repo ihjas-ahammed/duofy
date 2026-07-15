@@ -352,8 +352,9 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
       builder: (context) {
         return FractionallySizedBox(
           heightFactor: 0.85,
-          child: _DocumentStorePickerDialog(
+          child: DocumentStorePickerDialog(
             cacheDirPath: _cacheDirPath!,
+            prefixFilter: 'syllabus/',
             onFileSelected: (file) {
               setState(() {
                 _selectedFiles[index] = file;
@@ -939,27 +940,31 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
   }
 }
 
-class _DocumentStorePickerDialog extends StatefulWidget {
+class DocumentStorePickerDialog extends StatefulWidget {
   final String cacheDirPath;
   final ValueChanged<File> onFileSelected;
+  final String? prefixFilter;
 
-  const _DocumentStorePickerDialog({
+  const DocumentStorePickerDialog({
     required this.cacheDirPath,
     required this.onFileSelected,
+    this.prefixFilter,
   });
 
   @override
-  State<_DocumentStorePickerDialog> createState() =>
-      _DocumentStorePickerDialogState();
+  State<DocumentStorePickerDialog> createState() =>
+      DocumentStorePickerDialogState();
 }
 
-class _DocumentStorePickerDialogState
-    extends State<_DocumentStorePickerDialog> {
+class DocumentStorePickerDialogState
+    extends State<DocumentStorePickerDialog> {
   bool _isConfigured = false;
   bool _isLoading = true;
   List<B2Object> _files = [];
   String? _errorMessage;
   String _searchQuery = '';
+  String? _selectedCourse;
+  String? _selectedSemester;
   final TextEditingController _searchController = TextEditingController();
 
   // For download status
@@ -1012,7 +1017,11 @@ class _DocumentStorePickerDialogState
       });
       if (mounted) {
         setState(() {
-          _files = files.where((f) => !f.key.endsWith('.thumb.jpg')).toList();
+          var filteredFiles = files.where((f) => !f.key.endsWith('.thumb.jpg')).toList();
+          if (widget.prefixFilter != null) {
+            filteredFiles = filteredFiles.where((f) => f.key.startsWith(widget.prefixFilter!)).toList();
+          }
+          _files = filteredFiles;
           _isLoading = false;
         });
       }
@@ -1345,7 +1354,6 @@ class _DocumentStorePickerDialogState
                   ),
                 ),
 
-                // Files list
                 Expanded(
                   child: Builder(
                     builder: (context) {
@@ -1374,90 +1382,123 @@ class _DocumentStorePickerDialogState
                         );
                       }
 
+                      // Group files by course and semester if search query is empty
+                      if (_searchQuery.isEmpty) {
+                        if (_selectedCourse == null) {
+                          final courses = filtered
+                              .map((f) => f.course)
+                              .whereType<String>()
+                              .toSet()
+                              .toList()
+                            ..sort();
+                          if (courses.isNotEmpty) {
+                            return ListView.builder(
+                              physics: const BouncingScrollPhysics(),
+                              itemCount: courses.length,
+                              itemBuilder: (context, index) {
+                                return ListTile(
+                                  leading: const Icon(LucideIcons.folder, color: AppTheme.duoBlue),
+                                  title: Text(
+                                    courses[index],
+                                    style: TextStyle(
+                                      color: context.colors.textPrimary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedCourse = courses[index];
+                                    });
+                                  },
+                                );
+                              },
+                            );
+                          }
+                        } else if (_selectedSemester == null) {
+                          final semesters = filtered
+                              .where((f) => f.course == _selectedCourse)
+                              .map((f) => f.semester)
+                              .whereType<String>()
+                              .toSet()
+                              .toList()
+                            ..sort((a, b) {
+                              final aNum = int.tryParse(a.replaceAll(RegExp(r'\D'), '')) ?? 0;
+                              final bNum = int.tryParse(b.replaceAll(RegExp(r'\D'), '')) ?? 0;
+                              return aNum.compareTo(bNum);
+                            });
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildPickerBreadcrumbs(),
+                              Expanded(
+                                child: ListView.builder(
+                                  physics: const BouncingScrollPhysics(),
+                                  itemCount: semesters.length,
+                                  itemBuilder: (context, index) {
+                                    return ListTile(
+                                      leading: const Icon(LucideIcons.folderClosed, color: AppTheme.duoViolet),
+                                      title: Text(
+                                        semesters[index],
+                                        style: TextStyle(
+                                          color: context.colors.textPrimary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      onTap: () {
+                                        setState(() {
+                                          _selectedSemester = semesters[index];
+                                        });
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          );
+                        } else {
+                          // Show files for this course/semester
+                          final folderFiles = filtered
+                              .where((f) => f.course == _selectedCourse && f.semester == _selectedSemester)
+                              .toList();
+                          if (folderFiles.isEmpty) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildPickerBreadcrumbs(),
+                                const Expanded(
+                                  child: Center(
+                                    child: Text('No files in this folder'),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildPickerBreadcrumbs(),
+                              Expanded(
+                                child: ListView.builder(
+                                  physics: const BouncingScrollPhysics(),
+                                  itemCount: folderFiles.length,
+                                  itemBuilder: (context, idx) {
+                                    final file = folderFiles[idx];
+                                    return _buildFileTile(file);
+                                  },
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+                      }
+
                       return ListView.builder(
                         physics: const BouncingScrollPhysics(),
                         itemCount: filtered.length,
                         itemBuilder: (context, idx) {
                           final file = filtered[idx];
-                          final displayName = file.key.split('/').last;
-                          final isCached = _isPdfCached(file.key);
-                          final isSyllabus = file.key.startsWith('syllabus/');
-
-                          return ListTile(
-                            onTap: () => _handleFileSelection(file),
-                            leading: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color:
-                                    (isSyllabus
-                                            ? AppTheme.duoOrange
-                                            : AppTheme.duoBlue)
-                                        .withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                LucideIcons.fileText,
-                                color: isSyllabus
-                                    ? AppTheme.duoOrange
-                                    : AppTheme.duoBlue,
-                              ),
-                            ),
-                            title: Text(
-                              displayName,
-                              style: TextStyle(
-                                color: context.colors.textPrimary,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            subtitle: Row(
-                              children: [
-                                Text(
-                                  file.sizeFormatted,
-                                  style: TextStyle(
-                                    color: context.colors.textFaint,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        (isSyllabus
-                                                ? AppTheme.duoOrange
-                                                : AppTheme.duoBlue)
-                                            .withOpacity(0.15),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    isSyllabus ? 'Syllabus' : 'Reference',
-                                    style: TextStyle(
-                                      color: isSyllabus
-                                          ? AppTheme.duoOrange
-                                          : AppTheme.duoBlue,
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            trailing: Icon(
-                              isCached
-                                  ? LucideIcons.checkCircle2
-                                  : LucideIcons.downloadCloud,
-                              color: isCached
-                                  ? AppTheme.duoGreen
-                                  : context.colors.textFaint,
-                              size: 20,
-                            ),
-                          );
+                          return _buildFileTile(file);
                         },
                       );
                     },
@@ -1467,6 +1508,144 @@ class _DocumentStorePickerDialogState
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPickerBreadcrumbs() {
+    if (_selectedCourse == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          IconButton(
+            icon: Icon(LucideIcons.arrowLeft, color: context.colors.textPrimary, size: 20),
+            onPressed: () {
+              setState(() {
+                if (_selectedSemester != null) {
+                  _selectedSemester = null;
+                } else {
+                  _selectedCourse = null;
+                }
+              });
+            },
+          ),
+          const SizedBox(width: 4),
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedCourse = null;
+                _selectedSemester = null;
+              });
+            },
+            child: Text(
+              widget.prefixFilter == 'pyq/' ? 'PYQs' : 'Syllabus',
+              style: TextStyle(
+                color: context.colors.textFaint,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          Icon(LucideIcons.chevronRight, color: context.colors.textFaint, size: 14),
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedSemester = null;
+              });
+            },
+            child: Text(
+              _selectedCourse!,
+              style: TextStyle(
+                color: _selectedSemester == null ? context.colors.textPrimary : context.colors.textFaint,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          if (_selectedSemester != null) ...[
+            Icon(LucideIcons.chevronRight, color: context.colors.textFaint, size: 14),
+            Text(
+              _selectedSemester!,
+              style: TextStyle(
+                color: context.colors.textPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFileTile(B2Object file) {
+    final displayName = file.key.split('/').last;
+    final isCached = _isPdfCached(file.key);
+    final isSyllabus = file.key.startsWith('syllabus/');
+    final isPyq = file.key.startsWith('pyq/');
+    final typeName = isSyllabus ? 'Syllabus' : (isPyq ? 'PYQ' : 'Reference');
+    final typeColor = isSyllabus
+        ? AppTheme.duoOrange
+        : (isPyq ? AppTheme.duoGreen : AppTheme.duoBlue);
+
+    return ListTile(
+      onTap: () => _handleFileSelection(file),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: typeColor.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(
+          LucideIcons.fileText,
+          color: typeColor,
+        ),
+      ),
+      title: Text(
+        displayName,
+        style: TextStyle(
+          color: context.colors.textPrimary,
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Row(
+        children: [
+          Text(
+            file.sizeFormatted,
+            style: TextStyle(
+              color: context.colors.textFaint,
+              fontSize: 11,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 6,
+              vertical: 2,
+            ),
+            decoration: BoxDecoration(
+              color: typeColor.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              typeName,
+              style: TextStyle(
+                color: typeColor,
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+      trailing: Icon(
+        isCached ? LucideIcons.checkCircle2 : LucideIcons.downloadCloud,
+        color: isCached ? AppTheme.duoGreen : context.colors.textFaint,
+        size: 20,
       ),
     );
   }
