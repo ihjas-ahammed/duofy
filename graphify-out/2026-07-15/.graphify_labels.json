@@ -691,5 +691,22 @@
   "689": "IsContainerTest",
   "690": "webview_value",
   "691": "GetErrorString",
-  "692": "CheckedDowncastToActualType"
+  "692": "CheckedDowncastToActualType",
+  "693": "LockImpl",
+  "694": "CefCToCppRefCounted<\n    CefJSDialogCallbackCToCpp,\n    CefJSDialogCallback,\n    cef_jsdialog_callback_t>::UnwrapDerived",
+  "695": "CefTimer",
+  "696": "RegisterCookieableSchemes",
+  "697": "CreateTestRequestContext",
+  "698": "_cef_extension_handler_t",
+  "699": "_cef_overlay_controller_t",
+  "700": "GetFileContents",
+  "701": "shutdown_checker.cc",
+  "702": "RedirectMismatchedFromHandlerTest",
+  "703": "TestData",
+  "704": "PostClosure",
+  "705": "TEST",
+  "706": "FunctorTraits<R (Receiver::*)(Args...) const>",
+  "707": ".applicationShouldTerminateAfterLastWindowClosed",
+  "708": "CefCToCppRefCounted<CefDOMNodeCToCpp, CefDOMNode, cef_domnode_t>::UnwrapDerived",
+  "709": "_InlineBlankField"
 }

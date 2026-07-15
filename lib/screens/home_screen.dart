@@ -3317,7 +3317,7 @@ class _HomeScreenState extends State<HomeScreen> {
           maxCrossAxisExtent: 110,
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
-          childAspectRatio: 100 / 112,
+          childAspectRatio: 100 / 122,
         ),
         itemCount: folders.length,
         itemBuilder: (context, index) {
@@ -3356,7 +3356,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onLongPress: () => _showFolderOptions(folder),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
             decoration: BoxDecoration(
               color: isHovered
                   ? AppTheme.duoBlue.withOpacity(0.15)

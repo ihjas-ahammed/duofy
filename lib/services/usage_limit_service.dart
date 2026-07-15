@@ -9,37 +9,51 @@ class UsageLimitService {
 
   // Default daily request count (capacity) for our free keys per model
   static const Map<String, int> defaultCapacityLimits = {
-    'gemini-3.5-flash': 20,
-    'gemini-3-flash-preview': 20,
-    'gemini-2.5-flash': 20,
-    'gemini-flash-lite-latest': 500,
-    'gemini-3.1-flash-lite': 500,
-    'gemini-3.1-flash-lite-preview': 500,
-    'gemini-2.5-flash-lite': 500,
-    'gemini-2.0-flash-lite': 500,
-    'gemini-3.1-flash-live-preview': 20,
+    // Gemini Flash / Lite models
+    'gemini-3.5-flash': 1500,
+    'gemini-3-flash-preview': 1500,
+    'gemini-2.5-flash': 1500,
+    'gemini-flash-lite-latest': 1500,
+    'gemini-3.1-flash-lite': 1500,
+    'gemini-3.1-flash-lite-preview': 1500,
+    'gemini-2.5-flash-lite': 1500,
+    'gemini-2.0-flash-lite': 1500,
+    'google/gemini-2.5-flash': 1500,
+
+    // Gemini Pro / Live models
+    'gemini-3.1-flash-live-preview': 50,
+    'google/gemini-2.5-pro': 50,
+
+    // Groq models
     'llama-3.3-70b-versatile': 14400,
     'llama-3.1-8b-instant': 14400,
     'groq/compound': 14400,
     'groq/compound-mini': 14400,
-    'llama-3.3-70b': 1000,
-    'llama-3.1-8b': 1000,
+
+    // Cerebras models
+    'llama-3.3-70b': 14400,
+    'llama-3.1-8b': 14400,
+    'llama-3.1-70b': 14400,
+
+    // OpenRouter models
     'meta-llama/llama-3.3-70b-instruct': 200,
-    'google/gemini-2.5-flash': 20,
+    'meta-llama/llama-3.1-8b-instruct': 200,
+    'google/gemma-2-9b-it:free': 1500,
     'gemma-4-26b-a4b-it': 1500,
     'gemma-4-31b-it': 1500,
-    'google/gemma-2-9b-it:free': 1500,
     'gemma4': 1500,
   };
 
   int _dailyActiveUsers = 1;
   final Map<String, int> _capacityLimits = Map.from(defaultCapacityLimits);
+  SharedPreferences? _prefs;
 
   int get dailyActiveUsers => _dailyActiveUsers;
 
   // Initialize: register active user and fetch limits from Firebase
   Future<void> init() async {
-    final prefs = await SharedPreferences.getInstance();
+    _prefs = await SharedPreferences.getInstance();
+    final prefs = _prefs!;
     
     // Generate/retrieve a unique user ID for daily active tracking
     String? localUserId = prefs.getString('usage_limit_local_uid');
@@ -115,29 +129,42 @@ class UsageLimitService {
     await prefs.setString('usage_limit_last_date', todayStr);
   }
 
-  // Check if own API key is configured for a platform
-  Future<bool> hasOwnApiKey(String platform) async {
-    final prefs = await SharedPreferences.getInstance();
-    switch (platform.toLowerCase()) {
-      case 'gemini':
-        final list = prefs.getStringList('gemini_api_keys_list') ?? [];
-        final str = prefs.getString('gemini_api_keys') ?? '';
-        return list.isNotEmpty || str.trim().isNotEmpty;
-      case 'groq':
-        final list = prefs.getStringList('groq_api_keys_list') ?? [];
-        final str = prefs.getString('groq_api_keys') ?? '';
-        return list.isNotEmpty || str.trim().isNotEmpty;
-      case 'cerebras':
-        final list = prefs.getStringList('cerebras_api_keys_list') ?? [];
-        final str = prefs.getString('cerebras_api_keys') ?? '';
-        return list.isNotEmpty || str.trim().isNotEmpty;
-      case 'openrouter':
-        final list = prefs.getStringList('openrouter_api_keys_list') ?? [];
-        final str = prefs.getString('openrouter_api_keys') ?? '';
-        return list.isNotEmpty || str.trim().isNotEmpty;
-      default:
-        return false;
+  // Check how many own API keys are configured synchronously
+  int getKeysCount(String platform) {
+    if (_prefs == null) return 0;
+    final plat = platform.toLowerCase();
+    List<String> list = [];
+    String scalar = '';
+
+    if (plat == 'gemini') {
+      list = _prefs!.getStringList('gemini_api_keys_list') ?? [];
+      scalar = _prefs!.getString('gemini_api_keys') ?? '';
+    } else if (plat == 'groq') {
+      list = _prefs!.getStringList('groq_api_keys_list') ?? [];
+      scalar = _prefs!.getString('groq_api_keys') ?? '';
+    } else if (plat == 'cerebras') {
+      list = _prefs!.getStringList('cerebras_api_keys_list') ?? [];
+      scalar = _prefs!.getString('cerebras_api_keys') ?? '';
+    } else if (plat == 'openrouter') {
+      list = _prefs!.getStringList('openrouter_api_keys_list') ?? [];
+      scalar = _prefs!.getString('openrouter_api_keys') ?? '';
     }
+
+    if (list.isNotEmpty) return list.length;
+    if (scalar.trim().isNotEmpty) {
+      return scalar.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).length;
+    }
+    return 0;
+  }
+
+  // Check if own API key is configured for a platform synchronously
+  bool hasOwnApiKeySync(String platform) {
+    return getKeysCount(platform) > 0;
+  }
+
+  // Check if own API key is configured for a platform (async fallback)
+  Future<bool> hasOwnApiKey(String platform) async {
+    return hasOwnApiKeySync(platform);
   }
 
   // Get platform name for a model
@@ -166,10 +193,10 @@ class UsageLimitService {
     // Dynamic fallbacks based on model names
     final lower = modelName.toLowerCase();
     if (lower.contains('flash-lite')) {
-      return 500;
+      return 1500;
     }
     if (lower.contains('flash')) {
-      return 20;
+      return 1500;
     }
     if (lower.contains('gemma')) {
       return 1500;
@@ -177,10 +204,17 @@ class UsageLimitService {
     return 1500; // global fallback
   }
 
-  // Get daily limit for a model (capacity / daily active users)
+  // Get daily limit for a model (capacity * custom keys count, or capacity / daily active users)
   int getLimit(String modelName) {
     final capacity = getCapacity(modelName);
-    return (capacity / _dailyActiveUsers).round();
+    final platform = getPlatformOfModel(modelName);
+    final keyCount = getKeysCount(platform);
+
+    if (keyCount > 0) {
+      return capacity * keyCount;
+    } else {
+      return (capacity / _dailyActiveUsers).round();
+    }
   }
 
   // Get current usage for a model today
@@ -198,10 +232,6 @@ class UsageLimitService {
 
   // Check if limit is hit for a model
   Future<bool> isLimitExceeded(String modelName) async {
-    final platform = getPlatformOfModel(modelName);
-    if (await hasOwnApiKey(platform)) {
-      return false; // No limit for own API keys
-    }
     final usage = await getUsage(modelName);
     final limit = getLimit(modelName);
     return usage >= limit;
