@@ -1456,93 +1456,104 @@ class _HomeScreenState extends State<HomeScreen> {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isDesktop = screenWidth >= 900;
 
-    return AnimatedBuilder(
-      animation: GenerationManager.instance,
-      builder: (context, child) {
-        final activeTasks = GenerationManager.instance.activeTasks;
-
-        if (isLoading) {
-          return Scaffold(
-            backgroundColor: context.colors.background,
-            body: const Center(
-              child: CircularProgressIndicator(color: AppTheme.duoBlue),
-            ),
-          );
+    return PopScope<Object?>(
+      canPop: _selectedFolderId == null,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_selectedFolderId != null) {
+          setState(() {
+            _selectedFolderId = null;
+          });
         }
+      },
+      child: AnimatedBuilder(
+        animation: GenerationManager.instance,
+        builder: (context, child) {
+          final activeTasks = GenerationManager.instance.activeTasks;
 
-        if (isDesktop) {
-          return Scaffold(
-            backgroundColor: context.colors.background,
-            body: Row(
-              children: [
-                // Desktop Left Sidebar (Navigation)
-                _buildDesktopSidebar(),
-                Container(width: 1, color: context.colors.outline),
-                // Desktop Main Content
-                Expanded(
-                  child: IndexedStack(
-                    index: _selectedTabIndex,
-                    children: [
-                      _buildDesktopLibraryTab(activeTasks, screenWidth),
-                      _buildAnalyticsTab(screenWidth),
-                      _buildPublishedTab(screenWidth),
-                      const DocumentStoreScreen(),
-                    ],
+          if (isLoading) {
+            return Scaffold(
+              backgroundColor: context.colors.background,
+              body: const Center(
+                child: CircularProgressIndicator(color: AppTheme.duoBlue),
+              ),
+            );
+          }
+
+          if (isDesktop) {
+            return Scaffold(
+              backgroundColor: context.colors.background,
+              body: Row(
+                children: [
+                  // Desktop Left Sidebar (Navigation)
+                  _buildDesktopSidebar(),
+                  Container(width: 1, color: context.colors.outline),
+                  // Desktop Main Content
+                  Expanded(
+                    child: IndexedStack(
+                      index: _selectedTabIndex,
+                      children: [
+                        _buildDesktopLibraryTab(activeTasks, screenWidth),
+                        _buildAnalyticsTab(screenWidth),
+                        _buildPublishedTab(screenWidth),
+                        const DocumentStoreScreen(),
+                      ],
+                    ),
                   ),
-                ),
+                ],
+              ),
+            );
+          }
+
+          return Scaffold(
+            extendBody: true,
+            backgroundColor: context.colors.background,
+            body: IndexedStack(
+              index: _selectedTabIndex,
+              children: [
+                _buildLibraryTab(activeTasks, screenWidth),
+                _buildAnalyticsTab(screenWidth),
+                _buildPublishedTab(screenWidth),
+                const DocumentStoreScreen(),
               ],
             ),
-          );
-        }
-
-        return Scaffold(
-          extendBody: true,
-          backgroundColor: context.colors.background,
-          body: IndexedStack(
-            index: _selectedTabIndex,
-            children: [
-              _buildLibraryTab(activeTasks, screenWidth),
-              _buildAnalyticsTab(screenWidth),
-              _buildPublishedTab(screenWidth),
-              const DocumentStoreScreen(),
-            ],
-          ),
-          bottomNavigationBar: GlassyNavBar(
-            currentIndex: _selectedTabIndex,
-            blur: 6.0,
-            icons: const [
-              LucideIcons.bookOpen,
-              LucideIcons.barChart2,
-              LucideIcons.globe,
-              LucideIcons.hardDrive,
-            ],
-            tooltips: const ['Library', 'Analytics', 'Published', 'Doc Store'],
-            onTap: (index) {
-              setState(() {
-                _selectedTabIndex = index;
-              });
-            },
-            activeColor: AppTheme.duoGreen,
-          ),
-          floatingActionButton: _selectedTabIndex == 0 && !kIsWeb
-              ? FloatingActionButton(
-                  heroTag: 'home_fab',
-                  backgroundColor: AppTheme.duoGreen,
-                  child: Icon(
-                    LucideIcons.plus,
-                    color: context.colors.textPrimary,
-                    size: 32,
-                  ),
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const GenerateBookScreen(),
+            bottomNavigationBar: GlassyNavBar(
+              currentIndex: _selectedTabIndex,
+              blur: 6.0,
+              icons: const [
+                LucideIcons.bookOpen,
+                LucideIcons.barChart2,
+                LucideIcons.globe,
+                LucideIcons.hardDrive,
+              ],
+              tooltips: const ['Library', 'Analytics', 'Published', 'Doc Store'],
+              onTap: (index) {
+                setState(() {
+                  _selectedTabIndex = index;
+                });
+              },
+              activeColor: AppTheme.duoGreen,
+            ),
+            floatingActionButton: _selectedTabIndex == 0 && !kIsWeb
+                ? FloatingActionButton(
+                    heroTag: 'home_fab',
+                    backgroundColor: AppTheme.duoGreen,
+                    child: Icon(
+                      LucideIcons.plus,
+                      color: context.colors.textPrimary,
+                      size: 32,
                     ),
-                  ).then((_) => _loadAllData(force: false)),
-                )
-              : null,
-        );
-      },
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const GenerateBookScreen(),
+                      ),
+                    ).then((_) => _loadAllData(force: false)),
+                  )
+                : null,
+          );
+        },
+      ),
     );
   }
 

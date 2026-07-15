@@ -5,10 +5,13 @@ import '../theme/app_theme.dart';
 import '../services/progress_service.dart';
 import '../utils/progress_utils.dart';
 import 'dart:ui';
+import 'dart:async';
 import '../services/global_state.dart';
 import '../services/generation_manager.dart';
 import 'main_layout_screen.dart';
 import '../services/deadline_service.dart';
+import '../services/bookmark_service.dart';
+import 'lesson_screen.dart';
 
 class SectionSelectionScreen extends StatefulWidget {
   final Book book;
@@ -32,14 +35,26 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
   List<String> _completedLessons = [];
   bool _isLoading = true;
   Map<int, Map<String, dynamic>> _sectionTargets = {};
+  bool _targetButtonExpanded = false;
+  Timer? _targetCollapseTimer;
   int? _highlightedSectionIdx;
   final ScrollController _scrollController = ScrollController();
   final Map<int, GlobalKey> _sectionKeys = {};
+  bool _hasScrolled = false;
 
   @override
   void initState() {
     super.initState();
     _loadProgress();
+    GlobalState.progressNotifier.addListener(_loadProgress);
+  }
+
+  @override
+  void dispose() {
+    GlobalState.progressNotifier.removeListener(_loadProgress);
+    _targetCollapseTimer?.cancel();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadProgress() async {
@@ -56,10 +71,13 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
           _isLoading = false;
         });
       }
-      if (widget.initialHighlightSectionIdx != null) {
+      if (widget.initialHighlightSectionIdx != null && !_hasScrolled) {
+        _hasScrolled = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           Future.delayed(const Duration(milliseconds: 400), () {
-            _scrollToAndHighlight(widget.initialHighlightSectionIdx!);
+            if (mounted) {
+              _scrollToAndHighlight(widget.initialHighlightSectionIdx!);
+            }
           });
         });
       }
@@ -125,6 +143,14 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(LucideIcons.bookmark),
+            onPressed: () => _showBookmarksDialog(context),
+            tooltip: 'Module Bookmarks',
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       floatingActionButton: _buildFloatingTargetButton(),
       body: _isLoading
@@ -602,6 +628,276 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
     );
   }
 
+  Future<List<_BookmarkMatch>> _getMatches() async {
+    final bookmarks = await BookmarkService.getBookmarks();
+    final List<_BookmarkMatch> matches = [];
+
+    for (var bm in bookmarks) {
+      if (bm.bookId != widget.book.id) continue;
+      bool found = false;
+      for (int m = 0; m < widget.book.modules.length; m++) {
+        if (m != widget.moduleIdx) continue;
+        final module = widget.book.modules[m];
+        for (int s = 0; s < module.sections.length; s++) {
+          final section = module.sections[s];
+          for (int u = 0; u < section.units.length; u++) {
+            final unit = section.units[u];
+            for (int l = 0; l < unit.lessons.length; l++) {
+              final lesson = unit.lessons[l];
+              if (lesson.id == bm.lessonId) {
+                matches.add(_BookmarkMatch(
+                  bookmark: bm,
+                  module: module,
+                  section: section,
+                  unit: unit,
+                  lesson: lesson,
+                  moduleIdx: m,
+                  sectionIdx: s,
+                  unitIdx: u,
+                  lessonIdx: l,
+                ));
+                found = true;
+                break;
+              }
+            }
+            if (found) break;
+          }
+          if (found) break;
+        }
+        if (found) break;
+      }
+    }
+    return matches;
+  }
+
+  void _showBookmarksDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return FutureBuilder<List<_BookmarkMatch>>(
+              future: _getMatches(),
+              builder: (context, snapshot) {
+                final colors = context.colors;
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return AlertDialog(
+                    backgroundColor: colors.surface,
+                    content: const SizedBox(
+                      height: 100,
+                      child: Center(
+                        child: CircularProgressIndicator(color: AppTheme.duoViolet),
+                      ),
+                    ),
+                  );
+                }
+
+                final matches = snapshot.data ?? [];
+                if (matches.isEmpty) {
+                  return AlertDialog(
+                    backgroundColor: colors.surface,
+                    title: Row(
+                      children: [
+                        Icon(LucideIcons.bookmark, color: AppTheme.duoViolet),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Bookmarks',
+                          style: TextStyle(
+                            color: colors.textPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 16),
+                        Icon(
+                          LucideIcons.bookmark,
+                          size: 48,
+                          color: colors.textFaint,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No Bookmarks Yet',
+                          style: TextStyle(
+                            color: colors.textPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Tap the bookmark icon while studying a lesson to save it here.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: colors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          'Close',
+                          style: TextStyle(color: colors.textPrimary),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+
+                // Group by section
+                final Map<Section, List<_BookmarkMatch>> grouped = {};
+                for (var match in matches) {
+                  grouped.putIfAbsent(match.section, () => []).add(match);
+                }
+
+                return Dialog(
+                  backgroundColor: colors.surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Container(
+                    constraints: const BoxConstraints(maxHeight: 500),
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(LucideIcons.bookmark, color: AppTheme.duoViolet),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Module Bookmarks',
+                              style: TextStyle(
+                                color: colors.textPrimary,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Expanded(
+                          child: ListView(
+                            shrinkWrap: true,
+                            physics: const BouncingScrollPhysics(),
+                            children: grouped.entries.map((entry) {
+                              final section = entry.key;
+                              final sMatches = entry.value;
+                              final sectionColor = SectionColors.base(section.color);
+
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                    child: Text(
+                                      section.title.toUpperCase(),
+                                      style: TextStyle(
+                                        color: sectionColor,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 11,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                  ),
+                                  ...sMatches.map((match) {
+                                    return Card(
+                                      color: colors.surfaceAlt,
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: ListTile(
+                                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                        title: Text(
+                                          match.lesson.title,
+                                          style: TextStyle(
+                                            color: colors.textPrimary,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        subtitle: Text(
+                                          match.unit.title,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: colors.textSecondary,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                        trailing: IconButton(
+                                          icon: Icon(
+                                            LucideIcons.trash2,
+                                            size: 18,
+                                            color: colors.textFaint,
+                                          ),
+                                          onPressed: () async {
+                                            await BookmarkService.remove(match.bookmark.lessonId);
+                                            setStateDialog(() {});
+                                          },
+                                        ),
+                                        onTap: () async {
+                                          Navigator.pop(context); // Close dialog
+                                          await BookmarkService.markOpened(match.bookmark.lessonId);
+                                          if (!context.mounted) return;
+                                          await Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => LessonScreen(
+                                                lesson: match.lesson,
+                                                book: widget.book,
+                                                modIdx: match.moduleIdx,
+                                                secIdx: match.sectionIdx,
+                                                unitIdx: match.unitIdx,
+                                                lessonIdx: match.lessonIdx,
+                                              ),
+                                            ),
+                                          );
+                                          _loadProgress();
+                                        },
+                                      ),
+                                    );
+                                  }),
+                                  const Divider(height: 24),
+                                ],
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: Text(
+                              'Close',
+                              style: TextStyle(
+                                color: colors.textPrimary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget? _buildFloatingTargetButton() {
     Map<String, dynamic>? currentModuleTarget;
     int? currentSecIdx;
@@ -620,24 +916,36 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
     final targetLeft = currentModuleTarget['targetLeftToday'] as int;
     final color = SectionColors.base(widget.module.sections[currentSecIdx!].color);
 
-    final text = targetLeft > 0 
-        ? "Today's Target: $targetLeft left"
-        : "Today's Target Completed! 🎉";
+    final int todayTarget = currentModuleTarget['todayTarget'] as int? ?? 0;
+    final int completedToday = currentModuleTarget['completedToday'] as int? ?? 0;
 
-    return Container(
+    final double progress = todayTarget > 0 
+        ? (completedToday / todayTarget).clamp(0.0, 1.0) 
+        : 1.0;
+
+    final String expandedText = targetLeft > 0 ? "$targetLeft left" : "Done! 🎉";
+
+    final double buttonWidth = _targetButtonExpanded
+        ? (targetLeft > 0 ? 116.0 : 124.0)
+        : 48.0; // Perfect circle!
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOutCubic,
       height: 48,
+      width: buttonWidth,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withOpacity(0.12),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: color.withOpacity(0.4),
-          width: 1.5,
+          color: _targetButtonExpanded ? color.withOpacity(0.3) : Colors.transparent,
+          width: _targetButtonExpanded ? 1.5 : 0.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -647,26 +955,82 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: InkWell(
             onTap: () {
-              _scrollToAndHighlight(currentSecIdx!);
+              if (!_targetButtonExpanded) {
+                setState(() {
+                  _targetButtonExpanded = true;
+                });
+                _targetCollapseTimer?.cancel();
+                _targetCollapseTimer = Timer(const Duration(seconds: 4), () {
+                  if (mounted) {
+                    setState(() {
+                      _targetButtonExpanded = false;
+                    });
+                  }
+                });
+              } else {
+                _targetCollapseTimer?.cancel();
+                setState(() {
+                  _targetButtonExpanded = false;
+                });
+                _scrollToAndHighlight(currentSecIdx!);
+              }
             },
             borderRadius: BorderRadius.circular(24),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(LucideIcons.target, color: color, size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    text,
-                    style: TextStyle(
-                      color: context.colors.textPrimary,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 12,
+            child: Stack(
+              children: [
+                // The Circular Progress Border surrounding the target icon
+                AnimatedAlign(
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeOutCubic,
+                  alignment: _targetButtonExpanded ? Alignment.centerLeft : Alignment.center,
+                  child: AnimatedPadding(
+                    duration: const Duration(milliseconds: 350),
+                    curve: Curves.easeOutCubic,
+                    padding: EdgeInsets.only(left: _targetButtonExpanded ? 2.0 : 0.0),
+                    child: SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                            value: progress,
+                            strokeWidth: 3.5,
+                            backgroundColor: color.withOpacity(0.15),
+                            valueColor: AlwaysStoppedAnimation<Color>(color),
+                          ),
+                          Icon(
+                            LucideIcons.target,
+                            color: color,
+                            size: 18,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ],
-              ),
+                ),
+                // The expanded text view
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 54.0),
+                    child: AnimatedOpacity(
+                      opacity: _targetButtonExpanded ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutCubic,
+                      child: Text(
+                        expandedText,
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: context.colors.textPrimary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -685,7 +1049,14 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
         }
       }
     }
-    int incompleteCount = (totalLessons - completedCount).clamp(0, totalLessons);
+    int incompleteCount = 0;
+    if (totalLessons == 0) {
+      final isCompleted = _completedLessons.contains(section.id);
+      completedCount = isCompleted ? 1 : 0;
+      incompleteCount = isCompleted ? 0 : 1;
+    } else {
+      incompleteCount = (totalLessons - completedCount).clamp(0, totalLessons);
+    }
 
     showModalBottomSheet(
       context: context,
@@ -1014,5 +1385,29 @@ class _MenuActionItem {
     required this.subtitle,
     required this.iconColor,
     required this.onTap,
+  });
+}
+
+class _BookmarkMatch {
+  final Bookmark bookmark;
+  final Module module;
+  final Section section;
+  final Unit unit;
+  final Lesson lesson;
+  final int moduleIdx;
+  final int sectionIdx;
+  final int unitIdx;
+  final int lessonIdx;
+
+  _BookmarkMatch({
+    required this.bookmark,
+    required this.module,
+    required this.section,
+    required this.unit,
+    required this.lesson,
+    required this.moduleIdx,
+    required this.sectionIdx,
+    required this.unitIdx,
+    required this.lessonIdx,
   });
 }

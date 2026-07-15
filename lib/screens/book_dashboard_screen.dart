@@ -1,5 +1,6 @@
 import '../platform/io_shim.dart';
 import 'dart:ui';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -23,6 +24,7 @@ import '../services/global_state.dart';
 import '../widgets/coach_mark.dart';
 import '../widgets/quick_review_sheet.dart';
 import 'main_layout_screen.dart';
+import '../services/deadline_service.dart';
 
 class BookDashboardScreen extends StatefulWidget {
   final Book book;
@@ -56,6 +58,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
 
   int _activeModuleIdx = 0;
   int _activeSectionIdx = 0;
+  Map<String, dynamic>? _mostUrgentTarget;
+  bool _targetButtonExpanded = false;
+  Timer? _targetCollapseTimer;
 
   final GlobalKey _coachModuleKey = GlobalKey();
   final GlobalKey _coachSectionKey = GlobalKey();
@@ -113,6 +118,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
   @override
   void dispose() {
     GlobalState.progressNotifier.removeListener(_loadProgress);
+    _targetCollapseTimer?.cancel();
     super.dispose();
   }
 
@@ -190,6 +196,163 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     final courseXp = await ProgressService.getXpForCourse(widget.book.id);
     GlobalState.xpNotifier.value = courseXp;
     if (mounted) setState(() => _completedLessons = comp);
+    final urgent = await DeadlineService.instance.getMostUrgentActiveTarget(
+      widget.book.id,
+      widget.book,
+      comp,
+    );
+    if (mounted) {
+      setState(() {
+        _mostUrgentTarget = urgent;
+      });
+    }
+  }
+
+  Widget? _buildFloatingTargetButton() {
+    if (_mostUrgentTarget == null) return null;
+
+    final metrics = _mostUrgentTarget!['metrics'] as Map<String, dynamic>;
+    final targetLeft = _mostUrgentTarget!['totalTargetLeftToday'] as int? ?? (metrics['targetLeftToday'] as int);
+    final moduleIdx = _mostUrgentTarget!['moduleIdx'] as int;
+    final sectionIdx = _mostUrgentTarget!['sectionIdx'] as int;
+
+    final mIdx = _activeModuleIdx.clamp(0, widget.book.modules.length - 1);
+    final activeMod = widget.book.modules[mIdx];
+    final sIdx = activeMod.sections.isEmpty 
+        ? 0 
+        : _activeSectionIdx.clamp(0, activeMod.sections.length - 1);
+    final activeSec = activeMod.sections.isNotEmpty ? activeMod.sections[sIdx] : null;
+    final color = activeSec != null
+        ? SectionColors.base(activeSec.color)
+        : AppTheme.duoBlue;
+
+    final int todayTarget = metrics['todayTarget'] as int? ?? 0;
+    final int completedToday = metrics['completedToday'] as int? ?? 0;
+
+    final double progress = todayTarget > 0 
+        ? (completedToday / todayTarget).clamp(0.0, 1.0) 
+        : 1.0;
+
+    final String expandedText = targetLeft > 0 ? "$targetLeft left" : "Done! 🎉";
+
+    final double buttonWidth = _targetButtonExpanded
+        ? (targetLeft > 0 ? 116.0 : 124.0)
+        : 48.0; // Perfect circle!
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOutCubic,
+      height: 48,
+      width: buttonWidth,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: _targetButtonExpanded ? color.withOpacity(0.3) : Colors.transparent,
+          width: _targetButtonExpanded ? 1.5 : 0.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: InkWell(
+            onTap: () {
+              if (!_targetButtonExpanded) {
+                setState(() {
+                  _targetButtonExpanded = true;
+                });
+                _targetCollapseTimer?.cancel();
+                _targetCollapseTimer = Timer(const Duration(seconds: 4), () {
+                  if (mounted) {
+                    setState(() {
+                      _targetButtonExpanded = false;
+                    });
+                  }
+                });
+              } else {
+                _targetCollapseTimer?.cancel();
+                setState(() {
+                  _targetButtonExpanded = false;
+                });
+                if (_activeModuleIdx != moduleIdx || _activeSectionIdx != sectionIdx) {
+                  setState(() {
+                    _activeModuleIdx = moduleIdx;
+                    _activeSectionIdx = sectionIdx;
+                  });
+                  widget.activeModule?.value = moduleIdx;
+                  widget.activeSection?.value = sectionIdx;
+                }
+              }
+            },
+            borderRadius: BorderRadius.circular(24),
+            child: Stack(
+              children: [
+                // The Circular Progress Border surrounding the target icon
+                AnimatedAlign(
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeOutCubic,
+                  alignment: _targetButtonExpanded ? Alignment.centerLeft : Alignment.center,
+                  child: AnimatedPadding(
+                    duration: const Duration(milliseconds: 350),
+                    curve: Curves.easeOutCubic,
+                    padding: EdgeInsets.only(left: _targetButtonExpanded ? 2.0 : 0.0),
+                    child: SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                            value: progress,
+                            strokeWidth: 3.5,
+                            backgroundColor: color.withOpacity(0.15),
+                            valueColor: AlwaysStoppedAnimation<Color>(color),
+                          ),
+                          Icon(
+                            LucideIcons.target,
+                            color: color,
+                            size: 18,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // The expanded text view
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 54.0),
+                    child: AnimatedOpacity(
+                      opacity: _targetButtonExpanded ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutCubic,
+                      child: Text(
+                        expandedText,
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: context.colors.textPrimary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _onClearUnit(Unit unit, int modIdx, int secIdx, int unitIdx) {
@@ -935,6 +1098,12 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
 
     return Scaffold(
       backgroundColor: context.colors.background,
+      floatingActionButton: _buildFloatingTargetButton(),
+      floatingActionButtonLocation: const _CustomFloatingActionButtonLocation(
+        FloatingActionButtonLocation.endFloat,
+        offsetX: -12,
+        offsetY: -93,
+      ),
       body: Stack(
         children: [
           // Lesson path content
@@ -1361,10 +1530,18 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     final cachedList = prefs.getStringList(cacheKey) ?? [];
 
     int totalLessons = unit.lessons.length;
-    int completedCount = unit.lessons
-        .where((l) => _completedLessons.contains(l.id))
-        .length;
-    int incompleteCount = totalLessons - completedCount;
+    int completedCount = 0;
+    int incompleteCount = 0;
+    if (!unit.isGenerated || unit.lessons.isEmpty) {
+      final isCompleted = _completedLessons.contains(unit.id);
+      completedCount = isCompleted ? 1 : 0;
+      incompleteCount = isCompleted ? 0 : 1;
+    } else {
+      completedCount = unit.lessons
+          .where((l) => _completedLessons.contains(l.id))
+          .length;
+      incompleteCount = totalLessons - completedCount;
+    }
 
     if (!mounted) return;
 
@@ -2999,4 +3176,22 @@ class UnitPrerequisite {
     required this.completedLessonsCount,
     required this.totalLessonsCount,
   });
+}
+
+class _CustomFloatingActionButtonLocation extends FloatingActionButtonLocation {
+  final FloatingActionButtonLocation location;
+  final double offsetX;
+  final double offsetY;
+
+  const _CustomFloatingActionButtonLocation(
+    this.location, {
+    this.offsetX = 0,
+    this.offsetY = 0,
+  });
+
+  @override
+  Offset getOffset(ScaffoldPrelayoutGeometry scaffoldGeometry) {
+    final Offset offset = location.getOffset(scaffoldGeometry);
+    return Offset(offset.dx + offsetX, offset.dy + offsetY);
+  }
 }
