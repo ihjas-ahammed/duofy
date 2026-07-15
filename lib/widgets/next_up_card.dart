@@ -45,16 +45,12 @@ class NextUpCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(24, 4, 24, 8),
             child: InkWell(
               borderRadius: BorderRadius.circular(20),
-              onTap: () async {
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.setString(
-                  'last_lesson_id_${n.book.id}',
-                  n.lesson.id,
-                );
-                await prefs.setInt('last_mod_idx_${n.book.id}', n.modIdx);
-                await prefs.setInt('last_sec_idx_${n.book.id}', n.secIdx);
-
-                if (!context.mounted) return;
+              onTap: () {
+                SharedPreferences.getInstance().then((prefs) {
+                  prefs.setString('last_lesson_id_${n.book.id}', n.lesson.id);
+                  prefs.setInt('last_mod_idx_${n.book.id}', n.modIdx);
+                  prefs.setInt('last_sec_idx_${n.book.id}', n.secIdx);
+                });
 
                 Navigator.push(
                   context,

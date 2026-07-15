@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Lets the in-app auto-updater hand a downloaded APK to the system
+         package installer (Settings → "Install unknown apps" grant flow). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
     <application
         android:label="Flow"
         android:name="${applicationName}"

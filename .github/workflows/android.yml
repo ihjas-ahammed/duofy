@@ -82,8 +82,11 @@ jobs:
         id: version
         shell: bash
         run: |
-          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//' | xargs)
+          RAW=$(grep '^version:' pubspec.yaml | sed 's/version: //' | xargs)
+          VERSION="${RAW%%+*}"
+          VCODE="${RAW##*+}"
           echo "vname=$VERSION" >> $GITHUB_OUTPUT
+          echo "vcode=$VCODE" >> $GITHUB_OUTPUT
 
       - name: Build release APK (split per ABI)
         run: flutter build apk --release --split-per-abi
@@ -99,6 +102,55 @@ jobs:
             cp "$apk" "builds/flow-v${VERSION}-${ABI}.apk"
           done
           ls -lh builds/
+
+      - name: Generate update manifest and changelog
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.vname }}"
+          VCODE="${{ steps.version.outputs.vcode }}"
+          mkdir -p builds/whatsnew
+
+          # Auto-generate the "What's new" notes from feat:/fix: commits since the
+          # previous release — but never clobber a hand-written one for this version.
+          CHANGELOG="builds/whatsnew/${VERSION}.md"
+          if [ ! -f "$CHANGELOG" ]; then
+            PREV=$(git log --format='%H' --grep='chore: add Android builds' -n 1 || true)
+            RANGE="HEAD"
+            [ -n "$PREV" ] && RANGE="${PREV}..HEAD"
+            {
+              echo "## What's new in ${VERSION}"
+              echo
+              NOTES=$(git log $RANGE --pretty='%s' \
+                | grep -E '^(feat|fix|perf)(\(.*\))?:' \
+                | sed -E 's/^(feat|fix|perf)(\(.*\))?: */- /' || true)
+              if [ -n "$NOTES" ]; then
+                echo "$NOTES"
+              else
+                echo "- Improvements and bug fixes."
+              fi
+            } > "$CHANGELOG"
+          fi
+
+          # Build the manifest, including only ABIs we actually produced.
+          {
+            echo '{'
+            echo "  \"versionName\": \"${VERSION}\","
+            echo "  \"versionCode\": ${VCODE},"
+            echo "  \"changelogPath\": \"builds/whatsnew/${VERSION}.md\","
+            echo '  "apks": {'
+            first=1
+            for ABI in arm64-v8a armeabi-v7a; do
+              APK="builds/flow-v${VERSION}-${ABI}.apk"
+              [ -f "$APK" ] || continue
+              [ $first -eq 0 ] && echo ','
+              printf '    "%s": "%s"' "$ABI" "$APK"
+              first=0
+            done
+            echo
+            echo '  }'
+            echo '}'
+          } > builds/latest.json
+          cat builds/latest.json
 
       - name: Commit and push builds to repository
         if: ${{ github.event_name != 'pull_request' }}

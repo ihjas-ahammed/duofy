@@ -662,7 +662,7 @@ class _LessonScreenState extends State<LessonScreen> {
         if (correct) {
           HapticFeedback.heavyImpact();
         } else {
-          HapticFeedback.vibrate();
+          HapticFeedback.mediumImpact();
         }
       });
       _recordFirstAttempt(slide, correct);
@@ -1290,9 +1290,7 @@ class _LessonScreenState extends State<LessonScreen> {
     ].contains(slide.type);
     final feedbackColor = _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed;
     final wrongExplanation = _wrongQuizExplanation(slide);
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
+    return Container(
       decoration: BoxDecoration(
         color: _answered ? feedbackColor.withOpacity(0.1) : Colors.transparent,
         borderRadius: BorderRadius.circular(_answered ? 20 : 0),
@@ -1558,7 +1556,7 @@ class _LessonScreenState extends State<LessonScreen> {
                 if (remembered) {
                   HapticFeedback.heavyImpact();
                 } else {
-                  HapticFeedback.vibrate();
+                  HapticFeedback.mediumImpact();
                 }
               });
               _recordFirstAttempt(slide, remembered);

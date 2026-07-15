@@ -436,11 +436,15 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
       }
     }
 
-    if (correct) {
-      HapticFeedback.heavyImpact();
-    } else {
-      HapticFeedback.vibrate();
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 50), () {
+        if (correct) {
+          HapticFeedback.heavyImpact();
+        } else {
+          HapticFeedback.mediumImpact();
+        }
+      });
+    });
 
     setState(() {
       _answered = true;
@@ -607,8 +611,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
 
               // Native Bottom Action Bar (hide if child implements its own)
               if (!_isCustomBottomBar)
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
+                Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 24,

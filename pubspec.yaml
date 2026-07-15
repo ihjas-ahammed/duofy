@@ -77,6 +77,13 @@ dependencies:
   timezone: ^0.11.1
   flutter_timezone: ^5.1.0
 
+  # Auto-update (Android): read the running build's versionCode, detect the
+  # device ABI to pick the matching split APK, and hand the downloaded APK to
+  # the system package installer. See lib/services/update_service.dart.
+  package_info_plus: ^8.3.0
+  device_info_plus: ^12.1.0
+  open_filex: ^4.7.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

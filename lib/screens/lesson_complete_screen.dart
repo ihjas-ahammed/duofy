@@ -313,36 +313,58 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen>
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.sizeOf(context).width >= 900;
     return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
-            isDesktop ? _buildDesktop() : _buildMobile(),
-            // Celebration burst falling from the top, above the content but
-            // purely decorative (ignores pointer events).
-            Align(
-              alignment: Alignment.topCenter,
-              child: IgnorePointer(
-                child: ConfettiWidget(
-                  confettiController: _confettiController,
-                  blastDirection: math.pi / 2, // downwards
-                  blastDirectionality: BlastDirectionality.explosive,
-                  emissionFrequency: 0.55,
-                  numberOfParticles: 12,
-                  maxBlastForce: 24,
-                  minBlastForce: 8,
-                  gravity: 0.25,
-                  colors: const [
-                    AppTheme.duoGreen,
-                    AppTheme.duoBlue,
-                    AppTheme.duoViolet,
-                    AppTheme.duoOrange,
-                    Colors.amber,
-                  ],
-                ),
+      body: Stack(
+        children: [
+          SafeArea(
+            child: isDesktop ? _buildDesktop() : _buildMobile(),
+          ),
+          // Celebration burst shooting from left corner
+          Positioned(
+            left: 20,
+            bottom: 120,
+            child: IgnorePointer(
+              child: ConfettiWidget(
+                confettiController: _confettiController,
+                blastDirectionality: BlastDirectionality.explosive,
+                emissionFrequency: 0.01,
+                numberOfParticles: 60,
+                maxBlastForce: 135,
+                minBlastForce: 75,
+                gravity: 0.08,
+                colors: const [
+                  AppTheme.duoGreen,
+                  AppTheme.duoBlue,
+                  AppTheme.duoViolet,
+                  AppTheme.duoOrange,
+                  Colors.amber,
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+          // Celebration burst shooting from right corner
+          Positioned(
+            right: 20,
+            bottom: 120,
+            child: IgnorePointer(
+              child: ConfettiWidget(
+                confettiController: _confettiController,
+                blastDirectionality: BlastDirectionality.explosive,
+                emissionFrequency: 0.01,
+                numberOfParticles: 60,
+                maxBlastForce: 135,
+                minBlastForce: 75,
+                gravity: 0.08,
+                colors: const [
+                  AppTheme.duoGreen,
+                  AppTheme.duoBlue,
+                  AppTheme.duoViolet,
+                  AppTheme.duoOrange,
+                  Colors.amber,
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -412,48 +434,52 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen>
 
   /// Mobile: original full-height stacked layout.
   Widget _buildMobile() {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        children: [
-          const Spacer(),
-          _hero,
-          const SizedBox(height: 48),
-          _staggered(
-            0.2,
-            Row(
-              children: [
-                Expanded(child: _xpStatTile()),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _statTile(
-                    icon: LucideIcons.target,
-                    accentColor: AppTheme.duoBlue,
-                    label: 'ACCURACY',
-                    value: '${widget.accuracy}%',
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          children: [
+            const SizedBox(height: 16),
+            _hero,
+            const SizedBox(height: 32),
+            _staggered(
+              0.2,
+              Row(
+                children: [
+                  Expanded(child: _xpStatTile()),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _statTile(
+                      icon: LucideIcons.target,
+                      accentColor: AppTheme.duoBlue,
+                      label: 'ACCURACY',
+                      value: '${widget.accuracy}%',
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          _staggered(
-            0.4,
-            SizedBox(
-              width: double.infinity,
-              child: _statTile(
-                icon: LucideIcons.clock,
-                accentColor: AppTheme.duoGreen,
-                label: 'TIME SPENT',
-                value: _formattedTime,
+                ],
               ),
             ),
-          ),
-          const Spacer(),
-          _reflectionRow,
-          const SizedBox(height: 20),
-          _continueButton,
-        ],
+            const SizedBox(height: 16),
+            _staggered(
+              0.4,
+              SizedBox(
+                width: double.infinity,
+                child: _statTile(
+                  icon: LucideIcons.clock,
+                  accentColor: AppTheme.duoGreen,
+                  label: 'TIME SPENT',
+                  value: _formattedTime,
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+            _reflectionRow,
+            const SizedBox(height: 24),
+            _continueButton,
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }

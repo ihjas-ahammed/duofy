@@ -13,6 +13,7 @@ import '../widgets/duo_button.dart';
 import '../services/pdf_service.dart';
 import '../services/ai_service.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
+import '../services/fb/fb_firestore.dart';
 
 enum DocCategory { reference, syllabus, pyq }
 
@@ -259,8 +260,18 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
   Future<void> _pickAndUpload() async {
     if (_isActionLoading) return;
 
-    final category = await _showCategorySelectionDialog();
-    if (category == null) return;
+    final DocCategory category = _selectedCategory;
+
+    // Ensure we are inside a course/semester folder for syllabus and pyq
+    if (category != DocCategory.reference && (_selectedCourse == null || _selectedSemester == null)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please navigate to a semester folder before uploading syllabus or PYQ files.'),
+          backgroundColor: AppTheme.duoOrange,
+        ),
+      );
+      return;
+    }
 
     try {
       final result = await FilePicker.platform.pickFiles(
@@ -287,14 +298,17 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
 
       final bytes = await file.readAsBytes();
       final String folder;
+      final String objectKey;
       if (category == DocCategory.syllabus) {
         folder = 'syllabus';
+        objectKey = '$folder/$_selectedCourse/$_selectedSemester/$confirmedName';
       } else if (category == DocCategory.pyq) {
         folder = 'pyq';
+        objectKey = '$folder/$_selectedCourse/$_selectedSemester/$confirmedName';
       } else {
         folder = 'reference';
+        objectKey = '$folder/$confirmedName';
       }
-      final objectKey = '$folder/$confirmedName';
 
       setState(() {
         _isActionLoading = true;
@@ -372,6 +386,165 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
             content: Text('Upload failed: $e'),
             backgroundColor: AppTheme.duoRed,
           ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isActionLoading = false;
+      });
+    }
+  }
+
+  IconData get _fabIcon {
+    if (_selectedCategory == DocCategory.reference) {
+      return LucideIcons.upload;
+    }
+    if (_selectedCourse == null) {
+      return LucideIcons.folderPlus;
+    }
+    if (_selectedSemester == null) {
+      return LucideIcons.folderPlus;
+    }
+    return LucideIcons.upload;
+  }
+
+  void _onFabPressed() {
+    if (_selectedCategory == DocCategory.reference) {
+      _pickAndUpload();
+      return;
+    }
+    if (_selectedCourse == null) {
+      _showCreateSubjectDialog();
+      return;
+    }
+    if (_selectedSemester == null) {
+      _showCreateSemesterDialog();
+      return;
+    }
+    _pickAndUpload();
+  }
+
+  Future<void> _showCreateSubjectDialog() async {
+    final textController = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.colors.surface,
+        title: const Text('Create Subject Folder'),
+        content: TextField(
+          controller: textController,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Subject Name',
+            hintText: 'e.g. Mathematics, Biology',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, textController.text.trim()),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.duoGreen),
+            child: Text('Create', style: TextStyle(color: context.colors.textPrimary)),
+          ),
+        ],
+      ),
+    );
+
+    if (name == null || name.isEmpty) return;
+
+    final String folder = _selectedCategory == DocCategory.syllabus ? 'syllabus' : 'pyq';
+    final String dummyKey = '$folder/$name/placeholder.txt';
+    final docId = dummyKey.replaceAll('/', '_');
+
+    setState(() {
+      _isActionLoading = true;
+      _actionLoadingText = 'Creating subject folder...';
+    });
+
+    try {
+      await FbFirestore.instance.collection('document_store').doc(docId).set({
+        'name': 'placeholder.txt',
+        'key': dummyKey,
+        'size': 0,
+        'category': folder,
+        'partsCount': 1,
+        'uploadedAt': DateTime.now().toUtc().toIso8601String(),
+        'course': name,
+      });
+      await _loadFiles();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to create folder: $e'), backgroundColor: AppTheme.duoRed),
+        );
+      }
+    } finally {
+      setState(() {
+        _isActionLoading = false;
+      });
+    }
+  }
+
+  Future<void> _showCreateSemesterDialog() async {
+    if (_selectedCourse == null) return;
+    final textController = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.colors.surface,
+        title: Text('Create Semester in $_selectedCourse'),
+        content: TextField(
+          controller: textController,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Semester Name',
+            hintText: 'e.g. S1, S2, S3',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, textController.text.trim()),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.duoGreen),
+            child: Text('Create', style: TextStyle(color: context.colors.textPrimary)),
+          ),
+        ],
+      ),
+    );
+
+    if (name == null || name.isEmpty) return;
+
+    final String folder = _selectedCategory == DocCategory.syllabus ? 'syllabus' : 'pyq';
+    final String dummyKey = '$folder/$_selectedCourse/$name/placeholder.txt';
+    final docId = dummyKey.replaceAll('/', '_');
+
+    setState(() {
+      _isActionLoading = true;
+      _actionLoadingText = 'Creating semester folder...';
+    });
+
+    try {
+      await FbFirestore.instance.collection('document_store').doc(docId).set({
+        'name': 'placeholder.txt',
+        'key': dummyKey,
+        'size': 0,
+        'category': folder,
+        'partsCount': 1,
+        'uploadedAt': DateTime.now().toUtc().toIso8601String(),
+        'course': _selectedCourse!,
+        'semester': name,
+      });
+      await _loadFiles();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to create folder: $e'), backgroundColor: AppTheme.duoRed),
         );
       }
     } finally {
@@ -804,14 +977,14 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
       floatingActionButton:
           _isConfigured && !_isLoading && _errorMessage == null
           ? Padding(
-              padding: const EdgeInsets.only(bottom: 80),
+              padding: const EdgeInsets.only(bottom: 105),
               child: FloatingActionButton(
                 heroTag: 'doc_store_fab',
-                onPressed: _pickAndUpload,
+                onPressed: _onFabPressed,
                 backgroundColor: AppTheme.duoGreen,
                 foregroundColor: context.colors.textPrimary,
                 elevation: 4,
-                child: const Icon(LucideIcons.upload, size: 22),
+                child: Icon(_fabIcon, size: 22),
               ),
             )
           : null,
@@ -2005,7 +2178,7 @@ class CategoryTabs extends StatelessWidget {
             child: _buildTab(
               context,
               category: DocCategory.reference,
-              label: 'Reference Books',
+              label: 'Books',
               icon: LucideIcons.bookOpen,
             ),
           ),

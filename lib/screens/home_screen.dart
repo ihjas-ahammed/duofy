@@ -10,6 +10,8 @@ import '../services/database_service.dart';
 import '../services/progress_service.dart';
 import '../services/generation_manager.dart';
 import '../services/learning_sync.dart';
+import '../services/update_service.dart';
+import '../widgets/update_dialog.dart';
 import 'bookmarks_screen.dart';
 import '../theme/app_theme.dart';
 import '../widgets/compact_book_list_item.dart';
@@ -114,10 +116,20 @@ class _HomeScreenState extends State<HomeScreen> {
         showGlobalErrorAlert(startupError!, null);
         startupError = null;
       }
+      _checkForAppUpdate();
       // The writing-style survey is no longer forced on first launch — the
       // onboarding walkthrough handles first-run, and the survey lives on as
       // an optional Settings → Personalization card.
     });
+  }
+
+  /// Once per session, ask GitHub whether a newer Android build exists and, if
+  /// so, surface the "What's new" update dialog. No-ops off Android and never
+  /// throws — see [UpdateService].
+  Future<void> _checkForAppUpdate() async {
+    final info = await UpdateService.instance.checkForUpdate();
+    if (info == null || !mounted) return;
+    await showUpdateDialog(context, info);
   }
 
   @override

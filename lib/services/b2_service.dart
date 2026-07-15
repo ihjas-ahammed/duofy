@@ -240,7 +240,16 @@ class B2Service {
         : '$folder/$hash.pdf';
 
     if (isThumb) {
-      return _downloadPartDirect(b2Key);
+      try {
+        return await _downloadPartDirect(b2Key);
+      } catch (e) {
+        if (e.toString().contains('[404]')) {
+          try {
+            return await _downloadPartDirect('$mainFilename.thumb.jpg');
+          } catch (_) {}
+        }
+        rethrow;
+      }
     }
 
     final docId = mainFilename.replaceAll('/', '_');
@@ -257,11 +266,23 @@ class B2Service {
 
     if (partsCount <= 1) {
       // Download single part directly
-      final bytes = await _downloadPartDirect(b2Key);
-      if (onProgress != null) {
-        onProgress(1.0);
+      try {
+        final bytes = await _downloadPartDirect(b2Key);
+        if (onProgress != null) {
+          onProgress(1.0);
+        }
+        return bytes;
+      } catch (e) {
+        if (e.toString().contains('[404]')) {
+          // Fallback to literal original filename path
+          final bytes = await _downloadPartDirect(mainFilename);
+          if (onProgress != null) {
+            onProgress(1.0);
+          }
+          return bytes;
+        }
+        rethrow;
       }
-      return bytes;
     }
 
     // Split file: download all parts and combine
