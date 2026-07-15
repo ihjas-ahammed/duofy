@@ -70,8 +70,8 @@
     "semantic_hash": ""
   },
   "lib/screens/lesson_screen.dart": {
-    "mtime": 1784098976.1828535,
-    "ast_hash": "c50ee9fb8180efd4fc2fa27078ff6dff",
+    "mtime": 1784101266.3237348,
+    "ast_hash": "b28dcb90fd497f6ef7da6030dcef42c2",
     "semantic_hash": ""
   },
   "lib/screens/generate_qp_screen.dart": {
@@ -220,8 +220,8 @@
     "semantic_hash": ""
   },
   "lib/widgets/duo_button.dart": {
-    "mtime": 1784098224.8688936,
-    "ast_hash": "1c1a875bed585131174b253794054707",
+    "mtime": 1784101205.1744158,
+    "ast_hash": "f2edb37e038e768a95c5b82d73f12eae",
     "semantic_hash": ""
   },
   "lib/widgets/math_markdown.dart": {
@@ -350,8 +350,8 @@
     "semantic_hash": ""
   },
   "lib/services/prompt_service.dart": {
-    "mtime": 1784096234.9989727,
-    "ast_hash": "bc35e1648480dff8ed8ffc03cccb6c08",
+    "mtime": 1784102280.269153,
+    "ast_hash": "54ed7fa224018abe27ee60bf4aa29d87",
     "semantic_hash": ""
   },
   "lib/services/notification_service.dart": {
@@ -1680,8 +1680,8 @@
     "semantic_hash": ""
   },
   "lib/widgets/next_up_card.dart": {
-    "mtime": 1784096234.9929726,
-    "ast_hash": "b5805f89e34287c41b0b544945d4cb6c",
+    "mtime": 1784101368.627602,
+    "ast_hash": "a5598e656b280e79263b5a77c1138a76",
     "semantic_hash": ""
   },
   "lib/widgets/slide_views/error_spotting_view.dart": {
@@ -6700,8 +6700,8 @@
     "semantic_hash": ""
   },
   "assets/walkthrough/basic_algebra.json": {
-    "mtime": 1784095011.0059702,
-    "ast_hash": "c54e8e7f5b15b68bce2a10611c8cc7d6",
+    "mtime": 1784102319.8986259,
+    "ast_hash": "10b553cb5608d7ccea2bcbcba517954e",
     "semantic_hash": ""
   },
   "lib/services/walkthrough_service.dart": {
@@ -6710,18 +6710,18 @@
     "semantic_hash": ""
   },
   "lib/widgets/walkthrough_banner.dart": {
-    "mtime": 1784094412.2061825,
-    "ast_hash": "a37f7584bcac69901567151c12027e53",
+    "mtime": 1784102190.6507158,
+    "ast_hash": "cd0af94d518421c3e68256e7c83d82d6",
     "semantic_hash": ""
   },
   "test/walkthrough_course_test.dart": {
-    "mtime": 1784095522.07844,
-    "ast_hash": "938d6931fa6fc54aafab5fd7e056398f",
+    "mtime": 1784102361.4651327,
+    "ast_hash": "c8743e726d71ad57f91d047574af9cf3",
     "semantic_hash": ""
   },
   "assets/walkthrough/python_programming.json": {
-    "mtime": 1784095450.194557,
-    "ast_hash": "b579134977b02a73975ebae31848a021",
+    "mtime": 1784102325.6611197,
+    "ast_hash": "860756b3d6e62b04e35ed2457de6829d",
     "semantic_hash": ""
   },
   "lib/screens/dev/programming_slides_screen.dart": {
@@ -6735,8 +6735,8 @@
     "semantic_hash": ""
   },
   "lib/widgets/slide_views/code_runner_view.dart": {
-    "mtime": 1784098929.1861694,
-    "ast_hash": "33579ce660028b39eb9fb7ea2ccd50ac",
+    "mtime": 1784101229.365146,
+    "ast_hash": "6c061d5f4ee2459e509a5bf58853774c",
     "semantic_hash": ""
   },
   "lib/widgets/slide_views/program_view.dart": {
@@ -6745,8 +6745,8 @@
     "semantic_hash": ""
   },
   "lib/widgets/lazy_indexed_stack.dart": {
-    "mtime": 1784098695.638622,
-    "ast_hash": "d223e89c5a86bcbb15f119eee076e2c3",
+    "mtime": 1784099045.4507258,
+    "ast_hash": "639967fa5b6e630a343289355bbad731",
     "semantic_hash": ""
   }
 }

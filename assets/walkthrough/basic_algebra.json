@@ -184,6 +184,84 @@
               ]
             }
           ]
+        },
+        {
+          "id": "s2",
+          "title": "Linear Equations",
+          "description": "Graphing lines and intercept forms.",
+          "color": "duo-orange",
+          "units": [
+            {
+              "id": "u2",
+              "title": "Unit 2 — Slope and Intercept",
+              "description": "Learn slope, intercept, and linear plotting.",
+              "isGenerated": true,
+              "lessons": [
+                {
+                  "id": "u2l1",
+                  "title": "Introduction to Slope",
+                  "description": "What slope is and how to calculate it.",
+                  "icon": "TrendingUp",
+                  "slides": [
+                    {
+                      "id": "u2l1s1",
+                      "type": "theory",
+                      "title": "Slope Definition",
+                      "content": "The **slope** of a line measures its steepness — often called the *rise over run*. It's the change in y divided by the change in x.\n\n$$\\text{slope} = \\frac{\\text{change in } y}{\\text{change in } x}$$"
+                    },
+                    {
+                      "id": "u2l1s2",
+                      "type": "quiz",
+                      "title": "Positive vs Negative",
+                      "content": "If a line goes up from left to right, its slope is:",
+                      "options": [
+                        { "text": "Positive", "isCorrect": true, "explanation": "Correct! Going up means y increases as x increases." },
+                        { "text": "Negative", "isCorrect": false, "explanation": "Going down means y decreases as x increases." }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "m2",
+      "title": "Quadratic Algebra",
+      "description": "Moving beyond linear systems to curves.",
+      "practiceQuestions": [],
+      "sections": [
+        {
+          "id": "m2s1",
+          "title": "Quadratic Curves",
+          "description": "Quadratic equations, parabolas, and factoring.",
+          "color": "duo-violet",
+          "units": [
+            {
+              "id": "m2u1",
+              "title": "Unit 3 — Factoring Basics",
+              "description": "Learn factoring expressions and finding roots.",
+              "isGenerated": true,
+              "lessons": [
+                {
+                  "id": "m2u1l1",
+                  "title": "Common Factors",
+                  "description": "Factoring out terms.",
+                  "icon": "FolderHeart",
+                  "slides": [
+                    {
+                      "id": "m2u1l1s1",
+                      "type": "theory",
+                      "title": "Common Factors",
+                      "content": "Factoring is the opposite of expanding. We look for terms that are common to all parts of an expression and pull them out.\n\n$$2x^2 + 4x = 2x(x + 2)$$"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
         }
       ]
     }

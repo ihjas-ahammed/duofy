@@ -111,6 +111,82 @@
               ]
             }
           ]
+        },
+        {
+          "id": "s2",
+          "title": "Data Structures",
+          "description": "Lists, dictionaries, and sets.",
+          "color": "duo-orange",
+          "units": [
+            {
+              "id": "u2",
+              "title": "Unit 2 — Lists & Dictionaries",
+              "description": "Store and manipulate collections of data.",
+              "isGenerated": true,
+              "lessons": [
+                {
+                  "id": "u2l1",
+                  "title": "Python Lists",
+                  "description": "Creating and indexing lists.",
+                  "icon": "List",
+                  "slides": [
+                    {
+                      "id": "u2l1s1",
+                      "type": "theory",
+                      "title": "Lists in Python",
+                      "content": "A **list** stores an ordered sequence of items. Lists are mutable (you can modify them) and use square brackets `[]`.\n\n```python\nnumbers = [1, 2, 3]\n```"
+                    },
+                    {
+                      "id": "u2l1s2",
+                      "type": "try_yourself",
+                      "title": "Play with lists",
+                      "language": "python",
+                      "content": "Run this list operation:",
+                      "code": "fruits = ['apple', 'banana']\nfruits.append('orange')\nprint(fruits)\n"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "m2",
+      "title": "Object-Oriented Python",
+      "description": "Classes, methods, and encapsulation.",
+      "practiceQuestions": [],
+      "sections": [
+        {
+          "id": "m2s1",
+          "title": "Classes & Objects",
+          "description": "Constructing templates for data.",
+          "color": "duo-violet",
+          "units": [
+            {
+              "id": "m2u1",
+              "title": "Unit 3 — Intro to Classes",
+              "description": "Learn class constructors and instances.",
+              "isGenerated": true,
+              "lessons": [
+                {
+                  "id": "m2u1l1",
+                  "title": "Your First Class",
+                  "description": "Define and initialize a class.",
+                  "icon": "Cpu",
+                  "slides": [
+                    {
+                      "id": "m2u1l1s1",
+                      "type": "theory",
+                      "title": "Classes in Python",
+                      "content": "A **class** is a blueprint for creating objects. Objects have attributes and methods.\n\n```python\nclass Dog:\n    def __init__(self, name):\n        self.name = name\n```"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
         }
       ]
     }

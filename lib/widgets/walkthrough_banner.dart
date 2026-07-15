@@ -18,18 +18,24 @@ class WalkthroughBanner extends StatelessWidget {
       builder: (context, step, _) {
         final info =
             WalkthroughService.bannerFor(step, WalkthroughService.instance.seededTitle);
+        final isTop = step == WalkStep.confirmCreate;
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 250),
           transitionBuilder: (child, anim) => SlideTransition(
             position: Tween<Offset>(
-              begin: const Offset(0, 1),
+              begin: Offset(0, isTop ? -1.0 : 1.0),
               end: Offset.zero,
             ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOut)),
             child: child,
           ),
           child: info == null
               ? const SizedBox.shrink(key: ValueKey('none'))
-              : _Card(key: ValueKey(step), title: info.title, body: info.body),
+              : _Card(
+                  key: ValueKey(step),
+                  title: info.title,
+                  body: info.body,
+                  step: step,
+                ),
         );
       },
     );
@@ -39,14 +45,21 @@ class WalkthroughBanner extends StatelessWidget {
 class _Card extends StatelessWidget {
   final String title;
   final String body;
-  const _Card({super.key, required this.title, required this.body});
+  final WalkStep step;
+  const _Card({
+    super.key,
+    required this.title,
+    required this.body,
+    required this.step,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final isTop = step == WalkStep.confirmCreate;
     return SafeArea(
-      minimum: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      minimum: EdgeInsets.fromLTRB(16, isTop ? 16 : 0, 16, isTop ? 0 : 16),
       child: Align(
-        alignment: Alignment.bottomCenter,
+        alignment: isTop ? Alignment.topCenter : Alignment.bottomCenter,
         child: Material(
           color: Colors.transparent,
           child: Container(
@@ -60,7 +73,7 @@ class _Card extends StatelessWidget {
                 BoxShadow(
                   color: context.colors.shadow,
                   blurRadius: 28,
-                  offset: const Offset(0, 8),
+                  offset: Offset(0, isTop ? 4 : 8),
                 ),
               ],
             ),

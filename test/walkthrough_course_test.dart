@@ -33,10 +33,10 @@ void main() {
 
     // Structure: a single unit the tour tells the user to try.
     expect(book.title, 'Basic Algebra');
-    expect(book.modules, hasLength(1));
-    final section = book.modules.first.sections.single;
-    expect(section.units, hasLength(1));
-    final unit = section.units.single;
+    expect(book.modules, isNotEmpty);
+    final section = book.modules.first.sections.first;
+    expect(section.units, isNotEmpty);
+    final unit = section.units.first;
     // Old-flow baked-in unit: lessons must be immediately playable (no gating).
     expect(section.needsUnitManifest, isFalse);
     expect(section.needsFormatConfirmation, isFalse);
@@ -76,7 +76,7 @@ void main() {
     final book = Book.fromJson(jsonDecode(raw) as Map<String, dynamic>);
 
     expect(book.title, 'Python Programming');
-    final unit = book.modules.single.sections.single.units.single;
+    final unit = book.modules.first.sections.first.units.first;
     final slides = [for (final l in unit.lessons) ...l.slides];
 
     // A fill-in `program` slide: highlighted code with a blank + an answer.

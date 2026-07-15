@@ -141,6 +141,8 @@ LATEX / MARKDOWN-MATH GUIDE (READ CAREFULLY — most generation errors come from
     '"ordering" slides: `content` is a one-line instruction. `orderItems` is an array of 3-6 short strings listed in the CORRECT order — the app shuffles them for the learner. Use for procedures, derivation steps, chronological sequences, algorithms.',
     '"error_spotting" slides: `content` states the problem being solved. `proofSteps` is an array of 3-6 short solution steps of which EXACTLY ONE contains a plausible conceptual mistake; `errorIndex` is the 0-based index of that flawed step. The mistake must be instructive (a real misconception), never a typo.',
     '"flashcard" slides: `content` is a recall prompt ("State the formula for…", "What is …?"); `blankAnswer` is the complete answer revealed on the back. Use for definitions, formulas, and key facts worth memorizing. No options.',
+    '"program" slides: `content` is an optional one-line description. `code` MUST contain the source code block containing exactly one blank written as three underscores (`___`). `blankAnswer` is the correct code token to fill the blank. `blankDistractors` is an array of 3 incorrect code tokens. `language` is the language name (e.g., "python", "javascript", "latex", "html").',
+    '"try_yourself" slides: `content` is an optional one-line instruction. `code` is the starter source code loaded into the interactive runner. `language` is the language name (e.g., "python", "javascript", "latex", "html"). `packages` is an optional array of packages to load (e.g. ["matplotlib", "numpy", "pandas"] for python). No blank or options.',
     'LaTeX formatting must follow the LATEX GUIDE above (double-escaped, correct delimiters, no inline-on-its-own-line, and NO LaTeX in fill_in_blank/one_word content or answers).',
   ];
 
@@ -193,7 +195,9 @@ PEDAGOGY (HOW TO TEACH — apply these while following the schema rules):
 - "error_spotting": {"id": "%slide_id%", "type": "error_spotting", "title": "Title", "content": "This solution has one mistake.", "proofSteps": ["Step 1 ...", "Step 2 ...", "Step 3 ..."], "errorIndex": 1}
 - "flashcard": {"id": "%slide_id%", "type": "flashcard", "title": "Title", "content": "State the formula for ...", "blankAnswer": "The formula ..."}
 - "descriptive": {"id": "%slide_id%", "type": "descriptive", "title": "Title", "content": "Question asking for paragraph/upload response"}
-- "custom_html": {"id": "%slide_id%", "type": "custom_html", "title": "Title", "content": "Markdown instructions", "interactiveCanvasHtml": "HTML code"}''';
+- "custom_html": {"id": "%slide_id%", "type": "custom_html", "title": "Title", "content": "Markdown instructions", "interactiveCanvasHtml": "HTML code"}
+- "program": {"id": "%slide_id%", "type": "program", "title": "Title", "content": "Complete this function", "code": "def greet():\\n  ___(\\"Hello\\")", "blankAnswer": "print", "blankDistractors": ["return", "def", "import"], "language": "python"}
+- "try_yourself": {"id": "%slide_id%", "type": "try_yourself", "title": "Title", "content": "Try playing with the plot parameters.", "code": "import matplotlib.pyplot as plt\\n...", "language": "python", "packages": ["matplotlib"]}''';
 
   /// Shared page-number contract for every skeleton-stage prompt: the model
   /// reports numbers EXACTLY as printed in the TOC and never performs offset
@@ -475,7 +479,7 @@ Section description: "%section_description%"
 Analyze the pedagogical needs of the attached PDF content. Generate up to 10 custom lesson formats tailored specifically to the material (e.g., "Theory Focus" for conceptual parts, "Worked Example" for problem solving, "Derivation/Proof Walkthrough" for mathematical content, or specialized formats like "Lab Experiment Analysis", "Case Study Walkthrough", etc.).
 
 Each format should have a descriptive name, a pedagogical description of when the AI should select it, and a list of slide templates. Each slide template must define:
-- `type`: one of "theory", "concept_pieces", "quiz", "fill_in_blank", "one_word", "numerical", "proof", "step_by_step", "matching", "ordering", "error_spotting", "flashcard", "descriptive", "custom_html"
+- `type`: one of "theory", "concept_pieces", "quiz", "fill_in_blank", "one_word", "numerical", "proof", "step_by_step", "matching", "ordering", "error_spotting", "flashcard", "descriptive", "custom_html", "program", "try_yourself"
 - `condition`: optional condition when to show it
 - `description`: description of slide structure
 
@@ -516,7 +520,7 @@ TASK:
 CRITICAL RULES:
 1. Cover the entire content of the attached PDF. Do not skip topics.
 2. Each unit should be roughly self-contained and digestible in one short study session.
-3. For custom formats, the slide `type` must be one of: "theory", "concept_pieces", "quiz", "fill_in_blank", "one_word", "numerical", "proof", "step_by_step", "matching", "ordering", "error_spotting", "flashcard", "descriptive", "custom_html".
+3. For custom formats, the slide `type` must be one of: "theory", "concept_pieces", "quiz", "fill_in_blank", "one_word", "numerical", "proof", "step_by_step", "matching", "ordering", "error_spotting", "flashcard", "descriptive", "custom_html", "program", "try_yourself".
 4. BY DEFAULT, NEVER NEGLECT EXAMPLE AND EXERCISE QUESTIONS.
 5. IF THE SECTION CONTAINS EXERCISE/PRACTICE QUESTIONS (often at the end of the section/chapter, e.g. in math/science textbooks), you MUST create a dedicated unit specifically for these exercises (e.g., "Practice Exercises"). This exercises unit must be structured such that the exercises are treated as individual lessons (taking them one by one/problem-by-problem) to ensure comprehensive, hands-on practice.
 
@@ -577,7 +581,7 @@ CRITICAL DUOLINGO-STYLE MICRO-LEARNING RULES:
 For the chosen format, evaluate its slide templates. You can include a slide multiple times (e.g. more than one of the same kind) if needed for the topic, or only once, as long as its condition logically applies.
 3. NO STORY MODE: never frame content as a story, scenario, anecdote, or narrative ("Imagine you are...", "Sara walks into a shop...", etc.). Present theory and concepts directly and factually.
 4. EXAMPLES AND EXERCISE QUESTIONS: BY DEFAULT, NEVER NEGLECT EXAMPLE AND EXERCISES QUESTIONS. If this unit represents or contains exercise questions/practice problems, you MUST take/plan them as individual lessons, one by one (i.e. one lesson per exercise question/problem), rather than grouping them into a single lesson or omitting them.
-5. AVAILABLE SLIDE TYPES you may plan with (respect each format's own templates first): theory, concept_pieces, quiz, fill_in_blank, one_word, numerical, proof, step_by_step, matching, ordering, error_spotting, flashcard, descriptive, custom_html. Prefer matching for term↔definition sets, ordering for procedures, error_spotting to probe misconceptions after a worked example, and flashcard for must-memorize facts and formulas.
+5. AVAILABLE SLIDE TYPES you may plan with (respect each format's own templates first): theory, concept_pieces, quiz, fill_in_blank, one_word, numerical, proof, step_by_step, matching, ordering, error_spotting, flashcard, descriptive, custom_html, program, try_yourself. Prefer matching for term↔definition sets, ordering for procedures, error_spotting to probe misconceptions after a worked example, and flashcard for must-memorize facts and formulas.
 ''';
 
   static final String json =
