@@ -124,11 +124,26 @@ class DeadlineService {
     Map<String, dynamic>? targetMetrics;
     int totalTargetLeftToday = 0;
 
+    final sequence = book.getFullLessonsSequence();
+    final completedSet = completedLessons.toSet();
+
+    // Find the maximum index of a completed lesson in the entire sequence
+    int lastCompletedIdx = -1;
+    for (int i = 0; i < sequence.length; i++) {
+      if (completedSet.contains(sequence[i])) {
+        lastCompletedIdx = i;
+      }
+    }
+    final int currentCompletedTotal = lastCompletedIdx + 1;
+
     for (var mIdx = 0; mIdx < book.modules.length; mIdx++) {
       final module = book.modules[mIdx];
       for (var sIdx = 0; sIdx < module.sections.length; sIdx++) {
         final totalLessons = book.getEstimatedLessonsUpToSection(mIdx, sIdx);
-        final completedInSec = book.getCompletedLessonsUpToSection(mIdx, sIdx, completedLessons);
+        int completedInSec = currentCompletedTotal;
+        if (completedInSec > totalLessons) {
+          completedInSec = totalLessons;
+        }
 
         if (completedInSec >= totalLessons) continue; // Already fully completed
 
@@ -151,9 +166,7 @@ class DeadlineService {
           }
         }
       }
-    }
-
-    if (targetMetrics != null) {
+    }    if (targetMetrics != null) {
       return {
         'moduleIdx': targetModuleIdx,
         'sectionIdx': targetSectionIdx,

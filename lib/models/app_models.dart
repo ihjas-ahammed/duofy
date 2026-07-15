@@ -1069,17 +1069,7 @@ class Book {
     }
     return sum;
   }
-
-  int getCompletedLessonsUpToSection(
-    int targetModuleIdx,
-    int targetSectionIdx,
-    List<String> completedLessons,
-  ) {
-    final totalLessons = getEstimatedLessonsUpToSection(
-      targetModuleIdx,
-      targetSectionIdx,
-    );
-
+  List<String> getFullLessonsSequence() {
     // Find average lessons per unit for imaginary numbering
     int totalGeneratedLessons = 0;
     int unitsWithLessonsCount = 0;
@@ -1132,11 +1122,27 @@ class Book {
         }
       }
     }
+    return sequence;
+  }
+
+  int getCompletedLessonsUpToSection(
+    int targetModuleIdx,
+    int targetSectionIdx,
+    List<String> completedLessons, {
+    List<String>? cachedSequence,
+  }) {
+    final totalLessons = getEstimatedLessonsUpToSection(
+      targetModuleIdx,
+      targetSectionIdx,
+    );
+
+    final sequence = cachedSequence ?? getFullLessonsSequence();
+    final completedSet = completedLessons.toSet();
 
     // Find the maximum index of a completed lesson in the entire sequence
     int lastCompletedIdx = -1;
     for (int i = 0; i < sequence.length; i++) {
-      if (completedLessons.contains(sequence[i])) {
+      if (completedSet.contains(sequence[i])) {
         lastCompletedIdx = i;
       }
     }
@@ -1147,7 +1153,6 @@ class Book {
     }
     return currentCompleted;
   }
-
   Book copyWith({
     String? id,
     String? title,

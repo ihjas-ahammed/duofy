@@ -15,8 +15,8 @@
     "semantic_hash": ""
   },
   "lib/models/app_models.dart": {
-    "mtime": 1784095094.5590665,
-    "ast_hash": "1e7de5e86c33a6f61bc4e499bebc94aa",
+    "mtime": 1784104213.158643,
+    "ast_hash": "fe03397d5d2c49b8ac4cfe8878f5ef68",
     "semantic_hash": ""
   },
   "lib/screens/main_layout_screen.dart": {
@@ -25,8 +25,8 @@
     "semantic_hash": ""
   },
   "lib/screens/book_dashboard_screen.dart": {
-    "mtime": 1784102992.0644977,
-    "ast_hash": "14258bc16bf7fb709ed5d46107cf592c",
+    "mtime": 1784104451.645667,
+    "ast_hash": "733375d3f108073925f34acf52a082be",
     "semantic_hash": ""
   },
   "lib/screens/practice_session_screen.dart": {
@@ -45,12 +45,12 @@
     "semantic_hash": ""
   },
   "lib/screens/home_screen.dart": {
-    "mtime": 1784103014.6248498,
-    "ast_hash": "9a3987a95369d63faf2fb1bc447ae4e2",
+    "mtime": 1784104378.678956,
+    "ast_hash": "f8cdde4ca3d48f3ddfcc9eb6e5e9d276",
     "semantic_hash": ""
   },
   "lib/screens/pyq_tab_screen.dart": {
-    "mtime": 1784103441.8019335,
+    "mtime": 1784103893.4281895,
     "ast_hash": "a4590ef1cc3f030efaadac95d433676e",
     "semantic_hash": ""
   },
@@ -150,7 +150,7 @@
     "semantic_hash": ""
   },
   "lib/screens/source_pdf_upload_screen.dart": {
-    "mtime": 1784103387.528958,
+    "mtime": 1784103893.4311898,
     "ast_hash": "f94b3f39a136d0a01b67ec28680a0133",
     "semantic_hash": ""
   },
@@ -160,7 +160,7 @@
     "semantic_hash": ""
   },
   "lib/widgets/missing_files_banner.dart": {
-    "mtime": 1784103392.0361185,
+    "mtime": 1784103893.4311898,
     "ast_hash": "56bbf589d5caf085ef662a6fb45c4491",
     "semantic_hash": ""
   },
@@ -200,8 +200,8 @@
     "semantic_hash": ""
   },
   "lib/widgets/lesson_path.dart": {
-    "mtime": 1784096234.9929726,
-    "ast_hash": "6b6b2d9be373f9319d12be4ba9dd0a8b",
+    "mtime": 1784104261.5160546,
+    "ast_hash": "01984d4edf5b440149744466d9ce6cbf",
     "semantic_hash": ""
   },
   "lib/widgets/real_progress_bar.dart": {
@@ -1835,8 +1835,8 @@
     "semantic_hash": ""
   },
   "lib/services/deadline_service.dart": {
-    "mtime": 1783964887.5094135,
-    "ast_hash": "6a9a556a12b3c6de427dec3aa994fbe2",
+    "mtime": 1784104230.0164819,
+    "ast_hash": "70a359ce8fea9a3c7cabaf4c60ffb0d5",
     "semantic_hash": ""
   },
   "lib/services/usage_limit_service.dart": {

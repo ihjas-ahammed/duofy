@@ -9,6 +9,7 @@ import '../widgets/safe_pdf_viewer.dart';
 import 'source_pdf_upload_screen.dart';
 import 'reference_pdf_viewer_screen.dart';
 import 'course_settings_screen.dart';
+import '../services/b2_service.dart';
 import 'package:file_picker/file_picker.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
@@ -178,7 +179,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       for (final s in m.sections) {
         // New-flow: section owns the PDF chunk.
         if (s.startPage != null && s.endPage != null) {
-          if (s.pdfPath == null || !File(s.pdfPath!).existsSync()) {
+          if (s.pdfPath == null || !await File(s.pdfPath!).exists()) {
             missing = true;
             break;
           }
@@ -187,7 +188,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
         // Old-flow: each unit owns its chunk.
         for (final u in s.units) {
           if (u.startPage != null && u.endPage != null) {
-            if (u.pdfPath == null || !File(u.pdfPath!).existsSync()) {
+            if (u.pdfPath == null || !await File(u.pdfPath!).exists()) {
               missing = true;
               break;
             }
@@ -1030,34 +1031,140 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     );
   }
 
-  Widget _buildRestoreSyllabusButton({required bool expand}) {
-    final button = InkWell(
-      onTap: () async {
-        try {
-          FilePickerResult? result = await FilePicker.platform.pickFiles(
-            type: FileType.custom,
-            allowedExtensions: ['pdf'],
-          );
-          if (result != null && result.files.single.path != null) {
-            final pickedFile = File(result.files.single.path!);
-            final targetFile = File(widget.book.syllabusPath!);
-            await targetFile.parent.create(recursive: true);
-            await pickedFile.copy(targetFile.path);
-            setState(() {});
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Syllabus PDF restored successfully!')),
-              );
-            }
-          }
-        } catch (e) {
+  Future<void> _handleRestoreSyllabus() async {
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: ctx.colors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Restore Syllabus PDF',
+          style: TextStyle(
+            color: ctx.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Would you like to import the syllabus from your local device or search the cloud Document Store?',
+          style: TextStyle(color: ctx.colors.textSecondary, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'device'),
+            child: const Text(
+              'Upload from Device',
+              style: TextStyle(color: AppTheme.duoBlue),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'store'),
+            child: const Text(
+              'Document Store',
+              style: TextStyle(
+                color: AppTheme.duoGreen,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (choice == 'device') {
+      try {
+        FilePickerResult? result = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['pdf'],
+        );
+        if (result != null && result.files.single.path != null) {
+          final pickedFile = File(result.files.single.path!);
+          final targetFile = File(widget.book.syllabusPath!);
+          await targetFile.parent.create(recursive: true);
+          await pickedFile.copy(targetFile.path);
+          setState(() {});
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Failed to restore syllabus: $e')),
+              const SnackBar(content: Text('Syllabus PDF restored successfully!')),
             );
           }
         }
-      },
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to restore syllabus: $e')),
+          );
+        }
+      }
+    } else if (choice == 'store') {
+      final configured = await B2Service.instance.isConfigured();
+      if (!configured) {
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: ctx.colors.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Text(
+              'Cloud Storage Required',
+              style: TextStyle(
+                color: ctx.colors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: Text(
+              'Backblaze B2 is not configured. Please setup cloud storage in the Document Store tab first.',
+              style: TextStyle(color: ctx.colors.textSecondary),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text(
+                  'OK',
+                  style: TextStyle(
+                    color: AppTheme.duoGreen,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      if (!mounted) return;
+      final B2Object? selected = await showDialog<B2Object>(
+        context: context,
+        builder: (ctx) => const DocumentStorePickerDialog(forSyllabus: true),
+      );
+
+      if (selected != null && mounted) {
+        final File? downloadedFile = await showDialog<File>(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => DownloadProgressDialog(b2Obj: selected),
+        );
+
+        if (downloadedFile != null && downloadedFile.existsSync() && mounted) {
+          final targetFile = File(widget.book.syllabusPath!);
+          await targetFile.parent.create(recursive: true);
+          await downloadedFile.copy(targetFile.path);
+          setState(() {});
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Syllabus PDF restored from Document Store successfully!')),
+          );
+        }
+      }
+    }
+  }
+
+  Widget _buildRestoreSyllabusButton({required bool expand}) {
+    final button = InkWell(
+      onTap: _handleRestoreSyllabus,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),

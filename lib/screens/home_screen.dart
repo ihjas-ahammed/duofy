@@ -39,6 +39,7 @@ import '../utils/toast_utils.dart';
 import 'package:file_picker/file_picker.dart';
 import '../platform/io_shim.dart';
 import 'source_pdf_upload_screen.dart';
+import '../services/b2_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -2512,28 +2513,132 @@ class _HomeScreenState extends State<HomeScreen> {
                           iconColor: AppTheme.duoOrange,
                           onTap: () async {
                             Navigator.pop(ctx);
-                            try {
-                              FilePickerResult? result = await FilePicker.platform.pickFiles(
-                                type: FileType.custom,
-                                allowedExtensions: ['pdf'],
-                              );
-                              if (result != null && result.files.single.path != null) {
-                                final pickedFile = File(result.files.single.path!);
-                                final targetFile = File(book.syllabusPath!);
-                                await targetFile.parent.create(recursive: true);
-                                await pickedFile.copy(targetFile.path);
-                                _loadAllData(force: false);
+                            final choice = await showDialog<String>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                backgroundColor: context.colors.surface,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                title: Text(
+                                  'Restore Syllabus PDF',
+                                  style: TextStyle(
+                                    color: context.colors.textPrimary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                content: Text(
+                                  'Would you like to import the syllabus from your local device or search the cloud Document Store?',
+                                  style: TextStyle(color: context.colors.textSecondary, fontSize: 13),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, 'device'),
+                                    child: const Text(
+                                      'Upload from Device',
+                                      style: TextStyle(color: AppTheme.duoBlue),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, 'store'),
+                                    child: const Text(
+                                      'Document Store',
+                                      style: TextStyle(
+                                        color: AppTheme.duoGreen,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (!mounted) return;
+
+                            if (choice == 'device') {
+                              try {
+                                FilePickerResult? result = await FilePicker.platform.pickFiles(
+                                  type: FileType.custom,
+                                  allowedExtensions: ['pdf'],
+                                );
+                                if (result != null && result.files.single.path != null) {
+                                  final pickedFile = File(result.files.single.path!);
+                                  final targetFile = File(book.syllabusPath!);
+                                  await targetFile.parent.create(recursive: true);
+                                  await pickedFile.copy(targetFile.path);
+                                  _loadAllData(force: false);
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Syllabus PDF restored successfully!')),
+                                    );
+                                  }
+                                }
+                              } catch (e) {
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Syllabus PDF restored successfully!')),
+                                    SnackBar(content: Text('Failed to restore syllabus: $e')),
                                   );
                                 }
                               }
-                            } catch (e) {
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Failed to restore syllabus: $e')),
+                            } else if (choice == 'store') {
+                              final configured = await B2Service.instance.isConfigured();
+                              if (!configured) {
+                                if (!mounted) return;
+                                showDialog(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    backgroundColor: context.colors.surface,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    title: Text(
+                                      'Cloud Storage Required',
+                                      style: TextStyle(
+                                        color: context.colors.textPrimary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    content: Text(
+                                      'Backblaze B2 is not configured. Please setup cloud storage in the Document Store tab first.',
+                                      style: TextStyle(color: context.colors.textSecondary),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.of(ctx).pop(),
+                                        child: const Text(
+                                          'OK',
+                                          style: TextStyle(
+                                            color: AppTheme.duoGreen,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 );
+                                return;
+                              }
+
+                              if (!mounted) return;
+                              final B2Object? selected = await showDialog<B2Object>(
+                                context: context,
+                                builder: (ctx) => const DocumentStorePickerDialog(forSyllabus: true),
+                              );
+
+                              if (selected != null && mounted) {
+                                final File? downloadedFile = await showDialog<File>(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (ctx) => DownloadProgressDialog(b2Obj: selected),
+                                );
+
+                                if (downloadedFile != null && downloadedFile.existsSync() && mounted) {
+                                  final targetFile = File(book.syllabusPath!);
+                                  await targetFile.parent.create(recursive: true);
+                                  await downloadedFile.copy(targetFile.path);
+                                  _loadAllData(force: false);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Syllabus PDF restored from Document Store successfully!')),
+                                  );
+                                }
                               }
                             }
                           },

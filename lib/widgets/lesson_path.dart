@@ -259,12 +259,13 @@ class _LessonPathState extends State<LessonPath> {
 
   Set<String> _unlockedLessons() {
     final Set<String> unlocked = {};
+    final completedSet = widget.completedLessons.toSet();
     for (final unit in widget.section.units) {
       for (int i = 0; i < unit.lessons.length; i++) {
         final lesson = unit.lessons[i];
         if (i == 0) {
           unlocked.add(lesson.id);
-        } else if (widget.completedLessons.contains(unit.lessons[i - 1].id)) {
+        } else if (completedSet.contains(unit.lessons[i - 1].id)) {
           unlocked.add(lesson.id);
         }
       }
@@ -275,11 +276,12 @@ class _LessonPathState extends State<LessonPath> {
   @override
   Widget build(BuildContext context) {
     final color = SectionColors.base(widget.section.color);
+    final completedSet = widget.completedLessons.toSet();
 
     final allLessons = widget.section.units.expand((u) => u.lessons).toList();
     final bool allLessonsFinished =
         allLessons.isNotEmpty &&
-        allLessons.every((l) => widget.completedLessons.contains(l.id));
+        allLessons.every((l) => completedSet.contains(l.id));
     final bool hasNextSection =
         (widget.secIdx + 1 <
             widget.book.modules[widget.modIdx].sections.length) ||
@@ -553,7 +555,7 @@ class _LessonPathState extends State<LessonPath> {
                       continue;
                     }
                     final lesson = el.lesson!;
-                    final isCompleted = widget.completedLessons.contains(
+                    final isCompleted = completedSet.contains(
                       lesson.id,
                     );
                     final isUnlocked = unlocked.contains(lesson.id);
