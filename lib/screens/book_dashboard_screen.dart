@@ -962,7 +962,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     final syllabusAvailable =
         hasSyllabus && File(widget.book.syllabusPath!).existsSync();
 
-    if (!hasReference && !syllabusAvailable) {
+    if (!hasReference && !syllabusAvailable && !hasSyllabus) {
       return const SizedBox.shrink();
     }
 
@@ -1021,10 +1021,76 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
           if (syllabusAvailable) ...[
             if (hasReference) const SizedBox(width: 8),
             _buildSyllabusButton(expand: !hasReference),
+          ] else if (hasSyllabus) ...[
+            if (hasReference) const SizedBox(width: 8),
+            _buildRestoreSyllabusButton(expand: !hasReference),
           ],
         ],
       ),
     );
+  }
+
+  Widget _buildRestoreSyllabusButton({required bool expand}) {
+    final button = InkWell(
+      onTap: () async {
+        try {
+          FilePickerResult? result = await FilePicker.platform.pickFiles(
+            type: FileType.custom,
+            allowedExtensions: ['pdf'],
+          );
+          if (result != null && result.files.single.path != null) {
+            final pickedFile = File(result.files.single.path!);
+            final targetFile = File(widget.book.syllabusPath!);
+            await targetFile.parent.create(recursive: true);
+            await pickedFile.copy(targetFile.path);
+            setState(() {});
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Syllabus PDF restored successfully!')),
+              );
+            }
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to restore syllabus: $e')),
+            );
+          }
+        }
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+        decoration: BoxDecoration(
+          color: AppTheme.duoOrange.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppTheme.duoOrange.withValues(alpha: 0.35)),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              LucideIcons.fileWarning,
+              size: 16,
+              color: AppTheme.duoOrange,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'RESTORE SYLLABUS',
+              style: TextStyle(
+                color: AppTheme.duoOrange,
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return expand ? Expanded(child: button) : button;
   }
 
   Widget _buildSyllabusButton({required bool expand}) {

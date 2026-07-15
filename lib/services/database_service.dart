@@ -404,7 +404,16 @@ class DatabaseService {
 
       final Map<String, Book> merged = {...remote};
       final List<Book> toPush = [];
+      final Set<String> idsToWrite = {};
 
+      // 1. Check for remote-only books (remote has them, local doesn't)
+      for (final remoteBook in remote.values) {
+        if (!local.containsKey(remoteBook.id)) {
+          idsToWrite.add(remoteBook.id);
+        }
+      }
+
+      // 2. Check local-only and conflict updates
       for (final localBook in local.values) {
         final remoteBook = remote[localBook.id];
         if (remoteBook == null) {
@@ -420,14 +429,18 @@ class DatabaseService {
             toPush.add(localBook);
           } else {
             merged[localBook.id] = remoteBook;
+            idsToWrite.add(remoteBook.id);
           }
         }
       }
 
-      // Persist merged set locally (remote-only books land on disk too).
-      for (final b in merged.values) {
-        local[b.id] = b;
-        await _writeBookFile(uid, b);
+      // Persist only new or updated books locally
+      for (final id in idsToWrite) {
+        final b = merged[id];
+        if (b != null) {
+          local[id] = b;
+          await _writeBookFile(uid, b);
+        }
       }
 
       // Background push of local-newer books (non-blocking).

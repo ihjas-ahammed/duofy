@@ -36,6 +36,9 @@ import '../widgets/analytics_view.dart';
 import 'document_store_screen.dart';
 import '../widgets/glassy_nav_bar.dart';
 import '../utils/toast_utils.dart';
+import 'package:file_picker/file_picker.dart';
+import '../platform/io_shim.dart';
+import 'source_pdf_upload_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -190,13 +193,14 @@ class _HomeScreenState extends State<HomeScreen> {
     final globals = await _db.fetchGlobalBooks(useCacheOnly: true);
     final fetchedFolders = await _db.fetchFolders();
     final completed = await ProgressService.getCompletedLessons();
+    final completedSet = completed.toSet();
 
     Map<String, double> prog = {};
     for (var b in fetched) {
-      prog[b.id] = await ProgressService.getBookProgress(b);
+      prog[b.id] = await ProgressService.getBookProgress(b, completedSet);
     }
     for (var b in globals) {
-      prog[b.id] = await ProgressService.getBookProgress(b);
+      prog[b.id] = await ProgressService.getBookProgress(b, completedSet);
     }
 
     if (mounted) {
@@ -255,13 +259,14 @@ class _HomeScreenState extends State<HomeScreen> {
       final globals = results[2] as List<Book>;
       final fetchedFolders = results[3] as List<CourseFolder>;
       final completed = results[4] as List<String>;
+      final completedSet = completed.toSet();
 
       Map<String, double> prog = {};
       for (var b in fetched) {
-        prog[b.id] = await ProgressService.getBookProgress(b);
+        prog[b.id] = await ProgressService.getBookProgress(b, completedSet);
       }
       for (var b in globals) {
-        prog[b.id] = await ProgressService.getBookProgress(b);
+        prog[b.id] = await ProgressService.getBookProgress(b, completedSet);
       }
 
       if (mounted) {
@@ -2499,6 +2504,55 @@ class _HomeScreenState extends State<HomeScreen> {
                           _resetBookProgress(book);
                         },
                       ),
+                      if (book.syllabusPath != null && book.syllabusPath!.isNotEmpty)
+                        _buildMenuItem(
+                          icon: LucideIcons.fileWarning,
+                          title: 'Restore Syllabus PDF',
+                          subtitle: 'Upload the syllabus file for this course',
+                          iconColor: AppTheme.duoOrange,
+                          onTap: () async {
+                            Navigator.pop(ctx);
+                            try {
+                              FilePickerResult? result = await FilePicker.platform.pickFiles(
+                                type: FileType.custom,
+                                allowedExtensions: ['pdf'],
+                              );
+                              if (result != null && result.files.single.path != null) {
+                                final pickedFile = File(result.files.single.path!);
+                                final targetFile = File(book.syllabusPath!);
+                                await targetFile.parent.create(recursive: true);
+                                await pickedFile.copy(targetFile.path);
+                                _loadAllData(force: false);
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Syllabus PDF restored successfully!')),
+                                  );
+                                }
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Failed to restore syllabus: $e')),
+                                );
+                              }
+                            }
+                          },
+                        ),
+                      if (book.modules.any((m) => m.sections.any((s) => s.hasSourceMapping)))
+                        _buildMenuItem(
+                          icon: LucideIcons.fileWarning,
+                          title: 'Restore Reference PDF(s)',
+                          subtitle: 'Upload reference files to view in-lesson references',
+                          iconColor: AppTheme.duoOrange,
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => SourcePdfUploadScreen(book: book),
+                              ),
+                            );
+                          },
+                        ),
                       if (folders.any((f) => f.bookIds.contains(book.id))) ...[
                         _buildMenuItem(
                           icon: LucideIcons.folderClosed,

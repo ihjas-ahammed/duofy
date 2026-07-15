@@ -26,12 +26,13 @@ class NextUpService {
 
   /// Walks [books] in recency order (last learning activity, then the book's
   /// own updatedAt) and returns the first playable uncompleted lesson.
-  static Future<NextUp?> resolve(List<Book> books) async {
+  static Future<NextUp?> resolve(List<Book> books, [List<Map<String, dynamic>>? logs]) async {
     if (books.isEmpty) return null;
     final completed = (await ProgressService.getCompletedLessons()).toSet();
 
     final lastActivity = <String, int>{};
-    for (final log in await ProgressService.getActivityLogs()) {
+    final activityLogs = logs ?? await ProgressService.getActivityLogs();
+    for (final log in activityLogs) {
       final id = log['courseId']?.toString();
       final ts = log['timestamp'] is num ? (log['timestamp'] as num).toInt() : 0;
       if (id != null && ts > (lastActivity[id] ?? 0)) lastActivity[id] = ts;
@@ -71,11 +72,12 @@ class NextUpService {
   }
 
   /// XP earned since local midnight, for the daily-goal ring.
-  static Future<int> xpToday() async {
+  static Future<int> xpToday([List<Map<String, dynamic>>? logs]) async {
     final now = DateTime.now();
     final midnight = DateTime(now.year, now.month, now.day).millisecondsSinceEpoch;
     var xp = 0;
-    for (final log in await ProgressService.getActivityLogs()) {
+    final activityLogs = logs ?? await ProgressService.getActivityLogs();
+    for (final log in activityLogs) {
       final ts = log['timestamp'] is num ? (log['timestamp'] as num).toInt() : 0;
       if (ts >= midnight && log['xp'] is num) xp += (log['xp'] as num).toInt();
     }

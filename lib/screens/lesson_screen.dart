@@ -1389,12 +1389,11 @@ class _LessonScreenState extends State<LessonScreen> {
           ),
           if (isInteractive && !_answered) _buildConfidenceRow(),
           AnimatedSwitcher(
-            duration: Duration.zero,
+            duration: const Duration(milliseconds: 200),
             child: isInteractive && !_answered
                 ? DuoButton(
                     key: const ValueKey('check_button'),
                     text: 'CHECK',
-                    animate: false,
                     color: _canCheck(slide)
                         ? AppTheme.duoGreen
                         : const Color(0xFF334155),
@@ -1408,7 +1407,6 @@ class _LessonScreenState extends State<LessonScreen> {
                 : DuoButton(
                     key: const ValueKey('continue_button'),
                     text: _answered && !_isCorrect ? 'GOT IT' : 'CONTINUE',
-                    animate: false,
                     color: _answered && !_isCorrect
                         ? AppTheme.duoRed
                         : AppTheme.duoGreen,

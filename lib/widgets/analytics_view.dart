@@ -102,9 +102,11 @@ class _AnalyticsViewState extends State<AnalyticsView> {
     // 7. Course breakdown data (for overall view)
     final List<Map<String, dynamic>> courseStats = [];
     if (widget.courseId == null) {
+      final completed = await ProgressService.getCompletedLessons();
+      final completedSet = completed.toSet();
       for (final book in books) {
         final bookXp = await ProgressService.getXpForCourse(book.id);
-        final bookProgress = await ProgressService.getBookProgress(book);
+        final bookProgress = await ProgressService.getBookProgress(book, completedSet);
 
         final bookLogs = logs.where((log) => log['courseId'] == book.id);
         final bookAccuracies = bookLogs

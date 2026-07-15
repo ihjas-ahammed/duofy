@@ -126,11 +126,17 @@ class LearningSync {
     return changed;
   }
 
+  static bool _legacyKeysMigrated = false;
+
   /// One-time migration: move unscoped legacy keys into the per-user keys
   /// so existing users don't lose their progress after this update.
   static Future<void> migrateLegacyKeys(SharedPreferences prefs) async {
+    if (_legacyKeysMigrated) return;
     final uid = _uid;
-    if (uid == 'guest') return;
+    if (uid == 'guest') {
+      _legacyKeysMigrated = true;
+      return;
+    }
 
     // completed_lessons -> completed_lessons_<uid>
     if (prefs.containsKey(_legacyCompletedKey)) {
@@ -153,6 +159,7 @@ class LearningSync {
       }
       await prefs.remove(_legacyXpKey);
     }
+    _legacyKeysMigrated = true;
   }
 
   static List<Map<String, dynamic>> decodeBookmarks(String? raw) {

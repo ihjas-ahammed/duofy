@@ -154,8 +154,8 @@ class ProgressService {
     return prefs.getInt(key) ?? 0;
   }
 
-  static Future<double> getBookProgress(Book book) async {
-    final completed = await getCompletedLessons();
+  static Future<double> getBookProgress(Book book, [Set<String>? completedSet]) async {
+    final completed = completedSet ?? (await getCompletedLessons()).toSet();
     if (completed.contains(book.id)) {
       return 1.0;
     }

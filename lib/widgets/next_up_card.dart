@@ -6,6 +6,7 @@ import '../models/app_models.dart';
 import '../screens/main_layout_screen.dart';
 import '../services/global_state.dart';
 import '../services/next_up_service.dart';
+import '../services/progress_service.dart';
 import '../theme/app_theme.dart';
 
 /// "Continue learning" hero: one tap from the library straight into the next
@@ -19,9 +20,10 @@ class NextUpCard extends StatelessWidget {
 
   Future<(NextUp?, int, int)> _load() async {
     final prefs = await SharedPreferences.getInstance();
+    final logs = await ProgressService.getActivityLogs();
     final results = await Future.wait([
-      NextUpService.resolve(books),
-      NextUpService.xpToday(),
+      NextUpService.resolve(books, logs),
+      NextUpService.xpToday(logs),
     ]);
     final goal = prefs.getInt('daily_goal_xp') ?? 50;
     return (results[0] as NextUp?, results[1] as int? ?? 0, goal);
