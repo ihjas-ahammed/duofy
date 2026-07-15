@@ -1,7 +1,6 @@
 import 'dart:convert';
 import '../platform/io_shim.dart';
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
@@ -16,7 +15,6 @@ import 'pdf_service.dart';
 import 'personalization_service.dart';
 import 'secrets_service.dart';
 import 'database_service.dart';
-import 'fb/fb_firestore.dart';
 import 'ai_estimator.dart';
 import 'usage_limit_service.dart';
 
@@ -617,12 +615,15 @@ class AiService {
     final s = e.toString();
     final lower = s.toLowerCase();
     if (lower.contains('<html') || lower.contains('doctype html')) {
-      if (lower.contains('502'))
+      if (lower.contains('502')) {
         return '$category — server 502 (Bad Gateway), model temporarily unavailable.';
-      if (lower.contains('503'))
+      }
+      if (lower.contains('503')) {
         return '$category — server 503, model overloaded.';
-      if (lower.contains('504'))
+      }
+      if (lower.contains('504')) {
         return '$category — server 504, upstream timeout.';
+      }
       return '$category — upstream returned an HTML error page (model unavailable).';
     }
     return '$category: $s';
@@ -1226,9 +1227,10 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
       }
       if (meta != null) break;
     }
-    if (meta == null)
+    if (meta == null) {
       throw lastException ??
           Exception('Failed to map chapters. All models/keys exhausted.');
+    }
 
     final rawChapters = (meta['chapters'] ?? meta['modules']) as List?;
     if (rawChapters == null || rawChapters.isEmpty) {
@@ -1760,8 +1762,9 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     // has a prompt but no rendered canvas yet.
     bool needsArt(Lesson l) {
       bool empty(String? s) => s == null || s.trim().isEmpty;
-      if ((l.canvasPrompt?.trim().isNotEmpty ?? false) && empty(l.canvasSvg))
+      if ((l.canvasPrompt?.trim().isNotEmpty ?? false) && empty(l.canvasSvg)) {
         return true;
+      }
       return l.slides.any(
         (s) =>
             (s.type == 'proof' || s.type == 'step_by_step') &&
@@ -2113,8 +2116,9 @@ If all lessons are 100% correct, respond with:
       if (cleanJson.startsWith('```')) {
         final lines = cleanJson.split('\n');
         if (lines.first.startsWith('```')) lines.removeAt(0);
-        if (lines.isNotEmpty && lines.last.startsWith('```'))
+        if (lines.isNotEmpty && lines.last.startsWith('```')) {
           lines.removeLast();
+        }
         cleanJson = lines.join('\n').trim();
       }
 
@@ -2829,8 +2833,9 @@ Do not include any explanation or other text.
           ),
         );
       }
-      if (units.isEmpty)
+      if (units.isEmpty) {
         throw Exception('Unit manifest had no usable entries.');
+      }
 
       final newFormats = <LessonFormat>[];
       final formatsData = jsonMap['newLessonFormats'] as List?;
@@ -3066,8 +3071,7 @@ Do not include any explanation or other text.
 
     final neighborContext = slidesSoFar.isEmpty
         ? 'No slides generated yet.'
-        : 'Slides generated so far: ' +
-              jsonEncode(slidesSoFar.map((s) => s.toJson()).toList());
+        : 'Slides generated so far: ${jsonEncode(slidesSoFar.map((s) => s.toJson()).toList())}';
 
     final sizeCtx = screenSizeInfo != null && screenSizeInfo.isNotEmpty
         ? screenSizeInfo
@@ -3889,7 +3893,7 @@ Respond strictly in JSON format:
 
     // Limit text size to avoid exceeding context window (e.g. max ~120k chars)
     if (textContent.length > 120000) {
-      textContent = textContent.substring(0, 120000) + '... [truncated]';
+      textContent = '${textContent.substring(0, 120000)}... [truncated]';
     }
 
     final prompt =

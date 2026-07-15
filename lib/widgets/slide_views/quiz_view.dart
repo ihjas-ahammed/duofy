@@ -122,16 +122,16 @@ class QuizView extends StatelessWidget {
                     if (isAnswered) {
                       if (opt.isCorrect) {
                         borderColor = AppTheme.duoGreen;
-                        bgColor = AppTheme.duoGreen.withOpacity(0.2);
+                        bgColor = AppTheme.duoGreen.withValues(alpha: 0.2);
                       } else if (isSelected && !opt.isCorrect) {
                         borderColor = AppTheme.duoRed;
-                        bgColor = AppTheme.duoRed.withOpacity(0.2);
+                        bgColor = AppTheme.duoRed.withValues(alpha: 0.2);
                       } else {
                         bgColor = Colors.transparent;
                       }
                     } else if (isSelected) {
                       borderColor = AppTheme.duoBlue;
-                      bgColor = AppTheme.duoBlue.withOpacity(0.2);
+                      bgColor = AppTheme.duoBlue.withValues(alpha: 0.2);
                     }
 
                     return Padding(

@@ -218,8 +218,8 @@ class B2Service {
       'category': folder,
       'partsCount': parts.length,
       'uploadedAt': DateTime.now().toUtc().toIso8601String(),
-      if (course != null) 'course': course,
-      if (semester != null) 'semester': semester,
+      'course': ?course,
+      'semester': ?semester,
     });
   }
 
@@ -487,8 +487,8 @@ class B2Service {
       'category': newFolder,
       'partsCount': partsCount,
       'uploadedAt': data['uploadedAt'] ?? DateTime.now().toUtc().toIso8601String(),
-      if (course != null) 'course': course,
-      if (semester != null) 'semester': semester,
+      'course': ?course,
+      'semester': ?semester,
     });
     
     await FbFirestore.instance.collection('document_store').doc(oldDocId).delete();

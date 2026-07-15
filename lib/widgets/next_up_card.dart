@@ -31,7 +31,7 @@ class NextUpCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return ValueListenableBuilder<int>(
       valueListenable: GlobalState.progressNotifier,
-      builder: (context, _, __) => FutureBuilder<(NextUp?, int, int)>(
+      builder: (context, _, _) => FutureBuilder<(NextUp?, int, int)>(
         future: _load(),
         builder: (context, snap) {
           final data = snap.data;
@@ -68,15 +68,15 @@ class NextUpCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      AppTheme.duoGreen.withOpacity(0.16),
-                      AppTheme.duoBlue.withOpacity(0.10),
+                      AppTheme.duoGreen.withValues(alpha: 0.16),
+                      AppTheme.duoBlue.withValues(alpha: 0.10),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: AppTheme.duoGreen.withOpacity(0.35),
+                    color: AppTheme.duoGreen.withValues(alpha: 0.35),
                   ),
                 ),
                 child: Row(

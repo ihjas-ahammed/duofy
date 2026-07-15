@@ -410,10 +410,10 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppTheme.duoGreen.withOpacity(0.15),
+                            color: AppTheme.duoGreen.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: AppTheme.duoGreen.withOpacity(0.3),
+                              color: AppTheme.duoGreen.withValues(alpha: 0.3),
                             ),
                           ),
                           child: const Row(
@@ -442,10 +442,10 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppTheme.duoRed.withOpacity(0.15),
+                            color: AppTheme.duoRed.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: AppTheme.duoRed.withOpacity(0.3),
+                              color: AppTheme.duoRed.withValues(alpha: 0.3),
                             ),
                           ),
                           child: Row(
@@ -628,11 +628,13 @@ class _ExperimentPreviewScreenState extends State<ExperimentPreviewScreen> {
 
   bool _canCheck() {
     if (_activeSlide.type == 'quiz') return _selectedQuizOption != null;
-    if (_activeSlide.type == 'fill_in_blank')
+    if (_activeSlide.type == 'fill_in_blank') {
       return _blankInput.trim().isNotEmpty;
+    }
     if (_activeSlide.type == 'one_word') return _wordInput.trim().isNotEmpty;
-    if (_activeSlide.type == 'numerical')
+    if (_activeSlide.type == 'numerical') {
       return _numericInput.trim().isNotEmpty;
+    }
     if (_activeSlide.type == 'matching') {
       return _matchingAssignments.isNotEmpty &&
           _matchingAssignments.length == (_activeSlide.matchPairs?.length ?? 0);
@@ -696,11 +698,11 @@ class _ExperimentPreviewScreenState extends State<ExperimentPreviewScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: _answered ? feedbackColor.withOpacity(0.1) : Colors.transparent,
+        color: _answered ? feedbackColor.withValues(alpha: 0.1) : Colors.transparent,
         borderRadius: BorderRadius.circular(_answered ? 20 : 0),
         border: Border.all(
           color: _answered
-              ? feedbackColor.withOpacity(0.3)
+              ? feedbackColor.withValues(alpha: 0.3)
               : Colors.transparent,
           width: 1,
         ),
@@ -719,10 +721,10 @@ class _ExperimentPreviewScreenState extends State<ExperimentPreviewScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppTheme.duoRed.withOpacity(0.15),
+                        color: AppTheme.duoRed.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: AppTheme.duoRed.withOpacity(0.4),
+                          color: AppTheme.duoRed.withValues(alpha: 0.4),
                         ),
                       ),
                       child: Column(

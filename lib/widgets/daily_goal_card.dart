@@ -108,7 +108,7 @@ class _DailyGoalCardState extends State<DailyGoalCard> {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: _goal == g
-                            ? AppTheme.duoOrange.withOpacity(0.2)
+                            ? AppTheme.duoOrange.withValues(alpha: 0.2)
                             : context.colors.surfaceAlt,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
@@ -138,7 +138,7 @@ class _DailyGoalCardState extends State<DailyGoalCard> {
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               value: _reminderEnabled,
-              activeColor: AppTheme.duoOrange,
+              activeThumbColor: AppTheme.duoOrange,
               title: Text(
                 'Daily reminder',
                 style: TextStyle(

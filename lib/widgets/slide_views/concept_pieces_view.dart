@@ -36,7 +36,7 @@ class ConceptPiecesView extends StatelessWidget {
           SliverToBoxAdapter(
             child: Column(
               children: [
-                if (lessonCanvas != null) lessonCanvas!,
+                ?lessonCanvas,
                 if (!hasCanvas)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16.0, top: 16.0),
@@ -130,7 +130,7 @@ class ConceptPiecesView extends StatelessWidget {
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: currentAccent.withOpacity(0.4),
+                                      color: currentAccent.withValues(alpha: 0.4),
                                       blurRadius: 8,
                                       spreadRadius: 1,
                                       offset: const Offset(0, 2),
@@ -161,7 +161,7 @@ class ConceptPiecesView extends StatelessWidget {
                                     decoration: BoxDecoration(
                                       border: Border(
                                         left: BorderSide(
-                                          color: currentAccent.withOpacity(0.8),
+                                          color: currentAccent.withValues(alpha: 0.8),
                                           width: 4,
                                         ),
                                       ),
@@ -233,7 +233,7 @@ class _TimelineLinePainter extends CustomPainter {
         ..shader = ui.Gradient.linear(
           Offset(startX, 0),
           Offset(startX, centerY - bubbleSize / 2),
-          [startColor.withOpacity(0.8), endColor.withOpacity(0.8)],
+          [startColor.withValues(alpha: 0.8), endColor.withValues(alpha: 0.8)],
         )
         ..strokeWidth = 2.0
         ..style = PaintingStyle.stroke;
@@ -259,7 +259,7 @@ class _TimelineLinePainter extends CustomPainter {
         ..shader = ui.Gradient.linear(
           Offset(startX, centerY + bubbleSize / 2),
           Offset(startX, size.height),
-          [startColor.withOpacity(0.8), endColor.withOpacity(0.8)],
+          [startColor.withValues(alpha: 0.8), endColor.withValues(alpha: 0.8)],
         )
         ..strokeWidth = 2.0
         ..style = PaintingStyle.stroke;

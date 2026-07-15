@@ -427,7 +427,7 @@ class _SafePdfViewerState extends State<SafePdfViewer> {
               color: context.colors.surface,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: Colors.redAccent.withOpacity(0.3),
+                color: Colors.redAccent.withValues(alpha: 0.3),
                 width: 1.5,
               ),
             ),

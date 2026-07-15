@@ -47,7 +47,7 @@ class SmartReviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return ValueListenableBuilder<int>(
       valueListenable: GlobalState.progressNotifier,
-      builder: (context, _, __) => FutureBuilder<int>(
+      builder: (context, _, _) => FutureBuilder<int>(
         future: MetacognitionService.dueCount(),
         builder: (context, snap) {
           final due = snap.data ?? 0;
@@ -60,10 +60,10 @@ class SmartReviewCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppTheme.duoViolet.withOpacity(0.10),
+                  color: AppTheme.duoViolet.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color: AppTheme.duoViolet.withOpacity(0.4),
+                    color: AppTheme.duoViolet.withValues(alpha: 0.4),
                   ),
                 ),
                 child: Row(
@@ -73,7 +73,7 @@ class SmartReviewCard extends StatelessWidget {
                       height: 42,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: AppTheme.duoViolet.withOpacity(0.16),
+                        color: AppTheme.duoViolet.withValues(alpha: 0.16),
                       ),
                       child: const Icon(
                         LucideIcons.brain,

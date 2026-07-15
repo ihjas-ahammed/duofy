@@ -199,7 +199,7 @@ class _PdfBrowserScreenState extends State<PdfBrowserScreen> {
                     decoration: AppTheme.glassOf(context).copyWith(
                       border: Border.all(
                         color: isOrphan
-                            ? AppTheme.duoOrange.withOpacity(0.4)
+                            ? AppTheme.duoOrange.withValues(alpha: 0.4)
                             : context.colors.outline,
                       ),
                     ),
@@ -217,8 +217,8 @@ class _PdfBrowserScreenState extends State<PdfBrowserScreen> {
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: isOrphan
-                                ? AppTheme.duoOrange.withOpacity(0.2)
-                                : AppTheme.duoBlue.withOpacity(0.2),
+                                ? AppTheme.duoOrange.withValues(alpha: 0.2)
+                                : AppTheme.duoBlue.withValues(alpha: 0.2),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(

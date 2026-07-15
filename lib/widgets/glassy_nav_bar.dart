@@ -71,10 +71,10 @@ class GlassyNavBar extends StatelessWidget {
                       child: Container(
                         margin: EdgeInsets.zero,
                         decoration: BoxDecoration(
-                          color: bubbleTint.withOpacity(0.08),
+                          color: bubbleTint.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(32),
                           border: Border.all(
-                            color: bubbleTint.withOpacity(0.08),
+                            color: bubbleTint.withValues(alpha: 0.08),
                             width: 1,
                           ),
                         ),

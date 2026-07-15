@@ -45,13 +45,13 @@ class BookCard extends StatelessWidget {
                   flex: 5,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: AppTheme.duoBlue.withOpacity(0.8),
+                      color: AppTheme.duoBlue.withValues(alpha: 0.8),
                     ),
                     child: Center(
                       child: Icon(
                         LucideIcons.bookOpen,
                         size: 64,
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha: 0.8),
                       ),
                     ),
                   ),

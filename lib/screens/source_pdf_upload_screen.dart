@@ -32,8 +32,9 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
     for (final module in widget.book.modules) {
       for (final section in module.sections) {
         hasUnitsOrSections = true;
-        if ((section.bookIndex ?? 0) > maxBookIdx)
+        if ((section.bookIndex ?? 0) > maxBookIdx) {
           maxBookIdx = section.bookIndex!;
+        }
         for (final unit in section.units) {
           if ((unit.bookIndex ?? 0) > maxBookIdx) maxBookIdx = unit.bookIndex!;
         }
@@ -231,7 +232,7 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
       builder: (context) {
         return AppTheme.applyGlassBlur(
           borderRadius: 24,
-          color: context.colors.surface.withOpacity(0.95),
+          color: context.colors.surface.withValues(alpha: 0.95),
           child: SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -268,7 +269,7 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                     leading: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppTheme.duoBlue.withOpacity(0.1),
+                        color: AppTheme.duoBlue.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
@@ -300,7 +301,7 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                     leading: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppTheme.duoGreen.withOpacity(0.1),
+                        color: AppTheme.duoGreen.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
@@ -451,7 +452,7 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: AppTheme.duoBlue.withOpacity(0.15),
+                              color: AppTheme.duoBlue.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: const Icon(
@@ -498,10 +499,10 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                         margin: const EdgeInsets.only(bottom: 16),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppTheme.duoGreen.withOpacity(0.15),
+                          color: AppTheme.duoGreen.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: AppTheme.duoGreen.withOpacity(0.4),
+                            color: AppTheme.duoGreen.withValues(alpha: 0.4),
                           ),
                         ),
                         child: Row(
@@ -533,10 +534,10 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                           margin: const EdgeInsets.only(bottom: 20),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: AppTheme.duoRed.withOpacity(0.1),
+                            color: AppTheme.duoRed.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: AppTheme.duoRed.withOpacity(0.3),
+                              color: AppTheme.duoRed.withValues(alpha: 0.3),
                             ),
                           ),
                           child: Column(
@@ -655,10 +656,10 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                           margin: const EdgeInsets.only(bottom: 20),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: AppTheme.duoBlue.withOpacity(0.1),
+                            color: AppTheme.duoBlue.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: AppTheme.duoBlue.withOpacity(0.3),
+                              color: AppTheme.duoBlue.withValues(alpha: 0.3),
                             ),
                           ),
                           child: Column(
@@ -746,10 +747,10 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                         decoration: AppTheme.glassOf(context).copyWith(
                           border: Border.all(
                             color: file != null
-                                ? AppTheme.duoBlue.withOpacity(0.4)
+                                ? AppTheme.duoBlue.withValues(alpha: 0.4)
                                 : (isRestored
-                                      ? AppTheme.duoGreen.withOpacity(0.3)
-                                      : AppTheme.duoOrange.withOpacity(0.3)),
+                                      ? AppTheme.duoGreen.withValues(alpha: 0.3)
+                                      : AppTheme.duoOrange.withValues(alpha: 0.3)),
                           ),
                         ),
                         child: Material(
@@ -769,13 +770,13 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
                                       color: file != null
-                                          ? AppTheme.duoBlue.withOpacity(0.2)
+                                          ? AppTheme.duoBlue.withValues(alpha: 0.2)
                                           : (isRestored
-                                                ? AppTheme.duoGreen.withOpacity(
-                                                    0.15,
+                                                ? AppTheme.duoGreen.withValues(
+                                                    alpha: 0.15,
                                                   )
                                                 : AppTheme.duoOrange
-                                                      .withOpacity(0.15)),
+                                                      .withValues(alpha: 0.15)),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
@@ -945,7 +946,7 @@ class DocumentStorePickerDialog extends StatefulWidget {
   final ValueChanged<File> onFileSelected;
   final String? prefixFilter;
 
-  const DocumentStorePickerDialog({
+  const DocumentStorePickerDialog({super.key, 
     required this.cacheDirPath,
     required this.onFileSelected,
     this.prefixFilter,
@@ -1107,7 +1108,7 @@ class DocumentStorePickerDialogState
       backgroundColor: Colors.transparent,
       body: AppTheme.applyGlassBlur(
         borderRadius: 24,
-        color: context.colors.surface.withOpacity(0.95),
+        color: context.colors.surface.withValues(alpha: 0.95),
         child: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1594,7 +1595,7 @@ class DocumentStorePickerDialogState
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: typeColor.withOpacity(0.1),
+          color: typeColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
@@ -1628,7 +1629,7 @@ class DocumentStorePickerDialogState
               vertical: 2,
             ),
             decoration: BoxDecoration(
-              color: typeColor.withOpacity(0.15),
+              color: typeColor.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(

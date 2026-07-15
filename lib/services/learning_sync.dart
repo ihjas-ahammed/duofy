@@ -17,8 +17,8 @@ class LearningSync {
 
   // Per-user SharedPreferences keys — scoped by UID so switching accounts
   // never pollutes or resets another user's progress.
-  static String get completedKey => 'completed_lessons_${_uid}';
-  static String get xpKey => 'user_xp_${_uid}';
+  static String get completedKey => 'completed_lessons_$_uid';
+  static String get xpKey => 'user_xp_$_uid';
   static const String bookmarksKey = 'bookmarks';
 
   // Legacy unscoped keys — used only for one-time migration.

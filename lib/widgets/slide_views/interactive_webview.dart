@@ -36,7 +36,7 @@ class InteractiveWebview extends StatelessWidget {
               maxHeight: MediaQuery.of(context).size.height * 0.35,
             ),
             decoration: BoxDecoration(
-              color: context.colors.surface.withOpacity(0.5),
+              color: context.colors.surface.withValues(alpha: 0.5),
               border: Border(
                 bottom: BorderSide(color: context.colors.outline, width: 2),
               ),

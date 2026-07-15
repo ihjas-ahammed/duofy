@@ -72,13 +72,13 @@ class _FlashcardViewState extends State<FlashcardView> {
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
                             color: showBack
-                                ? AppTheme.duoGreen.withOpacity(0.08)
+                                ? AppTheme.duoGreen.withValues(alpha: 0.08)
                                 : context.colors.surfaceAlt,
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
                               color: showBack
-                                  ? AppTheme.duoGreen.withOpacity(0.5)
-                                  : AppTheme.duoBlue.withOpacity(0.4),
+                                  ? AppTheme.duoGreen.withValues(alpha: 0.5)
+                                  : AppTheme.duoBlue.withValues(alpha: 0.4),
                               width: 2,
                             ),
                           ),

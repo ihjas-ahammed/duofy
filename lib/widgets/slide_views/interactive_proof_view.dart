@@ -332,10 +332,10 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppTheme.duoGreen.withOpacity(0.1),
+                          color: AppTheme.duoGreen.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: AppTheme.duoGreen.withOpacity(0.3),
+                            color: AppTheme.duoGreen.withValues(alpha: 0.3),
                           ),
                         ),
                         child: Row(
@@ -370,10 +370,10 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: AppTheme.duoBlue.withOpacity(0.1),
+                      color: AppTheme.duoBlue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: AppTheme.duoBlue.withOpacity(0.3),
+                        color: AppTheme.duoBlue.withValues(alpha: 0.3),
                         width: 2,
                       ),
                     ),
@@ -391,7 +391,7 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                             Text(
                               'NEXT STEP',
                               style: TextStyle(
-                                color: AppTheme.duoBlue.withOpacity(0.8),
+                                color: AppTheme.duoBlue.withValues(alpha: 0.8),
                                 fontWeight: FontWeight.w900,
                                 fontSize: 12,
                                 letterSpacing: 1.2,
@@ -481,16 +481,16 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                             if (_isSubmitted) {
                               if (opt.isCorrect) {
                                 borderColor = AppTheme.duoGreen;
-                                bgColor = AppTheme.duoGreen.withOpacity(0.2);
+                                bgColor = AppTheme.duoGreen.withValues(alpha: 0.2);
                               } else if (isSelected && !opt.isCorrect) {
                                 borderColor = AppTheme.duoRed;
-                                bgColor = AppTheme.duoRed.withOpacity(0.2);
+                                bgColor = AppTheme.duoRed.withValues(alpha: 0.2);
                               } else {
                                 bgColor = Colors.transparent;
                               }
                             } else if (isSelected) {
                               borderColor = AppTheme.duoBlue;
-                              bgColor = AppTheme.duoBlue.withOpacity(0.2);
+                              bgColor = AppTheme.duoBlue.withValues(alpha: 0.2);
                             }
 
                             return Padding(
@@ -551,8 +551,8 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
           decoration: BoxDecoration(
             color: _isSubmitted
                 ? (_isCorrect
-                      ? AppTheme.duoGreen.withOpacity(0.15)
-                      : AppTheme.duoRed.withOpacity(0.15))
+                      ? AppTheme.duoGreen.withValues(alpha: 0.15)
+                      : AppTheme.duoRed.withValues(alpha: 0.15))
                 : Colors.transparent,
             border: Border(
               top: BorderSide(

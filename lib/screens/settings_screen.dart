@@ -1,22 +1,17 @@
 import 'dart:convert';
-import 'package:flow/services/generation_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 import '../services/fb/fb_auth.dart';
 import '../services/global_state.dart';
 import '../services/database_service.dart';
 import '../services/secrets_service.dart';
-import '../services/usage_limit_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/daily_goal_card.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/learner_profile_card.dart';
-import '../widgets/string_list_manager.dart';
 import '../widgets/responsive_center.dart';
 
-import '../models/app_models.dart';
 import 'pdf_browser_screen.dart';
 import 'dev/programming_slides_screen.dart';
 import 'metacognition_setup_screen.dart';
@@ -277,7 +272,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: _cloudSync
-              ? AppTheme.duoBlue.withOpacity(0.5)
+              ? AppTheme.duoBlue.withValues(alpha: 0.5)
               : context.colors.outline,
         ),
       ),
@@ -304,7 +299,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               Switch(
                 value: _cloudSync,
-                activeColor: AppTheme.duoBlue,
+                activeThumbColor: AppTheme.duoBlue,
                 onChanged: _isGuest
                     ? null
                     : (v) async {
@@ -516,7 +511,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(width: 12),
               Switch(
                 value: _autoFetchBooks,
-                activeColor: AppTheme.duoBlue,
+                activeThumbColor: AppTheme.duoBlue,
                 onChanged: (v) {
                   setState(() => _autoFetchBooks = v);
                 },
@@ -552,7 +547,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(width: 12),
               Switch(
                 value: _autoVerifyMappings,
-                activeColor: AppTheme.duoBlue,
+                activeThumbColor: AppTheme.duoBlue,
                 onChanged: (v) {
                   setState(() => _autoVerifyMappings = v);
                 },
@@ -588,7 +583,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(width: 12),
               Switch(
                 value: _autoGenerateModule1,
-                activeColor: AppTheme.duoBlue,
+                activeThumbColor: AppTheme.duoBlue,
                 onChanged: (v) {
                   setState(() => _autoGenerateModule1 = v);
                 },
@@ -624,7 +619,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppTheme.duoBlue.withOpacity(0.15),
+                    color: AppTheme.duoBlue.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -694,7 +689,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppTheme.duoViolet.withOpacity(0.15),
+                    color: AppTheme.duoViolet.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -1370,7 +1365,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 decoration: AppTheme.glassOf(context),
                 child: SwitchListTile(
                   value: GlobalState.developerModeNotifier.value,
-                  activeColor: AppTheme.duoRed,
+                  activeThumbColor: AppTheme.duoRed,
                   title: Text(
                     'Developer mode',
                     style: TextStyle(
@@ -1400,7 +1395,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   decoration: AppTheme.glassOf(context),
                   child: SwitchListTile(
                     value: GlobalState.advancedModeNotifier.value,
-                    activeColor: AppTheme.duoViolet,
+                    activeThumbColor: AppTheme.duoViolet,
                     title: Text(
                       'Advanced mode',
                       style: TextStyle(
@@ -1559,12 +1554,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppTheme.duoBlue.withOpacity(0.15)
+              ? AppTheme.duoBlue.withValues(alpha: 0.15)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
-                ? AppTheme.duoBlue.withOpacity(0.3)
+                ? AppTheme.duoBlue.withValues(alpha: 0.3)
                 : Colors.transparent,
           ),
         ),
@@ -1710,7 +1705,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             decoration: AppTheme.glassOf(context),
             child: SwitchListTile(
               value: GlobalState.developerModeNotifier.value,
-              activeColor: AppTheme.duoRed,
+              activeThumbColor: AppTheme.duoRed,
               title: Text(
                 'Developer mode',
                 style: TextStyle(
@@ -1783,7 +1778,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             decoration: AppTheme.glassOf(context),
             child: SwitchListTile(
               value: GlobalState.advancedModeNotifier.value,
-              activeColor: AppTheme.duoViolet,
+              activeThumbColor: AppTheme.duoViolet,
               title: Text(
                 'Advanced mode',
                 style: TextStyle(

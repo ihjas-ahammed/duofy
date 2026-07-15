@@ -670,9 +670,9 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: color.withOpacity(0.18),
+                          color: color.withValues(alpha: 0.18),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: color.withOpacity(0.4)),
+                          border: Border.all(color: color.withValues(alpha: 0.4)),
                         ),
                         child: Icon(icon, color: color, size: 24),
                       ),
@@ -1090,15 +1090,15 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
       height: 48,
       width: buttonWidth,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: _targetButtonExpanded ? color.withOpacity(0.3) : Colors.transparent,
+          color: _targetButtonExpanded ? color.withValues(alpha: 0.3) : Colors.transparent,
           width: _targetButtonExpanded ? 1.5 : 0.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
+            color: Colors.black.withValues(alpha: 0.15),
             blurRadius: 6,
             offset: const Offset(0, 3),
           ),
@@ -1161,7 +1161,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                           CircularProgressIndicator(
                             value: progress,
                             strokeWidth: 3.5,
-                            backgroundColor: color.withOpacity(0.15),
+                            backgroundColor: color.withValues(alpha: 0.15),
                             valueColor: AlwaysStoppedAnimation<Color>(color),
                           ),
                           Icon(

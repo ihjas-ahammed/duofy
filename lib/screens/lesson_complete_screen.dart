@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
@@ -186,17 +185,21 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen>
       return false;
     }
     final book = widget.book!;
-    if (widget.modIdx! < 0 || widget.modIdx! >= book.modules.length)
+    if (widget.modIdx! < 0 || widget.modIdx! >= book.modules.length) {
       return false;
+    }
     final module = book.modules[widget.modIdx!];
-    if (widget.secIdx! < 0 || widget.secIdx! >= module.sections.length)
+    if (widget.secIdx! < 0 || widget.secIdx! >= module.sections.length) {
       return false;
+    }
     final section = module.sections[widget.secIdx!];
-    if (widget.unitIdx! < 0 || widget.unitIdx! >= section.units.length)
+    if (widget.unitIdx! < 0 || widget.unitIdx! >= section.units.length) {
       return false;
+    }
     final unit = section.units[widget.unitIdx!];
-    if (widget.lessonIdx! < 0 || widget.lessonIdx! >= unit.lessons.length)
+    if (widget.lessonIdx! < 0 || widget.lessonIdx! >= unit.lessons.length) {
       return false;
+    }
 
     // Do not auto next if it is the last lesson of the unit
     return widget.lessonIdx! < unit.lessons.length - 1;
@@ -245,7 +248,7 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen>
               padding: const EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
                 color: selected
-                    ? color.withOpacity(0.18)
+                    ? color.withValues(alpha: 0.18)
                     : context.colors.surfaceAlt,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(

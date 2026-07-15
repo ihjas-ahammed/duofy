@@ -571,13 +571,13 @@ void showCanvasCodeDialog(BuildContext context, String code) {
                           ),
                           decoration: BoxDecoration(
                             color: isSvg
-                                ? AppTheme.duoGreen.withOpacity(0.15)
-                                : AppTheme.duoBlue.withOpacity(0.15),
+                                ? AppTheme.duoGreen.withValues(alpha: 0.15)
+                                : AppTheme.duoBlue.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
                               color: isSvg
-                                  ? AppTheme.duoGreen.withOpacity(0.3)
-                                  : AppTheme.duoBlue.withOpacity(0.3),
+                                  ? AppTheme.duoGreen.withValues(alpha: 0.3)
+                                  : AppTheme.duoBlue.withValues(alpha: 0.3),
                             ),
                           ),
                           child: Text(

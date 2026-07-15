@@ -38,10 +38,10 @@ class MissingFilesBanner extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppTheme.duoOrange.withOpacity(0.15),
+        color: AppTheme.duoOrange.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppTheme.duoOrange.withOpacity(0.5),
+          color: AppTheme.duoOrange.withValues(alpha: 0.5),
           width: 2,
         ),
       ),

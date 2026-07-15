@@ -134,9 +134,9 @@ class NotificationService {
     );
     const NotificationDetails details = NotificationDetails(
       android: androidDetails,
-      linux: const LinuxNotificationDetails(),
-      iOS: const DarwinNotificationDetails(),
-      macOS: const DarwinNotificationDetails(),
+      linux: LinuxNotificationDetails(),
+      iOS: DarwinNotificationDetails(),
+      macOS: DarwinNotificationDetails(),
     );
     try {
       await _plugin.show(id: id, title: title, body: body, notificationDetails: details, payload: payload);

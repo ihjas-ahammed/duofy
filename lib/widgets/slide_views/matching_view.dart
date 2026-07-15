@@ -179,7 +179,7 @@ class _MatchingViewState extends State<MatchingView> {
             alignment: Alignment.centerLeft,
             decoration: BoxDecoration(
               color: bound
-                  ? color.withOpacity(0.12)
+                  ? color.withValues(alpha: 0.12)
                   : context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: border, width: 2),

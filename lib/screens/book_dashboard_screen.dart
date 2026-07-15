@@ -254,15 +254,15 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       height: 48,
       width: buttonWidth,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: _targetButtonExpanded ? color.withOpacity(0.3) : Colors.transparent,
+          color: _targetButtonExpanded ? color.withValues(alpha: 0.3) : Colors.transparent,
           width: _targetButtonExpanded ? 1.5 : 0.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
+            color: Colors.black.withValues(alpha: 0.15),
             blurRadius: 6,
             offset: const Offset(0, 3),
           ),
@@ -322,7 +322,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                           CircularProgressIndicator(
                             value: progress,
                             strokeWidth: 3.5,
-                            backgroundColor: color.withOpacity(0.15),
+                            backgroundColor: color.withValues(alpha: 0.15),
                             valueColor: AlwaysStoppedAnimation<Color>(color),
                           ),
                           Icon(
@@ -580,7 +580,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         const Spacer(),
                         Switch(
                           value: generateGraphics,
-                          activeColor: AppTheme.duoBlue,
+                          activeThumbColor: AppTheme.duoBlue,
                           onChanged: (val) {
                             setState(() {
                               generateGraphics = val;
@@ -654,7 +654,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: AppTheme.duoRed.withOpacity(0.85),
+            backgroundColor: AppTheme.duoRed.withValues(alpha: 0.85),
             content: Text(
               msg,
               style: TextStyle(color: context.colors.textPrimary),
@@ -982,11 +982,11 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: (isMissing ? AppTheme.duoOrange : AppTheme.duoBlue)
-                        .withOpacity(0.12),
+                        .withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: (isMissing ? AppTheme.duoOrange : AppTheme.duoBlue)
-                          .withOpacity(0.35),
+                          .withValues(alpha: 0.35),
                     ),
                   ),
                   child: Row(
@@ -1052,9 +1052,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
         decoration: BoxDecoration(
-          color: AppTheme.duoGreen.withOpacity(0.12),
+          color: AppTheme.duoGreen.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppTheme.duoGreen.withOpacity(0.35)),
+          border: Border.all(color: AppTheme.duoGreen.withValues(alpha: 0.35)),
         ),
         child: const Row(
           mainAxisSize: MainAxisSize.min,
@@ -2481,9 +2481,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: color.withOpacity(0.18),
+                          color: color.withValues(alpha: 0.18),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: color.withOpacity(0.4)),
+                          border: Border.all(color: color.withValues(alpha: 0.4)),
                         ),
                         child: Icon(icon, color: color, size: 24),
                       ),

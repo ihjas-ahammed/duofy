@@ -74,7 +74,7 @@ class _LearnerProfileCardState extends State<LearnerProfileCard> {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: selected == value
-                            ? AppTheme.duoBlue.withOpacity(0.18)
+                            ? AppTheme.duoBlue.withValues(alpha: 0.18)
                             : context.colors.surfaceAlt,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(

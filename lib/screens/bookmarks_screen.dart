@@ -134,7 +134,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
         maxWidth: ResponsiveMaxWidth.reading,
         child: ValueListenableBuilder<int>(
           valueListenable: GlobalState.bookmarksNotifier,
-          builder: (context, _, __) {
+          builder: (context, _, _) {
             return FutureBuilder<List<Bookmark>>(
               future: BookmarkService.getBookmarks(),
               builder: (context, snap) {
@@ -151,7 +151,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                   physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
                   itemCount: bookmarks.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
                   itemBuilder: (context, i) => _buildTile(bookmarks[i]),
                 );
               },
@@ -207,7 +207,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
-          color: AppTheme.duoRed.withOpacity(0.2),
+          color: AppTheme.duoRed.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(16),
         ),
         child: const Icon(LucideIcons.trash2, color: AppTheme.duoRed),
@@ -230,7 +230,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppTheme.duoBlue.withOpacity(0.15),
+                    color: AppTheme.duoBlue.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(

@@ -19,7 +19,7 @@ class QpDetailScreen extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 16, left: 24, right: 24),
       decoration: AppTheme.glassOf(context).copyWith(
-        border: Border.all(color: AppTheme.duoBlue.withOpacity(0.3), width: 2),
+        border: Border.all(color: AppTheme.duoBlue.withValues(alpha: 0.3), width: 2),
       ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -66,9 +66,9 @@ class QpDetailScreen extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppTheme.duoOrange.withOpacity(0.1),
+                color: AppTheme.duoOrange.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppTheme.duoOrange.withOpacity(0.5)),
+                border: Border.all(color: AppTheme.duoOrange.withValues(alpha: 0.5)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,7 +86,7 @@ class QpDetailScreen extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w900,
-                          color: AppTheme.duoOrange.withOpacity(0.8),
+                          color: AppTheme.duoOrange.withValues(alpha: 0.8),
                           letterSpacing: 1.2,
                         ),
                       ),

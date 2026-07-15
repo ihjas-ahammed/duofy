@@ -160,7 +160,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppTheme.duoBlue.withOpacity(0.1),
+                  color: AppTheme.duoBlue.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
@@ -189,7 +189,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppTheme.duoOrange.withOpacity(0.1),
+                  color: AppTheme.duoOrange.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
@@ -218,7 +218,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppTheme.duoGreen.withOpacity(0.1),
+                  color: AppTheme.duoGreen.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
@@ -672,7 +672,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
       builder: (context) {
         return AppTheme.applyGlassBlur(
           borderRadius: 24,
-          color: context.colors.surface.withOpacity(0.95),
+          color: context.colors.surface.withValues(alpha: 0.95),
           child: SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -1441,7 +1441,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.15),
+            color: iconColor.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
@@ -1664,8 +1664,8 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.black.withOpacity(0.9),
-                      Colors.black.withOpacity(0.5),
+                      Colors.black.withValues(alpha: 0.9),
+                      Colors.black.withValues(alpha: 0.5),
                       Colors.transparent,
                     ],
                     begin: Alignment.bottomCenter,
@@ -1863,7 +1863,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
         children: [
           CircleAvatar(
             radius: 12,
-            backgroundColor: AppTheme.duoViolet.withOpacity(0.2),
+            backgroundColor: AppTheme.duoViolet.withValues(alpha: 0.2),
             child: Text(
               num,
               style: const TextStyle(
@@ -2114,7 +2114,7 @@ class _PdfThumbnailWidgetState extends State<PdfThumbnailWidget> {
         gradient: LinearGradient(
           colors: [
             context.colors.surface,
-            context.colors.surface.withOpacity(0.7),
+            context.colors.surface.withValues(alpha: 0.7),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -2127,7 +2127,7 @@ class _PdfThumbnailWidgetState extends State<PdfThumbnailWidget> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppTheme.duoBlue.withOpacity(0.1),
+                color: AppTheme.duoBlue.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -2393,10 +2393,10 @@ Proposed clean title:
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppTheme.duoViolet.withOpacity(0.15),
+                    color: AppTheme.duoViolet.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: AppTheme.duoViolet.withOpacity(0.3),
+                      color: AppTheme.duoViolet.withValues(alpha: 0.3),
                     ),
                   ),
                   child: _isSuggesting

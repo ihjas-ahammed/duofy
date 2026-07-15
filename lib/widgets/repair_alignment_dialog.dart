@@ -55,7 +55,7 @@ Future<void> showRepairAlignmentFlow(BuildContext context, Book book) async {
           Expanded(
             child: ValueListenableBuilder<String>(
               valueListenable: status,
-              builder: (_, s, __) => Text(
+              builder: (_, s, _) => Text(
                 s,
                 style: TextStyle(
                   color: context.colors.textSecondary,

@@ -1,5 +1,4 @@
 import '../platform/io_shim.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:file_picker/file_picker.dart';
@@ -57,7 +56,7 @@ class FileSelectionList extends StatelessWidget {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: AppTheme.duoViolet.withOpacity(0.2),
+                            color: AppTheme.duoViolet.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Row(
@@ -90,7 +89,7 @@ class FileSelectionList extends StatelessWidget {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: AppTheme.duoBlue.withOpacity(0.2),
+                          color: AppTheme.duoBlue.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Row(

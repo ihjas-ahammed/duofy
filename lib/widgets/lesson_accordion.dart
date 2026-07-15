@@ -167,14 +167,14 @@ class _LessonAccordionState extends State<LessonAccordion> {
       margin: const EdgeInsets.only(bottom: 8, left: 16, right: 16),
       decoration: BoxDecoration(
         color: isCompleted
-            ? AppTheme.duoGreen.withOpacity(0.05)
-            : (isActive ? secColor.withOpacity(0.1) : Colors.transparent),
+            ? AppTheme.duoGreen.withValues(alpha: 0.05)
+            : (isActive ? secColor.withValues(alpha: 0.1) : Colors.transparent),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isActive
               ? secColor
               : (isCompleted
-                    ? AppTheme.duoGreen.withOpacity(0.3)
+                    ? AppTheme.duoGreen.withValues(alpha: 0.3)
                     : context.colors.outline),
         ),
       ),
@@ -253,7 +253,7 @@ class _LessonAccordionState extends State<LessonAccordion> {
       child: ListTile(
         leading: Icon(
           LucideIcons.loader,
-          color: secColor.withOpacity(0.4),
+          color: secColor.withValues(alpha: 0.4),
           size: 28,
         ),
         title: Text(

@@ -641,8 +641,8 @@ class PdfService {
 
   int? _resolveBookmarkPage(sync_pdf.PdfDocument doc, sync_pdf.PdfBookmark bookmark) {
     try {
-      if (bookmark.destination != null && bookmark.destination!.page != null) {
-        final idx = doc.pages.indexOf(bookmark.destination!.page!);
+      if (bookmark.destination != null) {
+        final idx = doc.pages.indexOf(bookmark.destination!.page);
         if (idx >= 0) return idx + 1;
       }
     } catch (e) {
@@ -694,7 +694,7 @@ class PdfService {
             final uNode = sNode.children[k];
             final uEnd = getEndPage(sNode.children, k, sEnd);
             units.add(Unit(
-              id: 'unit_${DateTime.now().millisecondsSinceEpoch}_${i}_${j}_${k}',
+              id: 'unit_${DateTime.now().millisecondsSinceEpoch}_${i}_${j}_$k',
               title: uNode.title,
               description: 'Unit on ${uNode.title}',
               startPage: uNode.pageNumber,
@@ -719,7 +719,7 @@ class PdfService {
           }
           
           sections.add(Section(
-            id: 'section_${DateTime.now().millisecondsSinceEpoch}_${i}_${j}',
+            id: 'section_${DateTime.now().millisecondsSinceEpoch}_${i}_$j',
             title: sNode.title,
             description: 'Section on ${sNode.title}',
             color: 'duo-blue',
@@ -749,7 +749,7 @@ class PdfService {
         }
 
         modules.add(Module(
-          id: 'module_${DateTime.now().millisecondsSinceEpoch}_${i}',
+          id: 'module_${DateTime.now().millisecondsSinceEpoch}_$i',
           title: mNode.title,
           description: 'Module on ${mNode.title}',
           practiceQuestions: const [],
@@ -766,7 +766,7 @@ class PdfService {
           final uNode = mNode.children[j];
           final uEnd = getEndPage(mNode.children, j, mEnd);
           units.add(Unit(
-            id: 'unit_${DateTime.now().millisecondsSinceEpoch}_${i}_${j}',
+            id: 'unit_${DateTime.now().millisecondsSinceEpoch}_${i}_$j',
             title: uNode.title,
             description: 'Unit on ${uNode.title}',
             startPage: uNode.pageNumber,
@@ -791,13 +791,13 @@ class PdfService {
         }
 
         modules.add(Module(
-          id: 'module_${DateTime.now().millisecondsSinceEpoch}_${i}',
+          id: 'module_${DateTime.now().millisecondsSinceEpoch}_$i',
           title: mNode.title,
           description: 'Module on ${mNode.title}',
           practiceQuestions: const [],
           sections: [
             Section(
-              id: 'section_${DateTime.now().millisecondsSinceEpoch}_${i}',
+              id: 'section_${DateTime.now().millisecondsSinceEpoch}_$i',
               title: mNode.title,
               description: 'Section on ${mNode.title}',
               color: 'duo-blue',
@@ -812,7 +812,7 @@ class PdfService {
         final uNode = bookmarks[i];
         final uEnd = getEndPage(bookmarks, i, totalPages);
         units.add(Unit(
-          id: 'unit_${DateTime.now().millisecondsSinceEpoch}_${i}',
+          id: 'unit_${DateTime.now().millisecondsSinceEpoch}_$i',
           title: uNode.title,
           description: 'Unit on ${uNode.title}',
           startPage: uNode.pageNumber,
@@ -827,7 +827,7 @@ class PdfService {
         units.add(Unit(
           id: 'unit_${DateTime.now().millisecondsSinceEpoch}_0',
           title: filename,
-          description: 'Unit on ${filename}',
+          description: 'Unit on $filename',
           startPage: 1,
           endPage: totalPages,
           isGenerated: false,
@@ -839,7 +839,7 @@ class PdfService {
       modules.add(Module(
         id: 'module_${DateTime.now().millisecondsSinceEpoch}',
         title: filename,
-        description: 'Module on ${filename}',
+        description: 'Module on $filename',
         practiceQuestions: const [],
         sections: [
           Section(

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../services/ai_estimator.dart';
 import '../theme/app_theme.dart';
@@ -99,7 +98,7 @@ class _CanvasArtViewState extends State<CanvasArtView> {
           borderRadius: widget.isStackedWithContent
               ? const BorderRadius.vertical(top: Radius.circular(24))
               : BorderRadius.circular(16),
-          border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+          border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
         ),
         child: AspectRatio(
           aspectRatio: 3 / 2,
@@ -297,9 +296,9 @@ class _TapToGenerateCard extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: AppTheme.duoBlue.withOpacity(0.06),
+            color: AppTheme.duoBlue.withValues(alpha: 0.06),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppTheme.duoBlue.withOpacity(0.3)),
+            border: Border.all(color: AppTheme.duoBlue.withValues(alpha: 0.3)),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,7 +306,7 @@ class _TapToGenerateCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppTheme.duoBlue.withOpacity(0.15),
+                  color: AppTheme.duoBlue.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -401,13 +400,11 @@ class _CanvasPlaceholderState extends State<_CanvasPlaceholder> {
 
   void _startTimerIfNeeded() {
     if (widget.spinning && widget.targetId != null) {
-      if (_timer == null) {
-        _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      _timer ??= Timer.periodic(const Duration(milliseconds: 100), (timer) {
           if (mounted) {
             setState(() {});
           }
         });
-      }
     } else {
       _timer?.cancel();
       _timer = null;

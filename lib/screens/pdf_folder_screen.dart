@@ -279,7 +279,7 @@ class _PdfFolderScreenState extends State<PdfFolderScreen> {
                         leading: Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: AppTheme.duoViolet.withOpacity(0.2),
+                            color: AppTheme.duoViolet.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(

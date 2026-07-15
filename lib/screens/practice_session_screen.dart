@@ -172,14 +172,18 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     if (widget.practiceType == 'quiz' && slideType == 'quiz') return true;
     if (widget.practiceType == 'proof' && slideType == 'proof') return true;
     if (widget.practiceType == 'step_by_step' &&
-        (slideType == 'step_by_step' || slideType == 'proof'))
+        (slideType == 'step_by_step' || slideType == 'proof')) {
       return true;
-    if (widget.practiceType == 'fill_in_blank' && slideType == 'fill_in_blank')
+    }
+    if (widget.practiceType == 'fill_in_blank' && slideType == 'fill_in_blank') {
       return true;
-    if (widget.practiceType == 'one_word' && slideType == 'one_word')
+    }
+    if (widget.practiceType == 'one_word' && slideType == 'one_word') {
       return true;
-    if (widget.practiceType == 'numerical' && slideType == 'numerical')
+    }
+    if (widget.practiceType == 'numerical' && slideType == 'numerical') {
       return true;
+    }
     return false;
   }
 
@@ -619,8 +623,8 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
                   decoration: BoxDecoration(
                     color: _answered
                         ? (_isCorrect
-                              ? AppTheme.duoGreen.withOpacity(0.15)
-                              : AppTheme.duoRed.withOpacity(0.15))
+                              ? AppTheme.duoGreen.withValues(alpha: 0.15)
+                              : AppTheme.duoRed.withValues(alpha: 0.15))
                         : Colors.transparent,
                     border: Border(
                       top: BorderSide(
@@ -641,10 +645,10 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: AppTheme.duoRed.withOpacity(0.1),
+                              color: AppTheme.duoRed.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: AppTheme.duoRed.withOpacity(0.3),
+                                color: AppTheme.duoRed.withValues(alpha: 0.3),
                               ),
                             ),
                             child: Column(

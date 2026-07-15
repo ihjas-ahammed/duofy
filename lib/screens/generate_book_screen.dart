@@ -7,7 +7,6 @@ import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/file_selection_list.dart';
 import '../widgets/responsive_center.dart';
-import 'pdf_split_preview_screen.dart';
 import '../services/generation_manager.dart';
 import '../services/walkthrough_service.dart';
 import '../services/pdf_service.dart';
@@ -483,7 +482,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                     Expanded(
                       child: ListView.separated(
                         itemCount: itemsList.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        separatorBuilder: (_, _) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final item = itemsList[index];
                           final title = item['title'] as String;
@@ -599,14 +598,14 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                                     ),
                                     decoration: BoxDecoration(
                                       color: isAvailable
-                                          ? AppTheme.duoGreen.withOpacity(0.1)
+                                          ? AppTheme.duoGreen.withValues(alpha: 0.1)
                                           : isSearching
                                           ? context.colors.surfaceAlt
                                           : context.colors.surfaceAlt,
                                       borderRadius: BorderRadius.circular(20),
                                       border: Border.all(
                                         color: isAvailable
-                                            ? AppTheme.duoGreen.withOpacity(0.3)
+                                            ? AppTheme.duoGreen.withValues(alpha: 0.3)
                                             : context.colors.outline,
                                       ),
                                     ),
@@ -851,17 +850,15 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
         });
       } else {
         final bytes = await B2Service.instance.downloadObject(obj.key);
-        if (bytes != null) {
-          if (!await file.parent.exists()) {
-            await file.parent.create(recursive: true);
-          }
-          await file.writeAsBytes(bytes);
-          setState(() {
-            if (!_selectedFiles.any((f) => f.path == file.path)) {
-              _selectedFiles.add(file);
-            }
-          });
+        if (!await file.parent.exists()) {
+          await file.parent.create(recursive: true);
         }
+        await file.writeAsBytes(bytes);
+        setState(() {
+          if (!_selectedFiles.any((f) => f.path == file.path)) {
+            _selectedFiles.add(file);
+          }
+        });
       }
     } catch (e) {
       print('[SyllabusScan] Error downloading B2 object PDF: $e');
@@ -1626,7 +1623,7 @@ class _DocumentStorePickerDialogState
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<String?>(
-                          value: _selectedCourseFilter,
+                          initialValue: _selectedCourseFilter,
                           isExpanded: true,
                           decoration: InputDecoration(
                             labelText: 'Course',
@@ -1655,7 +1652,7 @@ class _DocumentStorePickerDialogState
                       const SizedBox(width: 8),
                       Expanded(
                         child: DropdownButtonFormField<String?>(
-                          value: _selectedSemesterFilter,
+                          initialValue: _selectedSemesterFilter,
                           isExpanded: true,
                           decoration: InputDecoration(
                             labelText: 'Semester',

@@ -135,7 +135,7 @@ class ExamScreen extends StatelessWidget {
                           Icon(
                             LucideIcons.fileQuestion,
                             size: 40,
-                            color: AppTheme.duoBlue.withOpacity(0.5),
+                            color: AppTheme.duoBlue.withValues(alpha: 0.5),
                           ),
                           const SizedBox(height: 16),
                           Text(

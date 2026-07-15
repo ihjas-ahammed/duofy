@@ -7,7 +7,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
-import '../widgets/platform_webview.dart';
 
 class YoutubeVideo {
   final String id;
@@ -502,7 +501,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: AppTheme.duoBlue.withOpacity(0.1),
+                                color: AppTheme.duoBlue.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: const Icon(

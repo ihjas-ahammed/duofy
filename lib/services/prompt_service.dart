@@ -607,7 +607,7 @@ YOU MUST RETURN ONLY VALID JSON MATCHING THIS EXACT STRUCTURE:
     {
       "id": "l1", "title": "Lesson 1", "description": "...", "icon": "<one value from the icon list>",
       "formatId": "<the format id for this lesson>",
-      "canvasPrompt": "One concise sentence describing the lesson\'s key diagram.",
+      "canvasPrompt": "One concise sentence describing the lesson's key diagram.",
       "slides": [ ... ]
     }
   ]
@@ -650,7 +650,7 @@ RETURN ONLY VALID JSON FOR THIS ONE LESSON (no wrapping array, no other keys):
   "description": "...",
   "icon": "<one value from the icon list>",
   "formatId": "<the format id for this lesson>",
-  "canvasPrompt": "One concise sentence describing the lesson\'s key diagram.",
+  "canvasPrompt": "One concise sentence describing the lesson's key diagram.",
   "slides": [ ... ]
 }''';
 

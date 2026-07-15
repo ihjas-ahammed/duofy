@@ -36,9 +36,9 @@ class ModuleSelectorSheet extends StatelessWidget {
       context: context,
       barrierLabel: 'Select Module',
       barrierDismissible: true,
-      barrierColor: const Color(0xFF0B0F19).withOpacity(0.8),
+      barrierColor: const Color(0xFF0B0F19).withValues(alpha: 0.8),
       transitionDuration: const Duration(milliseconds: 220),
-      pageBuilder: (_, __, ___) => ModuleSelectorSheet(
+      pageBuilder: (_, _, _) => ModuleSelectorSheet(
         modules: modules,
         activeModuleIdx: activeModuleIdx,
         completedLessons: completedLessons,
@@ -136,7 +136,7 @@ class ModuleSelectorSheet extends StatelessWidget {
                               padding: const EdgeInsets.all(8),
                               physics: const BouncingScrollPhysics(),
                               itemCount: modules.length,
-                              separatorBuilder: (_, __) =>
+                              separatorBuilder: (_, _) =>
                                   const SizedBox(height: 8),
                               itemBuilder: (context, index) {
                                 return _ModuleRow(
@@ -202,7 +202,7 @@ class _ModuleRow extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: isActive
-                ? AppTheme.duoBlue.withOpacity(0.18)
+                ? AppTheme.duoBlue.withValues(alpha: 0.18)
                 : context.colors.surfaceAlt,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(

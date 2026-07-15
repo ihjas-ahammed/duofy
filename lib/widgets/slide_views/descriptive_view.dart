@@ -356,10 +356,10 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                           padding: const EdgeInsets.all(12),
                           margin: const EdgeInsets.only(bottom: 20),
                           decoration: BoxDecoration(
-                            color: AppTheme.duoOrange.withOpacity(0.15),
+                            color: AppTheme.duoOrange.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: AppTheme.duoOrange.withOpacity(0.5),
+                              color: AppTheme.duoOrange.withValues(alpha: 0.5),
                             ),
                           ),
                           child: Row(
@@ -389,13 +389,13 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                           padding: const EdgeInsets.all(18),
                           decoration: BoxDecoration(
                             color: _isCorrect
-                                ? AppTheme.duoGreen.withOpacity(0.08)
-                                : AppTheme.duoRed.withOpacity(0.08),
+                                ? AppTheme.duoGreen.withValues(alpha: 0.08)
+                                : AppTheme.duoRed.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                               color: _isCorrect
-                                  ? AppTheme.duoGreen.withOpacity(0.4)
-                                  : AppTheme.duoRed.withOpacity(0.4),
+                                  ? AppTheme.duoGreen.withValues(alpha: 0.4)
+                                  : AppTheme.duoRed.withValues(alpha: 0.4),
                               width: 1.5,
                             ),
                           ),

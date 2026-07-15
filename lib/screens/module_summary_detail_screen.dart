@@ -42,7 +42,7 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: context.colors.background,
       appBar: AppBar(
-        backgroundColor: context.colors.background.withOpacity(0.9),
+        backgroundColor: context.colors.background.withValues(alpha: 0.9),
         flexibleSpace: ClipRRect(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),

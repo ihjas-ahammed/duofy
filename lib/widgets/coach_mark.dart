@@ -82,7 +82,7 @@ class CoachMarkController {
                       color: context.colors.surface,
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
-                        color: AppTheme.duoBlue.withOpacity(0.5),
+                        color: AppTheme.duoBlue.withValues(alpha: 0.5),
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -104,7 +104,7 @@ class CoachMarkController {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: AppTheme.duoBlue.withOpacity(0.15),
+                                color: AppTheme.duoBlue.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -175,7 +175,7 @@ class _HolePainter extends CustomPainter {
     );
     // Fixed dimming scrim for the spotlight cutout — deliberately
     // theme-invariant, not a themed surface.
-    canvas.drawPath(path, Paint()..color = Colors.black.withOpacity(0.72));
+    canvas.drawPath(path, Paint()..color = Colors.black.withValues(alpha: 0.72));
   }
 
   @override

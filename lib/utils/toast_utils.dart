@@ -18,12 +18,12 @@ void showToast(BuildContext context, String message) {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B).withOpacity(0.95), // Premium slate dark color
+                color: const Color(0xFF1E293B).withValues(alpha: 0.95), // Premium slate dark color
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.white.withOpacity(0.08), width: 1.2),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1.2),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.4),
+                    color: Colors.black.withValues(alpha: 0.4),
                     blurRadius: 12,
                     offset: const Offset(0, 6),
                   )

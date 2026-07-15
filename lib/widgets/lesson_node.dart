@@ -395,6 +395,7 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget>
     super.dispose();
   }
 
+  @override
   Widget build(BuildContext context) {
     final sectionColor = SectionColors.base(widget.sectionColorStr);
 
@@ -409,9 +410,9 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget>
     }
 
     final Color highlightColor = widget.isLocked
-        ? Colors.white.withOpacity(0.06)
-        : Colors.white.withOpacity(0.22);
-    final Color rimShade = Colors.black.withOpacity(0.18);
+        ? Colors.white.withValues(alpha: 0.06)
+        : Colors.white.withValues(alpha: 0.22);
+    final Color rimShade = Colors.black.withValues(alpha: 0.18);
 
     // When NOT pressed, the top face is shifted UP by _depthOffset.
     // When pressed, it shifts to 0, covering the shadow.
@@ -478,8 +479,8 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget>
                                   shape: BoxShape.circle,
                                   gradient: RadialGradient(
                                     colors: [
-                                      glowColor.withOpacity(glowOpacity),
-                                      glowColor.withOpacity(0),
+                                      glowColor.withValues(alpha: glowOpacity),
+                                      glowColor.withValues(alpha: 0),
                                     ],
                                     stops: const [0.42, 1.0],
                                   ),
@@ -509,7 +510,7 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget>
                                   // Circle 2: Transparent black for shadow effect
                                   Positioned.fill(
                                     child: Container(
-                                      color: Colors.black.withOpacity(0.2),
+                                      color: Colors.black.withValues(alpha: 0.2),
                                     ),
                                   ),
 
@@ -556,13 +557,13 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget>
                                                     begin: Alignment.topCenter,
                                                     end: Alignment.bottomCenter,
                                                     colors: [
-                                                      Colors.white.withOpacity(
-                                                        widget.isLocked
+                                                      Colors.white.withValues(
+                                                        alpha: widget.isLocked
                                                             ? 0.10
                                                             : 0.28,
                                                       ),
-                                                      Colors.white.withOpacity(
-                                                        0.0,
+                                                      Colors.white.withValues(
+                                                        alpha: 0.0,
                                                       ),
                                                     ],
                                                   ),
@@ -642,7 +643,7 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget>
                               height: 2,
                               color: widget.isLocked
                                   ? const Color(0xFF475569)
-                                  : sectionColor.withOpacity(0.5),
+                                  : sectionColor.withValues(alpha: 0.5),
                             ),
                           ),
                           Icon(
@@ -650,7 +651,7 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget>
                             size: 14,
                             color: widget.isLocked
                                 ? const Color(0xFF475569)
-                                : sectionColor.withOpacity(0.8),
+                                : sectionColor.withValues(alpha: 0.8),
                           ),
                         ]
                       : [
@@ -659,14 +660,14 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget>
                             size: 14,
                             color: widget.isLocked
                                 ? const Color(0xFF475569)
-                                : sectionColor.withOpacity(0.8),
+                                : sectionColor.withValues(alpha: 0.8),
                           ),
                           Expanded(
                             child: Container(
                               height: 2,
                               color: widget.isLocked
                                   ? const Color(0xFF475569)
-                                  : sectionColor.withOpacity(0.5),
+                                  : sectionColor.withValues(alpha: 0.5),
                             ),
                           ),
                         ],

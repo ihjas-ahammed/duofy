@@ -55,10 +55,10 @@ class PyqCompleteScreen extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: AppTheme.duoGreen.withOpacity(0.15),
+                            color: AppTheme.duoGreen.withValues(alpha: 0.15),
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: AppTheme.duoGreen.withOpacity(0.3),
+                              color: AppTheme.duoGreen.withValues(alpha: 0.3),
                               width: 3,
                             ),
                           ),
@@ -150,8 +150,8 @@ class PyqCompleteScreen extends StatelessWidget {
                               ? AppTheme.duoGreen
                               : AppTheme.duoRed;
                           final bgCol = isCorrect
-                              ? AppTheme.duoGreen.withOpacity(0.06)
-                              : AppTheme.duoRed.withOpacity(0.06);
+                              ? AppTheme.duoGreen.withValues(alpha: 0.06)
+                              : AppTheme.duoRed.withValues(alpha: 0.06);
 
                           return Container(
                             margin: const EdgeInsets.only(bottom: 16),
@@ -160,7 +160,7 @@ class PyqCompleteScreen extends StatelessWidget {
                               color: bgCol,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: borderCol.withOpacity(0.3),
+                                color: borderCol.withValues(alpha: 0.3),
                                 width: 1.5,
                               ),
                             ),

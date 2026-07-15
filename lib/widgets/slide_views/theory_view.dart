@@ -32,7 +32,7 @@ class TheoryView extends StatelessWidget {
           SliverToBoxAdapter(
             child: Column(
               children: [
-                if (lessonCanvas != null) lessonCanvas!,
+                ?lessonCanvas,
                 if (!hasCanvas)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16.0, top: 16.0),
@@ -132,7 +132,7 @@ class TheoryView extends StatelessWidget {
                         ),
                       ),
                     )
-                    .toList(),
+                    ,
               ],
             ),
           ),

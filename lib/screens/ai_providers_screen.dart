@@ -620,7 +620,7 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
                   color: context.colors.shadow,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: isPrimary ? AppTheme.duoBlue.withOpacity(0.6) : context.colors.outline,
+                    color: isPrimary ? AppTheme.duoBlue.withValues(alpha: 0.6) : context.colors.outline,
                   ),
                 ),
                 child: Row(
@@ -685,7 +685,7 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                           decoration: BoxDecoration(
-                                            color: AppTheme.duoGreen.withOpacity(0.15),
+                                            color: AppTheme.duoGreen.withValues(alpha: 0.15),
                                             borderRadius: BorderRadius.circular(4),
                                           ),
                                           child: const Text(
@@ -701,7 +701,7 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                           decoration: BoxDecoration(
-                                            color: AppTheme.duoBlue.withOpacity(0.1),
+                                            color: AppTheme.duoBlue.withValues(alpha: 0.1),
                                             borderRadius: BorderRadius.circular(4),
                                           ),
                                           child: const Text(

@@ -202,11 +202,11 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
     final card = Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: context.colors.surface.withOpacity(0.4),
+        color: context.colors.surface.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isRunning
-              ? AppTheme.duoBlue.withOpacity(0.3)
+              ? AppTheme.duoBlue.withValues(alpha: 0.3)
               : context.colors.outline,
           width: isRunning ? 2 : 1,
         ),
@@ -224,7 +224,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.12),
+                      color: statusColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(taskIcon, color: statusColor, size: 20),
@@ -253,7 +253,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: statusColor.withOpacity(0.15),
+                                color: statusColor.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -274,7 +274,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.duoViolet.withOpacity(0.15),
+                                  color: AppTheme.duoViolet.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: const Row(
@@ -383,9 +383,9 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppTheme.duoRed.withOpacity(0.08),
+                    color: AppTheme.duoRed.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppTheme.duoRed.withOpacity(0.2)),
+                    border: Border.all(color: AppTheme.duoRed.withValues(alpha: 0.2)),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -466,9 +466,9 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: AppTheme.duoBlue.withOpacity(0.08),
+          color: AppTheme.duoBlue.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppTheme.duoBlue.withOpacity(0.2)),
+          border: Border.all(color: AppTheme.duoBlue.withValues(alpha: 0.2)),
         ),
         child: Row(
           children: [
@@ -498,7 +498,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: context.colors.surface.withOpacity(0.2),
+        color: context.colors.surface.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: context.colors.outline),
       ),
@@ -540,7 +540,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: context.colors.surface.withOpacity(0.15),
+        color: context.colors.surface.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: context.colors.outline),
       ),
@@ -836,10 +836,10 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: AppTheme.duoViolet.withOpacity(0.08),
+                      color: AppTheme.duoViolet.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: AppTheme.duoViolet.withOpacity(0.2),
+                        color: AppTheme.duoViolet.withValues(alpha: 0.2),
                       ),
                     ),
                     child: Row(

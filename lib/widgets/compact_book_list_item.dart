@@ -85,15 +85,15 @@ class CompactBookListItem extends StatelessWidget {
           onTap: onTap,
           onLongPress: onLongPress,
           borderRadius: BorderRadius.circular(16),
-          splashColor: mostUsedColor.withOpacity(0.08),
-          highlightColor: mostUsedColor.withOpacity(0.04),
+          splashColor: mostUsedColor.withValues(alpha: 0.08),
+          highlightColor: mostUsedColor.withValues(alpha: 0.04),
           child: Ink(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: mostUsedColor.withOpacity(0.2),
+                color: mostUsedColor.withValues(alpha: 0.2),
                 width: 1.2,
               ),
             ),
@@ -104,10 +104,10 @@ class CompactBookListItem extends StatelessWidget {
                   width: 52,
                   height: 52,
                   decoration: BoxDecoration(
-                    color: mostUsedColor.withOpacity(0.08),
+                    color: mostUsedColor.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: mostUsedColor.withOpacity(0.25),
+                      color: mostUsedColor.withValues(alpha: 0.25),
                       width: 1.2,
                     ),
                   ),
@@ -149,7 +149,7 @@ class CompactBookListItem extends StatelessWidget {
                         borderRadius: BorderRadius.circular(2),
                         child: LinearProgressIndicator(
                           value: progress,
-                          backgroundColor: mostUsedColor.withOpacity(0.08),
+                          backgroundColor: mostUsedColor.withValues(alpha: 0.08),
                           color: mostUsedColor,
                           minHeight: 4,
                         ),

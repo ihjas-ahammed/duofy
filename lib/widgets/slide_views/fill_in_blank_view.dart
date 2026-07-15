@@ -120,8 +120,9 @@ class _FillInBlankViewState extends State<FillInBlankView> {
   }
 
   Widget _buildSuggestionsBank([int numBlanks = 1, List<String>? userAnswers]) {
-    if (_suggestions.isEmpty || widget.isAnswered)
+    if (_suggestions.isEmpty || widget.isAnswered) {
       return const SizedBox.shrink();
+    }
     final effectiveUserAnswers = userAnswers ?? [widget.value];
 
     return Padding(
@@ -143,7 +144,7 @@ class _FillInBlankViewState extends State<FillInBlankView> {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppTheme.duoBlue.withOpacity(0.2)
+                    ? AppTheme.duoBlue.withValues(alpha: 0.2)
                     : context.colors.surfaceAlt,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
@@ -294,7 +295,7 @@ class _FillInBlankViewState extends State<FillInBlankView> {
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
                                   color: isActive
-                                      ? AppTheme.duoBlue.withOpacity(0.15)
+                                      ? AppTheme.duoBlue.withValues(alpha: 0.15)
                                       : context.colors.surfaceAlt,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(

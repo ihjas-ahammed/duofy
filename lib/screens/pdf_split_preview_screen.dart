@@ -46,8 +46,9 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
   bool get _isCurrentFilePdf {
     if (widget.originalPdf.isEmpty) return false;
     if (_selectedFileIndex < 0 ||
-        _selectedFileIndex >= widget.originalPdf.length)
+        _selectedFileIndex >= widget.originalPdf.length) {
       return false;
+    }
     return widget.originalPdf[_selectedFileIndex].path.toLowerCase().endsWith(
       '.pdf',
     );
@@ -367,8 +368,9 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
         continue;
       }
       if (start < 1) issues.add('$label starts before page 1.');
-      if (end < start)
+      if (end < start) {
         issues.add('$label has an inverted range ($start–$end).');
+      }
       final prev = lastEndByFile[fileIdx];
       if (prev != null) {
         final (prevEnd, prevLabel) = prev;
@@ -917,9 +919,9 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: AppTheme.duoBlue.withOpacity(0.08),
+              color: AppTheme.duoBlue.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.duoBlue.withOpacity(0.2)),
+              border: Border.all(color: AppTheme.duoBlue.withValues(alpha: 0.2)),
             ),
             child: Row(
               children: [
@@ -1038,7 +1040,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                       horizontal: 12,
                       vertical: 6,
                     ),
-                    backgroundColor: AppTheme.duoViolet.withOpacity(0.08),
+                    backgroundColor: AppTheme.duoViolet.withValues(alpha: 0.08),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -1076,7 +1078,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                     horizontal: 12,
                     vertical: 6,
                   ),
-                  backgroundColor: AppTheme.duoBlue.withOpacity(0.08),
+                  backgroundColor: AppTheme.duoBlue.withValues(alpha: 0.08),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -1276,10 +1278,10 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(16.0),
                               decoration: BoxDecoration(
-                                color: context.colors.surface.withOpacity(0.95),
+                                color: context.colors.surface.withValues(alpha: 0.95),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: Colors.redAccent.withOpacity(0.5),
+                                  color: Colors.redAccent.withValues(alpha: 0.5),
                                 ),
                               ),
                               child: Column(
@@ -1324,7 +1326,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.25),
+                          color: Colors.black.withValues(alpha: 0.25),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(

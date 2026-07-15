@@ -581,7 +581,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppTheme.duoBlue.withOpacity(0.25),
+          color: AppTheme.duoBlue.withValues(alpha: 0.25),
           width: 1.5,
         ),
       ),
@@ -612,7 +612,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: AppTheme.duoBlue.withOpacity(0.15),
+                  color: AppTheme.duoBlue.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -773,7 +773,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
               activeTrackColor: AppTheme.duoBlue,
               inactiveTrackColor: context.colors.outline,
               thumbColor: AppTheme.duoBlue,
-              overlayColor: AppTheme.duoBlue.withOpacity(0.2),
+              overlayColor: AppTheme.duoBlue.withValues(alpha: 0.2),
               rangeThumbShape: const RoundRangeSliderThumbShape(
                 enabledThumbRadius: 9,
               ),
@@ -881,14 +881,14 @@ class _ModeCard extends StatelessWidget {
               color: context.colors.surface,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: color.withOpacity(disabled ? 0.2 : 0.4),
+                color: color.withValues(alpha: disabled ? 0.2 : 0.4),
                 width: 2,
               ),
               boxShadow: disabled
                   ? null
                   : [
                       BoxShadow(
-                        color: color.withOpacity(0.12),
+                        color: color.withValues(alpha: 0.12),
                         offset: const Offset(0, 4),
                         blurRadius: 12,
                       ),
@@ -903,7 +903,7 @@ class _ModeCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.18),
+                        color: color.withValues(alpha: 0.18),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(mode.icon, size: 22, color: color),

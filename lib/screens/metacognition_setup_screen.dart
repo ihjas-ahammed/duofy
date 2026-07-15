@@ -340,11 +340,11 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
           ),
           if (_isSaving)
             Container(
-              color: Colors.black.withOpacity(0.75),
+              color: Colors.black.withValues(alpha: 0.75),
               child: Center(
                 child: AppTheme.applyGlassBlur(
                   borderRadius: 24,
-                  color: const Color(0xFF1E293B).withOpacity(0.85),
+                  color: const Color(0xFF1E293B).withValues(alpha: 0.85),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 40,

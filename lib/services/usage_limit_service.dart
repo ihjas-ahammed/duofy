@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'fb/fb_auth.dart';
@@ -71,10 +73,30 @@ class UsageLimitService {
       await _resetLocalUsage(prefs, todayStr);
     }
 
-    // Attempt to register presence and fetch stats from Firebase
+    // Local-first: seed limits from cache/defaults immediately so startup never
+    // blocks (or hangs offline) on a network round-trip. The Firebase refresh
+    // runs in the background and updates these in place when it lands.
+    _dailyActiveUsers = prefs.getInt('usage_limit_cached_users') ?? 1;
+    for (final key in defaultCapacityLimits.keys) {
+      _capacityLimits[key] =
+          prefs.getInt('usage_limit_cached_capacity_$key') ??
+          defaultCapacityLimits[key]!;
+    }
+
+    // Fire-and-forget: presence + capacity stats sync, off the startup path.
+    unawaited(_syncWithBackend(prefs, uid, todayStr));
+  }
+
+  /// Background refresh of daily-active-user count and capacity limits. Never
+  /// awaited by [init], so an offline or slow network can't delay app launch.
+  Future<void> _syncWithBackend(
+    SharedPreferences prefs,
+    String uid,
+    String todayStr,
+  ) async {
     try {
       final db = FbFirestore.instance;
-      
+
       // 1. Register presence in subcollection: usage_stats/day_$todayStr/users/$uid
       await db
           .collection('usage_stats')
@@ -90,7 +112,7 @@ class UsageLimitService {
           .collection('users')
           .get();
       _dailyActiveUsers = usersSnap.docs.isNotEmpty ? usersSnap.docs.length : 1;
-      
+
       // 3. Fetch configured global request capacity limits from usage_stats/config
       final configSnap = await db.collection('usage_stats').doc('config').get();
       if (configSnap.exists) {
@@ -103,7 +125,7 @@ class UsageLimitService {
           });
         }
       }
-      
+
       // Save fetched stats to local cache for offline use
       await prefs.setInt('usage_limit_cached_users', _dailyActiveUsers);
       _capacityLimits.forEach((key, val) async {
@@ -111,11 +133,7 @@ class UsageLimitService {
       });
     } catch (e) {
       debugPrint('[UsageLimitService] Failed to sync limits with Firebase: $e');
-      // Load from local cache or defaults
-      _dailyActiveUsers = prefs.getInt('usage_limit_cached_users') ?? 1;
-      defaultCapacityLimits.keys.forEach((key) {
-        _capacityLimits[key] = prefs.getInt('usage_limit_cached_capacity_$key') ?? defaultCapacityLimits[key]!;
-      });
+      // Cached/default values from init() stay in place.
     }
   }
 

@@ -318,10 +318,10 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppTheme.duoBlue.withOpacity(0.15),
+                            color: AppTheme.duoBlue.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: AppTheme.duoBlue.withOpacity(0.3),
+                              color: AppTheme.duoBlue.withValues(alpha: 0.3),
                             ),
                           ),
                           child: const Icon(
@@ -382,28 +382,28 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                       value: '$streak Days',
                       icon: LucideIcons.flame,
                       iconColor: AppTheme.duoOrange,
-                      glowColor: AppTheme.duoOrange.withOpacity(0.15),
+                      glowColor: AppTheme.duoOrange.withValues(alpha: 0.15),
                     ),
                     _buildStatCard(
                       title: 'TIME SPENT',
                       value: _formatTimeSpent(timeSpent),
                       icon: LucideIcons.clock,
                       iconColor: AppTheme.duoBlue,
-                      glowColor: AppTheme.duoBlue.withOpacity(0.15),
+                      glowColor: AppTheme.duoBlue.withValues(alpha: 0.15),
                     ),
                     _buildStatCard(
                       title: 'AVG ACCURACY',
                       value: '$accuracy%',
                       icon: LucideIcons.target,
                       iconColor: AppTheme.duoGreen,
-                      glowColor: AppTheme.duoGreen.withOpacity(0.15),
+                      glowColor: AppTheme.duoGreen.withValues(alpha: 0.15),
                     ),
                     _buildStatCard(
                       title: 'TOTAL XP',
                       value: '$totalXp XP',
                       icon: LucideIcons.zap,
                       iconColor: const Color(0xFFFBBF24),
-                      glowColor: const Color(0xFFFBBF24).withOpacity(0.15),
+                      glowColor: const Color(0xFFFBBF24).withValues(alpha: 0.15),
                     ),
                   ],
                 ),
@@ -478,11 +478,11 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                                         end: Alignment.topCenter,
                                         colors: xp > 0
                                             ? [
-                                                AppTheme.duoBlue.withOpacity(
-                                                  0.8,
+                                                AppTheme.duoBlue.withValues(
+                                                  alpha: 0.8,
                                                 ),
-                                                AppTheme.duoViolet.withOpacity(
-                                                  0.9,
+                                                AppTheme.duoViolet.withValues(
+                                                  alpha: 0.9,
                                                 ),
                                               ]
                                             : [
@@ -494,7 +494,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                                           ? [
                                               BoxShadow(
                                                 color: AppTheme.duoBlue
-                                                    .withOpacity(0.3),
+                                                    .withValues(alpha: 0.3),
                                                 blurRadius: 8,
                                                 offset: const Offset(0, 2),
                                               ),
@@ -663,9 +663,9 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                               ),
                             ),
                           );
-                        }).toList(),
+                        }),
                       ];
-                    }).toList(),
+                    }),
                 ] else ...[
                   Padding(
                     padding: const EdgeInsets.only(left: 4, bottom: 12),
@@ -713,8 +713,8 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
                                 color: actType == 'practice'
-                                    ? AppTheme.duoViolet.withOpacity(0.15)
-                                    : AppTheme.duoGreen.withOpacity(0.15),
+                                    ? AppTheme.duoViolet.withValues(alpha: 0.15)
+                                    : AppTheme.duoGreen.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Icon(
@@ -752,7 +752,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                               decoration: BoxDecoration(
                                 color: const Color(
                                   0xFFFBBF24,
-                                ).withOpacity(0.15),
+                                ).withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -767,7 +767,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                           ),
                         ),
                       );
-                    }).toList(),
+                    }),
                 ],
                 const SizedBox(height: 100),
               ],

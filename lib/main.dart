@@ -33,7 +33,9 @@ bool _looksNonFatal(Object error) {
   if (s.contains('handshake') ||
       s.contains('network_error') ||
       s.contains('usage limit exceeded') ||
-      s.contains('rate limit reached')) return true;
+      s.contains('rate limit reached')) {
+    return true;
+  }
 
   const benign = [
     // Transient network / IO — recoverable, the feature that needed it
@@ -254,7 +256,7 @@ void main() async {
   try {
     await NotificationService.init();
   } catch (e, stack) {
-    startupError = (startupError ?? "") + "\nNotification Init Error: $e\n$stack";
+    startupError = "${startupError ?? ""}\nNotification Init Error: $e\n$stack";
   }
 
   try {
@@ -336,7 +338,7 @@ void main() async {
       await prefs.remove('gemini_model');
     }
   } catch (e, stack) {
-    startupError = (startupError ?? "") + "\nPrefs Init Error: $e\n$stack";
+    startupError = "${startupError ?? ""}\nPrefs Init Error: $e\n$stack";
   }
 
   // Set up global error boundaries.
@@ -400,7 +402,7 @@ class FlowApp extends StatelessWidget {
       themeMode: themeMode,
       builder: (context, child) => Stack(
         children: [
-          if (child != null) child,
+          ?child,
           const Positioned.fill(child: WalkthroughBanner()),
         ],
       ),

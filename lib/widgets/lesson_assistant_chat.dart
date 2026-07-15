@@ -1,7 +1,6 @@
 import 'dart:convert';
 import '../platform/io_shim.dart';
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -902,7 +901,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat>
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
                                 color: isUser
-                                    ? AppTheme.duoBlue.withOpacity(0.15)
+                                    ? AppTheme.duoBlue.withValues(alpha: 0.15)
                                     : context.colors.surfaceAlt,
                                 borderRadius: BorderRadius.only(
                                   topLeft: const Radius.circular(16),
@@ -916,7 +915,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat>
                                 ),
                                 border: Border.all(
                                   color: isUser
-                                      ? AppTheme.duoBlue.withOpacity(0.3)
+                                      ? AppTheme.duoBlue.withValues(alpha: 0.3)
                                       : context.colors.outline,
                                 ),
                               ),
@@ -1003,8 +1002,8 @@ class _LessonAssistantChatState extends State<LessonAssistantChat>
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: _isRecording
-                                ? Colors.red.withOpacity(
-                                    0.2 + 0.3 * _pulsingController.value,
+                                ? Colors.red.withValues(
+                                    alpha: 0.2 + 0.3 * _pulsingController.value,
                                   )
                                 : context.colors.surfaceAlt,
                             border: Border.all(

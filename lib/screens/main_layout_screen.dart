@@ -368,7 +368,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     return Scaffold(
       extendBody: true, 
       appBar: _currentIndex == 0 ? null : AppBar(
-        backgroundColor: context.colors.background.withOpacity(0.9),
+        backgroundColor: context.colors.background.withValues(alpha: 0.9),
         flexibleSpace: ClipRRect(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -529,7 +529,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: isActive ? AppTheme.duoBlue.withOpacity(0.15) : Colors.transparent,
+          color: isActive ? AppTheme.duoBlue.withValues(alpha: 0.15) : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(

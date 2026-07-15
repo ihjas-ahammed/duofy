@@ -54,13 +54,11 @@ class _RealProgressBarState extends State<RealProgressBar> {
       return;
     }
     if (widget.startTime != null && widget.estimatedDuration != null) {
-      if (_timer == null) {
-        _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      _timer ??= Timer.periodic(const Duration(milliseconds: 100), (timer) {
           if (mounted) {
             setState(() {});
           }
         });
-      }
     } else {
       _timer?.cancel();
       _timer = null;
@@ -92,7 +90,7 @@ class _RealProgressBarState extends State<RealProgressBar> {
       }
     }
     final p = widget.progress;
-    return p == null ? null : p.clamp(0.0, 1.0);
+    return p?.clamp(0.0, 1.0);
   }
 
   @override

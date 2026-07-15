@@ -12,9 +12,9 @@ class ProgressService {
 
   /// Per-user SharedPreferences keys so switching accounts never pollutes
   /// or resets another user's progress.
-  static String get _completedKey => 'completed_lessons_${_uid}';
-  static String get _xpKey => 'user_xp_${_uid}';
-  static String get _activitiesKey => 'learning_activities_${_uid}';
+  static String get _completedKey => 'completed_lessons_$_uid';
+  static String get _xpKey => 'user_xp_$_uid';
+  static String get _activitiesKey => 'learning_activities_$_uid';
 
   /// Notifies listeners + backs up to the cloud after a completion change.
   /// Called by every mutation so the UI refreshes and cloud stays in sync.

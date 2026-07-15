@@ -69,8 +69,9 @@ class CalibrationCard extends StatelessWidget {
       future: MetacognitionService.calibrationStats(),
       builder: (context, snap) {
         final stats = snap.data;
-        if (stats == null || stats.ratedTotal < 5)
+        if (stats == null || stats.ratedTotal < 5) {
           return const SizedBox.shrink();
+        }
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: AppTheme.applyGlassBlur(

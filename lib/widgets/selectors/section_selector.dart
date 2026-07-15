@@ -51,7 +51,7 @@ class SectionSelector extends StatelessWidget {
               margin: const EdgeInsets.only(right: 8),
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: isActive ? color.withOpacity(0.2) : Colors.transparent,
+                color: isActive ? color.withValues(alpha: 0.2) : Colors.transparent,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isActive ? color : context.colors.outline,

@@ -1,4 +1,3 @@
-import '../platform/io_shim.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -408,7 +407,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
@@ -536,10 +535,10 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                               vertical: 8,
                             ),
                             decoration: BoxDecoration(
-                              color: AppTheme.duoBlue.withOpacity(0.12),
+                              color: AppTheme.duoBlue.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: AppTheme.duoBlue.withOpacity(0.3),
+                                color: AppTheme.duoBlue.withValues(alpha: 0.3),
                               ),
                             ),
                             child: Row(
@@ -787,9 +786,9 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                                                   color:
                                                       slide.type == 'one_word'
                                                       ? AppTheme.duoBlue
-                                                            .withOpacity(0.2)
+                                                            .withValues(alpha: 0.2)
                                                       : AppTheme.duoViolet
-                                                            .withOpacity(0.2),
+                                                            .withValues(alpha: 0.2),
                                                   borderRadius:
                                                       BorderRadius.circular(8),
                                                 ),

@@ -246,7 +246,7 @@ class _SectionCard extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
             color: isActive
-                ? color.withOpacity(0.2)
+                ? color.withValues(alpha: 0.2)
                 : context.colors.surfaceAlt,
             borderRadius: BorderRadius.circular(16),
             border: Border(

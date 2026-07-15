@@ -431,7 +431,7 @@ packages:
     source: hosted
     version: "0.3.4"
   flutter_math_fork:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: flutter_math_fork
       sha256: "6d5f2f1aa57ae539ffb0a04bb39d2da67af74601d685a161aff7ce5bda5fa407"
@@ -505,7 +505,7 @@ packages:
     source: hosted
     version: "1.6.0"
   grpc:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: grpc
       sha256: e93ee3bce45c134bf44e9728119102358c7cd69de7832d9a874e2e74eb8cab40
@@ -720,7 +720,7 @@ packages:
     source: hosted
     version: "3.2.1"
   path:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: path
       sha256: "75cca69d1490965be98c73ceaea117e8a04dd21217b37b292c9ddbec0d955bc5"

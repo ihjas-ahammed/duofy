@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'ai_queue_screen.dart';
 import 'lesson_screen.dart';
 import '../services/fb/fb_auth.dart';
 import '../models/app_models.dart';
@@ -643,8 +642,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       snippet = 'Answer: ${slide.blankAnswer}';
                     } else {
                       snippet = slide.content;
-                      if (snippet.length > 100)
+                      if (snippet.length > 100) {
                         snippet = '${snippet.substring(0, 100)}...';
+                      }
                     }
 
                     searchResults.add(
@@ -741,7 +741,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: isHovered
-                          ? AppTheme.duoRed.withOpacity(0.15)
+                          ? AppTheme.duoRed.withValues(alpha: 0.15)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
@@ -971,7 +971,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         alignment: Alignment.center,
                         margin: const EdgeInsets.symmetric(vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.red.shade900.withOpacity(0.8),
+                          color: Colors.red.shade900.withValues(alpha: 0.8),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Icon(
@@ -1022,9 +1022,9 @@ class _HomeScreenState extends State<HomeScreen> {
             height: 88,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppTheme.duoGreen.withOpacity(0.12),
+              color: AppTheme.duoGreen.withValues(alpha: 0.12),
               border: Border.all(
-                color: AppTheme.duoGreen.withOpacity(0.4),
+                color: AppTheme.duoGreen.withValues(alpha: 0.4),
                 width: 2,
               ),
             ),
@@ -1221,7 +1221,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         alignment: Alignment.center,
                         margin: const EdgeInsets.symmetric(vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.red.shade900.withOpacity(0.8),
+                          color: Colors.red.shade900.withValues(alpha: 0.8),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Icon(
@@ -1350,10 +1350,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: AppTheme.duoBlue.withOpacity(0.18),
+                              color: AppTheme.duoBlue.withValues(alpha: 0.18),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: AppTheme.duoBlue.withOpacity(0.4),
+                                color: AppTheme.duoBlue.withValues(alpha: 0.4),
                               ),
                             ),
                             child: const Icon(
@@ -1647,8 +1647,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     radius: 18,
                     backgroundColor: AppTheme.duoBlue,
                     child: Text(
-                      user?.displayName?.isNotEmpty == true
-                          ? user!.displayName![0].toUpperCase()
+                      user.displayName?.isNotEmpty == true
+                          ? user.displayName![0].toUpperCase()
                           : 'U',
                       style: TextStyle(
                         fontSize: 14,
@@ -1664,7 +1664,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          user?.displayName ?? 'User',
+                          user.displayName ?? 'User',
                           style: TextStyle(
                             color: context.colors.textPrimary,
                             fontWeight: FontWeight.bold,
@@ -1673,7 +1673,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         Text(
-                          user?.email ?? '',
+                          user.email ?? '',
                           style: TextStyle(
                             color: context.colors.textFaint,
                             fontSize: 10,
@@ -1713,7 +1713,7 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: isActive
-              ? AppTheme.duoGreen.withOpacity(0.15)
+              ? AppTheme.duoGreen.withValues(alpha: 0.15)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
@@ -1897,8 +1897,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       snippet = 'Answer: ${slide.blankAnswer}';
                     } else {
                       snippet = slide.content;
-                      if (snippet.length > 100)
+                      if (snippet.length > 100) {
                         snippet = '${snippet.substring(0, 100)}...';
+                      }
                     }
 
                     searchResults.add(
@@ -2037,7 +2038,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             decoration: BoxDecoration(
                               color: isHovered
-                                  ? AppTheme.duoRed.withOpacity(0.15)
+                                  ? AppTheme.duoRed.withValues(alpha: 0.15)
                                   : Colors.transparent,
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
@@ -2315,8 +2316,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                         vertical: 6,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Colors.red.shade900.withOpacity(
-                                          0.8,
+                                        color: Colors.red.shade900.withValues(
+                                          alpha: 0.8,
                                         ),
                                         borderRadius: BorderRadius.circular(16),
                                       ),
@@ -2398,10 +2399,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: AppTheme.duoBlue.withOpacity(0.18),
+                              color: AppTheme.duoBlue.withValues(alpha: 0.18),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: AppTheme.duoBlue.withOpacity(0.4),
+                                color: AppTheme.duoBlue.withValues(alpha: 0.4),
                               ),
                             ),
                             child: const Icon(
@@ -2826,7 +2827,6 @@ class _HomeScreenState extends State<HomeScreen> {
       isCompleted = _completedLessons.contains(result.lesson!.id);
       bool isUnlocked = false;
       if (result.lessonIdx != null &&
-          result.book != null &&
           result.modIdx != null &&
           result.secIdx != null &&
           result.unitIdx != null) {
@@ -2985,7 +2985,7 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               color: context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: color.withOpacity(0.15), width: 1),
+              border: Border.all(color: color.withValues(alpha: 0.15), width: 1),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2994,9 +2994,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.08),
+                    color: color.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: color.withOpacity(0.2), width: 1),
+                    border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
                   ),
                   alignment: Alignment.center,
                   child: Icon(icon, color: color, size: 18),
@@ -3014,7 +3014,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: color.withOpacity(0.12),
+                              color: color.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -3052,7 +3052,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         TextStyle(
                           color: color,
                           fontWeight: FontWeight.bold,
-                          backgroundColor: color.withOpacity(0.1),
+                          backgroundColor: color.withValues(alpha: 0.1),
                         ),
                       ),
                       if (result.snippet != null &&
@@ -3069,7 +3069,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           TextStyle(
                             color: color,
                             fontWeight: FontWeight.bold,
-                            backgroundColor: color.withOpacity(0.1),
+                            backgroundColor: color.withValues(alpha: 0.1),
                           ),
                         ),
                       ],
@@ -3391,7 +3391,7 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
             decoration: BoxDecoration(
               color: isHovered
-                  ? AppTheme.duoBlue.withOpacity(0.15)
+                  ? AppTheme.duoBlue.withValues(alpha: 0.15)
                   : context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(

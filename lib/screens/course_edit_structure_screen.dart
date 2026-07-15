@@ -467,27 +467,31 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
           final ePageStr = _endPageControllers[section.id]?.text ?? '';
           if (sPageStr.isNotEmpty) {
             final val = int.tryParse(sPageStr);
-            if (val != null)
+            if (val != null) {
               _startPageControllers[section.id]!.text = (val + shift)
                   .toString();
+            }
           }
           if (ePageStr.isNotEmpty) {
             final val = int.tryParse(ePageStr);
-            if (val != null)
+            if (val != null) {
               _endPageControllers[section.id]!.text = (val + shift).toString();
+            }
           }
           for (final unit in section.units) {
             final usPageStr = _startPageControllers[unit.id]?.text ?? '';
             final uePageStr = _endPageControllers[unit.id]?.text ?? '';
             if (usPageStr.isNotEmpty) {
               final val = int.tryParse(usPageStr);
-              if (val != null)
+              if (val != null) {
                 _startPageControllers[unit.id]!.text = (val + shift).toString();
+              }
             }
             if (uePageStr.isNotEmpty) {
               final val = int.tryParse(uePageStr);
-              if (val != null)
+              if (val != null) {
                 _endPageControllers[unit.id]!.text = (val + shift).toString();
+              }
             }
           }
         }
@@ -679,11 +683,13 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
               int maxBookIdx = 0;
               for (final module in _modules) {
                 for (final section in module.sections) {
-                  if ((section.bookIndex ?? 0) > maxBookIdx)
+                  if ((section.bookIndex ?? 0) > maxBookIdx) {
                     maxBookIdx = section.bookIndex!;
+                  }
                   for (final unit in section.units) {
-                    if ((unit.bookIndex ?? 0) > maxBookIdx)
+                    if ((unit.bookIndex ?? 0) > maxBookIdx) {
                       maxBookIdx = unit.bookIndex!;
+                    }
                   }
                 }
               }
@@ -932,12 +938,12 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: _uploadedPdfs.isNotEmpty
-              ? AppTheme.duoGreen.withOpacity(0.08)
+              ? AppTheme.duoGreen.withValues(alpha: 0.08)
               : context.colors.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: _uploadedPdfs.isNotEmpty
-                ? AppTheme.duoGreen.withOpacity(0.3)
+                ? AppTheme.duoGreen.withValues(alpha: 0.3)
                 : context.colors.outline,
             width: 1,
           ),
@@ -1122,9 +1128,9 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: AppTheme.duoBlue.withOpacity(0.08),
+              color: AppTheme.duoBlue.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.duoBlue.withOpacity(0.2)),
+              border: Border.all(color: AppTheme.duoBlue.withValues(alpha: 0.2)),
             ),
             child: Row(
               children: [
@@ -1376,7 +1382,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                       horizontal: 12,
                       vertical: 6,
                     ),
-                    backgroundColor: AppTheme.duoViolet.withOpacity(0.08),
+                    backgroundColor: AppTheme.duoViolet.withValues(alpha: 0.08),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -1413,7 +1419,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                   horizontal: 12,
                   vertical: 6,
                 ),
-                backgroundColor: AppTheme.duoBlue.withOpacity(0.08),
+                backgroundColor: AppTheme.duoBlue.withValues(alpha: 0.08),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),

@@ -166,7 +166,7 @@ class _PyqOneWordViewState extends State<PyqOneWordView> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.amber.withOpacity(0.15),
+                            color: Colors.amber.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(

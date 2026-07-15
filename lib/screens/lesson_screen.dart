@@ -1,5 +1,4 @@
 import 'dart:ui';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -163,8 +162,9 @@ class _LessonScreenState extends State<LessonScreen> {
     if (widget.book == null ||
         widget.modIdx == null ||
         widget.secIdx == null ||
-        widget.unitIdx == null)
+        widget.unitIdx == null) {
       return;
+    }
 
     final book = widget.book!;
     final modIdx = widget.modIdx!;
@@ -272,8 +272,9 @@ class _LessonScreenState extends State<LessonScreen> {
         widget.modIdx == null ||
         widget.secIdx == null ||
         widget.unitIdx == null ||
-        widget.lessonIdx == null)
+        widget.lessonIdx == null) {
       return;
+    }
 
     final book = widget.book!;
     final modIdx = widget.modIdx!;
@@ -871,7 +872,7 @@ class _LessonScreenState extends State<LessonScreen> {
                   const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
                     dropdownColor: context.colors.surface,
-                    value: selectedType,
+                    initialValue: selectedType,
                     style: TextStyle(
                       color: context.colors.textPrimary,
                       fontSize: 13,
@@ -1213,7 +1214,7 @@ class _LessonScreenState extends State<LessonScreen> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
               color: selected
-                  ? AppTheme.duoBlue.withOpacity(0.18)
+                  ? AppTheme.duoBlue.withValues(alpha: 0.18)
                   : context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
@@ -1304,11 +1305,11 @@ class _LessonScreenState extends State<LessonScreen> {
     final wrongExplanation = _wrongQuizExplanation(slide);
     return Container(
       decoration: BoxDecoration(
-        color: _answered ? feedbackColor.withOpacity(0.1) : Colors.transparent,
+        color: _answered ? feedbackColor.withValues(alpha: 0.1) : Colors.transparent,
         borderRadius: BorderRadius.circular(_answered ? 20 : 0),
         border: Border.all(
           color: _answered
-              ? feedbackColor.withOpacity(0.3)
+              ? feedbackColor.withValues(alpha: 0.3)
               : Colors.transparent,
           width: 1,
         ),
@@ -1333,10 +1334,10 @@ class _LessonScreenState extends State<LessonScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppTheme.duoRed.withOpacity(0.15),
+                        color: AppTheme.duoRed.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: AppTheme.duoRed.withOpacity(0.4),
+                          color: AppTheme.duoRed.withValues(alpha: 0.4),
                         ),
                       ),
                       child: Column(
@@ -1857,27 +1858,44 @@ class _LessonScreenState extends State<LessonScreen> {
                             ),
                           ),
                         )
-                      : ([
-                              'descriptive',
-                              'one_word',
-                              'numerical',
-                              'fill_in_blank',
-                              'custom_html',
-                            ].contains(slide.type)
-                            ? _buildSlideContent(slide, bottomBar)
-                            : GestureDetector(
-                                behavior: HitTestBehavior.translucent,
-                                onDoubleTap:
-                                    !GlobalState.developerModeNotifier.value
-                                    ? null
-                                    : () {
-                                        setState(() {
-                                          _editController.text = slide.content;
-                                          _isEditingMode = true;
-                                        });
-                                      },
-                                child: _buildSlideContent(slide, bottomBar),
-                              )),
+                      // Key the slide body by slide id so advancing to the
+                      // next slide swaps in a fresh subtree instead of reusing
+                      // this one's element. Without this, the bottom bar's
+                      // AnimatedSwitchers (feedback panel + CHECK/CONTINUE
+                      // button) animate across the slide change — the old
+                      // slide's "correct answer" panel shrinks away and its
+                      // CONTINUE button morphs to CHECK over the new slide.
+                      : KeyedSubtree(
+                          key: ValueKey('slidebody_${slide.id}'),
+                          child:
+                              ([
+                                    'descriptive',
+                                    'one_word',
+                                    'numerical',
+                                    'fill_in_blank',
+                                    'custom_html',
+                                  ].contains(slide.type)
+                                  ? _buildSlideContent(slide, bottomBar)
+                                  : GestureDetector(
+                                      behavior: HitTestBehavior.translucent,
+                                      onDoubleTap:
+                                          !GlobalState
+                                              .developerModeNotifier
+                                              .value
+                                          ? null
+                                          : () {
+                                              setState(() {
+                                                _editController.text =
+                                                    slide.content;
+                                                _isEditingMode = true;
+                                              });
+                                            },
+                                      child: _buildSlideContent(
+                                        slide,
+                                        bottomBar,
+                                      ),
+                                    )),
+                        ),
                 ),
               ),
 

@@ -125,8 +125,8 @@ class _OrderingViewState extends State<OrderingView> {
                         height: 28,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: (resultColor ?? AppTheme.duoBlue).withOpacity(
-                            0.15,
+                          color: (resultColor ?? AppTheme.duoBlue).withValues(
+                            alpha: 0.15,
                           ),
                           shape: BoxShape.circle,
                         ),

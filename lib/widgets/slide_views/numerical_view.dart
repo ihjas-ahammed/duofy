@@ -35,7 +35,7 @@ class NumericalView extends StatelessWidget {
         if (fraction == '0') {
           placeholder = '0';
         } else {
-          placeholder = '0.' + ('0' * fraction.length);
+          placeholder = '0.${'0' * fraction.length}';
         }
       }
     }

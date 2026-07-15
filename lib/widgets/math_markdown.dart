@@ -89,7 +89,7 @@ class MathMarkdown extends StatelessWidget {
     final inlineSyntaxes = <md.InlineSyntax>[
       _PermissiveLatexInlineSyntax(),
       if (blankController != null) _BlankSyntax(),
-      if (customSyntaxes != null) ...customSyntaxes!,
+      ...?customSyntaxes,
       ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes,
     ];
 
@@ -102,7 +102,7 @@ class MathMarkdown extends StatelessWidget {
           isCorrect: blankCorrect,
           onChanged: onBlankChanged ?? (_) {},
         ),
-      if (customBuilders != null) ...customBuilders!,
+      ...?customBuilders,
     };
 
     return MarkdownBody(
@@ -299,7 +299,7 @@ class _MathBuilder extends MarkdownElementBuilder {
               _latexToPlainText(text),
               style: style?.copyWith(
                 fontStyle: FontStyle.italic,
-                color: style.color?.withOpacity(0.85),
+                color: style.color?.withValues(alpha: 0.85),
               ),
             );
           },
@@ -438,7 +438,9 @@ String _fixLatex(String tex) {
     final opens = RegExp('\\\\begin\\{$env\\}').allMatches(s).length;
     final closes = RegExp('\\\\end\\{$env\\}').allMatches(s).length;
     if (opens > closes) {
-      for (var i = 0; i < opens - closes; i++) s += '\\end{$env}';
+      for (var i = 0; i < opens - closes; i++) {
+        s += '\\end{$env}';
+      }
     }
   }
 

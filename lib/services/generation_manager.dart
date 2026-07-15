@@ -767,9 +767,9 @@ class GenerationManager extends ChangeNotifier {
         'chapter1AbsolutePages': chapter1AbsolutePages,
         'customInstructions': customInstructions,
         'isHandout': isHandout,
-        if (chapterStarts != null) 'chapterStarts': chapterStarts,
+        'chapterStarts': ?chapterStarts,
         'sourceFilesPaths': sourceFiles.map((f) => f.path).toList(),
-        if (parentTaskId != null) 'parentTaskId': parentTaskId,
+        'parentTaskId': ?parentTaskId,
       },
     );
     _enqueueTaskObject(task);
@@ -785,7 +785,7 @@ class GenerationManager extends ChangeNotifier {
     final task = AiTask(
       id: 'canvas_${DateTime.now().millisecondsSinceEpoch}_${canvasPrompt.hashCode}',
       title:
-          'Generate Graphic: ${canvasPrompt.length > 20 ? canvasPrompt.substring(0, 20) + "..." : canvasPrompt}',
+          'Generate Graphic: ${canvasPrompt.length > 20 ? "${canvasPrompt.substring(0, 20)}..." : canvasPrompt}',
       bookId: 'canvas',
       type: 'canvas_regen',
       generateGraphics: true,
@@ -858,9 +858,7 @@ class GenerationManager extends ChangeNotifier {
     final isHandout = task.params['isHandout'] as bool? ?? false;
 
     final chapterStartsRaw = task.params['chapterStarts'] as List?;
-    final List<List<int>>? chapterStarts = chapterStartsRaw != null
-        ? chapterStartsRaw.map((list) => List<int>.from(list as List)).toList()
-        : null;
+    final List<List<int>>? chapterStarts = chapterStartsRaw?.map((list) => List<int>.from(list as List)).toList();
 
     List<File> indexFiles = indexFilesPaths.map((p) => File(p)).toList();
     final syllabusFiles = syllabusFilesPaths.map((p) => File(p)).toList();
@@ -1051,8 +1049,9 @@ class GenerationManager extends ChangeNotifier {
         i--
       ) {
         final u = sectionUnits[i];
-        if (u.isGenerated && u.lessons.isNotEmpty)
+        if (u.isGenerated && u.lessons.isNotEmpty) {
           previousGeneratedUnits.insert(0, u);
+        }
       }
 
       Future<void> saveChain = Future.value();
@@ -1296,7 +1295,7 @@ class GenerationManager extends ChangeNotifier {
 
       await startUnitGeneration(
         unit,
-        book!,
+        book,
         modIdx,
         secIdx,
         unitIdx,
@@ -2230,7 +2229,7 @@ class GenerationManager extends ChangeNotifier {
         'modIdx': modIdx,
         'secIdx': secIdx,
         'instructions': instructions,
-        if (selectedQuestions != null) 'selectedQuestions': selectedQuestions,
+        'selectedQuestions': ?selectedQuestions,
         'saveGlobally': saveGlobally,
       },
     );
@@ -2327,8 +2326,9 @@ class GenerationManager extends ChangeNotifier {
     final lesson =
         book.modules[modIdx].sections[secIdx].units[unitIdx].lessons[lessonIdx];
     if ((lesson.canvasPrompt?.trim().isEmpty ?? true) ||
-        activeCanvasRegens.contains(lesson.id))
+        activeCanvasRegens.contains(lesson.id)) {
       return;
+    }
     activeCanvasRegens.add(lesson.id);
     notifyListeners();
     try {
@@ -2374,8 +2374,9 @@ class GenerationManager extends ChangeNotifier {
         .lessons[lessonIdx]
         .slides[slideIdx];
     if ((slide.canvasPrompt?.trim().isEmpty ?? true) ||
-        activeCanvasRegens.contains(slide.id))
+        activeCanvasRegens.contains(slide.id)) {
       return;
+    }
     activeCanvasRegens.add(slide.id);
     notifyListeners();
     try {
@@ -2496,8 +2497,8 @@ class GenerationManager extends ChangeNotifier {
         'unitIdx': unitIdx,
         'lessonIdx': lessonIdx,
         'lessonId': lesson.id,
-        if (customPrompt != null) 'customPrompt': customPrompt,
-        if (newFormatId != null) 'newFormatId': newFormatId,
+        'customPrompt': ?customPrompt,
+        'newFormatId': ?newFormatId,
       },
     );
   }
@@ -2703,7 +2704,7 @@ class GenerationManager extends ChangeNotifier {
       params: {
         'filePaths': filePaths,
         'instructions': customInstructions,
-        if (moduleIndex != null) 'moduleIndex': moduleIndex,
+        'moduleIndex': ?moduleIndex,
       },
     );
   }

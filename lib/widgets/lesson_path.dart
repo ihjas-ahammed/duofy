@@ -906,10 +906,10 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
                 alignment: Alignment.center,
                 margin: const EdgeInsets.only(bottom: 20),
                 decoration: BoxDecoration(
-                  color: sectionColor.withOpacity(0.18),
+                  color: sectionColor.withValues(alpha: 0.18),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: sectionColor.withOpacity(0.5),
+                    color: sectionColor.withValues(alpha: 0.5),
                     width: 2,
                   ),
                 ),
@@ -1154,10 +1154,10 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
                 alignment: Alignment.center,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: sectionColor.withOpacity(0.18),
+                  color: sectionColor.withValues(alpha: 0.18),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: sectionColor.withOpacity(0.55),
+                    color: sectionColor.withValues(alpha: 0.55),
                     width: 2,
                   ),
                 ),

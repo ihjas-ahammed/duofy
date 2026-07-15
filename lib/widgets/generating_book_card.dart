@@ -57,7 +57,7 @@ class GeneratingBookCard extends StatelessWidget {
                   Container(
                     width: 120,
                     decoration: BoxDecoration(
-                      color: borderColor.withOpacity(0.15),
+                      color: borderColor.withValues(alpha: 0.15),
                       border: Border(
                         right: BorderSide(color: borderColor, width: 2),
                       ),

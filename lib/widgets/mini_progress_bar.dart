@@ -23,8 +23,8 @@ class MiniProgressBar extends StatelessWidget {
         : const LinearGradient(colors: [Color(0xFF58CC02), Color(0xFF22C55E)]);
 
     final shadowColor = isCompleted
-        ? const Color(0xFFFBBF24).withOpacity(0.4)
-        : const Color(0xFF58CC02).withOpacity(0.4);
+        ? const Color(0xFFFBBF24).withValues(alpha: 0.4)
+        : const Color(0xFF58CC02).withValues(alpha: 0.4);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

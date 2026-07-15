@@ -34,9 +34,9 @@ class CommunityBookCard extends StatelessWidget {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: AppTheme.duoBlue.withOpacity(0.18),
+              color: AppTheme.duoBlue.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.duoBlue.withOpacity(0.4)),
+              border: Border.all(color: AppTheme.duoBlue.withValues(alpha: 0.4)),
             ),
             child: const Icon(
               LucideIcons.bookOpen,
@@ -82,7 +82,7 @@ class CommunityBookCard extends StatelessWidget {
                 margin: const EdgeInsets.only(right: 8),
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.15),
+                  color: Colors.red.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -98,7 +98,7 @@ class CommunityBookCard extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: AppTheme.duoBlue.withOpacity(0.2),
+                color: AppTheme.duoBlue.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
