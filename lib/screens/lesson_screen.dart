@@ -66,6 +66,7 @@ class _LessonScreenState extends State<LessonScreen> {
   int _currentIndex = 0;
   bool _answered = false;
   bool _isCorrect = false;
+  bool _slideReady = true;
 
   late DateTime _startTime;
   int _totalInteractive = 0;
@@ -448,6 +449,7 @@ class _LessonScreenState extends State<LessonScreen> {
     if (_currentIndex < _slideQueue.length - 1) {
       setState(() {
         _currentIndex++;
+        _slideReady = false;
         _answered = false;
         _isCorrect = false;
         _selectedQuizOption = null;
@@ -458,6 +460,13 @@ class _LessonScreenState extends State<LessonScreen> {
         _orderingCurrent = [];
         _errorSelection = null;
         _confidence = null;
+      });
+      Future.delayed(const Duration(milliseconds: 60), () {
+        if (mounted) {
+          setState(() {
+            _slideReady = true;
+          });
+        }
       });
     } else {
       _finishLesson();
@@ -1380,11 +1389,12 @@ class _LessonScreenState extends State<LessonScreen> {
           ),
           if (isInteractive && !_answered) _buildConfidenceRow(),
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
+            duration: Duration.zero,
             child: isInteractive && !_answered
                 ? DuoButton(
                     key: const ValueKey('check_button'),
                     text: 'CHECK',
+                    animate: false,
                     color: _canCheck(slide)
                         ? AppTheme.duoGreen
                         : const Color(0xFF334155),
@@ -1398,6 +1408,7 @@ class _LessonScreenState extends State<LessonScreen> {
                 : DuoButton(
                     key: const ValueKey('continue_button'),
                     text: _answered && !_isCorrect ? 'GOT IT' : 'CONTINUE',
+                    animate: false,
                     color: _answered && !_isCorrect
                         ? AppTheme.duoRed
                         : AppTheme.duoGreen,
@@ -1407,6 +1418,48 @@ class _LessonScreenState extends State<LessonScreen> {
                     onPressed: _nextSlide,
                   ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSlideContentPlaceholder(Slide slide) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (slide.title.trim().isNotEmpty) ...[
+            Container(
+              width: 180,
+              height: 24,
+              decoration: BoxDecoration(
+                color: context.colors.surfaceAlt,
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          Container(
+            width: double.infinity,
+            height: 120,
+            decoration: BoxDecoration(
+              color: context.colors.surfaceAlt,
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          const Spacer(),
+          Center(
+            child: SizedBox(
+              width: 36,
+              height: 36,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                color: AppTheme.duoGreen.withValues(alpha: 0.6),
+              ),
+            ),
+          ),
+          const Spacer(),
         ],
       ),
     );
@@ -1867,8 +1920,9 @@ class _LessonScreenState extends State<LessonScreen> {
                       // CONTINUE button morphs to CHECK over the new slide.
                       : KeyedSubtree(
                           key: ValueKey('slidebody_${slide.id}'),
-                          child:
-                              ([
+                          child: !_slideReady
+                              ? _buildSlideContentPlaceholder(slide)
+                              : ([
                                     'descriptive',
                                     'one_word',
                                     'numerical',

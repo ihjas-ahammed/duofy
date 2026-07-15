@@ -8,6 +8,7 @@ class DuoButton extends StatefulWidget {
   final Color shadowColor;
   final bool isOutline;
   final Widget? child;
+  final bool animate;
 
   const DuoButton({
     super.key,
@@ -17,6 +18,7 @@ class DuoButton extends StatefulWidget {
     required this.shadowColor,
     this.isOutline = false,
     this.child,
+    this.animate = true,
   });
 
   @override
@@ -33,6 +35,10 @@ class _DuoButtonState extends State<DuoButton> {
 
   void _handleTapUp() {
     setState(() => _isPressed = false);
+    if (!widget.animate) {
+      widget.onPressed();
+      return;
+    }
     Future.delayed(_pressAnim, () {
       if (mounted) widget.onPressed();
     });
@@ -41,11 +47,11 @@ class _DuoButtonState extends State<DuoButton> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapDown: (_) => widget.animate ? setState(() => _isPressed = true) : null,
       onTapUp: (_) => _handleTapUp(),
-      onTapCancel: () => setState(() => _isPressed = false),
+      onTapCancel: () => widget.animate ? setState(() => _isPressed = false) : null,
       child: AnimatedContainer(
-        duration: _pressAnim,
+        duration: widget.animate ? _pressAnim : Duration.zero,
         margin: EdgeInsets.only(
           top: _isPressed ? 4 : 0,
           bottom: _isPressed ? 0 : 4,
@@ -93,6 +99,7 @@ class DuoIconButton extends StatefulWidget {
   final Color shadowColor;
   final Widget icon;
   final double size;
+  final bool animate;
 
   const DuoIconButton({
     super.key,
@@ -101,6 +108,7 @@ class DuoIconButton extends StatefulWidget {
     required this.shadowColor,
     required this.icon,
     this.size = 56.0,
+    this.animate = true,
   });
 
   @override
@@ -114,6 +122,10 @@ class _DuoIconButtonState extends State<DuoIconButton> {
 
   void _handleTapUp() {
     setState(() => _isPressed = false);
+    if (!widget.animate) {
+      widget.onPressed();
+      return;
+    }
     Future.delayed(_pressAnim, () {
       if (mounted) widget.onPressed();
     });
@@ -122,11 +134,11 @@ class _DuoIconButtonState extends State<DuoIconButton> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapDown: (_) => widget.animate ? setState(() => _isPressed = true) : null,
       onTapUp: (_) => _handleTapUp(),
-      onTapCancel: () => setState(() => _isPressed = false),
+      onTapCancel: () => widget.animate ? setState(() => _isPressed = false) : null,
       child: AnimatedContainer(
-        duration: _pressAnim,
+        duration: widget.animate ? _pressAnim : Duration.zero,
         margin: EdgeInsets.only(
           top: _isPressed ? 4.0 : 0.0,
           bottom: _isPressed ? 0.0 : 4.0,

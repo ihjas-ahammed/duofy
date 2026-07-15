@@ -55,13 +55,14 @@ class NextUpCard extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => MainLayoutScreen(
+                    builder: (_) => LessonLoadingScreen(
                       book: n.book,
-                      initialModuleIdx: n.modIdx,
-                      initialSectionIdx: n.secIdx,
+                      moduleIdx: n.modIdx,
+                      sectionIdx: n.secIdx,
+                      onReturn: onReturn,
                     ),
                   ),
-                ).then((_) => onReturn?.call());
+                );
               },
               child: Container(
                 padding: const EdgeInsets.all(16),
@@ -171,6 +172,76 @@ class NextUpCard extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class LessonLoadingScreen extends StatefulWidget {
+  final Book book;
+  final int moduleIdx;
+  final int sectionIdx;
+  final VoidCallback? onReturn;
+
+  const LessonLoadingScreen({
+    super.key,
+    required this.book,
+    required this.moduleIdx,
+    required this.sectionIdx,
+    this.onReturn,
+  });
+
+  @override
+  State<LessonLoadingScreen> createState() => _LessonLoadingScreenState();
+}
+
+class _LessonLoadingScreenState extends State<LessonLoadingScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MainLayoutScreen(
+              book: widget.book,
+              initialModuleIdx: widget.moduleIdx,
+              initialSectionIdx: widget.sectionIdx,
+            ),
+          ),
+        ).then((_) => widget.onReturn?.call());
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: context.colors.background,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(
+              width: 44,
+              height: 44,
+              child: CircularProgressIndicator(
+                strokeWidth: 4.5,
+                color: AppTheme.duoGreen,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Loading Lesson...',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: context.colors.textPrimary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

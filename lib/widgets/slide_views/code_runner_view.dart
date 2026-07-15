@@ -81,6 +81,7 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
           child: DuoButton(
             text: 'CONTINUE',
+            animate: false,
             color: AppTheme.duoGreen,
             shadowColor: AppTheme.duoGreenDark,
             onPressed: widget.onComplete,
@@ -197,8 +198,17 @@ window.__initRunner = async function(){
     // Load Pyodide dynamically and wait for it — a plain <script src> in the
     // head isn't reliably ready in loadHtmlString webviews (loadPyodide would
     // be undefined → "loadPyodide is not a function").
-    if (typeof loadPyodide !== 'function') { await loadScript(PYODIDE_URL); }
-    pyodide = await loadPyodide({
+    if (!window.loadPyodide) { await loadScript(PYODIDE_URL); }
+    // Defensive check: poll until window.loadPyodide is bound and executable
+    let retries = 0;
+    while (!window.loadPyodide && retries < 100) {
+      await new Promise(function(resolve){ setTimeout(resolve, 50); });
+      retries++;
+    }
+    if (!window.loadPyodide) {
+      throw new Error("loadPyodide is not registered on window.");
+    }
+    pyodide = await window.loadPyodide({
       indexURL: 'https://cdn.jsdelivr.net/pyodide/$pyodideVersion/full/'
     });
     if (PACKAGES.length) await pyodide.loadPackage(PACKAGES);
