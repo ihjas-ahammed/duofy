@@ -1,16 +1,16 @@
 # Graph Report - duofy  (2026-07-15)
 
 ## Corpus Check
-- 1218 files · ~1,450,182 words
+- 1218 files · ~1,450,517 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 23115 nodes · 45997 edges · 727 communities (678 shown, 49 thin omitted)
+- 23114 nodes · 45984 edges · 727 communities (678 shown, 49 thin omitted)
 - Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 1242 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `f25268e8`
+- Built from commit: `9d1d7bc7`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -319,6 +319,7 @@
 - [[_COMMUNITY_CefImageCToCpp|CefImageCToCpp]]
 - [[_COMMUNITY_TEST|TEST]]
 - [[_COMMUNITY_WebviewPlugin|WebviewPlugin]]
+- [[_COMMUNITY_CefApp|CefApp]]
 - [[_COMMUNITY_CefRequestContext|CefRequestContext]]
 - [[_COMMUNITY_CefStreamWriter|CefStreamWriter]]
 - [[_COMMUNITY_CefX509CertPrincipal|CefX509CertPrincipal]]
@@ -719,6 +720,7 @@ dialog_handler_on_file_dialog]]
 - [[_COMMUNITY_AsciiStrToLower|AsciiStrToLower]]
 - [[_COMMUNITY_SubResource|SubResource]]
 - [[_COMMUNITY_CreateTestRequestContext|CreateTestRequestContext]]
+- [[_COMMUNITY_.OnFrameCreated|.OnFrameCreated]]
 - [[_COMMUNITY_LoadIconImage|LoadIconImage]]
 - [[_COMMUNITY_DeathTestFactory|DeathTestFactory]]
 - [[_COMMUNITY_GetNotDefaultOrNull|GetNotDefaultOrNull]]
@@ -730,7 +732,6 @@ dialog_handler_on_file_dialog]]
 - [[_COMMUNITY_ostream|ostream]]
 - [[_COMMUNITY_main_context_impl_posix.cc|main_context_impl_posix.cc]]
 - [[_COMMUNITY_print_unittest.cc|print_unittest.cc]]
-- [[_COMMUNITY_TEST|TEST]]
 - [[_COMMUNITY_TEST|TEST]]
 - [[_COMMUNITY_FlatTupleElemBaseFlatTupleT..., I|FlatTupleElemBase<FlatTuple<T...>, I>]]
 - [[_COMMUNITY__BlankBuilder|_BlankBuilder]]
@@ -750,6 +751,8 @@ dialog_handler_on_file_dialog]]
 10. `CefWindowCToCpp` - 142 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `SetChildContent` --calls--> `SetParent`  [INFERRED]
+  windows/runner/win32_window.h → packages/webview_cef/third/cef/include/wrapper/cef_xml_object.h
 - `CefZipArchive::GetFile()` --references--> `File`  [EXTRACTED]
   packages/webview_cef/third/cef/libcef_dll/wrapper/cef_zip_archive.cc → lib/platform/io_stub.dart
 - `CefZipFile` --inherits--> `File`  [EXTRACTED]
@@ -758,8 +761,6 @@ dialog_handler_on_file_dialog]]
   lib/screens/ai_providers_screen.dart → packages/webview_cef/third/cef/tests/ceftests/test_request.h
 - `_AiQueueScreenState` --inherits--> `State`  [EXTRACTED]
   lib/screens/ai_queue_screen.dart → packages/webview_cef/third/cef/tests/ceftests/test_request.h
-- `_AuthScreenState` --inherits--> `State`  [EXTRACTED]
-  lib/screens/auth_screen.dart → packages/webview_cef/third/cef/tests/ceftests/test_request.h
 
 ## Import Cycles
 - None detected.
@@ -767,12 +768,12 @@ dialog_handler_on_file_dialog]]
 ## Communities (727 total, 49 thin omitted)
 
 ### Community 0 - "bookmarks_screen.dart & web_webview_helper.dart"
-Cohesion: 0.02
-Nodes (121): calibration_card.dart, lesson_screen.dart, bookId, BookRouteLoaderScreen, _BookRouteLoaderScreenState, build, createState, _error (+113 more)
+Cohesion: 0.03
+Nodes (63): lesson_screen.dart, Lesson, BookmarksScreen, _BookmarksScreenState, build, _buildEmpty, _buildTile, createState (+55 more)
 
 ### Community 1 - "course_edit_structure_screen.dart & pdf_folder_..."
 Cohesion: 0.02
-Nodes (95): GTEST_ATTRIBUTE_NO_SANITIZE_ADDRESS_, Handle, LPCWSTR, AlwaysFalse(), AlwaysTrue(), AtomMatchesChar(), AutoHandle::AutoHandle(), AutoHandle::Get() (+87 more)
+Nodes (100): FilePath, GTEST_ATTRIBUTE_NO_SANITIZE_ADDRESS_, Handle, LPCWSTR, AlwaysFalse(), AlwaysTrue(), AtomMatchesChar(), AutoHandle::AutoHandle() (+92 more)
 
 ### Community 2 - "../services/generation_manager.dart & applyUnit"
 Cohesion: 0.00
@@ -791,12 +792,12 @@ Cohesion: 0.04
 Nodes (46): blankAnswered, blankController, blankCorrect, build, _buildMath, cmdPattern, controller, createState (+38 more)
 
 ### Community 6 - "home_screen.dart & ../widgets/compact_book_card..."
-Cohesion: 0.05
-Nodes (63): AbortReason, AutoHandle, DeathTest, DeathTestOutcome, InterceptMode, MatcherBase<T>, FlushInfoLog(), LogToStderr() (+55 more)
+Cohesion: 0.04
+Nodes (79): AbortReason, AutoHandle, DeathTest, DeathTestOutcome, InterceptMode, MatcherBase<T>, FlushInfoLog(), LogToStderr() (+71 more)
 
 ### Community 7 - "book_dashboard_screen.dart & AlertDialog"
 Cohesion: 0.03
-Nodes (77): Animation, AnimationController, ConfettiController, Lesson, accuracy, _animController, book, bookId (+69 more)
+Nodes (77): Animation, AnimationController, ConfettiController, accuracy, _animController, book, bookId, build (+69 more)
 
 ### Community 8 - "../widgets/lesson_path.dart & lesson_accordion...."
 Cohesion: 0.03
@@ -804,15 +805,15 @@ Nodes (76): _ActiveGeneratingNodeWrapper, _ActiveGeneratingNodeWrapperState, _am
 
 ### Community 9 - "lesson_screen.dart & AnimatedContainer"
 Cohesion: 0.04
-Nodes (71): EditType, FilePath, IdMap, Integer, Eq(), IsDigit(), Matcher<T>::Matcher(), TestProperty (+63 more)
+Nodes (75): Integer, IsDigit(), TestProperty, Arguments, args_, ArrayAsVector(), CapturedStream, fd_ (+67 more)
 
 ### Community 10 - "main_layout_screen.dart & course_edit_structure..."
 Cohesion: 0.02
 Nodes (89): , BoxFit, double? w,, from io import, import sys, io,, let, build, buildCanvasArt (+81 more)
 
 ### Community 11 - "practice_screen.dart & AlertDialog"
-Cohesion: 0.04
-Nodes (47): _activeModule, book, build, _buildModeGrid, _buildRangeBlock, _buildScopeSelector, color, count (+39 more)
+Cohesion: 0.03
+Nodes (61): IconData, _activeModule, book, build, _buildModeGrid, _buildRangeBlock, _buildScopeSelector, color (+53 more)
 
 ### Community 12 - "pdf_split_preview_screen.dart & services/notifi..."
 Cohesion: 0.03
@@ -827,48 +828,48 @@ Cohesion: 0.03
 Nodes (58): AudioPlayer, AudioRecorder, FlutterTts, WebSocket, _addSystemMessage, _addWavHeader, audioBytes, _audioPlayer (+50 more)
 
 ### Community 15 - "ai_task.dart & Completer"
-Cohesion: 0.03
-Nodes (66): DocumentStorePickerDialog, _DownloadProgressDialog, LessonFormat, _DownloadProgressDialogState, _addFormat, _addSlide, book, build (+58 more)
+Cohesion: 0.06
+Nodes (38): Callback, HeaderMap, ResponseCallback, string, time_t, vector, CookieAccessData, cookie_js_ct_ (+30 more)
 
 ### Community 16 - "canvas_html_view.dart & buildCanvasArt"
 Cohesion: 0.03
-Nodes (15): _cef_browser_settings_t, _cef_client_t, _cef_dictionary_value_t, _cef_request_context_t, _cef_browser_t, _cef_client_t, _cef_browser_t, CefClient (+7 more)
+Nodes (52): _cef_settings_t, _cef_browser_settings_t, _cef_client_t, _cef_dictionary_value_t, _cef_request_context_t, _cef_completion_callback_t, _cef_browser_t, _cef_extension_handler_t (+44 more)
 
 ### Community 17 - "practice_session_screen.dart & lesson_complete_..."
-Cohesion: 0.02
-Nodes (141): lesson_complete_screen.dart, _activeSlide, _answered, _blankInput, build, _buildActionBottomBar, _buildSlideContent, _canCheck (+133 more)
+Cohesion: 0.01
+Nodes (161): lesson_complete_screen.dart, QuestionPaper, _activeSlide, _answered, _blankInput, build, _buildActionBottomBar, _buildSlideContent (+153 more)
 
 ### Community 18 - "course_settings_screen.dart & _addFormat"
-Cohesion: 0.06
-Nodes (52): AddProvider, DeleteProvider, DetachRequestFromProvider, GetNextValidProvider, IncrementProvider, SendRequest, StopRequest, cef_return_value_t (+44 more)
+Cohesion: 0.07
+Nodes (37): AddProvider, DeleteProvider, CefStreamReader, iterator, MimeTypeResolver, Request, string, UrlFilter (+29 more)
 
 ### Community 19 - "../services/ai_service.dart & package:google_ge..."
 Cohesion: 0.02
-Nodes (118): book, build, createState, _customPromptCtrl, dispose, _generate, GenerateQpScreen, _GenerateQpScreenState (+110 more)
+Nodes (105): _addModule, _addSection, _addUnit, _applyShiftOffset, b2Obj, book, _bookDescController, _bookIndices (+97 more)
 
 ### Community 20 - "pyq_tab_screen.dart & AnimatedBuilder"
 Cohesion: 0.10
 Nodes (19): about, net_internals, network_error, CefBrowser, CefRefPtr, CefString, ErrorCode, string (+11 more)
 
 ### Community 21 - "bookmark_service.dart & add"
-Cohesion: 0.03
-Nodes (46): FrameNavFactoryId, CompletionCallback, callback_, unique_ptr, FrameNavExpectations, completion_callback_, Finalize, FrameNavExpectationsBrowser (+38 more)
+Cohesion: 0.02
+Nodes (62): FrameNavFactoryId, CompletionCallback, callback_, unique_ptr, FrameNavExpectations, completion_callback_, Finalize, FrameNavExpectationsBrowser (+54 more)
 
 ### Community 22 - "index_picker_screen.dart & course_questionnaire..."
-Cohesion: 0.03
-Nodes (34): NowFromSystemTraceTime, _cef_settings_t, _cef_browser_t, _cef_frame_t, base, _cef_urlrequest_client_t, _cef_urlrequest_t, _cef_v8context_t (+26 more)
+Cohesion: 0.04
+Nodes (24): context, vector, CefBrowser, CefURLRequest, CefURLRequestClient, CefV8Context, CefSSLInfo, GetCertStatus (+16 more)
 
 ### Community 23 - "community_book_card.dart & summary_screen.dart"
-Cohesion: 0.05
-Nodes (35): nullptr_t, R, RunType, OnceCallback<R(Args...)>, RepeatingCallback<R(Args...)>, BindState, BindStateBase, polymorphic_invoke_ (+27 more)
+Cohesion: 0.06
+Nodes (29): BindState, BindStateBase, polymorphic_invoke_, BindStateBaseRefCountTraits, Destruct, CallbackBase, bind_state_, CallbackBase::CallbackBase() (+21 more)
 
 ### Community 24 - "../widgets/slide_views/interactive_proof_view.d..."
 Cohesion: 0.02
-Nodes (88): BrowseNavTestHandler, allow_, destroyed_, got_before_browse_, got_load_end_, got_load_error_, got_load_start_, got_loading_state_changed_end_ (+80 more)
+Nodes (94): cef_return_value_t, cef_transition_type_t, CefBrowser, CefProcessId, CefRefPtr, CefRequestContext, CefString, ErrorCode (+86 more)
 
 ### Community 25 - "app_models.dart & Book"
-Cohesion: 0.02
-Nodes (107): CefURLRequestClient, Entry, IncompleteType, NextRequestCallback, CefAuthCallback, Cancel, Continue, CefCallback (+99 more)
+Cohesion: 0.03
+Nodes (72): DataMap, Entry, CefAuthCallback, Cancel, Continue, Create, Create, CefResponse (+64 more)
 
 ### Community 26 - "source_pdf_upload_screen.dart & _clearSlot"
 Cohesion: 0.03
@@ -876,39 +877,39 @@ Nodes (78): FloatingActionButtonLocation, activeModule, _activeModuleIdx, active
 
 ### Community 27 - "generate_book_screen.dart & auto_index_screen.dart"
 Cohesion: 0.01
-Nodes (173): ai_providers_screen.dart, ai_queue_screen.dart, auth_screen.dart, bookmarks_screen.dart, dev/programming_slides_screen.dart, experiments_screen.dart, generate_book_screen.dart, home_screen.dart (+165 more)
+Nodes (148): ai_providers_screen.dart, ai_queue_screen.dart, bookmarks_screen.dart, dev/programming_slides_screen.dart, experiments_screen.dart, generate_book_screen.dart, build, _navigateToPrerequisite (+140 more)
 
 ### Community 28 - "lesson_complete_screen.dart & _buildDesktop"
 Cohesion: 0.04
 Nodes (56): BasicResponseTest, browser_id_, custom_scheme_, get_cookie_access_filter_ct_, get_resource_handler_ct_, get_resource_request_handler_ct_, get_resource_response_filter_ct_, incomplete_callback_ (+48 more)
 
 ### Community 29 - "main.dart & AlertDialog"
-Cohesion: 0.04
-Nodes (38): ManagerList, ManagerMap, ObserverSet, Handler, MakeTestQueries(), MultiQueryManagerMap, all_managers_, finalized_ (+30 more)
+Cohesion: 0.05
+Nodes (31): Handler, MultiQueryMultiBrowserTestHandler, same_origin_, MultiQueryMultiHandlerTestHandler, cancel_by_removing_handler_, got_query0_, got_query1_, got_query2_ (+23 more)
 
 ### Community 30 - "fb_firestore.dart & _CfCollection"
 Cohesion: 0.03
 Nodes (131): cef_color_t, cef_docking_mode_t, cef_menu_anchor_position_t, cef_mouse_button_type_t, cef_runtime_style_t, cef_window_t, CefBoxLayout, CefBrowserView (+123 more)
 
 ### Community 31 - "../services/pdf_service.dart & dart:typed_data"
-Cohesion: 0.05
-Nodes (38): ai_service.dart, auto_index_pipeline.dart, AiService, _aiService, AutoIndexService, _collectBookmarks, _extractLinkDestinations, _extractPageTexts (+30 more)
+Cohesion: 0.04
+Nodes (49): ai_service.dart, auto_index_pipeline.dart, AiService, _aiService, AutoIndexService, _collectBookmarks, _extractLinkDestinations, _extractPageTexts (+41 more)
 
 ### Community 32 - "../widgets/canvas_art_view.dart & canvas_html_v..."
 Cohesion: 0.02
-Nodes (115): NotifyStatus, NotifyType, string, TestRequestContextMode, PopupJSWindowEmptyTestHandler, got_after_created_popup_, got_before_close_popup_, got_before_popup_ (+107 more)
+Nodes (138): NotifyStatus, NotifyType, CefDialogHandler, BrowseNavTestHandler, allow_, destroyed_, got_before_browse_, got_load_end_ (+130 more)
 
 ### Community 33 - "../widgets/slide_views/fill_in_blank_view.dart ..."
 Cohesion: 0.04
-Nodes (52): Delegate, CefLoadHandler, CefBrowser, CefRefPtr, CefString, ErrorCode, TransitionType, CefRenderProcessHandler (+44 more)
+Nodes (61): GetGlobalCommandLine, CefLoadHandler, CefBrowser, CefRefPtr, CefString, ErrorCode, TransitionType, CefRenderProcessHandler (+53 more)
 
 ### Community 34 - "platform_webview.dart & buildWebWebView"
 Cohesion: 0.15
 Nodes (13): package:webview_cef/src/webview_inject_user_script.dart, allCookies, build, _controller, createState, dispose, initPlatformState, initState (+5 more)
 
 ### Community 35 - "exam_screen.dart & generate_qp_screen.dart"
-Cohesion: 0.06
-Nodes (34): book_dashboard_screen.dart, course_edit_structure_screen.dart, course_settings_screen.dart, _activeModule, _activeSection, book, _bookUpdateSub, build (+26 more)
+Cohesion: 0.03
+Nodes (57): book_dashboard_screen.dart, course_edit_structure_screen.dart, course_settings_screen.dart, dart:async, dart:html, dart:isolate, dart:ui_web, isolate_shim_io.dart (+49 more)
 
 ### Community 36 - "../widgets/slide_views/pyq_one_word_view.dart &..."
 Cohesion: 0.03
@@ -919,56 +920,56 @@ Cohesion: 0.05
 Nodes (36): fd.TokenStore, authStateChanges, _bootstrap, collection, createUserWithEmailAndPassword, _ctrl, _current, currentUser (+28 more)
 
 ### Community 38 - "services/global_state.dart & package:shared_pre..."
-Cohesion: 0.03
-Nodes (65): CefLabelButton, _cef_browser_settings_t, _cef_browser_t, _cef_browser_view_delegate_t, _cef_browser_view_t, base, _cef_client_t, _cef_dictionary_value_t (+57 more)
+Cohesion: 0.02
+Nodes (90): CefButton, CefLabelButton, CefLayout, _cef_completion_callback_t, _cef_browser_settings_t, _cef_browser_t, _cef_browser_view_delegate_t, _cef_browser_view_t (+82 more)
 
 ### Community 39 - "../widgets/bottom_sheets/section_bottom_sheet.d..."
-Cohesion: 0.04
-Nodes (50): Create, Create, Create, Create, GetForCurrentThread, cef_errorcode_t, OnceClosure, RequestDoneCallback (+42 more)
+Cohesion: 0.05
+Nodes (32): Create, Create, cef_errorcode_t, OnceClosure, RequestDoneCallback, vector, GetRequestScheme(), RegisterURLRequestCookieableSchemes() (+24 more)
 
 ### Community 40 - "pdf_browser_screen.dart & _deleteFolder"
 Cohesion: 0.05
-Nodes (67): CefV8Value, AdjustExternallyAllocatedMemory, ClearException, CreateArrayBuffer, CreateFunction, CreateInt, CreateObject, CreatePromise (+59 more)
+Nodes (65): CefV8Value, AdjustExternallyAllocatedMemory, ClearException, CreateArrayBuffer, CreateFunction, CreateInt, CreateObject, CreatePromise (+57 more)
 
 ### Community 41 - "package:flutter/foundation.dart & services/fb/f..."
-Cohesion: 0.04
-Nodes (117): GdkEventMotion, GdkEventScroll, GdkEventTouch, GtkDragResult, GtkSelectionData, GtkTargetList, OsrDelegate, BrowserWindowOsrGtk (+109 more)
+Cohesion: 0.06
+Nodes (41): GtkTargetList, OsrDelegate, BrowserWindowOsrGtk, ApplyPopupOffset, Create, CreateBrowser, device_scale_factor_, drag_context_ (+33 more)
 
 ### Community 43 - "../widgets/selectors/module_selector.dart & ../..."
 Cohesion: 0.03
 Nodes (62): MouseCursor, _assertJavascriptChannelNamesAreUnique, _browserId, build, _buildInner, _composingText, controller, createState (+54 more)
 
 ### Community 44 - "generate_qp_screen.dart & ../widgets/file_selec..."
-Cohesion: 0.04
-Nodes (48): ContainerType, ForwardIterator, IncrementT, FindFirstPrinter, Container, E, iterator, shared_ptr (+40 more)
+Cohesion: 0.05
+Nodes (43): A, B, ContainerType, ForwardIterator, CartesianProductGenerator, generators_, DefaultParamName(), Container (+35 more)
 
 ### Community 45 - "pyq_complete_screen.dart & _formatDuration"
 Cohesion: 0.03
 Nodes (64): _activeSearchResult, addEventListener, _base64Data, build, canShowScrollHead, canShowScrollStatus, charset, clear (+56 more)
 
 ### Community 46 - "auto_index_screen.dart & index_picker_screen.dart"
-Cohesion: 0.01
-Nodes (190): dart:ui, EdgeInsetsGeometry, generate_qp_screen.dart, lesson_node.dart, Book, Module, QuestionPaper, Section (+182 more)
+Cohesion: 0.02
+Nodes (99): Color, dart:ui, Module, Section, build, module, ModuleSummaryDetailScreen, book (+91 more)
 
 ### Community 47 - "course_questionnaire_screen.dart & generate_boo..."
 Cohesion: 0.05
-Nodes (57): CefCookieManager, DeleteCookies, FlushStore, SetCookie, VisitAllCookies, VisitUrlCookies, Callback, cef_return_value_t (+49 more)
+Nodes (54): BasicAllCookies, BasicDomainCookie, BasicHostCookie, BasicInvalidCookie, BasicMultipleCookies, CookieTest, GetCookieManagerCustomGlobal, GetCookieManagerCustomInMemory (+46 more)
 
 ### Community 48 - "math_markdown.dart & interactive_webview.dart"
 Cohesion: 0.04
-Nodes (94): cef_size_t, CefSize, cef_button_state_t, cef_color_t, cef_horizontal_alignment_t, cef_label_button_t, CefBrowserView, CefButton (+86 more)
+Nodes (96): cef_insets_t, cef_point_t, cef_size_t, CefInsets, CefPoint, CefSize, cef_button_state_t, cef_color_t (+88 more)
 
 ### Community 49 - "../services/database_service.dart & fb/fb_fires..."
 Cohesion: 0.04
 Nodes (100): cef_text_field_commands_t, cef_text_style_t, CefRange, cef_color_t, CefBrowserView, CefButton, CefPanel, CefRefPtr (+92 more)
 
 ### Community 50 - "unit_header.dart & BoxShadow"
-Cohesion: 0.06
-Nodes (101): cef_cursor_type_t, cef_log_severity_t, cef_ssl_version_t, cef_window_open_disposition_t, CefBrowser, CefBrowserSettings, CefClient, CefCursorHandle (+93 more)
+Cohesion: 0.05
+Nodes (103): cef_cursor_type_t, cef_log_severity_t, cef_ssl_content_status_t, cef_ssl_version_t, cef_window_open_disposition_t, CefBrowser, CefBrowserSettings, CefClient (+95 more)
 
 ### Community 51 - "auth_screen.dart & AuthScreen"
 Cohesion: 0.06
-Nodes (44): ElementBoundsMap, OSRTestType, Callback, cef_cursor_type_t, cef_horizontal_alignment_t, cef_touch_event_type_t, CefBrowser, CefCursorHandle (+36 more)
+Nodes (43): ElementBoundsMap, OSRTestType, Callback, cef_cursor_type_t, cef_horizontal_alignment_t, cef_touch_event_type_t, CefBrowser, CefCursorHandle (+35 more)
 
 ### Community 52 - "step_by_step_view.dart & duo_button.dart"
 Cohesion: 0.11
@@ -976,15 +977,15 @@ Nodes (37): cef_string_multimap_t, cef_request_t, CefRefPtr, CefString, CefWrapp
 
 ### Community 53 - "../widgets/generating_book_card.dart & package:..."
 Cohesion: 0.04
-Nodes (88): BinaryAccess, BinaryAccessOtherThread, DictionaryAccess, DictionaryAccessOtherThread, DictionaryDetachment, ListAccess, ListAccessOtherThread, ListDetachment (+80 more)
+Nodes (92): BinaryAccess, BinaryAccessOtherThread, DictionaryAccess, DictionaryAccessOtherThread, DictionaryDetachment, ListAccess, ListAccessOtherThread, ListDetachment (+84 more)
 
 ### Community 54 - "missing_files_banner.dart & Expanded"
-Cohesion: 0.10
-Nodes (52): EmptyTestEventListener, GTEST_ATTRIBUTE_NO_SANITIZE_MEMORY_, StreamableToString(), ostream, time_t, FormatCompilerIndependentFileLocation(), FormatEpochTimeInMillisAsIso8601(), FormatEpochTimeInMillisAsRFC3339() (+44 more)
+Cohesion: 0.09
+Nodes (54): EmptyTestEventListener, GTEST_ATTRIBUTE_NO_SANITIZE_MEMORY_, StreamableToString(), ostream, time_t, FormatCompilerIndependentFileLocation(), FormatEpochTimeInMillisAsIso8601(), FormatEpochTimeInMillisAsRFC3339() (+46 more)
 
 ### Community 55 - "screens/auth_gate.dart & auth_screen.dart"
-Cohesion: 0.09
-Nodes (28): GTestLogSeverity, TestPartResult, Abort(), OnTestPartResult, mutex_, DefaultGlobalTestPartResultReporter, ReportTestPartResult, unit_test_ (+20 more)
+Cohesion: 0.06
+Nodes (42): GTestLogSeverity, AssertHelper, Message, TestPartResult, ToUpper(), Abort(), AppendUserMessage(), AssertHelper::AssertHelper() (+34 more)
 
 ### Community 56 - "dart:async & ../services/auto_index_service.dart"
 Cohesion: 0.02
@@ -992,11 +993,11 @@ Nodes (119): auto_index_service.dart, ChangeNotifier, activeCanvasRegens, active
 
 ### Community 57 - "dart:convert & services/learning_sync.dart"
 Cohesion: 0.05
-Nodes (89): cef_point_t, CefPoint, ConvertPointFromScreen, ConvertPointToWindow, SetPosition, cef_button_state_t, cef_color_t, cef_horizontal_alignment_t (+81 more)
+Nodes (93): cef_button_state_t, cef_color_t, cef_horizontal_alignment_t, cef_menu_anchor_position_t, cef_menu_button_t, CefBrowserView, CefButton, CefLabelButton (+85 more)
 
 ### Community 58 - "book_card.dart & BookCard"
-Cohesion: 0.07
-Nodes (40): GTestColor, UnitTest, BriefUnitTestResultPrinter, OnTestEnd, OnTestIterationEnd, TestCase, TestInfo, ColoredPrintf() (+32 more)
+Cohesion: 0.05
+Nodes (54): AbstractSocketWriter, GTestColor, TestSuite, UnitTest, BriefUnitTestResultPrinter, OnTestEnd, OnTestIterationEnd, TestInfo (+46 more)
 
 ### Community 59 - "dart:io & file_selection_list.dart"
 Cohesion: 0.04
@@ -1004,32 +1005,29 @@ Nodes (86): GdkEventWindowState, GtkButton, GtkEntry, GtkToolItem, ClientWindowH
 
 ### Community 60 - "package:flutter/material.dart & real_progress_b..."
 Cohesion: 0.04
-Nodes (102): _cef_textfield_t, cef_rect_t, cef_size_t, cef_view_t, CEF_CALLBACK
-textfield_delegate_get_height_for_width(), CEF_CALLBACK
-textfield_delegate_get_maximum_size(), CEF_CALLBACK
-textfield_delegate_get_minimum_size(), CEF_CALLBACK
-textfield_delegate_get_preferred_size() (+94 more)
+Nodes (103): cef_panel_delegate_t, cef_rect_t, cef_size_t, cef_view_t, CefRefPtr, CefWrapperType, CEF_CALLBACK
+panel_delegate_get_height_for_width(), CEF_CALLBACK
+panel_delegate_get_maximum_size() (+95 more)
 
 ### Community 61 - "section_selector.dart & Function"
 Cohesion: 0.05
-Nodes (84): _cef_v8handler_t, base, CefV8ArrayBufferReleaseCallback, ReleaseBuffer, CefV8Handler, Execute, CefBaseRefCountedCppToC, cef_base_ref_counted_t (+76 more)
+Nodes (82): _cef_v8value_t, base, CefV8ArrayBufferReleaseCallback, ReleaseBuffer, CefV8Handler, Execute, CefBaseRefCountedCppToC, cef_base_ref_counted_t (+74 more)
 
 ### Community 62 - "../widgets/slide_views/numerical_view.dart & Fu..."
 Cohesion: 0.05
 Nodes (84): _cef_panel_t, _cef_window_t, base, cef_color_t, CefBoxLayout, CefBrowserView, CefButton, CefFillLayout (+76 more)
 
 ### Community 63 - "../widgets/slide_views/one_word_view.dart & Fun..."
-Cohesion: 0.05
-Nodes (76): cef_paint_element_type_t, cef_text_input_mode_t, _cef_render_handler_t, base, cef_base_ref_counted_t, CEF_CALLBACK
-client_get_print_handler(), cef_browser_t, cef_size_t (+68 more)
+Cohesion: 0.07
+Nodes (59): cef_cursor_handle_t, _cef_display_handler_t, base, cef_base_ref_counted_t, cef_browser_t, cef_cursor_type_t, cef_log_severity_t, cef_size_t (+51 more)
 
 ### Community 64 - "../utils/progress_utils.dart & base"
-Cohesion: 0.15
-Nodes (15): LabelButtons, CefLabelButton, CefMenuButton, string, MakeButtonsSameSize(), AddControls, CreateBrowseButton, CreateLocationBar (+7 more)
+Cohesion: 0.14
+Nodes (16): LabelButtons, CefIsRTL(), CefLabelButton, CefMenuButton, string, MakeButtonsSameSize(), AddControls, CreateBrowseButton (+8 more)
 
 ### Community 65 - "package:lucide_icons/lucide_icons.dart & ../wid..."
-Cohesion: 0.10
-Nodes (31): ErrorCode, function, string, T, vector, GetCallbackId(), GetDataURI(), unordered_map (+23 more)
+Cohesion: 0.18
+Nodes (18): CefString, ErrorCode, function, string, T, vector, GetCallbackId(), GetDataURI() (+10 more)
 
 ### Community 66 - "sync_conflict_dialog.dart & return result ??"
 Cohesion: 0.05
@@ -1049,39 +1047,40 @@ Nodes (20): char_type, CefStringBase, owner_, string_, CefStringTraitsUTF16, Cef
 
 ### Community 70 - "../widgets/responsive_center.dart & ResponsiveC..."
 Cohesion: 0.05
-Nodes (40): activeModule, _activeModuleIdx, activeSection, _activeSectionIdx, book, build, _buildVideoCard, _cachedVideos (+32 more)
+Nodes (39): activeModule, _activeModuleIdx, activeSection, _activeSectionIdx, book, build, _buildVideoCard, _cachedVideos (+31 more)
 
 ### Community 71 - "mock_books.dart & draw"
 Cohesion: 0.05
-Nodes (57): CefDOMVisitor, Visit, CefStringVisitor, Visit, cef_domvisitor_t, CefRefPtr, CefWrapperType, CEF_CALLBACK domvisitor_visit() (+49 more)
+Nodes (69): cef_quick_menu_edit_state_flags_t, CefStringVisitor, Visit, CEF_CALLBACK
+client_get_context_menu_handler(), cef_browser_t, cef_context_menu_handler_t, cef_event_flags_t, cef_point_t (+61 more)
 
 ### Community 72 - "CefBrowserViewCToCpp"
 Cohesion: 0.05
 Nodes (75): cef_color_t, cef_scroll_view_t, CefBrowserView, CefButton, CefPanel, CefRefPtr, CefScrollView, CefString (+67 more)
 
 ### Community 73 - "IteratorImpl<IndexSequence<I...>>"
-Cohesion: 0.05
-Nodes (39): cef_errorcode_t, CefRequestContext, string, vector, ClientSchemeHandlerFactory, test_results_, RegisterSchemeHandlerCookieableSchemes(), RegisterTestScheme() (+31 more)
+Cohesion: 0.06
+Nodes (34): cef_errorcode_t, CefRequestContext, ClientSchemeHandlerFactory, test_results_, TestResults, accept_language, console_messages, delay (+26 more)
 
 ### Community 74 - "struct_type"
 Cohesion: 0.02
-Nodes (78): dart:convert, dart:io, file_image_io.dart, io_shim.dart, fileImageProvider, fileImageProvider, abi, _apkFileFor (+70 more)
+Nodes (93): dart:convert, dart:io, dart:typed_data, file_image_io.dart, io_shim.dart, io_stub.dart, fileImageProvider, fileImageProvider (+85 more)
 
 ### Community 75 - "CefScrollViewCToCpp"
 Cohesion: 0.05
-Nodes (50): CefWindowInfo, CefPopupFeatures, cef_window_open_disposition_t, CefBrowserSettings, CefClient, WindowOpenDisposition, cef_window_open_disposition_t, CefBrowser (+42 more)
+Nodes (44): cef_window_open_disposition_t, CefBrowser, CefBrowserSettings, CefClient, CefRefPtr, CefRequestContext, CefString, ErrorCode (+36 more)
 
 ### Community 76 - "V8RendererTest"
 Cohesion: 0.06
 Nodes (73): cef_button_state_t, cef_color_t, CefBrowserView, CefButton, CefLabelButton, CefPanel, CefRefPtr, CefScrollView (+65 more)
 
 ### Community 77 - "CefButtonCToCpp"
-Cohesion: 0.06
-Nodes (39): BrowserQueryInfoMap, BrowserRequestInfoMap, ContextMap, HandlerSet, CefMessageRouterConfig, js_cancel_function, js_query_function, message_size_threshold (+31 more)
+Cohesion: 0.07
+Nodes (36): BrowserQueryInfoMap, BrowserRequestInfoMap, ContextMap, HandlerSet, CefMessageRouterConfig, js_cancel_function, js_query_function, message_size_threshold (+28 more)
 
 ### Community 78 - "CefTestSuite"
-Cohesion: 0.09
-Nodes (29): cef_media_route_connection_state_t, cef_media_route_create_result_t, _cef_media_route_t, base, CefMediaObserver, OnRouteMessageReceived, OnRoutes, OnRouteStateChanged (+21 more)
+Cohesion: 0.08
+Nodes (31): cef_media_route_connection_state_t, _cef_media_observer_t, base, _cef_media_route_t, base, _cef_media_sink_t, base, cef_base_ref_counted_t (+23 more)
 
 ### Community 79 - "CefFrameCToCpp"
 Cohesion: 0.04
@@ -1089,64 +1088,64 @@ Nodes (68): B1, bool_constant, conditional_t<static_cast<bool>(B1::value), B1, d
                        IsRefCountedType<std::remove_pointer_t<T>>>, false_type, is_convertible, is_trivially_copy_constructible<T> (+60 more)
 
 ### Community 80 - "CefRequestCToCpp"
-Cohesion: 0.14
-Nodes (12): _cef_media_observer_t, base, _cef_media_route_create_callback_t, base, _cef_media_router_t, base, _cef_media_sink_t, base (+4 more)
+Cohesion: 0.18
+Nodes (12): cef_media_route_create_result_t, _cef_media_route_create_callback_t, base, CefMediaRouteCreateCallback, OnMediaRouteCreateFinished, cef_string_t, CefRefPtr, CefWrapperType (+4 more)
 
 ### Community 81 - "CefRefPtr"
 Cohesion: 0.03
-Nodes (71): BasicCreate, BasicCreateNoHandler, BasicCreateSharedGlobal, BasicCreateSharedOnDisk, BasicGetGlobal, ClearCertificateExceptionsCustom, ClearCertificateExceptionsGlobal, CloseAllConnectionsCustom (+63 more)
+Nodes (78): BasicCreate, BasicCreateNoHandler, BasicCreateSharedGlobal, BasicCreateSharedOnDisk, BasicGetGlobal, ClearCertificateExceptionsCustom, ClearCertificateExceptionsGlobal, CloseAllConnectionsCustom (+70 more)
 
 ### Community 82 - "CallbackResourceHandler"
 Cohesion: 0.04
-Nodes (86): Destruct(), T, CefRefPtr, CefStreamReader, CefString, HeaderMap, CefStreamResourceHandler::CefStreamResourceHandler(), CefStreamResourceHandler::GetResponseHeaders() (+78 more)
+Nodes (91): Destruct(), T, CefRefPtr, CefStreamReader, CefString, HeaderMap, CefStreamResourceHandler::CefStreamResourceHandler(), CefStreamResourceHandler::GetResponseHeaders() (+83 more)
 
 ### Community 83 - "CefMessageRouterBrowserSideImpl"
 Cohesion: 0.01
-Nodes (169): dart:math, duo_button.dart, int?, interactive_proof_view.dart, mockBooks, Slide, calculateSectionTarget, clearSectionDeadline (+161 more)
+Nodes (211): duo_button.dart, EdgeInsetsGeometry, generate_qp_screen.dart, int?, interactive_proof_view.dart, lesson_node.dart, mockBooks, Book (+203 more)
 
 ### Community 84 - "CefBrowserHost"
 Cohesion: 0.03
 Nodes (66): AcceptLanguage, CustomNonStandardErrorResponse, CustomNonStandardFetchSameOrigin, CustomNonStandardNameNotHandled, CustomNonStandardNoResponse, CustomNonStandardNormalResponse, CustomNonStandardRedirect, CustomNonStandardXHRSameOriginAsync (+58 more)
 
 ### Community 85 - "cef_template_util.h"
-Cohesion: 0.06
-Nodes (65): cef_string_map_t, IntList, CefTranslatorTestRefPtrClient, GetValue, CefTranslatorTestRefPtrClientChild, GetOtherValue, CefTranslatorTestRefPtrClientCppToC, CefRefPtr (+57 more)
+Cohesion: 0.07
+Nodes (62): cef_string_map_t, IntList, CefTranslatorTestRefPtrClient, GetValue, CefTranslatorTestRefPtrClientCppToC, CefRawPtr, CefRefPtr, CefString (+54 more)
 
 ### Community 86 - "CefRefPtr"
 Cohesion: 0.07
-Nodes (39): CefMediaSinkDeviceInfo, ConnectionState, MediaRouteVector, MediaSinkVector, CefMediaRoute, GetId, GetSink, GetSource (+31 more)
+Nodes (40): CefMediaSinkDeviceInfo, ConnectionState, MediaRouteVector, MediaSinkVector, CefMediaRoute, GetId, GetSink, GetSource (+32 more)
 
 ### Community 87 - "CefTaskRunner"
-Cohesion: 0.05
-Nodes (54): cef_rect_t, _cef_draggable_region_t, bounds, draggable, _cef_screen_info_t, available_rect, depth, depth_per_component (+46 more)
+Cohesion: 0.07
+Nodes (38): CefDisplay, ConvertPointFromPixels, ConvertPointToPixels, ConvertScreenPointFromPixels, ConvertScreenPointToPixels, ConvertScreenRectFromPixels, ConvertScreenRectToPixels, GetAllDisplays (+30 more)
 
 ### Community 88 - "cef_bind_internal.h"
 Cohesion: 0.03
-Nodes (71): disjunction<NeedsScopedRefptrButGetsRawPtr<Ts>...>, AssertBindArgsValidity, BindArgument, BindTypeHelper, num_bounds, BindUnwrapTraits, BindUnwrapTraits<cef_internal::OwnedRefWrapper<T>>, BoundAs (+63 more)
+Nodes (67): disjunction<NeedsScopedRefptrButGetsRawPtr<Ts>...>, AssertBindArgsValidity, BindArgument, BindTypeHelper, num_bounds, BindUnwrapTraits, BindUnwrapTraits<cef_internal::OwnedRefWrapper<T>>, BoundAs (+59 more)
 
 ### Community 89 - "../services/global_state.dart"
-Cohesion: 0.13
-Nodes (15): BasicAllCookies, BasicDomainCookie, BasicHostCookie, BasicInvalidCookie, BasicMultipleCookies, CookieTest, GetCookieManagerCustomGlobal, GetCookieManagerCustomInMemory (+7 more)
+Cohesion: 0.04
+Nodes (46): calibration_card.dart, bookId, BookRouteLoaderScreen, _BookRouteLoaderScreenState, build, createState, _error, initState (+38 more)
 
 ### Community 90 - "bool get"
-Cohesion: 0.17
-Nodes (39): initCallback, WValue, webview_ptr_array_add(), webview_ptr_array_free(), webview_ptr_array_new_with_free_func(), webview_ptr_array_unref(), webview_value_append(), webview_value_append_take() (+31 more)
+Cohesion: 0.14
+Nodes (58): FlValue, HandleMethodCall, initCallback, WValue, webview_ptr_array_add(), webview_ptr_array_index(), webview_ptr_array_new_with_free_func(), webview_value_append() (+50 more)
 
 ### Community 91 - "package:flutter/foundation.dart"
 Cohesion: 0.03
 Nodes (61): CefTranslatorTest, GetBool, GetDouble, GetInt, GetIntListByRef, GetIntListSize, GetLong, GetOwnPtrLibrary (+53 more)
 
 ### Community 92 - "_FileTokenStore"
-Cohesion: 0.06
-Nodes (45): RootWindow::Create(), Delegate, CefBrowserSettings, CefClient, unique_ptr, CefRefPtr, CefRequestContext, unique_ptr (+37 more)
+Cohesion: 0.05
+Nodes (56): CefRequestContextHandler, CreateCallback, Get, RootWindow::Create(), Delegate, CefBrowserSettings, CefClient, CefRefPtr (+48 more)
 
 ### Community 93 - "SettingsScreen"
-Cohesion: 0.03
-Nodes (87): Base64Decode, Base64Encode, cef_json_parser_options_t, cef_uri_unescape_rule_t, CefURLParts, CreateURLAll, CreateURLHostRequired, CreateURLSchemeHost (+79 more)
+Cohesion: 0.02
+Nodes (101): Base64Decode, Base64Encode, cef_json_parser_options_t, cef_uri_unescape_rule_t, CefURLParts, CreateURLAll, CreateURLHostRequired, CreateURLSchemeHost (+93 more)
 
 ### Community 94 - "_ActiveGeneratingNodeWrapper"
-Cohesion: 0.05
-Nodes (31): NavigateWhileHidden, OsrPopupJSOtherClient, CreateBrowser, CefWindowHandle, CefString, Callback, cef_window_open_disposition_t, CefBrowser (+23 more)
+Cohesion: 0.06
+Nodes (25): NavigateWhileHidden, OsrPopupJSOtherClient, Callback, CefBrowser, CefClient, CefRefPtr, OSRTest, PaintElementType (+17 more)
 
 ### Community 95 - "LessonPath"
 Cohesion: 0.07
@@ -1157,36 +1156,36 @@ Cohesion: 0.03
 Nodes (58): CefMenuModel, AddCheckItem, AddItem, AddRadioItem, AddSeparator, AddSubMenu, Clear, CreateMenuModel (+50 more)
 
 ### Community 97 - "safe_pdf_viewer.dart"
-Cohesion: 0.06
-Nodes (49): ElementVector, CefPostData, AddElement, GetElementCount, GetElements, HasExcludedElements, IsReadOnly, RemoveElement (+41 more)
+Cohesion: 0.10
+Nodes (26): CefPostDataElement, GetBytes, GetBytesCount, GetFile, GetType, IsReadOnly, SetToBytes, SetToEmpty (+18 more)
 
 ### Community 98 - "SafePdfViewerController"
 Cohesion: 0.06
-Nodes (38): AccessibilityTestType, CefAccessibilityHandler, OnAccessibilityLocationChange, OnAccessibilityTreeChange, CefValue, Copy, GetBinary, GetBool (+30 more)
+Nodes (39): AccessibilityTestType, CefAccessibilityHandler, OnAccessibilityLocationChange, OnAccessibilityTreeChange, CefValue, Copy, GetBinary, GetBool (+31 more)
 
 ### Community 99 - "CodeLocation"
-Cohesion: 0.06
-Nodes (33): cef_resource_type_t, cef_return_value_t, cef_transition_type_t, CefBrowser, CefRefPtr, string, URLRequestStatus, CreateRequest() (+25 more)
+Cohesion: 0.04
+Nodes (41): IncompleteType, NextRequestCallback, ErrorCode, Status, IncompleteSchemeHandlerOld, cancel_ct_, destroy_callback_, get_response_headers_ct_ (+33 more)
 
 ### Community 100 - "preference_unittest.cc"
 Cohesion: 0.11
-Nodes (49): CefRequestContextHandler, GlobalDefaults, GlobalSetGet, CefPreferenceManager, CanSetPreference, GetAllPreferences, GetPreference, HasPreference (+41 more)
+Nodes (49): GlobalDefaults, GlobalSetGet, CefPreferenceManager, CanSetPreference, GetAllPreferences, GetPreference, HasPreference, SetPreference (+41 more)
 
 ### Community 101 - "CefBaseRefCounted"
 Cohesion: 0.03
-Nodes (61): CefBaseRefCounted, AddRef, HasAtLeastOneRef, HasOneRef, Release, CefBrowser, CanGoBack, CanGoForward (+53 more)
+Nodes (63): CefBaseRefCounted, AddRef, HasAtLeastOneRef, HasOneRef, Release, CefBrowser, CanGoBack, CanGoForward (+55 more)
 
 ### Community 102 - "cors_unittest.cc"
-Cohesion: 0.05
-Nodes (33): CefResponseFilter, Filter, InitFilter, CefBrowser, CefRefPtr, GetResourceResponseFilter(), cef_urlrequest_status_t, FilterStatus (+25 more)
+Cohesion: 0.06
+Nodes (27): cef_urlrequest_status_t, FilterStatus, string, CreateInput(), CreateOutput(), GetResponseBufferSize(), ResponseFilterError, ResponseFilterNeedMore (+19 more)
 
 ### Community 103 - "CefWaitableEvent"
-Cohesion: 0.06
-Nodes (62): CefButton, CefButtonDelegate, OnButtonPressed, CefRefPtr, CefMenuButtonDelegate, OnMenuButtonPressed, CefMenuButtonPressedLock, AddImage() (+54 more)
+Cohesion: 0.05
+Nodes (73): CefWaitableEvent, CreateWaitableEvent, IsSignaled, Reset, Signal, TimedWait, Wait, CefButtonDelegate (+65 more)
 
 ### Community 104 - "AssertionResult"
-Cohesion: 0.09
-Nodes (53): AssertionResult, AssertPred1Helper(), AssertPred2Helper(), AssertPred3Helper(), AssertPred4Helper(), AssertPred5Helper(), FormatForComparisonFailureMessage(), T1 (+45 more)
+Cohesion: 0.12
+Nodes (41): AssertionResult, AssertPred1Helper(), AssertPred2Helper(), AssertPred3Helper(), AssertPred4Helper(), AssertPred5Helper(), FormatForComparisonFailureMessage(), T1 (+33 more)
 
 ### Community 105 - "ViewsWindow"
 Cohesion: 0.04
@@ -1197,8 +1196,8 @@ Cohesion: 0.06
 Nodes (45): BaseClientHandler, browser_count_, GetBrowserCount, GetForBrowser, GetForClient, GetHangAction, GetResourceHandler, GetResourceResponseFilter (+37 more)
 
 ### Community 107 - "RequestSendRecvTestHandler"
-Cohesion: 0.06
-Nodes (33): IconData, body, build, _buildProgrammerQuestion, color, _controller, createState, dispose (+25 more)
+Cohesion: 0.05
+Nodes (44): auth_screen.dart, home_screen.dart, AuthGate, build, _buildAuthFlow, AuthScreen, _AuthScreenState, build (+36 more)
 
 ### Community 108 - "CefPostData"
 Cohesion: 0.08
@@ -1209,20 +1208,20 @@ Cohesion: 0.09
 Nodes (48): cef_state_t, CefButton, CefRefPtr, CefTextfield, CefView, CefWindow, SetViewEnabled(), AcceptsFirstMouse (+40 more)
 
 ### Community 110 - "test_runner.cc"
-Cohesion: 0.08
-Nodes (53): string, GetResourceDir(), CleanupOnUIThread, Alert(), BeginTracing(), Callback, cef_errorcode_t, cef_termination_status_t (+45 more)
+Cohesion: 0.07
+Nodes (54): string, GetResourceDir(), CleanupOnUIThread, GetForBrowser, Alert(), BeginTracing(), Callback, cef_errorcode_t (+46 more)
 
 ### Community 111 - "lesson_node.dart"
-Cohesion: 0.07
-Nodes (52): _cef_menu_button_pressed_lock_t, base, cef_base_ref_counted_t, _cef_button_t, cef_button_delegate_t, cef_rect_t, cef_size_t, cef_view_t (+44 more)
+Cohesion: 0.08
+Nodes (48): _cef_menu_button_pressed_lock_t, base, cef_base_ref_counted_t, _cef_button_t, cef_button_delegate_t, cef_rect_t, cef_size_t, cef_view_t (+40 more)
 
 ### Community 112 - "CefBaseRefCounted"
-Cohesion: 0.16
-Nodes (20): AdoptRef(), AdoptRefIfNeeded(), BasePromise, nullptr_t, StartRefCountFromOneTag, StartRefCountFromZeroTag, T, U (+12 more)
+Cohesion: 0.12
+Nodes (24): AdoptRef(), AdoptRefIfNeeded(), BasePromise, nullptr_t, StartRefCountFromOneTag, StartRefCountFromZeroTag, T, U (+16 more)
 
 ### Community 113 - "views_window.cc"
-Cohesion: 0.15
-Nodes (15): AsWeakPtr(), AsWeakPtrImpl(), Base, Derived, nullptr_t, T, U, operator!=() (+7 more)
+Cohesion: 0.07
+Nodes (31): AsWeakPtr(), AsWeakPtrImpl(), Base, Derived, Flag, nullptr_t, T, U (+23 more)
 
 ### Community 114 - "CefView"
 Cohesion: 0.04
@@ -1233,32 +1232,32 @@ Cohesion: 0.08
 Nodes (50): CefString, CefMenuModelCToCpp, AddCheckItem, AddItem, AddRadioItem, AddSeparator, Clear, GetAccelerator (+42 more)
 
 ### Community 116 - "CefRequestContextCToCpp"
-Cohesion: 0.10
-Nodes (48): cef_color_variant_t, cef_content_setting_types_t, cef_content_setting_values_t, CefRequestContextSettings, CefCompletionCallback, OnComplete, CefCompletionCallbackCppToC, cef_completion_callback_t (+40 more)
+Cohesion: 0.13
+Nodes (35): cef_color_variant_t, cef_content_setting_types_t, cef_content_setting_values_t, CefRequestContextSettings, cef_color_t, CefRefPtr, CefRequestContext, CefRequestContextHandler (+27 more)
 
 ### Community 117 - "TEST"
-Cohesion: 0.04
-Nodes (39): OwnPtrClient, OwnPtrClientInherit, OwnPtrLibrary, OwnPtrLibraryInherit, Create, Create, RefPtrClientList, RefPtrLibraryList (+31 more)
+Cohesion: 0.05
+Nodes (32): OwnPtrClient, OwnPtrClientInherit, OwnPtrLibrary, OwnPtrLibraryInherit, Create, RefPtrClientList, RefPtrLibraryList, String (+24 more)
 
 ### Community 118 - "CefViewDelegate"
 Cohesion: 0.03
-Nodes (54): canvas_html_view.dart, dart:async, dart:isolate, isolate_shim_io.dart, overlayEntry, overlayState, showToast, build (+46 more)
+Nodes (56): canvas_html_view.dart, WalkStep, build, CanvasArtView, _CanvasArtViewState, _CanvasPlaceholder, _CanvasPlaceholderState, createState (+48 more)
 
 ### Community 119 - "MultiQueryManager"
-Cohesion: 0.02
-Nodes (87): Directory, File, FileSystemEntity, _addModule, _addSection, _addUnit, _applyShiftOffset, b2Obj (+79 more)
+Cohesion: 0.03
+Nodes (81): Directory, File, FileSystemEntity, build, createState, _deleteFile, directory, file (+73 more)
 
 ### Community 120 - "CefLoadHandler"
-Cohesion: 0.02
-Nodes (74): HINSTANCE, context, LPWSTR, ostringstream, AtomicFlag, flag_, Set, set_thread_checker_ (+66 more)
+Cohesion: 0.04
+Nodes (36): HINSTANCE, LPWSTR, mainPtr, decay_t, Deleter, T, unique_ptr, IgnoreResult() (+28 more)
 
 ### Community 121 - "ViewsMenuBar"
 Cohesion: 0.08
-Nodes (47): MnemonicMap, CefIsRTL(), cef_event_flags_t, CefMenuButton, CefMenuModel, CefPanel, CefRefPtr, CefString (+39 more)
+Nodes (46): MnemonicMap, cef_event_flags_t, CefMenuButton, CefMenuModel, CefPanel, CefRefPtr, CefString, CefView (+38 more)
 
 ### Community 122 - "WeakPtr"
 Cohesion: 0.07
-Nodes (25): Buffer, Lhs, M, MatcheeStringType, DummyMatchResultListener, GetDescriberImpl(), GetVTable(), CharType (+17 more)
+Nodes (28): Arg, Buffer, Idx, M, Bool(), FlatTuple, FlatTupleBase, FlatTupleBase<FlatTuple<T...>, IndexSequence<Idx...>> (+20 more)
 
 ### Community 123 - "cef_types_wrappers.h"
 Cohesion: 0.07
@@ -1266,14 +1265,14 @@ Nodes (14): CefBrowserSettingsTraits, CefCookieTraits, CefDraggableRegion, CefLi
 
 ### Community 124 - "CookieRestartTestHandler"
 Cohesion: 0.03
-Nodes (85): CefFrame, Copy, CreateURLRequest, Cut, Delete, ExecuteJavaScript, GetBrowser, GetIdentifier (+77 more)
+Nodes (89): CefFrame, Copy, CreateURLRequest, Cut, Delete, ExecuteJavaScript, GetBrowser, GetIdentifier (+81 more)
 
 ### Community 125 - "AssertMainBrowser"
 Cohesion: 0.08
-Nodes (27): Callback, CefBrowser, CefRefPtr, CefString, string, TestType, SinglePersistentQueryTestHandler, callback_ (+19 more)
+Nodes (26): Callback, CefBrowser, CefRefPtr, CefString, string, TestType, SinglePersistentQueryTestHandler, callback_ (+18 more)
 
 ### Community 126 - "NetNotifyTestHandler"
-Cohesion: 0.13
+Cohesion: 0.12
 Nodes (14): HttpRequestHandler, list, OnceClosure, TestServerHandler, actual_http_request_ct_, destroy_callback_, expected_http_request_ct_, http_request_handler_list_ (+6 more)
 
 ### Community 127 - "CefContextMenuParamsCToCpp"
@@ -1281,20 +1280,20 @@ Cohesion: 0.11
 Nodes (31): EditStateFlags, MediaStateFlags, MediaType, cef_context_menu_params_t, CefString, CefWrapperType, vector, CefContextMenuParamsCToCpp (+23 more)
 
 ### Community 128 - "NetNotifyTestHandler"
-Cohesion: 0.15
-Nodes (25): cef_cursor_handle_t, _cef_display_handler_t, base, cef_base_ref_counted_t, cef_browser_t, cef_cursor_type_t, cef_log_severity_t, cef_size_t (+17 more)
+Cohesion: 0.05
+Nodes (41): book, build, _buildFileTile, _buildPickerBreadcrumbs, _cacheDirPath, _checkConfigAndLoad, _clearSlot, createState (+33 more)
 
 ### Community 129 - "Rhs"
-Cohesion: 0.15
+Cohesion: 0.16
 Nodes (10): CurrentId(), CurrentRef(), PlatformThreadId, PlatformThreadRef, id_, PlatformThreadId, ScopedGdkThreadsEnter, locked_thread_ (+2 more)
 
 ### Community 130 - "CefMenuButtonDelegateCppToC"
-Cohesion: 0.07
-Nodes (22): CancelType, TestType, vector, MultiQueryManager, auto_complete_count_, finalized_, id_offset_, manual_complete_count_ (+14 more)
+Cohesion: 0.09
+Nodes (16): TestType, MultiQueryManager, auto_complete_count_, finalized_, id_offset_, manual_complete_count_, manual_total_, observer_set_ (+8 more)
 
 ### Community 131 - "CefResourceManager"
-Cohesion: 0.04
-Nodes (44): CefStreamResourceHandler, Cancel, GetResponseHeaders, header_map_, mime_type_, Open, Read, status_code_ (+36 more)
+Cohesion: 0.11
+Nodes (17): CefStreamResourceHandler, Cancel, GetResponseHeaders, header_map_, mime_type_, Open, Read, status_code_ (+9 more)
 
 ### Community 132 - "CefWindowDelegateCppToC"
 Cohesion: 0.12
@@ -1303,18 +1302,18 @@ window_delegate_accepts_first_mouse() (+34 more)
 
 ### Community 133 - "CefCommandLine"
 Cohesion: 0.06
-Nodes (38): CefCommandLine, AppendArgument, AppendSwitch, AppendSwitchWithValue, Copy, GetArguments, GetArgv, GetCommandLineString (+30 more)
+Nodes (38): CommandLineTest, IgnoreCase, IgnorePrefixes, Init, Manual, CefCommandLine, AppendArgument, AppendSwitch (+30 more)
 
 ### Community 134 - "WebviewApp"
 Cohesion: 0.09
-Nodes (36): CefBrowser, CefBrowserView, CefProcessId, CefRefPtr, CefString, CefV8Context, CefView, CefWindow (+28 more)
+Nodes (32): CefBrowser, CefBrowserView, CefRefPtr, CefString, CefV8Context, CefView, CefWindow, ProcessType (+24 more)
 
 ### Community 135 - "CookieAccessTestHandler"
 Cohesion: 0.05
-Nodes (38): NetNotifyTestType, cef_return_value_t, CefBrowser, CefProcessId, CefRefPtr, CefString, CompletionState, string (+30 more)
+Nodes (37): dart:math, calculateSectionTarget, clearSectionDeadline, DeadlineService, _getDeadlineKey, getMostUrgentActiveTarget, getSectionDeadline, _getStartDayCompletedKey (+29 more)
 
 ### Community 136 - "CefV8ContextCToCpp"
-Cohesion: 0.16
+Cohesion: 0.15
 Nodes (21): cef_v8context_t, CefBrowser, CefRefPtr, CefString, CefV8Context, CefWrapperType, CefCToCppRefCounted<CefV8ContextCToCpp, CefV8Context, cef_v8context_t>::
     UnwrapDerived(), CefV8Context::GetCurrentContext() (+13 more)
 
@@ -1331,7 +1330,7 @@ Nodes (40): cef_box_layout_t, CefBoxLayout, CefFillLayout, CefRefPtr, CefView, C
 
 ### Community 139 - "win32_window.cpp"
 Cohesion: 0.09
-Nodes (36): OnCreate, HWND, LPARAM, LRESULT, Point, RECT, Size, UINT (+28 more)
+Nodes (37): OnCreate, HWND, LPARAM, LRESULT, Point, RECT, Size, UINT (+29 more)
 
 ### Community 140 - "CefTaskManager"
 Cohesion: 0.06
@@ -1346,8 +1345,8 @@ Cohesion: 0.11
 Nodes (20): FlView, main(), GApplication, gboolean, gchar, GObject, GtkApplication, MyApplicationClass (+12 more)
 
 ### Community 143 - "CefResourceRequestHandlerCppToC"
-Cohesion: 0.05
-Nodes (40): database_service.dart, global_state.dart, bookmarksKey, completedKey, decodeBookmarks, LearningSync, _legacyCompletedKey, _legacyXpKey (+32 more)
+Cohesion: 0.03
+Nodes (58): database_service.dart, fb/fb_auth.dart, global_state.dart, learning_sync.dart, addXp, advancedModeNotifier, bookmarksNotifier, bumpBookmarks (+50 more)
 
 ### Community 144 - "CefWindow"
 Cohesion: 0.05
@@ -1362,9 +1361,8 @@ Cohesion: 0.07
 Nodes (42): CefShutdown(), cef_color_t, CefBrowserSettings, CefRefPtr, CefSettings, RootWindowManager, string, cef_color_t (+34 more)
 
 ### Community 147 - "CefCallbackCToCpp"
-Cohesion: 0.10
-Nodes (34): _cef_request_handler_t, base, _cef_select_client_certificate_callback_t, base, cef_base_ref_counted_t, CefSelectClientCertificateCallback, Select, CEF_CALLBACK
-client_get_request_handler() (+26 more)
+Cohesion: 0.21
+Nodes (20): cef_auth_callback_t, cef_browser_t, cef_errorcode_t, cef_frame_t, cef_request_t, cef_string_t, cef_termination_status_t, cef_window_open_disposition_t (+12 more)
 
 ### Community 148 - "CefXmlObject"
 Cohesion: 0.05
@@ -1372,15 +1370,15 @@ Nodes (43): CefXmlObject, AddChild, Append, attributes_, children_, Clear, Clear
 
 ### Community 149 - "panel_unittest.cc"
 Cohesion: 0.08
-Nodes (39): BoxLayoutSizeHierarchy(), BoxLayoutSizeHierarchyHorizontalCenter(), BoxLayoutSizeHierarchyHorizontalCenterCenter(), BoxLayoutSizeHierarchyHorizontalCenterCenterImpl(), BoxLayoutSizeHierarchyHorizontalCenterCenterWithDelegateImpl(), BoxLayoutSizeHierarchyHorizontalCenterImpl(), BoxLayoutSizeHierarchyHorizontalCenterWithDelegateImpl(), BoxLayoutSizeHierarchyHorizontalStretch() (+31 more)
+Nodes (37): BoxLayoutSizeHierarchy(), BoxLayoutSizeHierarchyHorizontalCenter(), BoxLayoutSizeHierarchyHorizontalCenterCenter(), BoxLayoutSizeHierarchyHorizontalCenterCenterImpl(), BoxLayoutSizeHierarchyHorizontalCenterCenterWithDelegateImpl(), BoxLayoutSizeHierarchyHorizontalCenterImpl(), BoxLayoutSizeHierarchyHorizontalCenterWithDelegateImpl(), BoxLayoutSizeHierarchyHorizontalStretch() (+29 more)
 
 ### Community 150 - "window_unittest.cc"
-Cohesion: 0.07
-Nodes (58): OverlayTestMode, CefWaitableEvent, IsSignaled, Reset, Signal, TimedWait, Wait, cef_show_state_t (+50 more)
+Cohesion: 0.08
+Nodes (51): OverlayTestMode, cef_show_state_t, CefRefPtr, CefView, CefWindow, Config, unique_ptr, CreateBoxLayout() (+43 more)
 
 ### Community 151 - "CefTranslatorTestScopedLibrary"
-Cohesion: 0.08
-Nodes (41): _cef_translator_test_scoped_library_child_t, base, _cef_translator_test_scoped_library_t, base, CefTranslatorTestScopedLibrary, GetValue, SetValue, CefTranslatorTestScopedLibraryChild (+33 more)
+Cohesion: 0.09
+Nodes (38): _cef_translator_test_scoped_library_child_t, base, _cef_translator_test_scoped_library_t, base, CefTranslatorTestScopedLibrary, Create, GetValue, SetValue (+30 more)
 
 ### Community 152 - "cef_resource_manager.cc"
 Cohesion: 0.09
@@ -1391,66 +1389,64 @@ Cohesion: 0.07
 Nodes (20): ConsoleMessage, CookieVector, OnceClosure, vector, CorsTestHandler, got_cleared_cookies_, got_stopped_server_, main_url_ (+12 more)
 
 ### Community 154 - "HandleExceptionsInMethodIfSupported"
-Cohesion: 0.02
-Nodes (102): dart:typed_data, io_stub.dart, fileImageProvider, _transparentPng, _actionCancelled, _actionLoadingText, _actionProgress, build (+94 more)
+Cohesion: 0.03
+Nodes (66): _actionCancelled, _actionLoadingText, _actionProgress, build, _buildContextActionItem, _buildEmptyState, _buildFolderGridItem, _buildFolderListItem (+58 more)
 
 ### Community 155 - "ReadHandlerTester"
 Cohesion: 0.10
 Nodes (21): CefRefPtr, CefStreamReader, string, TEST(), VerifyStreamReadBehavior(), VerifyStreamWriteBehavior(), WriteHandlerTester, flush_called_ (+13 more)
 
 ### Community 156 - "cef_callback_list.h"
-Cohesion: 0.05
-Nodes (36): Allocator, CallbackListBase<OnceCallbackList<Signature>>, CallbackListBase<RepeatingCallbackList<Signature>>, Callbacks, AutoReset, original_value_, scoped_variable_, T (+28 more)
+Cohesion: 0.06
+Nodes (31): Allocator, CallbackListBase<OnceCallbackList<Signature>>, CallbackListBase<RepeatingCallbackList<Signature>>, Callbacks, AutoReset, original_value_, scoped_variable_, T (+23 more)
 
 ### Community 157 - "BindStateBase"
 Cohesion: 0.10
-Nodes (29): atomic_bool, MakeUnboundRunType, BindOnce(), BindRepeating(), Functor, OnceCallback, RepeatingCallback, AdaptCallbackForRepeating() (+21 more)
+Nodes (26): atomic_bool, MakeUnboundRunType, BindOnce(), BindRepeating(), Functor, OnceCallback, RepeatingCallback, nullptr_t (+18 more)
 
 ### Community 158 - "CefV8StackFrame"
-Cohesion: 0.06
-Nodes (34): BiggestInt, D, ConvertibleToIntegerPrinter, DescribeImpl(), nullptr_t, Optional, ostream, pair (+26 more)
+Cohesion: 0.04
+Nodes (47): BiggestInt, D, Lhs, MatcheeStringType, ComparisonBase, rhs_, ConvertibleToIntegerPrinter, DescribeImpl() (+39 more)
 
 ### Community 159 - "TitleTestHandler"
-Cohesion: 0.06
-Nodes (40): TestSuite, E, TypeId, GetElementOr(), GetTestTypeId(), MakeAndRegisterTestInfo(), OnTestSuiteEnd(), OnTestSuiteStart() (+32 more)
+Cohesion: 0.07
+Nodes (36): EditType, IdMap, CalculateOptimalEdits(), E, u32string, u8string, GetElementOr(), InternalStrings (+28 more)
 
 ### Community 160 - "CefRefPtr"
-Cohesion: 0.08
-Nodes (41): SetParent, PluginRegistry, RegisterPlugins(), OnCreate, HWND, LPARAM, LRESULT, Point (+33 more)
+Cohesion: 0.09
+Nodes (38): OnCreate, HWND, LPARAM, LRESULT, Point, RECT, Size, UINT (+30 more)
 
 ### Community 161 - "CefCToCppRefCounted"
-Cohesion: 0.08
-Nodes (27): cef_auth_callback_t, CefString, CefWrapperType, CefAuthCallbackCToCpp, Cancel, Continue, CefCToCppRefCounted<CefAuthCallbackCToCpp,
-                    CefAuthCallback,
-                    cef_auth_callback_t>::UnwrapDerived(), cef_auth_callback_t (+19 more)
+Cohesion: 0.11
+Nodes (19): CefCToCppRefCounted, CefCToCppRefCounted<ClassName, BaseName, StructName>::Release(), CefCToCppRefCounted<ClassName, BaseName, StructName>::Unwrap(), CefCToCppRefCounted<ClassName, BaseName, StructName>::Wrap(), CefCToCppRefCounted<ClassName, BaseName, StructName>::WrapperStruct, struct_, type_, wrapper_ (+11 more)
 
 ### Community 162 - "CefServer"
-Cohesion: 0.08
-Nodes (30): IconType, _cef_media_sink_device_info_callback_t, base, CefMediaSink, GetDeviceInfo, GetIconType, GetId, GetName (+22 more)
+Cohesion: 0.12
+Nodes (20): IconType, _cef_media_sink_device_info_callback_t, base, CefMediaSinkDeviceInfoCallback, OnMediaSinkDeviceInfo, CefRefPtr, CefWrapperType, CEF_CALLBACK media_sink_device_info_callback_on_media_sink_device_info() (+12 more)
 
 ### Community 163 - "CefDictionaryValueCToCpp"
 Cohesion: 0.14
 Nodes (36): KeyList, CefRefPtr, CefString, CefValueType, CefDictionaryValue::Create(), CefDictionaryValueCToCpp, Clear, Copy (+28 more)
 
 ### Community 164 - "Resource"
-Cohesion: 0.10
-Nodes (15): CefRefPtr, CefByteReadHandler::CefByteReadHandler(), CefRefPtr, CefStreamReader, CefString, FileMap, unique_ptr, CefZipArchive::GetFile() (+7 more)
+Cohesion: 0.14
+Nodes (13): CefRefPtr, CefStreamReader, CefString, FileMap, unique_ptr, CefZipArchive::GetFile(), CefZipArchive::GetFiles(), CefZipArchive::HasFile() (+5 more)
 
 ### Community 165 - "cef_translator_test.h"
 Cohesion: 0.09
 Nodes (31): CefRefPtr, CefString, CefV8ValueList, CefJSBridge, CallCppFunction, EvaluateCallback, ExecuteJSCallbackFunc, GetNextReqID (+23 more)
 
 ### Community 166 - "AssertionResult"
-Cohesion: 0.14
-Nodes (16): BinaryValueABRCallback, value_, BrowserMessage, context_id, error_code, is_success, payload, request_id (+8 more)
+Cohesion: 0.08
+Nodes (26): CefBinaryBuffer, GetData, GetSize, BinaryValueABRCallback, value_, BrowserMessage, context_id, error_code (+18 more)
 
 ### Community 167 - "CefContextMenuParams"
 Cohesion: 0.12
 Nodes (19): BlockType, BoundArgsTuple, ExtractReturnType, IgnoreResultType, BindUnwrapTraits<Microsoft::WRL::ComPtr<T>>, ComPtr, CancellationQueryMode, Function (+11 more)
 
 ### Community 168 - "CefRefPtr"
-Cohesion: 0.12
-Nodes (13): Type, HttpServerResponse, content, content_type, error_message, extra_headers, response_code, type (+5 more)
+Cohesion: 0.09
+Nodes (22): CefRefPtr, CefString, CefURLRequest, ResponseCallback, Type, HttpServerResponse, content, content_type (+14 more)
 
 ### Community 169 - "CefURLRequestCToCpp"
 Cohesion: 0.08
@@ -1458,7 +1454,7 @@ Nodes (36): cef_auth_callback_t, cef_string_t, cef_urlrequest_client_t, cef_urlr
 urlrequest_client_get_auth_credentials() (+28 more)
 
 ### Community 170 - "cef_xml_object.cc"
-Cohesion: 0.09
+Cohesion: 0.08
 Nodes (28): AttributeMap, CefRefPtr, CefStreamReader, CefString, EncodingType, ObjectVector, CefXmlObject::AddChild(), CefXmlObject::CefXmlObject() (+20 more)
 
 ### Community 171 - "TEST"
@@ -1466,8 +1462,8 @@ Cohesion: 0.11
 Nodes (36): cef_cursor_type_t, CefBrowser, CefClient, CefCursorHandle, CefRefPtr, Delegate, DragOperation, DragOperationsMask (+28 more)
 
 ### Community 172 - "MatcherBase"
-Cohesion: 0.08
-Nodes (22): CefCookie, function, string, CefCookie, function, mutex, WebviewCookieVisitor, getVisitedCookies (+14 more)
+Cohesion: 0.15
+Nodes (13): CefCookie, function, string, CefCookie, function, mutex, WebviewCookieVisitor, getVisitedCookies (+5 more)
 
 ### Community 173 - "RequestTestHandler"
 Cohesion: 0.02
@@ -1475,11 +1471,11 @@ Nodes (84): CustomPainter, GlobalKey, Intent, any, benign, build, _buildApp, Flo
 
 ### Community 174 - "ViewsOverlayControls"
 Cohesion: 0.04
-Nodes (57): document_store_screen.dart, DocCategory, _autoFetchBooks, b2Obj, build, _buildListContent, _buildModeSelector, _buildModeTab (+49 more)
+Nodes (56): document_store_screen.dart, DocCategory, _autoFetchBooks, b2Obj, build, _buildListContent, _buildModeSelector, _buildModeTab (+48 more)
 
 ### Community 175 - "CefRequestHandlerCppToC"
-Cohesion: 0.03
-Nodes (65): Color, QuickReviewItem, _DownloadProgressDialog, _DocumentStorePickerDialog, _DownloadProgressDialog, DocumentStorePickerDialog, build, child (+57 more)
+Cohesion: 0.02
+Nodes (111): DesktopWebView, DocumentStorePickerDialog, _DownloadProgressDialog, LessonFormat, QuickReviewItem, _DownloadProgressDialog, _DownloadProgressDialogState, _addFormat (+103 more)
 
 ### Community 176 - "CefRefPtr"
 Cohesion: 0.12
@@ -1487,15 +1483,15 @@ Nodes (17): AlertRunDelayed, AlertRunImmediate, AlertSuppress, ConfirmRunDelayed
 
 ### Community 177 - "CefTestServerHandler"
 Cohesion: 0.07
-Nodes (20): AnyEq, AnyGe, AnyGt, AnyLe, AnyLt, AnyNe, ComparisonBase, rhs_ (+12 more)
+Nodes (18): AnyEq, AnyGe, AnyGt, AnyLe, AnyLt, AnyNe, EqMatcher, Ge() (+10 more)
 
 ### Community 178 - "CefPrintHandler"
 Cohesion: 0.16
 Nodes (4): CefClient, CefBrowser, CefProcessId, CefRefPtr
 
 ### Community 179 - "TestMenuButtonCustomPopupDelegate"
-Cohesion: 0.07
-Nodes (32): Callback, cef_return_value_t, CefBrowser, CefRefPtr, CefString, string, CreateContents(), CreateContentsResourceHandler() (+24 more)
+Cohesion: 0.08
+Nodes (34): Mode, OnceClosure, string, CreateContents(), CreateContentsResourceHandler(), CreateMessage(), EchoProvider, base_url_ (+26 more)
 
 ### Community 180 - "CefListValueCToCpp"
 Cohesion: 0.11
@@ -1503,30 +1499,28 @@ Nodes (37): cef_list_value_t, CefRefPtr, CefString, CefValueType, CefWrapperType
     UnwrapDerived(), CefListValue::Create(), CefListValueCToCpp (+29 more)
 
 ### Community 181 - "ClientAppBrowser"
-Cohesion: 0.07
-Nodes (28): ClientAppBrowser::Delegate, cef_preferences_type_t, CefClient, CefRawPtr, CefRefPtr, CefString, ClientBrowserDelegate, MediaAccessBrowserTest (+20 more)
+Cohesion: 0.08
+Nodes (27): ClientAppBrowser::Delegate, cef_preferences_type_t, CefClient, CefRawPtr, CefRefPtr, CefString, ClientBrowserDelegate, MediaAccessBrowserTest (+19 more)
 
 ### Community 182 - "message_router_unittest_utils.cc"
-Cohesion: 0.06
-Nodes (48): CefMessageRouterBrowserSide, AddHandler, CancelPending, Create, GetPendingCount, OnBeforeBrowse, OnBeforeClose, OnProcessMessageReceived (+40 more)
+Cohesion: 0.08
+Nodes (43): CefMessageRouterBrowserSide, AddHandler, CancelPending, Create, GetPendingCount, OnBeforeBrowse, OnBeforeClose, OnProcessMessageReceived (+35 more)
 
 ### Community 183 - "TEST"
-Cohesion: 0.08
-Nodes (25): _answersCtrl1, _answersCtrl2, build, _buildField, _canSubmit, _countSentences, _countWords, createState (+17 more)
+Cohesion: 0.04
+Nodes (49): _answersCtrl1, _answersCtrl2, build, _buildField, _canSubmit, _countSentences, _countWords, createState (+41 more)
 
 ### Community 184 - "CefImage"
-Cohesion: 0.12
-Nodes (17): CefImage, AddBitmap, AddJPEG, AddPNG, GetAsBitmap, GetAsJPEG, GetAsPNG, GetHeight (+9 more)
+Cohesion: 0.10
+Nodes (35): DisableGL, DragReset, EnableGL, GetDeviceScaleFactor, GetRootScreenRect, GetScreenInfo, GetScreenPoint, GetViewRect (+27 more)
 
 ### Community 185 - "RequestRunSettings"
-Cohesion: 0.11
-Nodes (11): CefRefPtr, CefString, CefURLRequest, ResponseCallback, EchoWebSocketRequestHandler, actual_message_ct_, expected_message_ct_, StaticHttpURLRequestClient (+3 more)
+Cohesion: 0.12
+Nodes (12): CefRefPtr, CefString, CefURLRequest, ResponseCallback, EchoWebSocketRequestHandler, actual_message_ct_, expected_message_ct_, StaticHttpURLRequestClient (+4 more)
 
 ### Community 186 - "CefClientCppToC"
-Cohesion: 0.05
-Nodes (48): cef_browser_t, cef_client_t, cef_process_id_t, CefClient, CefRefPtr, CefWrapperType, CEF_CALLBACK
-client_get_command_handler(), CEF_CALLBACK
-client_get_dialog_handler() (+40 more)
+Cohesion: 0.04
+Nodes (57): _cef_find_handler_t, base, cef_base_ref_counted_t, CefFindHandler, CefBrowser, CefRefPtr, cef_browser_t, cef_client_t (+49 more)
 
 ### Community 187 - "CefCppToCRefCounted"
 Cohesion: 0.14
@@ -1553,12 +1547,12 @@ Cohesion: 0.07
 Nodes (20): BrowserInvalidURL, ContextTestMode, GetTestCookieCallback, CefRequestContext, GetTestCookie(), RequestTestHandler, auth_credentials_ct_, context_mode_ (+12 more)
 
 ### Community 193 - "CefTranslatorTestRefPtrLibrary"
-Cohesion: 0.09
-Nodes (31): _cef_translator_test_ref_ptr_library_child_t, base, _cef_translator_test_ref_ptr_library_t, base, CefTranslatorTestRefPtrLibrary, Create, GetValue, SetValue (+23 more)
+Cohesion: 0.08
+Nodes (34): _cef_translator_test_ref_ptr_library_child_t, base, _cef_translator_test_ref_ptr_library_t, base, CefTranslatorTestRefPtrLibrary, Create, GetValue, SetValue (+26 more)
 
 ### Community 194 - "RoutingTestHandler"
 Cohesion: 0.08
-Nodes (21): CookieTestSchemeHandler, block_cookies_, cookies_, got_cookie1_, got_cookie2_, got_cookie3_, got_create_cookie_, got_load_end1_ (+13 more)
+Nodes (22): CefRequestContext, CookieTestSchemeHandler, block_cookies_, cookies_, got_cookie1_, got_cookie2_, got_cookie3_, got_create_cookie_ (+14 more)
 
 ### Community 195 - "WebviewCefPlugin"
 Cohesion: 0.07
@@ -1566,7 +1560,7 @@ Nodes (33): default_delete, MethodCall, GetCefKeyboardModifiers(), getCefKeyEven
 
 ### Community 196 - "OsrRenderer"
 Cohesion: 0.11
-Nodes (30): mat4x4_t, CefBrowser, CefRefPtr, PaintElementType, RectList, mat4x4_identity(), mat4x4_multiply(), mat4x4_ortho() (+22 more)
+Nodes (31): mat4x4_t, CefRect, CefBrowser, CefRefPtr, PaintElementType, RectList, mat4x4_identity(), mat4x4_multiply() (+23 more)
 
 ### Community 197 - "PERF_TEST_FUNC"
 Cohesion: 0.10
@@ -1581,44 +1575,44 @@ Cohesion: 0.08
 Nodes (35): BrowserWindow, browser_, BrowserWindow::BrowserWindow(), client_handler_, CreateBrowser, delegate_, GetBrowser, GetDeviceScaleFactor (+27 more)
 
 ### Community 200 - "TestWindowDelegate"
-Cohesion: 0.11
-Nodes (33): cef_show_state_t, CefRefPtr, CefView, CefWindow, Config, unique_ptr, CefRefPtr, CefWindow (+25 more)
+Cohesion: 0.22
+Nodes (18): cef_show_state_t, CefRefPtr, CefView, CefWindow, Config, unique_ptr, GetInitialBounds, GetInitialShowState (+10 more)
 
 ### Community 201 - "OnceCallback"
-Cohesion: 0.13
-Nodes (10): cef_return_value_t, CefBrowser, CefRefPtr, CefString, string, MediaAccessTestHandler, callback_, request_ (+2 more)
+Cohesion: 0.08
+Nodes (23): cef_return_value_t, CefBrowser, CefRefPtr, CefString, string, MediaAccessTestHandler, callback_, request_ (+15 more)
 
 ### Community 202 - "CefDOMNodeCToCpp"
 Cohesion: 0.12
 Nodes (33): FormControlType, AttributeMap, CefRefPtr, CefString, Type, CefDOMNodeCToCpp, GetAsMarkup, GetDocument (+25 more)
 
 ### Community 203 - "CefTaskRunner"
-Cohesion: 0.18
-Nodes (25): GetOnceForCurrentThread, GetOnceForThread, GetRepeatingForCurrentThread, GetRepeatingForThread, GetForThread, CefRefPtr, CefCreateClosureTask(), CefRefPtr (+17 more)
+Cohesion: 0.06
+Nodes (50): CreateFromBrowserFILEThread, CreateFromBrowserIOThread, CreateFromBrowserUIThread, CreateFromRenderThread, GetOnceForCurrentThread, GetOnceForThread, GetRepeatingForCurrentThread, GetRepeatingForThread (+42 more)
 
 ### Community 204 - "CefJSBridge"
 Cohesion: 0.05
-Nodes (37): CreateArray, CreateArrayBufferWithCopy, CreateDate, CreateDouble, CreateNull, CreateUndefined, CefBrowser, CefRefPtr (+29 more)
+Nodes (36): CreateArray, CreateDate, CreateDouble, CreateNull, CreateUndefined, CefBrowser, CefRefPtr, CefString (+28 more)
 
 ### Community 205 - "CefCompletionCallback"
-Cohesion: 0.10
-Nodes (20): AbstractSocketWriter, unique_ptr, Passed, Wait, FormatDeathTestOutput(), FuchsiaDeathTest, captured_stderr_, child_process_ (+12 more)
+Cohesion: 0.13
+Nodes (31): cef_paint_element_type_t, cef_text_input_mode_t, _cef_render_handler_t, base, cef_base_ref_counted_t, cef_browser_t, cef_drag_operations_mask_t, cef_horizontal_alignment_t (+23 more)
 
 ### Community 206 - "T"
-Cohesion: 0.07
-Nodes (31): decay_t, Deleter, T, unique_ptr, IgnoreResult(), Owned(), OwnedRef(), Passed() (+23 more)
+Cohesion: 0.09
+Nodes (21): BindUnwrapTraits<cef_internal::OwnedWrapper<T, Deleter>>, BindUnwrapTraits<cef_internal::PassedWrapper<T>>, BindUnwrapTraits<cef_internal::RetainedRefWrapper<T>>, BindUnwrapTraits<cef_internal::UnretainedWrapper<T>>, Deleter, T, unique_ptr, IgnoreResultHelper (+13 more)
 
 ### Community 207 - "Create"
-Cohesion: 0.08
-Nodes (20): CefRequestContext, CookieRestartTestHandler, before_resource_load_ct_, can_save_cookie_ct_, can_send_cookie_ct_, context_, cookie_js1_ct_, cookie_js2_ct_ (+12 more)
+Cohesion: 0.09
+Nodes (19): CookieRestartTestHandler, before_resource_load_ct_, can_save_cookie_ct_, can_send_cookie_ct_, context_, cookie_js1_ct_, cookie_js2_ct_, cookie_manager_ (+11 more)
 
 ### Community 208 - "SimpleHandler"
-Cohesion: 0.14
-Nodes (9): CefBrowserProcessHandler, CefClient, CefRefPtr, CefRequestContextHandler, CefString, CefRefPtr, SimpleApp, OnContextInitialized (+1 more)
+Cohesion: 0.12
+Nodes (10): CefBrowserProcessHandler, cef_preferences_type_t, CefClient, CefRawPtr, CefRefPtr, CefRequestContextHandler, CefString, CefRefPtr (+2 more)
 
 ### Community 209 - "ImageCache"
-Cohesion: 0.23
-Nodes (15): ImageContent, ImageInfo, ImageRepSet, ImageType, CefRefPtr, string, CreateImage, GetCachedImage (+7 more)
+Cohesion: 0.10
+Nodes (32): ImageContent, ImageContentSet, ImageInfo, ImageInfoSet, ImageMap, ImageRepSet, ImageType, LoadImagesCallback (+24 more)
 
 ### Community 210 - "CefXmlReaderCToCpp"
 Cohesion: 0.16
@@ -1637,7 +1631,7 @@ Cohesion: 0.08
 Nodes (30): cef_window_handle_t, _cef_life_span_handler_t, base, cef_base_ref_counted_t, _cef_window_info_t, bounds, external_begin_frame_enabled, parent_window (+22 more)
 
 ### Community 214 - "cef_callback_helpers.h"
-Cohesion: 0.08
+Cohesion: 0.09
 Nodes (27): CefContextMenuHandler, CefContextMenuParams, GetDictionarySuggestions, GetEditStateFlags, GetFrameCharset, GetFrameUrl, GetLinkUrl, GetMediaStateFlags (+19 more)
 
 ### Community 215 - "CefXmlReader"
@@ -1645,20 +1639,20 @@ Cohesion: 0.08
 Nodes (26): CefXmlReader, Close, GetAttribute, GetAttributeCount, GetBaseURI, GetDepth, GetError, GetInnerXml (+18 more)
 
 ### Community 216 - "cef_export.h"
-Cohesion: 0.11
-Nodes (11): FrameStatusMapVector, string, TestMode, CrossOriginOrderSubTestHandler, temp_frame_detached_ct_, NavigateOrderMainTestHandler, cross_origin_, current_nav_ct_ (+3 more)
+Cohesion: 0.09
+Nodes (12): FrameStatusMapVector, string, TestMode, TransitionType, CrossOriginOrderSubTestHandler, temp_frame_detached_ct_, NavigateOrderMainTestHandler, cross_origin_ (+4 more)
 
 ### Community 217 - "CefBrowserProcessHandler"
 Cohesion: 0.16
 Nodes (16): _cef_browser_process_handler_t, base, cef_base_ref_counted_t, cef_preferences_type_t, cef_string_t, CefRefPtr, CefWrapperType, CEF_CALLBACK browser_process_handler_get_default_client() (+8 more)
 
 ### Community 218 - "CefTranslatorTestScopedClient"
-Cohesion: 0.10
-Nodes (29): _cef_translator_test_scoped_client_child_t, base, _cef_translator_test_scoped_client_t, base, cef_base_scoped_t, CefTranslatorTestScopedClient, GetValue, CefTranslatorTestScopedClientChild (+21 more)
+Cohesion: 0.08
+Nodes (33): _cef_translator_test_scoped_client_child_t, base, _cef_translator_test_scoped_client_t, base, cef_base_scoped_t, CefTranslatorTestScopedClient, GetValue, CefTranslatorTestScopedClientChild (+25 more)
 
 ### Community 219 - "CefX509Certificate"
-Cohesion: 0.07
-Nodes (23): A, B, DefaultParamName(), Variant, operator()(), ParameterizedTestFactory, parameter_, Test (+15 more)
+Cohesion: 0.13
+Nodes (11): string, vector, MakeTestQueries(), MultiQueryMultiFrameTestHandler, cancel_url_, cancel_with_subnav_, manager_map_, synchronous_ (+3 more)
 
 ### Community 220 - "CefTextfield"
 Cohesion: 0.06
@@ -1677,28 +1671,28 @@ Cohesion: 0.06
 Nodes (32): cef_log_items_t, _cef_settings_t, accept_language_list, background_color, browser_subprocess_path, cache_path, chrome_app_icon_id, chrome_policy_id (+24 more)
 
 ### Community 224 - "CefResponseCToCpp"
-Cohesion: 0.14
+Cohesion: 0.13
 Nodes (27): cef_errorcode_t, cef_response_t, CefRefPtr, CefString, CefWrapperType, HeaderMap, CefCToCppRefCounted<CefResponseCToCpp, CefResponse, cef_response_t>::
     UnwrapDerived(), CefResponse::Create() (+19 more)
 
 ### Community 225 - "ThreadTest"
-Cohesion: 0.06
-Nodes (34): _addSection, _addUnit, _bookIndices, build, _buildEditorRow, _commitSplits, createState, dispose (+26 more)
+Cohesion: 0.14
+Nodes (30): GdkEventMotion, GdkEventScroll, GdkEventTouch, GtkDragResult, GtkSelectionData, ClickEvent, DragBegin, DragDataGet (+22 more)
 
 ### Community 226 - "CefPrintSettingsCToCpp"
-Cohesion: 0.12
+Cohesion: 0.11
 Nodes (30): DuplexMode, CefRefPtr, CefString, ColorModel, CefPrintSettings::Create(), CefPrintSettingsCToCpp, GetColorModel, GetCopies (+22 more)
 
 ### Community 227 - "cef_types.h"
-Cohesion: 0.18
-Nodes (15): AddPopOutAccelerator(), CefBrowserSettings, CefBrowserView, CefClient, CefRefPtr, CefRequestContext, CefWindow, string (+7 more)
+Cohesion: 0.16
+Nodes (17): AddPopOutAccelerator(), CefBrowser, CefBrowserSettings, CefBrowserView, CefClient, CefRefPtr, CefRequestContext, CefWindow (+9 more)
 
 ### Community 228 - "CefNavigationEntry"
 Cohesion: 0.08
-Nodes (35): Message, ToUpper(), AppendUserMessage(), AssertHelper::AssertHelper(), AssertHelper::operator=(), BoolFromGTestEnv(), T, Type (+27 more)
+Nodes (12): ManagerList, ManagerMap, ObserverSet, MultiQueryManagerMap, all_managers_, finalized_, manager_map_, manual_complete_count_ (+4 more)
 
 ### Community 229 - "CreateRenderDelegates"
-Cohesion: 0.11
+Cohesion: 0.08
 Nodes (25): BaseName, CefCToCppRefCounted<ClassName, BaseName, StructName>::GetWrapperStruct(), CefCToCppScoped, CefCToCppScoped<ClassName, BaseName, StructName>::GetWrapperStruct(), CefCToCppScoped<ClassName, BaseName, StructName>::operator delete(), CefCToCppScoped<ClassName, BaseName, StructName>::UnwrapOwn(), CefCToCppScoped<ClassName, BaseName, StructName>::UnwrapRaw(), CefCToCppScoped<ClassName, BaseName, StructName>::Wrap() (+17 more)
 
 ### Community 230 - "CefCommandLineCToCpp"
@@ -1706,12 +1700,12 @@ Cohesion: 0.14
 Nodes (29): ArgumentList, CefRefPtr, CefString, vector, CefCommandLine::CreateCommandLine(), CefCommandLine::GetGlobalCommandLine(), CefCommandLineCToCpp, AppendArgument (+21 more)
 
 ### Community 231 - "CefThread"
-Cohesion: 0.18
-Nodes (13): cef_com_init_mode_t, cef_message_loop_type_t, cef_thread_priority_t, cef_platform_thread_id_t, CefRefPtr, CefString, CefThread::CreateThread(), CefThreadCToCpp (+5 more)
+Cohesion: 0.08
+Nodes (29): AutomaticReset, cef_com_init_mode_t, cef_message_loop_type_t, cef_thread_priority_t, ManualReset, CefThread, CreateThread, GetPlatformThreadId (+21 more)
 
 ### Community 232 - "_cef_key_event_t"
-Cohesion: 0.09
-Nodes (25): cef_event_handle_t, cef_key_event_type_t, CefKeyboardHandler, CefBrowser, CefEventHandle, CefRefPtr, _cef_key_event_t, character (+17 more)
+Cohesion: 0.13
+Nodes (16): cef_event_handle_t, cef_key_event_type_t, _cef_key_event_t, character, focus_on_editable_field, is_system_key, modifiers, native_key_code (+8 more)
 
 ### Community 233 - "webview_cef_plugin.cc"
 Cohesion: 0.08
@@ -1722,20 +1716,20 @@ Cohesion: 0.06
 Nodes (28): OtherServerType, cef_errorcode_t, cef_test_cert_type_t, CefBrowser, CefRefPtr, CefRequestContext, CefString, ErrorCode (+20 more)
 
 ### Community 235 - "CefExtension"
-Cohesion: 0.13
-Nodes (19): CefExtension, GetHandler, GetIdentifier, GetLoaderContext, GetManifest, GetPath, IsLoaded, IsSame (+11 more)
+Cohesion: 0.11
+Nodes (21): CefExtension, GetHandler, GetIdentifier, GetLoaderContext, GetManifest, GetPath, IsLoaded, IsSame (+13 more)
 
 ### Community 236 - "WindowTestRunner"
 Cohesion: 0.14
 Nodes (26): OnSetFullscreen, CefBrowser, CefRefPtr, optional, CefBrowser, CefRefPtr, GtkWindow, GetWindow() (+18 more)
 
 ### Community 237 - "ViewsOverlayBrowser"
-Cohesion: 0.08
-Nodes (30): cef_runtime_style_t, CefBrowser, CefView, vector, ViewsWindow, CefBrowserView, CefRefPtr, CefWindow (+22 more)
+Cohesion: 0.09
+Nodes (28): cef_runtime_style_t, CefView, vector, ViewsWindow, CefBrowserView, CefRefPtr, CefWindow, ViewsOverlayBrowser (+20 more)
 
 ### Community 238 - "ThresholdTestHandler"
-Cohesion: 0.06
-Nodes (40): _cef_resource_handler_t, base, _cef_resource_read_callback_t, base, _cef_resource_skip_callback_t, base, cef_base_ref_counted_t, _cef_callback_t (+32 more)
+Cohesion: 0.10
+Nodes (17): _cef_resource_handler_t, base, _cef_resource_read_callback_t, base, _cef_resource_skip_callback_t, base, cef_base_ref_counted_t, CEF_CALLBACK resource_handler_read() (+9 more)
 
 ### Community 239 - "CefBrowserViewDelegateCppToC"
 Cohesion: 0.15
@@ -1743,14 +1737,14 @@ Nodes (28): cef_chrome_toolbar_type_t, cef_browser_t, cef_browser_view_t, cef_ge
 
 ### Community 240 - "MainMessageLoopExternalPumpLinux"
 Cohesion: 0.09
-Nodes (32): GPollFD, GSource, doMessageLoopWork(), CefDoMessageLoopWork(), gboolean, gint, GMainContext, gpointer (+24 more)
+Nodes (31): GPollFD, GSource, doMessageLoopWork(), CefDoMessageLoopWork(), gboolean, gint, GMainContext, gpointer (+23 more)
 
 ### Community 241 - "TestServerObserver"
-Cohesion: 0.07
-Nodes (33): AutomaticReset, HelperMultipleHttp, HelperMultipleHttps, HelperSingleHttp, HelperSingleHttps, ManualReset, CreateWaitableEvent, TestHandler::CompletionState::CompletionState() (+25 more)
+Cohesion: 0.09
+Nodes (27): HelperMultipleHttp, HelperMultipleHttps, HelperSingleHttp, HelperSingleHttps, SetTestTimeout, OnceClosure, string, CreateObserverOnUIThread() (+19 more)
 
 ### Community 242 - "my_application.cc"
-Cohesion: 0.09
+Cohesion: 0.08
 Nodes (24): CefServer, CloseConnection, CreateServer, GetAddress, GetTaskRunner, HasConnection, IsRunning, IsValidConnection (+16 more)
 
 ### Community 243 - "CefDisplayHandler"
@@ -1774,102 +1768,100 @@ Cohesion: 0.13
 Nodes (13): CefBrowser, CefMenuModel, CefRefPtr, Mode, string, PdfViewerTestHandler, got_context_menu_dismissed_, got_on_load_end_html_ (+5 more)
 
 ### Community 248 - "ArchiveProvider"
-Cohesion: 0.08
-Nodes (23): GeneratorCreationFunc, CanonicalizeForStdLibVersioning(), Close(), FormatForComparison, FormatForComparison<ToPrint[N], OtherOperand>, GenerateNames(), GenerateNamesRecursively(), GetName() (+15 more)
+Cohesion: 0.09
+Nodes (21): CanonicalizeForStdLibVersioning(), Close(), FormatForComparison, FormatForComparison<ToPrint[N], OtherOperand>, GenerateNames(), GenerateNamesRecursively(), GetName(), GetTypeName() (+13 more)
 
 ### Community 249 - "cef_zip_archive.cc"
 Cohesion: 0.03
-Nodes (46): map, vector, string, list, CefRequestContextHandler, CefSchemeHandlerFactory, CefDeleteOnFileBackgroundThread, CefDeleteOnFileUserBlockingThread (+38 more)
+Nodes (50): NavAction, map, string, DeletePointer(), DoNothing, T, IsBaseCallbackImpl, IsBaseCallbackImpl<OnceCallback<R(Args...)>> (+42 more)
 
 ### Community 250 - "DownloadTestHandler"
 Cohesion: 0.08
-Nodes (26): CefRequestContext, OnceClosure, string, TestMode, TestRequestContextMode, DownloadTestHandler, delay_callback_, destroyed_ (+18 more)
+Nodes (29): CefBrowser, CefRefPtr, CefRequestContext, CefString, OnceClosure, string, TestMode, TestRequestContextMode (+21 more)
 
 ### Community 251 - "RoutingTestHandler"
 Cohesion: 0.15
 Nodes (10): Callback, CefBrowser, CefRefPtr, CefString, ReadTestHandler, expected_result_, got_on_loading_state_change_done_, got_on_query_ (+2 more)
 
 ### Community 252 - "CefAudioHandler"
-Cohesion: 0.29
-Nodes (3): CefBrowser, CefProcessId, CefRefPtr
+Cohesion: 0.12
+Nodes (12): OnWebKitInitialized, CefRegisterExtension(), CefBrowser, CefProcessId, CefRefPtr, CefV8Context, V8TestHandler, got_message_ (+4 more)
 
 ### Community 253 - "ResponseFilterTestHandler"
-Cohesion: 0.10
-Nodes (20): ClientAppRenderer::CreateDelegates(), CreateRenderDelegates(), DelegateSet, CreateFrameRendererTests(), DelegateSet, CreateMessageRouterRendererTests(), DelegateSet, CreateNavigationRendererTests() (+12 more)
+Cohesion: 0.07
+Nodes (31): DelegateSet, ClientAppBrowser::CreateDelegates(), ClientAppRenderer::CreateDelegates(), CreateBrowserDelegates(), CreateRenderDelegates(), DelegateSet, CreateCorsBrowserTests(), DelegateSet (+23 more)
 
 ### Community 254 - "TestDOMVisitor"
-Cohesion: 0.13
-Nodes (14): DOMTestType, CefBrowser, CefProcessId, CefRefPtr, DelegateSet, CreateDOMRendererTests(), DOMRendererTest, TestDOMHandler (+6 more)
+Cohesion: 0.16
+Nodes (11): DOMTestType, CefBrowser, CefProcessId, CefRefPtr, TestDOMHandler, got_message_, got_success_, test_type_ (+3 more)
 
 ### Community 255 - "MultiQueryManagerMap"
 Cohesion: 0.16
 Nodes (19): _cef_translator_test_scoped_library_child_child_t, base, CefTranslatorTestScopedLibraryChildChild, Create, GetOtherOtherValue, SetOtherOtherValue, CefOwnPtr, CefRawPtr (+11 more)
 
 ### Community 256 - "Manager"
-Cohesion: 0.10
-Nodes (33): ObserverList, CefRefPtr, DoneCallback, ResponseCallback, string, DoneCallback, string, unique_ptr (+25 more)
+Cohesion: 0.09
+Nodes (36): ObserverList, OnceClosure, CefRefPtr, DoneCallback, ResponseCallback, string, DoneCallback, string (+28 more)
 
 ### Community 257 - "CefDisplayHandlerCppToC"
 Cohesion: 0.06
-Nodes (27): ConnectionIdSet, HttpRequestHandlerList, OnceClosure, TestServerHandler, actual_connection_ct_, actual_http_request_ct_, actual_ws_connected_ct_, actual_ws_message_ct_ (+19 more)
+Nodes (27): ConnectionIdSet, HttpRequestHandlerList, HttpRequestHandler, OnceClosure, TestServerHandler, actual_connection_ct_, actual_http_request_ct_, actual_ws_connected_ct_ (+19 more)
 
 ### Community 258 - "CefDragData"
 Cohesion: 0.07
 Nodes (29): CefDragData, AddFile, ClearFilenames, Clone, Create, GetFileContents, GetFileName, GetFileNames (+21 more)
 
 ### Community 259 - "CefProcessMessage"
-Cohesion: 0.18
-Nodes (12): Callback, CefBrowser, CefRefPtr, CefString, optional, string, unique_ptr, vector (+4 more)
+Cohesion: 0.16
+Nodes (14): Callback, CefBrowser, CefRefPtr, CefString, MessageHandlerSet, optional, string, unique_ptr (+6 more)
 
 ### Community 260 - "TestServerHandler"
 Cohesion: 0.22
 Nodes (9): BrowserMessage, duration, start_time, test_id, Duration, TimePoint, RendererMessage, start_time (+1 more)
 
 ### Community 261 - "WebUITestHandler"
-Cohesion: 0.10
-Nodes (28): BrowserList, CefClient, CefQuitMessageLoop(), CefClient, GetDefaultClient, CefBrowser, CefRefPtr, CefString (+20 more)
+Cohesion: 0.11
+Nodes (25): BrowserList, CefClient, CefClient, GetDefaultClient, CefBrowser, CefRefPtr, CefString, ErrorCode (+17 more)
 
 ### Community 262 - "TEST"
-Cohesion: 0.06
-Nodes (32): BrowseAllow, BrowseDeny, CancelAfterCommit, CancelBeforeCommit, ExtraInfo, History, HistoryDynamicIFrames, LoadCrossOriginCtrlLeftClick (+24 more)
+Cohesion: 0.07
+Nodes (30): BrowseAllow, BrowseDeny, CancelAfterCommit, CancelBeforeCommit, ExtraInfo, History, HistoryDynamicIFrames, LoadCrossOriginCtrlLeftClick (+22 more)
 
 ### Community 263 - "CefSharedProcessMessageBuilder"
-Cohesion: 0.19
-Nodes (19): cef_alpha_type_t, cef_color_type_t, CefRefPtr, CefImage::CreateImage(), CefImageCToCpp, AddBitmap, AddJPEG, AddPNG (+11 more)
+Cohesion: 0.14
+Nodes (22): cef_alpha_type_t, cef_color_type_t, cef_image_t, CefRefPtr, CefWrapperType, CefCToCppRefCounted<CefImageCToCpp, CefImage, cef_image_t>::UnwrapDerived(), CefImage::CreateImage(), CefImageCToCpp (+14 more)
 
 ### Community 264 - "ChildPanelDelegate"
-Cohesion: 0.14
-Nodes (17): CefSchemeRegistrar, AddCustomScheme, CefRawPtr, ClientApp::RegisterCustomSchemes(), CefRawPtr, RegisterCustomSchemes(), CefRawPtr, ClientApp::RegisterCustomSchemes() (+9 more)
+Cohesion: 0.12
+Nodes (18): CefRawPtr, CefSchemeRegistrar, AddCustomScheme, CefRawPtr, ClientApp::RegisterCustomSchemes(), CefRawPtr, RegisterCustomSchemes(), CefRawPtr (+10 more)
 
 ### Community 265 - "cef_platform_thread.h"
-Cohesion: 0.31
-Nodes (5): T, has_valid_size(), HasValidSize, HasValidSize<T, decltype(void(T::base.size))>, HasValidSize<
-    T,
-    typename std::enable_if_t<std::is_same<decltype(T::size), size_t>::value>>
+Cohesion: 0.12
+Nodes (17): _cef_cookie_access_filter_t, base, cef_base_ref_counted_t, cef_browser_t, cef_frame_t, cef_request_t, CefRefPtr, CefWrapperType (+9 more)
 
 ### Community 266 - "ResponseFilterTestHandler"
-Cohesion: 0.04
-Nodes (52): ClientAppRenderer::Delegate, Copy, CefProcessMessage, Copy, Create, GetArgumentList, GetName, GetSharedMemoryRegion (+44 more)
+Cohesion: 0.03
+Nodes (83): ClientAppRenderer::Delegate, Copy, Delegate, CefProcessId, OnFocusedNodeChanged, OnProcessMessageReceived, CefProcessMessage, Copy (+75 more)
 
 ### Community 267 - "browser_window_std_gtk.cc"
 Cohesion: 0.13
-Nodes (27): _XDisplay, set_xdisplay, BrowserWindowStdGtk, BrowserWindowStdGtk::BrowserWindowStdGtk(), CreateBrowser, GetPopupConfig, GetWindowHandle, Hide (+19 more)
+Nodes (26): _XDisplay, BrowserWindowStdGtk, BrowserWindowStdGtk::BrowserWindowStdGtk(), CreateBrowser, GetPopupConfig, GetWindowHandle, Hide, set_xdisplay (+18 more)
 
 ### Community 268 - "ServerHandler"
-Cohesion: 0.17
-Nodes (11): CefBinaryBuffer, GetData, GetSize, Callback, CefBrowser, CefRefPtr, CefString, RequestType (+3 more)
+Cohesion: 0.23
+Nodes (8): Callback, CefBrowser, CefRefPtr, CefString, RequestType, TransitionType, OnQueryImpl(), AssertMainBrowser
 
 ### Community 269 - "FrameStatus"
-Cohesion: 0.06
-Nodes (29): DateTime?, ActiveRequestInfo, activeRequests, AiEstimator, _baseOverheads, defaultBaseOverhead, defaultRatePer1000Chars, estimatedDuration (+21 more)
+Cohesion: 0.11
+Nodes (17): DateTime?, ActiveRequestInfo, activeRequests, AiEstimator, _baseOverheads, defaultBaseOverhead, defaultRatePer1000Chars, estimatedDuration (+9 more)
 
 ### Community 270 - "CefRefPtr"
-Cohesion: 0.16
-Nodes (20): Changed, CefPanel, vector, ChildAdd(), ChildAddAt(), ChildAddRemoveMultipleImpl(), ChildAddRemoveSingleImpl(), ChildOrderImpl() (+12 more)
+Cohesion: 0.14
+Nodes (22): Changed, CefPanel, CefRefPtr, CefView, vector, ChildAdd(), ChildAddAt(), ChildAddRemoveMultipleImpl() (+14 more)
 
 ### Community 271 - "CefDisplayHandlerCppToC"
-Cohesion: 0.10
-Nodes (19): _cef_translator_test_ref_ptr_client_child_t, base, _cef_translator_test_ref_ptr_client_t, base, _cef_translator_test_t, base, cef_base_ref_counted_t, CefRefPtr (+11 more)
+Cohesion: 0.07
+Nodes (25): _cef_translator_test_ref_ptr_client_child_t, base, _cef_translator_test_ref_ptr_client_t, base, _cef_translator_test_t, base, cef_base_ref_counted_t, CefTranslatorTestRefPtrClientChild (+17 more)
 
 ### Community 272 - "RefCountedBase"
 Cohesion: 0.09
@@ -1880,10 +1872,8 @@ Cohesion: 0.12
 Nodes (10): AudioCloseBrowserTest, AudioOutputTest, AudioOutputTestHandler, AudioTogglePlaybackTest, start_count_, stop_count_, DelegateSet, string (+2 more)
 
 ### Community 274 - "cef_stream.h"
-Cohesion: 0.17
-Nodes (13): cef_channel_layout_t, _cef_audio_parameters_t, channel_layout, frames_per_buffer, sample_rate, cef_string_t, CEF_CALLBACK
-audio_handler_get_audio_parameters(), CEF_CALLBACK
-audio_handler_on_audio_stream_error() (+5 more)
+Cohesion: 0.13
+Nodes (17): cef_channel_layout_t, _cef_audio_parameters_t, channel_layout, frames_per_buffer, sample_rate, cef_audio_handler_t, cef_string_t, CefRefPtr (+9 more)
 
 ### Community 275 - "CefX509CertPrincipal"
 Cohesion: 0.16
@@ -1900,23 +1890,23 @@ Nodes (12): cef_runtime_style_t, cef_show_state_t, CefBrowserView, CefRefPtr, Ce
 
 ### Community 278 - "MainContext"
 Cohesion: 0.07
-Nodes (40): GetNextRandomSeed(), GetRandomSeedFromFlag(), GetTimeInMillis(), OnTestCaseEnd(), OnTestCaseStart(), UponLeavingGTest, ScopedFakeTestPartResultReporter::ReportTestPartResult(), Test::Run() (+32 more)
+Nodes (37): Container, Functor, DefaultGlobalTestPartResultReporter, ReportTestPartResult, unit_test_, ForEach(), GetNextRandomSeed(), GetRandomSeedFromFlag() (+29 more)
 
 ### Community 279 - "WebSocketTestHandler"
-Cohesion: 0.14
-Nodes (18): _cef_resource_bundle_t, base, cef_base_ref_counted_t, CefResourceBundle, GetDataResource, GetDataResourceForScale, GetGlobal, GetLocalizedString (+10 more)
+Cohesion: 0.17
+Nodes (15): CefResourceBundle, GetDataResource, GetDataResourceForScale, GetGlobal, GetLocalizedString, CefRefPtr, CefString, CefWrapperType (+7 more)
 
 ### Community 280 - "RequestClient"
 Cohesion: 0.07
 Nodes (38): _cef_v8stack_frame_t, base, _cef_v8stack_trace_t, base, CefV8StackFrame, GetColumn, GetFunctionName, GetLineNumber (+30 more)
 
 ### Community 281 - "CefPrintHandlerCppToC"
-Cohesion: 0.19
-Nodes (23): ExecMode, HandlerType, string, GetDefaultSuccessMsgHtml(), GetExecMainHtml(), GetFailureMsgJS(), GetFetchExecJS(), GetIframeMainHtml() (+15 more)
+Cohesion: 0.15
+Nodes (31): ExecMode, HandlerType, string, CookieResource, expect_cookie, GetDefaultSuccessMsgHtml(), GetExecMainHtml(), GetFailureMsgJS() (+23 more)
 
 ### Community 282 - "CefTranslatorTestRefPtrClientChildCppToC"
 Cohesion: 0.03
-Nodes (73): dart:html, dart:ui_web, desktop_webview_io.dart, DesktopWebView, build, createState, DesktopWebView, desktopWebViewEnsureInitialized (+65 more)
+Nodes (67): bool get, desktop_webview_io.dart, fd_backend.dart, ../../firebase_options.dart, android, DefaultFirebaseOptions, ios, linuxApiKey (+59 more)
 
 ### Community 283 - "CefPrintSettings"
 Cohesion: 0.08
@@ -1931,31 +1921,31 @@ Cohesion: 0.16
 Nodes (15): CefCppToCScoped, CEF_CALLBACK, kWrapperType, owned_, UnwrapDerivedOwn, UnwrapDerivedRaw, wrapper_struct_, BaseName (+7 more)
 
 ### Community 286 - "CefOverlayControllerCToCpp"
-Cohesion: 0.05
-Nodes (55): cef_insets_t, _cef_overlay_controller_t, base, cef_base_ref_counted_t, CefInsets, CefOverlayController, Destroy, GetBounds (+47 more)
+Cohesion: 0.14
+Nodes (24): cef_docking_mode_t, CefRefPtr, CefView, CefWindow, CefOverlayControllerCToCpp, Destroy, GetBounds, GetBoundsInScreen (+16 more)
 
 ### Community 287 - "MediaAccessTestHandler"
 Cohesion: 0.07
-Nodes (34): _cef_media_access_callback_t, base, _cef_permission_handler_t, base, _cef_permission_prompt_callback_t, base, cef_base_ref_counted_t, CefMediaAccessCallback (+26 more)
+Nodes (33): _cef_media_access_callback_t, base, _cef_permission_handler_t, base, _cef_permission_prompt_callback_t, base, cef_base_ref_counted_t, CefMediaAccessCallback (+25 more)
 
 ### Community 288 - "ClientAppRenderer"
-Cohesion: 0.06
-Nodes (34): cef_scale_factor_t, _cef_app_t, base, cef_base_ref_counted_t, CefApp, CefRawPtr, CefRefPtr, CefString (+26 more)
+Cohesion: 0.08
+Nodes (26): initCEFProcesses(), _cef_app_t, base, cef_base_ref_counted_t, CefApp, CefRefPtr, CefString, CefMainArgs (+18 more)
 
 ### Community 289 - "CookieTestSchemeHandler"
 Cohesion: 0.09
 Nodes (15): RequestRunnerMap, UIThreadHelper, HttpTestRunner, destroy_event_, got_all_requests_, got_server_destroyed_, handler_, https_server_ (+7 more)
 
 ### Community 290 - "CefRefPtr"
-Cohesion: 0.14
-Nodes (12): CefBrowser, CefRefPtr, CefString, FileDialogMode, TestConfig, vector, DialogTestHandler, got_onfiledialog_ct_ (+4 more)
+Cohesion: 0.07
+Nodes (28): CefFileDialogCallback, Cancel, Continue, CefBrowser, CefRefPtr, CefString, FileDialogMode, vector (+20 more)
 
 ### Community 291 - "ServerHandler"
 Cohesion: 0.18
 Nodes (10): const_iterator, Iter, _Element, ArrayAwareFind(), ArrayEq(), CopyArray(), U, NativeArray (+2 more)
 
 ### Community 292 - "CefDownloadItemCToCpp"
-Cohesion: 0.17
+Cohesion: 0.16
 Nodes (21): cef_download_interrupt_reason_t, CefString, CefDownloadItemCToCpp, GetContentDisposition, GetCurrentSpeed, GetFullPath, GetId, GetInterruptReason (+13 more)
 
 ### Community 293 - "CefDevToolsMessageObserver"
@@ -1963,8 +1953,8 @@ Cohesion: 0.14
 Nodes (18): _cef_dev_tools_message_observer_t, base, cef_base_ref_counted_t, CefBrowser, CefDevToolsMessageObserver, CefRefPtr, CefString, cef_browser_t (+10 more)
 
 ### Community 294 - "CefV8Exception"
-Cohesion: 0.06
-Nodes (36): _cef_v8array_buffer_release_callback_t, base, _cef_v8context_t, base, _cef_v8exception_t, base, _cef_v8value_t, base (+28 more)
+Cohesion: 0.11
+Nodes (23): _cef_v8exception_t, base, CefV8Exception, GetEndColumn, GetEndPosition, GetLineNumber, GetMessage, GetScriptResourceName (+15 more)
 
 ### Community 295 - "CefOverlayController"
 Cohesion: 0.06
@@ -1983,12 +1973,12 @@ Cohesion: 0.17
 Nodes (13): string, TestMode, TestType, JSDialogTestHandler, got_onbeforeunloaddialog_, got_onjsdialog_, got_onloadend_, got_onresetdialogstate_ (+5 more)
 
 ### Community 299 - "Create"
-Cohesion: 0.19
-Nodes (8): CefLayout, CefBoxLayout, ClearFlexForView, SetFlexForView, CefView, CefFillLayout, CefBoxLayout, CefFillLayout
+Cohesion: 0.11
+Nodes (23): ElementVector, CefPostData, AddElement, GetElementCount, GetElements, HasExcludedElements, IsReadOnly, RemoveElement (+15 more)
 
 ### Community 300 - "_cef_resource_read_callback_t"
-Cohesion: 0.04
-Nodes (37): CefResourceHandler, Cancel, GetResponseHeaders, CefResourceReadCallback, Continue, CefRefPtr, CefResourceManager::GetResourceHandler(), CefBrowser (+29 more)
+Cohesion: 0.02
+Nodes (71): CefCallback, Cancel, Continue, CefResourceHandler, Cancel, GetResponseHeaders, CefResourceReadCallback, Continue (+63 more)
 
 ### Community 301 - "CefImageCToCpp"
 Cohesion: 0.14
@@ -1999,8 +1989,12 @@ Cohesion: 0.08
 Nodes (24): DesktopFailureWhenRequestingVideoButReturningAudio, DesktopFailureWhenReturningNoPermission, DesktopPartialFailureReturningAudio, DesktopPartialSuccessReturningVideo, DeviceFailureWhenNoCallback, DeviceFailureWhenRequestingAudioButReturningVideo, DeviceFailureWhenRequestingVideoButReturningAudio, DeviceFailureWhenReturningFalse (+16 more)
 
 ### Community 303 - "WebviewPlugin"
-Cohesion: 0.10
-Nodes (23): function, shared_ptr, CefRefPtr, function, shared_ptr, unordered_map, stopCEF(), WebviewPlugin (+15 more)
+Cohesion: 0.09
+Nodes (27): function, shared_ptr, string, WValue, CefRefPtr, function, shared_ptr, unordered_map (+19 more)
+
+### Community 304 - "CefApp"
+Cohesion: 0.13
+Nodes (15): cef_runtime_style_t, CefBrowserSettings, CefBrowserView, CefClient, CefRefPtr, CefWindow, GetExpectedRuntimeStyle(), TestBrowserViewDelegate (+7 more)
 
 ### Community 305 - "CefRequestContext"
 Cohesion: 0.08
@@ -2019,8 +2013,8 @@ Cohesion: 0.07
 Nodes (27): CefResourceManager, AddArchiveProvider, AddContentProvider, AddDirectoryProvider, ContinueRequest, GetResourceHandler, mime_type_resolver_, OnBeforeResourceLoad (+19 more)
 
 ### Community 309 - "auto_index_pipeline_test.dart"
-Cohesion: 0.06
-Nodes (35): Chapter 1 Introduction to, Chapter 3, Chapter 4 Plant, package:flow/services/auto_index_pipeline.dart, package:flow/services/toc_matcher.dart, 230, 58, Botany (+27 more)
+Cohesion: 0.10
+Nodes (19): package:flow/services/auto_index_pipeline.dart, 230, 58, Botany, chapter1Page, cover, Harness, linkDestinations (+11 more)
 
 ### Community 310 - "dialog_handler_gtk.cc"
 Cohesion: 0.10
@@ -2035,8 +2029,8 @@ Cohesion: 0.10
 Nodes (20): AiQueueScreen, _AiQueueScreenState, _booksMap, build, _buildCourseHeader, _buildHierarchicalList, _buildModuleDropdown, _buildSectionDropdown (+12 more)
 
 ### Community 313 - "CookieAccessServerHandler"
-Cohesion: 0.09
-Nodes (30): MainContext, Get, GetAppWorkingDirectory, GetBackgroundColor, GetCommandLine, GetConsoleLogPath, GetDownloadPath, GetMainURL (+22 more)
+Cohesion: 0.08
+Nodes (28): MainContext, GetAppWorkingDirectory, GetBackgroundColor, GetCommandLine, GetConsoleLogPath, GetDownloadPath, GetMainURL, GetRootWindowManager (+20 more)
 
 ### Community 314 - "HSTSRedirectTest"
 Cohesion: 0.08
@@ -2063,7 +2057,7 @@ Cohesion: 0.10
 Nodes (12): queue, FrameStatus, debug_info_, delivered_query_ct_, expected_query_ct_, got_before_close_, got_callback_, ident_str_ (+4 more)
 
 ### Community 320 - "CefClient"
-Cohesion: 0.19
+Cohesion: 0.18
 Nodes (11): _cef_scheme_registrar_t, base, cef_base_scoped_t, CefOwnPtr, CefRawPtr, CefString, CefWrapperType, CefCToCppScoped<
     CefSchemeRegistrarCToCpp,
     CefSchemeRegistrar,
@@ -2074,32 +2068,33 @@ Cohesion: 0.33
 Nodes (6): AccessibilityDisable, AccessibilityEnable, AccessibilityFocusChange, AccessibilityLocationChange, OSRTest, TEST()
 
 ### Community 322 - "CefDownloadHandler"
-Cohesion: 0.19
-Nodes (29): FlValue, string, WValue, startCEF(), cursorAction, HandleMethodCall, webview_ptr_array_index(), webview_value_equals() (+21 more)
+Cohesion: 0.08
+Nodes (25): _cef_overlay_controller_t, base, cef_base_ref_counted_t, CefOverlayController, Destroy, GetBounds, GetBoundsInScreen, GetContentsView (+17 more)
 
 ### Community 323 - "CefDownloadItem"
-Cohesion: 0.25
-Nodes (7): SetUpXHR(), XHRTestSettings, sub_allow_origin, sub_redirect_url, sub_url, synchronous, url
+Cohesion: 0.11
+Nodes (17): string, vector, FetchTestSettings, sub_allow_origin, sub_redirect_url, sub_url, url, RegisterSchemeHandlerCookieableSchemes() (+9 more)
 
 ### Community 324 - "CefBaseTime"
-Cohesion: 0.23
-Nodes (12): GMainContext, gpointer, GSourceFunc, guint, idle_add(), DoQuit, MainMessageLoopMultithreadedGtk::MainMessageLoopMultithreadedGtk(), Run (+4 more)
+Cohesion: 0.20
+Nodes (11): CreateBrowser, CefWindowInfo, CefWindowHandle, CefPopupFeatures, cef_window_open_disposition_t, CefBrowserSettings, CefClient, WindowOpenDisposition (+3 more)
 
 ### Community 325 - "Invoke"
 Cohesion: 0.11
 Nodes (21): BoundWeakPtr, enable_if_t, ForwardFunctor, is_nullable, BanUnconstructedRefCountedReceiver(), BindImpl(), BindState, bound_args_ (+13 more)
 
 ### Community 326 - "TEST"
-Cohesion: 0.10
-Nodes (27): DataMap, _cef_task_runner_t, base, cef_base_ref_counted_t, CefTaskRunner, BelongsToCurrentThread, BelongsToThread, IsSame (+19 more)
+Cohesion: 0.19
+Nodes (15): _cef_task_runner_t, base, cef_base_ref_counted_t, CefRefPtr, CefThreadId, CefWrapperType, CefCToCppRefCounted<CefTaskRunnerCToCpp, CefTaskRunner, cef_task_runner_t>::
+    UnwrapDerived(), CefTaskRunner::GetForCurrentThread() (+7 more)
 
 ### Community 327 - "CefBrowser"
 Cohesion: 0.10
 Nodes (38): string, TeamcityGoogleTestEventListener, flowid, messages, OnTestCaseEnd, OnTestCaseStart, OnTestEnd, OnTestStart (+30 more)
 
 ### Community 328 - "print_handler_gtk.cc"
-Cohesion: 0.17
-Nodes (18): GtkPrintSettings, CefBrowser, CefRefPtr, ClientPrintHandlerGtk, GetPdfPaperSize, OnPrintDialog, OnPrintReset, OnPrintSettings (+10 more)
+Cohesion: 0.20
+Nodes (17): CefPrintJobCallback, Continue, CefBrowser, CefRefPtr, CefString, ClientPrintHandlerGtk, GetPdfPaperSize, OnPrintDialog (+9 more)
 
 ### Community 329 - "CefSSLStatus"
 Cohesion: 0.11
@@ -2118,11 +2113,11 @@ Cohesion: 0.07
 Nodes (34): Callback, CefBrowser, CefRefPtr, CefString, LifeSpanTestHandler, executing_delay_close_, got_after_created_, got_before_close_ (+26 more)
 
 ### Community 334 - "wWinMain"
-Cohesion: 0.12
+Cohesion: 0.13
 Nodes (16): __int64, _In_, _In_opt_, wWinMain(), string, vector, wchar_t, CreateAndAttachConsole() (+8 more)
 
 ### Community 335 - "cef_scoped_refptr.h"
-Cohesion: 0.21
+Cohesion: 0.19
 Nodes (14): cef_process_message_t, CefRefPtr, CefString, CefWrapperType, CefCToCppRefCounted<
     CefProcessMessageCToCpp,
     CefProcessMessage,
@@ -2133,19 +2128,23 @@ Cohesion: 0.09
 Nodes (14): RequestRunnerMap, UIThreadHelper, HttpTestRunner, destroy_event_, got_all_requests_, got_server_destroyed_, handler_, initialized_ (+6 more)
 
 ### Community 337 - "_cef_server_t"
-Cohesion: 0.10
+Cohesion: 0.09
 Nodes (39): _cef_server_handler_t, base, _cef_server_t, base, cef_base_ref_counted_t, cef_request_t, cef_string_t, CefRefPtr (+31 more)
 
 ### Community 338 - "CefTranslatorTestScopedLibraryChildChildCToCpp"
-Cohesion: 0.14
-Nodes (13): TestSetup, continue_async, deny_implicitly, deny_with_navigation, got_audio, got_change, got_js_error, got_js_success (+5 more)
+Cohesion: 0.21
+Nodes (19): _cef_textfield_t, cef_rect_t, cef_size_t, cef_view_t, CEF_CALLBACK
+textfield_delegate_get_height_for_width(), CEF_CALLBACK
+textfield_delegate_get_maximum_size(), CEF_CALLBACK
+textfield_delegate_get_minimum_size(), CEF_CALLBACK
+textfield_delegate_get_preferred_size() (+11 more)
 
 ### Community 339 - "CefBrowserViewDelegate"
 Cohesion: 0.16
 Nodes (13): CefBrowser, CefBrowserView, CefBrowserViewDelegate, cef_gesture_command_t, cef_runtime_style_t, CefBrowserSettings, CefClient, CefRefPtr (+5 more)
 
 ### Community 340 - "CefDOMDocumentCToCpp"
-Cohesion: 0.20
+Cohesion: 0.19
 Nodes (19): CefRefPtr, CefString, Type, CefDOMDocumentCToCpp, GetBaseURL, GetBody, GetCompleteURL, GetDocument (+11 more)
 
 ### Community 341 - "PdfViewerTestHandler"
@@ -2153,12 +2152,12 @@ Cohesion: 0.27
 Nodes (9): CefRefPtr, CefString, CefSharedProcessMessageBuilder::Create(), CefSharedProcessMessageBuilderCToCpp, Build, IsValid, Memory, Size (+1 more)
 
 ### Community 342 - "test_util.cc"
-Cohesion: 0.23
-Nodes (8): CefRefPtr, CefString, CefURLRequest, ResponseCallback, StaticHttpURLRequestClient, data_, request_, response_callback_
+Cohesion: 0.15
+Nodes (20): DetachRequestFromProvider, GetNextValidProvider, IncrementProvider, SendRequest, StopRequest, cef_return_value_t, CefBrowser, CefRefPtr (+12 more)
 
 ### Community 343 - "StaticHttpRequestRunner"
-Cohesion: 0.13
-Nodes (15): CefRefPtr, CefView, CreatePanel(), SizeWithDelegateImpl(), SizingPanelDelegate, got_get_height_for_width_, got_get_maximum_size_, got_get_minimum_size_ (+7 more)
+Cohesion: 0.11
+Nodes (17): CefPanelDelegate, CreatePanel(), CreatePanelNoDelegateImpl(), CreatePanelWithDelegateImpl(), EmptyPanelDelegate, SizeWithDelegateImpl(), SizingPanelDelegate, got_get_height_for_width_ (+9 more)
 
 ### Community 344 - "WebviewCookieVisitor"
 Cohesion: 0.18
@@ -2170,23 +2169,26 @@ Nodes (26): ../code_highlighter.dart, answered, bottomBar, build, _buildAnswerFi
 
 ### Community 346 - "ClientPrintHandlerGtk::PrintHandler"
 Cohesion: 0.13
-Nodes (16): GtkPageSetup, GtkPrintJob, Create, GError, gint, GtkDialog, GtkWidget, PrintHandler (+8 more)
+Nodes (16): GtkPageSetup, GtkPrintJob, CefPrintDialogCallback, Cancel, Continue, GError, GtkWidget, GtkWindow (+8 more)
 
 ### Community 347 - "PopupOrderMainTestHandler"
-Cohesion: 0.36
-Nodes (5): CefPermissionHandler, cef_permission_request_result_t, CefBrowser, CefRefPtr, CefString
+Cohesion: 0.12
+Nodes (18): UseAlloyStyleWindowGlobal(), cef_runtime_style_t, CefRefPtr, CefWindow, Config, unique_ptr, TestWindowDelegate, event_ (+10 more)
 
 ### Community 348 - "AtomicFlag"
-Cohesion: 0.15
-Nodes (12): TestSetup, continue_async, deny_implicitly, deny_no_gesture, deny_with_navigation, got_dismiss, got_js_error, got_js_success (+4 more)
+Cohesion: 0.13
+Nodes (13): cef_rect_t, _cef_draggable_region_t, bounds, draggable, _cef_screen_info_t, available_rect, depth, depth_per_component (+5 more)
 
 ### Community 349 - "CefSharedMemoryRegion"
-Cohesion: 0.14
-Nodes (15): GMainLoop, CefRefPtr, CefRefPtr, GMainContext, Lock, PlatformThreadId, queue, MainMessageLoopMultithreadedGtk (+7 more)
+Cohesion: 0.10
+Nodes (27): GMainLoop, CefRefPtr, GMainContext, gpointer, GSourceFunc, guint, CefRefPtr, GMainContext (+19 more)
 
 ### Community 350 - "CefServerCToCpp"
-Cohesion: 0.18
-Nodes (12): _cef_run_file_dialog_callback_t, base, CefRunFileDialogCallback, OnFileDialogDismissed, cef_string_list_t, CefRefPtr, CefWrapperType, CEF_CALLBACK run_file_dialog_callback_on_file_dialog_dismissed() (+4 more)
+Cohesion: 0.12
+Nodes (18): CefRunFileDialogCallback, OnFileDialogDismissed, cef_string_list_t, CefRefPtr, CefWrapperType, CEF_CALLBACK run_file_dialog_callback_on_file_dialog_dismissed(), CefCppToCRefCounted<CefRunFileDialogCallbackCppToC,
+                    CefRunFileDialogCallback,
+                    cef_run_file_dialog_callback_t>::
+    UnwrapDerived(), CefRunFileDialogCallbackCppToC (+10 more)
 
 ### Community 351 - "RootWindowConfig"
 Cohesion: 0.10
@@ -2201,35 +2203,32 @@ Cohesion: 0.07
 Nodes (28): AutoIndexPipeline, AutoIndexResult, _chapter1FromLinks, chapter1StartPage, _expandToc, _finish, indexPages, isComplete (+20 more)
 
 ### Community 354 - "MultiQueryMultiHandlerTestHandler"
-Cohesion: 0.15
-Nodes (19): CefCookieVisitor, Visit, CefRefPtr, CefWrapperType, CEF_CALLBACK cookie_visitor_visit(), CefCookieVisitorCppToC, CefCppToCRefCounted<
-    CefCookieVisitorCppToC,
-    CefCookieVisitor,
-    cef_cookie_visitor_t>::UnwrapDerived(), CefCookie (+11 more)
+Cohesion: 0.11
+Nodes (24): _cef_cookie_manager_t, base, _cef_cookie_visitor_t, base, cef_base_ref_counted_t, CefCookieVisitor, Visit, CefRefPtr (+16 more)
 
 ### Community 355 - "_cef_pdf_print_settings_t"
 Cohesion: 0.11
 Nodes (19): cef_pdf_print_margin_type_t, _cef_pdf_print_settings_t, display_header_footer, footer_template, generate_document_outline, generate_tagged_pdf, header_template, landscape (+11 more)
 
 ### Community 356 - "G_DECLARE_INTERFACE"
-Cohesion: 0.05
-Nodes (41): fl_method_response, fl_plugin_registrar, fl_texture_registrar, FlMethodResponse, G_MODULE_EXPORT, GtkApplicationClass, GTypeInterface, _FlApplicationClass (+33 more)
+Cohesion: 0.06
+Nodes (35): fl_method_response, fl_plugin_registrar, fl_texture_registrar, FlMethodResponse, G_MODULE_EXPORT, GtkApplicationClass, GTypeInterface, _FlApplicationClass (+27 more)
 
 ### Community 357 - "FlutterWindow"
-Cohesion: 0.11
-Nodes (16): DartProject, HWND, LPARAM, LRESULT, UINT, WPARAM, FlutterWindow, flutter_controller_ (+8 more)
+Cohesion: 0.12
+Nodes (15): DartProject, HWND, LPARAM, LRESULT, UINT, WPARAM, FlutterWindow, flutter_controller_ (+7 more)
 
 ### Community 358 - "TEST"
-Cohesion: 0.11
+Cohesion: 0.10
 Nodes (21): _cef_test_server_handler_t, base, _cef_test_server_t, base, CefTestServerHandler, OnTestServerRequest, cef_request_t, CefRefPtr (+13 more)
 
 ### Community 359 - "CefNavigationEntryVisitor"
-Cohesion: 0.09
+Cohesion: 0.10
 Nodes (15): Callback, CefBrowser, EchoWebSocketTestHandler, connection_ct_, in_parallel_, message_ct_, ws_url_, WebSocketTestHandler (+7 more)
 
 ### Community 360 - "CefPreferenceRegistrar"
-Cohesion: 0.13
-Nodes (16): _cef_preference_registrar_t, base, cef_base_scoped_t, cef_preferences_type_t, CefRawPtr, CefPreferenceRegistrar, AddPreference, CefOwnPtr (+8 more)
+Cohesion: 0.15
+Nodes (14): _cef_preference_registrar_t, base, cef_base_scoped_t, CefPreferenceRegistrar, AddPreference, CefOwnPtr, CefRawPtr, CefRefPtr (+6 more)
 
 ### Community 361 - "CefTranslatorTestRefPtrLibraryChildChildCToCpp"
 Cohesion: 0.15
@@ -2240,17 +2239,19 @@ Cohesion: 0.20
 Nodes (13): CefRefPtr, CefTextfield, CefWindow, RunTextfieldContents(), RunTextfieldKeyEvent(), RunTextfieldStyle(), TestTextfieldDelegate, after_user_action_ct_ (+5 more)
 
 ### Community 363 - "CefRequestHandler"
-Cohesion: 0.25
-Nodes (8): CefRequestHandler, cef_errorcode_t, CefBrowser, CefRefPtr, CefString, TerminationStatus, WindowOpenDisposition, X509CertificateList
+Cohesion: 0.20
+Nodes (11): CefRequestHandler, cef_errorcode_t, CefBrowser, CefRefPtr, CefString, TerminationStatus, WindowOpenDisposition, X509CertificateList (+3 more)
 
 ### Community 364 - "CefBrowserProcessHandler"
 Cohesion: 0.09
 Nodes (22): Completer, AiTask, bookId, completer, endTime, errorMessage, estimatedDuration, fromJson (+14 more)
 
 ### Community 365 - "CefSchemeRegistrar"
-Cohesion: 0.08
-Nodes (32): cef_quick_menu_edit_state_flags_t, CefRunContextMenuCallback, Cancel, Continue, CEF_CALLBACK
-client_get_context_menu_handler(), cef_browser_t, cef_context_menu_handler_t, cef_event_flags_t (+24 more)
+Cohesion: 0.16
+Nodes (11): CefRunContextMenuCallback, Cancel, Continue, cef_event_flags_t, cef_run_context_menu_callback_t, CefWrapperType, CefCToCppRefCounted<
+    CefRunContextMenuCallbackCToCpp,
+    CefRunContextMenuCallback,
+    cef_run_context_menu_callback_t>::UnwrapDerived(), CefRunContextMenuCallbackCToCpp (+3 more)
 
 ### Community 366 - "CefServer"
 Cohesion: 0.16
@@ -2277,12 +2278,12 @@ Cohesion: 0.15
 Nodes (13): CefV8Context, Enter, Eval, Exit, GetBrowser, GetCurrentContext, GetEnteredContext, GetFrame (+5 more)
 
 ### Community 372 - "FrameStatusMap"
-Cohesion: 0.13
-Nodes (22): CefX509CertPrincipal, GetCommonName, GetCountryName, GetDisplayName, GetLocalityName, GetOrganizationNames, GetOrganizationUnitNames, GetStateOrProvinceName (+14 more)
+Cohesion: 0.12
+Nodes (23): CefX509CertPrincipal, GetCommonName, GetCountryName, GetDisplayName, GetLocalityName, GetOrganizationNames, GetOrganizationUnitNames, GetStateOrProvinceName (+15 more)
 
 ### Community 373 - "PermissionPromptTestHandler"
-Cohesion: 0.18
-Nodes (11): cef_permission_request_result_t, cef_return_value_t, CefBrowser, CefRefPtr, CefString, string, PermissionPromptTestHandler, prompt_id_ (+3 more)
+Cohesion: 0.07
+Nodes (28): CefPermissionHandler, cef_permission_request_result_t, CefBrowser, CefRefPtr, CefString, cef_permission_request_result_t, cef_return_value_t, CefBrowser (+20 more)
 
 ### Community 374 - "GeneratedPluginRegistrant.swift"
 Cohesion: 0.18
@@ -2293,12 +2294,12 @@ Cohesion: 0.11
 Nodes (18): AutoResize, DisplayTest, LoadingProgress, OnConsoleMessageAssert, OnConsoleMessageCount, OnConsoleMessageDebug, OnConsoleMessageError, OnConsoleMessageGroup (+10 more)
 
 ### Community 376 - "CefMediaRouteCToCpp"
-Cohesion: 0.09
-Nodes (22): fb/fb_firestore.dart, int get, areAllLimitsHit, _capacityLimits, _dailyActiveUsers, defaultCapacityLimits, getCapacity, getKeysCount (+14 more)
+Cohesion: 0.08
+Nodes (23): fb/fb_firestore.dart, int get, areAllLimitsHit, _capacityLimits, _dailyActiveUsers, defaultCapacityLimits, getCapacity, getKeysCount (+15 more)
 
 ### Community 377 - "panel_ctocpp.h"
 Cohesion: 0.15
-Nodes (16): StartImpl, Delegate, unique_ptr, Delegate, unique_ptr, Runner::CreateNormal(), Runner, Create (+8 more)
+Nodes (15): StartImpl, Delegate, unique_ptr, Delegate, unique_ptr, Runner::CreateNormal(), Runner, Create (+7 more)
 
 ### Community 378 - "TEST"
 Cohesion: 0.11
@@ -2309,7 +2310,7 @@ Cohesion: 0.16
 Nodes (16): _cef_command_handler_t, base, cef_base_ref_counted_t, cef_browser_t, cef_chrome_page_action_icon_type_t, cef_chrome_toolbar_button_type_t, cef_window_open_disposition_t, CefRefPtr (+8 more)
 
 ### Community 380 - "CefPreferenceManagerCToCpp"
-Cohesion: 0.19
+Cohesion: 0.18
 Nodes (16): _cef_preference_manager_t, base, cef_base_ref_counted_t, _cef_request_context_t, base, CefRefPtr, CefString, CefWrapperType (+8 more)
 
 ### Community 381 - "CefStreamReaderCToCpp"
@@ -2323,7 +2324,7 @@ Cohesion: 0.11
 Nodes (18): CefDOMDocument, GetBaseURL, GetBody, GetCompleteURL, GetDocument, GetElementById, GetFocusedNode, GetHead (+10 more)
 
 ### Community 383 - "DialogTestHandler"
-Cohesion: 0.22
+Cohesion: 0.20
 Nodes (13): cef_jsdialog_type_t, CEF_CALLBACK
 client_get_jsdialog_handler(), cef_browser_t, cef_jsdialog_callback_t, cef_string_t, CEF_CALLBACK
 jsdialog_handler_on_before_unload_dialog(), CEF_CALLBACK
@@ -2332,45 +2333,46 @@ jsdialog_handler_on_jsdialog() (+5 more)
 
 ### Community 384 - "FlutterWindow"
 Cohesion: 0.12
-Nodes (15): DartProject, HWND, LPARAM, LRESULT, UINT, WPARAM, FlutterWindow, flutter_controller_ (+7 more)
+Nodes (16): Win32Window, DartProject, HWND, LPARAM, LRESULT, UINT, WPARAM, FlutterWindow (+8 more)
 
 ### Community 385 - "CefZipReader"
-Cohesion: 0.22
-Nodes (7): ALWAYS_INLINE, AddRefWithCheck(), RefCountedThreadSafeBase, HasAtLeastOneRef, HasOneRef, ref_count_, RefCountedThreadSafeBase::AddRefWithCheck()
+Cohesion: 0.14
+Nodes (15): cef_scale_factor_t, CefResourceBundleHandler, GetDataResource, GetDataResourceForScale, GetLocalizedString, cef_resource_bundle_handler_t, cef_string_t, CefRefPtr (+7 more)
 
 ### Community 386 - "TEST"
 Cohesion: 0.10
 Nodes (20): add, bookId, Bookmark, bookmarkedAt, BookmarkService, bookTitle, copyWith, fromJson (+12 more)
 
 ### Community 387 - "TEST"
-Cohesion: 0.11
-Nodes (14): LPVOID, ThreadLocalBase, NewValueForCurrentThread, ThreadLocalValueHolderBase, ThreadWithParamBase, Run, DWORD, ThreadLocalRegistry::GetValueOnCurrentThread() (+6 more)
+Cohesion: 0.09
+Nodes (23): LPVOID, ThreadLocalBase, NewValueForCurrentThread, ThreadLocalValueHolderBase, DWORD, T, Delete(), FormatCxxExceptionMessage() (+15 more)
 
 ### Community 388 - "ResourceManagerTestHandler"
-Cohesion: 0.14
-Nodes (24): cef_panel_delegate_t, cef_rect_t, cef_size_t, cef_view_t, CefRefPtr, CefWrapperType, CEF_CALLBACK
-panel_delegate_get_height_for_width(), CEF_CALLBACK
-panel_delegate_get_maximum_size() (+16 more)
+Cohesion: 0.12
+Nodes (16): Chapter 1 Introduction to, Chapter 3, Chapter 4 Plant, package:flow/services/toc_matcher.dart, 230, 245, 58, Botany (+8 more)
 
 ### Community 389 - "NativeArray"
-Cohesion: 0.16
-Nodes (10): CefTextfield, CefTextfieldDelegate, CefRefPtr, CefView, CefViewDelegate, CefRefPtr, cef_textfield_delegate_t, CefRefPtr (+2 more)
+Cohesion: 0.23
+Nodes (7): CefView, CefViewDelegate, CefRefPtr, cef_view_delegate_t, CefRefPtr, CefWrapperType, CefCppToCRefCounted<
+    CefViewDelegateCppToC,
+    CefViewDelegate,
+    cef_view_delegate_t>::UnwrapDerived()
 
 ### Community 390 - "G_DECLARE_INTERFACE"
 Cohesion: 0.32
 Nodes (8): AddFileMenuItems(), AddTestMenuItems(), cef_event_flags_t, CefMenuModel, CreateMenuModel, ExecuteCommand, MenuBarExecuteCommand, OnBeforeContextMenu
 
 ### Community 391 - "TEST"
-Cohesion: 0.08
-Nodes (24): DevToolsMessageTest, FrameHandlerTest, Messages, OrderMain, OrderMainNavCrossOrigin, OrderMainNavSameOrigin, OrderMainPopupCrossOrigin, OrderMainPopupSameOrigin (+16 more)
+Cohesion: 0.06
+Nodes (32): CanSendAndReceiveFromIoThread, CanSendAndReceiveFromUiThread, DevToolsMessageTest, FrameHandlerTest, Messages, OrderMain, OrderMainNavCrossOrigin, OrderMainNavSameOrigin (+24 more)
 
 ### Community 392 - "OverlayTestWindowDelegate"
-Cohesion: 0.11
-Nodes (13): DelayCallback, CefBrowser, CefRefPtr, CefString, DownloadSchemeHandler, content_, content_disposition_, delay_callback_ (+5 more)
+Cohesion: 0.16
+Nodes (10): DelayCallback, DownloadSchemeHandler, content_, content_disposition_, delay_callback_, got_download_request_, mime_type_, offset_ (+2 more)
 
 ### Community 393 - "CefDeleteCookiesCallback"
-Cohesion: 0.07
-Nodes (25): Run, GTestMutexLock, mutex_, Mutex(), MutexBase, has_owner_, mutex_, owner_ (+17 more)
+Cohesion: 0.06
+Nodes (27): Run, GTestMutexLock, mutex_, Mutex(), MutexBase, has_owner_, mutex_, owner_ (+19 more)
 
 ### Community 394 - "CefTaskRunnerCToCpp"
 Cohesion: 0.25
@@ -2386,19 +2388,19 @@ Nodes (14): MouseButtonType, _cef_mouse_event_t, modifiers, x, y, CefMouseEvent,
 
 ### Community 397 - "CEF_CALLBACK
 request_context_handler_get_resource_request_handler"
-Cohesion: 0.17
-Nodes (10): cef_request_context_handler_t, cef_request_context_t, CefRefPtr, CefRequestContextHandler, CefWrapperType, CEF_CALLBACK request_context_handler_on_request_context_initialized(), CefCppToCRefCounted<
+Cohesion: 0.22
+Nodes (7): cef_request_context_handler_t, cef_request_context_t, CefRefPtr, CefRequestContextHandler, CefWrapperType, CEF_CALLBACK request_context_handler_on_request_context_initialized(), CefCppToCRefCounted<
     CefRequestContextHandlerCppToC,
     CefRequestContextHandler,
-    cef_request_context_handler_t>::UnwrapDerived(), CefRequestContextHandlerCppToC (+2 more)
+    cef_request_context_handler_t>::UnwrapDerived()
 
 ### Community 398 - "BytesWriteHandler"
-Cohesion: 0.11
-Nodes (7): ApiHash, CefTraceEndOnScopeClose, category_, name_, TEST(), VersionInfo, VersionTest
+Cohesion: 0.09
+Nodes (12): ApiHash, CefTraceEndOnScopeClose, category_, name_, _cef_accelerated_paint_native_pixmap_plane_info_t, fd, offset, size (+4 more)
 
 ### Community 399 - ".DestroyTest"
-Cohesion: 0.07
-Nodes (30): _cef_task_t, base, CefTask, Execute, CefRefPtr, CefWrapperType, CEF_CALLBACK task_execute(), CefCppToCRefCounted<CefTaskCppToC, CefTask, cef_task_t>::UnwrapDerived() (+22 more)
+Cohesion: 0.22
+Nodes (9): CefThreadId, OnceClosure, RepeatingClosure, CefOnceClosureTask, closure_, CefPostDelayedTask(), CefPostTask(), CefRepeatingClosureTask (+1 more)
 
 ### Community 400 - "CefRefPtr"
 Cohesion: 0.17
@@ -2409,44 +2411,44 @@ Cohesion: 0.11
 Nodes (18): chooseEffectiveOffset, computeOffset, corrections, _enforceIncreasing, _fillMissingStarts, _leadingNumbering, _nonWord, _normalize (+10 more)
 
 ### Community 402 - "ResourceManagerTestHandler"
-Cohesion: 0.17
-Nodes (9): FlutterAppDelegate, AppDelegate, Any, Bool, AppDelegate, Bool, NSApplication, UIApplication (+1 more)
+Cohesion: 0.12
+Nodes (16): _applyReminder, build, createState, DailyGoalCard, _DailyGoalCardState, _goal, _goals, initState (+8 more)
 
 ### Community 403 - "AtomicRefCount"
-Cohesion: 0.14
-Nodes (14): CefButton, CefLabelButton, AsMenuButton, CreateLabelButton, GetImage, GetText, SetEnabledTextColors, SetFontList (+6 more)
+Cohesion: 0.12
+Nodes (16): _activeUnitId, book, build, _buildLessonTile, _buildPlaceholderLessonTile, completedLessons, createState, _findActiveUnit (+8 more)
 
 ### Community 404 - "_cef_touch_event_t"
-Cohesion: 0.14
-Nodes (14): cef_pointer_type_t, _cef_touch_event_t, id, modifiers, pointer_type, pressure, radius_x, radius_y (+6 more)
+Cohesion: 0.12
+Nodes (15): cef_pointer_type_t, _cef_touch_event_t, id, modifiers, pointer_type, pressure, radius_x, radius_y (+7 more)
 
 ### Community 405 - "FlutterMacOS"
 Cohesion: 0.17
 Nodes (10): Cocoa, FlutterMacOS, FlutterPlugin, MainFlutterWindow, NSWindow, MainFlutterWindow, NSObject, WebviewCefPlugin (+2 more)
 
 ### Community 406 - "flutter_linux.h"
-Cohesion: 0.18
-Nodes (9): Lock, ThreadCheckerImpl, CalledOnValidThread, DetachFromThread, EnsureThreadIdAssigned, lock_, valid_thread_id_, ThreadCheckerImpl::CalledOnValidThread() (+1 more)
+Cohesion: 0.15
+Nodes (11): ThreadChecker, ThreadCheckerDoNothing, Lock, ThreadCheckerImpl, CalledOnValidThread, DetachFromThread, EnsureThreadIdAssigned, lock_ (+3 more)
 
 ### Community 407 - "TestSetCookieCallback"
 Cohesion: 0.12
 Nodes (17): BeforeResourceLoadCancel, BeforeResourceLoadCancelAsync, BeforeResourceLoadCancelNav, BeforeResourceLoadContinue, BeforeResourceLoadContinueAsync, FilterError, FilterNeedMore, FilterPassThruReadAll (+9 more)
 
 ### Community 408 - "CefFindHandler"
-Cohesion: 0.14
-Nodes (13): _cef_find_handler_t, base, cef_base_ref_counted_t, CefFindHandler, CefBrowser, CefRefPtr, cef_browser_t, cef_rect_t (+5 more)
+Cohesion: 0.16
+Nodes (11): AtomicFlag, flag_, Set, set_thread_checker_, UnsafeResetForTesting, atomic, AssertNotShutdown(), IsCefShutdown() (+3 more)
 
 ### Community 409 - "CefV8InterceptorCppToC"
-Cohesion: 0.11
-Nodes (16): cef_transition_type_t, TestMode, IsInitialUrl(), LoadNavTestHandler, browser_id_current_, cancel_in_open_url_, got_before_browse_, got_before_resource_load_ (+8 more)
+Cohesion: 0.21
+Nodes (9): GtkPrintSettings, Create, gint, GtkDialog, PrintHandler, GetLastUsedSettings(), InitPrintSettings(), StickyPrintSettingGtk (+1 more)
 
 ### Community 410 - "CefRenderProcessHandler"
-Cohesion: 0.12
-Nodes (17): _cef_navigation_entry_visitor_t, base, CefNavigationEntryVisitor, Visit, CefRefPtr, CefWrapperType, CEF_CALLBACK
+Cohesion: 0.21
+Nodes (10): _cef_navigation_entry_visitor_t, base, CefNavigationEntryVisitor, Visit, CefRefPtr, CefWrapperType, CEF_CALLBACK
 navigation_entry_visitor_visit(), CefCppToCRefCounted<CefNavigationEntryVisitorCppToC,
                     CefNavigationEntryVisitor,
                     cef_navigation_entry_visitor_t>::
-    UnwrapDerived() (+9 more)
+    UnwrapDerived() (+2 more)
 
 ### Community 411 - "CefMenuModelDelegateCppToC"
 Cohesion: 0.23
@@ -2465,20 +2467,20 @@ Cohesion: 0.34
 Nodes (13): CefBrowser, CefRefPtr, CefWindow, optional, GetWindow(), SetTitlebarHeight(), WindowTestRunnerViews, Fullscreen (+5 more)
 
 ### Community 414 - "RequestClient"
-Cohesion: 0.07
-Nodes (32): CookieDoneCallback, CefCookie, CefRefPtr, CefString, CefURLRequest, CookieVector, RequestDoneCallback, string (+24 more)
+Cohesion: 0.16
+Nodes (14): CefURLRequestClient, CefRefPtr, CefString, CefURLRequest, RequestDoneCallback, string, GetPathURL(), GetUrlCookies() (+6 more)
 
 ### Community 415 - "scroll_view_unittest.cc"
-Cohesion: 0.21
-Nodes (15): CefRefPtr, CefString, TransitionType, CefNavigationEntryCToCpp, GetCompletionTime, GetDisplayURL, GetHttpStatusCode, GetOriginalURL (+7 more)
+Cohesion: 0.09
+Nodes (29): CefNavigationEntry, GetCompletionTime, GetDisplayURL, GetHttpStatusCode, GetOriginalURL, GetSSLStatus, GetTitle, GetTransitionType (+21 more)
 
 ### Community 416 - "MainMessageLoopExternalPump"
-Cohesion: 0.20
-Nodes (13): OnScheduleMessagePumpWork, MainMessageLoopExternalPump, DoWork, Get, is_active_, IsTimerPending, KillTimer, OnScheduleMessagePumpWork (+5 more)
+Cohesion: 0.18
+Nodes (14): OnScheduleMessagePumpWork, MainMessageLoopExternalPump, Create, DoWork, Get, is_active_, IsTimerPending, KillTimer (+6 more)
 
 ### Community 417 - "TEST"
-Cohesion: 0.26
-Nodes (10): LogSeverity, string, SystemErrorCode, ErrnoLogMessage::ErrnoLogMessage(), GetLastSystemErrorCode(), LogMessage::LogMessage(), safe_strerror(), safe_strerror_r() (+2 more)
+Cohesion: 0.05
+Nodes (39): LogSeverity, string, SystemErrorCode, ErrnoLogMessage::ErrnoLogMessage(), GetLastSystemErrorCode(), LogMessage::LogMessage(), safe_strerror(), safe_strerror_r() (+31 more)
 
 ### Community 418 - "CefBrowserInfoMap"
 Cohesion: 0.21
@@ -2490,18 +2492,18 @@ Nodes (15): cef_cookie_priority_t, cef_cookie_same_site_t, _cef_cookie_t, creati
 
 ### Community 420 - "RequestClient"
 Cohesion: 0.07
-Nodes (33): cef_errorcode_t, HeaderMap, HttpRequestHandler, RequestRunner, string, Type, unique_ptr, CreateTestServerRequest() (+25 more)
+Nodes (32): cef_errorcode_t, HeaderMap, RequestRunner, string, Type, unique_ptr, CreateTestServerRequest(), GetHeaderValue() (+24 more)
 
 ### Community 421 - "WebviewTextureRenderer"
-Cohesion: 0.33
-Nodes (7): OnceClosure, ScopedClosureRunner, closure_, Release, ReplaceClosure, RunAndReset, ScopedClosureRunner::ScopedClosureRunner()
+Cohesion: 0.21
+Nodes (10): OnceClosure, ScopedClosureRunner, closure_, Release, ReplaceClosure, RunAndReset, OnceClosure, ScopedClosureRunner::Release() (+2 more)
 
 ### Community 422 - "CefMouseEvent"
-Cohesion: 0.04
-Nodes (40): OnceClosure, TestMode, CookieAccessResponseHandler, AddResponse, CookieAccessSchemeHandlerFactory, data_map_, CookieAccessServerHandler, actual_http_request_ct_ (+32 more)
+Cohesion: 0.06
+Nodes (27): CookieVector, OnceClosure, TestMode, CookieAccessTestHandler, can_save_cookie1_ct_, can_send_cookie2_ct_, context_, cookie_js1_ct_ (+19 more)
 
 ### Community 423 - "CefMediaSource"
-Cohesion: 0.15
+Cohesion: 0.16
 Nodes (8): Callback, cef_log_severity_t, CefBrowser, CefRefPtr, CefString, ErrorCode, ResponseCallback, CorsBrowserTest
 
 ### Community 424 - "CEF_CALLBACK permission_handler_on_request_media_access_permission"
@@ -2509,43 +2511,43 @@ Cohesion: 0.11
 Nodes (18): FlPluginRegistry, fl_register_plugins(), main(), GApplication, gboolean, gchar, GObject, GtkApplication (+10 more)
 
 ### Community 425 - "CefPrintDialogCallback"
-Cohesion: 0.16
-Nodes (12): _cef_print_dialog_callback_t, base, CefPrintDialogCallback, Cancel, Continue, CefRefPtr, CefWrapperType, CefCToCppRefCounted<
+Cohesion: 0.29
+Nodes (5): CefRefPtr, CefWrapperType, CefCToCppRefCounted<
     CefPrintDialogCallbackCToCpp,
     CefPrintDialogCallback,
-    cef_print_dialog_callback_t>::UnwrapDerived() (+4 more)
+    cef_print_dialog_callback_t>::UnwrapDerived(), Cancel, Continue
 
 ### Community 426 - "CefLifeSpanHandler"
 Cohesion: 0.02
-Nodes (104): bool get, ../data/mock_books.dart, FbCollectionRef get, FbDocRef get, fd_backend.dart, ../../firebase_options.dart, android, DefaultFirebaseOptions (+96 more)
+Nodes (79): ../data/mock_books.dart, FbCollectionRef get, FbDocRef get, _bookFile, _booksDir, cloudSyncPrefKey, DatabaseService, _db (+71 more)
 
 ### Community 427 - "CefMenuModelDelegate"
 Cohesion: 0.23
 Nodes (9): CefMenuModel, CefMenuModelDelegate, ExecuteCommand, CefRefPtr, CefString, cef_menu_model_delegate_t, CefRefPtr, CefWrapperType (+1 more)
 
 ### Community 428 - "CefRegistration"
-Cohesion: 0.18
-Nodes (7): scoped_refptr, CefStreamReader, Request, DirectoryProvider, directory_path_, url_path_, Request
+Cohesion: 0.13
+Nodes (13): RedirectTestHandler, got_invalid_before_resource_load_, got_invalid_load_end_, got_invalid_load_start_, got_invalid_redirect_, got_nav1_before_resource_load_, got_nav1_redirect_, got_nav2_redirect_ (+5 more)
 
 ### Community 429 - "InitAsPopup"
-Cohesion: 0.08
-Nodes (26): CefSSLInfo, GetCertStatus, GetX509Certificate, CefX509Certificate, GetDEREncoded, GetDEREncodedIssuerChain, GetIssuer, GetIssuerChainSize (+18 more)
+Cohesion: 0.07
+Nodes (23): CefX509Certificate, GetDEREncoded, GetDEREncodedIssuerChain, GetIssuer, GetIssuerChainSize, GetPEMEncoded, GetPEMEncodedIssuerChain, GetSerialNumber (+15 more)
 
 ### Community 430 - "CefPermissionHandler"
 Cohesion: 0.14
 Nodes (12): CefByteReadHandler, bytes_, Eof, lock_, offset_, Read, Seek, size_ (+4 more)
 
 ### Community 431 - "SharedMessageTestHandler"
-Cohesion: 0.09
-Nodes (14): CefBrowser, CefRequestContext, Redirect, HSTSRedirectTest, got_http_request_, got_https_request_, got_load_end_, got_redirect_ (+6 more)
+Cohesion: 0.07
+Nodes (23): CefBrowser, CefRequestContext, OnceClosure, ReadyCallback, Redirect, string, HSTSRedirectTest, got_http_request_ (+15 more)
 
 ### Community 432 - "ObserverHelper"
 Cohesion: 0.17
 Nodes (13): string, CefRefPtr, ObserverHelper, Initialize, OnInitialized, OnRegistered, OnShutdown, OnStartDone (+5 more)
 
 ### Community 433 - "Hunk"
-Cohesion: 0.16
-Nodes (10): list, pair, Hunk, adds_, common_, hunk_adds_, hunk_removes_, left_start_ (+2 more)
+Cohesion: 0.15
+Nodes (11): list, pair, CreateUnifiedDiff(), Hunk, adds_, common_, hunk_adds_, hunk_removes_ (+3 more)
 
 ### Community 434 - "_cef_box_layout_settings_t"
 Cohesion: 0.15
@@ -2556,19 +2558,19 @@ Cohesion: 0.23
 Nodes (14): CefBrowser, CefBrowserSettings, CefClient, CefRefPtr, CefRequestContext, CefBrowserHost::CreateBrowser(), CefBrowserHost::CreateBrowserSync(), AddDevToolsMessageObserver (+6 more)
 
 ### Community 436 - "CreateRoute"
-Cohesion: 0.07
-Nodes (28): _cef_linux_window_properties_t, wayland_app_id, wm_class_class, wm_class_name, wm_role_name, _cef_media_sink_device_info_t, ip_address, model_name (+20 more)
+Cohesion: 0.11
+Nodes (17): _cef_linux_window_properties_t, wayland_app_id, wm_class_class, wm_class_name, wm_role_name, _cef_media_sink_device_info_t, ip_address, model_name (+9 more)
 
 ### Community 437 - "CefLabelButton"
-Cohesion: 0.13
-Nodes (10): OrderMainTestHandler, CompletionState, ParentOrderMainTestHandler, got_on_before_popup_, popup_handler_, PopupOrderMainTestHandler, cross_origin_, got_temp_created_ (+2 more)
+Cohesion: 0.11
+Nodes (11): OrderMainTestHandler, CompletionState, ParentOrderMainTestHandler, got_on_before_popup_, popup_handler_, PopupOrderMainTestHandler, cross_origin_, got_temp_created_ (+3 more)
 
 ### Community 438 - "PrintToPDF"
 Cohesion: 0.09
 Nodes (21): background, CodeHighlighter, CodeTheme, comment, dark, function, _generic, _isDigit (+13 more)
 
 ### Community 439 - "browser_info"
-Cohesion: 0.12
+Cohesion: 0.11
 Nodes (16): CefSharedMemoryRegion, IsValid, Memory, Size, cef_shared_memory_region_t, CefWrapperType, CefCToCppRefCounted<
     CefSharedMemoryRegionCToCpp,
     CefSharedMemoryRegion,
@@ -2579,8 +2581,8 @@ Cohesion: 0.15
 Nodes (12): Automatic Book Indexing Pipeline — Design, Error handling, Goals, `lib/screens/auto_index_screen.dart`, `lib/screens/generate_book_screen.dart`, `lib/screens/index_picker_screen.dart`, New component: `lib/services/toc_matcher.dart`, Non-goals (+4 more)
 
 ### Community 441 - "CefBaseScoped"
-Cohesion: 0.04
-Nodes (31): CookieTestJSHandler, cookies_, got_cookie1_, got_cookie2_, got_load_end1_, got_load_end2_, manager_, FrameNavExpectationsBrowserTestSingleNavHarness (+23 more)
+Cohesion: 0.18
+Nodes (8): Callback, cef_return_value_t, CefBrowser, CefRefPtr, CefString, ResourceManagerTestHandler, current_url_, state_
 
 ### Community 442 - "CefResolveCallback"
 Cohesion: 0.16
@@ -2591,31 +2593,31 @@ Cohesion: 0.14
 Nodes (10): ReadHandlerTester, eof_called_, read_called_, read_n_, read_ptr_, read_size_, seek_called_, seek_offset_ (+2 more)
 
 ### Community 444 - "CefDownloadItemCallback"
-Cohesion: 0.18
+Cohesion: 0.16
 Nodes (12): CefDownloadItemCallback, Cancel, Pause, Resume, cef_download_item_callback_t, CefWrapperType, CefCToCppRefCounted<
     CefDownloadItemCallbackCToCpp,
     CefDownloadItemCallback,
     cef_download_item_callback_t>::UnwrapDerived(), CefDownloadItemCallbackCToCpp (+4 more)
 
 ### Community 445 - "CefJSDialogHandler"
-Cohesion: 0.10
-Nodes (9): WeakPtrBase, ptr_, ref_, WeakReference, flag_, MaybeValid, Flag, WeakPtrBase::WeakPtrBase() (+1 more)
+Cohesion: 0.18
+Nodes (8): CefBrowser, CefRefPtr, CefString, string, ClientSchemeHandler, data_, mime_type_, offset_
 
 ### Community 446 - "client_prefs.cc"
-Cohesion: 0.19
-Nodes (8): _cef_basetime_t, val, CefBaseTime, GetEndTime, GetStartTime, CefBaseTimeFrom(), Struct, Time
+Cohesion: 0.11
+Nodes (15): BaseTimeToTime, InvalidBaseTimeToTime, InvalidTimeToBaseTime, Now, _cef_basetime_t, val, CefBaseTime, GetEndTime (+7 more)
 
 ### Community 447 - "CefPanel"
 Cohesion: 0.14
 Nodes (14): CefPanel, AddChildView, AddChildViewAt, AsWindow, CreatePanel, GetChildViewAt, GetChildViewCount, GetLayout (+6 more)
 
 ### Community 448 - "CefByteReadHandler"
-Cohesion: 0.20
-Nodes (10): CefJSDialogHandler, CefBrowser, CefRefPtr, CefString, JSDialogType, cef_jsdialog_handler_t, CefRefPtr, CefWrapperType (+2 more)
+Cohesion: 0.22
+Nodes (9): CefJSDialogHandler, CefBrowser, CefRefPtr, CefString, JSDialogType, cef_jsdialog_handler_t, CefRefPtr, CefWrapperType (+1 more)
 
 ### Community 449 - "CefSharedProcessMessageBuilderCToCpp"
-Cohesion: 0.03
-Nodes (54): AutoResizeTestHandler, got_auto_resize1_, got_auto_resize2_, got_done_message_, Callback, cef_log_severity_t, CefBrowser, CefRefPtr (+46 more)
+Cohesion: 0.07
+Nodes (21): AutoResizeTestHandler, got_auto_resize1_, got_auto_resize2_, got_done_message_, Callback, cef_log_severity_t, CefBrowser, CefRefPtr (+13 more)
 
 ### Community 450 - "CefWaitableEventCToCpp"
 Cohesion: 0.20
@@ -2628,9 +2630,9 @@ Cohesion: 0.08
 Nodes (38): Command, cef_docking_mode_t, CefButton, CefLabelButton, CefMenuButton, CefRefPtr, CefView, CefWindow (+30 more)
 
 ### Community 452 - "webview_cef_test.dart"
-Cohesion: 0.09
-Nodes (23): class MockWebviewCefPlatform
-    with, package:plugin_platform_interface/plugin_platform_interface.dart, package:webview_cef/webview_cef.dart, package:webview_cef/webview_cef_method_channel.dart, package:webview_cef/webview_cef_platform_interface.dart, MethodChannelWebviewCef, getPlatformVersion, _instance (+15 more)
+Cohesion: 0.21
+Nodes (11): class MockWebviewCefPlatform
+    with, package:webview_cef/webview_cef.dart, package:webview_cef/webview_cef_platform_interface.dart, MethodChannelWebviewCef, WebviewCefPlatform, getPlatformVersion, initialPlatform, main (+3 more)
 
 ### Community 453 - "FindReplaceResponseFilter"
 Cohesion: 0.20
@@ -2640,12 +2642,12 @@ Nodes (9): CefBeforeDownloadCallback, Continue, cef_before_download_callback_t, 
     cef_before_download_callback_t>::UnwrapDerived() (+1 more)
 
 ### Community 454 - "CookieTestJSHandler"
-Cohesion: 0.15
+Cohesion: 0.12
 Nodes (4): Map, FrameStatusMap, expected_frame_ct_, frame_map_
 
 ### Community 455 - "Runner"
-Cohesion: 0.09
-Nodes (20): CefTestServer, CreateAndStart, GetOrigin, Stop, CefTestServerConnection, SendHttp200Response, SendHttp404Response, SendHttp500Response (+12 more)
+Cohesion: 0.10
+Nodes (19): CefTestServer, CreateAndStart, GetOrigin, Stop, CefTestServerConnection, SendHttp200Response, SendHttp404Response, SendHttp500Response (+11 more)
 
 ### Community 456 - "WebView CEF"
 Cohesion: 0.17
@@ -2665,8 +2667,8 @@ Cohesion: 0.17
 Nodes (12): cef_composition_underline_style_t, _cef_composition_underline_t, background_color, color, range, style, thick, _cef_range_t (+4 more)
 
 ### Community 460 - "CefFocusHandlerCppToC"
-Cohesion: 0.25
-Nodes (4): StartRefCountFromOneTag, StartRefCountFromZeroTag, RefCounted, kRefCountPreference
+Cohesion: 0.16
+Nodes (7): AddRef(), StartRefCountFromOneTag, StartRefCountFromZeroTag, RefCounted, kRefCountPreference, RefCountedThreadSafe, kRefCountPreference
 
 ### Community 461 - "CefV8Handler"
 Cohesion: 0.24
@@ -2681,16 +2683,16 @@ Cohesion: 0.10
 Nodes (20): FbUser? get, authStateChanges, createUserWithEmailAndPassword, currentUser, displayName, email, _FaUser, FbUser (+12 more)
 
 ### Community 464 - "CefMediaAccessCallback"
-Cohesion: 0.12
-Nodes (15): CefNavigationEntry, GetCompletionTime, GetDisplayURL, GetHttpStatusCode, GetOriginalURL, GetSSLStatus, GetTitle, GetTransitionType (+7 more)
+Cohesion: 0.20
+Nodes (8): NavigationEntryVisitor, callback_, callback_count_, expected_current_index_, expected_forwardback_, expected_total_, nav_, CefTimeFrom()
 
 ### Community 465 - "_cef_screen_info_t"
-Cohesion: 0.09
-Nodes (22): CommandLineTest, IgnoreCase, IgnorePrefixes, Init, Manual, CreateCommandLine, CefGetExitCode(), main() (+14 more)
+Cohesion: 0.20
+Nodes (8): CefRawPtr, CefRefPtr, ProcessType, ClientApp, GetProcessType, OnRegisterCustomSchemes, RegisterCustomSchemes, ClientAppOther
 
 ### Community 466 - "cef_shared_process_message_builder.h"
-Cohesion: 0.18
-Nodes (11): DoCloseAllow, DoCloseAllowForce, DoCloseAllowWithOnUnloadForce, DoCloseDisallow, DoCloseDisallowForce, DoCloseDisallowWithOnUnloadAllow, DoCloseDisallowWithOnUnloadForce, LifeSpanTest (+3 more)
+Cohesion: 0.17
+Nodes (12): DoCloseAllow, DoCloseAllowForce, DoCloseAllowWithOnUnloadForce, DoCloseDisallow, DoCloseDisallowForce, DoCloseDisallowWithOnUnloadAllow, DoCloseDisallowWithOnUnloadForce, LifeSpanTest (+4 more)
 
 ### Community 467 - "TestSetup"
 Cohesion: 0.50
@@ -2701,41 +2703,41 @@ Cohesion: 0.18
 Nodes (11): CefRefPtr, CefView, CefWindow, RunScrollViewLayout(), ScrollViewLayout(), ScrollViewLayoutNoDelegateImpl(), ScrollViewLayoutWithDelegateImpl(), TestPanelDelegate (+3 more)
 
 ### Community 469 - "CefLifeSpanHandler"
-Cohesion: 0.16
-Nodes (12): CefFileDialogCallback, Cancel, Continue, cef_file_dialog_callback_t, CefString, CefWrapperType, vector, CefCToCppRefCounted<
+Cohesion: 0.20
+Nodes (9): cef_file_dialog_callback_t, CefString, CefWrapperType, vector, CefCToCppRefCounted<
     CefFileDialogCallbackCToCpp,
     CefFileDialogCallback,
-    cef_file_dialog_callback_t>::UnwrapDerived() (+4 more)
+    cef_file_dialog_callback_t>::UnwrapDerived(), CefFileDialogCallbackCToCpp, Cancel, Continue (+1 more)
 
 ### Community 470 - "_cef_scheme_registrar_t"
-Cohesion: 0.14
-Nodes (9): FilterStatus, string, FindReplaceResponseFilter, find_match_offset_, overflow_, replace_count_, replace_overflow_size_, MatchesFilterURL() (+1 more)
+Cohesion: 0.10
+Nodes (15): CefResponseFilter, Filter, InitFilter, CefBrowser, CefRefPtr, FilterStatus, string, FindReplaceResponseFilter (+7 more)
 
 ### Community 471 - "_cef_touch_handle_state_t"
 Cohesion: 0.18
 Nodes (8): CefClient, CefRefPtr, Delegate, string, ClientHandlerStd, ClientHandlerStd::ClientHandlerStd(), GetForClient, kTypeKey
 
 ### Community 472 - "CefMessageRouterBrowserSide"
-Cohesion: 0.21
-Nodes (9): CefBaseScoped, cef_base_scoped_t, CefOwnPtr, CefRawPtr, CefWrapperType, CefBaseScopedCppToC, CefCppToCScoped<CefBaseScopedCppToC, CefBaseScoped, cef_base_scoped_t>::
+Cohesion: 0.27
+Nodes (7): CefBaseScoped, cef_base_scoped_t, CefOwnPtr, CefRawPtr, CefWrapperType, CefCppToCScoped<CefBaseScopedCppToC, CefBaseScoped, cef_base_scoped_t>::
     UnwrapDerivedOwn(), CefCppToCScoped<CefBaseScopedCppToC, CefBaseScoped, cef_base_scoped_t>::
-    UnwrapDerivedRaw() (+1 more)
+    UnwrapDerivedRaw()
 
 ### Community 473 - "CookieAccessData"
-Cohesion: 0.25
-Nodes (8): NotificationsCrossOriginDelayedBrowser, NotificationsCrossOriginDelayedRenderer, NotificationsCrossOriginDirect, NotificationsSameOriginDelayedBrowser, NotificationsSameOriginDelayedRenderer, NotificationsSameOriginDirect, TEST(), RequestHandlerTest
+Cohesion: 0.17
+Nodes (11): NetNotifyTestType, NotificationsCrossOriginDelayedBrowser, NotificationsCrossOriginDelayedRenderer, NotificationsCrossOriginDirect, NotificationsSameOriginDelayedBrowser, NotificationsSameOriginDelayedRenderer, NotificationsSameOriginDirect, CompletionState (+3 more)
 
 ### Community 474 - "TEST"
 Cohesion: 0.15
 Nodes (13): TEST(), PermissionPromptTest, WindowManagementNoContinue, WindowManagementNoGesture, WindowManagementResultAccept, WindowManagementResultAcceptAsync, WindowManagementResultDeny, WindowManagementResultDenyAsync (+5 more)
 
 ### Community 475 - "CefTestServerConnectionCToCpp"
-Cohesion: 0.10
-Nodes (12): CefCommandHandler, cef_chrome_page_action_icon_type_t, cef_chrome_toolbar_button_type_t, cef_window_open_disposition_t, CefBrowser, CefRefPtr, CefDragHandler, CefBrowser (+4 more)
+Cohesion: 0.23
+Nodes (6): CefCommandHandler, cef_chrome_page_action_icon_type_t, cef_chrome_toolbar_button_type_t, cef_window_open_disposition_t, CefBrowser, CefRefPtr
 
 ### Community 476 - "TypeParameterizedTestSuiteRegistry"
-Cohesion: 0.12
-Nodes (18): _cef_browser_host_t, base, _cef_browser_t, base, _cef_download_image_callback_t, base, cef_base_ref_counted_t, CefDownloadImageCallback (+10 more)
+Cohesion: 0.19
+Nodes (11): _cef_download_image_callback_t, base, CefDownloadImageCallback, OnDownloadImageFinished, cef_string_t, CefRefPtr, CefWrapperType, CEF_CALLBACK download_image_callback_on_download_image_finished() (+3 more)
 
 ### Community 477 - "cef_lock.h"
 Cohesion: 0.10
@@ -2747,7 +2749,7 @@ Nodes (10): JavascriptMessageHandler, callbackId, frameId, JavascriptChannel, Ja
 
 ### Community 479 - "IpcDelegate"
 Cohesion: 0.06
-Nodes (43): cef_response_filter_status_t, _cef_cookie_access_filter_t, base, _cef_resource_request_handler_t, base, cef_base_ref_counted_t, cef_browser_t, cef_frame_t (+35 more)
+Nodes (50): cef_response_filter_status_t, _cef_callback_t, _cef_resource_request_handler_t, base, cef_browser_t, cef_frame_t, cef_request_t, cef_string_t (+42 more)
 
 ### Community 480 - ".application"
 Cohesion: 0.22
@@ -2758,7 +2760,7 @@ Cohesion: 0.27
 Nodes (12): FlutterMethodChannel, FlutterTextureRegistry, CefWrapper, -doMessageLoopWork, +encode_flvalue_to_wvalue, +encode_wvalue_to_flvalue, +getModifiersForEvent, -handleMethodCallWrapperresult (+4 more)
 
 ### Community 482 - "AddFilters"
-Cohesion: 0.18
+Cohesion: 0.16
 Nodes (11): CefRunQuickMenuCallback, Cancel, Continue, cef_event_flags_t, cef_run_quick_menu_callback_t, CefWrapperType, CefCToCppRefCounted<
     CefRunQuickMenuCallbackCToCpp,
     CefRunQuickMenuCallback,
@@ -2773,24 +2775,24 @@ Cohesion: 0.35
 Nodes (11): InTuple, ObjT, OutTuple, DispatchToFunction(), DispatchToFunctionImpl(), DispatchToMethod(), DispatchToMethodImpl(), Function (+3 more)
 
 ### Community 485 - "AddControls"
-Cohesion: 0.15
-Nodes (11): CefAudioHandler, OnAudioStreamError, OnAudioStreamPacket, OnAudioStreamStarted, OnAudioStreamStopped, CefBrowser, CefRefPtr, cef_audio_handler_t (+3 more)
+Cohesion: 0.22
+Nodes (7): CefAudioHandler, OnAudioStreamError, OnAudioStreamPacket, OnAudioStreamStarted, OnAudioStreamStopped, CefBrowser, CefRefPtr
 
 ### Community 486 - "TEST"
 Cohesion: 0.10
 Nodes (19): _cef_cursor_info_t, buffer, hotspot, image_scale_factor, size, _cef_touch_handle_state_t, alpha, enabled (+11 more)
 
 ### Community 487 - "CefMediaSink"
-Cohesion: 0.14
-Nodes (23): ImageTest, CreateImage, Empty, CefRefPtr, LoadImage(), TEST(), VerifySaveAsBitmap(), VerifySaveAsJPEG() (+15 more)
+Cohesion: 0.08
+Nodes (41): ImageTest, CefImage, AddBitmap, AddJPEG, AddPNG, CreateImage, GetAsBitmap, GetAsJPEG (+33 more)
 
 ### Community 488 - "ReadHandlerTester"
 Cohesion: 0.20
 Nodes (10): Ownership, List, Map, Multimap, TEST(), string16, StringTest, UTF16 (+2 more)
 
 ### Community 489 - "SimpleTestProvider"
-Cohesion: 0.15
-Nodes (21): cef_cursor_type_t, CefBrowser, CefCursorHandle, CefRefPtr, DragOperationsMask, FocusSource, TransitionType, DoClose (+13 more)
+Cohesion: 0.07
+Nodes (60): cef_cursor_type_t, cef_log_severity_t, CefBrowser, CefCursorHandle, CefProcessId, CefRefPtr, DragOperationsMask, FocusSource (+52 more)
 
 ### Community 490 - "CefMediaSinkDeviceInfoCallback"
 Cohesion: 0.20
@@ -2805,7 +2807,7 @@ Cohesion: 0.22
 Nodes (9): _cef_time_t, day_of_month, day_of_week, hour, millisecond, minute, month, second (+1 more)
 
 ### Community 493 - "CefUnresponsiveProcessCallback"
-Cohesion: 0.20
+Cohesion: 0.18
 Nodes (10): CefUnresponsiveProcessCallback, Terminate, Wait, cef_unresponsive_process_callback_t, CefWrapperType, CefCToCppRefCounted<CefUnresponsiveProcessCallbackCToCpp,
                     CefUnresponsiveProcessCallback,
                     cef_unresponsive_process_callback_t>::
@@ -2816,27 +2818,24 @@ Cohesion: 0.20
 Nodes (9): 0.0.1, 0.0.3, 0.0.5, 0.0.6, 0.0.7, 0.0.8, 0.0.9, 0.1.0 (+1 more)
 
 ### Community 495 - ".OnQuery"
-Cohesion: 0.21
-Nodes (18): CefBrowser, CefRefPtr, CefString, FileDialogMode, JSDialogType, vector, ClientDialogHandlerGtk, GetWindowAndContinue (+10 more)
+Cohesion: 0.18
+Nodes (19): OnFileDialogParams, OnJSDialogParams, CefFormatUrlForSecurityDisplay(), CefBrowser, CefRefPtr, GtkWindow, JSDialogType, ClientDialogHandlerGtk (+11 more)
 
 ### Community 496 - "CefV8Context"
-Cohesion: 0.15
+Cohesion: 0.16
 Nodes (9): CefRefPtr, CefString, string, TracingTestHandler, completion_event_, trace_data_, trace_type_, type_ (+1 more)
 
 ### Community 497 - "_cef_urlparts_t"
-Cohesion: 0.16
-Nodes (23): SetGetHeaderByName, TEST(), CefBrowserView, CefRefPtr, CefWindow, HeaderMap, string, ComputeNativeWindowTitle() (+15 more)
+Cohesion: 0.20
+Nodes (12): SetGetHeaderByName, TEST(), HeaderMap, TestMapEqual(), TestMapNoDuplicates(), TestPostDataElementEqual(), TestPostDataEqual(), TestResponseEqual() (+4 more)
 
 ### Community 498 - "TEST"
 Cohesion: 0.15
 Nodes (13): DirectExpired, DirectMismatchedCancel, DirectMismatchedContinue, DirectNoError, TEST(), RedirectMismatchedFromHttpResourceCancel, RedirectMismatchedFromHttpResourceContinue, RedirectMismatchedFromHttpServerCancel (+5 more)
 
 ### Community 499 - "_cef_time_t"
-Cohesion: 0.21
-Nodes (10): _cef_print_job_callback_t, base, CefPrintJobCallback, Continue, CefWrapperType, CefCToCppRefCounted<
-    CefPrintJobCallbackCToCpp,
-    CefPrintJobCallback,
-    cef_print_job_callback_t>::UnwrapDerived(), CefPrintJobCallbackCToCpp, Continue (+2 more)
+Cohesion: 0.12
+Nodes (13): _cef_browser_t, _cef_print_dialog_callback_t, base, _cef_print_handler_t, base, _cef_print_job_callback_t, base, cef_base_ref_counted_t (+5 more)
 
 ### Community 500 - "GetForClient"
 Cohesion: 0.29
@@ -2847,12 +2846,12 @@ Cohesion: 0.22
 Nodes (9): CefScrollView, CreateScrollView, GetContentView, GetHorizontalScrollbarHeight, GetVerticalScrollbarWidth, GetVisibleContentRect, HasHorizontalScrollbar, HasVerticalScrollbar (+1 more)
 
 ### Community 502 - "CefRefPtr"
-Cohesion: 0.29
-Nodes (6): FetchTestSettings, sub_allow_origin, sub_redirect_url, sub_url, url, SetUpFetch()
+Cohesion: 0.18
+Nodes (13): BrowserMessage, CefRefPtr, Duration, RendererMessage, string, TimePoint, vector, CopyDataIntoMemory() (+5 more)
 
 ### Community 503 - "RunnerTests.swift"
-Cohesion: 0.29
-Nodes (4): RunnerTests, RunnerTests, XCTest, XCTestCase
+Cohesion: 0.12
+Nodes (10): Flutter, AppDelegate, Any, Bool, RunnerTests, RunnerTests, UIApplication, UIKit (+2 more)
 
 ### Community 504 - ".OnPrintSettings"
 Cohesion: 0.50
@@ -2865,16 +2864,21 @@ Cohesion: 0.22
 Nodes (8): Automatic Book Indexing Pipeline Implementation Plan, Task 1: TocMatcher — offline TOC/chapter heuristics, Task 2: AutoIndexPipeline — pure stage-chain orchestration, Task 3: AiService.optimizeIndexResult, Task 4: Rewrite AutoIndexService to wire the pipeline, Task 5: AutoIndexScreen — route failures to the manual picker, Task 6: GenerateBookScreen — remove the indexing-method selector, Task 7: Final verification
 
 ### Community 506 - "WeakPtrFactory"
-Cohesion: 0.20
-Nodes (6): Callback, CefBrowserSettings, CefClient, CefString, TransitionType, WindowOpenDisposition
+Cohesion: 0.32
+Nodes (5): Callback, CefBrowserSettings, CefClient, CefString, WindowOpenDisposition
 
 ### Community 507 - "CefPermissionPromptCallback"
-Cohesion: 0.31
-Nodes (8): CefRefPtr, OnceClosure, string, Create404Response(), GetHost(), GetOrigin(), GetScheme(), Stop()
+Cohesion: 0.43
+Nodes (6): CefRefPtr, string, Create404Response(), GetHost(), GetOrigin(), GetScheme()
 
 ### Community 508 - "CookieTestJSHandler"
-Cohesion: 0.15
-Nodes (16): cef_log_severity_t, CefString, CefRefPtr, function, WebviewHandler, browser_map_, imeCommitText, imeSetComposition (+8 more)
+Cohesion: 0.28
+Nodes (11): CEF_CALLBACK
+client_get_print_handler(), cef_browser_t, cef_size_t, cef_string_t, CEF_CALLBACK
+print_handler_get_pdf_paper_size(), CEF_CALLBACK
+print_handler_on_print_dialog(), CEF_CALLBACK
+print_handler_on_print_job(), CEF_CALLBACK
+print_handler_on_print_reset() (+3 more)
 
 ### Community 509 - "_cef_urlparts_t"
 Cohesion: 0.25
@@ -2886,37 +2890,37 @@ Cohesion: 0.17
 Nodes (12): MessageRouterTest, TEST(), SinglePersistentQueryFailureAsyncCallback, SinglePersistentQueryFailureSyncCallback, SinglePersistentQuerySuccessAsyncCallback, SinglePersistentQuerySuccessSyncCallback, SingleQueryCancel, SingleQueryFailureAsyncCallback (+4 more)
 
 ### Community 511 - "CefV8Accessor"
-Cohesion: 0.29
-Nodes (7): BaseTimeToTime, InvalidBaseTimeToTime, InvalidTimeToBaseTime, Now, TEST(), TimeTest, TimeToBaseTime
+Cohesion: 0.18
+Nodes (8): package:flow/services/page_mapping.dart, package:flow/widgets/duo_button.dart, package:flutter_test/flutter_test.dart, package:webview_cef_example/main.dart, main, main, main, main
 
 ### Community 512 - "CEF_CALLBACK
 dialog_handler_on_file_dialog"
-Cohesion: 0.15
-Nodes (15): CookieResource, expect_cookie, CookieTestSetup, expect_cookie, PostResource, expect_downgrade_to_get, is_cross_origin, main_origin (+7 more)
+Cohesion: 0.33
+Nodes (5): PostResource, expect_downgrade_to_get, is_cross_origin, main_origin, was_redirected
 
 ### Community 513 - ".GetFrameMap"
 Cohesion: 0.15
 Nodes (14): cef_thread_id_t, CefBrowser, CefProcessId, CefRefPtr, CreateTestMessage(), SharedMessageTestHandler, data_, got_message_ (+6 more)
 
 ### Community 514 - "RefCountedThreadSafeBase"
-Cohesion: 0.13
-Nodes (13): BinaryMessageEmpty, BinaryMessageOverThresholdSize, BinaryMessageUnderThresholdSize, BinaryTestHandler, got_notify_, got_on_query_, message_size_, Callback (+5 more)
+Cohesion: 0.21
+Nodes (8): BinaryTestHandler, got_notify_, got_on_query_, message_size_, Callback, CefBrowser, CefRefPtr, string
 
 ### Community 515 - "cef_ref_counted.cc"
 Cohesion: 0.09
-Nodes (27): CefMediaRouteCreateCallback, OnMediaRouteCreateFinished, CefMediaRouter, AddObserver, CreateRoute, GetGlobalMediaRouter, GetSource, NotifyCurrentRoutes (+19 more)
+Nodes (25): _cef_media_router_t, base, CefMediaRouter, AddObserver, CreateRoute, GetGlobalMediaRouter, GetSource, NotifyCurrentRoutes (+17 more)
 
 ### Community 516 - "manifest.json"
 Cohesion: 0.18
 Nodes (10): background_color, description, display, icons, name, orientation, prefer_related_applications, short_name (+2 more)
 
 ### Community 517 - "wWinMain"
-Cohesion: 0.22
-Nodes (3): atomic_int, AtomicRefCount, ref_count_
+Cohesion: 0.12
+Nodes (5): atomic_int, AtomicRefCount, ref_count_, CefRefCount, ref_count_
 
 ### Community 518 - "CreateRequestContext"
-Cohesion: 0.13
-Nodes (11): CefDialogHandler, CefBrowser, CefRefPtr, CefString, FileDialogMode, vector, cef_dialog_handler_t, CefRefPtr (+3 more)
+Cohesion: 0.17
+Nodes (10): cef_browser_t, cef_dialog_handler_t, cef_file_dialog_callback_t, cef_file_dialog_mode_t, cef_string_list_t, cef_string_t, CefRefPtr, CefWrapperType (+2 more)
 
 ### Community 519 - "Show"
 Cohesion: 0.29
@@ -2931,16 +2935,20 @@ Cohesion: 0.39
 Nodes (3): CancelableCallbackImpl, weak_ptr_factory_, CallbackType
 
 ### Community 522 - "RefCounted"
-Cohesion: 0.22
-Nodes (3): RefCountedBase, ref_count_, Release()
+Cohesion: 0.11
+Nodes (10): ALWAYS_INLINE, AddRefWithCheck(), RefCountedBase, ref_count_, RefCountedThreadSafeBase, HasAtLeastOneRef, HasOneRef, ref_count_ (+2 more)
 
 ### Community 523 - "CefPanelDelegate"
-Cohesion: 0.20
-Nodes (7): CefPanelDelegate, cef_color_t, optional, EmptyPanelDelegate, ThemePanelDelegate, override_color_, theme_changed_ct_
+Cohesion: 0.29
+Nodes (5): cef_color_t, optional, ThemePanelDelegate, override_color_, theme_changed_ct_
 
 ### Community 524 - "CefDeleteCookiesCallback"
-Cohesion: 0.08
-Nodes (24): _cef_completion_callback_t, _cef_cookie_manager_t, base, _cef_cookie_visitor_t, base, _cef_delete_cookies_callback_t, base, _cef_set_cookie_callback_t (+16 more)
+Cohesion: 0.21
+Nodes (10): _cef_delete_cookies_callback_t, base, CefDeleteCookiesCallback, OnComplete, CefRefPtr, CefWrapperType, CEF_CALLBACK
+delete_cookies_callback_on_complete(), CefCppToCRefCounted<
+    CefDeleteCookiesCallbackCppToC,
+    CefDeleteCookiesCallback,
+    cef_delete_cookies_callback_t>::UnwrapDerived() (+2 more)
 
 ### Community 525 - "CefSetCookieCallback"
 Cohesion: 0.22
@@ -2954,19 +2962,19 @@ Nodes (8): Args, AssertBindArgsValidity<std::index_sequence<Ns...>,
                               TypeList<Params...>>, ok, AssertConstructible, decay_t, Params, static_cast, Unwrapped
 
 ### Community 527 - "client_prefs.cc"
-Cohesion: 0.27
-Nodes (14): GetGlobalPreferenceManager, cef_show_state_t, CefRawPtr, CefRefPtr, optional, string, CreateDefaultWindowRestoreValue(), CreateWindowRestoreValue() (+6 more)
+Cohesion: 0.26
+Nodes (16): GetGlobalPreferenceManager, GetDisplayMatchingBounds, cef_show_state_t, CefRawPtr, CefRefPtr, optional, string, ClampBoundsToDisplay() (+8 more)
 
 ### Community 528 - "_cef_accelerated_paint_info_t"
-Cohesion: 0.15
-Nodes (20): Char, CharFormat, IsXDigit(), CharType, u16string, u32string, u8string, GetCharWidthPrefix() (+12 more)
+Cohesion: 0.11
+Nodes (29): Char, CharFormat, CharType, u16string, wchar_t, CreateCodePointFromUtf16SurrogatePair(), GetCharWidthPrefix(), GTestIsInitialized() (+21 more)
 
 ### Community 529 - "CefFocusHandler"
 Cohesion: 0.18
 Nodes (7): BinaryValueBuffer, message_, value_, BrowserMessage, RendererMessage, ParseBrowserMessage(), ParseRendererMessage()
 
 ### Community 530 - "MyVisitor"
-Cohesion: 0.17
+Cohesion: 0.15
 Nodes (11): BrowserWindowOsrGtk::BrowserWindowOsrGtk(), Delegate, string, PopulateOsrSettings, cef_color_t, OsrRendererSettings, background_color, begin_frame_rate (+3 more)
 
 ### Community 531 - "CefRefPtr"
@@ -2974,24 +2982,28 @@ Cohesion: 0.11
 Nodes (19): Color get, double?, build, _color, createState, didUpdateWidget, dispose, estimatedDuration (+11 more)
 
 ### Community 532 - "SendConfig"
-Cohesion: 0.11
-Nodes (18): fb/fb_auth.dart, learning_sync.dart, addXp, advancedModeNotifier, bookmarksNotifier, bumpBookmarks, bumpProgress, completeOnboarding (+10 more)
+Cohesion: 0.22
+Nodes (9): _cef_set_cookie_callback_t, base, CefSetCookieCallback, OnComplete, CefRefPtr, CefWrapperType, CEF_CALLBACK
+set_cookie_callback_on_complete(), CefCppToCRefCounted<
+    CefSetCookieCallbackCppToC,
+    CefSetCookieCallback,
+    cef_set_cookie_callback_t>::UnwrapDerived() (+1 more)
 
 ### Community 533 - "CefMenuModel"
 Cohesion: 0.18
 Nodes (10): _cef_popup_features_t, height, heightSet, isPopup, width, widthSet, x, xSet (+2 more)
 
 ### Community 534 - "FrameNavTestHandler"
-Cohesion: 0.17
-Nodes (15): DelegateSet, string, vector, ClientAppBrowser::CreateDelegates(), ClientAppBrowser::RegisterCookieableSchemes(), CreateBrowserDelegates(), RegisterCookieableSchemes(), DelegateSet (+7 more)
+Cohesion: 0.83
+Nodes (4): string, vector, ClientAppBrowser::RegisterCookieableSchemes(), RegisterCookieableSchemes()
 
 ### Community 535 - ".OnQuery"
 Cohesion: 0.20
 Nodes (7): Callback, CefBrowser, CefRefPtr, CefString, MessageHandlerSet, CreateMessageHandlers(), Handler
 
 ### Community 536 - "CefMessageRouterConfig"
-Cohesion: 0.06
-Nodes (51): IssuerChainBinaryList, CefBinaryValue, Copy, GetData, GetRawData, GetSize, IsEqual, IsOwned (+43 more)
+Cohesion: 0.09
+Nodes (37): IssuerChainBinaryList, CefBinaryValue, Copy, GetData, GetRawData, GetSize, IsEqual, IsOwned (+29 more)
 
 ### Community 537 - "Environment"
 Cohesion: 0.21
@@ -3017,7 +3029,7 @@ Cohesion: 0.25
 Nodes (8): CefView, CefButton, AsLabelButton, GetState, SetAccessibleName, SetInkDropEnabled, SetState, SetTooltipText
 
 ### Community 542 - "OsStackTraceGetterInterface"
-Cohesion: 0.33
+Cohesion: 0.29
 Nodes (5): NativeHandle, LockImpl, Lock, Try, Unlock
 
 ### Community 543 - "resource_util_posix.cc"
@@ -3029,20 +3041,21 @@ Cohesion: 0.27
 Nodes (9): _In_, _In_opt_, wWinMain(), string, vector, wchar_t, CreateAndAttachConsole(), GetCommandLineArguments() (+1 more)
 
 ### Community 546 - ".OnQuery"
-Cohesion: 0.31
-Nodes (8): CreateCallback, CefRefPtr, CefRequestContext, ClientRequestContextHandler, create_callback_, CreateRequestContext, GetRequestContext, RequestContextCallback
+Cohesion: 0.20
+Nodes (10): _cef_request_handler_t, base, _cef_select_client_certificate_callback_t, base, cef_base_ref_counted_t, CefSelectClientCertificateCallback, Select, CefWrapperType (+2 more)
 
 ### Community 547 - "README.md"
 Cohesion: 0.25
 Nodes (7): Binary Distributions, External Projects, Getting Started, Helping Out, Introduction, Quick Links, Source Distributions
 
 ### Community 548 - "_cef_audio_parameters_t"
-Cohesion: 0.11
-Nodes (18): Handler, MultiQueryMultiHandlerTestHandler, cancel_by_removing_handler_, got_query0_, got_query1_, got_query2_, got_query_canceled0_, got_query_canceled1_ (+10 more)
+Cohesion: 0.17
+Nodes (10): CancelType, Handler, MultiQuerySingleFrameTestHandler, cancel_type_, manager_, string, SingleLoadTestHandler, GetMainHTML (+2 more)
 
 ### Community 549 - ".DestroyTest"
-Cohesion: 0.40
-Nodes (4): ImageCache::ImageContent, contents_, image_, RepContentSet
+Cohesion: 0.20
+Nodes (9): CefDOMVisitor, Visit, cef_domvisitor_t, CefRefPtr, CefWrapperType, CEF_CALLBACK domvisitor_visit(), CefCppToCRefCounted<CefDOMVisitorCppToC, CefDOMVisitor, cef_domvisitor_t>::
+    UnwrapDerived(), CefDOMVisitorCppToC (+1 more)
 
 ### Community 550 - "webview_cef.dart"
 Cohesion: 0.33
@@ -3065,16 +3078,16 @@ Cohesion: 0.11
 Nodes (17): _chapterLineStart, _dotLeader, _endsWithDigits, hasPrintedPageNumbers, isChapterStart, _lines, _normalize, _numberedHeading (+9 more)
 
 ### Community 555 - "ClientRequestContextHandler"
-Cohesion: 0.17
-Nodes (15): GtkFileChooser, GtkFileFilter, OnFileDialogParams, OnJSDialogParams, CefFormatUrlForSecurityDisplay(), AddFilters(), gint, GtkDialog (+7 more)
+Cohesion: 0.40
+Nodes (6): gint, GtkDialog, string, OnDialogResponse, GetDescriptionFromMimeType(), GetPromptText()
 
 ### Community 557 - "cef_dump_without_crashing.cc"
-Cohesion: 0.50
-Nodes (4): DOMTest, Modify, Read, TEST()
+Cohesion: 0.22
+Nodes (7): DOMTest, Modify, DelegateSet, Read, CreateDOMRendererTests(), DOMRendererTest, TEST()
 
 ### Community 558 - "RefCountedThreadSafe"
-Cohesion: 0.33
-Nodes (3): AddRef(), RefCountedThreadSafe, kRefCountPreference
+Cohesion: 0.25
+Nodes (9): CefKeyboardHandler, CefBrowser, CefEventHandle, CefRefPtr, CefKeyEvent, cef_keyboard_handler_t, CefRefPtr, CefWrapperType (+1 more)
 
 ### Community 559 - "G_DECLARE_INTERFACE"
 Cohesion: 0.31
@@ -3082,12 +3095,16 @@ Nodes (9): cef_menu_model_t, CefMenuModel, CefRefPtr, CefWrapperType, CefCToCppR
     UnwrapDerived(), AddSubMenu, GetSubMenu, GetSubMenuAt (+1 more)
 
 ### Community 560 - "DeathTestFactory"
-Cohesion: 0.16
-Nodes (6): CefTime, time_t, CefTimer, running_, GetTimeIntervalMilliseconds(), SetTimer
+Cohesion: 0.29
+Nodes (5): CefTime, time_t, GetTimeIntervalMilliseconds(), IsTimerPending, SetTimer
+
+### Community 561 - "CefRefCount"
+Cohesion: 0.18
+Nodes (11): _cef_task_info_t, cpu_usage, gpu_memory, id, is_gpu_memory_inflated, is_killable, memory, number_of_processors (+3 more)
 
 ### Community 562 - "CefTimer"
-Cohesion: 0.21
-Nodes (14): Impl, ContainsRegex(), MakeDeathTestMatcher(), MakePolymorphicMatcher(), MatchesRegex(), MatchesRegexMatcher, full_match_, regex_ (+6 more)
+Cohesion: 0.14
+Nodes (22): Impl, ContainsRegex(), GetPrefixUntilComma(), string, IsSpace(), MakeDeathTestMatcher(), MakePolymorphicMatcher(), MatchesRegex() (+14 more)
 
 ### Community 563 - "CefCppToCRefCounted<
     CefSchemeHandlerFactoryCppToC,
@@ -3104,19 +3121,21 @@ Nodes (5): cef_scheme_handler_factory_t, CefRefPtr, CefSchemeHandlerFactory, Cef
     CefJSDialogCallback,
     cef_jsdialog_callback_t>::UnwrapDerived"
 Cohesion: 0.05
-Nodes (44): Factory, InstantiationContainer, Abort(), AssertHelper, CodeLocation, file, line, GetPrefixUntilComma() (+36 more)
+Nodes (37): Factory, GeneratorCreationFunc, InstantiationContainer, Abort(), CodeLocation, file, line, GetTestCasePatternHolder() (+29 more)
 
 ### Community 565 - "OsrDragEvents"
 Cohesion: 0.29
 Nodes (5): OsrDragEvents, OnDragEnter, OnDragLeave, OnDragOver, OnDrop
 
 ### Community 566 - "ostream"
-Cohesion: 0.12
+Cohesion: 0.11
 Nodes (14): cef_errorcode_t, Resource, expected_error_code, expected_failure_query_ct, expected_response_ct, expected_success_query_ct, failure_query_ct, handler (+6 more)
 
 ### Community 567 - "teamcity_gtest.cpp"
-Cohesion: 0.18
-Nodes (9): OnceClosure, ReadyCallback, string, HSTSTestServerObserver, done_callback_, https_server_, origin_, ready_callback_ (+1 more)
+Cohesion: 0.20
+Nodes (8): cef_auth_callback_t, CefString, CefWrapperType, CefAuthCallbackCToCpp, Cancel, Continue, CefCToCppRefCounted<CefAuthCallbackCToCpp,
+                    CefAuthCallback,
+                    cef_auth_callback_t>::UnwrapDerived(), cef_auth_callback_t
 
 ### Community 569 - "AudioTogglePlaybackTest"
 Cohesion: 0.67
@@ -3187,7 +3206,7 @@ Cohesion: 0.15
 Nodes (16): DoesBlah, HasBlahBlah, HasFoo, HasPropertyA, BaseTest, DerivedTest, FooTest, shared_ (+8 more)
 
 ### Community 586 - "ThemeWindowDelegate"
-Cohesion: 0.33
+Cohesion: 0.29
 Nodes (4): CefWindow, ThemeWindowDelegate, native_theme_changed_ct_, theme_changed_ct_
 
 ### Community 587 - "FunctorTraits<R (__stdcall Receiver::*)(Args...) const>"
@@ -3195,24 +3214,24 @@ Cohesion: 0.50
 Nodes (4): FunctorTraits<R (__stdcall Receiver::*)(Args...) const>, is_callback, is_method, is_nullable
 
 ### Community 588 - "TEST"
-Cohesion: 0.12
-Nodes (11): CefMainArgs, CefWindowInfoTraits, struct_type, _cef_accelerated_paint_native_pixmap_plane_info_t, fd, offset, size, stride (+3 more)
+Cohesion: 0.22
+Nodes (8): CookieDoneCallback, CefCookie, CookieVector, CookieVisitor, callback_, cookies_, delete_cookies_, GetAllCookies()
 
 ### Community 589 - "parse_snapshot"
 Cohesion: 0.50
 Nodes (4): parse_snapshot(), Parses the snapshot content and yields (filename, file_content) tuples., Reads the snapshot file and updates the project files accordingly., update_project_from_snapshot()
 
 ### Community 590 - "CefPrintHandler"
-Cohesion: 0.12
-Nodes (15): _cef_print_handler_t, base, cef_base_ref_counted_t, CefPrintHandler, OnPrintDialog, OnPrintJob, OnPrintReset, OnPrintSettings (+7 more)
+Cohesion: 0.08
+Nodes (20): CefDragHandler, CefBrowser, CefRefPtr, DragOperationsMask, vector, CefPrintHandler, OnPrintDialog, OnPrintJob (+12 more)
 
 ### Community 591 - "FlatTuple"
-Cohesion: 0.15
-Nodes (12): Arg, Idx, Bool(), FlatTuple, FlatTupleBase, FlatTupleBase<FlatTuple<T...>, IndexSequence<Idx...>>, FlatTupleConstructTag, FlatTupleElemBase (+4 more)
+Cohesion: 0.20
+Nodes (10): CefMediaSink, GetDeviceInfo, GetIconType, GetId, GetName, IsCastSink, IsCompatibleWith, IsDialSink (+2 more)
 
 ### Community 593 - ".OnFileDialog"
-Cohesion: 0.05
-Nodes (41): CefRequest, GetFirstPartyForCookies, GetFlags, GetHeaderByName, GetHeaderMap, GetIdentifier, GetMethod, GetPostData (+33 more)
+Cohesion: 0.03
+Nodes (76): cef_resource_type_t, CefRequest, GetFirstPartyForCookies, GetFlags, GetHeaderByName, GetHeaderMap, GetIdentifier, GetMethod (+68 more)
 
 ### Community 594 - "WebviewTextureRenderer"
 Cohesion: 0.16
@@ -3232,32 +3251,35 @@ Nodes (12): cef_focus_source_t, CEF_CALLBACK
 client_get_focus_handler(), cef_browser_t, cef_focus_handler_t, CefRefPtr, CefWrapperType, CEF_CALLBACK focus_handler_on_got_focus(), CEF_CALLBACK focus_handler_on_set_focus() (+4 more)
 
 ### Community 605 - "TEST"
-Cohesion: 0.15
-Nodes (9): CreateFromBrowserFILEThread, CreateFromBrowserIOThread, CreateFromBrowserUIThread, CreateFromRenderThread, CreateThread, CefRefPtr, CefString, Create (+1 more)
+Cohesion: 0.27
+Nodes (7): CefTextfield, CefTextfieldDelegate, CefRefPtr, cef_textfield_delegate_t, CefRefPtr, CefWrapperType, CefCppToCRefCounted<
+    CefTextfieldDelegateCppToC,
+    CefTextfieldDelegate,
+    cef_textfield_delegate_t>::UnwrapDerived()
 
 ### Community 606 - "AppDelegate"
-Cohesion: 0.47
-Nodes (3): AppDelegate, Bool, NSApplication
+Cohesion: 0.22
+Nodes (7): FlutterAppDelegate, AppDelegate, Bool, NSApplication, AppDelegate, Bool, NSApplication
 
 ### Community 607 - "FunctorTraits<R(__fastcall*)(Args...)>"
-Cohesion: 0.19
-Nodes (12): I, integral_constant, CartesianProductGenerator, generators_, CartesianProductHolder, generators_, Combine(), tuple (+4 more)
+Cohesion: 0.24
+Nodes (10): I, integral_constant, CartesianProductHolder, generators_, Combine(), tuple, PrintTupleTo(), TersePrintPrefixToStrings() (+2 more)
 
 ### Community 608 - "CefV8Accessor"
-Cohesion: 0.19
-Nodes (12): _cef_v8accessor_t, base, CefV8Accessor, Get, Set, cef_string_t, CefRefPtr, CefWrapperType (+4 more)
+Cohesion: 0.07
+Nodes (26): _cef_v8accessor_t, base, _cef_v8array_buffer_release_callback_t, base, _cef_v8context_t, base, _cef_v8handler_t, base (+18 more)
 
 ### Community 609 - "GeneratedPluginRegistrant"
-Cohesion: 0.33
-Nodes (4): Flutter, GeneratedPluginRegistrant, +registerWithRegistry, NSObject
+Cohesion: 0.67
+Nodes (3): GeneratedPluginRegistrant, +registerWithRegistry, NSObject
 
 ### Community 610 - "ImageCache"
-Cohesion: 0.21
-Nodes (13): ImageContentSet, ImageInfoSet, ImageMap, LoadImagesCallback, ImageSet, ImageCache, image_map_, LoadImages (+5 more)
+Cohesion: 0.20
+Nodes (10): CefRefPtr, CefRequestContext, string, SendConfig, frame_, has_credentials_, password_, request_ (+2 more)
 
 ### Community 611 - "WeakPtrFactory"
-Cohesion: 0.18
-Nodes (9): Flag, WeakPtrFactory, WeakPtrFactoryBase, ptr_, weak_reference_owner_, WeakReferenceOwner, flag_, Invalidate (+1 more)
+Cohesion: 0.22
+Nodes (8): package:plugin_platform_interface/plugin_platform_interface.dart, getPlatformVersion, _instance, _token, static final Object, static WebviewCefPlatform, static WebviewCefPlatform get, webview_cef_method_channel.dart
 
 ### Community 612 - "TypeParameterizedTestSuiteRegistry"
 Cohesion: 0.15
@@ -3268,8 +3290,8 @@ Cohesion: 0.24
 Nodes (9): ApplyTo(), CefMenuModel, CefRefPtr, CefView, CefWindow, GetShade(), IsSet(), MaybeInitialize() (+1 more)
 
 ### Community 615 - "SimpleTestProvider"
-Cohesion: 0.21
-Nodes (10): Mode, OnceClosure, OneShotProvider, content_, destruct_callback_, done_, SimpleTestProvider, do_nothing_callback_ (+2 more)
+Cohesion: 0.22
+Nodes (9): _cef_browser_host_t, base, _cef_browser_t, base, _cef_run_file_dialog_callback_t, base, cef_base_ref_counted_t, CefWrapperType (+1 more)
 
 ### Community 616 - "FunctorTraits<R (*)(Args...)>"
 Cohesion: 0.50
@@ -3306,16 +3328,16 @@ Cohesion: 0.50
 Nodes (4): BrowserMsgHeader, context_id, is_binary, request_id
 
 ### Community 633 - "binary_transfer_test.cc"
-Cohesion: 0.22
-Nodes (7): Callback, CefBrowser, CefRefPtr, CefString, MessageHandlerSet, CreateMessageHandlers(), Handler
+Cohesion: 0.36
+Nodes (8): GtkFileChooser, GtkFileFilter, AddFilters(), CefString, FileDialogMode, vector, OnFileDialog, MissingMimeTypeData()
 
 ### Community 634 - "RedirectResponseTest"
 Cohesion: 0.20
 Nodes (8): unique_ptr, RedirectResponseTest, browser_id_, resource_request_handler_, resource_test_, via_request_context_handler_, ResourceRequestHandler, ResourceTest
 
 ### Community 635 - "ThreadTest"
-Cohesion: 0.24
-Nodes (6): cef_platform_thread_id_t, CefRefPtr, ThreadTest, thread_, thread_id_, RefCountedThreadSafe<ThreadTest>
+Cohesion: 0.32
+Nodes (4): CreateArrayBufferWithCopy, CefProcessId, CefString, RequestInfo
 
 ### Community 636 - "ClientAppBrowser::RegisterCookieableSchemes"
 Cohesion: 0.33
@@ -3330,69 +3352,65 @@ Cohesion: 0.50
 Nodes (4): FunctorTraits<base::mac::ScopedBlock<R (^)(Args...)>>, is_callback, is_method, is_nullable
 
 ### Community 672 - "FunctorTraits<OnceCallback<R(Args...)>>"
-Cohesion: 0.22
-Nodes (7): OnceClosure, SimpleThreadTest, done_callback_, expected_task_count_, got_done_count_, got_task_count_, task_callback_
+Cohesion: 0.48
+Nodes (7): KeyEvent, GdkEventKey, KeyboardCode, GdkEventToWindowsKeyCode(), GetControlCharacter(), GetWindowsKeyCodeWithoutLocation(), KeyboardCodeFromXKeysym()
 
 ### Community 683 - "OsStackTraceGetterInterface"
 Cohesion: 0.18
 Nodes (9): OsStackTraceGetter, CurrentStackTrace, OsStackTraceGetterInterface, CurrentStackTrace, kElidedFramesMarker, UponLeavingGTest, UnitTestImpl::CurrentOsStackTraceExceptTop(), UnitTestImpl::os_stack_trace_getter() (+1 more)
-
-### Community 684 - "FunctorTraits<R(__stdcall*)(Args...)>"
-Cohesion: 0.50
-Nodes (4): FunctorTraits<R(__stdcall*)(Args...)>, is_callback, is_method, is_nullable
 
 ### Community 685 - "DownloadSchemeHandlerFactory"
 Cohesion: 0.22
 Nodes (7): CefSchemeHandlerFactory, DelayCallbackVendor, ClientSchemeHandlerFactory, DownloadSchemeHandlerFactory, delay_callback_vendor_, got_download_request_, RedirectSchemeHandlerFactory
 
 ### Community 686 - "OnProcessMessageReceived"
-Cohesion: 0.20
-Nodes (10): CefProcessId, PaintElementType, RectList, onFocusedNodeChangeMessage, OnImeCompositionRangeChanged, onImeCompositionRangeChangedMessage, onJavaScriptChannelMessage, OnPaint (+2 more)
+Cohesion: 0.33
+Nodes (5): BinaryMessageEmpty, BinaryMessageOverThresholdSize, BinaryMessageUnderThresholdSize, MessageRouterTest, TEST()
 
 ### Community 687 - "fd_backend_stub.dart"
 Cohesion: 0.22
 Nodes (8): fb_auth.dart, fb_firestore.dart, _FaAuth, FbAuth, FdAuthBackend, FdAuthBackend, initializeFiredart, noSuchMethod
 
 ### Community 688 - "browser_info"
-Cohesion: 0.22
-Nodes (9): browser_info, browser, dpi, height, is_dragging, is_ime_commit, prev_ime_position, width (+1 more)
+Cohesion: 0.13
+Nodes (11): browser_info, browser, dpi, height, is_dragging, is_ime_commit, prev_ime_position, width (+3 more)
 
 ### Community 689 - "TEST"
 Cohesion: 0.25
 Nodes (8): BasicCustomStandardScheme, BasicCustomStandardSchemeWithQuery, BasicHttpScheme, BasicHttpSchemeWithQuery, BasicServer, BasicServerWithQuery, CorsTest, TEST()
 
 ### Community 692 - "CefFocusHandler"
-Cohesion: 0.39
+Cohesion: 0.33
 Nodes (4): CefFocusHandler, CefBrowser, CefRefPtr, FocusSource
 
 ### Community 693 - "CefCToCppRefCounted<CefXmlReaderCToCpp, CefXmlReader, cef_xml_reader_t>::
     UnwrapDerived"
-Cohesion: 0.06
-Nodes (17): _cef_extension_handler_t, _cef_extension_t, base, _cef_request_context_t, cef_base_ref_counted_t, _cef_client_t, _cef_extension_handler_t, base (+9 more)
+Cohesion: 0.08
+Nodes (6): CefStreamReader, CefStreamReader, Read, TEST(), ReadArchive, ZipReaderTest
 
 ### Community 694 - "CefThread"
-Cohesion: 0.25
-Nodes (8): CefThread, GetPlatformThreadId, GetTaskRunner, IsRunning, Stop, cef_thread_t, CefWrapperType, CefCToCppRefCounted<CefThreadCToCpp, CefThread, cef_thread_t>::UnwrapDerived()
+Cohesion: 0.40
+Nodes (6): webview_ptr_array_free(), webview_ptr_array_unref(), WPtrArray, capacity, len, pdata
 
 ### Community 695 - "CefString"
-Cohesion: 0.25
-Nodes (8): CefString, vector, AddWordToDictionary, Find, ImeCommitText, ImeSetComposition, ReplaceMisspelling, StartDownload
+Cohesion: 0.33
+Nodes (5): ScopedGLContext, is_valid_, scoped_gdk_threads_, swap_buffers_, widget_
 
 ### Community 696 - "GetCertificateInformation"
 Cohesion: 0.39
-Nodes (8): cef_cert_status_t, cef_ssl_content_status_t, string, GetBinaryString(), GetCertificateInformation(), GetCertStatusString(), GetContentStatusString(), GetTimeString()
+Nodes (8): cef_cert_status_t, Delegate, string, ClientHandler::ClientHandler(), GetBinaryString(), GetCertificateInformation(), GetCertStatusString(), GetTimeString()
 
 ### Community 697 - "IframeTestSetup"
-Cohesion: 0.25
-Nodes (7): IframeTestSetup, iframe_handler_, main_handler_, resource_iframe_, resource_main_, sandbox_attribs_, test_name_
+Cohesion: 0.18
+Nodes (9): CookieTestSetup, expect_cookie, IframeTestSetup, iframe_handler_, main_handler_, resource_iframe_, resource_main_, sandbox_attribs_ (+1 more)
 
 ### Community 698 - "SharedPayload"
-Cohesion: 0.29
-Nodes (5): atomic, SharedPayload, value, SharedPayloadBase, ref
+Cohesion: 0.06
+Nodes (32): IncrementT, Eq(), FindFirstPrinter, atomic, E, T, unique_ptr, IgnoredValue (+24 more)
 
 ### Community 699 - "G_DECLARE_INTERFACE"
-Cohesion: 0.29
-Nodes (7): fl_texture, FlTexture, G_DECLARE_INTERFACE(), FL, G_BEGIN_DECLS, GObject, TEXTURE
+Cohesion: 0.12
+Nodes (13): fl_texture, FlTexture, _FlPixelBufferTextureClass, parent_class, GObjectClass, G_DECLARE_INTERFACE(), _FlTextureGLClass, parent_class (+5 more)
 
 ### Community 700 - "TEST"
 Cohesion: 0.29
@@ -3402,28 +3420,28 @@ Nodes (7): ObjectLoad, ObjectLoadError, Create, Read, TEST(), ReadError, XmlRead
     CefCompletionCallbackCppToC,
     CefCompletionCallback,
     cef_completion_callback_t>::UnwrapDerived"
-Cohesion: 0.29
-Nodes (5): cef_completion_callback_t, CefRefPtr, CefWrapperType, CEF_CALLBACK
-completion_callback_on_complete(), CefCppToCRefCounted<
+Cohesion: 0.15
+Nodes (14): CefCompletionCallback, OnComplete, cef_completion_callback_t, CefRefPtr, CefWrapperType, CEF_CALLBACK
+completion_callback_on_complete(), CefCompletionCallbackCppToC, CefCppToCRefCounted<
     CefCompletionCallbackCppToC,
     CefCompletionCallback,
-    cef_completion_callback_t>::UnwrapDerived()
+    cef_completion_callback_t>::UnwrapDerived() (+6 more)
 
 ### Community 702 - "file_util.cc"
-Cohesion: 0.52
-Nodes (6): AllowFileIO(), string, GetFileExtension(), JoinPath(), ReadFileToString(), WriteFile()
+Cohesion: 0.40
+Nodes (4): package:webview_cef/webview_cef_method_channel.dart, channel, main, platform
 
 ### Community 703 - "IOException"
 Cohesion: 0.33
 Nodes (6): Exception, FileSystemException, HttpException, IOException, SocketException, FbAuthException
 
 ### Community 704 - "OnBeforePopup"
-Cohesion: 0.33
-Nodes (6): CefBrowserSettings, CefClient, WindowOpenDisposition, loadUrl, OnBeforePopup, openDevTools
+Cohesion: 0.50
+Nodes (4): CefBrowserSettings, CefClient, WindowOpenDisposition, OnBeforePopup
 
 ### Community 705 - "CefRegisterSchemeHandlerFactory"
-Cohesion: 0.33
-Nodes (6): CefSchemeHandlerFactoryCppToC, cef_scheme_handler_factory_t, CefSchemeHandlerFactory, CefSchemeHandlerFactory, CefRegisterSchemeHandlerFactory(), RegisterSchemeHandlers()
+Cohesion: 0.29
+Nodes (7): CefSchemeHandlerFactoryCppToC, cef_scheme_handler_factory_t, CefSchemeHandlerFactory, CefSchemeHandlerFactory, CefRegisterSchemeHandlerFactory(), RegisterSchemeHandlers(), RegisterTestScheme()
 
 ### Community 706 - "AsciiStrToLower"
 Cohesion: 0.47
@@ -3434,12 +3452,12 @@ Cohesion: 0.40
 Nodes (4): SubResource, is_cross_origin, main_origin, supports_cors
 
 ### Community 708 - "CreateTestRequestContext"
-Cohesion: 0.40
-Nodes (3): TestRequestContextMode, CreateTestRequestContext(), RCInitCallback
+Cohesion: 0.50
+Nodes (4): FunctorTraits<OnceCallback<R(Args...)>>, is_callback, is_method, is_nullable
 
-### Community 710 - "LoadIconImage"
-Cohesion: 0.70
-Nodes (4): CefRefPtr, string, LoadIconImage(), LoadImage()
+### Community 709 - ".OnFrameCreated"
+Cohesion: 0.50
+Nodes (4): FunctorTraits<R(__fastcall*)(Args...)>, is_callback, is_method, is_nullable
 
 ### Community 711 - "DeathTestFactory"
 Cohesion: 0.40
@@ -3450,8 +3468,11 @@ Cohesion: 0.70
 Nodes (3): GetNotDefaultOrNull(), SuiteApiResolver, SetUpTearDownSuiteFuncType
 
 ### Community 713 - "TEST"
-Cohesion: 0.50
-Nodes (4): CanSendAndReceiveFromIoThread, CanSendAndReceiveFromUiThread, TEST(), SendSharedProcessMessageTest
+Cohesion: 0.67
+Nodes (3): cef_request_context_t, CefWrapperType, CefCToCppRefCounted<
+    CefRequestContextCToCpp,
+    CefRequestContext,
+    cef_request_context_t>::UnwrapDerived()
 
 ### Community 714 - "TEST"
 Cohesion: 0.50
@@ -3465,6 +3486,10 @@ Nodes (4): MultiQueryMultiHandler, MultiQueryMultiHandlerCancelByRemovingHandler
 Cohesion: 0.50
 Nodes (4): webview_value, ref_count, type, WValueType
 
+### Community 718 - "ostream"
+Cohesion: 0.07
+Nodes (23): ostringstream, ErrnoLogMessage, err_, log_message_, LogSeverity, ostream, string, SystemErrorCode (+15 more)
+
 ### Community 719 - "main_context_impl_posix.cc"
 Cohesion: 0.67
 Nodes (3): string, MainContextImpl::GetAppWorkingDirectory(), MainContextImpl::GetDownloadPath()
@@ -3476,10 +3501,6 @@ Nodes (3): TEST(), PrintTest, SettingsSetGet
 ### Community 721 - "TEST"
 Cohesion: 0.50
 Nodes (3): SetGetHeaderByName, TEST(), ResponseTest
-
-### Community 722 - "TEST"
-Cohesion: 0.50
-Nodes (4): TEST(), ReadWillBlock, ReadWontBlock, StreamResourceHandlerTest
 
 ### Community 723 - "FlatTupleElemBase<FlatTuple<T...>, I>"
 Cohesion: 0.50
@@ -3494,24 +3515,27 @@ Cohesion: 0.67
 Nodes (3): MenuItemType, GetType, GetTypeAt
 
 ## Knowledge Gaps
-- **8094 isolated node(s):** `flutter_export_environment.sh script`, `+registerWithRegistry`, `mockBooks`, `DefaultFirebaseOptions`, `linuxApiKey` (+8089 more)
+- **8095 isolated node(s):** `flutter_export_environment.sh script`, `+registerWithRegistry`, `mockBooks`, `DefaultFirebaseOptions`, `linuxApiKey` (+8090 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **49 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `State` connect `ai_task.dart & Completer` to `bookmarks_screen.dart & web_webview_helper.dart`, `../widgets/math_markdown.dart & qp_detail_scree...`, `book_dashboard_screen.dart & AlertDialog`, `../widgets/lesson_path.dart & lesson_accordion....`, `main_layout_screen.dart & course_edit_structure...`, `practice_screen.dart & AlertDialog`, `../widgets/lesson_assistant_chat.dart & _addSys...`, `practice_session_screen.dart & lesson_complete_...`, `../services/ai_service.dart & package:google_ge...`, `CefRefPtr`, `app_models.dart & Book`, `HandleExceptionsInMethodIfSupported`, `source_pdf_upload_screen.dart & _clearSlot`, `generate_book_screen.dart & auto_index_screen.dart`, `CefTranslatorTestRefPtrClientChildCppToC`, `RequestClient`, `platform_webview.dart & buildWebWebView`, `exam_screen.dart & generate_qp_screen.dart`, `../widgets/bottom_sheets/section_bottom_sheet.d...`, `.OnQuery`, `CefLifeSpanHandler`, `../widgets/selectors/module_selector.dart & ../...`, `RequestTestHandler`, `ViewsOverlayControls`, `auto_index_screen.dart & index_picker_screen.dart`, `CefRequestHandlerCppToC`, `pyq_complete_screen.dart & _formatDuration`, `TestMenuButtonCustomPopupDelegate`, `AudioTestHandler`, `TEST`, `PopoutWindowDelegate`, `../widgets/responsive_center.dart & ResponsiveC...`, `struct_type`, `.OnFileDialog`, `CefMessageRouterBrowserSideImpl`, `RefCountedThreadSafeBase`, `cef_lock.h`, `ThreadTest`, `SimpleTestProvider`, `RequestSendRecvTestHandler`, `CefPostData`, `TestServerObserver`, `CefViewDelegate`, `MultiQueryManager`, `cef_zip_archive.cc`?**
-  _High betweenness centrality (0.169) - this node is a cross-community bridge._
-- **Why does `CefBaseRefCounted` connect `CefBaseRefCounted` to `cef_ref_counted.cc`, `CreateRequestContext`, `CefDeleteCookiesCallback`, `CefSetCookieCallback`, `canvas_html_view.dart & buildCanvasArt`, `CefMessageRouterConfig`, `app_models.dart & Book`, `../widgets/slide_views/fill_in_blank_view.dart ...`, `pdf_browser_screen.dart & _deleteFolder`, `course_questionnaire_screen.dart & generate_boo...`, `../widgets/generating_book_card.dart & package:...`, `section_selector.dart & Function`, `../widgets/slide_views/quiz_view.dart & Function`, `mock_books.dart & draw`, `CefTestSuite`, `CefPrintHandler`, `.OnFileDialog`, `cef_template_util.h`, `CefRefPtr`, `CefTaskRunner`, `package:flutter/foundation.dart`, `SettingsScreen`, `_SectionManifestPanel`, `safe_pdf_viewer.dart`, `SafePdfViewerController`, `CefV8Accessor`, `preference_unittest.cc`, `cors_unittest.cc`, `CefWaitableEvent`, `CefView`, `CefRequestContextCToCpp`, `CefJSDialogCallback`, `CookieRestartTestHandler`, `CefCommandLine`, `CefTaskManager`, `cef_message_router_utils.cc`, `CefCallbackCToCpp`, `window_unittest.cc`, `CefServer`, `Resource`, `CefPrintHandler`, `CefFocusHandler`, `CefThread`, `CefImage`, `CefCppToCRefCounted`, `CefRefPtr`, `CefTranslatorTestRefPtrLibrary`, `SimpleHandler`, `ReleaseAndWaitForDestructor`, `cef_callback_helpers.h`, `CefXmlReader`, `_cef_key_event_t`, `CefExtension`, `ThresholdTestHandler`, `my_application.cc`, `CefDOMNode`, `CefDragData`, `ResponseFilterTestHandler`, `ServerHandler`, `WebSocketTestHandler`, `RequestClient`, `CefPrintSettings`, `CefOverlayControllerCToCpp`, `MediaAccessTestHandler`, `ClientAppRenderer`, `CefDevToolsMessageObserver`, `CefV8Exception`, `CefOverlayController`, `DraggableRegionsTestHandler`, `_cef_resource_read_callback_t`, `CefStreamWriter`, `dialog_handler_gtk.cc`, `TEST`, `CefSSLStatus`, `CefRefPtr`, `WebviewCookieVisitor`, `PopupOrderMainTestHandler`, `CefServerCToCpp`, `cef_panel.h`, `MultiQueryMultiHandlerTestHandler`, `TEST`, `CefRequestHandler`, `CefSchemeRegistrar`, `CefReadHandler`, `CefWriteHandler`, `audio_output_unittest.cc`, `FrameStatusMap`, `CefDOMDocument`, `NativeArray`, `CefTaskRunnerCToCpp`, `.DestroyTest`, `CefFindHandler`, `CefRenderProcessHandler`, `CefPrintDialogCallback`, `CefMenuModelDelegate`, `InitAsPopup`, `CefPermissionHandler`, `browser_info`, `CefResolveCallback`, `CefDownloadItemCallback`, `CefByteReadHandler`, `FindReplaceResponseFilter`, `Runner`, `CefMediaAccessCallback`, `CefLifeSpanHandler`, `CefTestServerConnectionCToCpp`, `TypeParameterizedTestSuiteRegistry`, `AddFilters`, `CefMediaSinkCToCpp`, `AddControls`, `CreateRequestContext`, `CefUnresponsiveProcessCallback`, `_cef_time_t`?**
-  _High betweenness centrality (0.166) - this node is a cross-community bridge._
-- **Why does `CefRequest` connect `.OnFileDialog` to `Manager`, `CefResourceManager`, `CookieAccessTestHandler`, `OverlayTestWindowDelegate`, `ai_task.dart & Completer`, `RefCountedBase`, `course_settings_screen.dart & _addFormat`, `../widgets/slide_views/interactive_proof_view.d...`, `CefPrintHandlerCppToC`, `CefV8InterceptorCppToC`, `app_models.dart & Book`, `lesson_complete_screen.dart & _buildDesktop`, `RequestClient`, `../widgets/canvas_art_view.dart & canvas_html_v...`, `RequestClient`, `../widgets/bottom_sheets/section_bottom_sheet.d...`, `CefMediaSource`, `CefURLRequestCToCpp`, `CefRefPtr`, `_cef_resource_read_callback_t`, `CefImageCToCpp`, `course_questionnaire_screen.dart & generate_boo...`, `unit_header.dart & BoxShadow`, `auth_screen.dart & AuthScreen`, `step_by_step_view.dart & duo_button.dart`, `TestMenuButtonCustomPopupDelegate`, `ostream`, `message_router_unittest_utils.cc`, `RequestRunSettings`, `ServerHandler`, `mock_books.dart & draw`, `Runner`, `OnceCallback`, `SendRecvTestHandler`, `CallbackResourceHandler`, `test_util.cc`, `CodeLocation`, `CefBaseRefCounted`, `cors_unittest.cc`, `CefTranslatorTestRefPtrLibraryChildChildCToCpp`, `BaseClientHandler`, `CefRequestHandler`, `MainMessageLoopMultithreadedGtk`, `test_runner.cc`, `_cef_urlparts_t`, `TestServerObserver`, `my_application.cc`, `PermissionPromptTestHandler`, `CefStreamResourceHandler`, `cef_zip_archive.cc`, `RoutingTestHandler`, `CookieRestartTestHandler`?**
-  _High betweenness centrality (0.096) - this node is a cross-community bridge._
+- **Why does `CefBaseRefCounted` connect `CefBaseRefCounted` to `cef_ref_counted.cc`, `CefDeleteCookiesCallback`, `CefSetCookieCallback`, `SendConfig`, `index_picker_screen.dart & course_questionnaire...`, `CefMessageRouterConfig`, `app_models.dart & Book`, `../widgets/canvas_art_view.dart & canvas_html_v...`, `../widgets/slide_views/fill_in_blank_view.dart ...`, `.OnQuery`, `.DestroyTest`, `pdf_browser_screen.dart & _deleteFolder`, `RefCountedThreadSafe`, `course_questionnaire_screen.dart & generate_boo...`, `../widgets/generating_book_card.dart & package:...`, `section_selector.dart & Function`, `../widgets/slide_views/quiz_view.dart & Function`, `mock_books.dart & draw`, `CefPrintHandler`, `CefTestSuite`, `CefRequestCToCpp`, `FlatTuple`, `.OnFileDialog`, `cef_template_util.h`, `CefRefPtr`, `CefTaskRunner`, `package:flutter/foundation.dart`, `SettingsScreen`, `_SectionManifestPanel`, `safe_pdf_viewer.dart`, `SafePdfViewerController`, `CefV8Accessor`, `preference_unittest.cc`, `CefWaitableEvent`, `CefView`, `CefJSDialogCallback`, `CookieRestartTestHandler`, `CefCommandLine`, `CefTaskManager`, `cef_message_router_utils.cc`, `CefServer`, `AssertionResult`, `CefPrintHandler`, `CefFocusHandler`, `CefClientCppToC`, `CefCppToCRefCounted`, `CefRefPtr`, `CefCppToCRefCounted<
+    CefCompletionCallbackCppToC,
+    CefCompletionCallback,
+    cef_completion_callback_t>::UnwrapDerived`, `CefTranslatorTestRefPtrLibrary`, `CefTaskRunner`, `SimpleHandler`, `ReleaseAndWaitForDestructor`, `cef_callback_helpers.h`, `CefXmlReader`, `CefThread`, `CefExtension`, `my_application.cc`, `CefDOMNode`, `CefDragData`, `ResponseFilterTestHandler`, `WebSocketTestHandler`, `RequestClient`, `CefPrintSettings`, `MediaAccessTestHandler`, `ClientAppRenderer`, `CefRefPtr`, `CefDevToolsMessageObserver`, `CefV8Exception`, `CefOverlayController`, `DraggableRegionsTestHandler`, `Create`, `_cef_resource_read_callback_t`, `CefStreamWriter`, `dialog_handler_gtk.cc`, `CefDownloadHandler`, `print_handler_gtk.cc`, `CefSSLStatus`, `CefRefPtr`, `WebviewCookieVisitor`, `ClientPrintHandlerGtk::PrintHandler`, `CefServerCToCpp`, `cef_panel.h`, `MultiQueryMultiHandlerTestHandler`, `TEST`, `CefRequestHandler`, `CefSchemeRegistrar`, `CefReadHandler`, `CefWriteHandler`, `audio_output_unittest.cc`, `FrameStatusMap`, `PermissionPromptTestHandler`, `CefDOMDocument`, `CefZipReader`, `NativeArray`, `CefTaskRunnerCToCpp`, `CefRenderProcessHandler`, `scroll_view_unittest.cc`, `CefMenuModelDelegate`, `InitAsPopup`, `CefPermissionHandler`, `browser_info`, `CefResolveCallback`, `CefDownloadItemCallback`, `CefByteReadHandler`, `FindReplaceResponseFilter`, `Runner`, `_cef_scheme_registrar_t`, `CefTestServerConnectionCToCpp`, `TypeParameterizedTestSuiteRegistry`, `AddFilters`, `CefMediaSinkCToCpp`, `AddControls`, `CefMediaSink`, `CreateRequestContext`, `CefUnresponsiveProcessCallback`?**
+  _High betweenness centrality (0.171) - this node is a cross-community bridge._
+- **Why does `State` connect `CefRequestHandlerCppToC` to `bookmarks_screen.dart & web_webview_helper.dart`, `NetNotifyTestHandler`, `../widgets/math_markdown.dart & qp_detail_scree...`, `book_dashboard_screen.dart & AlertDialog`, `../widgets/lesson_path.dart & lesson_accordion....`, `CookieAccessTestHandler`, `main_layout_screen.dart & course_edit_structure...`, `practice_screen.dart & AlertDialog`, `../widgets/lesson_assistant_chat.dart & _addSys...`, `practice_session_screen.dart & lesson_complete_...`, `ResourceManagerTestHandler`, `../services/ai_service.dart & package:google_ge...`, `AtomicRefCount`, `CefRefPtr`, `app_models.dart & Book`, `HandleExceptionsInMethodIfSupported`, `source_pdf_upload_screen.dart & _clearSlot`, `generate_book_screen.dart & auto_index_screen.dart`, `CefTranslatorTestRefPtrClientChildCppToC`, `RequestClient`, `platform_webview.dart & buildWebWebView`, `exam_screen.dart & generate_qp_screen.dart`, `../widgets/bottom_sheets/section_bottom_sheet.d...`, `.OnQuery`, `CefLifeSpanHandler`, `../widgets/selectors/module_selector.dart & ../...`, `RequestTestHandler`, `ViewsOverlayControls`, `auto_index_screen.dart & index_picker_screen.dart`, `pyq_complete_screen.dart & _formatDuration`, `TestMenuButtonCustomPopupDelegate`, `AudioTestHandler`, `TEST`, `PopoutWindowDelegate`, `CefBaseScoped`, `../widgets/responsive_center.dart & ResponsiveC...`, `struct_type`, `.OnFileDialog`, `CefMessageRouterBrowserSideImpl`, `../services/global_state.dart`, `RefCountedThreadSafeBase`, `cef_lock.h`, `ImageCache`, `RequestSendRecvTestHandler`, `CefPostData`, `TestServerObserver`, `CefViewDelegate`, `MultiQueryManager`, `cef_zip_archive.cc`?**
+  _High betweenness centrality (0.167) - this node is a cross-community bridge._
+- **Why does `CefRequest` connect `.OnFileDialog` to `Manager`, `OverlayTestWindowDelegate`, `ResponseFilterTestHandler`, `ai_task.dart & Completer`, `RefCountedBase`, `../widgets/slide_views/interactive_proof_view.d...`, `app_models.dart & Book`, `lesson_complete_screen.dart & _buildDesktop`, `../widgets/canvas_art_view.dart & canvas_html_v...`, `RequestClient`, `../widgets/bottom_sheets/section_bottom_sheet.d...`, `CefMediaSource`, `CefURLRequestCToCpp`, `CefRefPtr`, `_cef_resource_read_callback_t`, `CefImageCToCpp`, `course_questionnaire_screen.dart & generate_boo...`, `CefRequestHandlerCppToC`, `unit_header.dart & BoxShadow`, `auth_screen.dart & AuthScreen`, `step_by_step_view.dart & duo_button.dart`, `ostream`, `message_router_unittest_utils.cc`, `CefBaseScoped`, `RequestRunSettings`, `CefJSDialogHandler`, `ServerHandler`, `mock_books.dart & draw`, `Runner`, `OnceCallback`, `SendRecvTestHandler`, `CallbackResourceHandler`, `test_util.cc`, `_cef_scheme_registrar_t`, `ImageCache`, `CodeLocation`, `CefBaseRefCounted`, `cors_unittest.cc`, `CefTranslatorTestRefPtrLibraryChildChildCToCpp`, `BaseClientHandler`, `CefRequestHandler`, `MainMessageLoopMultithreadedGtk`, `test_runner.cc`, `_cef_urlparts_t`, `TestServerObserver`, `my_application.cc`, `PermissionPromptTestHandler`, `cef_zip_archive.cc`, `DownloadTestHandler`, `RoutingTestHandler`, `CookieRestartTestHandler`, `NetNotifyTestHandler`?**
+  _High betweenness centrality (0.093) - this node is a cross-community bridge._
 - **What connects `Intercept NOTIFY_DEBUGGER_ABOUT_RX_PAGES and touch the pages.`, `flutter_export_environment.sh script`, `+registerWithRegistry` to the rest of the system?**
-  _8101 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _8102 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `bookmarks_screen.dart & web_webview_helper.dart` be split into smaller, more focused modules?**
-  _Cohesion score 0.017396825396825397 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.031701631701631705 - nodes in this community are weakly interconnected._
 - **Should `course_edit_structure_screen.dart & pdf_folder_...` be split into smaller, more focused modules?**
-  _Cohesion score 0.017943409247757072 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.01796276013143483 - nodes in this community are weakly interconnected._
 - **Should `../services/generation_manager.dart & applyUnit` be split into smaller, more focused modules?**
   _Cohesion score 0.0016750418760469012 - nodes in this community are weakly interconnected._

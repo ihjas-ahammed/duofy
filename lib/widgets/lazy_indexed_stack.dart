@@ -9,7 +9,6 @@ class LazyIndexedStack extends StatefulWidget {
   final List<WidgetBuilder> builders;
   final AlignmentGeometry alignment;
   final TextDirection? textDirection;
-  final StackFit fit;
 
   const LazyIndexedStack({
     super.key,
@@ -17,7 +16,6 @@ class LazyIndexedStack extends StatefulWidget {
     required this.builders,
     this.alignment = AlignmentDirectional.topStart,
     this.textDirection,
-    this.fit = StackFit.loose,
   });
 
   @override
@@ -56,7 +54,6 @@ class _LazyIndexedStackState extends State<LazyIndexedStack> {
       index: widget.index,
       alignment: widget.alignment,
       textDirection: widget.textDirection,
-      fit: widget.fit,
       children: List.generate(widget.builders.length, (i) {
         if (_activated[i]) {
           return widget.builders[i](context);
