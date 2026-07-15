@@ -16,6 +16,8 @@ import 'course_edit_structure_screen.dart';
 import '../widgets/analytics_view.dart';
 import '../widgets/glassy_nav_bar.dart';
 import '../widgets/repair_alignment_dialog.dart';
+import '../widgets/lazy_indexed_stack.dart';
+
 
 class MainLayoutScreen extends StatefulWidget {
   final Book book;
@@ -278,8 +280,8 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     // NOTE: the Exams / Question-Papers tab is intentionally omitted from the
     // nav for now — it's being reworked in a later development stage. The
     // ExamScreen + QP generation code is kept intact for when it returns.
-    final List<Widget> pages = [
-      BookDashboardScreen(
+    final List<WidgetBuilder> pageBuilders = [
+      (context) => BookDashboardScreen(
         book: _currentBook,
         onBookUpdated: _onBookUpdated,
         activeModule: _activeModule,
@@ -287,9 +289,9 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
         initialModuleIdx: widget.initialModuleIdx,
         initialSectionIdx: widget.initialSectionIdx,
       ),
-      PracticeScreen(book: _currentBook),
-      AnalyticsView(courseId: _currentBook.id),
-      PyqTabScreen(
+      (context) => PracticeScreen(book: _currentBook),
+      (context) => AnalyticsView(courseId: _currentBook.id),
+      (context) => PyqTabScreen(
         book: _currentBook,
         activeModule: _activeModule,
         onBookUpdated: () async {
@@ -301,12 +303,13 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
           }
         },
       ),
-      SummaryScreen(
+      (context) => SummaryScreen(
         book: _currentBook,
         activeModule: _activeModule,
         activeSection: _activeSection,
       ),
     ];
+
 
     final user = FbAuth.instance.currentUser;
     final bool isOwner = user != null && _currentBook.authorId == user.uid;
@@ -352,9 +355,9 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                         ),
                       ),
                     ),
-                    body: IndexedStack(
+                    body: LazyIndexedStack(
                       index: _currentIndex,
-                      children: pages,
+                      builders: pageBuilders,
                     ),
                   ),
                 ),
@@ -407,9 +410,9 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
             ),
         ],
       ),
-      body: IndexedStack(
+      body: LazyIndexedStack(
         index: _currentIndex,
-        children: pages,
+        builders: pageBuilders,
       ),
       
       bottomNavigationBar: GlassyNavBar(

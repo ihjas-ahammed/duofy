@@ -20,6 +20,7 @@ import '../widgets/generating_book_card.dart';
 import '../widgets/next_up_card.dart';
 import '../widgets/smart_review_card.dart';
 import '../widgets/responsive_center.dart';
+import '../widgets/lazy_indexed_stack.dart';
 
 import 'package:flutter/foundation.dart';
 import 'main_layout_screen.dart';
@@ -1522,13 +1523,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   Container(width: 1, color: context.colors.outline),
                   // Desktop Main Content
                   Expanded(
-                    child: IndexedStack(
+                    child: LazyIndexedStack(
                       index: _selectedTabIndex,
-                      children: [
-                        _buildDesktopLibraryTab(activeTasks, screenWidth),
-                        _buildAnalyticsTab(screenWidth),
-                        _buildPublishedTab(screenWidth),
-                        const DocumentStoreScreen(),
+                      builders: [
+                        (context) => _buildDesktopLibraryTab(activeTasks, screenWidth),
+                        (context) => _buildAnalyticsTab(screenWidth),
+                        (context) => _buildPublishedTab(screenWidth),
+                        (context) => const DocumentStoreScreen(),
                       ],
                     ),
                   ),
@@ -1540,13 +1541,13 @@ class _HomeScreenState extends State<HomeScreen> {
           return Scaffold(
             extendBody: true,
             backgroundColor: context.colors.background,
-            body: IndexedStack(
+            body: LazyIndexedStack(
               index: _selectedTabIndex,
-              children: [
-                _buildLibraryTab(activeTasks, screenWidth),
-                _buildAnalyticsTab(screenWidth),
-                _buildPublishedTab(screenWidth),
-                const DocumentStoreScreen(),
+              builders: [
+                (context) => _buildLibraryTab(activeTasks, screenWidth),
+                (context) => _buildAnalyticsTab(screenWidth),
+                (context) => _buildPublishedTab(screenWidth),
+                (context) => const DocumentStoreScreen(),
               ],
             ),
             bottomNavigationBar: GlassyNavBar(

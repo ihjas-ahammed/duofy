@@ -176,16 +176,31 @@ $bodyHtml
 <div class="out" id="out"></div>
 ''';
     final script = '''
-<script src="https://cdn.jsdelivr.net/pyodide/$pyodideVersion/full/pyodide.js"></script>
 <script>
 const PACKAGES = $pkgsJson;
+const PYODIDE_URL = 'https://cdn.jsdelivr.net/pyodide/$pyodideVersion/full/pyodide.js';
 let pyodide = null;
 function \$(id){ return document.getElementById(id); }
+function loadScript(src){
+  return new Promise(function(resolve, reject){
+    var s = document.createElement('script');
+    s.src = src; s.async = true;
+    s.onload = function(){ resolve(); };
+    s.onerror = function(){ reject(new Error('Failed to load ' + src)); };
+    document.head.appendChild(s);
+  });
+}
 window.__initRunner = async function(){
   \$('editor').value = window.__STARTER__ || '';
   \$('run').onclick = runCode;
   try {
-    pyodide = await loadPyodide();
+    // Load Pyodide dynamically and wait for it — a plain <script src> in the
+    // head isn't reliably ready in loadHtmlString webviews (loadPyodide would
+    // be undefined → "loadPyodide is not a function").
+    if (typeof loadPyodide !== 'function') { await loadScript(PYODIDE_URL); }
+    pyodide = await loadPyodide({
+      indexURL: 'https://cdn.jsdelivr.net/pyodide/$pyodideVersion/full/'
+    });
     if (PACKAGES.length) await pyodide.loadPackage(PACKAGES);
     await pyodide.runPythonAsync(`
 import sys, io, base64
@@ -278,9 +293,11 @@ function render(){
   <span class="status">Preview</span>
   <button class="run" id="run">Render ▶</button></div>
 <textarea id="editor" spellcheck="false"></textarea>
-<div class="out" id="out" style="background:#fff;color:#111;"></div>
+<div class="out" id="out" style="background:#fff;color:#111;padding:16px;"></div>
 ''';
     final script = '''
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/latex.js/dist/latex.min.js"></script>
 <script>
 function \$(id){ return document.getElementById(id); }
@@ -293,6 +310,14 @@ function render(){
     const gen = latexjs.parse(\$('editor').value, { generator: new latexjs.HtmlGenerator({ hyphenate:false }) });
     \$('out').innerHTML = '';
     \$('out').appendChild(gen.domFragment());
+    
+    // Inject LaTeX.js document styling (Computer Modern font, layout, etc.) dynamically
+    const oldStyles = document.getElementById('latex-styles');
+    if (oldStyles) { oldStyles.remove(); }
+    const container = document.createElement('div');
+    container.id = 'latex-styles';
+    container.appendChild(gen.stylesAndScripts("https://cdn.jsdelivr.net/npm/latex.js/dist/"));
+    document.head.appendChild(container);
   } catch (e) { \$('out').textContent = String(e); }
 }
 </script>

@@ -26,17 +26,26 @@ class DuoButton extends StatefulWidget {
 class _DuoButtonState extends State<DuoButton> {
   bool _isPressed = false;
 
+  // Matches the AnimatedContainer duration below. We fire onPressed only after
+  // the button has visibly sprung back up, otherwise advancing the slide tears
+  // the button down mid-animation (a visible glitch on Continue).
+  static const Duration _pressAnim = Duration(milliseconds: 90);
+
+  void _handleTapUp() {
+    setState(() => _isPressed = false);
+    Future.delayed(_pressAnim, () {
+      if (mounted) widget.onPressed();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) {
-        setState(() => _isPressed = false);
-        widget.onPressed();
-      },
+      onTapUp: (_) => _handleTapUp(),
       onTapCancel: () => setState(() => _isPressed = false),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 100),
+        duration: _pressAnim,
         margin: EdgeInsets.only(
           top: _isPressed ? 4 : 0,
           bottom: _isPressed ? 0 : 4,
@@ -101,17 +110,23 @@ class DuoIconButton extends StatefulWidget {
 class _DuoIconButtonState extends State<DuoIconButton> {
   bool _isPressed = false;
 
+  static const Duration _pressAnim = Duration(milliseconds: 90);
+
+  void _handleTapUp() {
+    setState(() => _isPressed = false);
+    Future.delayed(_pressAnim, () {
+      if (mounted) widget.onPressed();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) {
-        setState(() => _isPressed = false);
-        widget.onPressed();
-      },
+      onTapUp: (_) => _handleTapUp(),
       onTapCancel: () => setState(() => _isPressed = false),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 100),
+        duration: _pressAnim,
         margin: EdgeInsets.only(
           top: _isPressed ? 4.0 : 0.0,
           bottom: _isPressed ? 0.0 : 4.0,

@@ -1875,7 +1875,7 @@ class _LessonScreenState extends State<LessonScreen> {
                                     'fill_in_blank',
                                     'custom_html',
                                   ].contains(slide.type)
-                                  ? _buildSlideContent(slide, bottomBar)
+                                  ? _buildSlideContent(slide, null)
                                   : GestureDetector(
                                       behavior: HitTestBehavior.translucent,
                                       onDoubleTap:
@@ -1892,7 +1892,7 @@ class _LessonScreenState extends State<LessonScreen> {
                                             },
                                       child: _buildSlideContent(
                                         slide,
-                                        bottomBar,
+                                        null,
                                       ),
                                     )),
                         ),
@@ -1945,7 +1945,9 @@ class _LessonScreenState extends State<LessonScreen> {
                       ),
                     ],
                   ),
-                ),
+                )
+              else if (!hasCustomBar && bottomBar != null)
+                bottomBar,
             ],
           ),
         ),
