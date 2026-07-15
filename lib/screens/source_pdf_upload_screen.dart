@@ -10,6 +10,7 @@ import '../services/generation_manager.dart';
 import '../services/b2_service.dart';
 import '../widgets/responsive_center.dart';
 import '../widgets/duo_button.dart';
+import 'document_store_screen.dart';
 
 class SourcePdfUploadScreen extends StatefulWidget {
   final Book book;
@@ -334,38 +335,78 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
     );
   }
 
-  void _showDocumentStorePicker(int index) {
-    if (_cacheDirPath == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Cache directory not initialized yet. Please try again.',
+  Future<void> _showDocumentStorePicker(int index) async {
+    final configured = await B2Service.instance.isConfigured();
+    if (!configured) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: context.colors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
+          title: Text(
+            'Cloud Storage Required',
+            style: TextStyle(
+              color: context.colors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'Backblaze B2 is not configured. Please setup cloud storage in the Document Store tab first.',
+            style: TextStyle(color: context.colors.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text(
+                'OK',
+                style: TextStyle(
+                  color: AppTheme.duoGreen,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
         ),
       );
       return;
     }
 
-    showModalBottomSheet(
+    if (!mounted) return;
+    final B2Object? selected = await showDialog<B2Object>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return FractionallySizedBox(
-          heightFactor: 0.85,
-          child: DocumentStorePickerDialog(
-            cacheDirPath: _cacheDirPath!,
-            prefixFilter: 'syllabus/',
-            onFileSelected: (file) {
-              setState(() {
-                _selectedFiles[index] = file;
-                _successMessage = null;
-              });
-            },
-          ),
-        );
-      },
+      builder: (ctx) => const DocumentStorePickerDialog(forSyllabus: false),
     );
+
+    if (selected != null && mounted) {
+      final appDir = await getApplicationDocumentsDirectory();
+      final cacheDir = Directory('${appDir.path}/b2_cache');
+      final file = File('${cacheDir.path}/${selected.key}');
+
+      if (file.existsSync()) {
+        setState(() {
+          _selectedFiles[index] = file;
+          _successMessage = null;
+        });
+        return;
+      }
+
+      if (!mounted) return;
+      final File? downloadedFile = await showDialog<File>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => DownloadProgressDialog(b2Obj: selected),
+      );
+
+      if (downloadedFile != null && downloadedFile.existsSync() && mounted) {
+        setState(() {
+          _selectedFiles[index] = downloadedFile;
+          _successMessage = null;
+        });
+      }
+    }
   }
 
   void _startRestore() {
@@ -942,15 +983,9 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
 }
 
 class DocumentStorePickerDialog extends StatefulWidget {
-  final String cacheDirPath;
-  final ValueChanged<File> onFileSelected;
-  final String? prefixFilter;
+  final bool forSyllabus;
 
-  const DocumentStorePickerDialog({super.key, 
-    required this.cacheDirPath,
-    required this.onFileSelected,
-    this.prefixFilter,
-  });
+  const DocumentStorePickerDialog({super.key, required this.forSyllabus});
 
   @override
   State<DocumentStorePickerDialog> createState() =>
@@ -959,23 +994,24 @@ class DocumentStorePickerDialog extends StatefulWidget {
 
 class DocumentStorePickerDialogState
     extends State<DocumentStorePickerDialog> {
-  bool _isConfigured = false;
   bool _isLoading = true;
-  List<B2Object> _files = [];
   String? _errorMessage;
+  List<B2Object> _files = [];
+  late DocCategory _selectedCategory;
+  String? _selectedCourseFilter;
+  String? _selectedSemesterFilter;
   String _searchQuery = '';
-  String? _selectedCourse;
-  String? _selectedSemester;
   final TextEditingController _searchController = TextEditingController();
-
-  // For download status
-  String? _downloadingKey;
-  double _downloadProgress = 0.0;
+  String? _cacheDirPath;
 
   @override
   void initState() {
     super.initState();
-    _checkConfigAndLoad();
+    _selectedCategory = widget.forSyllabus
+        ? DocCategory.syllabus
+        : DocCategory.reference;
+    _initCacheDir();
+    _loadFiles();
   }
 
   @override
@@ -984,23 +1020,11 @@ class DocumentStorePickerDialogState
     super.dispose();
   }
 
-  Future<void> _checkConfigAndLoad() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    final configured = await B2Service.instance.isConfigured();
-    if (!mounted) return;
-    setState(() {
-      _isConfigured = configured;
-    });
-
-    if (configured) {
-      await _loadFiles();
-    } else {
+  Future<void> _initCacheDir() async {
+    final appDir = await getApplicationDocumentsDirectory();
+    if (mounted) {
       setState(() {
-        _isLoading = false;
+        _cacheDirPath = '${appDir.path}/b2_cache';
       });
     }
   }
@@ -1008,7 +1032,7 @@ class DocumentStorePickerDialogState
   Future<void> _loadFiles() async {
     try {
       final files = await B2Service.instance.listObjects();
-      // Sort files: newest first
+      // Sort newest first
       files.sort((a, b) {
         final aDate =
             a.lastModifiedDate ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -1018,636 +1042,524 @@ class DocumentStorePickerDialogState
       });
       if (mounted) {
         setState(() {
-          var filteredFiles = files.where((f) => !f.key.endsWith('.thumb.jpg')).toList();
-          if (widget.prefixFilter != null) {
-            filteredFiles = filteredFiles.where((f) => f.key.startsWith(widget.prefixFilter!)).toList();
-          }
-          _files = filteredFiles;
+          _files = files;
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _isLoading = false;
           _errorMessage = 'Failed to load files: $e';
+          _isLoading = false;
         });
       }
     }
   }
 
+  bool _isPdfCached(String key) {
+    if (_cacheDirPath == null) return false;
+    return File('$_cacheDirPath/$key').existsSync();
+  }
+
   List<B2Object> _getFilteredFiles() {
-    if (_searchQuery.isEmpty) return _files;
-    final query = _searchQuery.toLowerCase();
-    return _files.where((f) {
-      final name = f.key.split('/').last.toLowerCase();
-      return name.contains(query);
+    return _files.where((file) {
+      if (file.key.endsWith('.thumb.jpg')) return false;
+
+      final category = getDocCategory(file);
+      if (category != _selectedCategory) return false;
+
+      if (_selectedCategory == DocCategory.syllabus) {
+        if (_selectedCourseFilter != null && file.course != _selectedCourseFilter) {
+          return false;
+        }
+        if (_selectedSemesterFilter != null && file.semester != _selectedSemesterFilter) {
+          return false;
+        }
+      }
+
+      if (_searchQuery.isNotEmpty) {
+        final displayName = file.key.split('/').last.toLowerCase();
+        if (!displayName.contains(_searchQuery.toLowerCase())) {
+          return false;
+        }
+      }
+
+      return true;
     }).toList();
   }
 
-  bool _isPdfCached(String key) {
-    return File('${widget.cacheDirPath}/$key').existsSync();
+  @override
+  Widget build(BuildContext context) {
+    final filtered = _getFilteredFiles();
+
+    return AlertDialog(
+      backgroundColor: context.colors.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+      actionsPadding: const EdgeInsets.all(16),
+      title: Row(
+        children: [
+          const Icon(LucideIcons.cloud, color: AppTheme.duoViolet),
+          const SizedBox(width: 8),
+          Text(
+            'Document Store',
+            style: TextStyle(
+              color: context.colors.textPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: double.maxFinite,
+        height: 400,
+        child: Column(
+          children: [
+            // Search Bar
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: context.colors.surfaceAlt,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: context.colors.outline),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    LucideIcons.search,
+                    color: context.colors.textFaint,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (val) {
+                        setState(() {
+                          _searchQuery = val;
+                        });
+                      },
+                      style: TextStyle(
+                        color: context.colors.textPrimary,
+                        fontSize: 13,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Search documents...',
+                        hintStyle: TextStyle(
+                          color: context.colors.textFaint,
+                          fontSize: 13,
+                        ),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                      ),
+                    ),
+                  ),
+                  if (_searchQuery.isNotEmpty)
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _searchController.clear();
+                          _searchQuery = '';
+                        });
+                      },
+                      child: Icon(
+                        LucideIcons.x,
+                        color: context.colors.textFaint,
+                        size: 14,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Category Selector Tabs
+            Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: context.colors.surfaceAlt,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: context.colors.outline),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildTab(
+                      DocCategory.reference,
+                      'Reference',
+                      LucideIcons.bookOpen,
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildTab(
+                      DocCategory.syllabus,
+                      'Syllabus',
+                      LucideIcons.fileSpreadsheet,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (_selectedCategory == DocCategory.syllabus) ...[
+              const SizedBox(height: 12),
+              Builder(
+                builder: (context) {
+                  final syllabusFiles = _files.where((f) => getDocCategory(f) == DocCategory.syllabus).toList();
+                  final courses = syllabusFiles.map((f) => f.course).whereType<String>().toSet().toList()..sort();
+                  final semesters = syllabusFiles.map((f) => f.semester).whereType<String>().toSet().toList()
+                    ..sort((a, b) {
+                      final aNum = int.tryParse(a.replaceAll(RegExp(r'\D'), '')) ?? 0;
+                      final bNum = int.tryParse(b.replaceAll(RegExp(r'\D'), '')) ?? 0;
+                      return aNum.compareTo(bNum);
+                    });
+
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String?>(
+                          initialValue: _selectedCourseFilter,
+                          isExpanded: true,
+                          decoration: InputDecoration(
+                            labelText: 'Course',
+                            labelStyle: TextStyle(color: context.colors.textFaint, fontSize: 11),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          dropdownColor: context.colors.surface,
+                          items: [
+                            DropdownMenuItem<String?>(
+                              value: null,
+                              child: Text('All Courses', style: TextStyle(color: context.colors.textPrimary, fontSize: 12)),
+                            ),
+                            ...courses.map((c) => DropdownMenuItem<String?>(
+                              value: c,
+                              child: Text(c, style: TextStyle(color: context.colors.textPrimary, fontSize: 12)),
+                            )),
+                          ],
+                          onChanged: (val) {
+                            setState(() {
+                              _selectedCourseFilter = val;
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: DropdownButtonFormField<String?>(
+                          initialValue: _selectedSemesterFilter,
+                          isExpanded: true,
+                          decoration: InputDecoration(
+                            labelText: 'Semester',
+                            labelStyle: TextStyle(color: context.colors.textFaint, fontSize: 11),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          dropdownColor: context.colors.surface,
+                          items: [
+                            DropdownMenuItem<String?>(
+                              value: null,
+                              child: Text('All Semesters', style: TextStyle(color: context.colors.textPrimary, fontSize: 12)),
+                            ),
+                            ...semesters.map((s) => DropdownMenuItem<String?>(
+                              value: s,
+                              child: Text(s, style: TextStyle(color: context.colors.textPrimary, fontSize: 12)),
+                            )),
+                          ],
+                          onChanged: (val) {
+                            setState(() {
+                              _selectedSemesterFilter = val;
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  );
+                }
+              ),
+            ],
+            const SizedBox(height: 12),
+            // Files List
+            Expanded(child: _buildListContent(filtered)),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(
+            'Cancel',
+            style: TextStyle(color: context.colors.textFaint),
+          ),
+        ),
+      ],
+    );
   }
 
-  Future<void> _handleFileSelection(B2Object file) async {
-    if (_downloadingKey != null) return; // Busy downloading another file
+  Widget _buildTab(DocCategory category, String label, IconData icon) {
+    final isSelected = _selectedCategory == category;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedCategory = category;
+          _selectedCourseFilter = null;
+          _selectedSemesterFilter = null;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.duoViolet : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: isSelected
+                  ? context.colors.textPrimary
+                  : context.colors.textFaint,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected
+                    ? context.colors.textPrimary
+                    : context.colors.textFaint,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-    final localFile = File('${widget.cacheDirPath}/${file.key}');
-    if (localFile.existsSync()) {
-      widget.onFileSelected(localFile);
-      Navigator.pop(context);
-      return;
+  Widget _buildListContent(List<B2Object> filtered) {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppTheme.duoViolet),
+      );
+    }
+    if (_errorMessage != null) {
+      return Center(
+        child: Text(
+          _errorMessage!,
+          style: const TextStyle(color: AppTheme.duoRed, fontSize: 12),
+        ),
+      );
+    }
+    if (filtered.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              LucideIcons.folderClosed,
+              size: 32,
+              color: context.colors.textFaint,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _searchQuery.isNotEmpty ? 'No search results' : 'No documents',
+              style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+            ),
+          ],
+        ),
+      );
     }
 
-    // Need to download
-    setState(() {
-      _downloadingKey = file.key;
-      _downloadProgress = 0.0;
-    });
+    return ListView.separated(
+      itemCount: filtered.length,
+      separatorBuilder: (_, _) =>
+          Divider(height: 1, color: context.colors.outline),
+      itemBuilder: (context, index) {
+        final file = filtered[index];
+        final name = file.key.split('/').last;
+        final isCached = _isPdfCached(file.key);
 
+        return ListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(
+            name,
+            style: TextStyle(
+              color: context.colors.textPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Text(
+            file.sizeFormatted,
+            style: TextStyle(color: context.colors.textFaint, fontSize: 11),
+          ),
+          trailing: Icon(
+            isCached ? LucideIcons.smartphone : LucideIcons.download,
+            color: isCached ? AppTheme.duoBlue : AppTheme.duoGreen,
+            size: 16,
+          ),
+          onTap: () => Navigator.of(context).pop(file),
+        );
+      },
+    );
+  }
+}
+
+class DownloadProgressDialog extends StatefulWidget {
+  final B2Object b2Obj;
+
+  const DownloadProgressDialog({super.key, required this.b2Obj});
+
+  @override
+  State<DownloadProgressDialog> createState() =>
+      DownloadProgressDialogState();
+}
+
+class DownloadProgressDialogState extends State<DownloadProgressDialog> {
+  double _progress = 0.0;
+  bool _cancelled = false;
+  String _errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _startDownload();
+  }
+
+  Future<void> _startDownload() async {
     try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final cacheDir = Directory('${appDir.path}/b2_cache');
+      final localFile = File('${cacheDir.path}/${widget.b2Obj.key}');
+
       final bytes = await B2Service.instance.downloadObject(
-        file.key,
+        widget.b2Obj.key,
         onProgress: (p) {
+          if (_cancelled) {
+            throw Exception('Cancelled');
+          }
           if (mounted) {
             setState(() {
-              _downloadProgress = p;
+              _progress = p;
             });
           }
         },
       );
 
-      // Save locally
+      if (_cancelled) return;
+
       if (!await localFile.parent.exists()) {
         await localFile.parent.create(recursive: true);
       }
       await localFile.writeAsBytes(bytes);
 
       if (mounted) {
-        widget.onFileSelected(localFile);
-        Navigator.pop(context);
+        Navigator.of(context).pop(localFile);
       }
     } catch (e) {
+      if (_cancelled) {
+        // Clean up partial file if exists
+        try {
+          final appDir = await getApplicationDocumentsDirectory();
+          final localFile = File('${appDir.path}/b2_cache/${widget.b2Obj.key}');
+          if (await localFile.exists()) {
+            await localFile.delete();
+          }
+        } catch (_) {}
+        return;
+      }
       if (mounted) {
         setState(() {
-          _downloadingKey = null;
+          _errorMessage = e.toString();
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Download failed: $e'),
-            backgroundColor: AppTheme.duoRed,
-          ),
-        );
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: AppTheme.applyGlassBlur(
-        borderRadius: 24,
-        color: context.colors.surface.withValues(alpha: 0.95),
-        child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Top drag indicator / Header
-              Padding(
-                padding: const EdgeInsets.only(top: 12, bottom: 8),
-                child: Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: context.colors.textFaint,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _downloadingKey != null
-                            ? 'Downloading File...'
-                            : 'Select Document Store File',
-                        style: TextStyle(
-                          color: context.colors.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        LucideIcons.x,
-                        color: context.colors.textSecondary,
-                      ),
-                      onPressed: _downloadingKey != null
-                          ? null
-                          : () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-              Divider(color: context.colors.outline),
+    final filename = widget.b2Obj.key.split('/').last;
 
-              if (_downloadingKey != null) ...[
-                Expanded(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            LucideIcons.downloadCloud,
-                            size: 48,
-                            color: AppTheme.duoBlue,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            _downloadingKey!.split('/').last,
-                            style: TextStyle(
-                              color: context.colors.textPrimary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 12),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: LinearProgressIndicator(
-                              value: _downloadProgress > 0
-                                  ? _downloadProgress
-                                  : null,
-                              backgroundColor: context.colors.outline,
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                AppTheme.duoBlue,
-                              ),
-                              minHeight: 8,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${(_downloadProgress * 100).toStringAsFixed(0)}% downloaded',
-                            style: TextStyle(
-                              color: context.colors.textFaint,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ] else if (!_isConfigured && !_isLoading) ...[
-                Expanded(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            LucideIcons.database,
-                            size: 48,
-                            color: AppTheme.duoOrange,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Document Store Not Configured',
-                            style: TextStyle(
-                              color: context.colors.textPrimary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Cloud storage is not configured. Please setup credentials in the Document Store tab first.',
-                            style: TextStyle(
-                              color: context.colors.textFaint,
-                              fontSize: 13,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 24),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: context.colors.surface,
-                              foregroundColor: context.colors.textPrimary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Dismiss'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ] else if (_isLoading) ...[
-                const Expanded(
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        AppTheme.duoBlue,
-                      ),
-                    ),
-                  ),
-                ),
-              ] else if (_errorMessage != null) ...[
-                Expanded(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            LucideIcons.alertTriangle,
-                            size: 48,
-                            color: AppTheme.duoRed,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            _errorMessage!,
-                            style: TextStyle(
-                              color: context.colors.textSecondary,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 24),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: context.colors.surface,
-                              foregroundColor: context.colors.textPrimary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            onPressed: _checkConfigAndLoad,
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ] else ...[
-                // Search bar
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: context.colors.surfaceAlt,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: context.colors.outline),
-                    ),
-                    child: TextField(
-                      controller: _searchController,
-                      style: TextStyle(color: context.colors.textPrimary),
-                      decoration: InputDecoration(
-                        hintText: 'Search files...',
-                        hintStyle: TextStyle(color: context.colors.textFaint),
-                        prefixIcon: Icon(
-                          LucideIcons.search,
-                          color: context.colors.textFaint,
-                          size: 20,
-                        ),
-                        suffixIcon: _searchQuery.isNotEmpty
-                            ? IconButton(
-                                icon: Icon(
-                                  LucideIcons.x,
-                                  color: context.colors.textFaint,
-                                  size: 20,
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _searchController.clear();
-                                    _searchQuery = '';
-                                  });
-                                },
-                              )
-                            : null,
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 12,
-                        ),
-                      ),
-                      onChanged: (val) {
-                        setState(() {
-                          _searchQuery = val;
-                        });
-                      },
-                    ),
-                  ),
-                ),
-
-                Expanded(
-                  child: Builder(
-                    builder: (context) {
-                      final filtered = _getFilteredFiles();
-                      if (filtered.isEmpty) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                LucideIcons.folderOpen,
-                                size: 48,
-                                color: context.colors.textFaint,
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                _searchQuery.isNotEmpty
-                                    ? 'No files match "$_searchQuery"'
-                                    : 'No files in Document Store',
-                                style: TextStyle(
-                                  color: context.colors.textFaint,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      // Group files by course and semester if search query is empty
-                      if (_searchQuery.isEmpty) {
-                        if (_selectedCourse == null) {
-                          final courses = filtered
-                              .map((f) => f.course)
-                              .whereType<String>()
-                              .toSet()
-                              .toList()
-                            ..sort();
-                          if (courses.isNotEmpty) {
-                            return ListView.builder(
-                              physics: const BouncingScrollPhysics(),
-                              itemCount: courses.length,
-                              itemBuilder: (context, index) {
-                                return ListTile(
-                                  leading: const Icon(LucideIcons.folder, color: AppTheme.duoBlue),
-                                  title: Text(
-                                    courses[index],
-                                    style: TextStyle(
-                                      color: context.colors.textPrimary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedCourse = courses[index];
-                                    });
-                                  },
-                                );
-                              },
-                            );
-                          }
-                        } else if (_selectedSemester == null) {
-                          final semesters = filtered
-                              .where((f) => f.course == _selectedCourse)
-                              .map((f) => f.semester)
-                              .whereType<String>()
-                              .toSet()
-                              .toList()
-                            ..sort((a, b) {
-                              final aNum = int.tryParse(a.replaceAll(RegExp(r'\D'), '')) ?? 0;
-                              final bNum = int.tryParse(b.replaceAll(RegExp(r'\D'), '')) ?? 0;
-                              return aNum.compareTo(bNum);
-                            });
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildPickerBreadcrumbs(),
-                              Expanded(
-                                child: ListView.builder(
-                                  physics: const BouncingScrollPhysics(),
-                                  itemCount: semesters.length,
-                                  itemBuilder: (context, index) {
-                                    return ListTile(
-                                      leading: const Icon(LucideIcons.folderClosed, color: AppTheme.duoViolet),
-                                      title: Text(
-                                        semesters[index],
-                                        style: TextStyle(
-                                          color: context.colors.textPrimary,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      onTap: () {
-                                        setState(() {
-                                          _selectedSemester = semesters[index];
-                                        });
-                                      },
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          );
-                        } else {
-                          // Show files for this course/semester
-                          final folderFiles = filtered
-                              .where((f) => f.course == _selectedCourse && f.semester == _selectedSemester)
-                              .toList();
-                          if (folderFiles.isEmpty) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildPickerBreadcrumbs(),
-                                const Expanded(
-                                  child: Center(
-                                    child: Text('No files in this folder'),
-                                  ),
-                                ),
-                              ],
-                            );
-                          }
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildPickerBreadcrumbs(),
-                              Expanded(
-                                child: ListView.builder(
-                                  physics: const BouncingScrollPhysics(),
-                                  itemCount: folderFiles.length,
-                                  itemBuilder: (context, idx) {
-                                    final file = folderFiles[idx];
-                                    return _buildFileTile(file);
-                                  },
-                                ),
-                              ),
-                            ],
-                          );
-                        }
-                      }
-
-                      return ListView.builder(
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: filtered.length,
-                        itemBuilder: (context, idx) {
-                          final file = filtered[idx];
-                          return _buildFileTile(file);
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ],
-          ),
+    return AlertDialog(
+      backgroundColor: context.colors.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Text(
+        _errorMessage.isNotEmpty ? 'Download Failed' : 'Downloading File',
+        style: TextStyle(
+          color: context.colors.textPrimary,
+          fontWeight: FontWeight.bold,
         ),
       ),
-    );
-  }
-
-  Widget _buildPickerBreadcrumbs() {
-    if (_selectedCourse == null) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          IconButton(
-            icon: Icon(LucideIcons.arrowLeft, color: context.colors.textPrimary, size: 20),
-            onPressed: () {
-              setState(() {
-                if (_selectedSemester != null) {
-                  _selectedSemester = null;
-                } else {
-                  _selectedCourse = null;
-                }
-              });
-            },
+          Text(
+            filename,
+            style: TextStyle(
+              color: context.colors.textSecondary,
+              fontSize: 13,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(width: 4),
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedCourse = null;
-                _selectedSemester = null;
-              });
-            },
-            child: Text(
-              widget.prefixFilter == 'pyq/' ? 'PYQs' : 'Syllabus',
+          const SizedBox(height: 16),
+          if (_errorMessage.isNotEmpty)
+            Text(
+              _errorMessage,
+              style: const TextStyle(color: AppTheme.duoRed, fontSize: 12),
+            )
+          else ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: _progress > 0 ? _progress : null,
+                backgroundColor: context.colors.outline,
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                  AppTheme.duoBlue,
+                ),
+                minHeight: 8,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${(_progress * 100).toStringAsFixed(0)}% downloaded',
               style: TextStyle(
                 color: context.colors.textFaint,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
+                fontSize: 11,
               ),
-            ),
-          ),
-          Icon(LucideIcons.chevronRight, color: context.colors.textFaint, size: 14),
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedSemester = null;
-              });
-            },
-            child: Text(
-              _selectedCourse!,
-              style: TextStyle(
-                color: _selectedSemester == null ? context.colors.textPrimary : context.colors.textFaint,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-              ),
-            ),
-          ),
-          if (_selectedSemester != null) ...[
-            Icon(LucideIcons.chevronRight, color: context.colors.textFaint, size: 14),
-            Text(
-              _selectedSemester!,
-              style: TextStyle(
-                color: context.colors.textPrimary,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-              ),
+              textAlign: TextAlign.center,
             ),
           ],
         ],
       ),
-    );
-  }
-
-  Widget _buildFileTile(B2Object file) {
-    final displayName = file.key.split('/').last;
-    final isCached = _isPdfCached(file.key);
-    final isSyllabus = file.key.startsWith('syllabus/');
-    final isPyq = file.key.startsWith('pyq/');
-    final typeName = isSyllabus ? 'Syllabus' : (isPyq ? 'PYQ' : 'Reference');
-    final typeColor = isSyllabus
-        ? AppTheme.duoOrange
-        : (isPyq ? AppTheme.duoGreen : AppTheme.duoBlue);
-
-    return ListTile(
-      onTap: () => _handleFileSelection(file),
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: typeColor.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(
-          LucideIcons.fileText,
-          color: typeColor,
-        ),
-      ),
-      title: Text(
-        displayName,
-        style: TextStyle(
-          color: context.colors.textPrimary,
-          fontWeight: FontWeight.w600,
-          fontSize: 14,
-        ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Row(
-        children: [
-          Text(
-            file.sizeFormatted,
-            style: TextStyle(
-              color: context.colors.textFaint,
-              fontSize: 11,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 6,
-              vertical: 2,
-            ),
-            decoration: BoxDecoration(
-              color: typeColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(4),
-            ),
+      actions: [
+        if (_errorMessage.isNotEmpty)
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
             child: Text(
-              typeName,
-              style: TextStyle(
-                color: typeColor,
-                fontSize: 9,
-                fontWeight: FontWeight.bold,
-              ),
+              'Close',
+              style: TextStyle(color: context.colors.textFaint),
+            ),
+          )
+        else
+          TextButton(
+            onPressed: () {
+              _cancelled = true;
+              Navigator.of(context).pop();
+            },
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: context.colors.textFaint),
             ),
           ),
-        ],
-      ),
-      trailing: Icon(
-        isCached ? LucideIcons.checkCircle2 : LucideIcons.downloadCloud,
-        color: isCached ? AppTheme.duoGreen : context.colors.textFaint,
-        size: 20,
-      ),
+      ],
     );
   }
 }

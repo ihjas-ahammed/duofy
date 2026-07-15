@@ -50,8 +50,8 @@
     "semantic_hash": ""
   },
   "lib/screens/pyq_tab_screen.dart": {
-    "mtime": 1784096234.9729724,
-    "ast_hash": "efe90b3f140d39cb13895700a64e57cf",
+    "mtime": 1784103441.8019335,
+    "ast_hash": "a4590ef1cc3f030efaadac95d433676e",
     "semantic_hash": ""
   },
   "lib/screens/settings_screen.dart": {
@@ -150,8 +150,8 @@
     "semantic_hash": ""
   },
   "lib/screens/source_pdf_upload_screen.dart": {
-    "mtime": 1784096234.9829724,
-    "ast_hash": "9833ed4798a7ac07a956333779414a1c",
+    "mtime": 1784103387.528958,
+    "ast_hash": "f94b3f39a136d0a01b67ec28680a0133",
     "semantic_hash": ""
   },
   "lib/widgets/compact_book_card.dart": {
@@ -160,8 +160,8 @@
     "semantic_hash": ""
   },
   "lib/widgets/missing_files_banner.dart": {
-    "mtime": 1784096234.9889724,
-    "ast_hash": "3d4d3a58c39979d1fd5a2940efd217a6",
+    "mtime": 1784103392.0361185,
+    "ast_hash": "56bbf589d5caf085ef662a6fb45c4491",
     "semantic_hash": ""
   },
   "lib/widgets/generating_book_card.dart": {

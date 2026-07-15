@@ -6,30 +6,19 @@ import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../services/generation_manager.dart';
 
+import '../screens/source_pdf_upload_screen.dart';
+
 class MissingFilesBanner extends StatelessWidget {
   final Book book;
 
   const MissingFilesBanner({super.key, required this.book});
 
-  Future<void> _restoreFiles(BuildContext context) async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
-      allowMultiple: true,
+  void _restoreFiles(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SourcePdfUploadScreen(book: book),
+      ),
     );
-
-    if (result != null && result.paths.isNotEmpty) {
-      final files = result.paths
-          .where((p) => p != null)
-          .map((p) => File(p!))
-          .toList();
-      GenerationManager.instance.restoreBookFiles(book, files);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Restoring files natively in background...'),
-        ),
-      );
-    }
   }
 
   @override

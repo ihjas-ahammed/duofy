@@ -11,6 +11,8 @@ import '../widgets/file_selection_list.dart';
 import '../widgets/responsive_center.dart';
 import '../widgets/math_markdown.dart';
 import 'source_pdf_upload_screen.dart';
+import '../platform/io_shim.dart';
+import '../services/b2_service.dart';
 
 class PyqTabScreen extends StatefulWidget {
   final Book book;
@@ -52,36 +54,92 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
     }
   }
 
-  void _selectFromStore() {
-    if (_cacheDirPath == null) return;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return FractionallySizedBox(
-          heightFactor: 0.85,
-          child: DocumentStorePickerDialog(
-            cacheDirPath: _cacheDirPath!,
-            prefixFilter: 'pyq/',
-            onFileSelected: (file) {
-              final bytes = file.readAsBytesSync();
-              final name = file.path.split('/').last.split('\\').last;
-              final pFile = PlatformFile(
-                path: file.path,
-                name: name,
-                size: bytes.length,
-                bytes: bytes,
-              );
-              setState(() {
-                _selectedFiles.add(pFile);
-              });
-            },
+  Future<void> _selectFromStore() async {
+    final configured = await B2Service.instance.isConfigured();
+    if (!configured) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: context.colors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-        );
-      },
+          title: Text(
+            'Cloud Storage Required',
+            style: TextStyle(
+              color: context.colors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'Backblaze B2 is not configured. Please setup cloud storage in the Document Store tab first.',
+            style: TextStyle(color: context.colors.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text(
+                'OK',
+                style: TextStyle(
+                  color: AppTheme.duoGreen,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    final B2Object? selected = await showDialog<B2Object>(
+      context: context,
+      builder: (ctx) => const DocumentStorePickerDialog(forSyllabus: false),
     );
+
+    if (selected != null && mounted) {
+      final appDir = await getApplicationDocumentsDirectory();
+      final cacheDir = Directory('${appDir.path}/b2_cache');
+      final file = File('${cacheDir.path}/${selected.key}');
+
+      if (file.existsSync()) {
+        final bytes = file.readAsBytesSync();
+        final name = file.path.split('/').last.split('\\').last;
+        final pFile = PlatformFile(
+          path: file.path,
+          name: name,
+          size: bytes.length,
+          bytes: bytes,
+        );
+        setState(() {
+          _selectedFiles.add(pFile);
+        });
+        return;
+      }
+
+      if (!mounted) return;
+      final File? downloadedFile = await showDialog<File>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => DownloadProgressDialog(b2Obj: selected),
+      );
+
+      if (downloadedFile != null && downloadedFile.existsSync() && mounted) {
+        final bytes = downloadedFile.readAsBytesSync();
+        final name = downloadedFile.path.split('/').last.split('\\').last;
+        final pFile = PlatformFile(
+          path: downloadedFile.path,
+          name: name,
+          size: bytes.length,
+          bytes: bytes,
+        );
+        setState(() {
+          _selectedFiles.add(pFile);
+        });
+      }
+    }
   }
 
   // Fallback when no shared notifier is supplied (e.g. previews/tests).
