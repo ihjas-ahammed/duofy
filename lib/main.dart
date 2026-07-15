@@ -6,6 +6,7 @@ import 'services/fb/fb_core.dart';
 import 'services/global_state.dart';
 import 'services/notification_service.dart';
 import 'screens/auth_gate.dart';
+import 'widgets/walkthrough_banner.dart';
 import 'screens/settings_screen.dart';
 import 'screens/book_route_loader_screen.dart';
 import 'services/learning_sync.dart';
@@ -397,6 +398,12 @@ class FlowApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
+      builder: (context, child) => Stack(
+        children: [
+          if (child != null) child,
+          const Positioned.fill(child: WalkthroughBanner()),
+        ],
+      ),
       home: const AuthGate(),
       shortcuts: <ShortcutActivator, Intent>{
         ...WidgetsApp.defaultShortcuts,

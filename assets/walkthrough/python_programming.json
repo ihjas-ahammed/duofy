@@ -1,0 +1,118 @@
+{
+  "id": "python-programming",
+  "title": "Python Programming",
+  "description": "A hands-on tour for programmers — write and run real Python right inside the app, with fill-in code challenges and a live playground.",
+  "icon": "Code",
+  "isGlobal": false,
+  "bloomLevel": "Applying",
+  "modules": [
+    {
+      "id": "m1",
+      "title": "Python, Interactively",
+      "description": "Everything Duofy can do for coders, in one unit.",
+      "practiceQuestions": [],
+      "sections": [
+        {
+          "id": "s1",
+          "title": "Getting Hands-On",
+          "description": "Read, fill in, and run Python.",
+          "color": "duo-blue",
+          "units": [
+            {
+              "id": "u1",
+              "title": "Unit 1 — Python Playground",
+              "description": "Program challenges and a live code runner.",
+              "isGenerated": true,
+              "lessons": [
+                {
+                  "id": "l1",
+                  "title": "Hello, Python",
+                  "description": "Your first line of code, then fill in the blank.",
+                  "icon": "Terminal",
+                  "slides": [
+                    {
+                      "id": "l1s1",
+                      "type": "theory",
+                      "title": "Printing output",
+                      "content": "In Python, **`print()`** displays a value on the screen. Everything inside the quotes is a *string* — a piece of text.\n\n```python\nprint(\"Hello, world!\")\n```\n\nUp next: you'll complete a line of code yourself."
+                    },
+                    {
+                      "id": "l1s2",
+                      "type": "program",
+                      "title": "Complete the code",
+                      "language": "python",
+                      "content": "Finish the line so it prints the greeting.",
+                      "code": "name = \"Ada\"\n___(f\"Hello, {name}!\")",
+                      "blankAnswer": "print",
+                      "blankDistractors": ["echo", "printf", "console.log"]
+                    },
+                    {
+                      "id": "l1s3",
+                      "type": "quiz",
+                      "title": "What prints?",
+                      "content": "What does `print(2 + 3 * 2)` output?",
+                      "options": [
+                        { "text": "8", "isCorrect": true, "explanation": "Multiplication binds tighter than addition: 3*2=6, then 2+6=8." },
+                        { "text": "10", "isCorrect": false, "explanation": "That would be (2+3)*2 — but Python follows operator precedence." },
+                        { "text": "2 + 3 * 2", "isCorrect": false, "explanation": "print evaluates the expression, it doesn't echo it literally." }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "l2",
+                  "title": "Loops & Logic",
+                  "description": "Fill in a loop, then run your own.",
+                  "icon": "Repeat",
+                  "slides": [
+                    {
+                      "id": "l2s1",
+                      "type": "program",
+                      "title": "Fix the loop",
+                      "language": "python",
+                      "content": "Which keyword starts a count-controlled loop over a range?",
+                      "code": "total = 0\n___ i in range(1, 5):\n    total += i\nprint(total)",
+                      "blankAnswer": "for",
+                      "blankDistractors": ["while", "loop", "foreach"]
+                    },
+                    {
+                      "id": "l2s2",
+                      "type": "try_yourself",
+                      "title": "Try it yourself",
+                      "language": "python",
+                      "content": "Run this, then tweak it — change the numbers or add a line. Tap **Run** to execute.",
+                      "code": "for i in range(1, 6):\n    print(f\"{i} squared is {i*i}\")\n"
+                    }
+                  ]
+                },
+                {
+                  "id": "l3",
+                  "title": "A Taste of Data Science",
+                  "description": "Use real libraries in the browser.",
+                  "icon": "LineChart",
+                  "slides": [
+                    {
+                      "id": "l3s1",
+                      "type": "theory",
+                      "title": "Batteries included",
+                      "content": "Duofy's Python runner ships with **NumPy**, **pandas**, **Matplotlib** and **SymPy** — the same tools data scientists use. The next slide plots a curve live."
+                    },
+                    {
+                      "id": "l3s2",
+                      "type": "try_yourself",
+                      "title": "Plot a sine wave",
+                      "language": "python",
+                      "content": "Run it to see a chart. Try changing `np.sin` to `np.cos`.",
+                      "packages": ["numpy", "matplotlib"],
+                      "code": "import numpy as np\nimport matplotlib.pyplot as plt\n\nx = np.linspace(0, 2*np.pi, 200)\nplt.plot(x, np.sin(x))\nplt.title('y = sin(x)')\nplt.grid(True)\nplt.show()\n"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

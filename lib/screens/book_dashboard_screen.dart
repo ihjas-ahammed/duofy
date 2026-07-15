@@ -21,6 +21,7 @@ import '../widgets/bottom_sheets/section_bottom_sheet.dart';
 import '../widgets/selectors/module_selector.dart';
 import '../widgets/lesson_path.dart';
 import '../services/global_state.dart';
+import '../services/walkthrough_service.dart';
 import '../widgets/coach_mark.dart';
 import '../widgets/quick_review_sheet.dart';
 import 'main_layout_screen.dart';
@@ -82,6 +83,14 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     // unit/section/module marked finished or cleared, or a cloud sync merge),
     // so the lesson path always reflects the latest status.
     GlobalState.progressNotifier.addListener(_loadProgress);
+
+    // Walkthrough: reaching the seeded course's dashboard means "open the
+    // course" is done — now nudge the user into the first unit.
+    final walk = WalkthroughService.instance;
+    if (walk.step.value == WalkStep.openCourse &&
+        widget.book.id == walk.seededBookId) {
+      walk.advanceTo(WalkStep.tryUnit);
+    }
 
     // First-visit tour of the path header (runs once; see CoachMarkController).
     WidgetsBinding.instance.addPostFrameCallback((_) {

@@ -138,6 +138,10 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # Precreated example courses seeded during the first-run walkthrough.
+  assets:
+    - assets/walkthrough/
+
   fonts:
     - family: Nunito
       fonts:

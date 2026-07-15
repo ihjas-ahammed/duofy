@@ -45,8 +45,8 @@
     "semantic_hash": ""
   },
   "lib/screens/home_screen.dart": {
-    "mtime": 1784089540.6199613,
-    "ast_hash": "3923482b4a4f60f9bc80d65bc3cdb809",
+    "mtime": 1784093446.1622047,
+    "ast_hash": "2886da887c76334c3cee1148edb4d31e",
     "semantic_hash": ""
   },
   "lib/screens/pyq_tab_screen.dart": {
@@ -455,8 +455,8 @@
     "semantic_hash": ""
   },
   "android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java": {
-    "mtime": 1783400842.4202023,
-    "ast_hash": "30f0401a2aad59cb7a26562ebd85b5cc",
+    "mtime": 1784093308.284232,
+    "ast_hash": "8fccd783d3a8035832e80104c5909dfe",
     "semantic_hash": ""
   },
   "android/build.gradle.kts": {
@@ -510,8 +510,8 @@
     "semantic_hash": ""
   },
   "ios/Runner/GeneratedPluginRegistrant.m": {
-    "mtime": 1783400842.4372025,
-    "ast_hash": "2b6b7adce8f889afb34f35a669eb9a58",
+    "mtime": 1784093308.3832374,
+    "ast_hash": "d966bb9ac443b099233479526e94a640",
     "semantic_hash": ""
   },
   "ios/Runner/Runner-Bridging-Header.h": {
@@ -525,8 +525,8 @@
     "semantic_hash": ""
   },
   "lib/screens/document_store_screen.dart": {
-    "mtime": 1784092562.1115112,
-    "ast_hash": "a173af724683d70ba87e4c3511f2be8c",
+    "mtime": 1784092882.6387146,
+    "ast_hash": "3c09fb0bbe0f206c9e42d35f1e3b4c4b",
     "semantic_hash": ""
   },
   "lib/screens/experiments_screen.dart": {
@@ -640,8 +640,8 @@
     "semantic_hash": ""
   },
   "macos/Flutter/GeneratedPluginRegistrant.swift": {
-    "mtime": 1783400842.4392025,
-    "ast_hash": "f24959f47909108e949458f4ded5a2da",
+    "mtime": 1784093308.393238,
+    "ast_hash": "985aeac923b4b9c40deedc817a5e4333",
     "semantic_hash": ""
   },
   "macos/Flutter/ephemeral/flutter_export_environment.sh": {
@@ -1280,8 +1280,8 @@
     "semantic_hash": ""
   },
   "pubspec.yaml": {
-    "mtime": 1784089540.737607,
-    "ast_hash": "3bc625a9fb8f91d72852e027836e2129",
+    "mtime": 1784093297.034746,
+    "ast_hash": "4087271064f9c5a70464a01d17681e40",
     "semantic_hash": ""
   },
   "update.md": {
@@ -1790,8 +1790,8 @@
     "semantic_hash": ""
   },
   ".github/workflows/android.yml": {
-    "mtime": 1784090448.1180518,
-    "ast_hash": "43dff6fb3242aa5acb44f6a65170d4f4",
+    "mtime": 1784093493.6572962,
+    "ast_hash": "890a4bb9cff1d9429ce1cfa3670c79b5",
     "semantic_hash": ""
   },
   ".github/workflows/windows.yml": {
@@ -6677,6 +6677,26 @@
   "android/app/src/main/kotlin/com/example/duofy/MainActivity.kt": {
     "mtime": 1784089962.1853797,
     "ast_hash": "c29d9fabd5984e2d7af8091506cb3c07",
+    "semantic_hash": ""
+  },
+  "builds/latest.json": {
+    "mtime": 1784093456.967693,
+    "ast_hash": "56ab192ed967ce338a566af8fdcad1ac",
+    "semantic_hash": ""
+  },
+  "lib/services/update_service.dart": {
+    "mtime": 1784093677.1301985,
+    "ast_hash": "57220bff7aee66c646d86be72ea500d0",
+    "semantic_hash": ""
+  },
+  "lib/widgets/update_dialog.dart": {
+    "mtime": 1784093424.4582,
+    "ast_hash": "5071527ab49d1e678053f790cb54fa28",
+    "semantic_hash": ""
+  },
+  "builds/whatsnew/26.7.15.md": {
+    "mtime": 1784093468.9372253,
+    "ast_hash": "32d1c23d7da26c85067350236a58b407",
     "semantic_hash": ""
   }
 }

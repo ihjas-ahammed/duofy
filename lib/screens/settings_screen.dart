@@ -18,6 +18,7 @@ import '../widgets/responsive_center.dart';
 
 import '../models/app_models.dart';
 import 'pdf_browser_screen.dart';
+import 'dev/programming_slides_screen.dart';
 import 'metacognition_setup_screen.dart';
 import 'ai_queue_screen.dart';
 import 'experiments_screen.dart';
@@ -1437,6 +1438,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     },
                     color: AppTheme.duoViolet,
                     shadowColor: AppTheme.duoVioletDark,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: DuoButton(
+                    text: 'Programming Slides',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ProgrammingSlidesScreen(),
+                        ),
+                      );
+                    },
+                    color: AppTheme.duoBlue,
+                    shadowColor: AppTheme.duoBlueDark,
                   ),
                 ),
                 const SizedBox(height: 32),

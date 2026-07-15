@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../services/global_state.dart';
 import '../../theme/app_theme.dart';
@@ -28,6 +29,10 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _controller = PageController();
   int _page = 0;
+
+  /// Answered on the last page. Steers the first-run walkthrough: programmers
+  /// get the interactive Python course, everyone else Basic Algebra.
+  bool _isProgrammer = false;
 
   static const List<_OnboardingPage> _pages = [
     _OnboardingPage(
@@ -65,9 +70,65 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _finish({required bool toSignIn}) async {
+    // Arm the hands-on walkthrough for the first Home visit. HomeScreen picks
+    // this up (so it never fires over the sign-in screen for the login path).
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('walkthrough_pending', true);
+    await prefs.setBool('is_programmer', _isProgrammer);
     await GlobalState.completeOnboarding();
     GlobalState.isGuestNotifier.value = !toSignIn;
     GlobalState.forceShowAuthScreen.value = toSignIn;
+  }
+
+  Widget _buildProgrammerQuestion() {
+    return Column(
+      children: [
+        Text(
+          'Are you a programmer?',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 14,
+            color: context.colors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _programmerChip('Yes', true),
+            const SizedBox(width: 12),
+            _programmerChip('Not really', false),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _programmerChip(String label, bool value) {
+    final selected = _isProgrammer == value;
+    final color = value ? AppTheme.duoViolet : AppTheme.duoBlue;
+    return GestureDetector(
+      onTap: () => setState(() => _isProgrammer = value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? color.withValues(alpha: 0.18) : context.colors.surfaceAlt,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selected ? color : context.colors.outline,
+            width: 2,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            color: selected ? color : context.colors.textSecondary,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -169,6 +230,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 child: _isLast
                     ? Column(
                         children: [
+                          _buildProgrammerQuestion(),
+                          const SizedBox(height: 20),
                           DuoButton(
                             text: 'Sign In / Create Account',
                             color: AppTheme.duoGreen,

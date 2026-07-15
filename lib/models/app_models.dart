@@ -2022,6 +2022,20 @@ class Slide {
   /// `error_spotting` slides: index into [proofSteps] of the flawed step.
   final int? errorIndex;
 
+  /// Programming slides (`program`, `try_yourself`): the source code. For a
+  /// `program` fill-in slide this is the highlighted snippet with a `___`
+  /// blank; for `try_yourself` it's the editable starter code.
+  final String? code;
+
+  /// Programming-slide language id (`python`, `javascript`, `html`, `css`,
+  /// `latex`, `java`, `dart`, ...). Drives syntax highlighting and which
+  /// runtime the `try_yourself` runner loads. Null on non-programming slides.
+  final String? language;
+
+  /// `try_yourself` slides: runtime packages/libraries to preload (e.g.
+  /// `['numpy', 'pandas']` for Pyodide). Decided at lesson-creation time.
+  final List<String>? packages;
+
   Slide({
     required this.id,
     required this.type,
@@ -2041,6 +2055,9 @@ class Slide {
     this.matchPairs,
     this.orderItems,
     this.errorIndex,
+    this.code,
+    this.language,
+    this.packages,
   });
 
   factory Slide.fromJson(Map<String, dynamic> json) {
@@ -2194,6 +2211,12 @@ class Slide {
       errorIndex: json['errorIndex'] is num
           ? (json['errorIndex'] as num).toInt()
           : int.tryParse(_str(json['errorIndex'])),
+      code: _strOpt(json['code']),
+      language: _strOpt(json['language']),
+      packages: (json['packages'] as List?)
+          ?.map((s) => _str(s))
+          .where((s) => s.isNotEmpty)
+          .toList(),
     );
   }
 
@@ -2219,6 +2242,9 @@ class Slide {
       'matchPairs': matchPairs!.map((p) => p.toJson()).toList(),
     if (orderItems != null) 'orderItems': orderItems,
     if (errorIndex != null) 'errorIndex': errorIndex,
+    if (code != null) 'code': code,
+    if (language != null) 'language': language,
+    if (packages != null) 'packages': packages,
   };
 
   Slide copyWith({
@@ -2240,6 +2266,9 @@ class Slide {
     List<MatchPair>? matchPairs,
     List<String>? orderItems,
     int? errorIndex,
+    String? code,
+    String? language,
+    List<String>? packages,
   }) {
     return Slide(
       id: id ?? this.id,
@@ -2261,6 +2290,9 @@ class Slide {
       matchPairs: matchPairs ?? this.matchPairs,
       orderItems: orderItems ?? this.orderItems,
       errorIndex: errorIndex ?? this.errorIndex,
+      code: code ?? this.code,
+      language: language ?? this.language,
+      packages: packages ?? this.packages,
     );
   }
 }

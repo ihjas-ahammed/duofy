@@ -8,6 +8,7 @@ import '../theme/app_theme.dart';
 import '../services/database_service.dart';
 import '../services/generation_manager.dart';
 import '../services/global_state.dart';
+import '../services/walkthrough_service.dart';
 import '../services/progress_service.dart';
 import '../services/bookmark_service.dart';
 import '../services/metacognition_service.dart';
@@ -24,6 +25,8 @@ import '../widgets/slide_views/theory_view.dart';
 import '../widgets/slide_views/concept_pieces_view.dart';
 import '../widgets/slide_views/descriptive_view.dart';
 import '../widgets/slide_views/custom_html_view.dart';
+import '../widgets/slide_views/program_view.dart';
+import '../widgets/slide_views/code_runner_view.dart';
 import '../widgets/slide_views/matching_view.dart';
 import '../widgets/slide_views/ordering_view.dart';
 import '../widgets/slide_views/error_spotting_view.dart';
@@ -127,6 +130,10 @@ class _LessonScreenState extends State<LessonScreen> {
     _startTime = DateTime.now();
     _lesson = widget.lesson;
     _buildSlideQueue();
+    // Opening a lesson is the finish line of the first-run walkthrough.
+    if (WalkthroughService.instance.step.value == WalkStep.tryUnit) {
+      WalkthroughService.instance.finish();
+    }
     if (widget.initialSlideId != null) {
       final index = _slideQueue.indexWhere(
         (s) => s.id == widget.initialSlideId,
@@ -580,7 +587,7 @@ class _LessonScreenState extends State<LessonScreen> {
           correct = true;
         }
       }
-    } else if (slide.type == 'fill_in_blank') {
+    } else if (slide.type == 'fill_in_blank' || slide.type == 'program') {
       final userParts = _blankInput
           .split(',')
           .map((s) => s.trim().toLowerCase().replaceAll(r'\', ''))
@@ -686,7 +693,9 @@ class _LessonScreenState extends State<LessonScreen> {
 
   bool _canCheck(Slide slide) {
     if (slide.type == 'quiz') return _selectedQuizOption != null;
-    if (slide.type == 'fill_in_blank') return _blankInput.trim().isNotEmpty;
+    if (slide.type == 'fill_in_blank' || slide.type == 'program') {
+      return _blankInput.trim().isNotEmpty;
+    }
     if (slide.type == 'one_word') return _wordInput.trim().isNotEmpty;
     if (slide.type == 'numerical') return _numericInput.trim().isNotEmpty;
     if (slide.type == 'matching') {
@@ -703,6 +712,7 @@ class _LessonScreenState extends State<LessonScreen> {
         slide.type == 'step_by_step' ||
         slide.type == 'descriptive' ||
         slide.type == 'custom_html' ||
+        slide.type == 'try_yourself' ||
         slide.type == 'flashcard';
   }
 
@@ -714,7 +724,9 @@ class _LessonScreenState extends State<LessonScreen> {
       );
       return opt?.text ?? '';
     }
-    if (slide.type == 'fill_in_blank') return slide.blankAnswer ?? '';
+    if (slide.type == 'fill_in_blank' || slide.type == 'program') {
+      return slide.blankAnswer ?? '';
+    }
     if (slide.type == 'one_word') return slide.blankAnswer ?? '';
     if (slide.type == 'numerical') return slide.numericAnswer?.toString() ?? '';
     if (slide.type == 'matching') {
@@ -1463,6 +1475,34 @@ class _LessonScreenState extends State<LessonScreen> {
             _nextSlide();
             WidgetsBinding.instance.addPostFrameCallback((_) {
               HapticFeedback.heavyImpact();
+            });
+          },
+        );
+      case 'program':
+        return ProgramView(
+          slide: slide,
+          value: _blankInput,
+          isAnswered: _answered,
+          isCorrect: _isCorrect,
+          onChanged: (val) => setState(() => _blankInput = val),
+          onSubmit: () {
+            if (_canCheck(slide)) _checkAnswer(slide);
+          },
+          bottomBar: bottomBar,
+        );
+      case 'try_yourself':
+        return CodeRunnerView(
+          slide: slide,
+          onComplete: () {
+            setState(() {
+              _isCorrect = true;
+              _answered = true;
+              _correctAttempts++;
+            });
+            _nextSlide();
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              HapticFeedback.heavyImpact();
+              _recordFirstAttempt(slide, true);
             });
           },
         );

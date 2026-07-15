@@ -11,6 +11,7 @@ import '../services/progress_service.dart';
 import '../services/generation_manager.dart';
 import '../services/learning_sync.dart';
 import '../services/update_service.dart';
+import '../services/walkthrough_service.dart';
 import '../widgets/update_dialog.dart';
 import 'bookmarks_screen.dart';
 import '../theme/app_theme.dart';
@@ -110,6 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _loadAllData(force: false);
 
     GlobalState.progressNotifier.addListener(_handleProgressChange);
+    WalkthroughService.instance.step.addListener(_handleWalkthroughStep);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (startupError != null) {
@@ -117,6 +119,7 @@ class _HomeScreenState extends State<HomeScreen> {
         startupError = null;
       }
       _checkForAppUpdate();
+      _maybeStartWalkthrough();
       // The writing-style survey is no longer forced on first launch — the
       // onboarding walkthrough handles first-run, and the survey lives on as
       // an optional Settings → Personalization card.
@@ -132,6 +135,22 @@ class _HomeScreenState extends State<HomeScreen> {
     await showUpdateDialog(context, info);
   }
 
+  /// If the first-run walkthrough was armed at the end of onboarding, kick it
+  /// off now (on Home, not over the sign-in screen). Runs once, ever.
+  Future<void> _maybeStartWalkthrough() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!(prefs.getBool('walkthrough_pending') ?? false)) return;
+    await prefs.remove('walkthrough_pending');
+    final programmer = prefs.getBool('is_programmer') ?? false;
+    await WalkthroughService.instance.maybeStart(programmer: programmer);
+  }
+
+  /// The walkthrough seeds/opens courses outside the normal generation stream,
+  /// so refresh the library whenever its step advances.
+  void _handleWalkthroughStep() {
+    if (mounted) _loadAllData(force: false);
+  }
+
   @override
   void dispose() {
     _librarySearchController.dispose();
@@ -139,6 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
     GenerationManager.instance.removeListener(_handleGenerationTasksChange);
     _bookUpdateSubscription?.cancel();
     GlobalState.progressNotifier.removeListener(_handleProgressChange);
+    WalkthroughService.instance.step.removeListener(_handleWalkthroughStep);
     super.dispose();
   }
 

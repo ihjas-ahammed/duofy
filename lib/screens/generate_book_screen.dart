@@ -9,6 +9,7 @@ import '../widgets/file_selection_list.dart';
 import '../widgets/responsive_center.dart';
 import 'pdf_split_preview_screen.dart';
 import '../services/generation_manager.dart';
+import '../services/walkthrough_service.dart';
 import '../services/pdf_service.dart';
 import 'package:path_provider/path_provider.dart';
 import '../services/b2_service.dart';
@@ -35,6 +36,11 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
   bool _autoFetchBooks = true;
   bool _isScanningSyllabus = false;
 
+  /// True while the first-run walkthrough is driving this screen: we force
+  /// Course mode, pre-fill the title, and — on Continue — seed a ready-made
+  /// example course instead of running AI generation.
+  bool _walkthrough = false;
+
   @override
   void initState() {
     super.initState();
@@ -43,6 +49,14 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
     // prompt alone is enough to generate), so rebuild as the user types.
     _titleController.addListener(_onTextChanged);
     _customPromptController.addListener(_onTextChanged);
+
+    final walk = WalkthroughService.instance;
+    if (walk.isActive) {
+      _walkthrough = true;
+      _mode = GenerationMode.course;
+      _titleController.text = walk.seededTitle;
+      walk.advanceTo(WalkStep.confirmCreate);
+    }
   }
 
   void _onTextChanged() {
@@ -888,7 +902,41 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
     return matchRatio >= 0.5 || targetRatio >= 0.5;
   }
 
+  /// Seeds the precreated example course for the walkthrough, then returns to
+  /// Home where the tour points the user at their new course.
+  Future<void> _seedWalkthroughCourse() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: Card(
+          color: context.colors.surface,
+          child: const Padding(
+            padding: EdgeInsets.all(24.0),
+            child: CircularProgressIndicator(color: AppTheme.duoGreen),
+          ),
+        ),
+      ),
+    );
+    final book = await WalkthroughService.instance.seedExampleCourse();
+    if (!mounted) return;
+    Navigator.of(context).pop(); // dismiss spinner
+    if (book == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not create the example course.')),
+      );
+      return;
+    }
+    WalkthroughService.instance.advanceTo(WalkStep.openCourse);
+    if (mounted) Navigator.of(context).pop(); // back to Home
+  }
+
   void _generate() {
+    // Walkthrough: skip AI entirely and drop in the precreated example course.
+    if (_walkthrough) {
+      _seedWalkthroughCourse();
+      return;
+    }
     if (!_canStart) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
