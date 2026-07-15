@@ -143,15 +143,14 @@ class _PracticeScreenState extends State<PracticeScreen> {
       for (final section in module.sections) {
         final List<_UnitRef> units = [];
         for (final unit in section.units) {
-          // Only units that actually contain lessons can supply practice.
-          final hasSlides = unit.lessons.any((l) => l.slides.isNotEmpty);
+          final hasSlides = unit.isGenerated && unit.lessons.isNotEmpty;
           if (!hasSlides) continue;
           units.add(
             _UnitRef(
               id: unit.id,
               unitTitle: unit.title.isNotEmpty ? unit.title : 'Unit',
               sectionTitle: section.title,
-              slides: [for (final l in unit.lessons) ...l.slides],
+              slides: [],
             ),
           );
         }

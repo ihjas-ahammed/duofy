@@ -755,6 +755,121 @@ class LessonFormat {
       ],
     ),
   ];
+
+  static List<LessonFormat> defaultProgrammingFormats(String title, String desc) {
+    final titleLower = title.toLowerCase();
+    final descLower = desc.toLowerCase();
+    String lang = 'python';
+    if (titleLower.contains('python') || descLower.contains('python')) lang = 'python';
+    else if (titleLower.contains('javascript') || titleLower.contains(' js') || descLower.contains('javascript') || descLower.contains(' js')) lang = 'javascript';
+    else if (titleLower.contains('html') || descLower.contains('html')) lang = 'html';
+    else if (titleLower.contains('css') || descLower.contains('css')) lang = 'css';
+    else if (titleLower.contains('latex') || descLower.contains('latex')) lang = 'latex';
+    else if (titleLower.contains('java') || descLower.contains('java')) lang = 'java';
+    else if (titleLower.contains('dart') || descLower.contains('dart')) lang = 'dart';
+    else if (titleLower.contains('rust') || descLower.contains('rust')) lang = 'rust';
+
+    return [
+      LessonFormat(
+        id: 'coding-theory',
+        name: 'Coding & Theory',
+        description: 'Standard programming lesson: syntax explanations, runnable program fill-in-blank, and interactive sandbox.',
+        slides: [
+          SlideTemplate(
+            type: 'theory',
+            condition: 'Always',
+            description: 'Brief technical explanation of the syntax/logic being taught.',
+          ),
+          SlideTemplate(
+            type: 'program',
+            condition: 'Always',
+            description: 'A runnable code snippet with one blank `___` for the learner to complete.',
+          ),
+          SlideTemplate(
+            type: 'try_yourself',
+            condition: 'Always',
+            description: 'A fully interactive, editable sandbox preloaded with starter code to run.',
+          ),
+          SlideTemplate(
+            type: 'quiz',
+            condition: 'Always',
+            description: 'A multiple-choice question testing understanding of the logic or syntax details.',
+          ),
+        ],
+      ),
+      LessonFormat(
+        id: 'coding-sandbox',
+        name: 'Coding Practice Sandbox',
+        description: 'Heavy hands-on coding focus, guiding the learner to write and experiment with code.',
+        slides: [
+          SlideTemplate(
+            type: 'theory',
+            condition: 'Always',
+            description: 'Define the challenge objective and outline the requirements.',
+          ),
+          SlideTemplate(
+            type: 'program',
+            condition: 'Always',
+            description: 'A helper coding slide with a blank `___` showing a key part of the solution.',
+          ),
+          SlideTemplate(
+            type: 'try_yourself',
+            condition: 'Always',
+            description: 'An interactive playground where the learner implements the complete solution and runs it.',
+          ),
+        ],
+      ),
+      LessonFormat(
+        id: 'worked-example',
+        name: 'Worked Code Example',
+        description: 'Walkthrough of a complex script or program logic step-by-step.',
+        slides: [
+          SlideTemplate(
+            type: 'theory',
+            condition: 'Always',
+            description: 'State the coding problem, the input/output constraints, and the design.',
+          ),
+          SlideTemplate(
+            type: 'step_by_step',
+            condition: 'Always',
+            description: 'Break down the code logic step-by-step as an interactive walkthrough.',
+          ),
+          SlideTemplate(
+            type: 'try_yourself',
+            condition: 'Always',
+            description: 'An interactive coding runner with the complete solution preloaded to play with.',
+          ),
+          SlideTemplate(
+            type: 'error_spotting',
+            condition: 'Always',
+            description: 'A buggy version of the code where the learner has to locate the single flawed line.',
+          ),
+        ],
+      ),
+      LessonFormat(
+        id: 'active-retrieval',
+        name: 'Active Code Recall',
+        description: 'Test syntax and coding concepts purely from memory.',
+        slides: [
+          SlideTemplate(
+            type: 'program',
+            condition: 'Always',
+            description: 'Recall the correct keyword or function call by completing the blank `___`.',
+          ),
+          SlideTemplate(
+            type: 'one_word',
+            condition: 'Always',
+            description: 'Recall a specific programming term or syntax keyword from memory without hints.',
+          ),
+          SlideTemplate(
+            type: 'quiz',
+            condition: 'Always',
+            description: 'A multiple-choice question testing conceptual understanding of code execution.',
+          ),
+        ],
+      ),
+    ];
+  }
 }
 
 class Book {
@@ -876,7 +991,18 @@ class Book {
       ];
       defaultId = 'default';
     } else {
-      formats = LessonFormat.defaultFormats;
+      final titleStr = _str(json['title']).toLowerCase();
+      final descStr = _str(json['description']).toLowerCase();
+      final programmingKeywords = [
+        'python', 'javascript', 'html', 'css', 'latex', 'java', 'cpp', 'c++', 
+        'dart', 'rust', 'programming', 'coding', 'software development', 'computer science'
+      ];
+      final isProgramming = programmingKeywords.any((kw) => titleStr.contains(kw) || descStr.contains(kw));
+      if (isProgramming) {
+        formats = LessonFormat.defaultProgrammingFormats(titleStr, descStr);
+      } else {
+        formats = LessonFormat.defaultFormats;
+      }
       defaultId = formats.first.id;
     }
 
@@ -889,6 +1015,26 @@ class Book {
     final selectedQuestions = selectedQuestionsJson != null
         ? selectedQuestionsJson.map((q) => _str(q)).toList()
         : [defaultPlannerQuestions[0], defaultPlannerQuestions[1]];
+
+    final parsedModules = (json['modules'] as List?)
+        ?.map(
+          (m) => Module.fromJson(
+            m is Map ? Map<String, dynamic>.from(m) : {},
+          ),
+        )
+        .toList() ??
+        [];
+
+    // Ensure every section has its own separate copy of formats so they don't fall back to sharing the book's formats list.
+    final modules = parsedModules.map((m) {
+      final sections = m.sections.map((s) {
+        if (s.lessonFormats == null || s.lessonFormats!.isEmpty) {
+          return s.copyWith(lessonFormats: formats.map((f) => f.copyWith()).toList());
+        }
+        return s;
+      }).toList();
+      return m.copyWith(sections: sections);
+    }).toList();
 
     return Book(
       id: _str(json['id']),
@@ -903,15 +1049,7 @@ class Book {
       authorId: _strOpt(json['authorId']),
       authorName: _strOpt(json['authorName']),
       isGlobal: _bool(json['isGlobal'], false),
-      modules:
-          (json['modules'] as List?)
-              ?.map(
-                (m) => Module.fromJson(
-                  m is Map ? Map<String, dynamic>.from(m) : {},
-                ),
-              )
-              .toList() ??
-          [],
+      modules: modules,
       questionPapers:
           (json['questionPapers'] as List?)
               ?.map(

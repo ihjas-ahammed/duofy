@@ -1196,6 +1196,17 @@ class GenerationManager extends ChangeNotifier {
         }
       }
 
+      if (updatedSectionFormats.isEmpty) {
+        if (sections[secIdx].lessonFormats != null &&
+            sections[secIdx].lessonFormats!.isNotEmpty) {
+          updatedSectionFormats.addAll(sections[secIdx].lessonFormats!);
+        } else {
+          updatedSectionFormats.addAll(
+            baseBook.lessonFormats.map((f) => f.copyWith()).toList(),
+          );
+        }
+      }
+
       sections[secIdx] = sections[secIdx].copyWith(
         units: units,
         unitsGenerated: true,

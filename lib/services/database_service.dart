@@ -211,37 +211,123 @@ class DatabaseService {
   /// Atomic-ish single-book write: write to a temp file then rename, so an
   /// interrupted write can never leave a half-written (corrupt) book file.
   Future<void> _writeBookFile(String forUid, Book book) async {
+    final dir = await _booksDir(forUid);
+
+    // 1. Separate slides and save them to individual JSON files
+    for (final m in book.modules) {
+      for (final s in m.sections) {
+        for (final u in s.units) {
+          for (final l in u.lessons) {
+            if (l.slides.isNotEmpty) {
+              if (kIsWeb) {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setString(
+                  'web_book_${forUid}_${book.id}_lesson_${l.id}_slides',
+                  jsonEncode(l.slides.map((s) => s.toJson()).toList()),
+                );
+              } else {
+                final slidesFile = File('${dir.path}/${book.id}_lesson_${l.id}_slides.json');
+                final slidesJson = jsonEncode(l.slides.map((s) => s.toJson()).toList());
+                await slidesFile.writeAsString(slidesJson, flush: true);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 2. Strip slides from the Book JSON to build the skeleton book
+    final skeletonModules = book.modules.map((m) {
+      final skeletonSections = m.sections.map((s) {
+        final skeletonUnits = s.units.map((u) {
+          final skeletonLessons = u.lessons.map((l) {
+            return l.copyWith(slides: []); // Empty list
+          }).toList();
+          return u.copyWith(lessons: skeletonLessons);
+        }).toList();
+        return s.copyWith(units: skeletonUnits);
+      }).toList();
+      return m.copyWith(sections: skeletonSections);
+    }).toList();
+
+    final skeletonBook = book.copyWith(modules: skeletonModules);
+
     if (kIsWeb) {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('web_book_${forUid}_${book.id}', jsonEncode(book.toJson()));
+      await prefs.setString('web_book_${forUid}_${book.id}', jsonEncode(skeletonBook.toJson()));
       return;
     }
-    final dir = await _booksDir(forUid);
+
     final target = _bookFile(dir, book.id);
     final tmp = File('${target.path}.tmp');
     try {
-      await tmp.writeAsString(jsonEncode(book.toJson()), flush: true);
+      await tmp.writeAsString(jsonEncode(skeletonBook.toJson()), flush: true);
       if (await target.exists()) await target.delete();
       await tmp.rename(target.path);
     } catch (e) {
       print("[DatabaseService] _writeBookFile atomic write failed: $e. Falling back to direct write...");
-      await target.writeAsString(jsonEncode(book.toJson()), flush: true);
+      await target.writeAsString(jsonEncode(skeletonBook.toJson()), flush: true);
       try {
         if (await tmp.exists()) await tmp.delete();
       } catch (_) {}
     }
   }
 
+  Future<List<Slide>> loadSlidesForLesson(String bookId, String lessonId) async {
+    if (kIsWeb) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final txt = prefs.getString('web_book_${uid}_${bookId}_lesson_${lessonId}_slides');
+        if (txt != null && txt.trim().isNotEmpty) {
+          final List decoded = jsonDecode(txt);
+          return decoded.map((s) => Slide.fromJson(Map<String, dynamic>.from(s))).toList();
+        }
+      } catch (e) {
+        print("[DatabaseService] loadSlidesForLesson web error: $e");
+      }
+      return [];
+    }
+    try {
+      final dir = await _booksDir(uid);
+      final file = File('${dir.path}/${bookId}_lesson_${lessonId}_slides.json');
+      if (await file.exists()) {
+        final txt = await file.readAsString();
+        if (txt.trim().isNotEmpty) {
+          final List decoded = jsonDecode(txt);
+          return decoded.map((s) => Slide.fromJson(Map<String, dynamic>.from(s))).toList();
+        }
+      }
+    } catch (e) {
+      print("[DatabaseService] loadSlidesForLesson error: $e");
+    }
+    return [];
+  }
+
   Future<void> _deleteBookFile(String forUid, String id) async {
     if (kIsWeb) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('web_book_${forUid}_$id');
+      final keys = prefs.getKeys();
+      for (final key in keys) {
+        if (key.startsWith('web_book_${forUid}_${id}_lesson_')) {
+          await prefs.remove(key);
+        }
+      }
       return;
     }
     try {
       final dir = await _booksDir(forUid);
       final f = _bookFile(dir, id);
       if (await f.exists()) await f.delete();
+
+      // Clean up lesson slides
+      final files = dir.listSync().whereType<File>();
+      for (final file in files) {
+        final filename = file.path.split('/').last;
+        if (filename.startsWith('${id}_lesson_') && filename.endsWith('_slides.json')) {
+          await file.delete();
+        }
+      }
     } catch (e) {
       print("[DatabaseService] _deleteBookFile error: $e");
     }

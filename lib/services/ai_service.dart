@@ -1592,9 +1592,23 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
       contextParts = await _knowledgeContextParts(bookContext);
     }
 
+    Section? unitSection;
+    for (final m in bookContext.modules) {
+      for (final s in m.sections) {
+        if (s.units.any((u) => u.id == unit.id)) {
+          unitSection = s;
+          break;
+        }
+      }
+      if (unitSection != null) break;
+    }
+    final List<LessonFormat> formats = unitSection != null 
+        ? bookContext.formatsForSection(unitSection) 
+        : bookContext.lessonFormats;
+
     // Build a layout descriptor of all available lesson formats in the book.
     // Different lessons in the same unit can follow different formats.
-    final String formatsLayoutString = bookContext.lessonFormats
+    final String formatsLayoutString = formats
         .map((f) {
           final slidesStr = f.slides
               .map(
@@ -1940,7 +1954,20 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
         .replaceAll('%previous_units_content%', previousUnitsContent);
 
     final parts = <Part>[TextPart(prompt), ...fileParts];
-    final validFormatIds = bookContext.lessonFormats.map((f) => f.id).toSet();
+    Section? unitSection;
+    for (final m in bookContext.modules) {
+      for (final s in m.sections) {
+        if (s.units.any((u) => u.id == unit.id)) {
+          unitSection = s;
+          break;
+        }
+      }
+      if (unitSection != null) break;
+    }
+    final List<LessonFormat> formats = unitSection != null 
+        ? bookContext.formatsForSection(unitSection) 
+        : bookContext.lessonFormats;
+    final validFormatIds = formats.map((f) => f.id).toSet();
 
     Object? lastErr;
     for (final modelName in textModels) {

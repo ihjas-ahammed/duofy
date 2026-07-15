@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../services/global_state.dart';
+import '../services/database_service.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/math_markdown.dart';
 import '../widgets/responsive_center.dart';
@@ -50,6 +51,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
 
   bool _answered = false;
   bool _isCorrect = false;
+  bool _loading = false;
 
   late DateTime _startTime;
   int _mistakesMade = 0;
@@ -67,7 +69,59 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
   void initState() {
     super.initState();
     _startTime = DateTime.now();
-    _extractInteractiveSlides();
+    _loadAllSlidesAndExtract();
+  }
+
+  Future<void> _loadAllSlidesAndExtract() async {
+    setState(() {
+      _loading = true;
+    });
+
+    List<Slide> loadedPool = [];
+    if (widget.practiceType != 'pyq') {
+      final unitFilter = widget.unitIds?.toSet();
+      final List<Future<List<Slide>>> futures = [];
+
+      for (var module in widget.book.modules) {
+        for (var section in module.sections) {
+          for (var unit in section.units) {
+            if (unitFilter != null && !unitFilter.contains(unit.id)) continue;
+            for (var lesson in unit.lessons) {
+              if (lesson.slides.isNotEmpty) {
+                for (var slide in lesson.slides) {
+                  if (_isTargetType(slide.type)) loadedPool.add(slide);
+                }
+              } else {
+                futures.add(
+                  DatabaseService().loadSlidesForLesson(widget.book.id, lesson.id),
+                );
+              }
+            }
+          }
+        }
+      }
+
+      if (futures.isNotEmpty) {
+        final results = await Future.wait(futures);
+        for (final slides in results) {
+          for (final slide in slides) {
+            if (_isTargetType(slide.type)) loadedPool.add(slide);
+          }
+        }
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _loading = false;
+        if (widget.practiceType != 'pyq') {
+          _queue = loadedPool..shuffle();
+          _totalQuestions = _queue.length;
+        } else {
+          _extractInteractiveSlides();
+        }
+      });
+    }
   }
 
   void _extractInteractiveSlides() {
@@ -559,6 +613,17 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return Scaffold(
+        backgroundColor: context.colors.background,
+        body: const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.duoBlue),
+          ),
+        ),
+      );
+    }
+
     if (_queue.isEmpty) {
       return Scaffold(
         appBar: AppBar(),

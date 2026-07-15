@@ -67,6 +67,7 @@ class _LessonScreenState extends State<LessonScreen> {
   bool _answered = false;
   bool _isCorrect = false;
   bool _slideReady = true;
+  bool _loadingSlides = false;
 
   late DateTime _startTime;
   int _totalInteractive = 0;
@@ -129,7 +130,30 @@ class _LessonScreenState extends State<LessonScreen> {
     super.initState();
     _startTime = DateTime.now();
     _lesson = widget.lesson;
-    _buildSlideQueue();
+
+    if (_lesson.slides.isEmpty && widget.book != null) {
+      _loadingSlides = true;
+      _loadSlidesAsync();
+    } else {
+      _buildSlideQueue();
+      _initAfterSlidesReady();
+    }
+  }
+
+  Future<void> _loadSlidesAsync() async {
+    final bookId = widget.book?.id ?? '';
+    final slides = await DatabaseService().loadSlidesForLesson(bookId, _lesson.id);
+    if (mounted) {
+      setState(() {
+        _lesson = _lesson.copyWith(slides: slides);
+        _loadingSlides = false;
+        _buildSlideQueue();
+        _initAfterSlidesReady();
+      });
+    }
+  }
+
+  void _initAfterSlidesReady() {
     // Opening a lesson is the finish line of the first-run walkthrough.
     if (WalkthroughService.instance.step.value == WalkStep.tryUnit) {
       WalkthroughService.instance.finish();
@@ -1687,6 +1711,17 @@ class _LessonScreenState extends State<LessonScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loadingSlides) {
+      return Scaffold(
+        backgroundColor: context.colors.background,
+        body: const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.duoBlue),
+          ),
+        ),
+      );
+    }
+
     if (_slideQueue.isEmpty) {
       return Scaffold(
         backgroundColor: context.colors.background, // Match React lesson bg

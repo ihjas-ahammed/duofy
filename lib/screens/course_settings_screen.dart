@@ -475,102 +475,196 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
 
   void _editSlide(int index) {
     final slide = _slides[index];
+
+    const Map<String, String> slideTypes = {
+      'theory': 'Theory (factual & core concepts)',
+      'concept_pieces': 'Concept Pieces (short connected sentences)',
+      'program': 'Coding Blank (runnable fill-in code)',
+      'try_yourself': 'Coding Sandbox (runnable playground)',
+      'proof': 'Step-by-step Proof (interactive proof logic)',
+      'quiz': 'Quiz (multiple choice question)',
+      'fill_in_blank': 'Fill in the Blank (text recall)',
+      'one_word': 'One Word (recall typing game)',
+      'numerical': 'Numerical (math equation solver)',
+      'matching': 'Matching (drag connection pairs)',
+      'ordering': 'Ordering (sequence/step sorting)',
+      'error_spotting': 'Error Spotting (finding the flawed step)',
+      'flashcard': 'Flashcard (recall self-graded flip card)',
+      'descriptive': 'Descriptive (paragraph + optional photo review)',
+      'custom_html': 'Custom HTML/JS (canvas/interactive iframe)',
+      'custom': 'Custom (type your own type)',
+    };
+
+    const Map<String, String> defaultDescriptions = {
+      'theory': 'The original factual theory and core concepts presented directly, with no storytelling, narrative framing, or example-based scenarios.',
+      'concept_pieces': 'A conceptual breakdown showing a complex or long concept split into a series of short, connected, easy-to-read sentences or bullet-points.',
+      'program': 'A code snippet featuring a blank `___` in a key part of the script. The learner must complete the blank to make the code run and pass verification.',
+      'try_yourself': 'An interactive editable playground preloaded with starter code. The learner can run and edit the script, outputting results directly in the console.',
+      'proof': 'Interactive step-by-step logic proof.',
+      'quiz': 'A multiple-choice question testing understanding.',
+      'fill_in_blank': 'Recall key terms with a fill-in-the-blank question.',
+      'one_word': 'Recall a single key term by typing it as a one-word answer (no options shown).',
+      'numerical': 'A problem whose answer is a number the learner types in.',
+      'matching': 'Match items in the left column to their partners on the right.',
+      'ordering': 'Drag shuffled steps into the correct sequence.',
+      'error_spotting': 'A worked solution with exactly one flawed step the learner must find.',
+      'flashcard': 'Recall-then-flip card with honest self-grading; misses enter spaced review.',
+      'descriptive': 'A question requiring a paragraph explanation and optional photo upload, reviewed by AI.',
+      'custom_html': 'An interactive custom slide written in HTML and Javascript. Can contain buttons, text inputs, canvases, sliders, and logic. Calls DuoMessageChannel.postMessage("complete") when completed.',
+    };
+
+    String initialSelectedType = slideTypes.containsKey(slide.type) ? slide.type : 'custom';
+
     final typeCtrl = TextEditingController(text: slide.type);
     final conditionCtrl = TextEditingController(text: slide.condition);
     final descCtrl = TextEditingController(text: slide.description);
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: context.colors.surface,
-        title: Text(
-          'Edit Slide Template',
-          style: TextStyle(
-            color: context.colors.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextField(
-                controller: typeCtrl,
-                style: TextStyle(color: context.colors.textPrimary),
-                decoration: InputDecoration(
-                  labelText: 'Slide Type (Custom allowed)',
-                  labelStyle: TextStyle(color: context.colors.textFaint),
-                  filled: true,
-                  fillColor: context.colors.surfaceAlt,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (dialogCtx, setStateDialog) {
+            return AlertDialog(
+              backgroundColor: context.colors.surface,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Text(
+                'Edit Slide Template',
+                style: TextStyle(
+                  color: context.colors.textPrimary,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: conditionCtrl,
-                maxLines: 2,
-                style: TextStyle(color: context.colors.textPrimary),
-                decoration: InputDecoration(
-                  labelText: 'Condition / Priority',
-                  hintText: 'e.g., Only if mathematical proof is needed',
-                  labelStyle: TextStyle(color: context.colors.textFaint),
-                  filled: true,
-                  fillColor: context.colors.surfaceAlt,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: initialSelectedType,
+                      dropdownColor: context.colors.surface,
+                      style: TextStyle(color: context.colors.textPrimary),
+                      decoration: InputDecoration(
+                        labelText: 'Slide Type Preset',
+                        labelStyle: TextStyle(color: context.colors.textFaint),
+                        filled: true,
+                        fillColor: context.colors.surfaceAlt,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      items: slideTypes.entries.map((entry) {
+                        return DropdownMenuItem<String>(
+                          value: entry.key,
+                          child: Text(entry.value),
+                        );
+                      }).toList(),
+                      onChanged: (newVal) {
+                        if (newVal == null) return;
+                        setStateDialog(() {
+                          initialSelectedType = newVal;
+                          if (newVal != 'custom') {
+                            typeCtrl.text = newVal;
+                            if (descCtrl.text.isEmpty ||
+                                defaultDescriptions.values.contains(descCtrl.text) ||
+                                descCtrl.text == 'New description...') {
+                              descCtrl.text = defaultDescriptions[newVal] ?? '';
+                            }
+                          } else {
+                            typeCtrl.text = '';
+                          }
+                        });
+                      },
+                    ),
+                    if (initialSelectedType == 'custom') ...[
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: typeCtrl,
+                        style: TextStyle(color: context.colors.textPrimary),
+                        decoration: InputDecoration(
+                          labelText: 'Custom Slide Type',
+                          hintText: 'e.g., custom_game',
+                          labelStyle: TextStyle(color: context.colors.textFaint),
+                          filled: true,
+                          fillColor: context.colors.surfaceAlt,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: conditionCtrl,
+                      maxLines: 2,
+                      style: TextStyle(color: context.colors.textPrimary),
+                      decoration: InputDecoration(
+                        labelText: 'Condition / Priority',
+                        hintText: 'e.g., Always, or Only if programming course',
+                        labelStyle: TextStyle(color: context.colors.textFaint),
+                        filled: true,
+                        fillColor: context.colors.surfaceAlt,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: descCtrl,
+                      maxLines: 4,
+                      style: TextStyle(color: context.colors.textPrimary),
+                      decoration: InputDecoration(
+                        labelText: 'Instruction to AI',
+                        labelStyle: TextStyle(color: context.colors.textFaint),
+                        filled: true,
+                        fillColor: context.colors.surfaceAlt,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: descCtrl,
-                maxLines: 3,
-                style: TextStyle(color: context.colors.textPrimary),
-                decoration: InputDecoration(
-                  labelText: 'Instruction to AI',
-                  labelStyle: TextStyle(color: context.colors.textFaint),
-                  filled: true,
-                  fillColor: context.colors.surfaceAlt,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: context.colors.textFaint),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: context.colors.textFaint),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _slides[index] = SlideTemplate(
-                  type: typeCtrl.text,
-                  condition: conditionCtrl.text,
-                  description: descCtrl.text,
-                );
-              });
-              Navigator.pop(ctx);
-            },
-            child: const Text(
-              'Save',
-              style: TextStyle(
-                color: AppTheme.duoBlue,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
+                TextButton(
+                  onPressed: () {
+                    final finalType = typeCtrl.text.trim();
+                    if (finalType.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Slide type cannot be empty')),
+                      );
+                      return;
+                    }
+                    setState(() {
+                      _slides[index] = SlideTemplate(
+                        type: finalType,
+                        condition: conditionCtrl.text,
+                        description: descCtrl.text,
+                      );
+                    });
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text(
+                    'Save',
+                    style: TextStyle(
+                      color: AppTheme.duoBlue,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -593,6 +687,9 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
       case 'proof':
       case 'step_by_step':
         return LucideIcons.brainCircuit;
+      case 'program':
+      case 'try_yourself':
+        return LucideIcons.code;
       default:
         return LucideIcons.file;
     }
