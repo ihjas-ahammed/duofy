@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:duofy/services/page_mapping.dart';
+import 'package:flow/services/page_mapping.dart';
 
 void main() {
   group('computeOffset', () {

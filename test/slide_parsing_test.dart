@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:duofy/models/app_models.dart';
+import 'package:flow/models/app_models.dart';
 
 void main() {
   group('new slide types parse defensively', () {

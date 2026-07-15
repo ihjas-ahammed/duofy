@@ -53,7 +53,7 @@ jobs:
         run: |
           $version = "${{ steps.version.outputs.vname }}"
           New-Item -ItemType Directory -Force -Path builds | Out-Null
-          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath "builds\duofy-v${version}-windows-x64.zip" -Force
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath "builds\flow-v${version}-windows-x64.zip" -Force
           Get-ChildItem builds\
 
       - name: Commit and push builds to repository

@@ -113,7 +113,7 @@ class DatabaseService {
 
   Future<Directory> _booksDir(String forUid) async {
     final base = await getApplicationDocumentsDirectory();
-    final dir = Directory('${base.path}/duofy_books/$forUid');
+    final dir = Directory('${base.path}/flow_books/$forUid');
     if (!await dir.exists()) await dir.create(recursive: true);
     return dir;
   }

@@ -1,10 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:duofy/models/app_models.dart';
-import 'package:duofy/services/ai_service.dart';
-import 'package:duofy/services/mapping_verifier.dart';
-import 'package:duofy/services/pdf_service.dart';
+import 'package:flow/models/app_models.dart';
+import 'package:flow/services/ai_service.dart';
+import 'package:flow/services/mapping_verifier.dart';
+import 'package:flow/services/pdf_service.dart';
 
 /// Serves synthetic page text from a map of 0-based page index → text; every
 /// other page is blank. No real file is ever opened.

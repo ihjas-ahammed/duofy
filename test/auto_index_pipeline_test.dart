@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:duofy/services/auto_index_pipeline.dart';
+import 'package:flow/services/auto_index_pipeline.dart';
 
 const cover = 'Botany Textbook\nFirst Edition';
 const preface =

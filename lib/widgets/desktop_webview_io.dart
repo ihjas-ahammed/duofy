@@ -138,7 +138,7 @@ class _DesktopWebViewState extends State<DesktopWebView> {
 
     // Write HTML content to a temporary file to bypass opaque data URI security restrictions
     final tempDir = Directory.systemTemp;
-    final tempFile = File('${tempDir.path}/duofy_webview_${widget.html.hashCode}.html');
+    final tempFile = File('${tempDir.path}/flow_webview_${widget.html.hashCode}.html');
     await tempFile.writeAsString(widget.html);
     final fileUrl = 'file://${tempFile.path}';
     debugPrint('[DesktopWebView] CEF fileUrl: $fileUrl');

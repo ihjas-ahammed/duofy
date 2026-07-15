@@ -1576,7 +1576,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(width: 12),
               Text(
-                'Sirius',
+                'Flow',
                 style: TextStyle(
                   fontFamily: 'Nunito',
                   fontWeight: FontWeight.w900,

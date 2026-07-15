@@ -658,11 +658,13 @@ class _LessonScreenState extends State<LessonScreen> {
 
     // Run haptics and telemetry logging in the next frame to prevent frame drops
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (correct) {
-        HapticFeedback.heavyImpact();
-      } else {
-        HapticFeedback.vibrate();
-      }
+      Future.delayed(const Duration(milliseconds: 50), () {
+        if (correct) {
+          HapticFeedback.heavyImpact();
+        } else {
+          HapticFeedback.vibrate();
+        }
+      });
       _recordFirstAttempt(slide, correct);
     });
   }
@@ -1552,11 +1554,13 @@ class _LessonScreenState extends State<LessonScreen> {
               }
             }
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (remembered) {
-                HapticFeedback.heavyImpact();
-              } else {
-                HapticFeedback.vibrate();
-              }
+              Future.delayed(const Duration(milliseconds: 50), () {
+                if (remembered) {
+                  HapticFeedback.heavyImpact();
+                } else {
+                  HapticFeedback.vibrate();
+                }
+              });
               _recordFirstAttempt(slide, remembered);
             });
             if (remembered) {

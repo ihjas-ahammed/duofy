@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:duofy/services/pdf_service.dart';
+import 'package:flow/services/pdf_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

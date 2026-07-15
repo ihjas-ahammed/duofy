@@ -362,7 +362,7 @@ void main() async {
     return true; // Prevent default app crash behavior
   };
 
-  runApp(const SiriusApp());
+  runApp(const FlowApp());
 }
 
 class PopIntent extends Intent {
@@ -377,8 +377,8 @@ void _syncCurrentBrightness(ThemeMode mode) {
   };
 }
 
-class SiriusApp extends StatelessWidget {
-  const SiriusApp({super.key});
+class FlowApp extends StatelessWidget {
+  const FlowApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -392,7 +392,7 @@ class SiriusApp extends StatelessWidget {
     return MaterialApp(
       navigatorKey: navigatorKey,
       scaffoldMessengerKey: scaffoldMessengerKey,
-      title: 'Sirius',
+      title: 'Flow',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,

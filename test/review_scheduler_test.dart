@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:duofy/models/app_models.dart';
-import 'package:duofy/services/metacognition_service.dart';
+import 'package:flow/models/app_models.dart';
+import 'package:flow/services/metacognition_service.dart';
 
 Slide _slide(String id) =>
     Slide.fromJson({'id': id, 'type': 'quiz', 'content': 'Q?'});

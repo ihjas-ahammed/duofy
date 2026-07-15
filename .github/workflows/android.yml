@@ -96,7 +96,7 @@ jobs:
           for apk in build/app/outputs/flutter-apk/*-arm*.apk; do
             [ -f "$apk" ] || continue
             ABI=$(basename "$apk" | sed 's/app-//' | sed 's/-release.apk//')
-            cp "$apk" "builds/duofy-v${VERSION}-${ABI}.apk"
+            cp "$apk" "builds/flow-v${VERSION}-${ABI}.apk"
           done
           ls -lh builds/
 

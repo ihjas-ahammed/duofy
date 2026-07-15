@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:duofy/services/toc_matcher.dart';
+import 'package:flow/services/toc_matcher.dart';
 
 const tocWithNumbers = '''
 CONTENTS
