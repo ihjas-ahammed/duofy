@@ -17,6 +17,7 @@ import '../widgets/slide_views/pyq_one_word_view.dart';
 import '../widgets/slide_views/descriptive_view.dart';
 import '../services/ai_service.dart';
 import '../services/progress_service.dart';
+import '../services/math_evaluator_service.dart';
 import 'pyq_complete_screen.dart';
 import 'lesson_complete_screen.dart';
 
@@ -486,7 +487,8 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
           _wordInput.trim().toLowerCase() ==
           (slide.blankAnswer ?? '').trim().toLowerCase().replaceAll(r'\', '');
     } else if (slide.type == 'numerical') {
-      final val = double.tryParse(_numericInput);
+      final val = MathEvaluatorService.tryEvaluate(_numericInput) ??
+          double.tryParse(_numericInput);
       if (val != null && slide.numericAnswer != null) {
         correct =
             (val - slide.numericAnswer!).abs() <=

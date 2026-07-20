@@ -11,6 +11,7 @@ import '../services/walkthrough_service.dart';
 import '../services/progress_service.dart';
 import '../services/bookmark_service.dart';
 import '../services/metacognition_service.dart';
+import '../services/math_evaluator_service.dart';
 import '../widgets/canvas_art_view.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/math_markdown.dart';
@@ -651,7 +652,8 @@ class _LessonScreenState extends State<LessonScreen> {
           _wordInput.trim().toLowerCase() ==
           (slide.blankAnswer ?? '').trim().toLowerCase().replaceAll(r'\', '');
     } else if (slide.type == 'numerical') {
-      final val = double.tryParse(_numericInput);
+      final val = MathEvaluatorService.tryEvaluate(_numericInput) ??
+          double.tryParse(_numericInput);
       if (val != null && slide.numericAnswer != null) {
         correct =
             (val - slide.numericAnswer!).abs() <=
