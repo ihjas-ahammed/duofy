@@ -1,0 +1,475 @@
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../services/python_runner_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/duo_button.dart';
+
+class NotebookCell {
+  String id;
+  TextEditingController controller;
+  PythonExecutionResult? result;
+  bool isRunning;
+  int? executionCount;
+
+  NotebookCell({
+    required this.id,
+    required String initialCode,
+    this.result,
+    this.isRunning = false,
+    this.executionCount,
+  }) : controller = TextEditingController(text: initialCode);
+}
+
+class PythonIdeScreen extends StatefulWidget {
+  const PythonIdeScreen({super.key});
+
+  @override
+  State<PythonIdeScreen> createState() => _PythonIdeScreenState();
+}
+
+class _PythonIdeScreenState extends State<PythonIdeScreen> {
+  final List<NotebookCell> _cells = [];
+  int _executionCounter = 0;
+  bool _isGlobalRunning = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _seedDefaultNotebook();
+  }
+
+  void _seedDefaultNotebook() {
+    _cells.addAll([
+      NotebookCell(
+        id: 'cell_1',
+        initialCode: '# Duofy Python IDE & Jupyter Notebook\nprint("Hello from Duofy Native Python Engine!")\nfor i in range(1, 4):\n    print(f"  Step {i}: SeriousPython runtime active")',
+      ),
+      NotebookCell(
+        id: 'cell_2',
+        initialCode: '''# Matplotlib Inline Graphics Demo
+import matplotlib.pyplot as plt
+import numpy as np
+
+x = np.linspace(0, 10, 100)
+y = np.sin(x)
+
+plt.figure(figsize=(7, 3.8))
+plt.plot(x, y, color='#10B981', linewidth=2.5, label='sin(x)')
+plt.plot(x, np.cos(x), color='#3B82F6', linewidth=2.0, linestyle='--', label='cos(x)')
+plt.title('Inline Jupyter Plot Rendering', fontsize=14, fontweight='bold')
+plt.xlabel('X value')
+plt.ylabel('Y value')
+plt.grid(True, alpha=0.25)
+plt.legend()
+plt.tight_layout()
+plt.show()''',
+      ),
+    ]);
+  }
+
+  @override
+  void dispose() {
+    for (final cell in _cells) {
+      cell.controller.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _runCell(NotebookCell cell) async {
+    if (cell.isRunning) return;
+
+    setState(() {
+      cell.isRunning = true;
+      cell.result = null;
+    });
+
+    final res = await PythonRunnerService.instance.runCode(cell.controller.text);
+
+    if (mounted) {
+      setState(() {
+        _executionCounter++;
+        cell.executionCount = _executionCounter;
+        cell.isRunning = false;
+        cell.result = res;
+      });
+    }
+  }
+
+  Future<void> _runAllCells() async {
+    if (_isGlobalRunning) return;
+    setState(() => _isGlobalRunning = true);
+
+    for (final cell in _cells) {
+      await _runCell(cell);
+    }
+
+    if (mounted) {
+      setState(() => _isGlobalRunning = false);
+    }
+  }
+
+  void _addCell() {
+    setState(() {
+      _cells.add(
+        NotebookCell(
+          id: 'cell_${DateTime.now().millisecondsSinceEpoch}',
+          initialCode: '# Write Python code here\n',
+        ),
+      );
+    });
+  }
+
+  void _clearOutputs() {
+    setState(() {
+      for (final cell in _cells) {
+        cell.result = null;
+        cell.executionCount = null;
+      }
+    });
+  }
+
+  void _deleteCell(int index) {
+    if (_cells.length <= 1) return;
+    setState(() {
+      _cells[index].controller.dispose();
+      _cells.removeAt(index);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: context.colors.background,
+      appBar: AppBar(
+        title: Row(
+          children: [
+            const Icon(LucideIcons.terminal, color: AppTheme.duoGreen, size: 22),
+            const SizedBox(width: 10),
+            const Text(
+              'Python IDE & Jupyter',
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppTheme.duoGreen.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: AppTheme.duoGreen.withValues(alpha: 0.4)),
+              ),
+              child: const Text(
+                'SeriousPython',
+                style: TextStyle(
+                  color: AppTheme.duoGreen,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            tooltip: 'Run All Cells',
+            icon: _isGlobalRunning
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.duoGreen),
+                  )
+                : const Icon(LucideIcons.playCircle, color: AppTheme.duoGreen),
+            onPressed: _isGlobalRunning ? null : _runAllCells,
+          ),
+          IconButton(
+            tooltip: 'Clear Outputs',
+            icon: const Icon(LucideIcons.eraser),
+            onPressed: _clearOutputs,
+          ),
+          IconButton(
+            tooltip: 'Add Cell',
+            icon: const Icon(LucideIcons.plusCircle),
+            onPressed: _addCell,
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: AppTheme.glassOf(context),
+                child: Row(
+                  children: [
+                    const Icon(LucideIcons.code, color: AppTheme.duoBlue, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Embedded CPython runtime with Jupyter Notebook inline matplotlib graphics & plot rendering.',
+                        style: TextStyle(
+                          color: context.colors.textSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.all(16),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) => _buildCellCard(context, _cells[index], index),
+                childCount: _cells.length,
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+              child: DuoButton(
+                text: '+ ADD CODE CELL',
+                color: AppTheme.duoBlue,
+                shadowColor: AppTheme.duoBlueDark,
+                onPressed: _addCell,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCellCard(BuildContext context, NotebookCell cell, int index) {
+    final execLabel = cell.isRunning
+        ? '[*]:'
+        : (cell.executionCount != null ? '[${cell.executionCount}]:' : '[ ]:');
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: context.colors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: cell.isRunning
+              ? AppTheme.duoGreen
+              : context.colors.textFaint.withValues(alpha: 0.2),
+          width: cell.isRunning ? 2 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Cell Header Bar
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: context.colors.surfaceAlt,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  execLabel,
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontWeight: FontWeight.bold,
+                    color: cell.isRunning
+                        ? AppTheme.duoGreen
+                        : context.colors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Python Cell ${index + 1}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: context.colors.textSecondary,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  iconSize: 18,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  icon: cell.isRunning
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.duoGreen),
+                        )
+                      : const Icon(LucideIcons.play, color: AppTheme.duoGreen),
+                  tooltip: 'Run Cell',
+                  onPressed: cell.isRunning ? null : () => _runCell(cell),
+                ),
+                if (_cells.length > 1)
+                  IconButton(
+                    iconSize: 18,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    icon: const Icon(LucideIcons.trash2, color: AppTheme.duoRed),
+                    tooltip: 'Delete Cell',
+                    onPressed: () => _deleteCell(index),
+                  ),
+              ],
+            ),
+          ),
+          // Code Editor Field
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: TextField(
+              controller: cell.controller,
+              maxLines: null,
+              keyboardType: TextInputType.multiline,
+              autocorrect: false,
+              enableSuggestions: false,
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 13.5,
+                height: 1.5,
+                color: Color(0xFFE2E8F0),
+              ),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: const Color(0xFF0F172A),
+                contentPadding: const EdgeInsets.all(14),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+          // Cell Execution Output
+          if (cell.result != null) _buildCellOutput(context, cell.result!),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCellOutput(BuildContext context, PythonExecutionResult res) {
+    final hasStdout = res.stdout.trim().isNotEmpty;
+    final hasStderr = res.stderr.trim().isNotEmpty;
+    final hasGraphics = res.graphicsBase64.isNotEmpty;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF020617),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(15)),
+        border: Border(
+          top: BorderSide(color: context.colors.textFaint.withValues(alpha: 0.15)),
+        ),
+      ),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Execution Meta
+          Row(
+            children: [
+              Icon(
+                res.exitCode == 0 ? LucideIcons.checkCircle2 : LucideIcons.alertCircle,
+                size: 14,
+                color: res.exitCode == 0 ? AppTheme.duoGreen : AppTheme.duoRed,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                res.exitCode == 0 ? 'Output' : 'Execution Failed',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: res.exitCode == 0 ? AppTheme.duoGreen : AppTheme.duoRed,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${res.duration.inMilliseconds} ms',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: context.colors.textFaint,
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ],
+          ),
+          if (hasStdout) ...[
+            const SizedBox(height: 10),
+            SelectableText(
+              res.stdout,
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 12.5,
+                height: 1.45,
+                color: Color(0xFFCBD5E1),
+              ),
+            ),
+          ],
+          if (hasStderr) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppTheme.duoRed.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppTheme.duoRed.withValues(alpha: 0.3)),
+              ),
+              child: SelectableText(
+                res.stderr,
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                  color: Color(0xFFFCA5A5),
+                ),
+              ),
+            ),
+          ],
+          if (hasGraphics) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'Jupyter Graphics & Plots:',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.duoGreen,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...res.graphicsBase64.map((b64) {
+              final imageBytes = base64Decode(b64);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    color: Colors.white,
+                    padding: const EdgeInsets.all(8),
+                    child: Image.memory(
+                      imageBytes,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ],
+        ],
+      ),
+    );
+  }
+}

@@ -78,6 +78,9 @@ static void my_application_activate(GApplication* application) {
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
 
+  // Connect destroy signal so closing the GTK window quits the application process on Linux
+  g_signal_connect_swapped(window, "destroy", G_CALLBACK(g_application_quit), application);
+
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'lesson_screen.dart';
 import '../services/fb/fb_auth.dart';
@@ -1498,7 +1499,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return PopScope<Object?>(
       canPop: _selectedFolderId == null,
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
+        if (didPop) {
+          if (!kIsWeb && defaultTargetPlatform == TargetPlatform.linux) {
+            SystemNavigator.pop();
+          }
+          return;
+        }
         if (_selectedFolderId != null) {
           setState(() {
             _selectedFolderId = null;

@@ -18,6 +18,7 @@ import 'metacognition_setup_screen.dart';
 import 'ai_queue_screen.dart';
 import 'experiments_screen.dart';
 import 'ai_providers_screen.dart';
+import 'python_ide_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -272,6 +273,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ).then((_) {
             _loadSettings();
           });
+        },
+      ),
+    );
+  }
+
+  Widget _buildPythonIdeTile() {
+    return Container(
+      decoration: AppTheme.glassOf(context),
+      child: ListTile(
+        leading: const Icon(LucideIcons.terminal, color: AppTheme.duoGreen),
+        title: Text(
+          'Python IDE & Jupyter Notebook',
+          style: TextStyle(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        subtitle: Text(
+          'SeriousPython CPython engine & Jupyter matplotlib graphics rendering.',
+          style: TextStyle(
+            color: context.colors.textFaint,
+            fontSize: 11,
+          ),
+        ),
+        trailing: Icon(LucideIcons.chevronRight, color: context.colors.textFaint),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PythonIdeScreen()),
+          );
         },
       ),
     );
@@ -1372,6 +1403,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 16),
               _buildAiProvidersTile(),
+              const SizedBox(height: 12),
+              _buildPythonIdeTile(),
               const SizedBox(height: 32),
 
               Container(
@@ -1702,6 +1735,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 16),
           _buildAiProvidersTile(),
+          const SizedBox(height: 12),
+          _buildPythonIdeTile(),
           const SizedBox(height: 32),
 
           const Text(
@@ -1837,6 +1872,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 16),
             _buildAiProvidersTile(),
+            const SizedBox(height: 12),
+            _buildPythonIdeTile(),
             const SizedBox(height: 32),
 
             const Text(
