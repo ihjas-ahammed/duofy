@@ -235,6 +235,38 @@ class LessonFormat {
       ],
     ),
     LessonFormat(
+      id: 'code-playground',
+      name: 'Code Playground & Walkthrough',
+      description:
+          'Hands-on programming lesson: interactive code runner, syntax fill-in, live code execution.',
+      slides: [
+        SlideTemplate(
+          type: 'try_yourself',
+          condition: 'Always',
+          description:
+              'Hands-on code runner slide: starter code for the learner to edit and run live (e.g., print "Hello, World!").',
+        ),
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description:
+              'Concise explanation of the code concept or function used in 1-2 sentences.',
+        ),
+        SlideTemplate(
+          type: 'program',
+          condition: 'Always',
+          description:
+              'Interactive code fill-in-the-blank slide over syntax-highlighted code block.',
+        ),
+        SlideTemplate(
+          type: 'try_yourself',
+          condition: 'Always',
+          description:
+              'Challenge code runner slide where the learner modifies parameters or extends the program.',
+        ),
+      ],
+    ),
+    LessonFormat(
       id: 'proof-walkthrough',
       name: 'Proof Walkthrough',
       description: 'Step-by-step derivation of a theorem or formula.',

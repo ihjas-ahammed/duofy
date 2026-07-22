@@ -1,10 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:google_generative_ai/google_generative_ai.dart';
 import '../theme/app_theme.dart';
 import '../services/database_service.dart';
+import '../services/secrets_service.dart';
 import '../services/usage_limit_service.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/string_list_manager.dart';
@@ -855,6 +858,40 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
     );
   }
 
+  void _openTestAiDialog([String? provider]) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        child: TestAiDialog(
+          geminiKeys: _keys,
+          modelPrimaryText: _modelPrimaryText,
+          modelPrimaryGraphics: _modelPrimaryGraphics,
+          modelLite: _modelLite,
+          modelLive: _modelLive,
+          groqKeys: _groqKeys,
+          groqModelPrimaryText: _groqModelPrimaryText,
+          groqModelPrimaryGraphics: _groqModelPrimaryGraphics,
+          groqModelLite: _groqModelLite,
+          groqModelLive: _groqModelLive,
+          cerebrasKeys: _cerebrasKeys,
+          cerebrasModelPrimaryText: _cerebrasModelPrimaryText,
+          cerebrasModelPrimaryGraphics: _cerebrasModelPrimaryGraphics,
+          cerebrasModelLite: _cerebrasModelLite,
+          cerebrasModelLive: _cerebrasModelLive,
+          openrouterKeys: _openrouterKeys,
+          openrouterModelPrimaryText: _openrouterModelPrimaryText,
+          openrouterModelPrimaryGraphics: _openrouterModelPrimaryGraphics,
+          openrouterModelLite: _openrouterModelLite,
+          openrouterModelLive: _openrouterModelLive,
+          initialProvider: provider,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -873,6 +910,21 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
             style: TextStyle(fontWeight: FontWeight.w900),
           ),
           actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 4.0),
+              child: TextButton.icon(
+                onPressed: () => _openTestAiDialog(),
+                icon: const Icon(LucideIcons.bot, color: AppTheme.duoBlue, size: 18),
+                label: const Text(
+                  'TEST AI',
+                  style: TextStyle(
+                    color: AppTheme.duoBlue,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.only(right: 8.0),
               child: TextButton(
@@ -1178,6 +1230,757 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class TestAiChatMessage {
+  final String sender; // 'user', 'ai', 'error'
+  final String text;
+  final int? latencyMs;
+  final DateTime timestamp;
+
+  TestAiChatMessage({
+    required this.sender,
+    required this.text,
+    this.latencyMs,
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
+}
+
+class TestAiDialog extends StatefulWidget {
+  final List<String> geminiKeys;
+  final List<String> modelPrimaryText;
+  final List<String> modelPrimaryGraphics;
+  final List<String> modelLite;
+  final List<String> modelLive;
+
+  final List<String> groqKeys;
+  final List<String> groqModelPrimaryText;
+  final List<String> groqModelPrimaryGraphics;
+  final List<String> groqModelLite;
+  final List<String> groqModelLive;
+
+  final List<String> cerebrasKeys;
+  final List<String> cerebrasModelPrimaryText;
+  final List<String> cerebrasModelPrimaryGraphics;
+  final List<String> cerebrasModelLite;
+  final List<String> cerebrasModelLive;
+
+  final List<String> openrouterKeys;
+  final List<String> openrouterModelPrimaryText;
+  final List<String> openrouterModelPrimaryGraphics;
+  final List<String> openrouterModelLite;
+  final List<String> openrouterModelLive;
+
+  final String? initialProvider;
+
+  const TestAiDialog({
+    super.key,
+    required this.geminiKeys,
+    required this.modelPrimaryText,
+    required this.modelPrimaryGraphics,
+    required this.modelLite,
+    required this.modelLive,
+    required this.groqKeys,
+    required this.groqModelPrimaryText,
+    required this.groqModelPrimaryGraphics,
+    required this.groqModelLite,
+    required this.groqModelLive,
+    required this.cerebrasKeys,
+    required this.cerebrasModelPrimaryText,
+    required this.cerebrasModelPrimaryGraphics,
+    required this.cerebrasModelLite,
+    required this.cerebrasModelLive,
+    required this.openrouterKeys,
+    required this.openrouterModelPrimaryText,
+    required this.openrouterModelPrimaryGraphics,
+    required this.openrouterModelLite,
+    required this.openrouterModelLive,
+    this.initialProvider,
+  });
+
+  @override
+  State<TestAiDialog> createState() => _TestAiDialogState();
+}
+
+class _TestAiDialogState extends State<TestAiDialog> {
+  late String _selectedProvider;
+  String _selectedSlot = 'Primary - Text';
+  String _selectedModel = '';
+  final TextEditingController _customModelController = TextEditingController();
+  bool _isCustomModel = false;
+
+  final TextEditingController _inputController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final List<TestAiChatMessage> _messages = [];
+  bool _isGenerating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedProvider = widget.initialProvider ?? 'Google Gemini';
+    _updateSelectedModel();
+  }
+
+  @override
+  void dispose() {
+    _customModelController.dispose();
+    _inputController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  List<String> _getAvailableModels() {
+    switch (_selectedProvider) {
+      case 'Google Gemini':
+        switch (_selectedSlot) {
+          case 'Primary - Text': return widget.modelPrimaryText;
+          case 'Primary - Graphics': return widget.modelPrimaryGraphics;
+          case 'Lite': return widget.modelLite;
+          case 'Live': return widget.modelLive;
+          default: return widget.modelPrimaryText;
+        }
+      case 'Groq':
+        switch (_selectedSlot) {
+          case 'Primary - Text': return widget.groqModelPrimaryText;
+          case 'Primary - Graphics': return widget.groqModelPrimaryGraphics;
+          case 'Lite': return widget.groqModelLite;
+          case 'Live': return widget.groqModelLive;
+          default: return widget.groqModelPrimaryText;
+        }
+      case 'Cerebras':
+        switch (_selectedSlot) {
+          case 'Primary - Text': return widget.cerebrasModelPrimaryText;
+          case 'Primary - Graphics': return widget.cerebrasModelPrimaryGraphics;
+          case 'Lite': return widget.cerebrasModelLite;
+          case 'Live': return widget.cerebrasModelLive;
+          default: return widget.cerebrasModelPrimaryText;
+        }
+      case 'OpenRouter':
+        switch (_selectedSlot) {
+          case 'Primary - Text': return widget.openrouterModelPrimaryText;
+          case 'Primary - Graphics': return widget.openrouterModelPrimaryGraphics;
+          case 'Lite': return widget.openrouterModelLite;
+          case 'Live': return widget.openrouterModelLive;
+          default: return widget.openrouterModelPrimaryText;
+        }
+      default:
+        return [];
+    }
+  }
+
+  void _updateSelectedModel() {
+    final models = _getAvailableModels();
+    if (models.isNotEmpty) {
+      _selectedModel = models.first;
+      _isCustomModel = false;
+    } else {
+      _selectedModel = '';
+      _isCustomModel = true;
+    }
+  }
+
+  Future<List<String>> _resolveKeysForProvider(String provider) async {
+    List<String> keys = [];
+
+    if (provider == 'Google Gemini') {
+      keys = widget.geminiKeys.where((k) => k.trim().isNotEmpty).toList();
+      if (keys.isNotEmpty) return keys;
+
+      final secretKeys = await SecretsService.instance.geminiKeys();
+      if (secretKeys.isNotEmpty) return secretKeys;
+
+      final dbSettings = await DatabaseService().fetchUserSettings();
+      final dbKeys = (dbSettings?['apiKeys'] as List?)?.map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList() ?? [];
+      if (dbKeys.isNotEmpty) return dbKeys;
+
+      final prefs = await SharedPreferences.getInstance();
+      final prefKeys = prefs.getStringList('gemini_api_keys_list') ?? [];
+      if (prefKeys.isNotEmpty) return prefKeys;
+      final scalarKey = prefs.getString('gemini_api_keys');
+      if (scalarKey != null && scalarKey.trim().isNotEmpty) return [scalarKey.trim()];
+    } else if (provider == 'Groq') {
+      keys = widget.groqKeys.where((k) => k.trim().isNotEmpty).toList();
+      if (keys.isNotEmpty) return keys;
+
+      final secretKeys = await SecretsService.instance.groqKeys();
+      if (secretKeys.isNotEmpty) return secretKeys;
+
+      final dbSettings = await DatabaseService().fetchUserSettings();
+      final dbKeys = (dbSettings?['groqApiKeys'] as List?)?.map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList() ?? [];
+      if (dbKeys.isNotEmpty) return dbKeys;
+
+      final prefs = await SharedPreferences.getInstance();
+      final prefKeys = prefs.getStringList('groq_api_keys_list') ?? [];
+      if (prefKeys.isNotEmpty) return prefKeys;
+      final scalarKey = prefs.getString('groq_api_keys');
+      if (scalarKey != null && scalarKey.trim().isNotEmpty) return [scalarKey.trim()];
+    } else if (provider == 'Cerebras') {
+      keys = widget.cerebrasKeys.where((k) => k.trim().isNotEmpty).toList();
+      if (keys.isNotEmpty) return keys;
+
+      final secretKeys = await SecretsService.instance.cerebrasKeys();
+      if (secretKeys.isNotEmpty) return secretKeys;
+
+      final dbSettings = await DatabaseService().fetchUserSettings();
+      final dbKeys = (dbSettings?['cerebrasApiKeys'] as List?)?.map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList() ?? [];
+      if (dbKeys.isNotEmpty) return dbKeys;
+
+      final prefs = await SharedPreferences.getInstance();
+      final prefKeys = prefs.getStringList('cerebras_api_keys_list') ?? [];
+      if (prefKeys.isNotEmpty) return prefKeys;
+      final scalarKey = prefs.getString('cerebras_api_keys');
+      if (scalarKey != null && scalarKey.trim().isNotEmpty) return [scalarKey.trim()];
+    } else if (provider == 'OpenRouter') {
+      keys = widget.openrouterKeys.where((k) => k.trim().isNotEmpty).toList();
+      if (keys.isNotEmpty) return keys;
+
+      final secretKeys = await SecretsService.instance.openrouterKeys();
+      if (secretKeys.isNotEmpty) return secretKeys;
+
+      final dbSettings = await DatabaseService().fetchUserSettings();
+      final dbKeys = (dbSettings?['openrouterApiKeys'] as List?)?.map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList() ?? [];
+      if (dbKeys.isNotEmpty) return dbKeys;
+
+      final prefs = await SharedPreferences.getInstance();
+      final prefKeys = prefs.getStringList('openrouter_api_keys_list') ?? [];
+      if (prefKeys.isNotEmpty) return prefKeys;
+      final scalarKey = prefs.getString('openrouter_api_keys');
+      if (scalarKey != null && scalarKey.trim().isNotEmpty) return [scalarKey.trim()];
+    }
+
+    return [];
+  }
+
+  Future<void> _sendMessage([String? overrideText]) async {
+    final text = (overrideText ?? _inputController.text).trim();
+    if (text.isEmpty || _isGenerating) return;
+
+    final targetModel = _isCustomModel ? _customModelController.text.trim() : _selectedModel;
+    if (targetModel.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select or specify a model to test.')),
+      );
+      return;
+    }
+
+    _inputController.clear();
+    setState(() {
+      _messages.add(TestAiChatMessage(sender: 'user', text: text));
+      _isGenerating = true;
+    });
+
+    _scrollToBottom();
+
+    final stopwatch = Stopwatch()..start();
+
+    try {
+      String responseText = '';
+
+      final keys = await _resolveKeysForProvider(_selectedProvider);
+      if (keys.isEmpty) {
+        throw Exception('No $_selectedProvider API keys found in local settings, database, or shared secrets. Please add an API key in Settings.');
+      }
+      final apiKey = keys.first;
+
+      if (_selectedProvider == 'Google Gemini') {
+        final model = GenerativeModel(
+          model: targetModel,
+          apiKey: apiKey,
+        );
+        final res = await model.generateContent([Content.text(text)]);
+        responseText = res.text ?? 'Empty response from Gemini.';
+      } else if (_selectedProvider == 'Groq') {
+        final res = await http.post(
+          Uri.parse('https://api.groq.com/openai/v1/chat/completions'),
+          headers: {
+            'Authorization': 'Bearer $apiKey',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'model': targetModel,
+            'messages': [{'role': 'user', 'content': text}],
+          }),
+        ).timeout(const Duration(seconds: 30));
+        if (res.statusCode != 200) {
+          throw Exception('Groq API HTTP Error (${res.statusCode}):\n${res.body}');
+        }
+        final data = jsonDecode(res.body);
+        responseText = data['choices']?[0]?['message']?['content'] ?? 'No text returned from Groq.';
+      } else if (_selectedProvider == 'Cerebras') {
+        final res = await http.post(
+          Uri.parse('https://api.cerebras.ai/v1/chat/completions'),
+          headers: {
+            'Authorization': 'Bearer $apiKey',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'model': targetModel,
+            'messages': [{'role': 'user', 'content': text}],
+          }),
+        ).timeout(const Duration(seconds: 30));
+        if (res.statusCode != 200) {
+          throw Exception('Cerebras API HTTP Error (${res.statusCode}):\n${res.body}');
+        }
+        final data = jsonDecode(res.body);
+        responseText = data['choices']?[0]?['message']?['content'] ?? 'No text returned from Cerebras.';
+      } else if (_selectedProvider == 'OpenRouter') {
+        final res = await http.post(
+          Uri.parse('https://openrouter.ai/api/v1/chat/completions'),
+          headers: {
+            'Authorization': 'Bearer $apiKey',
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://duofy.app',
+            'X-Title': 'Duofy',
+          },
+          body: jsonEncode({
+            'model': targetModel,
+            'messages': [{'role': 'user', 'content': text}],
+          }),
+        ).timeout(const Duration(seconds: 30));
+        if (res.statusCode != 200) {
+          throw Exception('OpenRouter API HTTP Error (${res.statusCode}):\n${res.body}');
+        }
+        final data = jsonDecode(res.body);
+        responseText = data['choices']?[0]?['message']?['content'] ?? 'No text returned from OpenRouter.';
+      }
+
+      stopwatch.stop();
+      if (mounted) {
+        setState(() {
+          _messages.add(TestAiChatMessage(
+            sender: 'ai',
+            text: responseText,
+            latencyMs: stopwatch.elapsedMilliseconds,
+          ));
+          _isGenerating = false;
+        });
+        _scrollToBottom();
+      }
+    } catch (e, st) {
+      stopwatch.stop();
+      if (mounted) {
+        setState(() {
+          _messages.add(TestAiChatMessage(
+            sender: 'error',
+            text: 'ERROR LOG DETAILS:\n$e\n\nSTACK TRACE:\n$st',
+            latencyMs: stopwatch.elapsedMilliseconds,
+          ));
+          _isGenerating = false;
+        });
+        _scrollToBottom();
+      }
+    }
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final availableModels = _getAvailableModels();
+
+    return Container(
+      width: 720,
+      height: 720,
+      decoration: BoxDecoration(
+        color: context.colors.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppTheme.duoBlue.withValues(alpha: 0.5), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.5),
+            blurRadius: 20,
+            spreadRadius: 4,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            decoration: BoxDecoration(
+              color: context.colors.surfaceAlt,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(23)),
+              border: Border(bottom: BorderSide(color: context.colors.outline)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.duoBlue.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(LucideIcons.bot, color: AppTheme.duoBlue, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'AI Model Test & Debugger',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 17,
+                          color: context.colors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Test providers, AI types, and models with real-time error logs',
+                        style: TextStyle(color: context.colors.textFaint, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(LucideIcons.x, color: context.colors.textSecondary),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+
+          // Provider & Slot Selectors
+          Container(
+            padding: const EdgeInsets.all(14),
+            color: context.colors.background,
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    // Provider Dropdown
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('PROVIDER', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: context.colors.textFaint)),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            decoration: BoxDecoration(
+                              color: context.colors.surfaceAlt,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: context.colors.outline),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                isExpanded: true,
+                                value: _selectedProvider,
+                                dropdownColor: context.colors.surface,
+                                style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 12),
+                                items: const [
+                                  DropdownMenuItem(value: 'Google Gemini', child: Text('Google Gemini')),
+                                  DropdownMenuItem(value: 'Groq', child: Text('Groq')),
+                                  DropdownMenuItem(value: 'Cerebras', child: Text('Cerebras')),
+                                  DropdownMenuItem(value: 'OpenRouter', child: Text('OpenRouter')),
+                                ],
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    setState(() {
+                                      _selectedProvider = val;
+                                      _updateSelectedModel();
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // Slot / AI Type Dropdown
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('AI TYPE / SLOT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: context.colors.textFaint)),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            decoration: BoxDecoration(
+                              color: context.colors.surfaceAlt,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: context.colors.outline),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                isExpanded: true,
+                                value: _selectedSlot,
+                                dropdownColor: context.colors.surface,
+                                style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 12),
+                                items: const [
+                                  DropdownMenuItem(value: 'Primary - Text', child: Text('Primary - Text')),
+                                  DropdownMenuItem(value: 'Primary - Graphics', child: Text('Primary - Graphics')),
+                                  DropdownMenuItem(value: 'Lite', child: Text('Lite')),
+                                  DropdownMenuItem(value: 'Live', child: Text('Live')),
+                                ],
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    setState(() {
+                                      _selectedSlot = val;
+                                      _updateSelectedModel();
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                // Model Dropdown
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('SELECT MODEL', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: context.colors.textFaint)),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            decoration: BoxDecoration(
+                              color: context.colors.surfaceAlt,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: context.colors.outline),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                isExpanded: true,
+                                value: _isCustomModel ? 'custom' : (_selectedModel.isEmpty ? null : _selectedModel),
+                                dropdownColor: context.colors.surface,
+                                style: const TextStyle(color: Colors.amber, fontFamily: 'monospace', fontWeight: FontWeight.bold, fontSize: 12),
+                                items: [
+                                  for (final m in availableModels)
+                                    DropdownMenuItem(value: m, child: Text(m)),
+                                  const DropdownMenuItem(value: 'custom', child: Text('+ Enter Custom Model...')),
+                                ],
+                                onChanged: (val) {
+                                  if (val == 'custom') {
+                                    setState(() {
+                                      _isCustomModel = true;
+                                    });
+                                  } else if (val != null) {
+                                    setState(() {
+                                      _selectedModel = val;
+                                      _isCustomModel = false;
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                if (_isCustomModel) ...[
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _customModelController,
+                    style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.amber),
+                    decoration: InputDecoration(
+                      isDense: true,
+                      hintText: 'Enter custom model identifier (e.g. meta-llama/llama-3.3-70b-instruct)',
+                      hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 11),
+                      filled: true,
+                      fillColor: context.colors.surfaceAlt,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          // Messages List
+          Expanded(
+            child: _messages.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(LucideIcons.sparkles, color: AppTheme.duoBlue.withValues(alpha: 0.5), size: 36),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Ready to test $_selectedProvider ($_selectedSlot)',
+                            style: TextStyle(fontWeight: FontWeight.bold, color: context.colors.textSecondary, fontSize: 14),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Click a prompt below or type your own test prompt.',
+                            style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+                          ),
+                          const SizedBox(height: 16),
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              ActionChip(
+                                label: const Text('Hello! Verify model connection'),
+                                onPressed: () => _sendMessage('Hello! Verify provider and model connectivity.'),
+                              ),
+                              ActionChip(
+                                label: const Text('Explain 1+1'),
+                                onPressed: () => _sendMessage('Explain why 1+1=2 in 1 sentence.'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(14),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, i) {
+                      final msg = _messages[i];
+                      final isUser = msg.sender == 'user';
+                      final isError = msg.sender == 'error';
+
+                      if (isError) {
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF450A0A),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppTheme.duoRed, width: 1.5),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(LucideIcons.alertTriangle, color: AppTheme.duoRed, size: 16),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'MODEL TEST ERROR LOG',
+                                    style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold, fontSize: 11),
+                                  ),
+                                  const Spacer(),
+                                  if (msg.latencyMs != null)
+                                    Text('${msg.latencyMs}ms', style: const TextStyle(color: Colors.white54, fontSize: 10)),
+                                  IconButton(
+                                    icon: const Icon(LucideIcons.copy, color: Colors.white70, size: 14),
+                                    tooltip: 'Copy Error Log',
+                                    onPressed: () {
+                                      Clipboard.setData(ClipboardData(text: msg.text));
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Error log copied to clipboard!')),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              SelectableText(
+                                msg.text,
+                                style: const TextStyle(fontFamily: 'monospace', fontSize: 11.5, color: Color(0xFFFCA5A5)),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      return Align(
+                        alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
+                          decoration: BoxDecoration(
+                            color: isUser ? AppTheme.duoBlue : context.colors.surfaceAlt,
+                            borderRadius: BorderRadius.circular(14),
+                            border: isUser ? null : Border.all(color: context.colors.outline),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (!isUser && msg.latencyMs != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 4),
+                                  child: Text(
+                                    '⚡ ${msg.latencyMs}ms',
+                                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.duoGreen),
+                                  ),
+                                ),
+                              SelectableText(
+                                msg.text,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: isUser ? Colors.white : context.colors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+
+          // Bottom Input Bar
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: context.colors.surfaceAlt,
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(23)),
+              border: Border(top: BorderSide(color: context.colors.outline)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _inputController,
+                    enabled: !_isGenerating,
+                    style: TextStyle(fontSize: 13, color: context.colors.textPrimary),
+                    decoration: InputDecoration(
+                      isDense: true,
+                      hintText: 'Type a test prompt (e.g. Test model output)...',
+                      hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 12),
+                      filled: true,
+                      fillColor: context.colors.background,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                    ),
+                    onSubmitted: (val) => _sendMessage(val),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: _isGenerating
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.duoGreen))
+                      : const Icon(LucideIcons.send, color: AppTheme.duoBlue),
+                  onPressed: _isGenerating ? null : () => _sendMessage(),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

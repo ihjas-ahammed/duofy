@@ -34,6 +34,12 @@ android {
         versionName = flutter.versionName
     }
 
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+
     signingConfigs {
         // Override the default debug signing config to point at the
         // checked-in keystore at android/app/debug.keystore. This way every
@@ -53,6 +59,12 @@ android {
             // `flutter build apk --release` works out of the box. Swap for
             // a real upload key before publishing to the Play Store.
             signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = true
+            isShrinkResources = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }

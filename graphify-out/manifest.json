@@ -15,8 +15,8 @@
     "semantic_hash": ""
   },
   "lib/models/app_models.dart": {
-    "mtime": 1784105485.0697663,
-    "ast_hash": "d4228a85752b47a3d968ccf5a9f06d78",
+    "mtime": 1784691327.69769,
+    "ast_hash": "63d25b309d5d9a820c4f03a4640fcd2f",
     "semantic_hash": ""
   },
   "lib/screens/main_layout_screen.dart": {
@@ -25,8 +25,8 @@
     "semantic_hash": ""
   },
   "lib/screens/book_dashboard_screen.dart": {
-    "mtime": 1784104451.645667,
-    "ast_hash": "733375d3f108073925f34acf52a082be",
+    "mtime": 1784690985.6774628,
+    "ast_hash": "b15aa1ff05b132843bbe2546e41c1715",
     "semantic_hash": ""
   },
   "lib/screens/practice_session_screen.dart": {
@@ -350,8 +350,8 @@
     "semantic_hash": ""
   },
   "lib/services/prompt_service.dart": {
-    "mtime": 1784102530.98674,
-    "ast_hash": "54ed7fa224018abe27ee60bf4aa29d87",
+    "mtime": 1784691335.927804,
+    "ast_hash": "aeb878e66de63d4b82a0ccde4114f9b9",
     "semantic_hash": ""
   },
   "lib/services/notification_service.dart": {
@@ -445,8 +445,8 @@
     "semantic_hash": ""
   },
   "android/app/build.gradle.kts": {
-    "mtime": 1784089962.176519,
-    "ast_hash": "bcfe4792a29cb2b9508d9a516a624bd3",
+    "mtime": 1784691087.6895385,
+    "ast_hash": "6e1f9e3bb0aacbae9bac8321c2dd7039",
     "semantic_hash": ""
   },
   "android/app/google-services.json": {
@@ -1790,8 +1790,8 @@
     "semantic_hash": ""
   },
   ".github/workflows/android.yml": {
-    "mtime": 1784093493.6572962,
-    "ast_hash": "890a4bb9cff1d9429ce1cfa3670c79b5",
+    "mtime": 1784691100.3576896,
+    "ast_hash": "5d263006b1d525586a998128914b3f8a",
     "semantic_hash": ""
   },
   ".github/workflows/windows.yml": {
@@ -6670,8 +6670,8 @@
     "semantic_hash": ""
   },
   "lib/screens/ai_providers_screen.dart": {
-    "mtime": 1784688071.8569598,
-    "ast_hash": "8fa6ada4abe31e6f093bc98719f918f4",
+    "mtime": 1784690521.772727,
+    "ast_hash": "f8d42814f8b9da29a9a2efff7c8588c6",
     "semantic_hash": ""
   },
   "android/app/src/main/kotlin/com/example/duofy/MainActivity.kt": {

@@ -173,12 +173,15 @@ LATEX / MARKDOWN-MATH GUIDE (READ CAREFULLY — most generation errors come from
   /// Schema rules say WHAT each type looks like; this says HOW to teach.
   static const String pedagogyBlock = '''
 PEDAGOGY (HOW TO TEACH — apply these while following the schema rules):
+- PRACTICE-FIRST PROGRAMMING (CRITICAL): Programming is learned by writing and running code! For any programming course, topic, or language (Python, JavaScript, C/C++, Java, HTML, SQL, etc.):
+  1. FIRST SLIDE HANDS-ON IMMERSION: In the first lesson of a programming course or unit, IMMEDIATELY let the learner edit and execute code in a `try_yourself` runner slide (e.g. print 'Hello, World!' or basic syntax) right at the start of the lesson! Do NOT start programming lessons with walls of static text.
+  2. EVERY CODE EXAMPLE MUST BE RUNNABLE: Every single code snippet, syntax rule, algorithm, or code example presented MUST be provided as an interactive `try_yourself` code runner slide or `program` fill-in-the-blank slide so the user runs and tests the code live in our runner.
 - OBJECTIVES FIRST: begin each lesson with a short "theory" slide stating, in 1-3 bullet lines, what the learner will be able to do afterwards.
-- RETRIEVAL PRACTICE: at least one third of each lesson's slides must make the learner PRODUCE an answer (quiz, fill_in_blank, one_word, numerical, matching, ordering, error_spotting, flashcard) — reading alone does not build memory.
+- RETRIEVAL PRACTICE: at least one third of each lesson's slides must make the learner PRODUCE an answer (quiz, fill_in_blank, one_word, numerical, matching, ordering, error_spotting, flashcard, program) — reading alone does not build memory.
 - WORKED EXAMPLE → FADED PRACTICE: teach procedures by first walking a fully worked example (proof/step_by_step), then a partially completed one the learner finishes, then a problem they solve alone (numerical/quiz).
 - INTERLEAVING: vary slide types instead of long same-type runs, and let later questions briefly revisit earlier concepts of THIS unit.
 - ONE IDEA PER SLIDE: never pack multiple new concepts into a single slide; add a slide instead.
-- MATCH THE ASSESSMENT TO THE SKILL: memorize → flashcard/one_word; discriminate → quiz/matching; sequence → ordering; evaluate → error_spotting; compute → numerical; construct → proof/step_by_step.''';
+- MATCH THE ASSESSMENT TO THE SKILL: memorize → flashcard/one_word; discriminate → quiz/matching; sequence → ordering; evaluate → error_spotting; compute → numerical; construct → proof/step_by_step; coding → try_yourself / program.''';
 
   /// JSON return-schema examples per slide type, shared by the single-slide
   /// prompts so new types are always documented alongside the old ones.
@@ -523,6 +526,7 @@ CRITICAL RULES:
 3. For custom formats, the slide `type` must be one of: "theory", "concept_pieces", "quiz", "fill_in_blank", "one_word", "numerical", "proof", "step_by_step", "matching", "ordering", "error_spotting", "flashcard", "descriptive", "custom_html", "program", "try_yourself".
 4. BY DEFAULT, NEVER NEGLECT EXAMPLE AND EXERCISE QUESTIONS.
 5. IF THE SECTION CONTAINS EXERCISE/PRACTICE QUESTIONS (often at the end of the section/chapter, e.g. in math/science textbooks), you MUST create a dedicated unit specifically for these exercises (e.g., "Practice Exercises"). This exercises unit must be structured such that the exercises are treated as individual lessons (taking them one by one/problem-by-problem) to ensure comprehensive, hands-on practice.
+6. HIGH-PRECISION PROGRAMMING DETECTION: Automatically detect with high precision if this section's title, description, or content chunk involves software engineering, coding languages (e.g., Python, JavaScript, C/C++, Java, HTML, CSS, SQL, Dart, Rust, Go, LaTeX, Shell), algorithms, syntax, data science, or computer science. If ANY programming content is present or inferred, you MUST explicitly generate programming formats and units incorporating 'program' (fill-in code tokens with syntax highlighting) and 'try_yourself' (interactive runner sandbox) slide types with precise language tags.
 
 Return ONLY valid JSON matching this exact structure:
 {
@@ -582,6 +586,7 @@ For the chosen format, evaluate its slide templates. You can include a slide mul
 3. NO STORY MODE: never frame content as a story, scenario, anecdote, or narrative ("Imagine you are...", "Sara walks into a shop...", etc.). Present theory and concepts directly and factually.
 4. EXAMPLES AND EXERCISE QUESTIONS: BY DEFAULT, NEVER NEGLECT EXAMPLE AND EXERCISES QUESTIONS. If this unit represents or contains exercise questions/practice problems, you MUST take/plan them as individual lessons, one by one (i.e. one lesson per exercise question/problem), rather than grouping them into a single lesson or omitting them.
 5. AVAILABLE SLIDE TYPES you may plan with (respect each format's own templates first): theory, concept_pieces, quiz, fill_in_blank, one_word, numerical, proof, step_by_step, matching, ordering, error_spotting, flashcard, descriptive, custom_html, program, try_yourself. Prefer matching for term↔definition sets, ordering for procedures, error_spotting to probe misconceptions after a worked example, and flashcard for must-memorize facts and formulas.
+6. HIGH-PRECISION PROGRAMMING DETECTION: If this unit involves programming, software engineering, code syntax, algorithms, or computer science, you MUST plan 'program' (fill-in code token) and 'try_yourself' (interactive code runner) slide types in your lesson plan, specifying exact language tags (e.g., 'python', 'javascript', 'html', 'latex').
 ''';
 
   static final String json =

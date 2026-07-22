@@ -2294,12 +2294,11 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                   widget.onBookUpdated(widget.book);
                 },
               ),
-            if (GlobalState.developerModeNotifier.value &&
-                (section.units.isNotEmpty || section.unitsGenerated))
+            if (section.units.isNotEmpty || section.unitsGenerated)
               _MenuActionItem(
-                icon: LucideIcons.rotateCcw,
-                title: 'Reset Section Plan',
-                subtitle: 'Delete generated units, lessons, and custom formats',
+                icon: LucideIcons.trash2,
+                title: 'Remove Section Plan',
+                subtitle: 'Delete all units & lessons to bring section back to planning stage',
                 iconColor: AppTheme.duoRed,
                 onTap: () async {
                   Navigator.pop(ctx);
@@ -2319,14 +2318,14 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.surface,
         title: Text(
-          'Reset Section Plan?',
+          'Remove Section Plan?',
           style: TextStyle(
             color: context.colors.textPrimary,
             fontWeight: FontWeight.bold,
           ),
         ),
         content: Text(
-          'This will permanently delete all units, lessons, and custom lesson formats for "${section.title}". Any progress in these lessons will be cleared. This action cannot be undone.',
+          'This will delete all units, lessons, and custom formats for "${section.title}" and bring it back to the planning stage. Any lesson progress will be cleared.',
           style: TextStyle(color: context.colors.textSecondary),
         ),
         actions: [
@@ -2340,7 +2339,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text(
-              'Reset',
+              'Remove Plan',
               style: TextStyle(
                 color: AppTheme.duoRed,
                 fontWeight: FontWeight.bold,
@@ -2377,7 +2376,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Section "${section.title}" reset successfully.'),
+            content: Text('Section "${section.title}" plan removed and returned to planning stage.'),
           ),
         );
       }

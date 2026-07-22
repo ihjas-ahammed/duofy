@@ -25,8 +25,8 @@
     "semantic_hash": ""
   },
   "lib/screens/book_dashboard_screen.dart": {
-    "mtime": 1784104451.645667,
-    "ast_hash": "733375d3f108073925f34acf52a082be",
+    "mtime": 1784690985.6774628,
+    "ast_hash": "b15aa1ff05b132843bbe2546e41c1715",
     "semantic_hash": ""
   },
   "lib/screens/practice_session_screen.dart": {
@@ -350,8 +350,8 @@
     "semantic_hash": ""
   },
   "lib/services/prompt_service.dart": {
-    "mtime": 1784102530.98674,
-    "ast_hash": "54ed7fa224018abe27ee60bf4aa29d87",
+    "mtime": 1784690978.9584043,
+    "ast_hash": "9036c23ebe2d055e0bb8293aea5cd448",
     "semantic_hash": ""
   },
   "lib/services/notification_service.dart": {
@@ -445,8 +445,8 @@
     "semantic_hash": ""
   },
   "android/app/build.gradle.kts": {
-    "mtime": 1784089962.176519,
-    "ast_hash": "bcfe4792a29cb2b9508d9a516a624bd3",
+    "mtime": 1784691087.6895385,
+    "ast_hash": "6e1f9e3bb0aacbae9bac8321c2dd7039",
     "semantic_hash": ""
   },
   "android/app/google-services.json": {
@@ -465,8 +465,8 @@
     "semantic_hash": ""
   },
   "android/settings.gradle.kts": {
-    "mtime": 1784689547.6543987,
-    "ast_hash": "5c5dd5bd1c88ba9ddb5b1a94f4cf045a",
+    "mtime": 1784690167.137995,
+    "ast_hash": "d12fa628fca9ae9521a4654e77a24a18",
     "semantic_hash": ""
   },
   "disable-keyboard.py": {
@@ -1790,8 +1790,8 @@
     "semantic_hash": ""
   },
   ".github/workflows/android.yml": {
-    "mtime": 1784093493.6572962,
-    "ast_hash": "890a4bb9cff1d9429ce1cfa3670c79b5",
+    "mtime": 1784691100.3576896,
+    "ast_hash": "5d263006b1d525586a998128914b3f8a",
     "semantic_hash": ""
   },
   ".github/workflows/windows.yml": {
@@ -6670,8 +6670,8 @@
     "semantic_hash": ""
   },
   "lib/screens/ai_providers_screen.dart": {
-    "mtime": 1784688071.8569598,
-    "ast_hash": "8fa6ada4abe31e6f093bc98719f918f4",
+    "mtime": 1784690521.772727,
+    "ast_hash": "f8d42814f8b9da29a9a2efff7c8588c6",
     "semantic_hash": ""
   },
   "android/app/src/main/kotlin/com/example/duofy/MainActivity.kt": {
@@ -6730,13 +6730,13 @@
     "semantic_hash": ""
   },
   "lib/widgets/code_highlighter.dart": {
-    "mtime": 1784095174.1220932,
-    "ast_hash": "a169998420f420442d39100aa9e13ec2",
+    "mtime": 1784689998.9508367,
+    "ast_hash": "be56154f32e92734039e09b379730528",
     "semantic_hash": ""
   },
   "lib/widgets/slide_views/code_runner_view.dart": {
-    "mtime": 1784689756.3671422,
-    "ast_hash": "1a7d6bab681c29c9a48587f6706d4541",
+    "mtime": 1784690085.0217452,
+    "ast_hash": "96c7761fdaf5c2043b1e6ac896f35656",
     "semantic_hash": ""
   },
   "lib/widgets/slide_views/program_view.dart": {
@@ -6760,8 +6760,8 @@
     "semantic_hash": ""
   },
   "lib/screens/python_ide_screen.dart": {
-    "mtime": 1784689637.57918,
-    "ast_hash": "61855ca2aa7db89a8b2bbe00f7e499a5",
+    "mtime": 1784690006.1076195,
+    "ast_hash": "99b24194dcb64686b2104652c0d1a4bf",
     "semantic_hash": ""
   },
   "lib/services/python_runner_service.dart": {
