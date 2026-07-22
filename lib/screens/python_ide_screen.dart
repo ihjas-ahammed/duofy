@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,10 +11,14 @@ class NotebookCell {
   String id;
   TextEditingController controller;
   TextEditingController inputsController;
+  TextEditingController realtimeInputController;
   PythonExecutionResult? result;
   bool isRunning;
   int? executionCount;
   bool showInputsField;
+  bool awaitingRealtimeInput;
+  String currentInputPrompt;
+  Completer<String>? activeInputCompleter;
 
   NotebookCell({
     required this.id,
@@ -23,8 +28,11 @@ class NotebookCell {
     this.isRunning = false,
     this.executionCount,
     this.showInputsField = false,
+    this.awaitingRealtimeInput = false,
+    this.currentInputPrompt = '',
   })  : controller = TextEditingController(text: initialCode),
-        inputsController = TextEditingController(text: initialInputs);
+        inputsController = TextEditingController(text: initialInputs),
+        realtimeInputController = TextEditingController();
 }
 
 class PythonIdeScreen extends StatefulWidget {
@@ -49,9 +57,9 @@ class _PythonIdeScreenState extends State<PythonIdeScreen> {
     _cells.addAll([
       NotebookCell(
         id: 'cell_1',
-        initialCode: '# Duofy Interactive Python Input Demo\nname = input("Enter your name: ")\nage = input("Enter your age: ")\nprint(f"Hello {name}! You are {age} years old.")',
-        initialInputs: 'Alice\n25',
-        showInputsField: true,
+        initialCode: '# Duofy Interactive Real-time Jupyter Input Demo\nname = input("Enter your name: ")\nage = input("Enter your age: ")\nprint(f"Hello {name}! You are {age} years old.")',
+        initialInputs: '',
+        showInputsField: false,
       ),
       NotebookCell(
         id: 'cell_2',
@@ -81,8 +89,19 @@ plt.show()''',
     for (final cell in _cells) {
       cell.controller.dispose();
       cell.inputsController.dispose();
+      cell.realtimeInputController.dispose();
     }
     super.dispose();
+  }
+
+  void _submitRealtimeInput(NotebookCell cell) {
+    final inputVal = cell.realtimeInputController.text;
+    cell.activeInputCompleter?.complete(inputVal);
+    setState(() {
+      cell.awaitingRealtimeInput = false;
+      cell.currentInputPrompt = '';
+      cell.activeInputCompleter = null;
+    });
   }
 
   Future<void> _runCell(NotebookCell cell) async {
@@ -91,6 +110,7 @@ plt.show()''',
     setState(() {
       cell.isRunning = true;
       cell.result = null;
+      cell.awaitingRealtimeInput = false;
     });
 
     final rawInputs = cell.inputsController.text;
@@ -101,6 +121,17 @@ plt.show()''',
     final res = await PythonRunnerService.instance.runCode(
       cell.controller.text,
       inputs: inputsList,
+      onInputRequest: (prompt) async {
+        if (!mounted) return '';
+        final completer = Completer<String>();
+        setState(() {
+          cell.awaitingRealtimeInput = true;
+          cell.currentInputPrompt = prompt;
+          cell.realtimeInputController.clear();
+          cell.activeInputCompleter = completer;
+        });
+        return await completer.future;
+      },
     );
 
     if (mounted) {
@@ -108,6 +139,7 @@ plt.show()''',
         _executionCounter++;
         cell.executionCount = _executionCounter;
         cell.isRunning = false;
+        cell.awaitingRealtimeInput = false;
         cell.result = res;
       });
     }
@@ -432,6 +464,79 @@ plt.show()''',
                         hintStyle: TextStyle(color: Colors.white30, fontSize: 12),
                         border: InputBorder.none,
                       ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          // Real-time Interactive Jupyter Input Prompt Widget
+          if (cell.awaitingRealtimeInput)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0F172A),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppTheme.duoGreen, width: 2),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const SizedBox(
+                          width: 12,
+                          height: 12,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.duoGreen),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          cell.currentInputPrompt.isNotEmpty
+                              ? cell.currentInputPrompt
+                              : 'Input required:',
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.duoGreen,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: cell.realtimeInputController,
+                            autofocus: true,
+                            style: const TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: 13,
+                              color: Colors.white,
+                            ),
+                            decoration: InputDecoration(
+                              isDense: true,
+                              hintText: 'Type input and press Enter...',
+                              hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+                              filled: true,
+                              fillColor: const Color(0xFF1E293B),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                            onSubmitted: (_) => _submitRealtimeInput(cell),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(LucideIcons.send, color: AppTheme.duoGreen),
+                          tooltip: 'Submit Input',
+                          onPressed: () => _submitRealtimeInput(cell),
+                        ),
+                      ],
                     ),
                   ],
                 ),

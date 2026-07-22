@@ -24,15 +24,15 @@ class PythonExecutionResult {
 
 /// Service for executing Python code natively on Linux, Desktop, and Mobile
 /// using SeriousPython and system CPython, with full Jupyter-style inline
-/// graphics/matplotlib support.
+/// graphics/matplotlib support and real-time interactive input() handling.
 class PythonRunnerService {
   static final PythonRunnerService _instance = PythonRunnerService._internal();
   static PythonRunnerService get instance => _instance;
   PythonRunnerService._internal();
 
-  /// Wraps user Python code to intercept stdout/stderr and automatically capture
-  /// matplotlib figures, plots, and charts as base64 PNG data.
-  String _prepareWrapperCode(String userCode, {List<String> inputs = const []}) {
+  /// Wraps user Python code to intercept stdout/stderr, handle real-time interactive
+  /// input() socket requests, and capture matplotlib figures as base64 PNG data.
+  String _prepareWrapperCode(String userCode, {int serverPort = 0, List<String> inputs = const []}) {
     final encodedUserCode = jsonEncode(userCode);
     final encodedInputs = jsonEncode(inputs);
     return '''
@@ -41,6 +41,7 @@ import io
 import json
 import base64
 import builtins
+import socket
 
 _orig_stdout = sys.stdout
 _orig_stderr = sys.stderr
@@ -52,11 +53,33 @@ sys.stderr = _stderr_buffer
 
 _user_inputs = $encodedInputs
 _input_idx = 0
+_server_port = $serverPort
 
-def _mock_input(prompt=''):
+def _interactive_input(prompt=''):
     global _input_idx
     if prompt:
         _stdout_buffer.write(str(prompt))
+    if _server_port > 0:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect(('127.0.0.1', _server_port))
+            req = json.dumps({'type': 'input_request', 'prompt': str(prompt)}) + '\\n'
+            s.sendall(req.encode('utf-8'))
+            data = b''
+            while True:
+                chunk = s.recv(1024)
+                if not chunk:
+                    break
+                data += chunk
+                if b'\\n' in data:
+                    break
+            s.close()
+            res = json.loads(data.decode('utf-8'))
+            reply = str(res.get('reply', ''))
+            _stdout_buffer.write(reply + '\\n')
+            return reply
+        except Exception:
+            pass
     if _input_idx < len(_user_inputs):
         val = str(_user_inputs[_input_idx])
         _input_idx += 1
@@ -65,7 +88,7 @@ def _mock_input(prompt=''):
     _stdout_buffer.write('\\n')
     return ''
 
-builtins.input = _mock_input
+builtins.input = _interactive_input
 sys.stdin = io.StringIO('\\n'.join([str(x) for x in _user_inputs]) + ('\\n' if _user_inputs else ''))
 
 _graphics_list = []
@@ -119,12 +142,47 @@ print("===DUOFY_PY_RESULT_END===")
   }
 
   /// Executes user python code and returns stdout, stderr, execution duration, and inline graphics.
-  Future<PythonExecutionResult> runCode(String code, {List<String> inputs = const []}) async {
+  /// If [onInputRequest] is provided, real-time input() prompts from Python will invoke it.
+  Future<PythonExecutionResult> runCode(
+    String code, {
+    List<String> inputs = const [],
+    Future<String> Function(String prompt)? onInputRequest,
+  }) async {
     final sw = Stopwatch()..start();
-    final wrapperCode = _prepareWrapperCode(code, inputs: inputs);
+    ServerSocket? serverSocket;
+    int serverPort = 0;
+
+    if (onInputRequest != null && !kIsWeb) {
+      try {
+        serverSocket = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+        serverPort = serverSocket.port;
+        serverSocket.listen((socket) {
+          socket.cast<List<int>>().transform(utf8.decoder).transform(const LineSplitter()).listen(
+            (line) async {
+              try {
+                final Map<String, dynamic> req = jsonDecode(line);
+                if (req['type'] == 'input_request') {
+                  final prompt = req['prompt'] ?? '';
+                  final reply = await onInputRequest(prompt);
+                  socket.write('${jsonEncode({'reply': reply})}\n');
+                  await socket.flush();
+                  await socket.close();
+                }
+              } catch (_) {
+                socket.close();
+              }
+            },
+            onError: (_) => socket.close(),
+          );
+        });
+      } catch (_) {}
+    }
+
+    final wrapperCode = _prepareWrapperCode(code, serverPort: serverPort, inputs: inputs);
 
     if (kIsWeb) {
       sw.stop();
+      await serverSocket?.close();
       return PythonExecutionResult(
         stdout: "Web execution utilizes browser engine.",
         stderr: "",
@@ -170,6 +228,8 @@ print("===DUOFY_PY_RESULT_END===")
         if (await pyFile.exists()) await pyFile.delete();
       } catch (_) {}
 
+      await serverSocket?.close();
+
       String stdOutText = rawStdout;
       String stdErrText = rawStderr;
       List<String> graphics = [];
@@ -198,6 +258,7 @@ print("===DUOFY_PY_RESULT_END===")
         duration: sw.elapsed,
       );
     } catch (e) {
+      await serverSocket?.close();
       sw.stop();
       return PythonExecutionResult(
         stdout: '',

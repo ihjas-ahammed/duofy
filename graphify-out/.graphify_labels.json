@@ -702,8 +702,14 @@
   "700": "IsChromeToolbarButtonVisible",
   "701": "ViewsOverlayBrowser::ViewsOverlayBrowser",
   "702": "PromptService",
+  "703": "CefXmlReader::Create",
   "704": "resource.h",
+  "705": "RegisterPlugins",
+  "706": "CefDoMessageLoopWork",
+  "707": "26.7.22.md",
+  "708": "GetType",
   "709": ".OnFrameCreated",
+  "710": "cef_dump_without_crashing.h",
   "719": "main_context_impl_posix.cc",
   "725": "GetType"
 }
