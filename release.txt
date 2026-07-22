@@ -1,0 +1,7 @@
+26.7.22
+2026072204
+https://github.com/ihjas-ahammed/duofy/releases/latest
+- Fix Android Python runner output capture with JSON file fallback
+- Synthetic module fallbacks for numpy and matplotlib on mobile
+- Fix Flashcard "Again" self-grade advancement
+- Expand default lesson formats catalog to 12+

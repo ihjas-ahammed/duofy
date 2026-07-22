@@ -138,6 +138,35 @@ except Exception:
         pass
 
 try:
+    import numpy
+except Exception:
+    import types
+    import math
+    import random
+    _np = types.ModuleType('numpy')
+    _np.array = lambda lst, *a, **kw: list(lst) if isinstance(lst, (list, tuple)) else [lst]
+    _np.zeros = lambda n, *a, **kw: [0] * (n if isinstance(n, int) else n[0])
+    _np.ones = lambda n, *a, **kw: [1] * (n if isinstance(n, int) else n[0])
+    _np.arange = lambda *a, **kw: list(range(*a))
+    _np.linspace = lambda start, stop, num=50, *a, **kw: [start + (stop - start) * i / max(1, num - 1) for i in range(num)]
+    _np.pi = math.pi
+    _np.e = math.e
+    _np.sin = lambda x: math.sin(x) if isinstance(x, (int, float)) else [math.sin(v) for v in x]
+    _np.cos = lambda x: math.cos(x) if isinstance(x, (int, float)) else [math.cos(v) for v in x]
+    _np.tan = lambda x: math.tan(x) if isinstance(x, (int, float)) else [math.tan(v) for v in x]
+    _np.exp = lambda x: math.exp(x) if isinstance(x, (int, float)) else [math.exp(v) for v in x]
+    _np.log = lambda x: math.log(x) if isinstance(x, (int, float)) else [math.log(v) for v in x]
+    _np.sqrt = lambda x: math.sqrt(x) if isinstance(x, (int, float)) else [math.sqrt(v) for v in x]
+    _np.abs = lambda x: abs(x) if isinstance(x, (int, float)) else [abs(v) for v in x]
+    _np_rnd = types.ModuleType('numpy.random')
+    _np_rnd.rand = lambda *a, **kw: random.random()
+    _np_rnd.random = lambda *a, **kw: random.random()
+    _np_rnd.randint = lambda a, b=None, size=None: random.randint(a, b if b else a)
+    _np.random = _np_rnd
+    sys.modules['numpy'] = _np
+    sys.modules['np'] = _np
+
+try:
     exec($encodedUserCode)
     _capture_plt()
 except Exception as e:
