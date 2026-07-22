@@ -227,3 +227,29 @@ class CodeTheme {
     function: Color(0xFFD2A8FF),
   );
 }
+
+/// A [TextEditingController] that dynamically applies syntax highlighting via [CodeHighlighter]
+/// to any editable [TextField] in real time as the user types.
+class CodeEditingController extends TextEditingController {
+  String language;
+  CodeTheme theme;
+
+  CodeEditingController({
+    super.text,
+    this.language = 'python',
+    this.theme = CodeTheme.dark,
+  });
+
+  @override
+  TextSpan buildTextSpan({
+    required BuildContext context,
+    TextStyle? style,
+    required bool withComposing,
+  }) {
+    final spans = CodeHighlighter.spans(text, language, theme);
+    return TextSpan(
+      style: style,
+      children: spans,
+    );
+  }
+}

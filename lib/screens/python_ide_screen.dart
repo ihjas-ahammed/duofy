@@ -5,11 +5,12 @@ import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../services/python_runner_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/code_highlighter.dart';
 import '../widgets/duo_button.dart';
 
 class NotebookCell {
   String id;
-  TextEditingController controller;
+  CodeEditingController controller;
   TextEditingController inputsController;
   TextEditingController realtimeInputController;
   PythonExecutionResult? result;
@@ -30,7 +31,7 @@ class NotebookCell {
     this.showInputsField = false,
     this.awaitingRealtimeInput = false,
     this.currentInputPrompt = '',
-  })  : controller = TextEditingController(text: initialCode),
+  })  : controller = CodeEditingController(text: initialCode, language: 'python'),
         inputsController = TextEditingController(text: initialInputs),
         realtimeInputController = TextEditingController();
 }

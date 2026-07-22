@@ -31,7 +31,7 @@ class CodeRunnerView extends StatefulWidget {
 }
 
 class _CodeRunnerViewState extends State<CodeRunnerView> {
-  late TextEditingController _controller;
+  late CodeEditingController _controller;
   late TextEditingController _inputsController;
   late TextEditingController _realtimeInputController;
 
@@ -51,7 +51,7 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(text: _initialCode);
+    _controller = CodeEditingController(text: _initialCode, language: _language);
     _inputsController = TextEditingController();
     _realtimeInputController = TextEditingController();
   }
@@ -115,7 +115,7 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
 
   @override
   Widget build(BuildContext context) {
-    if (kIsWeb && _language != 'python') {
+    if (_language != 'python') {
       final html = CodeRunnerHtml.build(
         language: _language,
         code: _initialCode,

@@ -9,23 +9,29 @@ run {
         }
         val targetPath = dummyDir.absolutePath
         try {
-            val processEnvironmentClass = Class.forName("java.lang.ProcessEnvironment")
-            val theEnvironmentField = processEnvironmentClass.getDeclaredField("theEnvironment")
-            theEnvironmentField.isAccessible = true
-            val env = theEnvironmentField.get(null) as MutableMap<String, String>
-            env["SERIOUS_PYTHON_SITE_PACKAGES"] = targetPath
+            val peClass = Class.forName("java.lang.ProcessEnvironment")
+            val varClass = Class.forName("java.lang.ProcessEnvironment\$Variable")
+            val valClass = Class.forName("java.lang.ProcessEnvironment\$Value")
 
-            val theCaseInsensitiveEnvironmentField = processEnvironmentClass.getDeclaredField("theCaseInsensitiveEnvironment")
-            theCaseInsensitiveEnvironmentField.isAccessible = true
-            val cienv = theCaseInsensitiveEnvironmentField.get(null) as MutableMap<String, String>
-            cienv["SERIOUS_PYTHON_SITE_PACKAGES"] = targetPath
+            val varMethod = varClass.getDeclaredMethod("valueOf", String::class.java).apply { isAccessible = true }
+            val valMethod = valClass.getDeclaredMethod("valueOf", String::class.java).apply { isAccessible = true }
+
+            val key = varMethod.invoke(null, "SERIOUS_PYTHON_SITE_PACKAGES")
+            val value = valMethod.invoke(null, targetPath)
+
+            val envField = peClass.getDeclaredField("theEnvironment").apply { isAccessible = true }
+            @Suppress("UNCHECKED_CAST")
+            (envField.get(null) as MutableMap<Any, Any>)[key!!] = value!!
+
+            val ciEnvField = peClass.getDeclaredField("theCaseInsensitiveEnvironment").apply { isAccessible = true }
+            @Suppress("UNCHECKED_CAST")
+            (ciEnvField.get(null) as MutableMap<Any, Any>)[key] = value
         } catch (_: Exception) {
             try {
                 val envMap = System.getenv()
-                val field = envMap.javaClass.getDeclaredField("m")
-                field.isAccessible = true
-                val map = field.get(envMap) as MutableMap<String, String>
-                map["SERIOUS_PYTHON_SITE_PACKAGES"] = targetPath
+                val field = envMap.javaClass.getDeclaredField("m").apply { isAccessible = true }
+                @Suppress("UNCHECKED_CAST")
+                (field.get(envMap) as MutableMap<String, String>)["SERIOUS_PYTHON_SITE_PACKAGES"] = targetPath
             } catch (_: Exception) {}
         }
     }

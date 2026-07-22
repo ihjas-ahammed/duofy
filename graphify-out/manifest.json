@@ -465,8 +465,8 @@
     "semantic_hash": ""
   },
   "android/settings.gradle.kts": {
-    "mtime": 1784689547.6543987,
-    "ast_hash": "5c5dd5bd1c88ba9ddb5b1a94f4cf045a",
+    "mtime": 1784690167.137995,
+    "ast_hash": "d12fa628fca9ae9521a4654e77a24a18",
     "semantic_hash": ""
   },
   "disable-keyboard.py": {
@@ -6730,13 +6730,13 @@
     "semantic_hash": ""
   },
   "lib/widgets/code_highlighter.dart": {
-    "mtime": 1784095174.1220932,
-    "ast_hash": "a169998420f420442d39100aa9e13ec2",
+    "mtime": 1784689998.9508367,
+    "ast_hash": "be56154f32e92734039e09b379730528",
     "semantic_hash": ""
   },
   "lib/widgets/slide_views/code_runner_view.dart": {
-    "mtime": 1784689756.3671422,
-    "ast_hash": "1a7d6bab681c29c9a48587f6706d4541",
+    "mtime": 1784690085.0217452,
+    "ast_hash": "96c7761fdaf5c2043b1e6ac896f35656",
     "semantic_hash": ""
   },
   "lib/widgets/slide_views/program_view.dart": {
@@ -6760,8 +6760,8 @@
     "semantic_hash": ""
   },
   "lib/screens/python_ide_screen.dart": {
-    "mtime": 1784689637.57918,
-    "ast_hash": "61855ca2aa7db89a8b2bbe00f7e499a5",
+    "mtime": 1784690006.1076195,
+    "ast_hash": "99b24194dcb64686b2104652c0d1a4bf",
     "semantic_hash": ""
   },
   "lib/services/python_runner_service.dart": {
