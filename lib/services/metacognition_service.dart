@@ -241,6 +241,116 @@ class MetacognitionService {
     }
     await _writeQueue(prefs, queue);
     GlobalState.bumpProgress();
+    push();
+  }
+
+  /// Cloud push of metacognition state (events, review queue, reflections).
+  static Future<void> push() async {
+    try {
+      final db = DatabaseService();
+      if (db.uid == 'guest' || !await db.isCloudEnabled()) return;
+      final prefs = await SharedPreferences.getInstance();
+      final events = prefs.getStringList(eventsKey) ?? [];
+      final queueMap = _readQueue(prefs);
+      final reviewQueue = queueMap.entries
+          .map((e) => {
+                'slideId': e.key,
+                ...e.value.toJson(),
+              })
+          .toList();
+      final reflectionsRaw = prefs.getString(reflectionsKey);
+      Map<String, dynamic> reflections = {};
+      if (reflectionsRaw != null && reflectionsRaw.isNotEmpty) {
+        try {
+          reflections = Map<String, dynamic>.from(jsonDecode(reflectionsRaw));
+        } catch (_) {}
+      }
+      await db.saveMetacognitionState(
+        events: events,
+        reviewQueue: reviewQueue,
+        reflections: reflections,
+      );
+    } catch (_) {
+      // Ignore when Firebase is uninitialized (e.g. unit tests or guest)
+    }
+  }
+
+  /// Cloud pull and merge of metacognition state.
+  static Future<bool> pullAndMerge() async {
+    try {
+      final db = DatabaseService();
+      if (db.uid == 'guest' || !await db.isCloudEnabled()) return false;
+      final remote = await db.fetchMetacognitionState();
+      if (remote == null) return false;
+
+      final prefs = await SharedPreferences.getInstance();
+      bool changed = false;
+
+      // Events union
+      final localEvents = prefs.getStringList(eventsKey) ?? [];
+      final remoteEvents = List<String>.from(remote['events'] ?? []);
+      final mergedEvents = {...localEvents, ...remoteEvents}.toList();
+      if (mergedEvents.length != localEvents.length) {
+        while (mergedEvents.length > _maxEvents) {
+          mergedEvents.removeAt(0);
+        }
+        await prefs.setStringList(eventsKey, mergedEvents);
+        changed = true;
+      }
+
+      // Review queue merge
+      final localQueue = _readQueue(prefs);
+      final remoteQueueRaw = List<Map<String, dynamic>>.from(remote['reviewQueue'] ?? []);
+      final Map<String, ReviewItem> mergedQueue = {...localQueue};
+      for (final r in remoteQueueRaw) {
+        final sId = r['slideId']?.toString() ?? '';
+        if (sId.isEmpty) continue;
+        final remoteItem = ReviewItem.fromJson(sId, r);
+        final localItem = localQueue[sId];
+        if (localItem == null) {
+          mergedQueue[sId] = remoteItem;
+          changed = true;
+        } else {
+          final bestLapses = localItem.lapses > remoteItem.lapses ? localItem.lapses : remoteItem.lapses;
+          final bestInterval = localItem.interval > remoteItem.interval ? localItem.interval : remoteItem.interval;
+          final bestDue = localItem.due > remoteItem.due ? localItem.due : remoteItem.due;
+          mergedQueue[sId] = ReviewItem(
+            slideId: sId,
+            lessonId: localItem.lessonId.isNotEmpty ? localItem.lessonId : remoteItem.lessonId,
+            bookId: localItem.bookId.isNotEmpty ? localItem.bookId : remoteItem.bookId,
+            due: bestDue,
+            interval: bestInterval,
+            lapses: bestLapses,
+          );
+        }
+      }
+      if (mergedQueue.length != localQueue.length || changed) {
+        await _writeQueue(prefs, mergedQueue);
+        changed = true;
+      }
+
+      // Module reflections merge
+      final localRefRaw = prefs.getString(reflectionsKey);
+      Map<String, dynamic> localRef = {};
+      if (localRefRaw != null && localRefRaw.isNotEmpty) {
+        try {
+          localRef = Map<String, dynamic>.from(jsonDecode(localRefRaw));
+        } catch (_) {}
+      }
+      final remoteRef = Map<String, dynamic>.from(remote['reflections'] ?? {});
+      final mergedRef = {...remoteRef, ...localRef};
+      if (mergedRef.length != localRef.length) {
+        await prefs.setString(reflectionsKey, jsonEncode(mergedRef));
+        changed = true;
+      }
+
+      if (changed) {
+        await push();
+      }
+      return changed;
+    } catch (_) {
+      return false;
+    }
   }
 
   static Future<List<ReviewItem>> dueItems({DateTime? now}) async {
@@ -324,6 +434,7 @@ class MetacognitionService {
     counts[feeling] = ((counts[feeling] as num?) ?? 0).toInt() + 1;
     all[key] = counts;
     await prefs.setString(reflectionsKey, jsonEncode(all));
+    push();
   }
 
   /// How future generation for this module should lean, from the learner's

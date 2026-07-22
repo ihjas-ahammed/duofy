@@ -4,6 +4,8 @@ import 'database_service.dart';
 import 'global_state.dart';
 import 'fb/fb_auth.dart';
 
+import 'metacognition_service.dart';
+
 /// Central place that mirrors the device's **learning state** (completed
 /// lessons, XP and bookmarks) to/from the cloud learning doc.
 ///
@@ -32,18 +34,40 @@ class LearningSync {
     if (db.uid == 'guest') return;
     if (!await db.isCloudEnabled()) return;
     final prefs = await SharedPreferences.getInstance();
+
+    final activitiesKey = 'learning_activities_$_uid';
+    final activities = prefs.getStringList(activitiesKey) ?? const [];
+
+    Map<String, int> courseXpMap = {};
+    final prefix = 'user_xp_${_uid}_';
+    for (final key in prefs.getKeys()) {
+      if (key.startsWith(prefix)) {
+        final courseId = key.substring(prefix.length);
+        final val = prefs.getInt(key);
+        if (val != null) courseXpMap[courseId] = val;
+      }
+    }
+
     await db.saveLearningState(
       completedLessons: prefs.getStringList(completedKey) ?? const [],
       xp: prefs.getInt(xpKey) ?? 0,
       bookmarks: decodeBookmarks(prefs.getString(bookmarksKey)),
+      activities: activities,
+      courseXp: courseXpMap,
+      recentlyCompleted: prefs.getString('recently_completed'),
     );
+
+    await MetacognitionService.push();
   }
 
   /// Pulls the cloud learning state and merges it into local storage:
   ///   • completed lessons  → union
   ///   • XP                 → max (best-effort; XP only grows in practice)
-  ///   • bookmarks          → union by lessonId (earliest bookmarkedAt,
-  ///                          latest lastOpenedAt)
+  ///   • bookmarks          → union by lessonId
+  ///   • activities         → union
+  ///   • course XP          → max
+  ///   • metacognition      → queue & reflections merge
+  ///   • settings & folders → sync to local
   ///
   /// Bumps the relevant notifiers and pushes the merged result back so the
   /// cloud reflects the union. Returns true when anything changed locally.
@@ -57,6 +81,10 @@ class LearningSync {
     // One-time migration: move unscoped legacy keys into the per-user keys
     // so existing users don't lose their progress after this update.
     await migrateLegacyKeys(prefs);
+
+    await MetacognitionService.pullAndMerge();
+    await db.syncUserSettingsToLocal();
+    await db.fetchFolders();
 
     final remote = await db.fetchLearningState();
     if (remote == null) return false;
@@ -116,6 +144,35 @@ class LearningSync {
     if (mergedBm.length != localBm.length) {
       await prefs.setString(bookmarksKey, jsonEncode(mergedBm));
       changed = true;
+    }
+
+    // Activities union
+    final remoteActivities = List<String>.from(remote['activities'] ?? []);
+    final localActivities = prefs.getStringList('learning_activities_$_uid') ?? [];
+    final mergedActivities = {...localActivities, ...remoteActivities}.toList();
+    if (mergedActivities.length != localActivities.length) {
+      await prefs.setStringList('learning_activities_$_uid', mergedActivities);
+      changed = true;
+    }
+
+    // Course XP merge
+    final remoteCourseXp = Map<String, int>.from(remote['courseXp'] ?? {});
+    for (final entry in remoteCourseXp.entries) {
+      final key = 'user_xp_${_uid}_${entry.key}';
+      final localVal = prefs.getInt(key) ?? 0;
+      final bestVal = localVal > entry.value ? localVal : entry.value;
+      if (bestVal != localVal) {
+        await prefs.setInt(key, bestVal);
+        changed = true;
+      }
+    }
+
+    if (remote['recentlyCompleted'] is String) {
+      final rec = remote['recentlyCompleted'] as String;
+      if (rec.isNotEmpty && prefs.getString('recently_completed') == null) {
+        await prefs.setString('recently_completed', rec);
+        changed = true;
+      }
     }
 
     if (changed) {

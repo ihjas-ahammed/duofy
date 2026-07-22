@@ -185,4 +185,13 @@ void main() {
       expect(lesson.slides, hasLength(3));
     });
   });
+
+  group('concept_pieces splitting regex', () {
+    test('does not split at numbers followed by periods (e.g. 1. Hi)', () {
+      final pattern = RegExp(r'\n|(?<!\d)\. (?=[A-Z])');
+      final input = '1. Hi\n2. Hello world. Next sentence.';
+      final parts = input.split(pattern).map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+      expect(parts, ['1. Hi', '2. Hello world', 'Next sentence.']);
+    });
+  });
 }

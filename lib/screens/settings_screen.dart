@@ -198,6 +198,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final openrouterLite = prefs.getStringList('openrouter_model_lite_list') ?? [];
     final openrouterLive = prefs.getStringList('openrouter_model_live_list') ?? [];
 
+    final selectedProvider = prefs.getString('selected_ai_provider');
+
     await _db.saveUserSettings(
       apiKeys: keys,
       models: models,
@@ -220,6 +222,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       openrouterModelPrimaryGraphicsList: openrouterPG,
       openrouterModelLiteList: openrouterLite,
       openrouterModelLiveList: openrouterLive,
+      selectedAiProvider: selectedProvider,
+      genConcurrency: _genConcurrency,
+      scheduleStartHour: _scheduleStart.hour,
+      scheduleStartMinute: _scheduleStart.minute,
+      scheduleEndHour: _scheduleEnd.hour,
+      scheduleEndMinute: _scheduleEnd.minute,
+      customLiveChatPrompt: _customPromptController.text.trim(),
+      autoFetchBooks: _autoFetchBooks,
+      autoVerifyMappings: _autoVerifyMappings,
+      autoGenerateModule1: _autoGenerateModule1,
+      writingStyleProfile: _writingStyleProfile,
     );
 
     if (mounted) {

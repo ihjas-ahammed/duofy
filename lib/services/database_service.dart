@@ -55,6 +55,12 @@ class DatabaseService {
   FbDocRef get _userLearningDoc =>
       _db.collection('users').doc(uid).collection('meta').doc('learning');
 
+  FbDocRef get _userFoldersDoc =>
+      _db.collection('users').doc(uid).collection('meta').doc('folders');
+
+  FbDocRef get _userMetacogDoc =>
+      _db.collection('users').doc(uid).collection('meta').doc('metacognition');
+
   // ---------------------------------------------------------------------------
   // Learning state (progress + bookmarks) — optional cloud backup, gated by the
   // same local-first cloud toggle. No-ops for guests / when cloud is off.
@@ -62,10 +68,15 @@ class DatabaseService {
 
   /// Pushes the merged learning state to Firestore (background, non-blocking).
   /// Safe to call on every change — it short-circuits when cloud is disabled.
+  /// Pushes the merged learning state to Firestore (background, non-blocking).
+  /// Safe to call on every change — it short-circuits when cloud is disabled.
   Future<void> saveLearningState({
     required List<String> completedLessons,
     required int xp,
     required List<Map<String, dynamic>> bookmarks,
+    List<String>? activities,
+    Map<String, int>? courseXp,
+    String? recentlyCompleted,
   }) async {
     if (uid == 'guest') return;
     if (!await isCloudEnabled()) return;
@@ -73,6 +84,9 @@ class DatabaseService {
       'completedLessons': completedLessons,
       'xp': xp,
       'bookmarks': bookmarks,
+      if (activities != null) 'activities': activities,
+      if (courseXp != null) 'courseXp': courseXp,
+      if (recentlyCompleted != null) 'recentlyCompleted': recentlyCompleted,
       'updatedAt': DateTime.now().millisecondsSinceEpoch,
     }).catchError((e) {
       print("[DatabaseService] Error saving learning state: $e");
@@ -95,9 +109,55 @@ class DatabaseService {
             .whereType<Map>()
             .map((e) => Map<String, dynamic>.from(e))
             .toList(),
+        'activities': List<String>.from((data['activities'] as List?) ?? const []),
+        'courseXp': Map<String, int>.from(
+          (data['courseXp'] as Map?)?.map(
+                (k, v) => MapEntry(k.toString(), (v as num).toInt()),
+              ) ??
+              const {},
+        ),
+        'recentlyCompleted': data['recentlyCompleted']?.toString(),
       };
     } catch (e) {
       print("[DatabaseService] Error fetching learning state: $e");
+      return null;
+    }
+  }
+
+  Future<void> saveMetacognitionState({
+    required List<String> events,
+    required List<Map<String, dynamic>> reviewQueue,
+    required Map<String, dynamic> reflections,
+  }) async {
+    if (uid == 'guest') return;
+    if (!await isCloudEnabled()) return;
+    _userMetacogDoc.set({
+      'events': events,
+      'reviewQueue': reviewQueue,
+      'reflections': reflections,
+      'updatedAt': DateTime.now().millisecondsSinceEpoch,
+    }).catchError((e) {
+      print("[DatabaseService] Error saving metacognition state: $e");
+    });
+  }
+
+  Future<Map<String, dynamic>?> fetchMetacognitionState() async {
+    if (uid == 'guest') return null;
+    if (!await isCloudEnabled()) return null;
+    try {
+      final snap = await _userMetacogDoc.get().timeout(const Duration(seconds: 30));
+      if (!snap.exists) return null;
+      final data = snap.data() ?? {};
+      return {
+        'events': List<String>.from((data['events'] as List?) ?? const []),
+        'reviewQueue': ((data['reviewQueue'] as List?) ?? const [])
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList(),
+        'reflections': Map<String, dynamic>.from((data['reflections'] as Map?) ?? const {}),
+      };
+    } catch (e) {
+      print("[DatabaseService] Error fetching metacognition state: $e");
       return null;
     }
   }
@@ -359,6 +419,17 @@ class DatabaseService {
     List<String>? openrouterModelPrimaryGraphicsList,
     List<String>? openrouterModelLiteList,
     List<String>? openrouterModelLiveList,
+    String? selectedAiProvider,
+    String? genConcurrency,
+    int? scheduleStartHour,
+    int? scheduleStartMinute,
+    int? scheduleEndHour,
+    int? scheduleEndMinute,
+    String? customLiveChatPrompt,
+    bool? autoFetchBooks,
+    bool? autoVerifyMappings,
+    bool? autoGenerateModule1,
+    Map<String, dynamic>? writingStyleProfile,
   }) async {
     if (uid == 'guest') return;
     if (!await isCloudEnabled()) return; // local-first: nothing to push
@@ -396,6 +467,17 @@ class DatabaseService {
       'openrouterModelPrimaryGraphicsList': ?openrouterModelPrimaryGraphicsList,
       'openrouterModelLiteList': ?openrouterModelLiteList,
       'openrouterModelLiveList': ?openrouterModelLiveList,
+      if (selectedAiProvider != null) 'selectedAiProvider': selectedAiProvider,
+      if (genConcurrency != null) 'genConcurrency': genConcurrency,
+      if (scheduleStartHour != null) 'scheduleStartHour': scheduleStartHour,
+      if (scheduleStartMinute != null) 'scheduleStartMinute': scheduleStartMinute,
+      if (scheduleEndHour != null) 'scheduleEndHour': scheduleEndHour,
+      if (scheduleEndMinute != null) 'scheduleEndMinute': scheduleEndMinute,
+      if (customLiveChatPrompt != null) 'customLiveChatPrompt': customLiveChatPrompt,
+      if (autoFetchBooks != null) 'autoFetchBooks': autoFetchBooks,
+      if (autoVerifyMappings != null) 'autoVerifyMappings': autoVerifyMappings,
+      if (autoGenerateModule1 != null) 'autoGenerateModule1': autoGenerateModule1,
+      if (writingStyleProfile != null) 'writingStyleProfile': writingStyleProfile,
       'updatedAt': DateTime.now().millisecondsSinceEpoch,
     }).then((_) {
       print("[DatabaseService] User settings saved to Firestore.");
@@ -440,10 +522,89 @@ class DatabaseService {
         'openrouterModelPrimaryGraphicsList': List<String>.from((data['openrouterModelPrimaryGraphicsList'] as List?) ?? []),
         'openrouterModelLiteList': List<String>.from((data['openrouterModelLiteList'] as List?) ?? []),
         'openrouterModelLiveList': List<String>.from((data['openrouterModelLiveList'] as List?) ?? []),
+        if (data['selectedAiProvider'] != null) 'selectedAiProvider': data['selectedAiProvider'],
+        if (data['genConcurrency'] != null) 'genConcurrency': data['genConcurrency'],
+        if (data['scheduleStartHour'] != null) 'scheduleStartHour': data['scheduleStartHour'],
+        if (data['scheduleStartMinute'] != null) 'scheduleStartMinute': data['scheduleStartMinute'],
+        if (data['scheduleEndHour'] != null) 'scheduleEndHour': data['scheduleEndHour'],
+        if (data['scheduleEndMinute'] != null) 'scheduleEndMinute': data['scheduleEndMinute'],
+        if (data['customLiveChatPrompt'] != null) 'customLiveChatPrompt': data['customLiveChatPrompt'],
+        if (data['autoFetchBooks'] != null) 'autoFetchBooks': data['autoFetchBooks'],
+        if (data['autoVerifyMappings'] != null) 'autoVerifyMappings': data['autoVerifyMappings'],
+        if (data['autoGenerateModule1'] != null) 'autoGenerateModule1': data['autoGenerateModule1'],
+        if (data['writingStyleProfile'] != null) 'writingStyleProfile': data['writingStyleProfile'],
       };
     } catch (e) {
       print("[DatabaseService] Error fetching user settings: $e");
       return null;
+    }
+  }
+
+  Future<void> syncUserSettingsToLocal() async {
+    final settings = await fetchUserSettings();
+    if (settings == null) return;
+    final prefs = await SharedPreferences.getInstance();
+
+    void setListIfNotEmpty(String key, dynamic list) {
+      if (list is List && list.isNotEmpty) {
+        prefs.setStringList(key, List<String>.from(list));
+      }
+    }
+
+    setListIfNotEmpty('gemini_api_keys_list', settings['apiKeys']);
+    setListIfNotEmpty('gemini_models_list', settings['models']);
+    setListIfNotEmpty('model_primary_text_list', settings['modelPrimaryTextList']);
+    setListIfNotEmpty('model_primary_graphics_list', settings['modelPrimaryGraphicsList']);
+    setListIfNotEmpty('model_lite_list', settings['modelLiteList']);
+    setListIfNotEmpty('model_live_list', settings['modelLiveList']);
+
+    setListIfNotEmpty('groq_api_keys_list', settings['groqApiKeys']);
+    setListIfNotEmpty('groq_model_primary_text_list', settings['groqModelPrimaryTextList']);
+    setListIfNotEmpty('groq_model_primary_graphics_list', settings['groqModelPrimaryGraphicsList']);
+    setListIfNotEmpty('groq_model_lite_list', settings['groqModelLiteList']);
+    setListIfNotEmpty('groq_model_live_list', settings['groqModelLiveList']);
+
+    setListIfNotEmpty('cerebras_api_keys_list', settings['cerebrasApiKeys']);
+    setListIfNotEmpty('cerebras_model_primary_text_list', settings['cerebrasModelPrimaryTextList']);
+    setListIfNotEmpty('cerebras_model_primary_graphics_list', settings['cerebrasModelPrimaryGraphicsList']);
+    setListIfNotEmpty('cerebras_model_lite_list', settings['cerebrasModelLiteList']);
+    setListIfNotEmpty('cerebras_model_live_list', settings['cerebrasModelLiveList']);
+
+    setListIfNotEmpty('openrouter_api_keys_list', settings['openrouterApiKeys']);
+    setListIfNotEmpty('openrouter_model_primary_text_list', settings['openrouterModelPrimaryTextList']);
+    setListIfNotEmpty('openrouter_model_primary_graphics_list', settings['openrouterModelPrimaryGraphicsList']);
+    setListIfNotEmpty('openrouter_model_lite_list', settings['openrouterModelLiteList']);
+    setListIfNotEmpty('openrouter_model_live_list', settings['openrouterModelLiveList']);
+
+    if (settings['selectedAiProvider'] is String) {
+      await prefs.setString('selected_ai_provider', settings['selectedAiProvider']);
+    }
+    if (settings['genConcurrency'] is String) {
+      await prefs.setString('gen_concurrency', settings['genConcurrency']);
+    }
+    if (settings['scheduleStartHour'] is int) {
+      await prefs.setInt('schedule_start_hour', settings['scheduleStartHour']);
+    }
+    if (settings['scheduleStartMinute'] is int) {
+      await prefs.setInt('schedule_start_minute', settings['scheduleStartMinute']);
+    }
+    if (settings['scheduleEndHour'] is int) {
+      await prefs.setInt('schedule_end_hour', settings['scheduleEndHour']);
+    }
+    if (settings['scheduleEndMinute'] is int) {
+      await prefs.setInt('schedule_end_minute', settings['scheduleEndMinute']);
+    }
+    if (settings['customLiveChatPrompt'] is String) {
+      await prefs.setString('custom_live_chat_prompt', settings['customLiveChatPrompt']);
+    }
+    if (settings['autoFetchBooks'] is bool) {
+      await prefs.setBool('auto_fetch_books', settings['autoFetchBooks']);
+    }
+    if (settings['autoVerifyMappings'] is bool) {
+      await prefs.setBool('auto_verify_mappings', settings['autoVerifyMappings']);
+    }
+    if (settings['autoGenerateModule1'] is bool) {
+      await prefs.setBool('auto_generate_module_1', settings['autoGenerateModule1']);
     }
   }
 
@@ -700,15 +861,49 @@ class DatabaseService {
     final prefs = await SharedPreferences.getInstance();
     final u = uid;
     final key = 'user_folders_$u';
+    List<CourseFolder> local = [];
     final jsonStr = prefs.getString(key);
-    if (jsonStr == null) return [];
-    try {
-      final List decoded = jsonDecode(jsonStr);
-      return decoded.map((e) => CourseFolder.fromJson(Map<String, dynamic>.from(e))).toList();
-    } catch (e) {
-      print("[DatabaseService] Error parsing folders: $e");
-      return [];
+    if (jsonStr != null) {
+      try {
+        final List decoded = jsonDecode(jsonStr);
+        local = decoded.map((e) => CourseFolder.fromJson(Map<String, dynamic>.from(e))).toList();
+      } catch (e) {
+        print("[DatabaseService] Error parsing folders: $e");
+      }
     }
+
+    if (u == 'guest' || !await isCloudEnabled()) {
+      return local;
+    }
+
+    try {
+      final snap = await _userFoldersDoc.get().timeout(const Duration(seconds: 15));
+      if (snap.exists && snap.data() != null) {
+        final data = snap.data()!;
+        final List remoteRaw = (data['folders'] as List?) ?? [];
+        final remote = remoteRaw
+            .whereType<Map>()
+            .map((e) => CourseFolder.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+
+        final Map<String, CourseFolder> map = {};
+        for (final f in local) map[f.id] = f;
+        for (final f in remote) map[f.id] = f;
+        final merged = map.values.toList();
+
+        if (merged.length != local.length || remote.length != local.length) {
+          await prefs.setString(key, jsonEncode(merged.map((f) => f.toJson()).toList()));
+          _userFoldersDoc.set({
+            'folders': merged.map((f) => f.toJson()).toList(),
+            'updatedAt': DateTime.now().millisecondsSinceEpoch,
+          }).catchError((_) {});
+        }
+        return merged;
+      }
+    } catch (e) {
+      print("[DatabaseService] Error syncing cloud folders: $e");
+    }
+    return local;
   }
 
   Future<void> saveFolders(List<CourseFolder> folders) async {
@@ -717,5 +912,14 @@ class DatabaseService {
     final key = 'user_folders_$u';
     final jsonStr = jsonEncode(folders.map((f) => f.toJson()).toList());
     await prefs.setString(key, jsonStr);
+
+    if (u != 'guest' && await isCloudEnabled()) {
+      _userFoldersDoc.set({
+        'folders': folders.map((f) => f.toJson()).toList(),
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      }).catchError((e) {
+        print("[DatabaseService] Error saving folders to cloud: $e");
+      });
+    }
   }
 }

@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import '../theme/app_theme.dart';
+import '../services/database_service.dart';
 import '../services/usage_limit_service.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/string_list_manager.dart';
@@ -306,6 +307,33 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
     
     // Trigger recalculation in service cache
     await UsageLimitService.instance.init();
+
+    final selectedProvider = prefs.getString('selected_ai_provider');
+    await DatabaseService().saveUserSettings(
+      apiKeys: _keys,
+      models: const [],
+      modelPrimaryTextList: _modelPrimaryText,
+      modelPrimaryGraphicsList: _modelPrimaryGraphics,
+      modelLiteList: _modelLite,
+      modelLiveList: _modelLive,
+      groqApiKeys: _groqKeys,
+      groqModelPrimaryTextList: _groqModelPrimaryText,
+      groqModelPrimaryGraphicsList: _groqModelPrimaryGraphics,
+      groqModelLiteList: _groqModelLite,
+      groqModelLiveList: _groqModelLive,
+      cerebrasApiKeys: _cerebrasKeys,
+      cerebrasModelPrimaryTextList: _cerebrasModelPrimaryText,
+      cerebrasModelPrimaryGraphicsList: _cerebrasModelPrimaryGraphics,
+      cerebrasModelLiteList: _cerebrasModelLite,
+      cerebrasModelLiveList: _cerebrasModelLive,
+      openrouterApiKeys: _openrouterKeys,
+      openrouterModelPrimaryTextList: _openrouterModelPrimaryText,
+      openrouterModelPrimaryGraphicsList: _openrouterModelPrimaryGraphics,
+      openrouterModelLiteList: _openrouterModelLite,
+      openrouterModelLiveList: _openrouterModelLive,
+      selectedAiProvider: selectedProvider,
+      genConcurrency: _genConcurrency,
+    );
   }
 
   List<String> _listForSlot(String slotName) {

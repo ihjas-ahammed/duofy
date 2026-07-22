@@ -23,7 +23,7 @@ class ConceptPiecesView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sentences = slide.content
-        .split(RegExp(r'\n|\. (?=[A-Z])'))
+        .split(RegExp(r'\n|(?<!\d)\. (?=[A-Z])'))
         .map((s) => s.trim())
         .where((s) => s.isNotEmpty)
         .toList();
