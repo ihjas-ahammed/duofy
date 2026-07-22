@@ -1,7 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../models/app_models.dart';
+import '../../services/python_runner_service.dart';
 import '../../theme/app_theme.dart';
 import '../code_highlighter.dart';
 import '../math_markdown.dart';
@@ -217,8 +220,8 @@ class _ProgramViewState extends State<ProgramView> {
   }
 }
 
-/// A dark, scrollable, syntax-highlighted code panel.
-class _CodePanel extends StatelessWidget {
+/// A dark, scrollable, syntax-highlighted code panel with live Python execution capability.
+class _CodePanel extends StatefulWidget {
   final String code;
   final String language;
   final bool answered;
@@ -232,11 +235,39 @@ class _CodePanel extends StatelessWidget {
   });
 
   @override
+  State<_CodePanel> createState() => _CodePanelState();
+}
+
+class _CodePanelState extends State<_CodePanel> {
+  bool _isRunning = false;
+  PythonExecutionResult? _result;
+
+  bool get _isPython => widget.language.toLowerCase() == 'python';
+
+  Future<void> _runCode() async {
+    if (_isRunning) return;
+    setState(() {
+      _isRunning = true;
+      _result = null;
+    });
+
+    final res = await PythonRunnerService.instance.runCode(widget.code);
+
+    if (mounted) {
+      setState(() {
+        _isRunning = false;
+        _result = res;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     const theme = CodeTheme.dark;
-    final borderColor = answered
-        ? (correct ? AppTheme.duoGreen : AppTheme.duoRed)
+    final borderColor = widget.answered
+        ? (widget.correct ? AppTheme.duoGreen : AppTheme.duoRed)
         : Colors.white.withValues(alpha: 0.08);
+
     return Container(
       decoration: BoxDecoration(
         color: theme.background,
@@ -259,8 +290,46 @@ class _CodePanel extends StatelessWidget {
                 _dot(const Color(0xFFFFBD2E)),
                 _dot(const Color(0xFF27C93F)),
                 const Spacer(),
+                if (_isPython)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: InkWell(
+                      onTap: _isRunning ? null : _runCode,
+                      borderRadius: BorderRadius.circular(6),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppTheme.duoGreen.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: AppTheme.duoGreen.withValues(alpha: 0.5)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_isRunning)
+                              const SizedBox(
+                                width: 12,
+                                height: 12,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.duoGreen),
+                              )
+                            else
+                              const Icon(LucideIcons.play, color: AppTheme.duoGreen, size: 12),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'RUN CODE',
+                              style: TextStyle(
+                                color: AppTheme.duoGreen,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 Text(
-                  language.toUpperCase(),
+                  widget.language.toUpperCase(),
                   style: TextStyle(
                     color: theme.comment,
                     fontSize: 10,
@@ -282,11 +351,85 @@ class _CodePanel extends StatelessWidget {
                     fontSize: 13.5,
                     height: 1.55,
                   ),
-                  children: CodeHighlighter.spans(code, language, theme),
+                  children: CodeHighlighter.spans(widget.code, widget.language, theme),
                 ),
               ),
             ),
           ),
+          if (_result != null) _buildResultPane(context, _result!),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResultPane(BuildContext context, PythonExecutionResult res) {
+    final hasStdout = res.stdout.trim().isNotEmpty;
+    final hasStderr = res.stderr.trim().isNotEmpty;
+    final hasGraphics = res.graphicsBase64.isNotEmpty;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF020617),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(15)),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(
+                res.exitCode == 0 ? LucideIcons.checkCircle : LucideIcons.alertTriangle,
+                size: 14,
+                color: res.exitCode == 0 ? AppTheme.duoGreen : AppTheme.duoRed,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Output (${res.duration.inMilliseconds}ms)',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: res.exitCode == 0 ? AppTheme.duoGreen : AppTheme.duoRed,
+                ),
+              ),
+            ],
+          ),
+          if (hasStdout) ...[
+            const SizedBox(height: 6),
+            SelectableText(
+              res.stdout,
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 12,
+                color: Color(0xFFE2E8F0),
+              ),
+            ),
+          ],
+          if (hasStderr) ...[
+            const SizedBox(height: 6),
+            SelectableText(
+              res.stderr,
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 12,
+                color: Color(0xFFF87171),
+              ),
+            ),
+          ],
+          if (hasGraphics) ...[
+            const SizedBox(height: 8),
+            for (final base64Img in res.graphicsBase64)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.memory(
+                    base64Decode(base64Img),
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+          ],
         ],
       ),
     );

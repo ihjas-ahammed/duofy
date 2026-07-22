@@ -191,32 +191,36 @@ plt.show()''',
     return Scaffold(
       backgroundColor: context.colors.background,
       appBar: AppBar(
-        title: Row(
-          children: [
-            const Icon(LucideIcons.terminal, color: AppTheme.duoGreen, size: 22),
-            const SizedBox(width: 10),
-            const Text(
-              'Python IDE & Jupyter',
-              style: TextStyle(fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: AppTheme.duoGreen.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppTheme.duoGreen.withValues(alpha: 0.4)),
+        title: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(LucideIcons.terminal, color: AppTheme.duoGreen, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Python IDE',
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
               ),
-              child: const Text(
-                'SeriousPython',
-                style: TextStyle(
-                  color: AppTheme.duoGreen,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppTheme.duoGreen.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: AppTheme.duoGreen.withValues(alpha: 0.4)),
+                ),
+                child: const Text(
+                  'SeriousPython',
+                  style: TextStyle(
+                    color: AppTheme.duoGreen,
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           IconButton(
