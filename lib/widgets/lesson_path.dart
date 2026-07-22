@@ -1138,6 +1138,14 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final secFormats = section.lessonFormats ?? [];
+    final allAvailableFormats = [
+      ...secFormats,
+      ...LessonFormat.defaultFormats.where(
+        (df) => !secFormats.any((f) => f.id == df.id),
+      ),
+    ];
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
       child: Center(
@@ -1229,7 +1237,7 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Available lesson formats:',
+                    'Available lesson formats (${allAvailableFormats.length}):',
                     style: TextStyle(
                       color: context.colors.textSecondary,
                       fontWeight: FontWeight.w800,
@@ -1287,11 +1295,11 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    for (var i = 0; i < formats.length; i++) ...[
+                    for (var i = 0; i < allAvailableFormats.length; i++) ...[
                       if (i > 0)
                         Divider(color: context.colors.outline, height: 16),
                       Text(
-                        formats[i].name,
+                        allAvailableFormats[i].name,
                         style: TextStyle(
                           color: sectionColor,
                           fontWeight: FontWeight.bold,
@@ -1300,7 +1308,7 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        formats[i].description,
+                        allAvailableFormats[i].description,
                         style: TextStyle(
                           color: context.colors.textFaint,
                           fontSize: 11,

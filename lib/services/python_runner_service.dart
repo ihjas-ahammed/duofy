@@ -216,7 +216,7 @@ print("===DUOFY_PY_RESULT_END===")
         exitCode = procResult.exitCode;
       } else {
         try {
-          final res = await SeriousPython.runProgram(pyFile.path, sync: true);
+          final res = await SeriousPython.runProgram(pyFile.path, sync: false);
           rawStdout = res ?? '';
         } catch (e) {
           rawStderr = "SeriousPython runtime exception: $e";

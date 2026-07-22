@@ -101,12 +101,20 @@ class _LessonAssistantChatState extends State<LessonAssistantChat>
 
   @override
   void dispose() {
-    _webSocket?.close();
-    _recorder.dispose();
-    _audioPlayer.dispose();
-    if (kIsWeb || !Platform.isLinux) {
-      _flutterTts.stop();
-    }
+    try {
+      _webSocket?.close();
+    } catch (_) {}
+    try {
+      _recorder.dispose();
+    } catch (_) {}
+    try {
+      _audioPlayer.dispose();
+    } catch (_) {}
+    try {
+      if (!kIsWeb && !Platform.isLinux) {
+        _flutterTts.stop();
+      }
+    } catch (_) {}
     _textController.dispose();
     _scrollController.dispose();
     _pulsingController.dispose();

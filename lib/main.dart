@@ -13,7 +13,9 @@ import 'services/learning_sync.dart';
 import 'services/usage_limit_service.dart';
 
 import 'dart:ui';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'screens/app_crash_recovery_screen.dart';
 
 // Global Navigation Key to handle routing from notifications anywhere
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -235,137 +237,161 @@ void showRateLimitDialog() {
 }
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    systemNavigationBarColor: Colors.transparent,
-    systemNavigationBarDividerColor: Colors.transparent,
-    systemNavigationBarIconBrightness: Brightness.light,
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.light,
-  ));
-  
-  try {
-    await FbCore.initializeApp();
-    await UsageLimitService.instance.init();
-  } catch (e, stack) {
-    startupError = "Firebase Init Error: $e\n$stack";
-  }
-  
-  try {
-    await NotificationService.init();
-  } catch (e, stack) {
-    startupError = "${startupError ?? ""}\nNotification Init Error: $e\n$stack";
-  }
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  try {
-    // Initialize shared prefs and load global XP early
-    final prefs = await SharedPreferences.getInstance();
-    GlobalState.xpNotifier.value = prefs.getInt(LearningSync.xpKey) ?? 0;
-
-    // Restore the guest-mode choice so desktop users who continued as a guest
-    // aren't bounced to the login screen (and away from their guest library)
-    // on every launch. Persist any later change to it.
-    GlobalState.isGuestNotifier.value = prefs.getBool('is_guest_mode') ?? false;
-    GlobalState.isGuestNotifier.addListener(() {
-      SharedPreferences.getInstance().then(
-        (p) => p.setBool('is_guest_mode', GlobalState.isGuestNotifier.value),
+    // Prevent raw red screen crashes with custom UI error widget
+    ErrorWidget.builder = (FlutterErrorDetails details) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        color: const Color(0xFF1E293B),
+        child: Center(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.error_outline, color: Colors.redAccent, size: 36),
+                const SizedBox(height: 12),
+                const Text(
+                  "UI Render Error",
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  details.exceptionAsString(),
+                  style: const TextStyle(color: Colors.white70, fontSize: 12, fontFamily: 'monospace'),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
       );
-    });
-
-    // First-run walkthrough gate + migration. Anyone who used the app before
-    // this feature existed is detected by traces the old flows always left
-    // (the forced writing-style survey wrote a profile even on skip; or their
-    // own API keys / guest flag) — they skip onboarding and keep the power
-    // features visible (advanced mode on).
-    final hasOnboarded = prefs.getBool('onboarding_complete') ?? false;
-    if (!hasOnboarded) {
-      final isExistingUser = prefs.getString('user_writing_style_profile') != null ||
-          (prefs.getStringList('gemini_api_keys_list')?.isNotEmpty ?? false) ||
-          (prefs.getBool('is_guest_mode') ?? false);
-      if (isExistingUser) {
-        await prefs.setBool('onboarding_complete', true);
-        if (!prefs.containsKey('advanced_mode')) {
-          await prefs.setBool('advanced_mode', true);
-        }
-      }
-    }
-    GlobalState.onboardingCompleteNotifier.value = prefs.getBool('onboarding_complete') ?? false;
-    GlobalState.advancedModeNotifier.value = prefs.getBool('advanced_mode') ?? false;
-    GlobalState.advancedModeNotifier.addListener(() {
-      SharedPreferences.getInstance().then(
-        (p) => p.setBool('advanced_mode', GlobalState.advancedModeNotifier.value),
-      );
-    });
-
-    GlobalState.developerModeNotifier.value = prefs.getBool('developer_mode') ?? false;
-    GlobalState.developerModeNotifier.addListener(() {
-      SharedPreferences.getInstance().then(
-        (p) => p.setBool('developer_mode', GlobalState.developerModeNotifier.value),
-      );
-    });
-
-    // Theme mode: hydrate, persist on change, and keep the legacy static
-    // AppTheme.currentBrightness shim in sync (it serves not-yet-migrated
-    // widgets that read AppTheme.background/surface without a context).
-    GlobalState.themeModeNotifier.value = ThemeMode.values.asNameMap()[
-            prefs.getString('theme_mode')] ??
-        ThemeMode.system;
-    _syncCurrentBrightness(GlobalState.themeModeNotifier.value);
-    GlobalState.themeModeNotifier.addListener(() {
-      final mode = GlobalState.themeModeNotifier.value;
-      _syncCurrentBrightness(mode);
-      SharedPreferences.getInstance()
-          .then((p) => p.setString('theme_mode', mode.name));
-    });
-    // Follow OS-level light/dark changes while in system mode.
-    PlatformDispatcher.instance.onPlatformBrightnessChanged = () {
-      _syncCurrentBrightness(GlobalState.themeModeNotifier.value);
     };
 
-    // One-time cleanup: older builds auto-saved `gemini-1.5-flash` into the
-    // generic models list / legacy scalar key whenever settings opened with
-    // nothing configured. That model is no longer routable on the Gemini
-    // API, so it kept poisoning every fallback ladder and surfaced as
-    // "model not found" errors mid-generation. Strip it on startup.
-    final legacyModels = prefs.getStringList('gemini_models_list') ?? const [];
-    if (legacyModels.contains('gemini-1.5-flash')) {
-      final cleaned = legacyModels.where((m) => m != 'gemini-1.5-flash').toList();
-      await prefs.setStringList('gemini_models_list', cleaned);
-    }
-    if (prefs.getString('gemini_model') == 'gemini-1.5-flash') {
-      await prefs.remove('gemini_model');
-    }
-  } catch (e, stack) {
-    startupError = "${startupError ?? ""}\nPrefs Init Error: $e\n$stack";
-  }
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarDividerColor: Colors.transparent,
+      systemNavigationBarIconBrightness: Brightness.light,
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+    ));
 
-  // Set up global error boundaries.
-  //
-  // Framework errors caught by [FlutterError.onError] (overflows, paint/layout
-  // glitches, "setState after dispose", etc.) are handled gracefully by Flutter
-  // and don't kill the app — they're just noise. Log them, but never interrupt
-  // the user with a dialog.
-  FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.presentError(details);
-    debugPrint("FLUTTER FRAMEWORK ERROR (non-fatal): ${details.exception}");
-  };
+    // Check for previous crash details
+    final recordedCrash = await AppCrashRecoveryScreen.getRecordedCrash();
 
-  // Errors reaching [PlatformDispatcher.onError] are otherwise-uncaught and are
-  // the ones that would actually terminate the app. Surface those — but still
-  // skip the handful of clearly-recoverable categories (transient network/IO)
-  // that callers already report inline.
-  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
-    if (_looksNonFatal(error)) {
-      debugPrint("UNCAUGHT NON-FATAL ERROR (suppressed dialog): $error");
+    FlutterError.onError = (FlutterErrorDetails details) {
+      FlutterError.presentError(details);
+      debugPrint("FLUTTER FRAMEWORK ERROR: ${details.exception}");
+    };
+
+    PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+      debugPrint("UNCAUGHT PROCESS ERROR: $error\n$stack");
+      AppCrashRecoveryScreen.recordCrash(error, stack);
+      if (!_looksNonFatal(error)) {
+        showGlobalErrorAlert(error, stack);
+      }
+      return true; // Prevent default app crash
+    };
+
+    try {
+      await FbCore.initializeApp();
+      await UsageLimitService.instance.init();
+    } catch (e, stack) {
+      startupError = "Firebase Init Error: $e\n$stack";
+    }
+
+    try {
+      await NotificationService.init();
+    } catch (e, stack) {
+      startupError = "${startupError ?? ""}\nNotification Init Error: $e\n$stack";
+    }
+
+    try {
+      // Initialize shared prefs and load global XP early
+      final prefs = await SharedPreferences.getInstance();
+      GlobalState.xpNotifier.value = prefs.getInt(LearningSync.xpKey) ?? 0;
+
+      // Restore guest-mode choice
+      GlobalState.isGuestNotifier.value = prefs.getBool('is_guest_mode') ?? false;
+      GlobalState.isGuestNotifier.addListener(() {
+        SharedPreferences.getInstance().then(
+          (p) => p.setBool('is_guest_mode', GlobalState.isGuestNotifier.value),
+        );
+      });
+
+      final hasOnboarded = prefs.getBool('onboarding_complete') ?? false;
+      if (!hasOnboarded) {
+        final isExistingUser = prefs.getString('user_writing_style_profile') != null ||
+            (prefs.getStringList('gemini_api_keys_list')?.isNotEmpty ?? false) ||
+            (prefs.getBool('is_guest_mode') ?? false);
+        if (isExistingUser) {
+          await prefs.setBool('onboarding_complete', true);
+          if (!prefs.containsKey('advanced_mode')) {
+            await prefs.setBool('advanced_mode', true);
+          }
+        }
+      }
+      GlobalState.onboardingCompleteNotifier.value = prefs.getBool('onboarding_complete') ?? false;
+      GlobalState.advancedModeNotifier.value = prefs.getBool('advanced_mode') ?? false;
+      GlobalState.advancedModeNotifier.addListener(() {
+        SharedPreferences.getInstance().then(
+          (p) => p.setBool('advanced_mode', GlobalState.advancedModeNotifier.value),
+        );
+      });
+
+      GlobalState.developerModeNotifier.value = prefs.getBool('developer_mode') ?? false;
+      GlobalState.developerModeNotifier.addListener(() {
+        SharedPreferences.getInstance().then(
+          (p) => p.setBool('developer_mode', GlobalState.developerModeNotifier.value),
+        );
+      });
+
+      GlobalState.themeModeNotifier.value = ThemeMode.values.asNameMap()[
+              prefs.getString('theme_mode')] ??
+          ThemeMode.system;
+      _syncCurrentBrightness(GlobalState.themeModeNotifier.value);
+      GlobalState.themeModeNotifier.addListener(() {
+        final mode = GlobalState.themeModeNotifier.value;
+        _syncCurrentBrightness(mode);
+        SharedPreferences.getInstance()
+            .then((p) => p.setString('theme_mode', mode.name));
+      });
+      PlatformDispatcher.instance.onPlatformBrightnessChanged = () {
+        _syncCurrentBrightness(GlobalState.themeModeNotifier.value);
+      };
+
+      final legacyModels = prefs.getStringList('gemini_models_list') ?? const [];
+      if (legacyModels.contains('gemini-1.5-flash')) {
+        final cleaned = legacyModels.where((m) => m != 'gemini-1.5-flash').toList();
+        await prefs.setStringList('gemini_models_list', cleaned);
+      }
+      if (prefs.getString('gemini_model') == 'gemini-1.5-flash') {
+        await prefs.remove('gemini_model');
+      }
+    } catch (e, stack) {
+      startupError = "${startupError ?? ""}\nPrefs Init Error: $e\n$stack";
+    }
+
+    if (recordedCrash != null) {
+      runApp(AppCrashRecoveryScreen(
+        error: recordedCrash['error'] ?? 'Unknown App Crash',
+        stackTrace: recordedCrash['stack'] ?? '',
+        onDismiss: () {
+          runApp(const FlowApp());
+        },
+      ));
     } else {
+      runApp(const FlowApp());
+    }
+  }, (Object error, StackTrace stack) {
+    debugPrint("ZONED GLOBAL ERROR: $error\n$stack");
+    AppCrashRecoveryScreen.recordCrash(error, stack);
+    if (!_looksNonFatal(error)) {
       showGlobalErrorAlert(error, stack);
     }
-    return true; // Prevent default app crash behavior
-  };
-
-  runApp(const FlowApp());
+  });
 }
 
 class PopIntent extends Intent {

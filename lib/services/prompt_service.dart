@@ -518,7 +518,7 @@ TASK:
      - For "Remembering / Understanding": focus on core conceptual explanations, definitions, key terminology, and simple quizzes.
      - For "Applying / Analyzing": focus on worked examples, real-world applications, code/logic walkthroughs, and step-by-step procedures.
      - For "Evaluating / Creating": focus on complex proofs/derivations, error-spotting, evaluating alternative approaches, and challenging multi-step problems.
-2. Analyze the unique pedagogical needs of the PDF content. If the existing lesson formats (%format_catalog%) are not optimal or sufficient for teaching this content, CREATE up to 10 new custom lesson formats tailored specifically to the material (e.g., an "Experimental Analysis" format for lab data, or "Derivation Focus" for math/physics). Each new format should define a name, description, and list of slide templates (type, condition, description).
+2. Analyze the unique pedagogical needs of the PDF content. You MUST CREATE AT LEAST 8 TO 10 specialized custom lesson formats tailored specifically to the material (e.g., "Syntax Walkthrough", "Architecture Blueprint", "Code Optimization Focus", "Experimental Analysis", "Derivation Focus", "Error Analysis", "Flashcard Rapid Review"). Each new format must define a name, description, and list of 2-5 slide templates (type, condition, description).
 
 CRITICAL RULES:
 1. Cover the entire content of the attached PDF. Do not skip topics.
@@ -527,6 +527,7 @@ CRITICAL RULES:
 4. BY DEFAULT, NEVER NEGLECT EXAMPLE AND EXERCISE QUESTIONS.
 5. IF THE SECTION CONTAINS EXERCISE/PRACTICE QUESTIONS (often at the end of the section/chapter, e.g. in math/science textbooks), you MUST create a dedicated unit specifically for these exercises (e.g., "Practice Exercises"). This exercises unit must be structured such that the exercises are treated as individual lessons (taking them one by one/problem-by-problem) to ensure comprehensive, hands-on practice.
 6. HIGH-PRECISION PROGRAMMING DETECTION: Automatically detect with high precision if this section's title, description, or content chunk involves software engineering, coding languages (e.g., Python, JavaScript, C/C++, Java, HTML, CSS, SQL, Dart, Rust, Go, LaTeX, Shell), algorithms, syntax, data science, or computer science. If ANY programming content is present or inferred, you MUST explicitly generate programming formats and units incorporating 'program' (fill-in code tokens with syntax highlighting) and 'try_yourself' (interactive runner sandbox) slide types with precise language tags.
+7. MINIMUM 10 FORMATS REQUIREMENT: You MUST populate `newLessonFormats` with AT LEAST 8 to 10 distinct, highly-tailored custom lesson formats so the user has a rich selection of pedagogical formats.
 
 Return ONLY valid JSON matching this exact structure:
 {

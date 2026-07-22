@@ -114,7 +114,14 @@ class _MatchingViewState extends State<MatchingView> {
   Color _pairColor(int leftIndex) =>
       _pairColors[leftIndex % _pairColors.length];
 
-  bool _isPairCorrect(int leftIndex) => _assigned[leftIndex] == leftIndex;
+  bool _isPairCorrect(int leftIndex) {
+    final assignedRightIdx = _assigned[leftIndex];
+    if (assignedRightIdx == null) return false;
+    if (leftIndex < 0 || leftIndex >= _pairs.length) return false;
+    if (assignedRightIdx < 0 || assignedRightIdx >= _pairs.length) return false;
+    return _pairs[leftIndex].right.trim().toLowerCase() ==
+        _pairs[assignedRightIdx].right.trim().toLowerCase();
+  }
 
   /// The left pair index currently bound to this right item, if any.
   int? _boundLeftFor(int rightIndex) => _assigned.entries

@@ -30,9 +30,17 @@ class FillInBlankView extends StatefulWidget {
   State<FillInBlankView> createState() => _FillInBlankViewState();
 }
 
+class _BlankOption {
+  final String id;
+  final String text;
+
+  const _BlankOption({required this.id, required this.text});
+}
+
 class _FillInBlankViewState extends State<FillInBlankView> {
   late TextEditingController _controller;
-  List<String> _suggestions = [];
+  List<_BlankOption> _suggestions = [];
+  final Map<int, String> _assignedChipIds = {}; // blankIndex -> option.id
   int _activeBlankIndex = 0;
 
   @override
@@ -45,21 +53,22 @@ class _FillInBlankViewState extends State<FillInBlankView> {
 
   void _buildSuggestions() {
     _suggestions = [];
+    _assignedChipIds.clear();
+    int idx = 0;
     if (widget.slide.blankAnswer != null &&
         widget.slide.blankAnswer!.isNotEmpty) {
-      // Split by comma in case of multiple answers
       final answers = widget.slide.blankAnswer!.split(',').map((s) => s.trim());
       for (final ans in answers) {
-        if (ans.isNotEmpty && !_suggestions.contains(ans)) {
-          _suggestions.add(ans);
+        if (ans.isNotEmpty) {
+          _suggestions.add(_BlankOption(id: 'ans_${idx++}_$ans', text: ans));
         }
       }
     }
     if (widget.slide.blankDistractors != null) {
       for (final dist in widget.slide.blankDistractors!) {
         final cleanDist = dist.trim();
-        if (cleanDist.isNotEmpty && !_suggestions.contains(cleanDist)) {
-          _suggestions.add(cleanDist);
+        if (cleanDist.isNotEmpty) {
+          _suggestions.add(_BlankOption(id: 'dist_${idx++}_$cleanDist', text: cleanDist));
         }
       }
     }
@@ -85,7 +94,7 @@ class _FillInBlankViewState extends State<FillInBlankView> {
   }
 
   void _onSuggestionTapped(
-    String word, [
+    _BlankOption option, [
     int numBlanks = 1,
     List<String>? userAnswers,
   ]) {
@@ -93,13 +102,15 @@ class _FillInBlankViewState extends State<FillInBlankView> {
     HapticFeedback.selectionClick();
 
     if (numBlanks <= 1 || userAnswers == null) {
-      _controller.text = word;
-      widget.onChanged(word);
+      _controller.text = option.text;
+      _assignedChipIds[0] = option.id;
+      widget.onChanged(option.text);
       return;
     }
 
     setState(() {
-      userAnswers[_activeBlankIndex] = word;
+      userAnswers[_activeBlankIndex] = option.text;
+      _assignedChipIds[_activeBlankIndex] = option.id;
       widget.onChanged(userAnswers.join(', '));
 
       // Auto-advance to the next empty blank
@@ -131,13 +142,14 @@ class _FillInBlankViewState extends State<FillInBlankView> {
         alignment: WrapAlignment.center,
         spacing: 12,
         runSpacing: 12,
-        children: _suggestions.map((word) {
-          final isSelected = numBlanks <= 1
-              ? widget.value == word
-              : effectiveUserAnswers.contains(word);
+        children: _suggestions.map((option) {
+          final isSelected = _assignedChipIds.containsValue(option.id) ||
+              (numBlanks <= 1
+                  ? widget.value == option.text
+                  : effectiveUserAnswers.contains(option.text));
           return GestureDetector(
             onTap: () =>
-                _onSuggestionTapped(word, numBlanks, effectiveUserAnswers),
+                _onSuggestionTapped(option, numBlanks, effectiveUserAnswers),
             child: Container(
               constraints: const BoxConstraints(minHeight: 48),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -155,7 +167,7 @@ class _FillInBlankViewState extends State<FillInBlankView> {
                 ),
               ),
               child: Text(
-                word,
+                option.text,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,

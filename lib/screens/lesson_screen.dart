@@ -664,7 +664,14 @@ class _LessonScreenState extends State<LessonScreen> {
       correct =
           pairs.isNotEmpty &&
           _matchingAssignments.length == pairs.length &&
-          _matchingAssignments.entries.every((e) => e.key == e.value);
+          _matchingAssignments.entries.every((e) {
+            final leftIdx = e.key;
+            final rightIdx = e.value;
+            if (leftIdx < 0 || leftIdx >= pairs.length) return false;
+            if (rightIdx < 0 || rightIdx >= pairs.length) return false;
+            return pairs[leftIdx].right.trim().toLowerCase() ==
+                pairs[rightIdx].right.trim().toLowerCase();
+          });
     } else if (slide.type == 'ordering') {
       final target = slide.orderItems ?? [];
       correct = target.isNotEmpty && _orderingCurrent.length == target.length;

@@ -59,7 +59,7 @@ android {
             // `flutter build apk --release` works out of the box. Swap for
             // a real upload key before publishing to the Play Store.
             signingConfig = signingConfigs.getByName("debug")
-            isMinifyEnabled = true
+            isMinifyEnabled = false
             isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

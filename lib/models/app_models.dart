@@ -198,41 +198,10 @@ class LessonFormat {
   static List<LessonFormat> get defaultFormats => [
     LessonFormat(
       id: 'default',
-      name: 'Theory',
+      name: 'Theory & Concept',
       description:
-          'Standard theory lesson: definitions, explanation, recall checks, quiz.',
+          'Standard theory lesson: definitions, explanation, recall checks, and quiz.',
       slides: SlideTemplate.defaultTemplate,
-    ),
-    LessonFormat(
-      id: 'worked-example',
-      name: 'Worked Example',
-      description: 'A single solved problem broken into interactive steps.',
-      slides: [
-        SlideTemplate(
-          type: 'theory',
-          condition: 'Always',
-          description:
-              'Restate the problem and the technique being used in 1-2 sentences.',
-        ),
-        SlideTemplate(
-          type: 'step_by_step',
-          condition: 'Always',
-          description:
-              'Solve the example as an interactive multi-step walkthrough where the learner picks the next step.',
-        ),
-        SlideTemplate(
-          type: 'numerical',
-          condition: 'Only if the example produces a numeric result.',
-          description:
-              'A follow-up problem where the learner computes and types the numeric answer.',
-        ),
-        SlideTemplate(
-          type: 'quiz',
-          condition: 'Always',
-          description:
-              'A multiple-choice follow-up applying the same technique to a near-identical problem.',
-        ),
-      ],
     ),
     LessonFormat(
       id: 'code-playground',
@@ -267,8 +236,39 @@ class LessonFormat {
       ],
     ),
     LessonFormat(
+      id: 'worked-example',
+      name: 'Worked Example & Procedure',
+      description: 'A single solved problem broken into interactive steps.',
+      slides: [
+        SlideTemplate(
+          type: 'theory',
+          condition: 'Always',
+          description:
+              'Restate the problem and the technique being used in 1-2 sentences.',
+        ),
+        SlideTemplate(
+          type: 'step_by_step',
+          condition: 'Always',
+          description:
+              'Solve the example as an interactive multi-step walkthrough where the learner picks the next step.',
+        ),
+        SlideTemplate(
+          type: 'numerical',
+          condition: 'Only if the example produces a numeric result.',
+          description:
+              'A follow-up problem where the learner computes and types the numeric answer.',
+        ),
+        SlideTemplate(
+          type: 'quiz',
+          condition: 'Always',
+          description:
+              'A multiple-choice follow-up applying the same technique to a near-identical problem.',
+        ),
+      ],
+    ),
+    LessonFormat(
       id: 'proof-walkthrough',
-      name: 'Proof Walkthrough',
+      name: 'Proof & Derivation Walkthrough',
       description: 'Step-by-step derivation of a theorem or formula.',
       slides: [
         SlideTemplate(
@@ -279,11 +279,6 @@ class LessonFormat {
         ),
         SlideTemplate(
           type: 'proof',
-          condition: 'Always',
-          description: 'Full interactive step-by-step proof.',
-        ),
-        SlideTemplate(
-          type: 'fill_in_blank',
           condition: 'Always',
           description:
               'Recall the key inequality, identity or definition that powered the proof.',
