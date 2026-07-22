@@ -31,10 +31,16 @@ class PythonRunnerService {
   PythonRunnerService._internal();
 
   /// Wraps user Python code to intercept stdout/stderr, handle real-time interactive
-  /// input() socket requests, and capture matplotlib figures as base64 PNG data.
-  String _prepareWrapperCode(String userCode, {int serverPort = 0, List<String> inputs = const []}) {
+  /// input() socket requests, write results to JSON file, and capture matplotlib figures.
+  String _prepareWrapperCode(
+    String userCode, {
+    int serverPort = 0,
+    List<String> inputs = const [],
+    String resultFilePath = '',
+  }) {
     final encodedUserCode = jsonEncode(userCode);
     final encodedInputs = jsonEncode(inputs);
+    final encodedResultFile = jsonEncode(resultFilePath);
     return '''
 import sys
 import io
@@ -54,6 +60,7 @@ sys.stderr = _stderr_buffer
 _user_inputs = $encodedInputs
 _input_idx = 0
 _server_port = $serverPort
+_result_file = $encodedResultFile
 
 def _interactive_input(prompt=''):
     global _input_idx
@@ -108,6 +115,25 @@ try:
                 _graphics_list.append(base64.b64encode(buf.read()).decode('ascii'))
             plt.close('all')
 except Exception:
+    import types
+    _mpl = types.ModuleType('matplotlib')
+    _mpl_plt = types.ModuleType('matplotlib.pyplot')
+    def _dummy_fn(*args, **kwargs): return None
+    _mpl_plt.plot = _dummy_fn
+    _mpl_plt.show = _dummy_fn
+    _mpl_plt.title = _dummy_fn
+    _mpl_plt.xlabel = _dummy_fn
+    _mpl_plt.ylabel = _dummy_fn
+    _mpl_plt.figure = _dummy_fn
+    _mpl_plt.clf = _dummy_fn
+    _mpl_plt.close = _dummy_fn
+    _mpl_plt.grid = _dummy_fn
+    _mpl_plt.legend = _dummy_fn
+    _mpl.use = _dummy_fn
+    _mpl.pyplot = _mpl_plt
+    sys.modules['matplotlib'] = _mpl
+    sys.modules['matplotlib.pyplot'] = _mpl_plt
+
     def _capture_plt():
         pass
 
@@ -134,6 +160,13 @@ payload = {
     "stderr": err_str,
     "graphics": _graphics_list
 }
+
+if _result_file:
+    try:
+        with open(_result_file, "w", encoding="utf-8") as _f:
+            json.dump(payload, _f)
+    except Exception:
+        pass
 
 print("===DUOFY_PY_RESULT_START===")
 print(json.dumps(payload))
@@ -178,8 +211,6 @@ print("===DUOFY_PY_RESULT_END===")
       } catch (_) {}
     }
 
-    final wrapperCode = _prepareWrapperCode(code, serverPort: serverPort, inputs: inputs);
-
     if (kIsWeb) {
       sw.stop();
       await serverSocket?.close();
@@ -194,16 +225,29 @@ print("===DUOFY_PY_RESULT_END===")
 
     try {
       final tempDir = await getTemporaryDirectory();
-      final pyFile = File(path.join(tempDir.path, 'duofy_runner_${DateTime.now().millisecondsSinceEpoch}.py'));
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final pyFile = File(path.join(tempDir.path, 'duofy_runner_$timestamp.py'));
+      final resultFile = File(path.join(tempDir.path, 'duofy_py_out_$timestamp.json'));
+
+      final wrapperCode = _prepareWrapperCode(
+        code,
+        serverPort: serverPort,
+        inputs: inputs,
+        resultFilePath: resultFile.path,
+      );
       await pyFile.writeAsString(wrapperCode);
 
       ProcessResult? procResult;
-      try {
-        procResult = await Process.run('python3', [pyFile.path], workingDirectory: tempDir.path);
-      } catch (_) {
+      // Only use Process.run on Desktop operating systems.
+      // Mobile platforms (Android / iOS) MUST use SeriousPython runtime.
+      if (!Platform.isAndroid && !Platform.isIOS) {
         try {
-          procResult = await Process.run('python', [pyFile.path], workingDirectory: tempDir.path);
-        } catch (_) {}
+          procResult = await Process.run('python3', [pyFile.path], workingDirectory: tempDir.path);
+        } catch (_) {
+          try {
+            procResult = await Process.run('python', [pyFile.path], workingDirectory: tempDir.path);
+          } catch (_) {}
+        }
       }
 
       String rawStdout = '';
@@ -234,7 +278,23 @@ print("===DUOFY_PY_RESULT_END===")
       String stdErrText = rawStderr;
       List<String> graphics = [];
 
-      if (rawStdout.contains("===DUOFY_PY_RESULT_START===")) {
+      // Priority 1: Read JSON result file produced by Python wrapper
+      if (await resultFile.exists()) {
+        try {
+          final jsonContent = await resultFile.readAsString();
+          final Map<String, dynamic> data = jsonDecode(jsonContent);
+          stdOutText = data['stdout'] ?? '';
+          final pyStderr = data['stderr'] ?? '';
+          stdErrText = pyStderr.isNotEmpty
+              ? pyStderr + (rawStderr.isNotEmpty ? '\n$rawStderr' : '')
+              : rawStderr;
+          graphics = List<String>.from(data['graphics'] ?? []);
+        } catch (_) {}
+        try {
+          await resultFile.delete();
+        } catch (_) {}
+      } else if (rawStdout.contains("===DUOFY_PY_RESULT_START===")) {
+        // Priority 2: Parse stdout delimiter
         final parts = rawStdout.split("===DUOFY_PY_RESULT_START===");
         final preLogs = parts[0];
         final postParts = parts[1].split("===DUOFY_PY_RESULT_END===");

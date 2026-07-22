@@ -1686,9 +1686,7 @@ class _LessonScreenState extends State<LessonScreen> {
               });
               _recordFirstAttempt(slide, remembered);
             });
-            if (remembered) {
-              _nextSlide();
-            }
+            _nextSlide();
           },
         );
       case 'concept_pieces':
