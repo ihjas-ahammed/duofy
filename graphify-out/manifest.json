@@ -6735,13 +6735,13 @@
     "semantic_hash": ""
   },
   "lib/widgets/slide_views/code_runner_view.dart": {
-    "mtime": 1784104844.4994698,
-    "ast_hash": "a48fa7d305d269510803443d10580254",
+    "mtime": 1784689756.3671422,
+    "ast_hash": "1a7d6bab681c29c9a48587f6706d4541",
     "semantic_hash": ""
   },
   "lib/widgets/slide_views/program_view.dart": {
-    "mtime": 1784095211.9115758,
-    "ast_hash": "e20d175acf077cf6ac1d93a8c038454b",
+    "mtime": 1784689657.438956,
+    "ast_hash": "315d9a25bdfba6d7963847a75d867d3e",
     "semantic_hash": ""
   },
   "lib/widgets/lazy_indexed_stack.dart": {
@@ -6760,8 +6760,8 @@
     "semantic_hash": ""
   },
   "lib/screens/python_ide_screen.dart": {
-    "mtime": 1784689382.1402586,
-    "ast_hash": "5a80e0f200dea99c1b41995355cd5c85",
+    "mtime": 1784689637.57918,
+    "ast_hash": "61855ca2aa7db89a8b2bbe00f7e499a5",
     "semantic_hash": ""
   },
   "lib/services/python_runner_service.dart": {

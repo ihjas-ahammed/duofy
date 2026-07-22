@@ -1,18 +1,21 @@
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../models/app_models.dart';
+import '../../services/python_runner_service.dart';
 import '../../theme/app_theme.dart';
+import '../code_highlighter.dart';
 import '../duo_button.dart';
 import '../math_markdown.dart';
 import '../platform_webview.dart';
 
-/// A `try_yourself` slide: an in-app code playground. A WebView hosts a
-/// language-specific runtime (Python via Pyodide, or a live web/LaTeX preview)
-/// seeded with the slide's starter [Slide.code] and [Slide.packages]. The
-/// runtime boots as soon as the slide mounts. Learning-by-doing, so there's no
-/// right answer — a Continue button advances the lesson.
+/// A `try_yourself` slide: an in-app code playground. Native Python execution
+/// via [PythonRunnerService] (or Pyodide fallback on Web) with real-time input()
+/// support and Matplotlib inline graphics rendering. Learning-by-doing!
 class CodeRunnerView extends StatefulWidget {
   final Slide slide;
   final VoidCallback onComplete;
@@ -28,19 +31,446 @@ class CodeRunnerView extends StatefulWidget {
 }
 
 class _CodeRunnerViewState extends State<CodeRunnerView> {
+  late TextEditingController _controller;
+  late TextEditingController _inputsController;
+  late TextEditingController _realtimeInputController;
+
+  PythonExecutionResult? _result;
+  bool _isRunning = false;
+  bool _showInputsField = false;
+  bool _awaitingRealtimeInput = false;
+  String _currentInputPrompt = '';
+  Completer<String>? _activeInputCompleter;
+
   String get _language => (widget.slide.language ?? 'python').toLowerCase();
-  String get _code =>
+  String get _initialCode =>
       (widget.slide.code?.trim().isNotEmpty ?? false)
           ? widget.slide.code!
           : widget.slide.content;
 
   @override
-  Widget build(BuildContext context) {
-    final html = CodeRunnerHtml.build(
-      language: _language,
-      code: _code,
-      packages: widget.slide.packages ?? const [],
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: _initialCode);
+    _inputsController = TextEditingController();
+    _realtimeInputController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _inputsController.dispose();
+    _realtimeInputController.dispose();
+    super.dispose();
+  }
+
+  void _submitRealtimeInput() {
+    final val = _realtimeInputController.text;
+    _activeInputCompleter?.complete(val);
+    setState(() {
+      _awaitingRealtimeInput = false;
+      _currentInputPrompt = '';
+      _activeInputCompleter = null;
+    });
+  }
+
+  Future<void> _runCode() async {
+    if (_isRunning) return;
+
+    setState(() {
+      _isRunning = true;
+      _result = null;
+      _awaitingRealtimeInput = false;
+    });
+
+    final rawInputs = _inputsController.text;
+    final List<String> inputsList = rawInputs.isNotEmpty
+        ? rawInputs.split(RegExp(r'\r?\n')).toList()
+        : const [];
+
+    final res = await PythonRunnerService.instance.runCode(
+      _controller.text,
+      inputs: inputsList,
+      onInputRequest: (prompt) async {
+        if (!mounted) return '';
+        final completer = Completer<String>();
+        setState(() {
+          _awaitingRealtimeInput = true;
+          _currentInputPrompt = prompt;
+          _realtimeInputController.clear();
+          _activeInputCompleter = completer;
+        });
+        return await completer.future;
+      },
     );
+
+    if (mounted) {
+      setState(() {
+        _isRunning = false;
+        _awaitingRealtimeInput = false;
+        _result = res;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (kIsWeb && _language != 'python') {
+      final html = CodeRunnerHtml.build(
+        language: _language,
+        code: _initialCode,
+        packages: widget.slide.packages ?? const [],
+      );
+      return _buildWebViewLayout(context, html);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (widget.slide.title.trim().isNotEmpty ||
+            widget.slide.content.trim().isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (widget.slide.title.trim().isNotEmpty)
+                  Text(
+                    widget.slide.title,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: context.colors.textPrimary,
+                    ),
+                  ),
+                if (widget.slide.content.trim().isNotEmpty &&
+                    widget.slide.content != _initialCode)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: MathMarkdown(data: widget.slide.content),
+                  ),
+              ],
+            ),
+          ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F172A),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: _isRunning
+                            ? AppTheme.duoGreen
+                            : Colors.white.withValues(alpha: 0.1),
+                        width: _isRunning ? 2 : 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Playground Header Bar
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF1E293B),
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(13)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(LucideIcons.code, color: AppTheme.duoGreen, size: 18),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${_language.toUpperCase()} PLAYGROUND',
+                                style: const TextStyle(
+                                  fontFamily: 'monospace',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.duoGreen,
+                                ),
+                              ),
+                              const Spacer(),
+                              IconButton(
+                                iconSize: 18,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                icon: Icon(
+                                  LucideIcons.terminal,
+                                  color: _showInputsField ? AppTheme.duoBlue : context.colors.textSecondary,
+                                ),
+                                tooltip: 'Configure Inputs (for input() calls)',
+                                onPressed: () {
+                                  setState(() {
+                                    _showInputsField = !_showInputsField;
+                                  });
+                                },
+                              ),
+                              IconButton(
+                                iconSize: 20,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                icon: _isRunning
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.duoGreen),
+                                      )
+                                    : const Icon(LucideIcons.play, color: AppTheme.duoGreen),
+                                tooltip: 'Run Code',
+                                onPressed: _isRunning ? null : _runCode,
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Code Field
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: TextField(
+                            controller: _controller,
+                            maxLines: null,
+                            keyboardType: TextInputType.multiline,
+                            autocorrect: false,
+                            enableSuggestions: false,
+                            style: const TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: 13.5,
+                              height: 1.5,
+                              color: Color(0xFFE2E8F0),
+                            ),
+                            decoration: const InputDecoration(
+                              filled: true,
+                              fillColor: Color(0xFF020617),
+                              contentPadding: EdgeInsets.all(12),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(10)),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Optional Input Field
+                        if (_showInputsField)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1E293B),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: AppTheme.duoBlue.withValues(alpha: 0.4)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(LucideIcons.terminal, color: AppTheme.duoBlue, size: 14),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'STANDARD INPUT (one line per input() call)',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: context.colors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  TextField(
+                                    controller: _inputsController,
+                                    maxLines: 3,
+                                    minLines: 1,
+                                    style: const TextStyle(
+                                      fontFamily: 'monospace',
+                                      fontSize: 12.5,
+                                      color: Color(0xFF38BDF8),
+                                    ),
+                                    decoration: const InputDecoration(
+                                      isDense: true,
+                                      hintText: 'Type input lines here...',
+                                      hintStyle: TextStyle(color: Colors.white30, fontSize: 12),
+                                      border: InputBorder.none,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        // Real-time Interactive Input Prompt
+                        if (_awaitingRealtimeInput)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF020617),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: AppTheme.duoGreen, width: 2),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const SizedBox(
+                                        width: 12,
+                                        height: 12,
+                                        child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.duoGreen),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        _currentInputPrompt.isNotEmpty
+                                            ? _currentInputPrompt
+                                            : 'Input required:',
+                                        style: const TextStyle(
+                                          fontFamily: 'monospace',
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppTheme.duoGreen,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: TextField(
+                                          controller: _realtimeInputController,
+                                          autofocus: true,
+                                          style: const TextStyle(
+                                            fontFamily: 'monospace',
+                                            fontSize: 13,
+                                            color: Colors.white,
+                                          ),
+                                          decoration: InputDecoration(
+                                            isDense: true,
+                                            hintText: 'Type input and press Enter...',
+                                            hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+                                            filled: true,
+                                            fillColor: const Color(0xFF1E293B),
+                                            border: OutlineInputBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                              borderSide: BorderSide.none,
+                                            ),
+                                          ),
+                                          onSubmitted: (_) => _submitRealtimeInput(),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      IconButton(
+                                        icon: const Icon(LucideIcons.send, color: AppTheme.duoGreen),
+                                        tooltip: 'Submit Input',
+                                        onPressed: _submitRealtimeInput,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        // Output Display Pane
+                        if (_result != null) _buildResultPane(context, _result!),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+          child: DuoButton(
+            text: 'CONTINUE',
+            color: AppTheme.duoGreen,
+            shadowColor: AppTheme.duoGreenDark,
+            onPressed: widget.onComplete,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildResultPane(BuildContext context, PythonExecutionResult res) {
+    final hasStdout = res.stdout.trim().isNotEmpty;
+    final hasStderr = res.stderr.trim().isNotEmpty;
+    final hasGraphics = res.graphicsBase64.isNotEmpty;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF020617),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(13)),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(
+                res.exitCode == 0 ? LucideIcons.checkCircle : LucideIcons.alertTriangle,
+                size: 14,
+                color: res.exitCode == 0 ? AppTheme.duoGreen : AppTheme.duoRed,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Output (${res.duration.inMilliseconds}ms)',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: res.exitCode == 0 ? AppTheme.duoGreen : AppTheme.duoRed,
+                ),
+              ),
+            ],
+          ),
+          if (hasStdout) ...[
+            const SizedBox(height: 6),
+            SelectableText(
+              res.stdout,
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 12,
+                color: Color(0xFFE2E8F0),
+              ),
+            ),
+          ],
+          if (hasStderr) ...[
+            const SizedBox(height: 6),
+            SelectableText(
+              res.stderr,
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 12,
+                color: Color(0xFFF87171),
+              ),
+            ),
+          ],
+          if (hasGraphics) ...[
+            const SizedBox(height: 8),
+            for (final base64Img in res.graphicsBase64)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.memory(
+                    base64Decode(base64Img),
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWebViewLayout(BuildContext context, String html) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
