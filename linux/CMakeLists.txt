@@ -70,6 +70,12 @@ set_target_properties(${BINARY_NAME}
 )
 
 
+# Fix serious_python_linux copying root directory / when SERIOUS_PYTHON_SITE_PACKAGES is unset
+if(NOT DEFINED ENV{SERIOUS_PYTHON_SITE_PACKAGES} OR "$ENV{SERIOUS_PYTHON_SITE_PACKAGES}" STREQUAL "")
+  set(ENV{SERIOUS_PYTHON_SITE_PACKAGES} "${CMAKE_BINARY_DIR}/empty_site_packages")
+  file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/empty_site_packages")
+endif()
+
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
 include(flutter/generated_plugins.cmake)
