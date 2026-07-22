@@ -9,17 +9,22 @@ import '../widgets/duo_button.dart';
 class NotebookCell {
   String id;
   TextEditingController controller;
+  TextEditingController inputsController;
   PythonExecutionResult? result;
   bool isRunning;
   int? executionCount;
+  bool showInputsField;
 
   NotebookCell({
     required this.id,
     required String initialCode,
+    String initialInputs = '',
     this.result,
     this.isRunning = false,
     this.executionCount,
-  }) : controller = TextEditingController(text: initialCode);
+    this.showInputsField = false,
+  })  : controller = TextEditingController(text: initialCode),
+        inputsController = TextEditingController(text: initialInputs);
 }
 
 class PythonIdeScreen extends StatefulWidget {
@@ -44,7 +49,9 @@ class _PythonIdeScreenState extends State<PythonIdeScreen> {
     _cells.addAll([
       NotebookCell(
         id: 'cell_1',
-        initialCode: '# Duofy Python IDE & Jupyter Notebook\nprint("Hello from Duofy Native Python Engine!")\nfor i in range(1, 4):\n    print(f"  Step {i}: SeriousPython runtime active")',
+        initialCode: '# Duofy Interactive Python Input Demo\nname = input("Enter your name: ")\nage = input("Enter your age: ")\nprint(f"Hello {name}! You are {age} years old.")',
+        initialInputs: 'Alice\n25',
+        showInputsField: true,
       ),
       NotebookCell(
         id: 'cell_2',
@@ -73,6 +80,7 @@ plt.show()''',
   void dispose() {
     for (final cell in _cells) {
       cell.controller.dispose();
+      cell.inputsController.dispose();
     }
     super.dispose();
   }
@@ -85,7 +93,15 @@ plt.show()''',
       cell.result = null;
     });
 
-    final res = await PythonRunnerService.instance.runCode(cell.controller.text);
+    final rawInputs = cell.inputsController.text;
+    final List<String> inputsList = rawInputs.isNotEmpty
+        ? rawInputs.split(RegExp(r'\r?\n')).toList()
+        : const [];
+
+    final res = await PythonRunnerService.instance.runCode(
+      cell.controller.text,
+      inputs: inputsList,
+    );
 
     if (mounted) {
       setState(() {
@@ -308,6 +324,21 @@ plt.show()''',
                   iconSize: 18,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  icon: Icon(
+                    LucideIcons.terminal,
+                    color: cell.showInputsField ? AppTheme.duoBlue : context.colors.textSecondary,
+                  ),
+                  tooltip: 'Configure Inputs (for input() calls)',
+                  onPressed: () {
+                    setState(() {
+                      cell.showInputsField = !cell.showInputsField;
+                    });
+                  },
+                ),
+                IconButton(
+                  iconSize: 18,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                   icon: cell.isRunning
                       ? const SizedBox(
                           width: 16,
@@ -356,6 +387,56 @@ plt.show()''',
               ),
             ),
           ),
+          // Optional Standard Input Field (for input() calls)
+          if (cell.showInputsField)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E293B),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppTheme.duoBlue.withValues(alpha: 0.4)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(LucideIcons.terminal, color: AppTheme.duoBlue, size: 14),
+                        const SizedBox(width: 6),
+                        Text(
+                          'STANDARD INPUT (one value per line for input() calls)',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: context.colors.textSecondary,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: cell.inputsController,
+                      maxLines: 3,
+                      minLines: 1,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 12.5,
+                        color: Color(0xFF38BDF8),
+                      ),
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        hintText: 'Enter inputs here (e.g. Alice\\n25)',
+                        hintStyle: TextStyle(color: Colors.white30, fontSize: 12),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           // Cell Execution Output
           if (cell.result != null) _buildCellOutput(context, cell.result!),
         ],

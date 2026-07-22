@@ -11,6 +11,13 @@ void main() {
       expect(res.duration, isNotNull);
     });
 
+    test('runCode handles user input() calls gracefully', () async {
+      final code = 'name = input("Name: ")\nprint(f"Hello {name}")';
+      final res = await PythonRunnerService.instance.runCode(code, inputs: ['Bob']);
+      expect(res, isNotNull);
+      expect(res.duration, isNotNull);
+    });
+
     test('runCode processes syntax checking without throwing', () async {
       final res = await PythonRunnerService.instance.runCode('def invalid_syntax(');
       expect(res, isNotNull);

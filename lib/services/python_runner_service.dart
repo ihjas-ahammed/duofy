@@ -32,18 +32,41 @@ class PythonRunnerService {
 
   /// Wraps user Python code to intercept stdout/stderr and automatically capture
   /// matplotlib figures, plots, and charts as base64 PNG data.
-  String _prepareWrapperCode(String userCode) {
+  String _prepareWrapperCode(String userCode, {List<String> inputs = const []}) {
     final encodedUserCode = jsonEncode(userCode);
+    final encodedInputs = jsonEncode(inputs);
     return '''
 import sys
 import io
 import json
 import base64
+import builtins
+
+_orig_stdout = sys.stdout
+_orig_stderr = sys.stderr
 
 _stdout_buffer = io.StringIO()
 _stderr_buffer = io.StringIO()
 sys.stdout = _stdout_buffer
 sys.stderr = _stderr_buffer
+
+_user_inputs = $encodedInputs
+_input_idx = 0
+
+def _mock_input(prompt=''):
+    global _input_idx
+    if prompt:
+        _stdout_buffer.write(str(prompt))
+    if _input_idx < len(_user_inputs):
+        val = str(_user_inputs[_input_idx])
+        _input_idx += 1
+        _stdout_buffer.write(val + '\\n')
+        return val
+    _stdout_buffer.write('\\n')
+    return ''
+
+builtins.input = _mock_input
+sys.stdin = io.StringIO('\\n'.join([str(x) for x in _user_inputs]) + ('\\n' if _user_inputs else ''))
 
 _graphics_list = []
 
@@ -77,6 +100,9 @@ try:
 except Exception:
     pass
 
+sys.stdout = _orig_stdout
+sys.stderr = _orig_stderr
+
 out_str = _stdout_buffer.getvalue()
 err_str = _stderr_buffer.getvalue()
 
@@ -93,9 +119,9 @@ print("===DUOFY_PY_RESULT_END===")
   }
 
   /// Executes user python code and returns stdout, stderr, execution duration, and inline graphics.
-  Future<PythonExecutionResult> runCode(String code) async {
+  Future<PythonExecutionResult> runCode(String code, {List<String> inputs = const []}) async {
     final sw = Stopwatch()..start();
-    final wrapperCode = _prepareWrapperCode(code);
+    final wrapperCode = _prepareWrapperCode(code, inputs: inputs);
 
     if (kIsWeb) {
       sw.stop();
