@@ -1,9 +1,9 @@
 {
-  "versionName": "26.7.22",
-  "versionCode": 2026072204,
-  "changelogPath": "builds/whatsnew/26.7.22.md",
+  "versionName": "26.7.25",
+  "versionCode": 2026072501,
+  "changelogPath": "builds/whatsnew/26.7.25.md",
   "apks": {
-    "arm64-v8a": "builds/flow-v26.7.22-arm64-v8a.apk",
-    "armeabi-v7a": "builds/flow-v26.7.22-armeabi-v7a.apk"
+    "arm64-v8a": "builds/flow-v26.7.25-arm64-v8a.apk",
+    "armeabi-v7a": "builds/flow-v26.7.25-armeabi-v7a.apk"
   }
 }
