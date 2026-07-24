@@ -251,7 +251,7 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                   Text(
                     'Select PDF Source',
                     style: TextStyle(
@@ -273,7 +273,7 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                         color: AppTheme.duoBlue.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         LucideIcons.folderOpen,
                         color: AppTheme.duoBlue,
                       ),
@@ -305,7 +305,7 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                         color: AppTheme.duoGreen.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         LucideIcons.database,
                         color: AppTheme.duoGreen,
                       ),
@@ -460,7 +460,7 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
     return Scaffold(
       backgroundColor: context.colors.background,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Source PDFs',
           style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
         ),
@@ -517,7 +517,7 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(height: 4),
+                                SizedBox(height: 4),
                                 Text(
                                   widget.book.description,
                                   style: TextStyle(
@@ -533,7 +533,7 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20),
 
                     if (_successMessage != null)
                       Container(
@@ -586,7 +586,7 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                             children: [
                               Row(
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     LucideIcons.alertTriangle,
                                     color: AppTheme.duoRed,
                                     size: 24,
@@ -616,7 +616,7 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 10),
+                              SizedBox(height: 10),
                               SelectableText(
                                 task.errorMessage ?? task.statusMessage,
                                 style: TextStyle(
@@ -625,7 +625,7 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                                   height: 1.4,
                                 ),
                               ),
-                              const SizedBox(height: 12),
+                              SizedBox(height: 12),
                               Row(
                                 children: [
                                   ElevatedButton.icon(
@@ -708,7 +708,7 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                             children: [
                               Row(
                                 children: [
-                                  const SizedBox(
+                                  SizedBox(
                                     width: 20,
                                     height: 20,
                                     child: CircularProgressIndicator(
@@ -733,7 +733,7 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 12),
+                              SizedBox(height: 12),
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
                                 child: LinearProgressIndicator(
@@ -748,7 +748,7 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                                   minHeight: 8,
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              SizedBox(height: 8),
                               Text(
                                 'Please keep the app open. We are splitting the files into optimized PDF reference chunks for each topic.',
                                 style: TextStyle(
@@ -830,7 +830,7 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                                       size: 22,
                                     ),
                                   ),
-                                  const SizedBox(width: 16),
+                                  SizedBox(width: 16),
                                   // Details
                                   Expanded(
                                     child: Column(
@@ -847,7 +847,7 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                                             color: context.colors.textPrimary,
                                           ),
                                         ),
-                                        const SizedBox(height: 2),
+                                        SizedBox(height: 2),
                                         Text(
                                           'Covers: $topics',
                                           style: TextStyle(
@@ -857,7 +857,7 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
-                                        const SizedBox(height: 6),
+                                        SizedBox(height: 6),
                                         if (file != null)
                                           Text(
                                             'Selected: ${file.path.split(RegExp(r"[/\\]")).last}',
@@ -952,7 +952,7 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
                       text: _isRestoring ? 'Restoring...' : 'Restore Files',
                       color: _canRestore
                           ? AppTheme.duoGreen
-                          : const Color(0xFF334155),
+                          : Color(0xFF334155),
                       shadowColor: _canRestore
                           ? AppTheme.duoGreenDark
                           : const Color(0xFF1E293B),
@@ -1100,7 +1100,7 @@ class DocumentStorePickerDialogState
       actionsPadding: const EdgeInsets.all(16),
       title: Row(
         children: [
-          const Icon(LucideIcons.cloud, color: AppTheme.duoViolet),
+          Icon(LucideIcons.cloud, color: AppTheme.duoViolet),
           const SizedBox(width: 8),
           Text(
             'Document Store',
@@ -1119,7 +1119,7 @@ class DocumentStorePickerDialogState
           children: [
             // Search Bar
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
                 color: context.colors.surfaceAlt,
                 borderRadius: BorderRadius.circular(12),
@@ -1174,10 +1174,10 @@ class DocumentStorePickerDialogState
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             // Category Selector Tabs
             Container(
-              padding: const EdgeInsets.all(2),
+              padding: EdgeInsets.all(2),
               decoration: BoxDecoration(
                 color: context.colors.surfaceAlt,
                 borderRadius: BorderRadius.circular(10),
@@ -1245,7 +1245,7 @@ class DocumentStorePickerDialogState
                           },
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       Expanded(
                         child: DropdownButtonFormField<String?>(
                           initialValue: _selectedSemesterFilter,
@@ -1279,7 +1279,7 @@ class DocumentStorePickerDialogState
                 }
               ),
             ],
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             // Files List
             Expanded(child: _buildListContent(filtered)),
           ],
@@ -1323,7 +1323,7 @@ class DocumentStorePickerDialogState
                   ? context.colors.textPrimary
                   : context.colors.textFaint,
             ),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
@@ -1364,7 +1364,7 @@ class DocumentStorePickerDialogState
               size: 32,
               color: context.colors.textFaint,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               _searchQuery.isNotEmpty ? 'No search results' : 'No documents',
               style: TextStyle(color: context.colors.textFaint, fontSize: 12),
@@ -1509,7 +1509,7 @@ class DownloadProgressDialogState extends State<DownloadProgressDialog> {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           if (_errorMessage.isNotEmpty)
             Text(
               _errorMessage,
@@ -1527,7 +1527,7 @@ class DownloadProgressDialogState extends State<DownloadProgressDialog> {
                 minHeight: 8,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               '${(_progress * 100).toStringAsFixed(0)}% downloaded',
               style: TextStyle(

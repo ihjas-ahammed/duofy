@@ -29,7 +29,7 @@ class QpCard extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: AppTheme.duoBlue.withValues(alpha: 0.1),
-              offset: const Offset(0, 4),
+              offset: Offset(0, 4),
               blurRadius: 10,
             ),
           ],
@@ -64,7 +64,7 @@ class QpCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     '$totalQuestions Solved Questions',
                     style: TextStyle(

@@ -174,7 +174,7 @@ class _CustomHtmlViewState extends State<CustomHtmlView> {
   Widget get bottomBarWidget {
     if (_isCompleted) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         color: context.colors.background,
         child: DuoButton(
           text: 'CONTINUE',
@@ -186,7 +186,7 @@ class _CustomHtmlViewState extends State<CustomHtmlView> {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       color: context.colors.background,
       child: Row(
         children: [
@@ -200,12 +200,12 @@ class _CustomHtmlViewState extends State<CustomHtmlView> {
               size: 28,
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: DuoButton(
               text: 'INCOMPLETE',
-              color: const Color(0xFF334155),
-              shadowColor: const Color(0xFF1E293B),
+              color: context.colors.outline,
+              shadowColor: context.colors.surfaceAlt,
               onPressed: () {}, // Disabled until JavaScript sends 'complete'
             ),
           ),

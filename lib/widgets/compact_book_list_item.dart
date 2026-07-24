@@ -88,7 +88,7 @@ class CompactBookListItem extends StatelessWidget {
           splashColor: mostUsedColor.withValues(alpha: 0.08),
           highlightColor: mostUsedColor.withValues(alpha: 0.04),
           child: Ink(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(16),
@@ -114,7 +114,7 @@ class CompactBookListItem extends StatelessWidget {
                   alignment: Alignment.center,
                   child: Icon(displayIcon, color: mostUsedColor, size: 24),
                 ),
-                const SizedBox(width: 14),
+                SizedBox(width: 14),
 
                 // 2. Middle Texts & Progress
                 Expanded(
@@ -133,7 +133,7 @@ class CompactBookListItem extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         book.modules.length == 1
                             ? '1 Module • $percentText complete'
@@ -143,7 +143,7 @@ class CompactBookListItem extends StatelessWidget {
                           fontSize: 12,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       // Progress Bar
                       ClipRRect(
                         borderRadius: BorderRadius.circular(2),

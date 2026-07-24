@@ -5,10 +5,11 @@ import 'global_state.dart';
 import 'learning_sync.dart';
 import 'fb/fb_auth.dart';
 import 'database_service.dart';
+import 'guest_service.dart';
 
 class ProgressService {
-  /// Returns the current user's UID (or 'guest' when not signed in).
-  static String get _uid => FbAuth.instance.currentUser?.uid ?? 'guest';
+  /// Returns the current user's UID (or unique guest ID when not signed in).
+  static String get _uid => FbAuth.instance.currentUser?.uid ?? GuestService.instance.guestIdSync;
 
   /// Per-user SharedPreferences keys so switching accounts never pollutes
   /// or resets another user's progress.

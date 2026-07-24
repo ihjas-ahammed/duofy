@@ -226,18 +226,29 @@ class CodeTheme {
     comment: Color(0xFF8B949E),
     function: Color(0xFFD2A8FF),
   );
+
+  /// GitHub Light-inspired palette for crisp Light Mode highlighting.
+  static const CodeTheme light = CodeTheme(
+    background: Color(0xFFF8FAFC),
+    plain: Color(0xFF0F172A),
+    keyword: Color(0xFFCF222E),
+    string: Color(0xFF0A3069),
+    number: Color(0xFF0550AE),
+    comment: Color(0xFF6E7781),
+    function: Color(0xFF8250DF),
+  );
 }
 
 /// A [TextEditingController] that dynamically applies syntax highlighting via [CodeHighlighter]
 /// to any editable [TextField] in real time as the user types.
 class CodeEditingController extends TextEditingController {
   String language;
-  CodeTheme theme;
+  CodeTheme? theme;
 
   CodeEditingController({
     super.text,
     this.language = 'python',
-    this.theme = CodeTheme.dark,
+    this.theme,
   });
 
   @override
@@ -246,7 +257,9 @@ class CodeEditingController extends TextEditingController {
     TextStyle? style,
     required bool withComposing,
   }) {
-    final spans = CodeHighlighter.spans(text, language, theme);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final effectiveTheme = theme ?? (isDark ? CodeTheme.dark : CodeTheme.light);
+    final spans = CodeHighlighter.spans(text, language, effectiveTheme);
     return TextSpan(
       style: style,
       children: spans,

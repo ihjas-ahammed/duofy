@@ -33,7 +33,7 @@ class QpDetailScreen extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     LucideIcons.helpCircle,
                     size: 16,
                     color: AppTheme.duoBlue,
@@ -75,7 +75,7 @@ class QpDetailScreen extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         LucideIcons.lightbulb,
                         size: 16,
                         color: AppTheme.duoOrange,
@@ -115,7 +115,7 @@ class QpDetailScreen extends StatelessWidget {
     return Scaffold(
       body: ResponsiveCenter(
         child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
+          physics: BouncingScrollPhysics(),
           slivers: [
             SliverAppBar(
               pinned: true,

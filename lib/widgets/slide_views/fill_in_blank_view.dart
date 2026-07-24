@@ -151,7 +151,7 @@ class _FillInBlankViewState extends State<FillInBlankView> {
             onTap: () =>
                 _onSuggestionTapped(option, numBlanks, effectiveUserAnswers),
             child: Container(
-              constraints: const BoxConstraints(minHeight: 48),
+              constraints: BoxConstraints(minHeight: 48),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               alignment: Alignment.center,
               decoration: BoxDecoration(
@@ -196,7 +196,7 @@ class _FillInBlankViewState extends State<FillInBlankView> {
         textAlign: TextAlign.center,
         textInputAction: TextInputAction.done,
         onFieldSubmitted: (_) => widget.onSubmit?.call(),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w900,
           color: Colors.amber,
@@ -258,7 +258,7 @@ class _FillInBlankViewState extends State<FillInBlankView> {
       return Padding(
         padding: const EdgeInsets.all(24),
         child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
+          physics: BouncingScrollPhysics(),
           slivers: [
             SliverToBoxAdapter(
               child: Column(
@@ -296,7 +296,7 @@ class _FillInBlankViewState extends State<FillInBlankView> {
                               onTap: () =>
                                   setState(() => _activeBlankIndex = i),
                               child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
+                                duration: Duration(milliseconds: 200),
                                 constraints: const BoxConstraints(
                                   minHeight: 48,
                                 ),
@@ -356,7 +356,7 @@ class _FillInBlankViewState extends State<FillInBlankView> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
+        physics: BouncingScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
             child: Column(
@@ -374,9 +374,9 @@ class _FillInBlankViewState extends State<FillInBlankView> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 32),
+                SizedBox(height: 32),
                 Container(
-                  padding: const EdgeInsets.all(20),
+                  padding: EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(20),
@@ -400,7 +400,7 @@ class _FillInBlankViewState extends State<FillInBlankView> {
                           letterSpacing: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       TextField(
                         controller: _controller,
                         enabled: !widget.isAnswered,

@@ -51,7 +51,7 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
         ),
         title: Text(
           module.title,
-          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
         ),
         centerTitle: true,
       ),
@@ -145,7 +145,7 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.only(top: 3),
                         child: Icon(
                           LucideIcons.arrowRight,
@@ -217,7 +217,7 @@ class ModuleSummaryDetailScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           LucideIcons.sparkles,
                           color: AppTheme.duoViolet,
                           size: 16,

@@ -115,9 +115,9 @@ class AppTheme {
 
   static const AppColors lightColors = AppColors(
     brightness: Brightness.light,
-    primary: Color(0xFF3B6DE8),
-    primaryDark: Color(0xFF2B54BC),
-    secondary: Color(0xFF0891B2),
+    primary: Color(0xFF4F46E5),
+    primaryDark: Color(0xFF4338CA),
+    secondary: Color(0xFF0284C7),
     success: Color(0xFF059669),
     successDark: Color(0xFF047857),
     danger: Color(0xFFDC2626),
@@ -126,16 +126,16 @@ class AppTheme {
     goldDark: Color(0xFFB45309),
     violet: Color(0xFF7C3AED),
     violetDark: Color(0xFF6D28D9),
-    background: Color(0xFFF6F8FC),
-    surface: Colors.white,
-    surfaceAlt: Color(0x0A000000), // black 4%
-    textPrimary: Color(0xFF171C2B),
-    textSecondary: Colors.black54,
-    textFaint: Colors.black38,
-    outline: Color(0x1A000000), // black 10%
-    glassFill: Color(0xB3FFFFFF), // white 70%
-    glassStrong: Color(0xD9FFFFFF), // white 85%
-    shadow: Color(0x1A000000), // black 10%
+    background: Color(0xFFEEF2FF), // Celestial soft light blue-gray canvas
+    surface: Color(0xFFF8FAFC), // Crisp soft slate surface for cards
+    surfaceAlt: Color(0xFFE2E8F0), // Soft slate fill for containers
+    textPrimary: Color(0xFF0F172A), // Deep charcoal navy (always dark in light mode)
+    textSecondary: Color(0xFF334155), // Dark slate body text
+    textFaint: Color(0xFF64748B), // Slate gray captions
+    outline: Color(0xFFCBD5E1), // Crisp slate borders
+    glassFill: Color(0xF2F8FAFC),
+    glassStrong: Color(0xFAFFFFFF),
+    shadow: Color(0x140F172A),
   );
 
   /// Resolves tokens through the ambient [Theme], registering a rebuild
@@ -172,12 +172,58 @@ class AppTheme {
         secondary: c.secondary,
         error: c.danger,
         surface: c.surface,
+        onSurface: c.textPrimary,
+        onPrimary: Colors.white,
       ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.transparent,
+      textTheme: TextTheme(
+        bodyLarge: TextStyle(color: c.textPrimary),
+        bodyMedium: TextStyle(color: c.textPrimary),
+        bodySmall: TextStyle(color: c.textSecondary),
+        titleLarge: TextStyle(color: c.textPrimary, fontWeight: FontWeight.bold),
+        titleMedium: TextStyle(color: c.textPrimary, fontWeight: FontWeight.bold),
+        titleSmall: TextStyle(color: c.textSecondary, fontWeight: FontWeight.bold),
+      ),
+      appBarTheme: AppBarTheme(
+        backgroundColor: c.background,
         elevation: 0,
         centerTitle: true,
+        foregroundColor: c.textPrimary,
+        iconTheme: IconThemeData(color: c.textPrimary),
+        titleTextStyle: TextStyle(
+          color: c.textPrimary,
+          fontSize: 18,
+          fontWeight: FontWeight.w900,
+          fontFamily: 'Nunito',
+        ),
       ),
+      cardTheme: CardThemeData(
+        color: c.surface,
+        elevation: 2,
+        shadowColor: c.shadow,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: c.outline, width: 1),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: c.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: c.outline, width: 1),
+        ),
+        titleTextStyle: TextStyle(
+          color: c.textPrimary,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          fontFamily: 'Nunito',
+        ),
+        contentTextStyle: TextStyle(
+          color: c.textSecondary,
+          fontSize: 14,
+          fontFamily: 'Nunito',
+        ),
+      ),
+      iconTheme: IconThemeData(color: c.textPrimary),
     );
   }
 

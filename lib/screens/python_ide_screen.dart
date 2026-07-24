@@ -197,7 +197,7 @@ plt.show()''',
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(LucideIcons.terminal, color: AppTheme.duoGreen, size: 20),
+              Icon(LucideIcons.terminal, color: AppTheme.duoGreen, size: 20),
               const SizedBox(width: 8),
               const Text(
                 'Python IDE',
@@ -306,7 +306,7 @@ plt.show()''',
         : (cell.executionCount != null ? '[${cell.executionCount}]:' : '[ ]:');
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
+      margin: EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(16),
@@ -320,7 +320,7 @@ plt.show()''',
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
-            offset: const Offset(0, 4),
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -329,7 +329,7 @@ plt.show()''',
         children: [
           // Cell Header Bar
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
               color: context.colors.surfaceAlt,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
@@ -347,7 +347,7 @@ plt.show()''',
                     fontSize: 13,
                   ),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Text(
                   'Python Cell ${index + 1}',
                   style: TextStyle(
@@ -356,7 +356,7 @@ plt.show()''',
                     color: context.colors.textSecondary,
                   ),
                 ),
-                const Spacer(),
+                Spacer(),
                 IconButton(
                   iconSize: 18,
                   padding: EdgeInsets.zero,
@@ -375,7 +375,7 @@ plt.show()''',
                 IconButton(
                   iconSize: 18,
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  constraints: BoxConstraints(minWidth: 32, minHeight: 32),
                   icon: cell.isRunning
                       ? const SizedBox(
                           width: 16,
@@ -407,15 +407,15 @@ plt.show()''',
               keyboardType: TextInputType.multiline,
               autocorrect: false,
               enableSuggestions: false,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'monospace',
                 fontSize: 13.5,
                 height: 1.5,
-                color: Color(0xFFE2E8F0),
+                color: context.colors.textPrimary,
               ),
               decoration: InputDecoration(
                 filled: true,
-                fillColor: const Color(0xFF0F172A),
+                fillColor: context.colors.surfaceAlt,
                 contentPadding: const EdgeInsets.all(14),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -431,7 +431,7 @@ plt.show()''',
               child: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E293B),
+                  color: context.colors.surface,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: AppTheme.duoBlue.withValues(alpha: 0.4)),
                 ),
@@ -461,12 +461,12 @@ plt.show()''',
                       style: const TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 12.5,
-                        color: Color(0xFF38BDF8),
+                        color: AppTheme.duoBlue,
                       ),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         isDense: true,
                         hintText: 'Enter inputs here (e.g. Alice\\n25)',
-                        hintStyle: TextStyle(color: Colors.white30, fontSize: 12),
+                        hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 12),
                         border: InputBorder.none,
                       ),
                     ),
@@ -481,7 +481,7 @@ plt.show()''',
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0F172A),
+                  color: context.colors.surfaceAlt,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: AppTheme.duoGreen, width: 2),
                 ),
@@ -516,17 +516,17 @@ plt.show()''',
                           child: TextField(
                             controller: cell.realtimeInputController,
                             autofocus: true,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'monospace',
                               fontSize: 13,
-                              color: Colors.white,
+                              color: context.colors.textPrimary,
                             ),
                             decoration: InputDecoration(
                               isDense: true,
                               hintText: 'Type input and press Enter...',
-                              hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+                              hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 12),
                               filled: true,
-                              fillColor: const Color(0xFF1E293B),
+                              fillColor: context.colors.surfaceAlt,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                                 borderSide: BorderSide.none,
@@ -561,10 +561,10 @@ plt.show()''',
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF020617),
+        color: context.colors.surfaceAlt,
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(15)),
         border: Border(
-          top: BorderSide(color: context.colors.textFaint.withValues(alpha: 0.15)),
+          top: BorderSide(color: context.colors.outline),
         ),
       ),
       padding: const EdgeInsets.all(14),
@@ -579,7 +579,7 @@ plt.show()''',
                 size: 14,
                 color: res.exitCode == 0 ? AppTheme.duoGreen : AppTheme.duoRed,
               ),
-              const SizedBox(width: 6),
+              SizedBox(width: 6),
               Text(
                 res.exitCode == 0 ? 'Output' : 'Execution Failed',
                 style: TextStyle(
@@ -603,11 +603,11 @@ plt.show()''',
             const SizedBox(height: 10),
             SelectableText(
               res.stdout,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'monospace',
                 fontSize: 12.5,
                 height: 1.45,
-                color: Color(0xFFCBD5E1),
+                color: context.colors.textPrimary,
               ),
             ),
           ],
@@ -622,10 +622,10 @@ plt.show()''',
               ),
               child: SelectableText(
                 res.stderr,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'monospace',
                   fontSize: 12,
-                  color: Color(0xFFFCA5A5),
+                  color: context.colors.danger,
                 ),
               ),
             ),
@@ -648,7 +648,11 @@ plt.show()''',
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: Container(
-                    color: Colors.white,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: context.colors.outline),
+                    ),
                     padding: const EdgeInsets.all(8),
                     child: Image.memory(
                       imageBytes,

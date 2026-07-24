@@ -77,7 +77,7 @@ class CoachMarkController {
                 child: Material(
                   color: Colors.transparent,
                   child: Container(
-                    padding: const EdgeInsets.all(18),
+                    padding: EdgeInsets.all(18),
                     decoration: BoxDecoration(
                       color: context.colors.surface,
                       borderRadius: BorderRadius.circular(18),
@@ -88,7 +88,7 @@ class CoachMarkController {
                         BoxShadow(
                           color: context.colors.shadow,
                           blurRadius: 24,
-                          offset: const Offset(0, 6),
+                          offset: Offset(0, 6),
                         ),
                       ],
                     ),
@@ -129,7 +129,7 @@ class CoachMarkController {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         Text(
                           mark.body,
                           style: TextStyle(
@@ -138,7 +138,7 @@ class CoachMarkController {
                             height: 1.4,
                           ),
                         ),
-                        const SizedBox(height: 10),
+                        SizedBox(height: 10),
                         Text(
                           'Tap anywhere to continue',
                           style: TextStyle(

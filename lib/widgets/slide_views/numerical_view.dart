@@ -137,7 +137,7 @@ class _NumericalViewState extends State<NumericalView> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
+        physics: BouncingScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
             child: Column(
@@ -155,9 +155,9 @@ class _NumericalViewState extends State<NumericalView> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24),
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(20),
@@ -224,7 +224,7 @@ class _NumericalViewState extends State<NumericalView> {
                                         ? AppTheme.duoBlue
                                         : context.colors.textSecondary,
                                   ),
-                                  const SizedBox(width: 6),
+                                  SizedBox(width: 6),
                                   Text(
                                     _useMathKeypad ? 'KEYPAD' : 'KEYBOARD',
                                     style: TextStyle(
@@ -242,7 +242,7 @@ class _NumericalViewState extends State<NumericalView> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       TextField(
                         controller: _controller,
                         focusNode: _focusNode,
@@ -389,7 +389,7 @@ class _NumericalViewState extends State<NumericalView> {
     ];
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(20),

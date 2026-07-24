@@ -466,7 +466,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
       body: SafeArea(
         bottom: false,
         child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
+          physics: BouncingScrollPhysics(),
           slivers: [
             if (currentModule == null || currentSection == null)
               SliverFillRemaining(
@@ -504,7 +504,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                 color: AppTheme.duoBlue.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 LucideIcons.bookOpen,
                                 color: AppTheme.duoBlue,
                                 size: 20,
@@ -542,7 +542,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                           ],
                         ),
                         if (currentSection.description.isNotEmpty) ...[
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
                           Text(
                             currentSection.description,
                             style: TextStyle(
@@ -575,7 +575,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                       children: [
                         Row(
                           children: [
-                            const Icon(
+                            Icon(
                               LucideIcons.playCircle,
                               color: AppTheme.duoBlue,
                               size: 22,
@@ -591,7 +591,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
                         Row(
                           children: [
                             Expanded(
@@ -623,7 +623,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            SizedBox(width: 10),
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppTheme.duoBlue,
@@ -631,7 +631,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 16,
                                 ),
-                                minimumSize: const Size(0, 42),
+                                minimumSize: Size(0, 42),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),
                                 ),
@@ -654,7 +654,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                             ),
                                       ),
                                     )
-                                  : const Icon(LucideIcons.search, size: 16),
+                                  : Icon(LucideIcons.search, size: 16),
                             ),
                           ],
                         ),
@@ -676,7 +676,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                             padding: const EdgeInsets.only(top: 16.0),
                             child: Text(
                               'Error: $_errorSectionVideos',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppTheme.duoRed,
                                 fontSize: 11,
                               ),
@@ -685,9 +685,9 @@ class _SummaryScreenState extends State<SummaryScreen> {
                           )
                         else if (_sectionVideos != null &&
                             _sectionVideos!.isNotEmpty) ...[
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           Divider(color: context.colors.outline, height: 1),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
                           ..._sectionVideos!.map(
                             (video) => _buildVideoCard(context, video),
                           ),
@@ -764,7 +764,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Container(
-                                      padding: const EdgeInsets.all(8),
+                                      padding: EdgeInsets.all(8),
                                       decoration: BoxDecoration(
                                         color: context.colors.surfaceAlt,
                                         shape: BoxShape.circle,
@@ -775,7 +775,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                         size: 20,
                                       ),
                                     ),
-                                    const SizedBox(width: 12),
+                                    SizedBox(width: 12),
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment:
@@ -790,7 +790,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                               fontFamily: 'Nunito',
                                             ),
                                           ),
-                                          const SizedBox(height: 2),
+                                          SizedBox(height: 2),
                                           Text(
                                             unit.description,
                                             style: TextStyle(
@@ -805,7 +805,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 16),
+                                SizedBox(height: 16),
 
                                 // Search Control Row
                                 if (controller != null)
@@ -844,7 +844,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(width: 10),
+                                      SizedBox(width: 10),
                                       ElevatedButton(
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: AppTheme.duoBlue,
@@ -853,7 +853,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 16,
                                           ),
-                                          minimumSize: const Size(0, 42),
+                                          minimumSize: Size(0, 42),
                                           shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
                                               10,
@@ -907,7 +907,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                     padding: const EdgeInsets.only(top: 16.0),
                                     child: Text(
                                       'Error: $error',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: AppTheme.duoRed,
                                         fontSize: 11,
                                       ),
@@ -916,12 +916,12 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                   )
                                 else if (videos != null &&
                                     videos.isNotEmpty) ...[
-                                  const SizedBox(height: 16),
+                                  SizedBox(height: 16),
                                   Divider(
                                     color: context.colors.outline,
                                     height: 1,
                                   ),
-                                  const SizedBox(height: 12),
+                                  SizedBox(height: 12),
                                   ...videos.map(
                                     (video) => _buildVideoCard(context, video),
                                   ),
@@ -953,7 +953,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
 
   Widget _buildVideoCard(BuildContext context, YoutubeVideo video) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(10),
@@ -998,7 +998,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                       child: Center(
                         child: Container(
                           padding: const EdgeInsets.all(3),
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             color: Colors.black54,
                             shape: BoxShape.circle,
                           ),
@@ -1050,7 +1050,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: 2),
                       Row(
                         children: [
                           Expanded(
@@ -1064,7 +1064,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(width: 6),
+                          SizedBox(width: 6),
                           Text(
                             video.views,
                             style: TextStyle(

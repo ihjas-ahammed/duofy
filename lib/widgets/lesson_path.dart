@@ -648,6 +648,7 @@ class _LessonPathState extends State<LessonPath> {
                                 completed: widget.completedLessons,
                                 unlocked: unlocked,
                                 sectionColor: color,
+                                bgStrokeColor: context.colors.outline,
                                 scaleX: scaleX,
                               ),
                             ),
@@ -761,16 +762,15 @@ class _PathConnectorPainter extends CustomPainter {
   final List<String> completed;
   final Set<String> unlocked;
   final Color sectionColor;
+  final Color bgStrokeColor;
   final double scaleX;
-
-  static const Color _bgStroke = Color(0xFF334155); // slate-700
-  static const Color _amber = Color(0xFFFBBF24);
 
   _PathConnectorPainter({
     required this.points,
     required this.completed,
     required this.unlocked,
     required this.sectionColor,
+    required this.bgStrokeColor,
     required this.scaleX,
   });
 
@@ -787,7 +787,7 @@ class _PathConnectorPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (points.length < 2) return;
     final basePaint = Paint()
-      ..color = _bgStroke
+      ..color = bgStrokeColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 8
       ..strokeCap = StrokeCap.round;
@@ -893,7 +893,7 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
       padding: const EdgeInsets.fromLTRB(24, 32, 24, 120),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
+          constraints: BoxConstraints(maxWidth: 420),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -966,7 +966,7 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
               // Editable instructions + action are hidden while a call is
               // actively in flight, shown for the idle and error states.
               if (!isRunning) ...[
-                const SizedBox(height: 24),
+                SizedBox(height: 24),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -978,7 +978,7 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -992,7 +992,7 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
                   child: Row(
                     children: [
                       Icon(Icons.psychology, color: sectionColor, size: 20),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1005,7 +1005,7 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
                                 fontSize: 14,
                               ),
                             ),
-                            const SizedBox(height: 2),
+                            SizedBox(height: 2),
                             Text(
                               widget.book.bloomLevel ==
                                       'Remembering / Understanding'
@@ -1025,7 +1025,7 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -1037,7 +1037,7 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 TextField(
                   controller: _ctrl,
                   maxLines: 4,
@@ -1065,7 +1065,7 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 CheckboxListTile(
                   value: _saveGlobally,
                   onChanged: (val) =>
@@ -1081,7 +1081,7 @@ class _SectionManifestPanelState extends State<_SectionManifestPanel> {
                   activeColor: sectionColor,
                   contentPadding: EdgeInsets.zero,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 ElevatedButton.icon(
                   onPressed: widget.onPlan == null ? null : _plan,
                   icon: Icon(
@@ -1150,7 +1150,7 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 460),
+          constraints: BoxConstraints(maxWidth: 460),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -1182,7 +1182,7 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
                   fontSize: 18,
                 ),
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: 6),
               Text(
                 'The AI has broken this section into the following units. Review the scope before generating lessons.',
                 textAlign: TextAlign.center,
@@ -1192,12 +1192,12 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
                   height: 1.4,
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
 
               for (final unit in section.units)
                 Container(
                   margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(14),
@@ -1215,7 +1215,7 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
                         ),
                       ),
                       if (unit.description.isNotEmpty) ...[
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text(
                           unit.description,
                           style: TextStyle(
@@ -1231,7 +1231,7 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
                   ),
                 ),
 
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1254,7 +1254,7 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
                           visualDensity: VisualDensity.compact,
                         ),
                         onPressed: onEditFormats,
-                        icon: const Icon(Icons.edit, size: 14),
+                        icon: Icon(Icons.edit, size: 14),
                         label: const Text(
                           'Edit',
                           style: TextStyle(
@@ -1286,7 +1286,7 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: context.colors.surfaceAlt,
                   borderRadius: BorderRadius.circular(14),
@@ -1306,7 +1306,7 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
                           fontSize: 12,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: 2),
                       Text(
                         allAvailableFormats[i].description,
                         style: TextStyle(
@@ -1320,7 +1320,7 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: _confirm,
                 icon: const Icon(Icons.check, size: 18),

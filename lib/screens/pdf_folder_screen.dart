@@ -242,7 +242,7 @@ class _PdfFolderScreenState extends State<PdfFolderScreen> {
       appBar: AppBar(
         title: Text(
           widget.linkedBook?.title ?? 'Folder Contents',
-          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
         ),
       ),
       body: ResponsiveCenter(
@@ -282,7 +282,7 @@ class _PdfFolderScreenState extends State<PdfFolderScreen> {
                             color: AppTheme.duoViolet.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             LucideIcons.fileText,
                             color: AppTheme.duoViolet,
                             size: 20,

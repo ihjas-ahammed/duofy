@@ -75,7 +75,7 @@ class SmartReviewCard extends StatelessWidget {
                         shape: BoxShape.circle,
                         color: AppTheme.duoViolet.withValues(alpha: 0.16),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         LucideIcons.brain,
                         color: AppTheme.duoViolet,
                         size: 20,

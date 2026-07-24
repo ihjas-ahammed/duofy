@@ -60,7 +60,7 @@ class _PyqOneWordViewState extends State<PyqOneWordView> {
     final steps = widget.slide.interactiveSteps ?? [];
 
     return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
+      physics: BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -90,7 +90,7 @@ class _PyqOneWordViewState extends State<PyqOneWordView> {
                 ),
               ),
             ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           Text(
             'FILL IN YOUR ANSWERS BELOW',
             style: TextStyle(
@@ -100,11 +100,11 @@ class _PyqOneWordViewState extends State<PyqOneWordView> {
               letterSpacing: 1.5,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
 
           if (steps.isEmpty)
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: context.colors.surfaceAlt,
                 borderRadius: BorderRadius.circular(16),
@@ -118,7 +118,7 @@ class _PyqOneWordViewState extends State<PyqOneWordView> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   TextField(
                     controller: _controllers[0] ??= TextEditingController(),
                     onChanged: (val) => widget.onChanged(0, val),
@@ -148,7 +148,7 @@ class _PyqOneWordViewState extends State<PyqOneWordView> {
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: context.colors.surfaceAlt,
                   borderRadius: BorderRadius.circular(16),
@@ -171,7 +171,7 @@ class _PyqOneWordViewState extends State<PyqOneWordView> {
                           ),
                           child: Text(
                             'Q${idx + 1}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.amber,
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
@@ -191,7 +191,7 @@ class _PyqOneWordViewState extends State<PyqOneWordView> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     TextField(
                       controller: ctrl,
                       onChanged: (val) => widget.onChanged(idx, val),

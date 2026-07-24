@@ -356,7 +356,7 @@ class _LessonScreenState extends State<LessonScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: context.colors.surface,
-        duration: const Duration(seconds: 2),
+        duration: Duration(seconds: 2),
         content: Text(
           nowBookmarked ? 'Lesson bookmarked' : 'Bookmark removed',
           style: TextStyle(color: context.colors.textPrimary),
@@ -883,7 +883,7 @@ class _LessonScreenState extends State<LessonScreen> {
                       fontSize: 13,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   TextField(
                     controller: noteCtrl,
                     maxLines: 2,
@@ -902,7 +902,7 @@ class _LessonScreenState extends State<LessonScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Text(
                     'Slide Type:',
                     style: TextStyle(
@@ -911,7 +911,7 @@ class _LessonScreenState extends State<LessonScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   DropdownButtonFormField<String>(
                     dropdownColor: context.colors.surface,
                     initialValue: selectedType,
@@ -986,7 +986,7 @@ class _LessonScreenState extends State<LessonScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const CircularProgressIndicator(color: AppTheme.duoBlue),
+            CircularProgressIndicator(color: AppTheme.duoBlue),
             const SizedBox(height: 16),
             Text(
               'Regenerating slide...',
@@ -1251,7 +1251,7 @@ class _LessonScreenState extends State<LessonScreen> {
         child: GestureDetector(
           onTap: () => setState(() => _confidence = selected ? null : value),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
+            duration: Duration(milliseconds: 120),
             margin: const EdgeInsets.symmetric(horizontal: 4),
             padding: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
@@ -1270,7 +1270,7 @@ class _LessonScreenState extends State<LessonScreen> {
                   size: 16,
                   color: selected ? AppTheme.duoBlue : context.colors.textFaint,
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Text(
                   label,
                   style: TextStyle(
@@ -1371,7 +1371,7 @@ class _LessonScreenState extends State<LessonScreen> {
             },
             child: (_answered && !_isCorrect)
                 ? Padding(
-                    key: const ValueKey('incorrect_feedback'),
+                    key: ValueKey('incorrect_feedback'),
                     padding: const EdgeInsets.only(bottom: 16),
                     child: Container(
                       padding: const EdgeInsets.all(16),
@@ -1422,17 +1422,17 @@ class _LessonScreenState extends State<LessonScreen> {
           ),
           if (isInteractive && !_answered) _buildConfidenceRow(),
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
+            duration: Duration(milliseconds: 200),
             child: isInteractive && !_answered
                 ? DuoButton(
                     key: const ValueKey('check_button'),
                     text: 'CHECK',
                     color: _canCheck(slide)
                         ? AppTheme.duoGreen
-                        : const Color(0xFF334155),
+                        : context.colors.outline,
                     shadowColor: _canCheck(slide)
                         ? AppTheme.duoGreenDark
-                        : const Color(0xFF1E293B),
+                        : context.colors.surfaceAlt,
                     onPressed: () {
                       if (_canCheck(slide)) _checkAnswer(slide);
                     },
@@ -1469,7 +1469,7 @@ class _LessonScreenState extends State<LessonScreen> {
                 borderRadius: BorderRadius.circular(6),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
           ],
           Container(
             width: double.infinity,
@@ -1780,7 +1780,7 @@ class _LessonScreenState extends State<LessonScreen> {
                   filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                   child: Container(
                     height: 64,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
                       color: context.colors.surfaceAlt,
                       borderRadius: const BorderRadius.vertical(
@@ -1797,7 +1797,7 @@ class _LessonScreenState extends State<LessonScreen> {
                           child: Container(
                             width: 48,
                             height: 48,
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -1807,7 +1807,7 @@ class _LessonScreenState extends State<LessonScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        SizedBox(width: 16),
                         Expanded(
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
@@ -1828,7 +1828,7 @@ class _LessonScreenState extends State<LessonScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         Text(
                           '$remaining left',
                           style: TextStyle(
@@ -1837,7 +1837,7 @@ class _LessonScreenState extends State<LessonScreen> {
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: 12),
                         GestureDetector(
                           onTap: () => _openAssistant(),
                           child: SizedBox(
@@ -1886,7 +1886,7 @@ class _LessonScreenState extends State<LessonScreen> {
                                   height: 48,
                                   child: Center(
                                     child: busy
-                                        ? const SizedBox(
+                                        ? SizedBox(
                                             width: 20,
                                             height: 20,
                                             child: CircularProgressIndicator(
@@ -1910,7 +1910,7 @@ class _LessonScreenState extends State<LessonScreen> {
                         if (_canRegenerateCanvas)
                           GestureDetector(
                             onTap: () => _promptDeleteSlide(slide),
-                            child: const SizedBox(
+                            child: SizedBox(
                               width: 40,
                               height: 48,
                               child: Icon(
@@ -1944,7 +1944,7 @@ class _LessonScreenState extends State<LessonScreen> {
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: context.colors.surfaceAlt,
-                            border: const OutlineInputBorder(),
+                            border: OutlineInputBorder(),
                             hintText: 'Markdown content...',
                             hintStyle: TextStyle(
                               color: context.colors.textFaint,

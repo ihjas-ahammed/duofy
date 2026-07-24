@@ -156,7 +156,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
   ) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         decoration: BoxDecoration(
           color: context.colors.surfaceAlt,
           borderRadius: BorderRadius.circular(16),
@@ -165,7 +165,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
         child: Row(
           children: [
             Icon(icon, color: color, size: 20),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -200,7 +200,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
     final bool isQueued = task.status == 'queued';
 
     final card = Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: context.colors.surface.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(20),
@@ -229,7 +229,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                     ),
                     child: Icon(taskIcon, color: statusColor, size: 20),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,7 +244,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 2),
+                        SizedBox(height: 2),
                         Row(
                           children: [
                             Container(
@@ -320,7 +320,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                     ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Text(
                 task.statusMessage,
                 style: TextStyle(
@@ -330,7 +330,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                 ),
               ),
               if (isRunning) ...[
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 RealProgressBar(
                   progress: task.progress,
                   startTime: task.startTime,
@@ -413,7 +413,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                             ),
                           );
                         },
-                        child: const MouseRegion(
+                        child: MouseRegion(
                           cursor: SystemMouseCursors.click,
                           child: Icon(
                             Icons.copy_rounded,
@@ -472,7 +472,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
         ),
         child: Row(
           children: [
-            const Icon(LucideIcons.bookOpen, color: AppTheme.duoBlue, size: 20),
+            Icon(LucideIcons.bookOpen, color: AppTheme.duoBlue, size: 20),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -496,7 +496,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
     required List<Widget> children,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: context.colors.surface.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(16),
@@ -506,7 +506,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           key: PageStorageKey<String>('module_$title'),
-          leading: const Icon(
+          leading: Icon(
             LucideIcons.package,
             color: AppTheme.duoBlue,
             size: 20,
@@ -538,7 +538,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
     required List<Widget> children,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: context.colors.surface.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(14),
@@ -548,7 +548,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           key: PageStorageKey<String>('section_$title'),
-          leading: const Icon(
+          leading: Icon(
             LucideIcons.layers,
             color: AppTheme.duoViolet,
             size: 18,
@@ -844,7 +844,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           LucideIcons.calendarClock,
                           color: AppTheme.duoViolet,
                           size: 20,
@@ -890,7 +890,7 @@ class _AiQueueScreenState extends State<AiQueueScreen> {
                           LucideIcons.play,
                           AppTheme.duoBlue,
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: 12),
                         _buildSummaryCard(
                           'Queued',
                           '${queued.length}',

@@ -23,7 +23,7 @@ class BookCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         height: 240,
-        margin: const EdgeInsets.only(bottom: 24),
+        margin: EdgeInsets.only(bottom: 24),
         decoration: BoxDecoration(
           color: context.colors.surface,
           borderRadius: BorderRadius.circular(24),
@@ -32,7 +32,7 @@ class BookCard extends StatelessWidget {
             BoxShadow(
               color: context.colors.shadow,
               blurRadius: 16,
-              offset: const Offset(0, 8),
+              offset: Offset(0, 8),
             ),
           ],
         ),
@@ -78,7 +78,7 @@ class BookCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 6),
+                        SizedBox(height: 6),
                         Text(
                           book.description,
                           style: TextStyle(
@@ -89,7 +89,7 @@ class BookCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const Spacer(),
+                        Spacer(),
                         Row(
                           children: [
                             Expanded(
@@ -101,7 +101,7 @@ class BookCard extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(6),
                               ),
                             ),
-                            const SizedBox(width: 16),
+                            SizedBox(width: 16),
                             const Text(
                               'Continue',
                               style: TextStyle(
@@ -124,7 +124,7 @@ class BookCard extends StatelessWidget {
               child: GestureDetector(
                 onTap: onDelete,
                 child: Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: context.colors.surfaceAlt,
                     shape: BoxShape.circle,

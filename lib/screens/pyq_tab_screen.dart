@@ -281,7 +281,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               TextField(
                 controller: titleCtrl,
                 style: TextStyle(color: context.colors.textPrimary),
@@ -293,7 +293,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               Text(
                 'Question Content',
                 style: TextStyle(
@@ -302,7 +302,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               TextField(
                 controller: contentCtrl,
                 maxLines: null,
@@ -315,7 +315,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               if (slide.type == 'one_word') ...[
                 Text(
                   'Correct Answer',
@@ -325,7 +325,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 TextField(
                   controller: answerCtrl,
                   style: TextStyle(color: context.colors.textPrimary),
@@ -507,7 +507,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
         return Scaffold(
           body: ResponsiveCenter(
             child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
+              physics: BouncingScrollPhysics(),
               slivers: [
                 if (pyqTask != null)
                   SliverToBoxAdapter(
@@ -584,7 +584,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                             color: context.colors.textPrimary,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         if (currentModule != null)
                           Container(
                             margin: const EdgeInsets.only(bottom: 12),
@@ -630,7 +630,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                             height: 1.5,
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        SizedBox(height: 24),
                         FileSelectionList(
                           files: _selectedFiles,
                           onAddMore: _pickFiles,
@@ -647,7 +647,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                             fontSize: 14,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         Container(
                           decoration: AppTheme.glassOf(context),
                           child: TextField(
@@ -675,7 +675,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        SizedBox(height: 24),
                         DuoButton(
                           text: 'Analyze & Split Questions',
                           color: _selectedFiles.isNotEmpty && pyqTask == null
@@ -721,7 +721,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                   SliverToBoxAdapter(
                     child: Container(
                       margin: const EdgeInsets.all(24),
-                      padding: const EdgeInsets.all(24),
+                      padding: EdgeInsets.all(24),
                       decoration: BoxDecoration(
                         color: context.colors.surfaceAlt,
                         borderRadius: BorderRadius.circular(20),
@@ -734,7 +734,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                             size: 40,
                             color: context.colors.textFaint,
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
                           Text(
                             'No extracted questions yet',
                             style: TextStyle(
@@ -742,7 +742,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Text(
                             'Upload a PDF or image paper above to get started.',
                             style: TextStyle(
@@ -762,7 +762,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                         final section = sectionsWithPyqs[index];
                         final isExpanded = _selectedSectionId == section.id;
                         return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
+                          margin: EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
                             color: context.colors.surface,
                             borderRadius: BorderRadius.circular(16),
@@ -864,7 +864,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                                                   ),
                                                 ),
                                               ),
-                                              const SizedBox(width: 6),
+                                              SizedBox(width: 6),
                                               _buildSourceTag(slide.source),
                                               const Spacer(),
                                               IconButton(
@@ -881,7 +881,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                                                 ),
                                               ),
                                               IconButton(
-                                                icon: const Icon(
+                                                icon: Icon(
                                                   LucideIcons.trash2,
                                                   size: 16,
                                                   color: AppTheme.duoRed,
@@ -903,7 +903,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                                               fontSize: 13,
                                             ),
                                           ),
-                                          const SizedBox(height: 4),
+                                          SizedBox(height: 4),
                                           MathMarkdown(
                                             data: slide.content,
                                             textStyle: TextStyle(

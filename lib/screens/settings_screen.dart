@@ -6,6 +6,7 @@ import '../services/fb/fb_auth.dart';
 import '../services/global_state.dart';
 import '../services/database_service.dart';
 import '../services/secrets_service.dart';
+import '../services/guest_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/daily_goal_card.dart';
 import '../widgets/duo_button.dart';
@@ -19,6 +20,8 @@ import 'ai_queue_screen.dart';
 import 'experiments_screen.dart';
 import 'ai_providers_screen.dart';
 import 'python_ide_screen.dart';
+import '../services/update_service.dart';
+import '../widgets/update_dialog.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -29,6 +32,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   String _selectedCategory = 'general';
+  bool _isCheckingUpdate = false;
 
   /// How many lesson requests to fire in parallel during generation.
   /// 'auto' lets the app pick from the device's capacity; otherwise a fixed
@@ -250,7 +254,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       decoration: AppTheme.glassOf(context),
       child: ListTile(
-        leading: const Icon(LucideIcons.brain, color: AppTheme.duoBlue),
+        leading: Icon(LucideIcons.brain, color: AppTheme.duoBlue),
         title: Text(
           'AI Providers & Models',
           style: TextStyle(
@@ -282,7 +286,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       decoration: AppTheme.glassOf(context),
       child: ListTile(
-        leading: const Icon(LucideIcons.terminal, color: AppTheme.duoGreen),
+        leading: Icon(LucideIcons.terminal, color: AppTheme.duoGreen),
         title: Text(
           'Python IDE & Jupyter Notebook',
           style: TextStyle(
@@ -310,7 +314,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildCloudSyncCard() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
@@ -330,7 +334,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 color: _cloudSync ? AppTheme.duoBlue : context.colors.textFaint,
                 size: 28,
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16),
               Expanded(
                 child: Text(
                   'Cloud Backup & Sync',
@@ -355,7 +359,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             _isGuest
                 ? 'Sign in to back up your courses to the cloud. Everything is currently stored on this device.'
@@ -369,9 +373,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           if (_cloudSync && !_isGuest) ...[
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Divider(color: context.colors.outline, height: 1),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -387,7 +391,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         letterSpacing: 1.0,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       _lastSyncTime == null || _lastSyncTime == 0
                           ? 'Never synced'
@@ -444,7 +448,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       '4': '4',
     };
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
@@ -452,7 +456,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       child: Row(
         children: [
-          const Icon(LucideIcons.gauge, color: AppTheme.duoBlue, size: 28),
+          Icon(LucideIcons.gauge, color: AppTheme.duoBlue, size: 28),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
@@ -465,7 +469,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
               color: context.colors.shadow,
               borderRadius: BorderRadius.circular(10),
@@ -501,7 +505,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildAutomationCard() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
@@ -512,7 +516,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           Row(
             children: [
-              const Icon(LucideIcons.cpu, color: AppTheme.duoBlue, size: 28),
+              Icon(LucideIcons.cpu, color: AppTheme.duoBlue, size: 28),
               const SizedBox(width: 16),
               Expanded(
                 child: Text(
@@ -526,7 +530,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Row(
             children: [
               Expanded(
@@ -541,7 +545,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         color: context.colors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       'Extract mentioned books from syllabus and download them from the marketplace automatically.',
                       style: TextStyle(
@@ -577,7 +581,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         color: context.colors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       'Verify page ranges automatically using AI and proceed without manual confirmation.',
                       style: TextStyle(
@@ -613,7 +617,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         color: context.colors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       'Create outlines for Module 1 sections and auto-generate the first unit with diagrams.',
                       style: TextStyle(
@@ -666,7 +670,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     color: AppTheme.duoBlue.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     LucideIcons.cpu,
                     color: AppTheme.duoBlue,
                     size: 20,
@@ -685,7 +689,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           color: context.colors.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         'Monitor active, queued, and scheduled lesson generation tasks.',
                         style: TextStyle(
@@ -736,7 +740,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     color: AppTheme.duoViolet.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     LucideIcons.flaskConical,
                     color: AppTheme.duoViolet,
                     size: 20,
@@ -755,7 +759,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           color: context.colors.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         'Load slide presets or paste custom slide JSON to test rendering live.',
                         style: TextStyle(
@@ -788,7 +792,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildScheduleCard() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
@@ -799,7 +803,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 LucideIcons.calendarRange,
                 color: AppTheme.duoBlue,
                 size: 28,
@@ -817,7 +821,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -894,7 +898,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildLiveChatPromptCard() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
@@ -905,7 +909,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 LucideIcons.messageSquare,
                 color: AppTheme.duoBlue,
                 size: 28,
@@ -921,7 +925,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Text(
             'This prompt is appended to the tutor\'s instructions in both live and standard chat modes. Use it to specify custom personas, topics, or explanation guidelines.',
             style: TextStyle(
@@ -930,7 +934,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               height: 1.4,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           TextField(
             controller: _customPromptController,
             maxLines: 4,
@@ -980,7 +984,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           Row(
             children: [
-              const Icon(LucideIcons.brain, color: AppTheme.duoBlue, size: 24),
+              Icon(LucideIcons.brain, color: AppTheme.duoBlue, size: 24),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -993,7 +997,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               if (hasProfile)
-                const Icon(
+                Icon(
                   LucideIcons.checkCircle2,
                   color: AppTheme.duoGreen,
                   size: 20,
@@ -1130,7 +1134,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return Scaffold(
         backgroundColor: context.colors.background,
         appBar: AppBar(
-          title: const Text(
+          title: Text(
             'Settings',
             style: TextStyle(fontWeight: FontWeight.w900),
           ),
@@ -1168,13 +1172,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                user?.displayName ?? 'Guest User',
+                                user?.displayName ?? 'Guest User (${GuestService.instance.getGuestIdShort()})',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w900,
                                   fontSize: 14,
@@ -1243,7 +1247,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       shadowColor: AppTheme.duoRedDark,
                       isOutline: true,
                     )
-                  else
+                  else ...[
                     DuoButton(
                       text: 'Sign In / Log In',
                       onPressed: () {
@@ -1254,6 +1258,63 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       color: AppTheme.duoBlue,
                       shadowColor: AppTheme.duoBlueDark,
                     ),
+                    SizedBox(height: 12),
+                    DuoButton(
+                      text: 'Reset Guest Session',
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            backgroundColor: context.colors.surface,
+                            title: Text(
+                              'Reset Guest Session?',
+                              style: TextStyle(
+                                color: context.colors.textPrimary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            content: Text(
+                              'This will generate a new unique guest session and start a clean session.',
+                              style: TextStyle(
+                                color: context.colors.textSecondary,
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+                              ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.duoRed,
+                                ),
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: const Text('Reset', style: TextStyle(color: Colors.white)),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (confirm == true && mounted) {
+                          await GuestService.instance.resetGuestSession();
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Guest session reset successfully (${GuestService.instance.getGuestIdShort()})',
+                                ),
+                                backgroundColor: AppTheme.duoGreen,
+                              ),
+                            );
+                            setState(() {});
+                          }
+                        }
+                      },
+                      color: AppTheme.duoOrange,
+                      shadowColor: AppTheme.duoOrangeDark,
+                      isOutline: true,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -1278,7 +1339,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Settings',
           style: TextStyle(fontWeight: FontWeight.w900),
         ),
@@ -1310,7 +1371,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1338,7 +1399,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
 
-              const Text(
+              Text(
                 'Appearance',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
               ),
@@ -1347,7 +1408,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Follow the system, or pick light/dark explicitly.',
                 style: TextStyle(color: context.colors.textFaint, fontSize: 12),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               _buildAppearanceCard(),
               const SizedBox(height: 32),
 
@@ -1360,7 +1421,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Set a daily XP goal and an optional study reminder.',
                 style: TextStyle(color: context.colors.textFaint, fontSize: 12),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               const DailyGoalCard(),
               const SizedBox(height: 32),
 
@@ -1373,7 +1434,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Optional: tune the generated content to your writing and learning style.',
                 style: TextStyle(color: context.colors.textFaint, fontSize: 12),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               const LearnerProfileCard(),
               const SizedBox(height: 16),
               _buildMetacognitionCard(),
@@ -1388,8 +1449,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Courses are saved on this device first. Cloud sync is optional.',
                 style: TextStyle(color: context.colors.textFaint, fontSize: 12),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               _buildCloudSyncCard(),
+              const SizedBox(height: 32),
+
+              const Text(
+                'App & Updates',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Check GitHub for the latest releases, features, and bug fixes.',
+                style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+              ),
+              SizedBox(height: 16),
+              _buildUpdatesCard(),
               const SizedBox(height: 32),
 
               const Text(
@@ -1401,7 +1475,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Configure API keys and fallback model ladders for Gemini, Groq, Cerebras, and OpenRouter.',
                 style: TextStyle(color: context.colors.textFaint, fontSize: 12),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               _buildAiProvidersTile(),
               const SizedBox(height: 12),
               _buildPythonIdeTile(),
@@ -1434,7 +1508,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   }),
                 ),
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: 32),
 
               if (GlobalState.developerModeNotifier.value) ...[
                 Container(
@@ -1498,7 +1572,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     shadowColor: AppTheme.duoBlueDark,
                   ),
                 ),
-                const SizedBox(height: 32),
+                SizedBox(height: 32),
 
                 const Text(
                   'Generation Settings',
@@ -1512,7 +1586,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     fontSize: 12,
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _buildScheduleCard(),
                 const SizedBox(height: 16),
                 _buildAutomationCard(),
@@ -1596,7 +1670,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       },
       borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: isSelected
@@ -1618,7 +1692,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   : context.colors.textSecondary,
               size: 20,
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Text(
               label,
               style: TextStyle(
@@ -1653,7 +1727,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               size: 20,
               color: context.colors.textSecondary,
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Text(
                 'Theme',
@@ -1685,7 +1759,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Appearance',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
           ),
@@ -1694,7 +1768,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             'Follow the system, or pick light/dark explicitly.',
             style: TextStyle(color: context.colors.textFaint, fontSize: 12),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           _buildAppearanceCard(),
           const SizedBox(height: 32),
 
@@ -1707,7 +1781,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             'Set a daily XP goal and an optional study reminder.',
             style: TextStyle(color: context.colors.textFaint, fontSize: 12),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           const DailyGoalCard(),
           const SizedBox(height: 32),
 
@@ -1720,8 +1794,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             'Courses are saved on this device first. Cloud sync is optional.',
             style: TextStyle(color: context.colors.textFaint, fontSize: 12),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           _buildCloudSyncCard(),
+          const SizedBox(height: 32),
+
+          const Text(
+            'App & Updates',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Check GitHub for the latest releases, features, and bug fixes.',
+            style: TextStyle(color: context.colors.textFaint, fontSize: 12),
+          ),
+          SizedBox(height: 16),
+          _buildUpdatesCard(),
           const SizedBox(height: 32),
 
           const Text(
@@ -1733,7 +1820,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             'Configure API keys and fallback model ladders for Gemini, Groq, Cerebras, and OpenRouter.',
             style: TextStyle(color: context.colors.textFaint, fontSize: 12),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           _buildAiProvidersTile(),
           const SizedBox(height: 12),
           _buildPythonIdeTile(),
@@ -1748,7 +1835,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             'Unlock developer tools, lesson editing, and model ladders.',
             style: TextStyle(color: context.colors.textFaint, fontSize: 12),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Container(
             decoration: AppTheme.glassOf(context),
             child: SwitchListTile(
@@ -1780,7 +1867,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Personalization',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
           ),
@@ -1789,7 +1876,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             'Optional: tune the generated content to your writing and learning style.',
             style: TextStyle(color: context.colors.textFaint, fontSize: 12),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           const LearnerProfileCard(),
           const SizedBox(height: 16),
           _buildMetacognitionCard(),
@@ -1812,7 +1899,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Advanced Options',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
           ),
@@ -1821,7 +1908,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             'Enable Advanced Mode to configure AI models, concurrency settings, and execute experiments.',
             style: TextStyle(color: context.colors.textFaint, fontSize: 12),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Container(
             decoration: AppTheme.glassOf(context),
             child: SwitchListTile(
@@ -1859,7 +1946,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 shadowColor: AppTheme.duoVioletDark,
               ),
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: 32),
 
             const Text(
               'AI Providers & Model Fallbacks',
@@ -1870,7 +1957,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'Configure API keys and fallback model ladders for Google Gemini, Groq, Cerebras, and OpenRouter.',
               style: TextStyle(color: context.colors.textFaint, fontSize: 12),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             _buildAiProvidersTile(),
             const SizedBox(height: 12),
             _buildPythonIdeTile(),
@@ -1885,7 +1972,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'Task queueing, schedule settings, and automated rules.',
               style: TextStyle(color: context.colors.textFaint, fontSize: 12),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             _buildScheduleCard(),
             const SizedBox(height: 16),
             _buildAutomationCard(),
@@ -1906,6 +1993,123 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
         ],
       );
+    }
+  }
+
+  Widget _buildUpdatesCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: AppTheme.glassOf(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.duoBlue.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(LucideIcons.github, color: AppTheme.duoBlue, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Duofy GitHub Release',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 15,
+                        color: context.colors.textPrimary,
+                      ),
+                    ),
+                    FutureBuilder<String>(
+                      future: UpdateService.instance.getCurrentVersionString(),
+                      builder: (context, snapshot) {
+                        return Text(
+                          'Current version: ${snapshot.data ?? "v1.0.0"}',
+                          style: TextStyle(
+                            color: context.colors.textFaint,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Keep Duofy up to date with the latest features, AI model updates, and bug fixes directly from GitHub.',
+            style: TextStyle(
+              fontSize: 12.5,
+              color: context.colors.textSecondary,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            child: DuoButton(
+              text: _isCheckingUpdate ? 'CHECKING GITHUB...' : 'CHECK FOR UPDATES',
+              color: AppTheme.duoBlue,
+              shadowColor: AppTheme.duoBlueDark,
+              onPressed: () {
+                if (!_isCheckingUpdate) {
+                  _handleCheckForUpdates();
+                }
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleCheckForUpdates() async {
+    setState(() => _isCheckingUpdate = true);
+
+    try {
+      final info = await UpdateService.instance.checkForUpdate(force: true);
+      if (!mounted) return;
+
+      if (info != null) {
+        await showUpdateDialog(context, info);
+      } else {
+        final versionStr = await UpdateService.instance.getCurrentVersionString();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(LucideIcons.checkCircle2, color: Colors.white, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text('Duofy is up to date ($versionStr)!'),
+                ),
+              ],
+            ),
+            backgroundColor: AppTheme.duoGreen,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not check for updates: $e'),
+            backgroundColor: AppTheme.duoRed,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isCheckingUpdate = false);
     }
   }
 }

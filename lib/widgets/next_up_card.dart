@@ -110,7 +110,7 @@ class NextUpCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 14),
+                    SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -135,7 +135,7 @@ class NextUpCard extends StatelessWidget {
                               fontSize: 15,
                             ),
                           ),
-                          const SizedBox(height: 2),
+                          SizedBox(height: 2),
                           Text(
                             '${n.book.title}  •  $xpToday/$goal XP today',
                             maxLines: 1,
@@ -148,7 +148,7 @@ class NextUpCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Container(
                       width: 44,
                       height: 44,
@@ -225,7 +225,7 @@ class _LessonLoadingScreenState extends State<LessonLoadingScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const SizedBox(
+            SizedBox(
               width: 44,
               height: 44,
               child: CircularProgressIndicator(

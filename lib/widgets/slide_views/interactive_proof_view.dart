@@ -341,7 +341,7 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Padding(
+                            Padding(
                               padding: EdgeInsets.only(top: 2, right: 12),
                               child: Icon(
                                 LucideIcons.checkCircle2,
@@ -382,7 +382,7 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                       children: [
                         Row(
                           children: [
-                            const Icon(
+                            Icon(
                               LucideIcons.brainCircuit,
                               color: AppTheme.duoBlue,
                               size: 24,
@@ -546,7 +546,7 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
 
         // Bottom Action Bar
         AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
+          duration: Duration(milliseconds: 300),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
           decoration: BoxDecoration(
             color: _isSubmitted

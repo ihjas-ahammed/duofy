@@ -440,7 +440,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                   fontSize: 12,
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -454,7 +454,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                   Container(
                     width: 72,
                     alignment: Alignment.center,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
                       color: context.colors.surfaceAlt,
                       borderRadius: BorderRadius.circular(10),
@@ -469,7 +469,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       LucideIcons.plusCircle,
                       color: AppTheme.duoGreen,
                     ),
@@ -523,7 +523,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
               ),
             ),
             content: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 320),
+              constraints: BoxConstraints(maxHeight: 320),
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -682,7 +682,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
@@ -701,7 +701,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                         child: TextField(
                           controller: _titleControllers[itemId],
                           autofocus: true,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                           ),
@@ -759,7 +759,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                       ),
                     ],
                   ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   subtitle,
                   style: TextStyle(
@@ -773,7 +773,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
           ),
           if (widget.originalPdf.length > 1) ...[
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: context.colors.surfaceAlt,
                 borderRadius: BorderRadius.circular(8),
@@ -828,7 +828,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
           ],
           SizedBox(
             width: 50,
@@ -979,7 +979,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
               padding: const EdgeInsets.only(top: 12, bottom: 6, left: 8),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     LucideIcons.layers,
                     color: AppTheme.duoViolet,
                     size: 14,
@@ -1092,7 +1092,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Review Page Splits',
           style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
         ),
@@ -1173,7 +1173,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       LucideIcons.fileText,
                       color: AppTheme.duoBlue,
                       size: 16,
@@ -1244,7 +1244,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
             Expanded(
               flex: 2,
               child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   border: Border.all(color: context.colors.outline, width: 2),
                   borderRadius: BorderRadius.circular(16),
@@ -1276,7 +1276,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                           child: Padding(
                             padding: const EdgeInsets.all(24.0),
                             child: Container(
-                              padding: const EdgeInsets.all(16.0),
+                              padding: EdgeInsets.all(16.0),
                               decoration: BoxDecoration(
                                 color: context.colors.surface.withValues(alpha: 0.95),
                                 borderRadius: BorderRadius.circular(12),
@@ -1287,7 +1287,7 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.error_outline,
                                     color: Colors.redAccent,
                                     size: 36,
@@ -1337,16 +1337,16 @@ class _PdfSplitPreviewScreenState extends State<PdfSplitPreviewScreen> {
                                   ? LucideIcons.fileText
                                   : LucideIcons.image,
                               size: 11,
-                              color: Colors.white70,
+                              color: context.colors.textSecondary,
                             ),
-                            const SizedBox(width: 4),
+                            SizedBox(width: 4),
                             Text(
                               _isCurrentFilePdf
                                   ? 'Use Viewer to find exact page #'
                                   : 'File ${_selectedFileIndex + 1} of ${widget.originalPdf.length}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 9,
-                                color: Colors.white70,
+                                color: context.colors.textSecondary,
                               ),
                             ),
                           ],

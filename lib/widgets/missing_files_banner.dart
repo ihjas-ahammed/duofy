@@ -36,7 +36,7 @@ class MissingFilesBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             LucideIcons.fileWarning,
             color: AppTheme.duoOrange,
             size: 28,
@@ -64,7 +64,7 @@ class MissingFilesBanner extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           GestureDetector(
             onTap: () => _restoreFiles(context),
             child: Container(

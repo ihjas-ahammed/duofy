@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'learning_sync.dart';
 import 'fb/fb_auth.dart';
+import 'guest_service.dart';
 
 class GlobalState {
   // Reactive XP variable that can be listened to anywhere in the app
@@ -55,7 +56,7 @@ class GlobalState {
 
   static Future<void> addXp(int amount, String courseId) async {
     final prefs = await SharedPreferences.getInstance();
-    final uid = FbAuth.instance.currentUser?.uid ?? 'guest';
+    final uid = FbAuth.instance.currentUser?.uid ?? GuestService.instance.guestIdSync;
     final courseXpKey = 'user_xp_${uid}_$courseId';
     
     // Update course-specific XP

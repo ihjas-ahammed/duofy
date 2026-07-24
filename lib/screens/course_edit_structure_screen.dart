@@ -411,7 +411,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                   fontSize: 13,
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               TextField(
                 controller: shiftController,
                 keyboardType: const TextInputType.numberWithOptions(
@@ -512,7 +512,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
@@ -536,7 +536,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                             fontSize: 12,
                             color: context.colors.textPrimary,
                           ),
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             isDense: true,
                             contentPadding: EdgeInsets.symmetric(vertical: 6),
                             focusedBorder: UnderlineInputBorder(
@@ -595,7 +595,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                       ),
                     ],
                   ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   subtitle,
                   style: TextStyle(
@@ -607,7 +607,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           if (type == 'section' || type == 'unit') ...[
             SizedBox(
               width: 50,
@@ -846,7 +846,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
     listItems.add(
       Container(
         margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: context.colors.surface,
           borderRadius: BorderRadius.circular(16),
@@ -863,7 +863,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                 color: context.colors.textPrimary,
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             TextField(
               controller: _bookTitleController,
               style: TextStyle(
@@ -886,7 +886,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             TextField(
               controller: _bookDescController,
               maxLines: 2,
@@ -906,7 +906,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             OutlinedButton.icon(
               icon: Icon(
                 LucideIcons.arrowUpDown,
@@ -961,7 +961,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                       : AppTheme.duoOrange,
                   size: 24,
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1000,7 +1000,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
@@ -1014,7 +1014,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                     onPressed: _pickPdfs,
                   ),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Expanded(
                   child: DuoButton(
                     text: 'Marketplace',
@@ -1040,14 +1040,14 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
               ],
             ),
             if (_uploadedPdfs.isNotEmpty && _showPdfPreview) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               if (_uploadedPdfs.length > 1) ...[
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 4,
                   ),
-                  margin: const EdgeInsets.only(bottom: 8),
+                  margin: EdgeInsets.only(bottom: 8),
                   decoration: BoxDecoration(
                     color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(12),
@@ -1134,7 +1134,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   LucideIcons.bookOpen,
                   color: AppTheme.duoBlue,
                   size: 18,
@@ -1249,7 +1249,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
               padding: const EdgeInsets.only(top: 12, bottom: 6, left: 8),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     LucideIcons.layers,
                     color: AppTheme.duoViolet,
                     size: 14,
@@ -1268,7 +1268,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                                     fontSize: 11,
                                     color: context.colors.textSecondary,
                                   ),
-                                  decoration: const InputDecoration(
+                                  decoration: InputDecoration(
                                     isDense: true,
                                     contentPadding: EdgeInsets.symmetric(
                                       vertical: 6,
@@ -1519,7 +1519,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                 if (snapshot.hasError) {
                   return Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(24),
+                      padding: EdgeInsets.all(24),
                       child: Text('Error loading marketplace: ${snapshot.error}', style: TextStyle(color: context.colors.textPrimary)),
                     ),
                   );
@@ -1535,13 +1535,13 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
 
                 return Column(
                   children: [
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     Container(
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(color: context.colors.outline, borderRadius: BorderRadius.circular(2)),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Text('Select PDF from Marketplace', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
                     const SizedBox(height: 16),
                     Expanded(
@@ -1553,7 +1553,7 @@ class _CourseEditStructureScreenState extends State<CourseEditStructureScreen> {
                           final filename = obj.key.split('/').last;
                           final sizeMB = (obj.size / (1024 * 1024)).toStringAsFixed(1);
                           return ListTile(
-                            leading: const Icon(LucideIcons.fileText, color: AppTheme.duoBlue),
+                            leading: Icon(LucideIcons.fileText, color: AppTheme.duoBlue),
                             title: Text(filename, style: TextStyle(color: context.colors.textPrimary)),
                             subtitle: Text('$sizeMB MB', style: TextStyle(color: context.colors.textFaint, fontSize: 12)),
                             onTap: () async {
@@ -1663,7 +1663,7 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
           if (_errorMessage.isNotEmpty)
             Text(
               _errorMessage,
-              style: const TextStyle(color: AppTheme.duoRed),
+              style: TextStyle(color: AppTheme.duoRed),
             )
           else ...[
             LinearProgressIndicator(
@@ -1671,7 +1671,7 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
               backgroundColor: context.colors.outline,
               valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.duoBlue),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Text(
               '${(_progress * 100).toInt()}% downloaded',
               style: TextStyle(color: context.colors.textSecondary),

@@ -89,7 +89,7 @@ class QuizView extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
+        physics: BouncingScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
             child: Column(
@@ -156,7 +156,7 @@ class QuizView extends StatelessWidget {
                                 onUpdateSlide == null ? 16 : 36,
                                 16,
                               ),
-                              constraints: const BoxConstraints(minHeight: 48),
+                              constraints: BoxConstraints(minHeight: 48),
                               alignment: Alignment.centerLeft,
                               decoration: BoxDecoration(
                                 color: bgColor,

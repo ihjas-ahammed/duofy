@@ -80,7 +80,7 @@ class _DailyGoalCardState extends State<DailyGoalCard> {
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 LucideIcons.flame,
                 color: AppTheme.duoOrange,
                 size: 18,
@@ -95,7 +95,7 @@ class _DailyGoalCardState extends State<DailyGoalCard> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Row(
             children: [
               for (final g in _goals) ...[
@@ -129,7 +129,7 @@ class _DailyGoalCardState extends State<DailyGoalCard> {
                     ),
                   ),
                 ),
-                if (g != _goals.last) const SizedBox(width: 8),
+                if (g != _goals.last) SizedBox(width: 8),
               ],
             ],
           ),

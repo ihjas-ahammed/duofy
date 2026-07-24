@@ -31,7 +31,7 @@ class ExamScreen extends StatelessWidget {
         return Scaffold(
           body: ResponsiveCenter(
             child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
+              physics: BouncingScrollPhysics(),
               slivers: [
                 SliverAppBar(
                   title: const Text(
@@ -76,7 +76,7 @@ class ExamScreen extends StatelessWidget {
                       child: Row(
                         children: [
                           if (qpTask.isError)
-                            const Icon(
+                            Icon(
                               LucideIcons.alertTriangle,
                               color: AppTheme.duoRed,
                               size: 24,
@@ -125,7 +125,7 @@ class ExamScreen extends StatelessWidget {
                         horizontal: 24,
                         vertical: 8,
                       ),
-                      padding: const EdgeInsets.all(24),
+                      padding: EdgeInsets.all(24),
                       decoration: BoxDecoration(
                         color: context.colors.surfaceAlt,
                         borderRadius: BorderRadius.circular(20),
@@ -137,7 +137,7 @@ class ExamScreen extends StatelessWidget {
                             size: 40,
                             color: AppTheme.duoBlue.withValues(alpha: 0.5),
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           Text(
                             'No Past Papers',
                             style: TextStyle(
@@ -146,7 +146,7 @@ class ExamScreen extends StatelessWidget {
                               color: context.colors.textFaint,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Text(
                             'Upload past exams to solve interactively.',
                             textAlign: TextAlign.center,
@@ -178,7 +178,7 @@ class ExamScreen extends StatelessWidget {
                     ),
                   ),
 
-                const SliverToBoxAdapter(
+                SliverToBoxAdapter(
                   child: SizedBox(height: 120),
                 ), // Nav bar padding
               ],

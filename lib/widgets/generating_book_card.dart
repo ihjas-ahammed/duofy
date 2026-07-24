@@ -47,7 +47,7 @@ class GeneratingBookCard extends StatelessWidget {
                   BoxShadow(
                     color: context.colors.shadow,
                     blurRadius: 16,
-                    offset: const Offset(0, 8),
+                    offset: Offset(0, 8),
                   ),
                 ],
               ),
@@ -94,7 +94,7 @@ class GeneratingBookCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Text(
                             task.statusMessage,
                             style: TextStyle(
@@ -154,7 +154,7 @@ class GeneratingBookCard extends StatelessWidget {
                               ),
                             ),
                           if (task.state == BookGenState.review)
-                            const Padding(
+                            Padding(
                               padding: EdgeInsets.only(top: 8.0),
                               child: Text(
                                 'TAP TO CONTINUE',

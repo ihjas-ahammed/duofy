@@ -156,17 +156,17 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
+              physics: BouncingScrollPhysics(),
               slivers: [
                 SliverToBoxAdapter(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0F172A),
+                      color: context.colors.surface,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: _isRunning
                             ? AppTheme.duoGreen
-                            : Colors.white.withValues(alpha: 0.1),
+                            : context.colors.outline,
                         width: _isRunning ? 2 : 1,
                       ),
                     ),
@@ -176,9 +176,9 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
                         // Playground Header Bar
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF1E293B),
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(13)),
+                          decoration: BoxDecoration(
+                            color: context.colors.surfaceAlt,
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(13)),
                           ),
                           child: Row(
                             children: [
@@ -235,17 +235,17 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
                             keyboardType: TextInputType.multiline,
                             autocorrect: false,
                             enableSuggestions: false,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'monospace',
                               fontSize: 13.5,
                               height: 1.5,
-                              color: Color(0xFFE2E8F0),
+                              color: context.colors.textPrimary,
                             ),
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               filled: true,
-                              fillColor: Color(0xFF020617),
-                              contentPadding: EdgeInsets.all(12),
-                              border: OutlineInputBorder(
+                              fillColor: context.colors.surfaceAlt,
+                              contentPadding: const EdgeInsets.all(12),
+                              border: const OutlineInputBorder(
                                 borderRadius: BorderRadius.all(Radius.circular(10)),
                                 borderSide: BorderSide.none,
                               ),
@@ -257,9 +257,9 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
                           Padding(
                             padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                             child: Container(
-                              padding: const EdgeInsets.all(10),
+                              padding: EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1E293B),
+                                color: context.colors.surfaceAlt,
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(color: AppTheme.duoBlue.withValues(alpha: 0.4)),
                               ),
@@ -268,7 +268,7 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
                                 children: [
                                   Row(
                                     children: [
-                                      const Icon(LucideIcons.terminal, color: AppTheme.duoBlue, size: 14),
+                                      Icon(LucideIcons.terminal, color: AppTheme.duoBlue, size: 14),
                                       const SizedBox(width: 6),
                                       Text(
                                         'STANDARD INPUT (one line per input() call)',
@@ -280,7 +280,7 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 6),
+                                  SizedBox(height: 6),
                                   TextField(
                                     controller: _inputsController,
                                     maxLines: 3,
@@ -290,10 +290,10 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
                                       fontSize: 12.5,
                                       color: Color(0xFF38BDF8),
                                     ),
-                                    decoration: const InputDecoration(
+                                    decoration: InputDecoration(
                                       isDense: true,
                                       hintText: 'Type input lines here...',
-                                      hintStyle: TextStyle(color: Colors.white30, fontSize: 12),
+                                      hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 12),
                                       border: InputBorder.none,
                                     ),
                                   ),
@@ -308,7 +308,7 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
                             child: Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF020617),
+                                color: context.colors.surfaceAlt,
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(color: AppTheme.duoGreen, width: 2),
                               ),
@@ -343,17 +343,17 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
                                         child: TextField(
                                           controller: _realtimeInputController,
                                           autofocus: true,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontFamily: 'monospace',
                                             fontSize: 13,
-                                            color: Colors.white,
+                                            color: context.colors.textPrimary,
                                           ),
                                           decoration: InputDecoration(
                                             isDense: true,
                                             hintText: 'Type input and press Enter...',
-                                            hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+                                            hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 12),
                                             filled: true,
-                                            fillColor: const Color(0xFF1E293B),
+                                            fillColor: context.colors.surfaceAlt,
                                             border: OutlineInputBorder(
                                               borderRadius: BorderRadius.circular(8),
                                               borderSide: BorderSide.none,
@@ -403,9 +403,9 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
     final hasGraphics = res.graphicsBase64.isNotEmpty;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF020617),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(13)),
+      decoration: BoxDecoration(
+        color: context.colors.surfaceAlt,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(13)),
       ),
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -433,10 +433,10 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
             const SizedBox(height: 6),
             SelectableText(
               res.stdout,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'monospace',
                 fontSize: 12,
-                color: Color(0xFFE2E8F0),
+                color: context.colors.textPrimary,
               ),
             ),
           ],
@@ -444,10 +444,10 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
             const SizedBox(height: 6),
             SelectableText(
               res.stderr,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'monospace',
                 fontSize: 12,
-                color: Color(0xFFF87171),
+                color: context.colors.danger,
               ),
             ),
           ],

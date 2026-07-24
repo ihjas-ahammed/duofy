@@ -3,12 +3,11 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // Shared runtime credentials (Gemini keys, B2 document store).
-    // Readable only by signed-in users; never writable from clients —
-    // edit the document in the Firebase console and rotate keys there.
+    // Readable by all users (including guests); writable only by admin.
     // Document shape: secrets/apikeys { GENAI: [..], B2_KEY_ID, B2_APP_KEY,
     // B2_BUCKET, B2_REGION }
     match /secrets/{doc} {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow write: if request.auth != null && request.auth.token.email == 'ihjas.one@gmail.com';
     }
 
@@ -29,10 +28,9 @@ service cloud.firestore {
             || request.auth.token.email == 'ihjas.one@gmail.com');
     }
 
-    // Document-store metadata (B2-backed community PDFs): requires sign-in,
-    // matching the auth-gated B2 credentials needed to actually fetch files.
+    // Document-store metadata (B2-backed community PDFs): accessible to everyone (including guests).
     match /document_store/{docId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if true;
     }
 
     // Usage tracking statistics and configurations

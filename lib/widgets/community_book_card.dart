@@ -21,7 +21,7 @@ class CommunityBookCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(20),
@@ -38,7 +38,7 @@ class CommunityBookCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppTheme.duoBlue.withValues(alpha: 0.4)),
             ),
-            child: const Icon(
+            child: Icon(
               LucideIcons.bookOpen,
               color: AppTheme.duoBlue,
               size: 28,
@@ -60,7 +60,7 @@ class CommunityBookCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   'By ${book.authorName ?? 'Community'}',
                   style: TextStyle(

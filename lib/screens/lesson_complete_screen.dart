@@ -122,7 +122,7 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen>
       child: Column(
         children: [
           Icon(icon, color: accentColor, size: 28),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             label,
             textAlign: TextAlign.center,
@@ -241,7 +241,7 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen>
                   HapticFeedback.selectionClick();
                 },
           child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 200),
+            duration: Duration(milliseconds: 200),
             opacity: _reflection == null || selected ? 1 : 0.35,
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -262,7 +262,7 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen>
                     size: 18,
                     color: selected ? color : context.colors.textFaint,
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     label,
                     style: TextStyle(
@@ -379,7 +379,7 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen>
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 620),
+          constraints: BoxConstraints(maxWidth: 620),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 56, vertical: 56),
             decoration: AppTheme.glassOf(context).copyWith(

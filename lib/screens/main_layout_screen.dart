@@ -98,7 +98,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: context.colors.surface,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
@@ -117,14 +117,14 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Text(
                   'Course Configuration',
                   style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 ListTile(
-                  leading: const Icon(LucideIcons.edit3, color: AppTheme.duoBlue),
+                  leading: Icon(LucideIcons.edit3, color: AppTheme.duoBlue),
                   title: Text('Edit Course Structure', style: TextStyle(color: context.colors.textPrimary)),
                   subtitle: Text('Rename components, add modules/sections, or re-map pages', style: TextStyle(color: context.colors.textFaint, fontSize: 11)),
                   onTap: () {
@@ -141,7 +141,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                   },
                 ),
                 ListTile(
-                  leading: const Icon(LucideIcons.list, color: AppTheme.duoViolet),
+                  leading: Icon(LucideIcons.list, color: AppTheme.duoViolet),
                   title: Text('Lesson Formats', style: TextStyle(color: context.colors.textPrimary)),
                   subtitle: Text('Manage pedagogical structures and AI guidance rules', style: TextStyle(color: context.colors.textFaint, fontSize: 11)),
                   onTap: () {
@@ -160,7 +160,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                   },
                 ),
                 ListTile(
-                  leading: const Icon(LucideIcons.arrowUpDown, color: AppTheme.duoOrange),
+                  leading: Icon(LucideIcons.arrowUpDown, color: AppTheme.duoOrange),
                   title: Text('Repair Page Alignment', style: TextStyle(color: context.colors.textPrimary)),
                   subtitle: Text('Check section↔page mapping against the source PDF and shift all pages if needed', style: TextStyle(color: context.colors.textFaint, fontSize: 11)),
                   onTap: () {
@@ -183,7 +183,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.surface,
         title: Text('Publish to Community?', style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
-        content: const Text('This will make your course available to everyone in the Published Courses.'),
+        content: Text('This will make your course available to everyone in the Published Courses.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel', style: TextStyle(color: context.colors.textFaint))),
           TextButton(
@@ -329,7 +329,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
             Expanded(
               child: Center(
                 child: Container(
-                  constraints: const BoxConstraints(maxWidth: 1000),
+                  constraints: BoxConstraints(maxWidth: 1000),
                   child: Scaffold(
                     appBar: AppBar(
                       automaticallyImplyLeading: false,
@@ -453,7 +453,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
           // Branding Header
           Row(
             children: [
-              const Icon(LucideIcons.map, size: 30, color: AppTheme.duoBlue),
+              Icon(LucideIcons.map, size: 30, color: AppTheme.duoBlue),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -529,7 +529,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
       onTap: () => setState(() => _currentIndex = index),
       borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: isActive ? AppTheme.duoBlue.withValues(alpha: 0.15) : Colors.transparent,
@@ -542,7 +542,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
               color: isActive ? AppTheme.duoBlue : context.colors.textFaint,
               size: 24,
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16),
             Text(
               label.toUpperCase(),
               style: TextStyle(
@@ -571,7 +571,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           border: Border.all(color: context.colors.outline),
           borderRadius: BorderRadius.circular(16),
@@ -583,7 +583,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
               color: resolvedIconColor,
               size: 24,
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -599,7 +599,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                     ),
                   ),
                   if (subtitle != null) ...[
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       subtitle,
                       style: TextStyle(

@@ -180,7 +180,7 @@ class _MatchingViewState extends State<MatchingView> {
           onTap: onTap,
           borderRadius: BorderRadius.circular(14),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
+            duration: Duration(milliseconds: 150),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             constraints: const BoxConstraints(minHeight: 48),
             alignment: Alignment.centerLeft,

@@ -137,7 +137,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
     return Scaffold(
       backgroundColor: context.colors.background,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Select Section',
           style: TextStyle(fontWeight: FontWeight.w900),
         ),
@@ -166,7 +166,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(20),
+                      padding: EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: context.colors.surfaceAlt,
                         borderRadius: BorderRadius.circular(20),
@@ -177,7 +177,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                         children: [
                           Text(
                             'MODULE ${widget.moduleIdx + 1}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppTheme.duoBlue,
                               fontSize: 11,
                               fontWeight: FontWeight.w900,
@@ -193,7 +193,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                               fontWeight: FontWeight.w900,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          SizedBox(height: 6),
                           Text(
                             widget.module.description,
                             style: TextStyle(
@@ -205,7 +205,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24),
                     Text(
                       'SECTIONS IN THIS MODULE',
                       style: TextStyle(
@@ -215,7 +215,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                         letterSpacing: 1.5,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     widget.module.sections.isEmpty
                         ? Center(
                             child: Padding(
@@ -266,7 +266,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                                 },
                                 child: Container(
                                   key: key,
-                                  margin: const EdgeInsets.only(bottom: 16),
+                                  margin: EdgeInsets.only(bottom: 16),
                                   decoration: BoxDecoration(
                                     color: context.colors.surfaceAlt,
                                     borderRadius: BorderRadius.circular(20),
@@ -314,7 +314,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                                                   ],
                                                 ),
                                               ),
-                                              const SizedBox(width: 8),
+                                              SizedBox(width: 8),
                                               Expanded(
                                                 child: Text(
                                                   section.title,
@@ -345,9 +345,9 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                                             ),
                                           ),
                                           if (section.units.isNotEmpty) ...[
-                                            const SizedBox(height: 16),
+                                            SizedBox(height: 16),
                                             Container(
-                                              padding: const EdgeInsets.all(12),
+                                              padding: EdgeInsets.all(12),
                                               decoration: BoxDecoration(
                                                 color: context.colors.background,
                                                 borderRadius: BorderRadius.circular(12),
@@ -428,7 +428,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                                             ),
                                           ],
                                           if (hasDeadline && progress < 1.0) ...[
-                                            const SizedBox(height: 12),
+                                            SizedBox(height: 12),
                                             Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                               decoration: BoxDecoration(
@@ -467,17 +467,17 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                                                     ),
                                                   ),
                                                   IconButton(
-                                                    icon: const Icon(LucideIcons.edit2, size: 14),
+                                                    icon: Icon(LucideIcons.edit2, size: 14),
                                                     onPressed: () => _showDeadlineMenu(index),
                                                     padding: EdgeInsets.zero,
-                                                    constraints: const BoxConstraints(),
+                                                    constraints: BoxConstraints(),
                                                     color: context.colors.textFaint,
                                                   ),
                                                 ],
                                               ),
                                             ),
                                           ] else if (progress < 1.0) ...[
-                                            const SizedBox(height: 12),
+                                            SizedBox(height: 12),
                                             Align(
                                               alignment: Alignment.centerRight,
                                               child: TextButton.icon(
@@ -495,7 +495,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                                               ),
                                             ),
                                           ],
-                                          const SizedBox(height: 20),
+                                          SizedBox(height: 20),
                                           Row(
                                             mainAxisAlignment:
                                                 MainAxisAlignment.spaceBetween,
@@ -544,7 +544,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
 
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: currentDeadline ?? DateTime.now().add(const Duration(days: 7)),
+      initialDate: currentDeadline ?? DateTime.now().add(Duration(days: 7)),
       firstDate: DateTime.now().subtract(const Duration(days: 1)),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) {
@@ -979,7 +979,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
               children: [
                 // The Circular Progress Border surrounding the target icon
                 AnimatedAlign(
-                  duration: const Duration(milliseconds: 350),
+                  duration: Duration(milliseconds: 350),
                   curve: Curves.easeOutCubic,
                   alignment: _targetButtonExpanded ? Alignment.centerLeft : Alignment.center,
                   child: AnimatedPadding(
@@ -1238,7 +1238,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
             ),
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
             child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
+              physics: BouncingScrollPhysics(),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1284,7 +1284,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                   ...items.map((item) {
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
@@ -1310,7 +1310,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                                   color: item.iconColor,
                                   size: 22,
                                 ),
-                                const SizedBox(width: 14),
+                                SizedBox(width: 14),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
@@ -1324,7 +1324,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                                      const SizedBox(height: 2),
+                                      SizedBox(height: 2),
                                       Text(
                                         item.subtitle,
                                         style: TextStyle(

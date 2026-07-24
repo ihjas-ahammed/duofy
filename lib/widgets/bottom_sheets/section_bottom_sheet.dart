@@ -118,7 +118,7 @@ class _SectionBottomSheetState extends State<SectionBottomSheet> {
                       width: 48,
                       height: 5,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF475569),
+                        color: context.colors.outline,
                         borderRadius: BorderRadius.circular(9999),
                       ),
                     ),
@@ -167,7 +167,7 @@ class _SectionBottomSheetState extends State<SectionBottomSheet> {
                                   },
                           ),
                           if (i != sections.length - 1)
-                            const SizedBox(height: 8),
+                            SizedBox(height: 8),
                         ],
                       ],
                     ),
@@ -191,13 +191,13 @@ class _SectionBottomSheetState extends State<SectionBottomSheet> {
                     child: InkWell(
                       onTap: () => Navigator.of(context).maybePop(),
                       borderRadius: BorderRadius.circular(12),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
                         child: Center(
                           child: Text(
                             'CLOSE',
                             style: TextStyle(
-                              color: Color(0xFF94A3B8),
+                              color: context.colors.textFaint,
                               fontWeight: FontWeight.w900,
                               fontSize: 12,
                               letterSpacing: 1.2,
@@ -243,7 +243,7 @@ class _SectionCard extends StatelessWidget {
         onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(16),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: Duration(milliseconds: 200),
           decoration: BoxDecoration(
             color: isActive
                 ? color.withValues(alpha: 0.2)
@@ -271,7 +271,7 @@ class _SectionCard extends StatelessWidget {
                           style: TextStyle(
                             color: isActive
                                 ? context.colors.textPrimary
-                                : const Color(0xFFCBD5E1),
+                                : context.colors.textSecondary,
                             fontWeight: FontWeight.w800,
                             fontSize: 14,
                           ),
@@ -283,7 +283,7 @@ class _SectionCard extends StatelessWidget {
                             style: TextStyle(
                               color: isActive
                                   ? context.colors.textSecondary
-                                  : const Color(0xFF64748B),
+                                  : context.colors.textFaint,
                               fontWeight: FontWeight.w600,
                               fontSize: 11,
                             ),
@@ -294,7 +294,7 @@ class _SectionCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
@@ -308,7 +308,7 @@ class _SectionCard extends StatelessWidget {
                       size: 16,
                       color: isActive
                           ? context.colors.textPrimary
-                          : const Color(0xFF64748B),
+                          : context.colors.textFaint,
                     ),
                   ),
                 ],

@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
 import '../data/mock_books.dart';
+import 'guest_service.dart';
 import 'fb/fb_auth.dart';
 import 'fb/fb_firestore.dart';
 
@@ -23,7 +24,13 @@ import 'fb/fb_firestore.dart';
 class DatabaseService {
   final FbFirestore _db = FbFirestore.instance;
 
-  String get uid => FbAuth.instance.currentUser?.uid ?? 'guest';
+  String get uid {
+    final user = FbAuth.instance.currentUser;
+    if (user != null) return user.uid;
+    return GuestService.instance.guestIdSync;
+  }
+
+  static bool isGuestId(String? u) => GuestService.isGuestId(u);
 
   // ---------------------------------------------------------------------------
   // Cloud sync toggle (local-first: OFF unless the user opts in from Settings)
@@ -78,7 +85,7 @@ class DatabaseService {
     Map<String, int>? courseXp,
     String? recentlyCompleted,
   }) async {
-    if (uid == 'guest') return;
+    if (isGuestId(uid)) return;
     if (!await isCloudEnabled()) return;
     _userLearningDoc.set({
       'completedLessons': completedLessons,
@@ -96,7 +103,7 @@ class DatabaseService {
   /// Reads the cloud learning state, or null when unavailable (guest, cloud
   /// off, missing doc, or network error).
   Future<Map<String, dynamic>?> fetchLearningState() async {
-    if (uid == 'guest') return null;
+    if (isGuestId(uid)) return null;
     if (!await isCloudEnabled()) return null;
     try {
       final snap = await _userLearningDoc.get().timeout(const Duration(seconds: 30));
@@ -129,7 +136,7 @@ class DatabaseService {
     required List<Map<String, dynamic>> reviewQueue,
     required Map<String, dynamic> reflections,
   }) async {
-    if (uid == 'guest') return;
+    if (isGuestId(uid)) return;
     if (!await isCloudEnabled()) return;
     _userMetacogDoc.set({
       'events': events,
@@ -142,7 +149,7 @@ class DatabaseService {
   }
 
   Future<Map<String, dynamic>?> fetchMetacognitionState() async {
-    if (uid == 'guest') return null;
+    if (isGuestId(uid)) return null;
     if (!await isCloudEnabled()) return null;
     try {
       final snap = await _userMetacogDoc.get().timeout(const Duration(seconds: 30));
@@ -431,7 +438,7 @@ class DatabaseService {
     bool? autoGenerateModule1,
     Map<String, dynamic>? writingStyleProfile,
   }) async {
-    if (uid == 'guest') return;
+    if (isGuestId(uid)) return;
     if (!await isCloudEnabled()) return; // local-first: nothing to push
     _userSettingsDoc.set({
       'apiKeys': apiKeys,
@@ -487,7 +494,7 @@ class DatabaseService {
   }
 
   Future<Map<String, dynamic>?> fetchUserSettings() async {
-    if (uid == 'guest') return null;
+    if (isGuestId(uid)) return null;
     if (!await isCloudEnabled()) return null; // local-first: don't hit network
     try {
       final snap = await _userSettingsDoc.get().timeout(const Duration(seconds: 30));
@@ -619,8 +626,8 @@ class DatabaseService {
     final cloud = await isCloudEnabled();
 
     // Local-first path: when cloud is off or user is guest, we never touch the network.
-    if (!cloud || uid == 'guest') {
-      if (local.isEmpty && uid == 'guest') {
+    if (!cloud || isGuestId(uid)) {
+      if (local.isEmpty && isGuestId(uid)) {
         await _seedGuestMocks(local);
       }
       return _sorted(local.values);
@@ -697,7 +704,7 @@ class DatabaseService {
         });
       }
 
-      if (merged.isEmpty && uid == 'guest') {
+      if (merged.isEmpty && isGuestId(uid)) {
         await _seedGuestMocks(local);
         return _sorted(local.values);
       }
@@ -723,9 +730,9 @@ class DatabaseService {
     for (final book in mockBooks) {
       final seeded = book.copyWith(updatedAt: DateTime.now().millisecondsSinceEpoch);
       into[seeded.id] = seeded;
-      await _writeBookFile('guest', seeded);
+      await _writeBookFile(uid, seeded);
     }
-    print("[DatabaseService] Seeded ${mockBooks.length} mock books for guest (local).");
+    print("[DatabaseService] Seeded ${mockBooks.length} mock books for $uid (local).");
   }
 
   /// Returns the freshest in-memory copy of [bookId] (or null). Backed by the
@@ -872,7 +879,7 @@ class DatabaseService {
       }
     }
 
-    if (u == 'guest' || !await isCloudEnabled()) {
+    if (isGuestId(u) || !await isCloudEnabled()) {
       return local;
     }
 
@@ -913,7 +920,7 @@ class DatabaseService {
     final jsonStr = jsonEncode(folders.map((f) => f.toJson()).toList());
     await prefs.setString(key, jsonStr);
 
-    if (u != 'guest' && await isCloudEnabled()) {
+    if (!isGuestId(u) && await isCloudEnabled()) {
       _userFoldersDoc.set({
         'folders': folders.map((f) => f.toJson()).toList(),
         'updatedAt': DateTime.now().millisecondsSinceEpoch,

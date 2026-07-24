@@ -55,48 +55,88 @@ class UpdateService {
 
   bool get isSupported => !kIsWeb && Platform.isAndroid;
 
+  static const String _githubReleasesUrl =
+      'https://api.github.com/repos/ihjas-ahammed/duofy/releases/latest';
+
+  Future<String> getCurrentVersionString() async {
+    try {
+      final pkg = await PackageInfo.fromPlatform();
+      return 'v${pkg.version} (build ${pkg.buildNumber})';
+    } catch (_) {
+      return 'v1.0.0';
+    }
+  }
+
   /// Returns the pending update if a newer build exists, else null. Safe to
   /// call anywhere — swallows network/parse errors and returns null.
   Future<UpdateInfo?> checkForUpdate({bool force = false}) async {
-    if (!isSupported) return null;
     if (_promptedThisSession && !force) return null;
     try {
       final pkg = await PackageInfo.fromPlatform();
       final currentCode = int.tryParse(pkg.buildNumber) ?? 0;
+      final currentVersionStr = pkg.version;
 
-      final res = await http
-          .get(Uri.parse(_manifestUrl))
-          .timeout(const Duration(seconds: 15));
-      if (res.statusCode != 200) return null;
+      // 1. Try builds/latest.json manifest first
+      try {
+        final res = await http
+            .get(Uri.parse(_manifestUrl))
+            .timeout(const Duration(seconds: 8));
+        if (res.statusCode == 200) {
+          final data = jsonDecode(res.body) as Map<String, dynamic>;
+          final remoteCode = (data['versionCode'] as num?)?.toInt() ?? 0;
+          final versionName = (data['versionName'] as String?) ?? '';
+          final apks = (data['apks'] as Map?)?.cast<String, dynamic>() ?? {};
 
-      final data = jsonDecode(res.body) as Map<String, dynamic>;
-      final remoteCode = (data['versionCode'] as num?)?.toInt() ?? 0;
-      final versionName = (data['versionName'] as String?) ?? '';
-      final apks = (data['apks'] as Map?)?.cast<String, dynamic>() ?? {};
+          if (isSupported) {
+            await _purgeStaleDownloads(caughtUp: currentCode >= remoteCode);
+          }
 
-      // Housekeeping: once the running build has caught up to the latest
-      // published one, drop any APK we cached for an update already installed.
-      await _purgeStaleDownloads(caughtUp: currentCode >= remoteCode);
+          if (remoteCode > currentCode && apks.isNotEmpty) {
+            final abi = isSupported ? await _pickAbi(apks.keys.toList()) : apks.keys.first;
+            if (abi != null) {
+              final apkRel = apks[abi] as String;
+              final changelog = await _fetchChangelog(data, versionName);
+              return UpdateInfo(
+                versionName: versionName,
+                versionCode: remoteCode,
+                changelog: changelog,
+                apkUrl: _rawBase + apkRel,
+                abi: abi,
+              );
+            }
+          }
+        }
+      } catch (_) {}
 
-      if (remoteCode <= currentCode || apks.isEmpty) return null;
+      // 2. Fallback to GitHub Releases API (api.github.com/repos/ihjas-ahammed/duofy/releases/latest)
+      final ghRes = await http
+          .get(
+            Uri.parse(_githubReleasesUrl),
+            headers: {'Accept': 'application/vnd.github.v3+json'},
+          )
+          .timeout(const Duration(seconds: 8));
 
-      final abi = await _pickAbi(apks.keys.toList());
-      if (abi == null) return null;
-      final apkRel = apks[abi] as String;
+      if (ghRes.statusCode == 200) {
+        final ghData = jsonDecode(ghRes.body) as Map<String, dynamic>;
+        final tagName = (ghData['tag_name'] as String?) ?? '';
+        final body = (ghData['body'] as String?) ?? 'New update available on GitHub!';
+        final htmlUrl = (ghData['html_url'] as String?) ?? 'https://github.com/ihjas-ahammed/duofy/releases';
 
-      final changelog = await _fetchChangelog(data, versionName);
-
-      return UpdateInfo(
-        versionName: versionName,
-        versionCode: remoteCode,
-        changelog: changelog,
-        apkUrl: _rawBase + apkRel,
-        abi: abi,
-      );
+        final cleanTag = tagName.replaceAll('v', '').trim();
+        if (cleanTag.isNotEmpty && cleanTag != currentVersionStr) {
+          return UpdateInfo(
+            versionName: tagName.startsWith('v') ? tagName : 'v$tagName',
+            versionCode: currentCode + 1,
+            changelog: body,
+            apkUrl: htmlUrl,
+            abi: 'universal',
+          );
+        }
+      }
     } catch (e) {
       debugPrint('[UpdateService] checkForUpdate failed: $e');
-      return null;
     }
+    return null;
   }
 
   /// Marks that the update dialog has been shown this session.

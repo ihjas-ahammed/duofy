@@ -497,7 +497,7 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget>
                             height: LessonNodeWidget.nodeSize,
                             child: Container(
                               clipBehavior: Clip.antiAlias,
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                               ),
                               child: Stack(
@@ -642,7 +642,7 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget>
                             child: Container(
                               height: 2,
                               color: widget.isLocked
-                                  ? const Color(0xFF475569)
+                                  ? Color(0xFF475569)
                                   : sectionColor.withValues(alpha: 0.5),
                             ),
                           ),
@@ -713,10 +713,10 @@ class _LessonNodeWidgetState extends State<LessonNodeWidget>
                           child: Center(
                             child: Text(
                               widget.lesson.title.toUpperCase(),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w900,
-                                color: Color(0xFFE2E8F0),
+                                color: context.colors.textPrimary,
                                 height: 1.15,
                               ),
                               textAlign: TextAlign.center,

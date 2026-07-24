@@ -1207,13 +1207,16 @@ class GenerationManager extends ChangeNotifier {
         }
       }
 
+      // Enforce max 10 lesson formats per section limit
+      final cappedFormats = updatedSectionFormats.take(10).toList();
+
       sections[secIdx] = sections[secIdx].copyWith(
         units: units,
         unitsGenerated: true,
         customInstructions: effectiveInstructions,
         selectedQuestions:
             selectedQuestions ?? sections[secIdx].selectedQuestions,
-        lessonFormats: updatedSectionFormats,
+        lessonFormats: cappedFormats,
       );
       modules[modIdx] = modules[modIdx].copyWith(sections: sections);
 

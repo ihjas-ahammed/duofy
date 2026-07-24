@@ -158,7 +158,7 @@ class _DescriptiveViewState extends State<DescriptiveView> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
+              physics: BouncingScrollPhysics(),
               slivers: [
                 SliverToBoxAdapter(
                   child: Column(
@@ -181,7 +181,7 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: 20),
 
                       // Text Input Area
                       Text(
@@ -193,7 +193,7 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                           letterSpacing: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       TextField(
                         controller: _answerController,
                         maxLines: 8,
@@ -227,7 +227,7 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                               color: context.colors.outline,
                             ),
                           ),
-                          focusedBorder: const OutlineInputBorder(
+                          focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.all(Radius.circular(16)),
                             borderSide: BorderSide(
                               color: AppTheme.duoBlue,
@@ -254,7 +254,7 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                           if (!_isSubmitted && !_isChecking)
                             IconButton(
                               onPressed: _pickPhotos,
-                              icon: const Icon(
+                              icon: Icon(
                                 LucideIcons.camera,
                                 size: 14,
                                 color: AppTheme.duoBlue,
@@ -300,7 +300,7 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                                         onTap: () => _removePhoto(idx),
                                         child: Container(
                                           padding: const EdgeInsets.all(4),
-                                          decoration: const BoxDecoration(
+                                          decoration: BoxDecoration(
                                             color: Colors.black87,
                                             shape: BoxShape.circle,
                                           ),
@@ -335,7 +335,7 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                                   color: context.colors.textFaint,
                                   size: 24,
                                 ),
-                                const SizedBox(height: 4),
+                                SizedBox(height: 4),
                                 Text(
                                   'Upload written work or diagrams',
                                   style: TextStyle(
@@ -348,7 +348,7 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                           ),
                         ),
 
-                      const SizedBox(height: 20),
+                      SizedBox(height: 20),
 
                       // Error Message / Bypass Warning
                       if (_errorMessage != null)
@@ -413,7 +413,7 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                                         : AppTheme.duoRed,
                                     size: 20,
                                   ),
-                                  const SizedBox(width: 8),
+                                  SizedBox(width: 8),
                                   Text(
                                     _isCorrect
                                         ? 'AI REVIEW: CORRECT'
@@ -461,14 +461,14 @@ class _DescriptiveViewState extends State<DescriptiveView> {
 
     if (_isChecking) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration: BoxDecoration(
           color: context.colors.background,
           border: Border(top: BorderSide(color: context.colors.outline)),
         ),
         child: Row(
           children: [
-            const SizedBox(
+            SizedBox(
               width: 20,
               height: 20,
               child: CircularProgressIndicator(
@@ -500,7 +500,7 @@ class _DescriptiveViewState extends State<DescriptiveView> {
 
     if (_showBypass && !_isSubmitted) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         color: context.colors.background,
         child: Row(
           children: [
@@ -528,14 +528,14 @@ class _DescriptiveViewState extends State<DescriptiveView> {
 
     if (!_isSubmitted) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         color: context.colors.background,
         child: DuoButton(
           text: 'CHECK ANSWER',
-          color: canCheck ? AppTheme.duoGreen : const Color(0xFF334155),
+          color: canCheck ? AppTheme.duoGreen : context.colors.outline,
           shadowColor: canCheck
               ? AppTheme.duoGreenDark
-              : const Color(0xFF1E293B),
+              : context.colors.surfaceAlt,
           onPressed: () {
             if (canCheck) _checkAnswer();
           },
@@ -545,7 +545,7 @@ class _DescriptiveViewState extends State<DescriptiveView> {
 
     // Is submitted
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       color: context.colors.background,
       child: _isCorrect
           ? DuoButton(
@@ -564,12 +564,12 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                     onPressed: _retry,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: DuoButton(
                     text: 'SKIP',
-                    color: const Color(0xFF475569),
-                    shadowColor: const Color(0xFF334155),
+                    color: context.colors.surfaceAlt,
+                    shadowColor: context.colors.outline,
                     onPressed: widget.onComplete,
                   ),
                 ),

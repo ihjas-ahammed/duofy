@@ -489,7 +489,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: context.colors.textFaint,
                     size: 20,
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: TextField(
                       controller: controller,
@@ -705,7 +705,7 @@ class _HomeScreenState extends State<HomeScreen> {
           await _syncRemoteData();
         },
         child: CustomScrollView(
-          physics: const BouncingScrollPhysics(
+          physics: BouncingScrollPhysics(
             parent: AlwaysScrollableScrollPhysics(),
           ),
           slivers: [
@@ -940,7 +940,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: context.colors.outline,
                               size: 40,
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16),
                             Text(
                               'No matching courses or content found.',
                               style: TextStyle(
@@ -1036,7 +1036,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: 2,
               ),
             ),
-            child: const Icon(
+            child: Icon(
               LucideIcons.sparkles,
               color: AppTheme.duoGreen,
               size: 40,
@@ -1051,7 +1051,7 @@ class _HomeScreenState extends State<HomeScreen> {
               fontSize: 18,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'Pick any PDF — a textbook, notes, or a handout — and the AI turns it into an interactive lesson path.',
             textAlign: TextAlign.center,
@@ -1140,7 +1140,7 @@ class _HomeScreenState extends State<HomeScreen> {
           await _syncRemoteData();
         },
         child: CustomScrollView(
-          physics: const BouncingScrollPhysics(
+          physics: BouncingScrollPhysics(
             parent: AlwaysScrollableScrollPhysics(),
           ),
           slivers: [
@@ -1348,7 +1348,7 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
               child: SafeArea(
                 child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
+                  physics: BouncingScrollPhysics(),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1614,7 +1614,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // Branding Header
           Row(
             children: [
-              const Icon(
+              Icon(
                 LucideIcons.bookOpen,
                 size: 30,
                 color: AppTheme.duoBlue,
@@ -1632,7 +1632,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 40),
+          SizedBox(height: 40),
 
           // Navigation Links
           _buildSidebarNavItem(0, LucideIcons.bookOpen, 'Your Library'),
@@ -1648,7 +1648,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // User profile at bottom if logged in
           if (user != null) ...[
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: context.colors.surfaceAlt,
                 borderRadius: BorderRadius.circular(16),
@@ -1670,7 +1670,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1722,7 +1722,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: () => setState(() => _selectedTabIndex = index),
       borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: isActive
@@ -1737,7 +1737,7 @@ class _HomeScreenState extends State<HomeScreen> {
               color: isActive ? AppTheme.duoGreen : context.colors.textFaint,
               size: 24,
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16),
             Text(
               label.toUpperCase(),
               style: TextStyle(
@@ -1765,7 +1765,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           border: Border.all(color: context.colors.outline),
           borderRadius: BorderRadius.circular(16),
@@ -1773,7 +1773,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Row(
           children: [
             Icon(icon, color: context.colors.textSecondary, size: 24),
-            const SizedBox(width: 16),
+            SizedBox(width: 16),
             Expanded(
               child: Text(
                 label.toUpperCase(),
@@ -1969,7 +1969,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SmartReviewCard(),
+                  SmartReviewCard(),
                   const SizedBox(height: 20),
                   if (books.isNotEmpty) ...[
                     NextUpCard(
@@ -2199,7 +2199,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   color: context.colors.outline,
                                   size: 40,
                                 ),
-                                const SizedBox(height: 16),
+                                SizedBox(height: 16),
                                 Text(
                                   'No matching courses or content found.',
                                   style: TextStyle(
@@ -2266,7 +2266,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               );
                             },
                           ),
-                          const SizedBox(height: 20),
+                          SizedBox(height: 20),
                         ],
                         if (displayedBooks.isEmpty &&
                             activeTasks.isEmpty &&
@@ -2402,7 +2402,7 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
               child: SafeArea(
                 child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
+                  physics: BouncingScrollPhysics(),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2871,7 +2871,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(16),
@@ -2880,7 +2880,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Row(
               children: [
                 Icon(icon, color: iconColor, size: 22),
-                const SizedBox(width: 14),
+                SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2893,7 +2893,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: 2),
                       Text(
                         subtitle,
                         style: TextStyle(
@@ -3147,7 +3147,7 @@ class _HomeScreenState extends State<HomeScreen> {
           },
           borderRadius: BorderRadius.circular(16),
           child: Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(16),
@@ -3167,7 +3167,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   alignment: Alignment.center,
                   child: Icon(icon, color: color, size: 18),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -3206,7 +3206,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 6),
+                      SizedBox(height: 6),
                       _highlightedText(
                         result.title,
                         query,
@@ -3223,7 +3223,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       if (result.snippet != null &&
                           result.snippet!.isNotEmpty) ...[
-                        const SizedBox(height: 6),
+                        SizedBox(height: 6),
                         _highlightedText(
                           result.snippet!,
                           query,
@@ -3242,7 +3242,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Icon(
                   LucideIcons.chevronRight,
                   color: context.colors.outline,
@@ -3293,7 +3293,7 @@ class _HomeScreenState extends State<HomeScreen> {
             enabledBorder: UnderlineInputBorder(
               borderSide: BorderSide(color: context.colors.outline),
             ),
-            focusedBorder: const UnderlineInputBorder(
+            focusedBorder: UnderlineInputBorder(
               borderSide: BorderSide(color: AppTheme.duoBlue),
             ),
           ),
@@ -3464,7 +3464,7 @@ class _HomeScreenState extends State<HomeScreen> {
             enabledBorder: UnderlineInputBorder(
               borderSide: BorderSide(color: context.colors.outline),
             ),
-            focusedBorder: const UnderlineInputBorder(
+            focusedBorder: UnderlineInputBorder(
               borderSide: BorderSide(color: AppTheme.duoBlue),
             ),
           ),
@@ -3553,7 +3553,7 @@ class _HomeScreenState extends State<HomeScreen> {
           },
           onLongPress: () => _showFolderOptions(folder),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+            duration: Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
             decoration: BoxDecoration(
               color: isHovered
@@ -3594,7 +3594,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   folder.name,
                   style: TextStyle(
@@ -3606,7 +3606,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Text(
                   folder.bookIds.length == 1
                       ? '1 course'
@@ -3633,7 +3633,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Opacity(
           opacity: 0.8,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: context.colors.surface,
               borderRadius: BorderRadius.circular(16),
@@ -3642,7 +3642,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   LucideIcons.bookOpen,
                   color: AppTheme.duoBlue,
                   size: 20,

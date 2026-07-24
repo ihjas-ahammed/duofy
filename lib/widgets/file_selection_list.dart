@@ -30,7 +30,7 @@ class FileSelectionList extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               border: Border(bottom: BorderSide(color: context.colors.outline)),
             ),
@@ -59,7 +59,7 @@ class FileSelectionList extends StatelessWidget {
                             color: AppTheme.duoViolet.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Row(
+                          child: Row(
                             children: [
                               Icon(
                                 LucideIcons.cloud,
@@ -130,7 +130,7 @@ class FileSelectionList extends StatelessWidget {
           else
             ListView.separated(
               shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
+              physics: NeverScrollableScrollPhysics(),
               itemCount: files.length,
               separatorBuilder: (_, _) =>
                   Divider(height: 1, color: context.colors.outline),

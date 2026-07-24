@@ -331,7 +331,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                     height: 1.4,
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24),
 
                 // One word questions configuration
                 Row(
@@ -369,7 +369,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                         ),
                         Text(
                           '$oneWordCount',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.amber,
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
@@ -388,7 +388,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
 
                 // Proof / Big questions configuration
                 Row(
@@ -426,7 +426,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                         ),
                         Text(
                           '$proofCount',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.amber,
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
@@ -494,7 +494,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Practice Arena',
           style: TextStyle(fontWeight: FontWeight.w900),
         ),
@@ -521,7 +521,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                 ),
               ),
             ),
-            const SmartReviewCard(margin: EdgeInsets.only(bottom: 16)),
+            SmartReviewCard(margin: EdgeInsets.only(bottom: 16)),
             _buildScopeSelector(),
             const SizedBox(height: 8),
             Padding(
@@ -546,7 +546,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
   Widget _buildScopeSelector() {
     if (_modules.isEmpty) {
       return Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: context.colors.surface,
           borderRadius: BorderRadius.circular(20),
@@ -555,7 +555,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
         child: Row(
           children: [
             Icon(LucideIcons.info, color: context.colors.textFaint, size: 18),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Text(
                 'No generated units yet — practice will draw from any available questions across the book.',
@@ -575,7 +575,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
     final unitsInScope = _unitsInScope;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+      padding: EdgeInsets.fromLTRB(16, 14, 16, 12),
       decoration: BoxDecoration(
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(20),
@@ -589,7 +589,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 LucideIcons.slidersHorizontal,
                 color: AppTheme.duoBlue,
                 size: 18,
@@ -604,7 +604,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                   letterSpacing: 1,
                 ),
               ),
-              const Spacer(),
+              Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
@@ -638,9 +638,9 @@ class _PracticeScreenState extends State<PracticeScreen> {
                 letterSpacing: 1,
               ),
             ),
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
                 color: context.colors.surfaceAlt,
                 borderRadius: BorderRadius.circular(12),
@@ -729,7 +729,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 14),
+        SizedBox(height: 14),
         Row(
           children: [
             Text(
@@ -741,7 +741,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                 letterSpacing: 1,
               ),
             ),
-            const Spacer(),
+            Spacer(),
             Text(
               selectedCount == total
                   ? 'All $total'
@@ -875,7 +875,7 @@ class _ModeCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           child: Container(
             height: 150,
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: context.colors.surface,
               borderRadius: BorderRadius.circular(20),
@@ -888,7 +888,7 @@ class _ModeCard extends StatelessWidget {
                   : [
                       BoxShadow(
                         color: color.withValues(alpha: 0.12),
-                        offset: const Offset(0, 4),
+                        offset: Offset(0, 4),
                         blurRadius: 12,
                       ),
                     ],
@@ -927,7 +927,7 @@ class _ModeCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const Spacer(),
+                Spacer(),
                 Text(
                   mode.title,
                   style: TextStyle(
@@ -938,7 +938,7 @@ class _ModeCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Text(
                   mode.subtitle,
                   style: TextStyle(

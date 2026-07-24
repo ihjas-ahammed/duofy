@@ -511,6 +511,9 @@ Section description: "%section_description%"
 TARGET COGNITIVE LEVEL (BLOOM'S TAXONOMY):
 %bloom_level%
 
+EXISTING LESSON FORMATS IN THIS COURSE:
+%format_catalog%
+
 %custom_instructions%
 TASK:
 1. Break this section into a small number of pedagogical units (typically 2-5). Each unit groups a few closely related lessons. Do NOT generate lesson slides here — just the unit metadata.
@@ -518,7 +521,7 @@ TASK:
      - For "Remembering / Understanding": focus on core conceptual explanations, definitions, key terminology, and simple quizzes.
      - For "Applying / Analyzing": focus on worked examples, real-world applications, code/logic walkthroughs, and step-by-step procedures.
      - For "Evaluating / Creating": focus on complex proofs/derivations, error-spotting, evaluating alternative approaches, and challenging multi-step problems.
-2. Analyze the unique pedagogical needs of the PDF content. You MUST CREATE AT LEAST 8 TO 10 specialized custom lesson formats tailored specifically to the material (e.g., "Syntax Walkthrough", "Architecture Blueprint", "Code Optimization Focus", "Experimental Analysis", "Derivation Focus", "Error Analysis", "Flashcard Rapid Review"). Each new format must define a name, description, and list of 2-5 slide templates (type, condition, description).
+2. Analyze the unique pedagogical needs of the PDF content. Generate up to 10 specialized custom lesson formats tailored specifically to the material (e.g., "Experimental Analysis", "Derivation Focus", "Error Analysis", "Flashcard Rapid Review"). Do NOT exceed 10 formats per section.
 
 CRITICAL RULES:
 1. Cover the entire content of the attached PDF. Do not skip topics.
@@ -526,8 +529,8 @@ CRITICAL RULES:
 3. For custom formats, the slide `type` must be one of: "theory", "concept_pieces", "quiz", "fill_in_blank", "one_word", "numerical", "proof", "step_by_step", "matching", "ordering", "error_spotting", "flashcard", "descriptive", "custom_html", "program", "try_yourself".
 4. BY DEFAULT, NEVER NEGLECT EXAMPLE AND EXERCISE QUESTIONS.
 5. IF THE SECTION CONTAINS EXERCISE/PRACTICE QUESTIONS (often at the end of the section/chapter, e.g. in math/science textbooks), you MUST create a dedicated unit specifically for these exercises (e.g., "Practice Exercises"). This exercises unit must be structured such that the exercises are treated as individual lessons (taking them one by one/problem-by-problem) to ensure comprehensive, hands-on practice.
-6. HIGH-PRECISION PROGRAMMING DETECTION: Automatically detect with high precision if this section's title, description, or content chunk involves software engineering, coding languages (e.g., Python, JavaScript, C/C++, Java, HTML, CSS, SQL, Dart, Rust, Go, LaTeX, Shell), algorithms, syntax, data science, or computer science. If ANY programming content is present or inferred, you MUST explicitly generate programming formats and units incorporating 'program' (fill-in code tokens with syntax highlighting) and 'try_yourself' (interactive runner sandbox) slide types with precise language tags.
-7. MINIMUM 10 FORMATS REQUIREMENT: You MUST populate `newLessonFormats` with AT LEAST 8 to 10 distinct, highly-tailored custom lesson formats so the user has a rich selection of pedagogical formats.
+6. PROGRAMMING vs NON-PROGRAMMING DISCRIMINATION (STRICTEST RULE): Automatically detect if this course/section explicitly requires programming or coding syntax (e.g., Python, JavaScript, C/C++, Java, HTML, CSS, SQL, Dart, Rust, Go). IF AND ONLY IF the course is a programming course, you may generate programming formats with 'program' or 'try_yourself' slide types. FOR ALL NON-PROGRAMMING COURSES (e.g., History, Biology, Chemistry, Literature, Economics, Physics, Mathematics, Philosophy, etc.), YOU MUST NEVER INCLUDE 'program' OR 'try_yourself' SLIDE TYPES OR PROGRAMMING FORMATS.
+7. MAXIMUM 10 FORMATS & DEDUPLICATION: You MUST populate `newLessonFormats` with AT MOST 10 distinct custom lesson formats. Do NOT duplicate or re-use any lesson format name or ID that already exists in the list of existing formats above. Only generate NEW formats if the content requires a genuinely distinct pedagogical approach.
 
 Return ONLY valid JSON matching this exact structure:
 {
@@ -587,7 +590,7 @@ For the chosen format, evaluate its slide templates. You can include a slide mul
 3. NO STORY MODE: never frame content as a story, scenario, anecdote, or narrative ("Imagine you are...", "Sara walks into a shop...", etc.). Present theory and concepts directly and factually.
 4. EXAMPLES AND EXERCISE QUESTIONS: BY DEFAULT, NEVER NEGLECT EXAMPLE AND EXERCISES QUESTIONS. If this unit represents or contains exercise questions/practice problems, you MUST take/plan them as individual lessons, one by one (i.e. one lesson per exercise question/problem), rather than grouping them into a single lesson or omitting them.
 5. AVAILABLE SLIDE TYPES you may plan with (respect each format's own templates first): theory, concept_pieces, quiz, fill_in_blank, one_word, numerical, proof, step_by_step, matching, ordering, error_spotting, flashcard, descriptive, custom_html, program, try_yourself. Prefer matching for term↔definition sets, ordering for procedures, error_spotting to probe misconceptions after a worked example, and flashcard for must-memorize facts and formulas.
-6. HIGH-PRECISION PROGRAMMING DETECTION: If this unit involves programming, software engineering, code syntax, algorithms, or computer science, you MUST plan 'program' (fill-in code token) and 'try_yourself' (interactive code runner) slide types in your lesson plan, specifying exact language tags (e.g., 'python', 'javascript', 'html', 'latex').
+6. PROGRAMMING vs NON-PROGRAMMING DISCRIMINATION (STRICT): IF AND ONLY IF this unit explicitly involves programming or software engineering (e.g. Python, JavaScript, C/C++, Java, SQL, HTML, CSS), plan 'program' and 'try_yourself' slide types. FOR ALL NON-PROGRAMMING COURSES (e.g. History, Biology, Chemistry, Literature, Economics, Physics, Math, General Science), NEVER plan 'program' or 'try_yourself' slide types.
 ''';
 
   static final String json =

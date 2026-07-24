@@ -467,14 +467,14 @@ class _CanvasFullScreenScreen extends StatelessWidget {
               top: 8,
               right: 8,
               child: Material(
-                color: Colors.black54,
+                color: context.colors.surfaceAlt,
                 shape: const CircleBorder(),
                 child: InkWell(
                   customBorder: const CircleBorder(),
                   onTap: () => Navigator.of(context).pop(),
-                  child: const Padding(
-                    padding: EdgeInsets.all(10),
-                    child: Icon(LucideIcons.x, size: 22, color: Colors.white),
+                  child: Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Icon(LucideIcons.x, size: 22, color: context.colors.textPrimary),
                   ),
                 ),
               ),
@@ -563,7 +563,7 @@ void showCanvasCodeDialog(BuildContext context, String code) {
                             color: context.colors.textPrimary,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
@@ -606,7 +606,7 @@ void showCanvasCodeDialog(BuildContext context, String code) {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               // Code Area
               Expanded(
                 child: Container(
@@ -617,7 +617,7 @@ void showCanvasCodeDialog(BuildContext context, String code) {
                   ),
                   padding: const EdgeInsets.all(12),
                   child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
+                    physics: BouncingScrollPhysics(),
                     child: SelectableText(
                       displayText.trim(),
                       style: TextStyle(
@@ -630,7 +630,7 @@ void showCanvasCodeDialog(BuildContext context, String code) {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               // Actions
               Row(
                 children: [
@@ -638,7 +638,7 @@ void showCanvasCodeDialog(BuildContext context, String code) {
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.duoBlue,
-                        foregroundColor: context.colors.textPrimary,
+                        foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -660,7 +660,7 @@ void showCanvasCodeDialog(BuildContext context, String code) {
                       },
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   TextButton(
                     style: TextButton.styleFrom(
                       foregroundColor: context.colors.textFaint,

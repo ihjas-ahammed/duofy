@@ -94,7 +94,7 @@ class _GenerateQpScreenState extends State<GenerateQpScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Add Past Paper',
           style: TextStyle(fontWeight: FontWeight.w900),
         ),
@@ -118,7 +118,7 @@ class _GenerateQpScreenState extends State<GenerateQpScreen> {
                           height: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
 
                       Text(
                         'Exam Name',
@@ -127,7 +127,7 @@ class _GenerateQpScreenState extends State<GenerateQpScreen> {
                           color: context.colors.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Container(
                         decoration: AppTheme.glassOf(context),
                         child: TextField(
@@ -152,7 +152,7 @@ class _GenerateQpScreenState extends State<GenerateQpScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
 
                       Text(
                         'Custom Prompt / Generation Instructions',
@@ -161,7 +161,7 @@ class _GenerateQpScreenState extends State<GenerateQpScreen> {
                           color: context.colors.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Container(
                         decoration: AppTheme.glassOf(context),
                         child: TextField(

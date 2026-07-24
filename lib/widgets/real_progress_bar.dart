@@ -113,7 +113,7 @@ class _RealProgressBarState extends State<RealProgressBar> {
                   )
                 : TweenAnimationBuilder<double>(
                     tween: Tween<double>(begin: 0, end: val),
-                    duration: const Duration(milliseconds: 150),
+                    duration: Duration(milliseconds: 150),
                     curve: Curves.easeOut,
                     builder: (context, v, _) => CircularProgressIndicator(
                       value: v,
@@ -180,7 +180,7 @@ class _RealProgressBarState extends State<RealProgressBar> {
                 )
               : TweenAnimationBuilder<double>(
                   tween: Tween<double>(begin: 0, end: val),
-                  duration: const Duration(milliseconds: 150),
+                  duration: Duration(milliseconds: 150),
                   curve: Curves.easeOut,
                   builder: (context, v, _) => LinearProgressIndicator(
                     value: v,

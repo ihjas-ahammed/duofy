@@ -151,7 +151,7 @@ class _ProgramViewState extends State<ProgramView> {
       onSubmitted: (_) => widget.onSubmit?.call(),
       autocorrect: false,
       enableSuggestions: false,
-      style: const TextStyle(
+      style: TextStyle(
         fontFamily: 'monospace',
         fontSize: 16,
         fontWeight: FontWeight.w700,
@@ -191,7 +191,7 @@ class _ProgramViewState extends State<ProgramView> {
               widget.onChanged(word);
             },
             child: Container(
-              constraints: const BoxConstraints(minHeight: 44),
+              constraints: BoxConstraints(minHeight: 44),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: selected
@@ -266,7 +266,7 @@ class _CodePanelState extends State<_CodePanel> {
     const theme = CodeTheme.dark;
     final borderColor = widget.answered
         ? (widget.correct ? AppTheme.duoGreen : AppTheme.duoRed)
-        : Colors.white.withValues(alpha: 0.08);
+        : context.colors.outline;
 
     return Container(
       decoration: BoxDecoration(
@@ -281,7 +281,7 @@ class _CodePanelState extends State<_CodePanel> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+                bottom: BorderSide(color: context.colors.outline),
               ),
             ),
             child: Row(
@@ -368,9 +368,9 @@ class _CodePanelState extends State<_CodePanel> {
     final hasGraphics = res.graphicsBase64.isNotEmpty;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF020617),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(15)),
+      decoration: BoxDecoration(
+        color: context.colors.surfaceAlt,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(15)),
       ),
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -398,10 +398,10 @@ class _CodePanelState extends State<_CodePanel> {
             const SizedBox(height: 6),
             SelectableText(
               res.stdout,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'monospace',
                 fontSize: 12,
-                color: Color(0xFFE2E8F0),
+                color: context.colors.textPrimary,
               ),
             ),
           ],
@@ -409,10 +409,10 @@ class _CodePanelState extends State<_CodePanel> {
             const SizedBox(height: 6),
             SelectableText(
               res.stderr,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'monospace',
                 fontSize: 12,
-                color: Color(0xFFF87171),
+                color: context.colors.danger,
               ),
             ),
           ],

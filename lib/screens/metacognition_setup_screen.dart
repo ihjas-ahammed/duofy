@@ -176,7 +176,7 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
               height: 1.4,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           TextField(
             controller: controller,
             maxLines: 4,
@@ -199,7 +199,7 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
+                borderSide: BorderSide(
                   color: AppTheme.duoBlue,
                   width: 1.5,
                 ),
@@ -220,7 +220,7 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
                 ),
               ),
               if (isValid)
-                const Icon(
+                Icon(
                   LucideIcons.checkCircle2,
                   color: AppTheme.duoGreen,
                   size: 16,
@@ -243,7 +243,7 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
     return Scaffold(
       backgroundColor: context.colors.background,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Metacognitive Setup',
           style: TextStyle(fontWeight: FontWeight.w900),
         ),
@@ -273,7 +273,7 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     'To reduce cognitive load, our AI will adapt textbook content to match the best academic version of your writing style. Answer the questions below to profile your syntax.',
                     style: TextStyle(
@@ -321,7 +321,7 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
                   ),
 
                   if (!widget.isSettingsMode) ...[
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     TextButton(
                       onPressed: _skip,
                       child: Text(
@@ -344,7 +344,7 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
               child: Center(
                 child: AppTheme.applyGlassBlur(
                   borderRadius: 24,
-                  color: const Color(0xFF1E293B).withValues(alpha: 0.85),
+                  color: context.colors.surface,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 40,
@@ -367,7 +367,7 @@ class _MetacognitionSetupScreenState extends State<MetacognitionSetupScreen> {
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         Text(
                           'Extracting syntactical signature parameters.',
                           style: TextStyle(

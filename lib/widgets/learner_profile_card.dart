@@ -60,7 +60,7 @@ class _LearnerProfileCardState extends State<LearnerProfileCard> {
               letterSpacing: 1.2,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Row(
             children: [
               for (final (value, text) in options) ...[
@@ -135,7 +135,7 @@ class _LearnerProfileCardState extends State<LearnerProfileCard> {
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 LucideIcons.slidersHorizontal,
                 color: AppTheme.duoBlue,
                 size: 18,
@@ -152,7 +152,7 @@ class _LearnerProfileCardState extends State<LearnerProfileCard> {
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             'Applied to every newly generated lesson. Tap a selected chip to clear it.',
             style: TextStyle(color: context.colors.textFaint, fontSize: 11),

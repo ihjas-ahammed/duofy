@@ -313,7 +313,7 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
     return Scaffold(
       backgroundColor: context.colors.background,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Slide Testing Experiments',
           style: TextStyle(fontWeight: FontWeight.w900),
         ),
@@ -327,7 +327,7 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
             children: [
               Container(
                 margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: context.colors.surfaceAlt,
                   borderRadius: BorderRadius.circular(16),
@@ -371,7 +371,7 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
                         );
                       }).toList(),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Text(
                       'Slide JSON Template:',
                       style: TextStyle(
@@ -380,7 +380,7 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
                         fontSize: 12,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     TextField(
                       controller: _jsonController,
                       maxLines: 12,

@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'database_service.dart';
 import 'global_state.dart';
 import 'fb/fb_auth.dart';
+import 'guest_service.dart';
 
 import 'metacognition_service.dart';
 
@@ -15,7 +16,7 @@ import 'metacognition_service.dart';
 /// after a local change so any one of them keeps the whole doc current.
 class LearningSync {
   /// Current user UID (mirrors ProgressService._uid).
-  static String get _uid => FbAuth.instance.currentUser?.uid ?? 'guest';
+  static String get _uid => FbAuth.instance.currentUser?.uid ?? GuestService.instance.guestIdSync;
 
   // Per-user SharedPreferences keys — scoped by UID so switching accounts
   // never pollutes or resets another user's progress.
@@ -31,7 +32,7 @@ class LearningSync {
   /// don't await the network.
   static Future<void> push() async {
     final db = DatabaseService();
-    if (db.uid == 'guest') return;
+    if (GuestService.isGuestId(db.uid)) return;
     if (!await db.isCloudEnabled()) return;
     final prefs = await SharedPreferences.getInstance();
 
@@ -73,7 +74,7 @@ class LearningSync {
   /// cloud reflects the union. Returns true when anything changed locally.
   static Future<bool> pullAndMerge() async {
     final db = DatabaseService();
-    if (db.uid == 'guest') return false;
+    if (GuestService.isGuestId(db.uid)) return false;
     if (!await db.isCloudEnabled()) return false;
 
     final prefs = await SharedPreferences.getInstance();
@@ -190,7 +191,7 @@ class LearningSync {
   static Future<void> migrateLegacyKeys(SharedPreferences prefs) async {
     if (_legacyKeysMigrated) return;
     final uid = _uid;
-    if (uid == 'guest') {
+    if (GuestService.isGuestId(uid)) {
       _legacyKeysMigrated = true;
       return;
     }

@@ -63,8 +63,8 @@ class _Card extends StatelessWidget {
         child: Material(
           color: Colors.transparent,
           child: Container(
-            constraints: const BoxConstraints(maxWidth: 520),
-            padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+            constraints: BoxConstraints(maxWidth: 520),
+            padding: EdgeInsets.fromLTRB(16, 14, 12, 14),
             decoration: BoxDecoration(
               color: context.colors.surface,
               borderRadius: BorderRadius.circular(18),
@@ -86,7 +86,7 @@ class _Card extends StatelessWidget {
                     color: AppTheme.duoGreen.withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(LucideIcons.sparkles,
+                  child: Icon(LucideIcons.sparkles,
                       size: 18, color: AppTheme.duoGreen),
                 ),
                 const SizedBox(width: 12),
@@ -103,7 +103,7 @@ class _Card extends StatelessWidget {
                           fontSize: 14.5,
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      SizedBox(height: 3),
                       Text(
                         body,
                         style: TextStyle(
@@ -118,8 +118,8 @@ class _Card extends StatelessWidget {
                 TextButton(
                   onPressed: () => WalkthroughService.instance.finish(),
                   style: TextButton.styleFrom(
-                    minimumSize: const Size(0, 32),
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    minimumSize: Size(0, 32),
+                    padding: EdgeInsets.symmetric(horizontal: 8),
                     foregroundColor: context.colors.textFaint,
                   ),
                   child: const Text('Skip', style: TextStyle(fontSize: 12)),

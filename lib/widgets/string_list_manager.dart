@@ -76,7 +76,7 @@ class StringListManagerState extends State<StringListManager> {
                 textInputAction: TextInputAction.done,
                 decoration: InputDecoration(
                   hintText: widget.hintText,
-                  border: const OutlineInputBorder(),
+                  border: OutlineInputBorder(),
                   filled: true,
                   fillColor: context.colors.surfaceAlt,
                   contentPadding: const EdgeInsets.symmetric(
@@ -86,7 +86,7 @@ class StringListManagerState extends State<StringListManager> {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             GestureDetector(
               onTap: _addItem,
               child: Container(
@@ -104,7 +104,7 @@ class StringListManagerState extends State<StringListManager> {
             ),
           ],
         ),
-        if (_items.isNotEmpty) const SizedBox(height: 16),
+        if (_items.isNotEmpty) SizedBox(height: 16),
         ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -112,7 +112,7 @@ class StringListManagerState extends State<StringListManager> {
           itemBuilder: (context, index) {
             return Container(
               margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: context.colors.surface,
                 borderRadius: BorderRadius.circular(12),
@@ -121,7 +121,7 @@ class StringListManagerState extends State<StringListManager> {
               child: Row(
                 children: [
                   Icon(widget.itemIcon, color: Colors.amber, size: 18),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       _items[index],

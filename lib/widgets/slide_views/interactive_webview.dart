@@ -48,7 +48,7 @@ class InteractiveWebview extends StatelessWidget {
           ),
         Expanded(
           child: Container(
-            margin: const EdgeInsets.all(24),
+            margin: EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(24),

@@ -50,7 +50,7 @@ class UnitHeader extends StatelessWidget {
                 BoxShadow(
                   color: context.colors.shadow,
                   blurRadius: 30,
-                  offset: const Offset(0, 8),
+                  offset: Offset(0, 8),
                 ),
               ],
             ),
@@ -184,7 +184,7 @@ class _ResumeIconButtonState extends State<_ResumeIconButton> {
       },
       onTapCancel: () => setState(() => _isPressed = false),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 100),
+        duration: Duration(milliseconds: 100),
         margin: EdgeInsets.only(
           top: _isPressed ? 3 : 0,
           bottom: _isPressed ? 0 : 3,

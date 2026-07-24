@@ -71,7 +71,7 @@ class _BookRouteLoaderScreenState extends State<BookRouteLoaderScreen> {
       backgroundColor: context.colors.background,
       body: Center(
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 400),
+          constraints: BoxConstraints(maxWidth: 400),
           padding: const EdgeInsets.all(24),
           child: _isLoading
               ? Column(
@@ -87,7 +87,7 @@ class _BookRouteLoaderScreenState extends State<BookRouteLoaderScreen> {
                         fontSize: 16,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Text(
                       "Fetching from community library",
                       style: TextStyle(
@@ -101,7 +101,7 @@ class _BookRouteLoaderScreenState extends State<BookRouteLoaderScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.error_outline_rounded,
                       size: 64,
                       color: AppTheme.duoRed,
@@ -116,7 +116,7 @@ class _BookRouteLoaderScreenState extends State<BookRouteLoaderScreen> {
                         fontSize: 20,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     Text(
                       _error ?? "Unknown error occurred",
                       style: TextStyle(
@@ -126,7 +126,7 @@ class _BookRouteLoaderScreenState extends State<BookRouteLoaderScreen> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 32),
+                    SizedBox(height: 32),
                     ElevatedButton(
                       onPressed: () =>
                           Navigator.pushReplacementNamed(context, '/'),

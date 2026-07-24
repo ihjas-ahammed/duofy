@@ -14,44 +14,68 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  bool _isSignUp = false;
   bool _isLoading = false;
-
   final _usernameCtrl = TextEditingController();
-  final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
 
   Future<void> _submit() async {
-    final email = _emailCtrl.text.trim();
-    final password = _passwordCtrl.text.trim();
-    final username = _usernameCtrl.text.trim();
+    final rawInput = _usernameCtrl.text.trim();
+    final rawPassword = _passwordCtrl.text.trim();
 
-    if (email.isEmpty || password.isEmpty || (_isSignUp && username.isEmpty)) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
+    if (rawInput.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your username or email')),
+      );
       return;
     }
+
+    final String email;
+    final String username;
+
+    if (rawInput.contains('@')) {
+      email = rawInput.toLowerCase();
+      username = rawInput.split('@').first;
+    } else {
+      final sanitized = rawInput
+          .toLowerCase()
+          .replaceAll(RegExp(r'[^a-z0-9_]'), '');
+      final cleanUsername = sanitized.isEmpty ? 'user_${DateTime.now().millisecondsSinceEpoch}' : sanitized;
+      email = '$cleanUsername@flow.in';
+      username = rawInput;
+    }
+
+    final password = rawPassword.isNotEmpty
+        ? rawPassword
+        : 'duofy_secret_${rawInput.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '')}';
 
     setState(() => _isLoading = true);
 
     try {
-      if (_isSignUp) {
+      try {
+        await FbAuth.instance.signInWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+      } catch (_) {
+        // Fallback: automatically create account if it doesn't exist yet
         final user = await FbAuth.instance.createUserWithEmailAndPassword(
           email: email,
           password: password,
         );
         await user.updateDisplayName(username);
-      } else {
-        await FbAuth.instance.signInWithEmailAndPassword(
-          email: email,
-          password: password,
-        );
       }
     } on FbAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? 'Authentication error')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'Authentication error')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login error: $e')),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -68,7 +92,7 @@ class _AuthScreenState extends State<AuthScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 40),
+                const SizedBox(height: 30),
                 const Icon(
                   LucideIcons.globe2,
                   size: 80,
@@ -76,7 +100,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  _isSignUp ? 'Create your\nprofile' : 'Enter your\ndetails',
+                  'Welcome to Duofy',
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.w900,
@@ -85,38 +109,35 @@ class _AuthScreenState extends State<AuthScreen> {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 40),
-
-                if (_isSignUp)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: TextField(
-                      controller: _usernameCtrl,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: context.colors.surfaceAlt,
-                        hintText: 'Username',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 18,
-                        ),
-                      ),
-                    ),
+                const SizedBox(height: 8),
+                Text(
+                  'Sign in with username or email',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: context.colors.textSecondary,
+                    fontWeight: FontWeight.w600,
                   ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 36),
 
                 TextField(
-                  controller: _emailCtrl,
+                  controller: _usernameCtrl,
+                  autofocus: true,
                   keyboardType: TextInputType.emailAddress,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: context.colors.textPrimary,
+                  ),
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: context.colors.surfaceAlt,
-                    hintText: 'Email address',
+                    hintText: 'Username or Email address',
+                    hintStyle: TextStyle(color: context.colors.textFaint),
+                    prefixIcon: Icon(
+                      LucideIcons.user,
+                      color: context.colors.textSecondary,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
@@ -132,11 +153,19 @@ class _AuthScreenState extends State<AuthScreen> {
                 TextField(
                   controller: _passwordCtrl,
                   obscureText: true,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: context.colors.textPrimary,
+                  ),
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: context.colors.surfaceAlt,
                     hintText: 'Password',
+                    hintStyle: TextStyle(color: context.colors.textFaint),
+                    prefixIcon: Icon(
+                      LucideIcons.lock,
+                      color: context.colors.textSecondary,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
@@ -146,8 +175,9 @@ class _AuthScreenState extends State<AuthScreen> {
                       vertical: 18,
                     ),
                   ),
+                  onSubmitted: (_) => _submit(),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
 
                 if (_isLoading)
                   const Center(
@@ -155,25 +185,13 @@ class _AuthScreenState extends State<AuthScreen> {
                   )
                 else
                   DuoButton(
-                    text: _isSignUp ? 'CREATE ACCOUNT' : 'SIGN IN',
+                    text: 'SIGN IN',
                     color: AppTheme.duoBlue,
                     shadowColor: AppTheme.duoBlueDark,
                     onPressed: _submit,
                   ),
 
-                const SizedBox(height: 24),
-                TextButton(
-                  onPressed: () => setState(() => _isSignUp = !_isSignUp),
-                  child: Text(
-                    _isSignUp ? 'ALREADY HAVE AN ACCOUNT?' : 'CREATE A PROFILE',
-                    style: const TextStyle(
-                      color: AppTheme.duoBlue,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 20),
                 TextButton(
                   onPressed: () {
                     GlobalState.isGuestNotifier.value = true;

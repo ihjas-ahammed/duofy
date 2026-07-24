@@ -500,7 +500,7 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
     await showModalBottomSheet(
       context: context,
       backgroundColor: context.colors.surface,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => Padding(
@@ -516,7 +516,7 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
                 color: context.colors.textPrimary,
               ),
             ),
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Text(
               'Models are tried in the order you list them. The first one that succeeds wins.',
               style: TextStyle(color: context.colors.textFaint, fontSize: 12),
@@ -578,7 +578,7 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
     final List<String> models = _listForSlot(slotName);
     return Container(
       padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
@@ -590,7 +590,7 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
           Row(
             children: [
               Icon(icon, color: AppTheme.duoBlue, size: 28),
-              const SizedBox(width: 16),
+              SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -603,7 +603,7 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
                         color: context.colors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       subtitle,
                       style: TextStyle(
@@ -646,7 +646,7 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
               return Container(
                 key: ValueKey('${slotName}_$i'),
                 margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
                   color: context.colors.shadow,
                   borderRadius: BorderRadius.circular(10),
@@ -673,7 +673,7 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -711,7 +711,7 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                                      const SizedBox(width: 6),
+                                      SizedBox(width: 6),
                                       if (hasOwnKey)
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
@@ -775,7 +775,7 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
                           color: context.colors.textFaint,
                         ),
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        constraints: BoxConstraints(minWidth: 32, minHeight: 32),
                         onPressed: () => _removeFromSlot(slotName, i),
                       ),
                     ReorderableDragStartListener(
@@ -808,7 +808,7 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
       '4': '4',
     };
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
@@ -816,7 +816,7 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
       ),
       child: Row(
         children: [
-          const Icon(LucideIcons.gauge, color: AppTheme.duoBlue, size: 28),
+          Icon(LucideIcons.gauge, color: AppTheme.duoBlue, size: 28),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
@@ -829,7 +829,7 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
               color: context.colors.shadow,
               borderRadius: BorderRadius.circular(10),
@@ -937,7 +937,7 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
                     Navigator.pop(context);
                   }
                 },
-                child: const Text(
+                child: Text(
                   'Save',
                   style: TextStyle(
                     color: AppTheme.duoGreen,
@@ -979,7 +979,7 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
                     'Add multiple Gemini keys to fall back automatically if rate-limited.',
                     style: TextStyle(color: context.colors.textFaint, fontSize: 12),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   StringListManager(
                     key: _keysManagerKey,
                     initialItems: _keys,
@@ -997,7 +997,7 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
                     'Models are evaluated top-to-bottom. If the first model fails or rate-limits, we automatically fallback to the next.',
                     style: TextStyle(color: context.colors.textFaint, fontSize: 12),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   _buildModelSlotCard(
                     title: 'Primary - Text',
                     subtitle: 'Generates final interactive lessons & quizzes.',
@@ -1040,7 +1040,7 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
                     'Add Groq keys to fall back automatically when Gemini rate-limits.',
                     style: TextStyle(color: context.colors.textFaint, fontSize: 12),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   StringListManager(
                     key: _groqKeysManagerKey,
                     initialItems: _groqKeys,
@@ -1058,7 +1058,7 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
                     'Fallback models evaluated top-to-bottom for Groq integration.',
                     style: TextStyle(color: context.colors.textFaint, fontSize: 12),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   _buildModelSlotCard(
                     title: 'Groq - Primary - Text',
                     subtitle: 'Fallback model for lessons & quizzes.',
@@ -1101,7 +1101,7 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
                     'Add Cerebras keys to fall back automatically when Gemini and Groq rate-limit.',
                     style: TextStyle(color: context.colors.textFaint, fontSize: 12),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   StringListManager(
                     key: _cerebrasKeysManagerKey,
                     initialItems: _cerebrasKeys,
@@ -1119,7 +1119,7 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
                     'Fallback models evaluated top-to-bottom for Cerebras integration.',
                     style: TextStyle(color: context.colors.textFaint, fontSize: 12),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   _buildModelSlotCard(
                     title: 'Cerebras - Primary - Text',
                     subtitle: 'Fallback model for lessons & quizzes.',
@@ -1162,7 +1162,7 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
                     'Add OpenRouter keys to fall back automatically when Gemini, Groq, and Cerebras rate-limit.',
                     style: TextStyle(color: context.colors.textFaint, fontSize: 12),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   StringListManager(
                     key: _openrouterKeysManagerKey,
                     initialItems: _openrouterKeys,
@@ -1180,7 +1180,7 @@ class _AiProvidersScreenState extends State<AiProvidersScreen> {
                     'Fallback models evaluated top-to-bottom for OpenRouter integration.',
                     style: TextStyle(color: context.colors.textFaint, fontSize: 12),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   _buildModelSlotCard(
                     title: 'OpenRouter - Primary - Text',
                     subtitle: 'Fallback model for lessons & quizzes.',
@@ -1610,10 +1610,10 @@ class _TestAiDialogState extends State<TestAiDialog> {
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             decoration: BoxDecoration(
               color: context.colors.surfaceAlt,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(23)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(23)),
               border: Border(bottom: BorderSide(color: context.colors.outline)),
             ),
             child: Row(
@@ -1624,7 +1624,7 @@ class _TestAiDialogState extends State<TestAiDialog> {
                     color: AppTheme.duoBlue.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(LucideIcons.bot, color: AppTheme.duoBlue, size: 22),
+                  child: Icon(LucideIcons.bot, color: AppTheme.duoBlue, size: 22),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1639,7 +1639,7 @@ class _TestAiDialogState extends State<TestAiDialog> {
                           color: context.colors.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: 2),
                       Text(
                         'Test providers, AI types, and models with real-time error logs',
                         style: TextStyle(color: context.colors.textFaint, fontSize: 11),
@@ -1657,7 +1657,7 @@ class _TestAiDialogState extends State<TestAiDialog> {
 
           // Provider & Slot Selectors
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(14),
             color: context.colors.background,
             child: Column(
               children: [
@@ -1669,9 +1669,9 @@ class _TestAiDialogState extends State<TestAiDialog> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('PROVIDER', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: context.colors.textFaint)),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            padding: EdgeInsets.symmetric(horizontal: 10),
                             decoration: BoxDecoration(
                               color: context.colors.surfaceAlt,
                               borderRadius: BorderRadius.circular(10),
@@ -1703,16 +1703,16 @@ class _TestAiDialogState extends State<TestAiDialog> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10),
                     // Slot / AI Type Dropdown
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('AI TYPE / SLOT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: context.colors.textFaint)),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            padding: EdgeInsets.symmetric(horizontal: 10),
                             decoration: BoxDecoration(
                               color: context.colors.surfaceAlt,
                               borderRadius: BorderRadius.circular(10),
@@ -1746,7 +1746,7 @@ class _TestAiDialogState extends State<TestAiDialog> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 // Model Dropdown
                 Row(
                   children: [
@@ -1755,9 +1755,9 @@ class _TestAiDialogState extends State<TestAiDialog> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('SELECT MODEL', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: context.colors.textFaint)),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            padding: EdgeInsets.symmetric(horizontal: 10),
                             decoration: BoxDecoration(
                               color: context.colors.surfaceAlt,
                               borderRadius: BorderRadius.circular(10),
@@ -1795,7 +1795,7 @@ class _TestAiDialogState extends State<TestAiDialog> {
                   ],
                 ),
                 if (_isCustomModel) ...[
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   TextField(
                     controller: _customModelController,
                     style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.amber),
@@ -1823,12 +1823,12 @@ class _TestAiDialogState extends State<TestAiDialog> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(LucideIcons.sparkles, color: AppTheme.duoBlue.withValues(alpha: 0.5), size: 36),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
                           Text(
                             'Ready to test $_selectedProvider ($_selectedSlot)',
                             style: TextStyle(fontWeight: FontWeight.bold, color: context.colors.textSecondary, fontSize: 14),
                           ),
-                          const SizedBox(height: 6),
+                          SizedBox(height: 6),
                           Text(
                             'Click a prompt below or type your own test prompt.',
                             style: TextStyle(color: context.colors.textFaint, fontSize: 12),
@@ -1867,7 +1867,7 @@ class _TestAiDialogState extends State<TestAiDialog> {
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF450A0A),
+                            color: Color(0xFF450A0A),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: AppTheme.duoRed, width: 1.5),
                           ),
@@ -1882,11 +1882,11 @@ class _TestAiDialogState extends State<TestAiDialog> {
                                     'MODEL TEST ERROR LOG',
                                     style: TextStyle(color: AppTheme.duoRed, fontWeight: FontWeight.bold, fontSize: 11),
                                   ),
-                                  const Spacer(),
+                                  Spacer(),
                                   if (msg.latencyMs != null)
-                                    Text('${msg.latencyMs}ms', style: const TextStyle(color: Colors.white54, fontSize: 10)),
+                                    Text('${msg.latencyMs}ms', style: TextStyle(color: context.colors.textFaint, fontSize: 10)),
                                   IconButton(
-                                    icon: const Icon(LucideIcons.copy, color: Colors.white70, size: 14),
+                                    icon: Icon(LucideIcons.copy, color: context.colors.textSecondary, size: 14),
                                     tooltip: 'Copy Error Log',
                                     onPressed: () {
                                       Clipboard.setData(ClipboardData(text: msg.text));
@@ -1900,7 +1900,7 @@ class _TestAiDialogState extends State<TestAiDialog> {
                               const SizedBox(height: 6),
                               SelectableText(
                                 msg.text,
-                                style: const TextStyle(fontFamily: 'monospace', fontSize: 11.5, color: Color(0xFFFCA5A5)),
+                                style: const TextStyle(fontFamily: 'monospace', fontSize: 11.5, color: AppTheme.duoRed),
                               ),
                             ],
                           ),
@@ -1926,7 +1926,7 @@ class _TestAiDialogState extends State<TestAiDialog> {
                                   padding: const EdgeInsets.only(bottom: 4),
                                   child: Text(
                                     '⚡ ${msg.latencyMs}ms',
-                                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.duoGreen),
+                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.duoGreen),
                                   ),
                                 ),
                               SelectableText(
@@ -1946,10 +1946,10 @@ class _TestAiDialogState extends State<TestAiDialog> {
 
           // Bottom Input Bar
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: context.colors.surfaceAlt,
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(23)),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(23)),
               border: Border(top: BorderSide(color: context.colors.outline)),
             ),
             child: Row(

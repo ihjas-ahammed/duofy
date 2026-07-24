@@ -100,13 +100,13 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
     return Scaffold(
       backgroundColor: context.colors.background,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Bookmarks',
           style: TextStyle(fontWeight: FontWeight.w900),
         ),
         actions: [
           PopupMenuButton<_SortMode>(
-            icon: const Icon(LucideIcons.arrowDownUp, size: 20),
+            icon: Icon(LucideIcons.arrowDownUp, size: 20),
             color: context.colors.surface,
             onSelected: (v) => setState(() => _sort = v),
             itemBuilder: (ctx) => [
@@ -174,7 +174,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
               color: context.colors.textFaint,
               size: 56,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               'No bookmarks yet',
               style: TextStyle(
@@ -183,7 +183,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                 fontSize: 18,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               'Tap the bookmark icon while in a lesson to save it here for spaced practice.',
               textAlign: TextAlign.center,
@@ -210,7 +210,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
           color: AppTheme.duoRed.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(16),
         ),
-        child: const Icon(LucideIcons.trash2, color: AppTheme.duoRed),
+        child: Icon(LucideIcons.trash2, color: AppTheme.duoRed),
       ),
       onDismissed: (_) => BookmarkService.remove(bm.lessonId),
       child: Material(
@@ -219,7 +219,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
           borderRadius: BorderRadius.circular(16),
           onTap: () => _openBookmark(bm),
           child: Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: context.colors.surface,
               borderRadius: BorderRadius.circular(16),
@@ -233,7 +233,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                     color: AppTheme.duoBlue.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     LucideIcons.bookmark,
                     color: AppTheme.duoBlue,
                     size: 22,
@@ -254,7 +254,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: 2),
                       Text(
                         bm.bookTitle,
                         style: TextStyle(
@@ -265,7 +265,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 6),
+                      SizedBox(height: 6),
                       Row(
                         children: [
                           Icon(
@@ -273,7 +273,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                             size: 12,
                             color: context.colors.textFaint,
                           ),
-                          const SizedBox(width: 4),
+                          SizedBox(width: 4),
                           Text(
                             'Last opened ${_formatDate(bm.lastOpenedAt)}',
                             style: TextStyle(

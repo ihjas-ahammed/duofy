@@ -155,7 +155,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                 fontSize: 14,
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             ListTile(
               leading: Container(
                 padding: const EdgeInsets.all(8),
@@ -184,7 +184,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
               ),
               onTap: () => Navigator.pop(ctx, DocCategory.reference),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             ListTile(
               leading: Container(
                 padding: const EdgeInsets.all(8),
@@ -213,7 +213,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
               ),
               onTap: () => Navigator.pop(ctx, DocCategory.syllabus),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             ListTile(
               leading: Container(
                 padding: const EdgeInsets.all(8),
@@ -430,7 +430,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.surface,
-        title: const Text('Create Subject Folder'),
+        title: Text('Create Subject Folder'),
         content: TextField(
           controller: textController,
           autofocus: true,
@@ -499,7 +499,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
         content: TextField(
           controller: textController,
           autofocus: true,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Semester Name',
             hintText: 'e.g. S1, S2, S3',
           ),
@@ -690,7 +690,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                   Text(
                     displayName,
                     style: TextStyle(
@@ -747,7 +747,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                         _changeDocumentCategory(file, DocCategory.pyq);
                       },
                     ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   _buildContextActionItem(
                     icon: LucideIcons.x,
                     label: 'Cancel',
@@ -770,7 +770,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
     required VoidCallback onTap,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(12),
@@ -1022,7 +1022,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                           });
                         },
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: 20),
                     ],
 
                     // Main Content
@@ -1039,7 +1039,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
               color: Colors.black54,
               child: Center(
                 child: Container(
-                  padding: const EdgeInsets.all(24),
+                  padding: EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     color: context.colors.surface,
                     borderRadius: BorderRadius.circular(16),
@@ -1048,7 +1048,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const CircularProgressIndicator(
+                      CircularProgressIndicator(
                         color: AppTheme.duoViolet,
                       ),
                       const SizedBox(height: 16),
@@ -1061,7 +1061,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                         textAlign: TextAlign.center,
                       ),
                       if (_actionProgress > 0.0) ...[
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(4),
                           child: SizedBox(
@@ -1076,7 +1076,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         Text(
                           '${(_actionProgress * 100).toStringAsFixed(0)}%',
                           style: TextStyle(
@@ -1132,7 +1132,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                   color: context.colors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Text(
                 _isConfigured
                     ? 'Upload and download PDF references from cloud store'
@@ -1175,7 +1175,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               LucideIcons.alertTriangle,
               size: 48,
               color: AppTheme.duoRed,
@@ -1345,7 +1345,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: context.colors.surfaceAlt,
               shape: BoxShape.circle,
@@ -1358,7 +1358,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
               color: context.colors.textFaint,
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           Text(
             _searchQuery.isNotEmpty ? 'No Search Results' : 'No Documents',
             style: TextStyle(
@@ -1367,7 +1367,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
               fontSize: 18,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             _searchQuery.isNotEmpty
                 ? 'No documents in this category match "$_searchQuery".'
@@ -1402,7 +1402,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
               size: 48,
               color: iconColor,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
               child: Text(
@@ -1430,7 +1430,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
     required VoidCallback onTap,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
@@ -1566,7 +1566,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
 
   Widget _buildSearchBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(12),
@@ -1647,9 +1647,9 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                     shape: BoxShape.circle,
                     border: Border.all(color: context.colors.outline),
                   ),
-                  child: Icon(
+                  child: const Icon(
                     LucideIcons.cloud,
-                    color: context.colors.textSecondary,
+                    color: Colors.white70,
                     size: 10,
                   ),
                 ),
@@ -1685,15 +1685,15 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                     // Title
                     Text(
                       displayName,
-                      style: TextStyle(
-                        color: context.colors.textPrimary,
+                      style: const TextStyle(
+                        color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
 
                     // Actions
                     Row(
@@ -1721,7 +1721,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                                     : AppTheme.duoGreen,
                                 size: 16,
                               ),
-                              constraints: const BoxConstraints(),
+                              constraints: BoxConstraints(),
                               padding: const EdgeInsets.all(6),
                               tooltip: isCached ? 'Open & View' : 'Download',
                               onPressed: () => _downloadAndView(file),
@@ -1770,14 +1770,14 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
 
   Widget _buildSetupInstructions() {
     return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
+      physics: BouncingScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Banner Card
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: context.colors.surfaceAlt,
               borderRadius: BorderRadius.circular(16),
@@ -1785,7 +1785,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
             ),
             child: Column(
               children: [
-                const Icon(
+                Icon(
                   LucideIcons.hardDrive,
                   size: 48,
                   color: AppTheme.duoViolet,
@@ -1800,7 +1800,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   'Backblaze B2 is not configured. Please configure your keyId, applicationKey, bucketName, and region constants in lib/services/b2_service.dart.',
                   style: TextStyle(
@@ -1813,7 +1813,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: 32),
 
           Text(
             'Step-by-step Setup Guide',
@@ -1866,7 +1866,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
             backgroundColor: AppTheme.duoViolet.withValues(alpha: 0.2),
             child: Text(
               num,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppTheme.duoViolet,
                 fontWeight: FontWeight.bold,
                 fontSize: 11,
@@ -1886,7 +1886,7 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                     fontSize: 14,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   desc,
                   style: TextStyle(
@@ -2130,7 +2130,7 @@ class _PdfThumbnailWidgetState extends State<PdfThumbnailWidget> {
                 color: AppTheme.duoBlue.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 LucideIcons.fileText,
                 color: AppTheme.duoBlue,
                 size: 32,
@@ -2166,7 +2166,7 @@ class CategoryTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(12),
@@ -2228,7 +2228,7 @@ class CategoryTabs extends StatelessWidget {
                   ? context.colors.textPrimary
                   : context.colors.textSecondary,
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
@@ -2362,12 +2362,12 @@ Proposed clean title:
             'Confirm or customize the document name before upload:',
             style: TextStyle(color: context.colors.textSecondary, fontSize: 13),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Row(
             children: [
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
                     color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(12),
@@ -2379,7 +2379,7 @@ Proposed clean title:
                       color: context.colors.textPrimary,
                       fontSize: 14,
                     ),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       border: InputBorder.none,
                       isDense: true,
                       contentPadding: EdgeInsets.symmetric(vertical: 12),

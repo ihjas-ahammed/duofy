@@ -646,7 +646,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(LucideIcons.x),
+          icon: Icon(LucideIcons.x),
           onPressed: () => Navigator.pop(context),
         ),
         title: LinearProgressIndicator(
@@ -669,7 +669,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
                 ),
                 child: Text(
                   slide.title.toUpperCase(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
                     color: AppTheme.duoViolet,

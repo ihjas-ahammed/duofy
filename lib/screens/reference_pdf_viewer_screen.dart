@@ -171,7 +171,7 @@ class _ReferencePdfViewerScreenState extends State<ReferencePdfViewerScreen> {
           ),
           // Navigation Actions
           IconButton(
-            icon: const Icon(LucideIcons.chevronUp, size: 22),
+            icon: Icon(LucideIcons.chevronUp, size: 22),
             tooltip: 'Previous Reference PDF (Up)',
             onPressed: _currentIndex > 0 ? _goToPreviousSection : null,
             color: _currentIndex > 0
@@ -179,7 +179,7 @@ class _ReferencePdfViewerScreenState extends State<ReferencePdfViewerScreen> {
                 : context.colors.textFaint,
           ),
           IconButton(
-            icon: const Icon(LucideIcons.chevronDown, size: 22),
+            icon: Icon(LucideIcons.chevronDown, size: 22),
             tooltip: 'Next Reference PDF (Down)',
             onPressed: _currentIndex < _pdfSections.length - 1
                 ? _goToNextSection

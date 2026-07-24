@@ -156,7 +156,7 @@ class _QuickReviewSheetState extends State<QuickReviewSheet> {
     return Container(
       decoration: BoxDecoration(
         color: context.colors.background.withValues(alpha: 0.95),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         border: Border.all(color: context.colors.outline),
       ),
       child: SafeArea(
@@ -171,7 +171,7 @@ class _QuickReviewSheetState extends State<QuickReviewSheet> {
                 child: Container(
                   width: 40,
                   height: 4,
-                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  margin: EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
                     color: context.colors.textFaint,
                     borderRadius: BorderRadius.circular(2),
@@ -187,7 +187,7 @@ class _QuickReviewSheetState extends State<QuickReviewSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'MODULE QUICK REVIEW',
                           style: TextStyle(
                             color: AppTheme.duoGreen,
@@ -284,7 +284,7 @@ class _EmptyReviewPanel extends StatelessWidget {
               color: AppTheme.duoBlue.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               LucideIcons.sparkles,
               color: AppTheme.duoBlue,
               size: 36,
@@ -299,7 +299,7 @@ class _EmptyReviewPanel extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'Generate a summary of key concepts, equations, and definitions directly from the module\'s textbook sections.',
             textAlign: TextAlign.center,
@@ -309,7 +309,7 @@ class _EmptyReviewPanel extends StatelessWidget {
               height: 1.4,
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -376,7 +376,7 @@ class _LoadingPanelState extends State<_LoadingPanel> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(
+          SizedBox(
             width: 50,
             height: 50,
             child: CircularProgressIndicator(
@@ -393,7 +393,7 @@ class _LoadingPanelState extends State<_LoadingPanel> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'This might take up to a minute depending on document size.',
             style: TextStyle(color: context.colors.textFaint, fontSize: 12),
@@ -418,7 +418,7 @@ class _ReviewItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12),
       color: context.colors.surfaceAlt,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
@@ -445,7 +445,7 @@ class _ReviewItemCard extends StatelessWidget {
                     alignment: Alignment.center,
                     child: Text(
                       '$index',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppTheme.duoGreen,
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -466,7 +466,7 @@ class _ReviewItemCard extends StatelessWidget {
                 ],
               ),
               if (item.relatedLessonTitle.isNotEmpty) ...[
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -484,7 +484,7 @@ class _ReviewItemCard extends StatelessWidget {
                         color: context.colors.textFaint,
                         size: 12,
                       ),
-                      const SizedBox(width: 4),
+                      SizedBox(width: 4),
                       Text(
                         item.relatedLessonTitle,
                         style: TextStyle(
@@ -595,7 +595,7 @@ class _StatementDetailSheetState extends State<_StatementDetailSheet> {
       height: MediaQuery.of(context).size.height * 0.75,
       decoration: BoxDecoration(
         color: context.colors.background,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         border: Border(top: BorderSide(color: context.colors.outline)),
       ),
       child: SafeArea(
@@ -609,7 +609,7 @@ class _StatementDetailSheetState extends State<_StatementDetailSheet> {
                 child: Container(
                   width: 40,
                   height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
+                  margin: EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
                     color: context.colors.textFaint,
                     borderRadius: BorderRadius.circular(2),
@@ -620,7 +620,7 @@ class _StatementDetailSheetState extends State<_StatementDetailSheet> {
               // Title
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     LucideIcons.sparkles,
                     color: AppTheme.duoGreen,
                     size: 20,
@@ -640,11 +640,11 @@ class _StatementDetailSheetState extends State<_StatementDetailSheet> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
 
               // Statement box
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: context.colors.surfaceAlt,
                   borderRadius: BorderRadius.circular(16),
@@ -659,7 +659,7 @@ class _StatementDetailSheetState extends State<_StatementDetailSheet> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
 
               // Explanation body
               Expanded(
@@ -685,7 +685,7 @@ class _StatementDetailSheetState extends State<_StatementDetailSheet> {
                         ),
                       )
                     : SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
+                        physics: BouncingScrollPhysics(),
                         child: MathMarkdown(
                           data: _explanation,
                           textStyle: TextStyle(
@@ -696,7 +696,7 @@ class _StatementDetailSheetState extends State<_StatementDetailSheet> {
                         ),
                       ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
 
               // Actions
               if (widget.matchingLesson != null)
@@ -709,7 +709,7 @@ class _StatementDetailSheetState extends State<_StatementDetailSheet> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  icon: const Icon(LucideIcons.playCircle, size: 18),
+                  icon: Icon(LucideIcons.playCircle, size: 18),
                   label: const Text(
                     'Study Related Lesson',
                     style: TextStyle(fontWeight: FontWeight.bold),

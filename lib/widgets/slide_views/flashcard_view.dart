@@ -68,7 +68,7 @@ class _FlashcardViewState extends State<FlashcardView> {
                           ..rotateY(showBack ? math.pi : 0),
                         child: Container(
                           width: double.infinity,
-                          constraints: const BoxConstraints(minHeight: 260),
+                          constraints: BoxConstraints(minHeight: 260),
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
                             color: showBack
@@ -98,7 +98,7 @@ class _FlashcardViewState extends State<FlashcardView> {
                                   letterSpacing: 1.5,
                                 ),
                               ),
-                              const SizedBox(height: 16),
+                              SizedBox(height: 16),
                               MathMarkdown(
                                 data: showBack
                                     ? (widget.slide.blankAnswer ?? '')
@@ -110,7 +110,7 @@ class _FlashcardViewState extends State<FlashcardView> {
                                 ),
                               ),
                               if (!showBack) ...[
-                                const SizedBox(height: 20),
+                                SizedBox(height: 20),
                                 Icon(
                                   LucideIcons.refreshCw,
                                   color: context.colors.textFaint,

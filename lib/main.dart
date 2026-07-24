@@ -11,6 +11,7 @@ import 'screens/settings_screen.dart';
 import 'screens/book_route_loader_screen.dart';
 import 'services/learning_sync.dart';
 import 'services/usage_limit_service.dart';
+import 'services/guest_service.dart';
 
 import 'dart:ui';
 import 'dart:async';
@@ -93,16 +94,16 @@ void showGlobalErrorAlert(Object error, StackTrace? stack) {
             });
           }
           return AlertDialog(
-            backgroundColor: const Color(0xFF1E293B),
+            backgroundColor: ctx.colors.surface,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: const Row(
+            title: Row(
               children: [
-                Icon(Icons.error_outline, color: Colors.redAccent, size: 28),
-                SizedBox(width: 10),
+                const Icon(Icons.error_outline, color: Colors.redAccent, size: 28),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     "An Error Occurred",
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: ctx.colors.textPrimary, fontWeight: FontWeight.bold),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -115,21 +116,21 @@ void showGlobalErrorAlert(Object error, StackTrace? stack) {
                 children: [
                   Text(
                     error.toString(),
-                    style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: ctx.colors.textSecondary, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     "You can continue using other features. If the issue persists, please copy the details and report it.",
-                    style: TextStyle(color: Colors.white60, fontSize: 13, height: 1.4),
+                    style: TextStyle(color: ctx.colors.textSecondary, fontSize: 13, height: 1.4),
                   ),
                   if (stack != null) ...[
                     const SizedBox(height: 12),
-                    const Text("Stack Trace:", style: TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold)),
+                    Text("Stack Trace:", style: TextStyle(color: ctx.colors.textFaint, fontSize: 11, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.black26,
+                        color: ctx.colors.surfaceAlt,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       constraints: const BoxConstraints(maxHeight: 120),
@@ -137,7 +138,7 @@ void showGlobalErrorAlert(Object error, StackTrace? stack) {
                       child: SingleChildScrollView(
                         child: Text(
                           stack.toString(),
-                          style: const TextStyle(color: Colors.white38, fontSize: 10, fontFamily: 'monospace'),
+                          style: TextStyle(color: ctx.colors.textFaint, fontSize: 10, fontFamily: 'monospace'),
                         ),
                       ),
                     ),
@@ -153,7 +154,7 @@ void showGlobalErrorAlert(Object error, StackTrace? stack) {
                     const SnackBar(content: Text("Error details copied!")),
                   );
                 },
-                child: const Text("Copy Details", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                child: Text("Copy Details", style: TextStyle(color: ctx.colors.textFaint, fontWeight: FontWeight.bold)),
               ),
               TextButton(
                 onPressed: () {
@@ -191,25 +192,25 @@ void showRateLimitDialog() {
       context: ctx,
       barrierDismissible: true,
       builder: (dCtx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: dCtx.colors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.speed, color: Colors.orangeAccent, size: 28),
-            SizedBox(width: 10),
+            const Icon(Icons.speed, color: Colors.orangeAccent, size: 28),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
                 "Rate Limit Reached",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: TextStyle(color: dCtx.colors.textPrimary, fontWeight: FontWeight.bold),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
         ),
-        content: const Text(
+        content: Text(
           "You're using the shared API key, which has limited capacity. "
           "Add your own Gemini API key in Settings for uninterrupted usage.",
-          style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
+          style: TextStyle(color: dCtx.colors.textSecondary, fontSize: 14, height: 1.5),
         ),
         actions: [
           TextButton(
@@ -217,7 +218,7 @@ void showRateLimitDialog() {
               _isRateLimitDialogOpen = false;
               Navigator.pop(dCtx);
             },
-            child: const Text("Later", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+            child: Text("Later", style: TextStyle(color: dCtx.colors.textFaint, fontWeight: FontWeight.bold)),
           ),
           TextButton(
             onPressed: () {
@@ -242,9 +243,12 @@ void main() async {
 
     // Prevent raw red screen crashes with custom UI error widget
     ErrorWidget.builder = (FlutterErrorDetails details) {
+      final ctx = navigatorKey.currentContext;
+      final textPrimaryColor = ctx != null ? ctx.colors.textPrimary : AppTheme.darkColors.textPrimary;
+      final textSecondaryColor = ctx != null ? ctx.colors.textSecondary : AppTheme.darkColors.textSecondary;
       return Container(
         padding: const EdgeInsets.all(16),
-        color: const Color(0xFF1E293B),
+        color: AppTheme.surface,
         child: Center(
           child: SingleChildScrollView(
             child: Column(
@@ -252,14 +256,14 @@ void main() async {
               children: [
                 const Icon(Icons.error_outline, color: Colors.redAccent, size: 36),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   "UI Render Error",
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(color: textPrimaryColor, fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   details.exceptionAsString(),
-                  style: const TextStyle(color: Colors.white70, fontSize: 12, fontFamily: 'monospace'),
+                  style: TextStyle(color: textSecondaryColor, fontSize: 12, fontFamily: 'monospace'),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -315,6 +319,7 @@ void main() async {
 
       // Restore guest-mode choice
       GlobalState.isGuestNotifier.value = prefs.getBool('is_guest_mode') ?? false;
+      await GuestService.instance.getGuestId();
       GlobalState.isGuestNotifier.addListener(() {
         SharedPreferences.getInstance().then(
           (p) => p.setBool('is_guest_mode', GlobalState.isGuestNotifier.value),

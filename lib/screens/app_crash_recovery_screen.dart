@@ -54,7 +54,7 @@ class AppCrashRecoveryScreen extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       home: Scaffold(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: context.colors.background,
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
@@ -76,19 +76,19 @@ class AppCrashRecoveryScreen extends StatelessWidget {
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
+                        children: [
                           Text(
                             'App Crash Recovered',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: context.colors.textPrimary,
                               fontSize: 20,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
-                          SizedBox(height: 2),
+                          const SizedBox(height: 2),
                           Text(
                             'The app saved crash details before quitting',
-                            style: TextStyle(color: Colors.white60, fontSize: 12),
+                            style: TextStyle(color: context.colors.textSecondary, fontSize: 12),
                           ),
                         ],
                       ),
@@ -111,15 +111,15 @@ class AppCrashRecoveryScreen extends StatelessWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1E293B),
+                      color: context.colors.surfaceAlt,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white12),
+                      border: Border.all(color: context.colors.outline),
                     ),
                     child: SingleChildScrollView(
                       child: SelectableText(
                         '$error\n\nSTACK TRACE:\n$stackTrace',
                         style: const TextStyle(
-                          color: Color(0xFFFCA5A5),
+                          color: AppTheme.duoRed,
                           fontFamily: 'monospace',
                           fontSize: 11.5,
                           height: 1.4,
@@ -134,14 +134,14 @@ class AppCrashRecoveryScreen extends StatelessWidget {
                     Expanded(
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.white38),
+                          side: BorderSide(color: context.colors.outline),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
-                        icon: const Icon(LucideIcons.copy, color: Colors.white, size: 16),
-                        label: const Text(
+                        icon: Icon(LucideIcons.copy, color: context.colors.textPrimary, size: 16),
+                        label: Text(
                           'Copy Log',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold),
                         ),
                         onPressed: () {
                           Clipboard.setData(ClipboardData(text: '$error\n\n$stackTrace'));

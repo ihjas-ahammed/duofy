@@ -139,7 +139,7 @@ class _OrderingViewState extends State<OrderingView> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Expanded(
                         child: MathMarkdown(
                           data: item,

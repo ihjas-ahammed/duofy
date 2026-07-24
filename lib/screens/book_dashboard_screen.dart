@@ -307,7 +307,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
               children: [
                 // The Circular Progress Border surrounding the target icon
                 AnimatedAlign(
-                  duration: const Duration(milliseconds: 350),
+                  duration: Duration(milliseconds: 350),
                   curve: Curves.easeOutCubic,
                   alignment: _targetButtonExpanded ? Alignment.centerLeft : Alignment.center,
                   child: AnimatedPadding(
@@ -488,7 +488,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         fontSize: 13,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Text(
                       'CUSTOM INSTRUCTIONS (OPTIONAL)',
                       style: TextStyle(
@@ -498,7 +498,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         letterSpacing: 0.5,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6),
                     TextField(
                       controller: customPromptController,
                       maxLines: 3,
@@ -522,7 +522,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         contentPadding: const EdgeInsets.all(12),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Text(
                       'LESSON FORMAT',
                       style: TextStyle(
@@ -532,9 +532,9 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         letterSpacing: 0.5,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      padding: EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
                         color: context.colors.surfaceAlt,
                         borderRadius: BorderRadius.circular(12),
@@ -568,7 +568,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Row(
                       children: [
                         Text(
@@ -898,7 +898,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
           children: [
-            const Icon(
+            Icon(
               LucideIcons.fileWarning,
               color: AppTheme.duoOrange,
               size: 28,
@@ -1209,7 +1209,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
               appBar: AppBar(
                 title: Text(
                   '${widget.book.title} - Syllabus',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1281,7 +1281,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     return Scaffold(
       backgroundColor: context.colors.background,
       floatingActionButton: _buildFloatingTargetButton(),
-      floatingActionButtonLocation: const _CustomFloatingActionButtonLocation(
+      floatingActionButtonLocation: _CustomFloatingActionButtonLocation(
         FloatingActionButtonLocation.endFloat,
         offsetX: -12,
         offsetY: -93,
@@ -1435,7 +1435,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
               bottom: false,
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 720),
+                  constraints: BoxConstraints(maxWidth: 720),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: ClipRRect(
@@ -1459,7 +1459,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                               BoxShadow(
                                 color: context.colors.shadow,
                                 blurRadius: 30,
-                                offset: const Offset(0, 4),
+                                offset: Offset(0, 4),
                               ),
                             ],
                           ),
@@ -1482,26 +1482,26 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                       bottom: -4,
                                       right: -4,
                                       child: Container(
-                                        padding: const EdgeInsets.all(2),
+                                        padding: EdgeInsets.all(2),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFF1E293B),
+                                          color: context.colors.surfaceAlt,
                                           shape: BoxShape.circle,
                                           border: Border.all(
-                                            color: const Color(0xFF475569),
+                                            color: context.colors.outline,
                                             width: 1,
                                           ),
                                         ),
-                                        child: const Icon(
+                                        child: Icon(
                                           LucideIcons.chevronDown,
                                           size: 10,
-                                          color: Color(0xFFCBD5E1),
+                                          color: context.colors.textSecondary,
                                         ),
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              SizedBox(width: 8),
 
                               // Section pill — flex-grow, border-b-2 in section color
                               if (activeSec != null)
@@ -1546,11 +1546,11 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                                 overflow: TextOverflow.ellipsis,
                                               ),
                                             ),
-                                            const SizedBox(width: 4),
-                                            const Icon(
+                                            SizedBox(width: 4),
+                                            Icon(
                                               LucideIcons.chevronDown,
                                               size: 16,
-                                              color: Color(0xFFCBD5E1),
+                                              color: context.colors.textSecondary,
                                             ),
                                           ],
                                         ),
@@ -1559,7 +1559,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                   ),
                                 )
                               else
-                                const Expanded(child: SizedBox.shrink()),
+                                Expanded(child: SizedBox.shrink()),
                               const SizedBox(width: 8),
 
                               // Quick Review Button
@@ -1859,7 +1859,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         letterSpacing: 0.5,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6),
                     TextField(
                       controller: promptController,
                       maxLines: 3,
@@ -1882,7 +1882,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         contentPadding: const EdgeInsets.all(12),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Text(
                       'REFERENCE FILES (PDF/IMAGES)',
                       style: TextStyle(
@@ -1892,7 +1892,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         letterSpacing: 0.5,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6),
                     Row(
                       children: [
                         Expanded(
@@ -1931,7 +1931,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                               });
                             }
                           },
-                          icon: const Icon(
+                          icon: Icon(
                             LucideIcons.paperclip,
                             size: 16,
                             color: AppTheme.duoBlue,
@@ -1946,7 +1946,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                     if (selectedFiles.isNotEmpty) ...[
                       const SizedBox(height: 6),
                       Container(
-                        constraints: const BoxConstraints(maxHeight: 120),
+                        constraints: BoxConstraints(maxHeight: 120),
                         decoration: BoxDecoration(
                           color: context.colors.surfaceAlt,
                           borderRadius: BorderRadius.circular(12),
@@ -1983,7 +1983,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Text(
                       'SLIDES FORMAT',
                       style: TextStyle(
@@ -1993,12 +1993,12 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                         letterSpacing: 0.5,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6),
                     Row(
                       children: [
                         Expanded(
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            padding: EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
                               color: context.colors.surfaceAlt,
                               borderRadius: BorderRadius.circular(12),
@@ -2080,7 +2080,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                               });
                             }
                           },
-                          icon: const Icon(
+                          icon: Icon(
                             LucideIcons.plus,
                             size: 16,
                             color: AppTheme.duoBlue,
@@ -2643,7 +2643,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
             ),
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
             child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
+              physics: BouncingScrollPhysics(),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2689,7 +2689,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                   ...items.map((item) {
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
@@ -2715,7 +2715,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                   color: item.iconColor,
                                   size: 22,
                                 ),
-                                const SizedBox(width: 14),
+                                SizedBox(width: 14),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
@@ -2729,7 +2729,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                                      const SizedBox(height: 2),
+                                      SizedBox(height: 2),
                                       Text(
                                         item.subtitle,
                                         style: TextStyle(
@@ -2788,7 +2788,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
           backgroundColor: context.colors.surface,
           content: Row(
             children: [
-              const CircularProgressIndicator(),
+              CircularProgressIndicator(),
               const SizedBox(width: 20),
               Expanded(
                 child: Text(
@@ -2882,7 +2882,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         content: Row(
           children: [
-            const CircularProgressIndicator(color: AppTheme.duoBlue),
+            CircularProgressIndicator(color: AppTheme.duoBlue),
             const SizedBox(width: 20),
             Expanded(
               child: Text(
@@ -2970,7 +2970,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
               ? Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                    Icon(
                       LucideIcons.checkCircle,
                       color: AppTheme.duoGreen,
                       size: 40,
@@ -3020,7 +3020,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                   },
                                   borderRadius: BorderRadius.circular(16),
                                   child: Container(
-                                    padding: const EdgeInsets.all(12),
+                                    padding: EdgeInsets.all(12),
                                     decoration: BoxDecoration(
                                       color: context.colors.surfaceAlt,
                                       borderRadius: BorderRadius.circular(16),
@@ -3045,7 +3045,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                                   fontSize: 14,
                                                 ),
                                               ),
-                                              const SizedBox(height: 4),
+                                              SizedBox(height: 4),
                                               Text(
                                                 '${p.bookTitle} / ${p.moduleTitle} / ${p.sectionTitle}',
                                                 style: TextStyle(
@@ -3054,7 +3054,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                                                   fontSize: 10,
                                                 ),
                                               ),
-                                              const SizedBox(height: 8),
+                                              SizedBox(height: 8),
                                               Row(
                                                 children: [
                                                   Expanded(
@@ -3128,7 +3128,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
                 Navigator.pop(ctx);
                 _runDependencySearch(unit); // Re-scan
               },
-              child: const Text(
+              child: Text(
                 'Re-scan',
                 style: TextStyle(
                   color: AppTheme.duoOrange,

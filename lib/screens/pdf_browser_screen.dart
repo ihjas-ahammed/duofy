@@ -170,7 +170,7 @@ class _PdfBrowserScreenState extends State<PdfBrowserScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'File Manager',
           style: TextStyle(fontWeight: FontWeight.w900),
         ),
@@ -253,7 +253,7 @@ class _PdfBrowserScreenState extends State<PdfBrowserScreen> {
                                   color: context.colors.textFaint,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              SizedBox(height: 4),
                               Row(
                                 children: [
                                   Text(
@@ -264,7 +264,7 @@ class _PdfBrowserScreenState extends State<PdfBrowserScreen> {
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
+                                  SizedBox(width: 12),
                                   Text(
                                     '${meta.sizeMb.toStringAsFixed(2)} MB',
                                     style: TextStyle(

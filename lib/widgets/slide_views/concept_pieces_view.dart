@@ -31,7 +31,7 @@ class ConceptPiecesView extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12.0),
       child: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
+        physics: BouncingScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
             child: Column(
@@ -133,7 +133,7 @@ class ConceptPiecesView extends StatelessWidget {
                                       color: currentAccent.withValues(alpha: 0.4),
                                       blurRadius: 8,
                                       spreadRadius: 1,
-                                      offset: const Offset(0, 2),
+                                      offset: Offset(0, 2),
                                     ),
                                   ],
                                 ),
@@ -149,7 +149,7 @@ class ConceptPiecesView extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 16),
+                              SizedBox(width: 16),
                               Expanded(
                                 child: AppTheme.applyGlassBlur(
                                   borderRadius: 16,

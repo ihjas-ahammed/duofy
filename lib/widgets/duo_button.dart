@@ -81,7 +81,7 @@ class _DuoButtonState extends State<DuoButton> {
                 style: TextStyle(
                   color: widget.isOutline
                       ? widget.color
-                      : context.colors.textPrimary,
+                      : Colors.white,
                   fontWeight: FontWeight.w900,
                   fontSize: 16,
                   letterSpacing: 1.2,

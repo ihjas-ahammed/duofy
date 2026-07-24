@@ -34,7 +34,7 @@ class ErrorSpottingView extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
+        physics: BouncingScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
             child: Column(
@@ -97,9 +97,9 @@ class ErrorSpottingView extends StatelessWidget {
                       return GestureDetector(
                         onTap: isAnswered ? null : () => onSelect(i),
                         child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
+                          duration: Duration(milliseconds: 150),
                           margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.all(14),
+                          padding: EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             color: context.colors.surfaceAlt,
                             borderRadius: BorderRadius.circular(14),
@@ -116,7 +116,7 @@ class ErrorSpottingView extends StatelessWidget {
                                   fontSize: 14,
                                 ),
                               ),
-                              const SizedBox(width: 10),
+                              SizedBox(width: 10),
                               Expanded(
                                 child: MathMarkdown(
                                   data: steps[i],

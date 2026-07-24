@@ -6,6 +6,7 @@ import '../models/app_models.dart';
 import 'database_service.dart';
 import 'fb/fb_auth.dart';
 import 'global_state.dart';
+import 'guest_service.dart';
 
 /// One first-attempt answer with the learner's self-rated confidence.
 /// The confidence-vs-correctness pairing is what powers calibration insights
@@ -156,9 +157,9 @@ class MetacognitionService {
 
   static String _defaultUid() {
     try {
-      return FbAuth.instance.currentUser?.uid ?? 'guest';
+      return FbAuth.instance.currentUser?.uid ?? GuestService.instance.guestIdSync;
     } catch (_) {
-      return 'guest';
+      return GuestService.instance.guestIdSync;
     }
   }
 
@@ -248,7 +249,7 @@ class MetacognitionService {
   static Future<void> push() async {
     try {
       final db = DatabaseService();
-      if (db.uid == 'guest' || !await db.isCloudEnabled()) return;
+      if (GuestService.isGuestId(db.uid) || !await db.isCloudEnabled()) return;
       final prefs = await SharedPreferences.getInstance();
       final events = prefs.getStringList(eventsKey) ?? [];
       final queueMap = _readQueue(prefs);
@@ -279,7 +280,7 @@ class MetacognitionService {
   static Future<bool> pullAndMerge() async {
     try {
       final db = DatabaseService();
-      if (db.uid == 'guest' || !await db.isCloudEnabled()) return false;
+      if (GuestService.isGuestId(db.uid) || !await db.isCloudEnabled()) return false;
       final remote = await db.fetchMetacognitionState();
       if (remote == null) return false;
 

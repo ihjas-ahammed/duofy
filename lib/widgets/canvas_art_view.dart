@@ -108,11 +108,11 @@ class _CanvasArtViewState extends State<CanvasArtView> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(LucideIcons.alertTriangle, color: Colors.redAccent, size: 24),
+                    Icon(LucideIcons.alertTriangle, color: Colors.redAccent, size: 24),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Diagram execution failed',
-                      style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: context.colors.textSecondary, fontSize: 13, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -123,16 +123,16 @@ class _CanvasArtViewState extends State<CanvasArtView> {
                   right: 6,
                   child: Material(
                     color: Colors.black54,
-                    shape: const CircleBorder(),
+                    shape: CircleBorder(),
                     child: InkWell(
                       customBorder: const CircleBorder(),
                       onTap: widget.isLoading ? null : () => widget.onRegenerate!(null),
-                      child: const Padding(
-                        padding: EdgeInsets.all(6.0),
-                        child: Icon(
+                      child: Padding(
+                        padding: const EdgeInsets.all(6.0),
+                        child: const Icon(
                           LucideIcons.refreshCcw,
                           size: 14,
-                          color: Colors.white70,
+                          color: Colors.white,
                         ),
                       ),
                     ),
@@ -172,7 +172,7 @@ class _CanvasArtViewState extends State<CanvasArtView> {
           : const EdgeInsets.only(bottom: 16),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: AppTheme.darkColors.surface,
+        color: context.colors.surface,
         borderRadius: widget.isStackedWithContent
             ? const BorderRadius.vertical(top: Radius.circular(24))
             : BorderRadius.circular(16),
@@ -216,16 +216,16 @@ class _CanvasArtViewState extends State<CanvasArtView> {
               left: 6,
               child: Material(
                 color: Colors.black54,
-                shape: const CircleBorder(),
+                shape: CircleBorder(),
                 child: InkWell(
                   customBorder: const CircleBorder(),
                   onTap: () => showCanvasFullScreen(context, widget.svg!),
-                  child: const Padding(
-                    padding: EdgeInsets.all(6.0),
-                    child: Icon(
+                  child: Padding(
+                    padding: const EdgeInsets.all(6.0),
+                    child: const Icon(
                       LucideIcons.maximize2,
                       size: 14,
-                      color: Colors.white70,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -238,7 +238,7 @@ class _CanvasArtViewState extends State<CanvasArtView> {
               right: 6,
               child: Material(
                 color: Colors.black54,
-                shape: const CircleBorder(),
+                shape: CircleBorder(),
                 child: InkWell(
                   customBorder: const CircleBorder(),
                   onTap: widget.isLoading
@@ -247,18 +247,18 @@ class _CanvasArtViewState extends State<CanvasArtView> {
                   child: Padding(
                     padding: const EdgeInsets.all(6.0),
                     child: widget.isLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 14,
                             height: 14,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white70,
+                              color: context.colors.textSecondary,
                             ),
                           )
                         : const Icon(
                             LucideIcons.refreshCcw,
                             size: 14,
-                            color: Colors.white70,
+                            color: Colors.white,
                           ),
                   ),
                 ),
@@ -309,7 +309,7 @@ class _TapToGenerateCard extends StatelessWidget {
                   color: AppTheme.duoBlue.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   LucideIcons.imagePlus,
                   size: 18,
                   color: AppTheme.duoBlue,
@@ -463,7 +463,7 @@ class _CanvasPlaceholderState extends State<_CanvasPlaceholder> {
             )
           else
             Icon(LucideIcons.image, color: context.colors.textFaint, size: 26),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             widget.label,
             style: TextStyle(

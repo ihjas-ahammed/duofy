@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
 void showToast(BuildContext context, String message) {
   final overlayState = Overlay.of(context);
@@ -18,12 +19,12 @@ void showToast(BuildContext context, String message) {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B).withValues(alpha: 0.95), // Premium slate dark color
+                color: context.colors.surface,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1.2),
+                border: Border.all(color: context.colors.outline, width: 1.2),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.4),
+                    color: context.colors.shadow,
                     blurRadius: 12,
                     offset: const Offset(0, 6),
                   )
@@ -31,8 +32,8 @@ void showToast(BuildContext context, String message) {
               ),
               child: Text(
                 message,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: context.colors.textPrimary,
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.2,

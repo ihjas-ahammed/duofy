@@ -110,8 +110,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return GestureDetector(
       onTap: () => setState(() => _isProgrammer = value),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        duration: Duration(milliseconds: 150),
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
           color: selected ? color.withValues(alpha: 0.18) : context.colors.surfaceAlt,
           borderRadius: BorderRadius.circular(14),
@@ -142,7 +142,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 200),
+                  duration: Duration(milliseconds: 200),
                   opacity: _isLast ? 0 : 1,
                   child: TextButton(
                     onPressed: _isLast
@@ -187,7 +187,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ),
                             child: Icon(p.icon, color: p.color, size: 60),
                           ),
-                          const SizedBox(height: 40),
+                          SizedBox(height: 40),
                           Text(
                             p.title,
                             textAlign: TextAlign.center,
@@ -196,7 +196,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 fontWeight: FontWeight.w900,
                                 color: context.colors.textPrimary),
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           Text(
                             p.body,
                             textAlign: TextAlign.center,
@@ -214,7 +214,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 children: [
                   for (var i = 0; i < _pages.length; i++)
                     AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
+                      duration: Duration(milliseconds: 200),
                       margin: const EdgeInsets.symmetric(horizontal: 4),
                       width: i == _page ? 24 : 8,
                       height: 8,

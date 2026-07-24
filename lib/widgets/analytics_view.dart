@@ -301,7 +301,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
             });
           },
           child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(
+            physics: BouncingScrollPhysics(
               parent: AlwaysScrollableScrollPhysics(),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -326,7 +326,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                               color: AppTheme.duoBlue.withValues(alpha: 0.3),
                             ),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             LucideIcons.barChart2,
                             color: AppTheme.duoBlue,
                             size: 28,
@@ -367,7 +367,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
 
                 // Stats Grid (2x2)
                 GridView.count(
@@ -463,7 +463,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                                       padding: const EdgeInsets.only(bottom: 6),
                                       child: Text(
                                         '$xp',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           color: Color(0xFFFBBF24),
                                           fontWeight: FontWeight.bold,
                                           fontSize: 10,
@@ -498,7 +498,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                                                 color: AppTheme.duoBlue
                                                     .withValues(alpha: 0.3),
                                                 blurRadius: 8,
-                                                offset: const Offset(0, 2),
+                                                offset: Offset(0, 2),
                                               ),
                                             ]
                                           : null,
@@ -526,7 +526,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
 
                 // Section 3: Course Breakdown (overall) OR Activity Logs (course-specific)
                 if (widget.courseId == null) ...[
@@ -566,7 +566,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                                     ? context.colors.textFaint
                                     : AppTheme.duoBlue,
                               ),
-                              const SizedBox(width: 8),
+                              SizedBox(width: 8),
                               Text(
                                 folder.toUpperCase(),
                                 style: TextStyle(
@@ -598,7 +598,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                                     Row(
                                       children: [
                                         Container(
-                                          padding: const EdgeInsets.all(10),
+                                          padding: EdgeInsets.all(10),
                                           decoration: BoxDecoration(
                                             color: context.colors.surfaceAlt,
                                             borderRadius: BorderRadius.circular(12),
@@ -609,7 +609,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                                             size: 20,
                                           ),
                                         ),
-                                        const SizedBox(width: 14),
+                                        SizedBox(width: 14),
                                         Expanded(
                                           child: Column(
                                             crossAxisAlignment:
@@ -625,7 +625,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
-                                              const SizedBox(height: 2),
+                                              SizedBox(height: 2),
                                               Text(
                                                 'Accuracy: $acc%  •  XP: $xp',
                                                 style: TextStyle(
@@ -636,7 +636,7 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                                             ],
                                           ),
                                         ),
-                                        const SizedBox(width: 8),
+                                        SizedBox(width: 8),
                                         Text(
                                           '${(progress * 100).round()}%',
                                           style: const TextStyle(

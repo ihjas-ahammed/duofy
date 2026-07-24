@@ -115,7 +115,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
     return Scaffold(
       backgroundColor: context.colors.background,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Select Module',
           style: TextStyle(fontWeight: FontWeight.w900),
         ),
@@ -171,7 +171,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                     alpha: 0.3,
                                   ),
                                   blurRadius: 16,
-                                  offset: const Offset(0, 4),
+                                  offset: Offset(0, 4),
                                 ),
                               ],
                             ),
@@ -182,7 +182,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                               size: 30,
                             ),
                           ),
-                          const SizedBox(width: 16),
+                          SizedBox(width: 16),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -197,7 +197,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(height: 4),
+                                SizedBox(height: 4),
                                 Text(
                                   widget.book.description,
                                   style: TextStyle(
@@ -259,7 +259,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                       ),
                                       shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(
+                                    child: Icon(
                                       LucideIcons.play,
                                       color: AppTheme.duoGreen,
                                       size: 20,
@@ -291,7 +291,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
-                                        const SizedBox(height: 2),
+                                        SizedBox(height: 2),
                                         Text(
                                           'Module ${_lastModIdx! + 1} • Section ${_lastSecIdx! + 1}',
                                           style: TextStyle(
@@ -314,7 +314,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24),
 
                     Text(
                       'COURSE MODULES',
@@ -340,7 +340,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                         final totalUnits = module.sections.fold<int>(0, (sum, sec) => sum + sec.units.length);
 
                         return Container(
-                          margin: const EdgeInsets.only(bottom: 16),
+                          margin: EdgeInsets.only(bottom: 16),
                           decoration: BoxDecoration(
                             color: context.colors.surfaceAlt,
                             borderRadius: BorderRadius.circular(20),
@@ -385,7 +385,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                         ),
                                         child: Text(
                                           'MODULE ${index + 1}',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             color: AppTheme.duoBlue,
                                             fontSize: 10,
                                             fontWeight: FontWeight.w900,
@@ -403,7 +403,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 12),
+                                  SizedBox(height: 12),
                                   Text(
                                     module.title,
                                     style: TextStyle(
@@ -412,7 +412,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                       fontWeight: FontWeight.w900,
                                     ),
                                   ),
-                                  const SizedBox(height: 6),
+                                  SizedBox(height: 6),
                                   Text(
                                     module.description,
                                     style: TextStyle(
@@ -423,7 +423,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  const SizedBox(height: 20),
+                                  SizedBox(height: 20),
 
                                   // Progress Bar
                                   Row(
@@ -447,7 +447,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(width: 12),
+                                      SizedBox(width: 12),
                                       Text(
                                         '${(progress * 100).toInt()}%',
                                         style: TextStyle(
@@ -660,7 +660,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
             ),
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
             child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
+              physics: BouncingScrollPhysics(),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -706,7 +706,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                   ...items.map((item) {
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
@@ -732,7 +732,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                   color: item.iconColor,
                                   size: 22,
                                 ),
-                                const SizedBox(width: 14),
+                                SizedBox(width: 14),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
@@ -746,7 +746,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                                      const SizedBox(height: 2),
+                                      SizedBox(height: 2),
                                       Text(
                                         item.subtitle,
                                         style: TextStyle(
@@ -1145,7 +1145,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
               children: [
                 // The Circular Progress Border surrounding the target icon
                 AnimatedAlign(
-                  duration: const Duration(milliseconds: 350),
+                  duration: Duration(milliseconds: 350),
                   curve: Curves.easeOutCubic,
                   alignment: _targetButtonExpanded ? Alignment.centerLeft : Alignment.center,
                   child: AnimatedPadding(

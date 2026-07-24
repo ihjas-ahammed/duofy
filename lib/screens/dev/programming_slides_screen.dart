@@ -121,7 +121,7 @@ class ProgrammingSlidesScreen extends StatelessWidget {
                 style: TextStyle(
                     fontWeight: FontWeight.w800,
                     color: context.colors.textPrimary)),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Text(desc,
                 style:
                     TextStyle(fontSize: 12, color: context.colors.textSecondary)),

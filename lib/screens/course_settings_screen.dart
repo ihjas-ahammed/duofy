@@ -171,7 +171,7 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
               itemBuilder: (context, i) {
                 final f = _formats[i];
                 return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
+                  margin: EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
                     color: context.colors.surface,
                     borderRadius: BorderRadius.circular(16),
@@ -193,7 +193,7 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
                               fontWeight: FontWeight.w900,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Text(
                             f.description,
                             style: TextStyle(
@@ -202,7 +202,7 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
                               height: 1.4,
                             ),
                           ),
-                          const SizedBox(height: 10),
+                          SizedBox(height: 10),
                           Row(
                             children: [
                               Icon(
@@ -210,7 +210,7 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
                                 size: 13,
                                 color: context.colors.textFaint,
                               ),
-                              const SizedBox(width: 6),
+                              SizedBox(width: 6),
                               Text(
                                 '${f.slides.length} slides — ${f.slides.map((s) => s.type).join(", ")}',
                                 style: TextStyle(
@@ -221,7 +221,7 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
                           Row(
                             children: [
                               const Spacer(),
@@ -576,7 +576,7 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
                       },
                     ),
                     if (initialSelectedType == 'custom') ...[
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       TextField(
                         controller: typeCtrl,
                         style: TextStyle(color: context.colors.textPrimary),
@@ -592,7 +592,7 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     TextField(
                       controller: conditionCtrl,
                       maxLines: 2,
@@ -608,7 +608,7 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     TextField(
                       controller: descCtrl,
                       maxLines: 4,
@@ -713,7 +713,7 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Edit Format',
           style: TextStyle(fontWeight: FontWeight.w900),
         ),
@@ -744,7 +744,7 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   TextField(
                     controller: _descCtrl,
                     maxLines: 2,
@@ -791,7 +791,7 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
                   final slide = _slides[index];
                   return Container(
                     key: ValueKey('slide_$index'),
-                    margin: const EdgeInsets.only(bottom: 12),
+                    margin: EdgeInsets.only(bottom: 12),
                     decoration: BoxDecoration(
                       color: context.colors.surface,
                       borderRadius: BorderRadius.circular(16),
@@ -812,7 +812,7 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
                         ),
                         title: Text(
                           slide.type.toUpperCase(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w900,
                             fontSize: 12,
                             color: AppTheme.duoViolet,
@@ -856,7 +856,7 @@ class _FormatEditorScreenState extends State<FormatEditorScreen> {
                               onPressed: () => _editSlide(index),
                             ),
                             IconButton(
-                              icon: const Icon(
+                              icon: Icon(
                                 LucideIcons.trash2,
                                 size: 18,
                                 color: AppTheme.duoRed,

@@ -84,7 +84,7 @@ class ModuleSelectorSheet extends StatelessWidget {
           right: 16,
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
+              constraints: BoxConstraints(maxWidth: 440),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                 child: BackdropFilter(
@@ -103,7 +103,7 @@ class ModuleSelectorSheet extends StatelessWidget {
                           BoxShadow(
                             color: context.colors.shadow,
                             blurRadius: 30,
-                            offset: const Offset(0, 4),
+                            offset: Offset(0, 4),
                           ),
                         ],
                       ),
@@ -198,7 +198,7 @@ class _ModuleRow extends StatelessWidget {
         onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(12),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: Duration(milliseconds: 200),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: isActive
@@ -215,7 +215,7 @@ class _ModuleRow extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isActive ? AppTheme.duoBlue : const Color(0xFF1E293B),
+                  color: isActive ? AppTheme.duoBlue : Color(0xFF1E293B),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(

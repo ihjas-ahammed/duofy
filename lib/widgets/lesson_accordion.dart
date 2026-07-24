@@ -244,7 +244,7 @@ class _LessonAccordionState extends State<LessonAccordion> {
 
   Widget _buildPlaceholderLessonTile(int index, Color secColor) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8, left: 16, right: 16),
+      margin: EdgeInsets.only(bottom: 8, left: 16, right: 16),
       decoration: BoxDecoration(
         color: context.colors.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
@@ -310,7 +310,7 @@ class _LessonAccordionState extends State<LessonAccordion> {
 
           listItems.add(
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: context.colors.surface,
                 borderRadius: BorderRadius.circular(20),
@@ -331,7 +331,7 @@ class _LessonAccordionState extends State<LessonAccordion> {
                         collapsedIconColor: context.colors.textFaint,
                         title: Text(
                           unit.title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w900,
                             fontSize: 16,
                           ),

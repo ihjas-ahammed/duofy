@@ -726,7 +726,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat>
           mainAxisSize: MainAxisSize.min,
           children: [
             // Handle Bar for Dragging
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Container(
               width: 44,
               height: 4,
@@ -735,7 +735,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat>
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
 
             // Header Section with Switchers
             Padding(
@@ -779,7 +779,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat>
                           ),
                         ],
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: 2),
                       Text(
                         "Study Helper (Slide: ${widget.currentSlide.title})",
                         style: TextStyle(
@@ -865,7 +865,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat>
             // Message History Window
             Flexible(
               child: Container(
-                constraints: const BoxConstraints(maxHeight: 400),
+                constraints: BoxConstraints(maxHeight: 400),
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _messages.isEmpty
                     ? Center(
@@ -1032,7 +1032,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat>
                       },
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
 
                   // Text input field
                   Expanded(
@@ -1062,7 +1062,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat>
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
 
                   // Send button
                   GestureDetector(

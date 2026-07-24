@@ -43,7 +43,7 @@ class PyqCompleteScreen extends StatelessWidget {
             children: [
               Expanded(
                 child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
+                  physics: BouncingScrollPhysics(),
                   padding: const EdgeInsets.all(24.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -82,7 +82,7 @@ class PyqCompleteScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 28),
+                      SizedBox(height: 28),
 
                       // Quick Stats Grid
                       Row(
@@ -126,7 +126,7 @@ class PyqCompleteScreen extends StatelessWidget {
                           letterSpacing: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
 
                       if (totalCount == 0)
                         Container(
@@ -177,7 +177,7 @@ class PyqCompleteScreen extends StatelessWidget {
                                       color: borderCol,
                                       size: 20,
                                     ),
-                                    const SizedBox(width: 10),
+                                    SizedBox(width: 10),
                                     Expanded(
                                       child: MathMarkdown(
                                         data: result['question'] ?? 'Question',
@@ -190,12 +190,12 @@ class PyqCompleteScreen extends StatelessWidget {
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 12),
+                                SizedBox(height: 12),
                                 Divider(
                                   color: context.colors.outline,
                                   height: 1,
                                 ),
-                                const SizedBox(height: 12),
+                                SizedBox(height: 12),
 
                                 // User Answer
                                 Row(
@@ -226,7 +226,7 @@ class PyqCompleteScreen extends StatelessWidget {
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 6),
+                                SizedBox(height: 6),
 
                                 // Correct Answer
                                 Row(
@@ -241,7 +241,7 @@ class PyqCompleteScreen extends StatelessWidget {
                                     Expanded(
                                       child: Text(
                                         result['correctAnswer'] ?? '',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           color: AppTheme.duoGreen,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 13,
@@ -258,7 +258,7 @@ class PyqCompleteScreen extends StatelessWidget {
                                         .isNotEmpty) ...[
                                   const SizedBox(height: 10),
                                   Container(
-                                    padding: const EdgeInsets.all(10),
+                                    padding: EdgeInsets.all(10),
                                     decoration: BoxDecoration(
                                       color: context.colors.surfaceAlt,
                                       borderRadius: BorderRadius.circular(10),
@@ -324,7 +324,7 @@ class _StatCard extends StatelessWidget {
       child: Column(
         children: [
           Icon(icon, color: iconColor, size: 24),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             value,
             style: TextStyle(
@@ -333,7 +333,7 @@ class _StatCard extends StatelessWidget {
               fontSize: 16,
             ),
           ),
-          const SizedBox(height: 2),
+          SizedBox(height: 2),
           Text(
             label,
             style: TextStyle(

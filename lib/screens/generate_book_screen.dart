@@ -420,11 +420,11 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                   .length;
 
               return Container(
-                constraints: const BoxConstraints(
+                constraints: BoxConstraints(
                   maxWidth: 600,
                   maxHeight: 700,
                 ),
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: context.colors.background,
                   borderRadius: BorderRadius.circular(24),
@@ -433,7 +433,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                     BoxShadow(
                       color: context.colors.shadow,
                       blurRadius: 20,
-                      offset: const Offset(0, 10),
+                      offset: Offset(0, 10),
                     ),
                   ],
                 ),
@@ -469,7 +469,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Text(
                       'AI identified the following reference books from your syllabus. Tap "AI Search" to perform a deep semantic search against the Marketplace or B2 Store.',
                       style: TextStyle(
@@ -496,7 +496,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                           final isSearching = item['isSearching'] == true;
 
                           return Container(
-                            padding: const EdgeInsets.all(14),
+                            padding: EdgeInsets.all(14),
                             decoration: BoxDecoration(
                               color: context.colors.surfaceAlt,
                               borderRadius: BorderRadius.circular(16),
@@ -509,7 +509,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                                   color: context.colors.textFaint,
                                   size: 22,
                                 ),
-                                const SizedBox(width: 12),
+                                SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
@@ -526,7 +526,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                       if (authors.isNotEmpty) ...[
-                                        const SizedBox(height: 4),
+                                        SizedBox(height: 4),
                                         Text(
                                           'By $authors',
                                           style: TextStyle(
@@ -610,7 +610,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                                       ),
                                     ),
                                     child: isSearching
-                                        ? const SizedBox(
+                                        ? SizedBox(
                                             width: 14,
                                             height: 14,
                                             child: CircularProgressIndicator(
@@ -959,7 +959,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const CircularProgressIndicator(color: AppTheme.duoGreen),
+                CircularProgressIndicator(color: AppTheme.duoGreen),
                 const SizedBox(height: 16),
                 Text(
                   'Preparing Files...',
@@ -1104,7 +1104,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
           });
         },
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             color: isSelected ? AppTheme.duoBlue : context.colors.surface,
             borderRadius: BorderRadius.circular(12),
@@ -1121,7 +1121,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                     : context.colors.textFaint,
                 size: 24,
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Text(
                 label,
                 style: TextStyle(
@@ -1143,7 +1143,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'New Material',
           style: TextStyle(fontWeight: FontWeight.w900),
         ),
@@ -1170,7 +1170,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                           letterSpacing: 0.5,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       TextField(
                         controller: _titleController,
                         style: TextStyle(
@@ -1193,7 +1193,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
+                            borderSide: BorderSide(
                               color: AppTheme.duoGreen,
                             ),
                           ),
@@ -1257,7 +1257,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                                 },
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 'Auto-fetch mentioned reference books from Marketplace',
@@ -1269,7 +1269,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 24),
+                        SizedBox(height: 24),
                         Text(
                           'REFERENCE BOOKS (PDF, OPTIONAL)',
                           style: TextStyle(
@@ -1301,7 +1301,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                         ),
                       ],
 
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       FileSelectionList(
                         files: _selectedFiles,
                         onAddMore: () => _pickFiles(false),
@@ -1322,7 +1322,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                         ),
                       ],
 
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
                       Text(
                         'CUSTOM INDEXING INSTRUCTIONS (OPTIONAL)',
                         style: TextStyle(
@@ -1332,7 +1332,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                           letterSpacing: 0.5,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       TextField(
                         controller: _customPromptController,
                         maxLines: 3,
@@ -1504,7 +1504,7 @@ class _DocumentStorePickerDialogState
       actionsPadding: const EdgeInsets.all(16),
       title: Row(
         children: [
-          const Icon(LucideIcons.cloud, color: AppTheme.duoViolet),
+          Icon(LucideIcons.cloud, color: AppTheme.duoViolet),
           const SizedBox(width: 8),
           Text(
             'Document Store',
@@ -1523,7 +1523,7 @@ class _DocumentStorePickerDialogState
           children: [
             // Search Bar
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
                 color: context.colors.surfaceAlt,
                 borderRadius: BorderRadius.circular(12),
@@ -1578,10 +1578,10 @@ class _DocumentStorePickerDialogState
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             // Category Selector Tabs
             Container(
-              padding: const EdgeInsets.all(2),
+              padding: EdgeInsets.all(2),
               decoration: BoxDecoration(
                 color: context.colors.surfaceAlt,
                 borderRadius: BorderRadius.circular(10),
@@ -1649,7 +1649,7 @@ class _DocumentStorePickerDialogState
                           },
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       Expanded(
                         child: DropdownButtonFormField<String?>(
                           initialValue: _selectedSemesterFilter,
@@ -1683,7 +1683,7 @@ class _DocumentStorePickerDialogState
                 }
               ),
             ],
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             // Files List
             Expanded(child: _buildListContent(filtered)),
           ],
@@ -1727,7 +1727,7 @@ class _DocumentStorePickerDialogState
                   ? context.colors.textPrimary
                   : context.colors.textFaint,
             ),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
@@ -1768,7 +1768,7 @@ class _DocumentStorePickerDialogState
               size: 32,
               color: context.colors.textFaint,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               _searchQuery.isNotEmpty ? 'No search results' : 'No documents',
               style: TextStyle(color: context.colors.textFaint, fontSize: 12),
@@ -1905,7 +1905,7 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
           if (_errorMessage.isNotEmpty) ...[
             Text(
               _errorMessage,
-              style: const TextStyle(color: AppTheme.duoRed, fontSize: 13),
+              style: TextStyle(color: AppTheme.duoRed, fontSize: 13),
             ),
             const SizedBox(height: 16),
           ] else ...[
@@ -1919,7 +1919,7 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             const CircularProgressIndicator(color: AppTheme.duoViolet),
             const SizedBox(height: 16),
             ClipRRect(
@@ -1932,7 +1932,7 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               '${(_progress * 100).toStringAsFixed(0)}%',
               style: TextStyle(
@@ -1954,7 +1954,7 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
               });
               _startDownload();
             },
-            child: const Text(
+            child: Text(
               'Retry',
               style: TextStyle(
                 color: AppTheme.duoGreen,

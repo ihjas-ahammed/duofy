@@ -46,7 +46,7 @@ Future<void> showRepairAlignmentFlow(BuildContext context, Book book) async {
       backgroundColor: context.colors.surface,
       content: Row(
         children: [
-          const SizedBox(
+          SizedBox(
             width: 22,
             height: 22,
             child: CircularProgressIndicator(strokeWidth: 2.5),
@@ -142,7 +142,7 @@ Future<void> showRepairAlignmentFlow(BuildContext context, Book book) async {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(icon, color: color, size: 18),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     headline,
@@ -154,7 +154,7 @@ Future<void> showRepairAlignmentFlow(BuildContext context, Book book) async {
                 ),
               ],
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: 18),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -168,7 +168,7 @@ Future<void> showRepairAlignmentFlow(BuildContext context, Book book) async {
                 Container(
                   width: 84,
                   alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
                     color: context.colors.surfaceAlt,
                     borderRadius: BorderRadius.circular(10),
@@ -183,7 +183,7 @@ Future<void> showRepairAlignmentFlow(BuildContext context, Book book) async {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     LucideIcons.plusCircle,
                     color: AppTheme.duoGreen,
                   ),
