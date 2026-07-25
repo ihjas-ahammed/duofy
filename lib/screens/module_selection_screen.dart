@@ -10,6 +10,7 @@ import 'dart:async';
 import '../services/global_state.dart';
 import '../services/generation_manager.dart';
 import '../utils/progress_utils.dart';
+import 'pyq_panel_screen.dart';
 import 'section_selection_screen.dart';
 import 'main_layout_screen.dart';
 import '../services/deadline_service.dart';
@@ -152,6 +153,18 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(LucideIcons.fileQuestion),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PyqPanelScreen(book: _currentBook),
+                ),
+              );
+            },
+            tooltip: 'PYQ Panel',
+          ),
           IconButton(
             icon: const Icon(LucideIcons.bookmark),
             onPressed: () => _showBookmarksDialog(context),

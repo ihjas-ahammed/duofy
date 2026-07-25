@@ -54,10 +54,12 @@ android {
     }
 
     buildTypes {
-        release {
+        getByName("debug") {
+            signingConfig = signingConfigs.getByName("debug")
+        }
+        getByName("release") {
             // Reuse the checked-in debug key for release too, so
-            // `flutter build apk --release` works out of the box. Swap for
-            // a real upload key before publishing to the Play Store.
+            // `flutter build apk --release` works out of the box and matches local builds.
             signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = false
             isShrinkResources = false

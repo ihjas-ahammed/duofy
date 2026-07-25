@@ -57,6 +57,9 @@ bool _looksNonFatal(Object error) {
     'clientexception',
     'httpexception',
     'http request failed',
+    'sqliteblobtoobigexception',
+    'cursorwindow',
+    'cloud firestore',
     // Framework layout / paint noise — visual only, never crashes the app.
     'renderflex',
     'overflowed',

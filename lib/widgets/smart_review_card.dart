@@ -21,7 +21,7 @@ class SmartReviewCard extends StatelessWidget {
   });
 
   Future<void> _startSession(BuildContext context) async {
-    final slides = await MetacognitionService.resolveDueSlides();
+    final slides = await MetacognitionService.resolveDueSlides(limit: 5);
     if (!context.mounted) return;
     if (slides.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(

@@ -10,6 +10,7 @@ import 'dart:async';
 import '../services/global_state.dart';
 import '../services/generation_manager.dart';
 import 'main_layout_screen.dart';
+import 'pyq_panel_screen.dart';
 import '../services/deadline_service.dart';
 import '../services/database_service.dart';
 import 'lesson_screen.dart';
@@ -178,6 +179,18 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(LucideIcons.fileQuestion),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PyqPanelScreen(book: widget.book),
+                ),
+              );
+            },
+            tooltip: 'PYQ Panel',
+          ),
           IconButton(
             icon: const Icon(LucideIcons.bookmark),
             onPressed: () => _showBookmarksDialog(context),

@@ -59,6 +59,34 @@ class NotificationService {
     final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
         _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     await androidImplementation?.requestNotificationsPermission();
+
+    // 1. Clear stale progress notifications leftover from killed/crashed app sessions
+    try {
+      final active = await _plugin.getActiveNotifications();
+      for (final n in active) {
+        if (n.channelId == 'progress_channel' && n.id != null) {
+          await _plugin.cancel(id: n.id!);
+        }
+      }
+    } catch (e) {
+      debugPrint('[NotificationService] Error clearing stale notifications: $e');
+    }
+
+    // 2. Cold-start fallback: process notification launch details if app was launched from a dead notification
+    try {
+      final NotificationAppLaunchDetails? launchDetails =
+          await _plugin.getNotificationAppLaunchDetails();
+      if (launchDetails != null && launchDetails.didNotificationLaunchApp) {
+        final response = launchDetails.notificationResponse;
+        if (response != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _onSelectNotification(response);
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('[NotificationService] Error processing launch notification: $e');
+    }
   }
 
   static Future<void> _onSelectNotification(NotificationResponse response) async {
@@ -83,9 +111,16 @@ class NotificationService {
               skeletonBook: targetTask.skeletonBook!,
             )
           ));
+          return;
         }
       }
-      // "open_home" action naturally brings app to foreground.
+
+      // Fallback for dead/orphaned notifications or home actions:
+      // Navigate cleanly to main app view instead of ignoring the tap.
+      final nav = navigatorKey.currentState;
+      if (nav != null && nav.mounted) {
+        nav.popUntil((route) => route.isFirst);
+      }
     }
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart' as fc;
+import 'package:cloud_firestore/cloud_firestore.dart' as cf;
 
 import '../../firebase_options.dart';
 import 'fd_backend.dart' if (dart.library.html) 'fd_backend_stub.dart' as fdb;
@@ -29,7 +30,19 @@ class FbCore {
       await fc.Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
+      try {
+        cf.FirebaseFirestore.instance.settings = const cf.Settings(
+          persistenceEnabled: false,
+        );
+      } catch (e) {
+        debugPrint('[FbCore] Firestore settings error (ignored): $e');
+      }
+      try {
+        await cf.FirebaseFirestore.instance.clearPersistence();
+      } catch (e) {
+        debugPrint('[FbCore] clearPersistence error (ignored): $e');
+      }
     }
     _initialized = true;
   }
-}
+}

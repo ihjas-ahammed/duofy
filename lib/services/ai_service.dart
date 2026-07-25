@@ -8,6 +8,7 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pdfx/pdfx.dart' as pdfx;
 import '../models/app_models.dart';
+import '../models/pyq_models.dart';
 import '../utils/latex_utils.dart';
 import '../main.dart' show showRateLimitDialog;
 import 'prompt_service.dart';
@@ -452,6 +453,22 @@ class AiService {
   Future<String> getApiKey() async {
     final keys = await _getKeys();
     return keys.isNotEmpty ? keys.first : '';
+  }
+
+  Map<String, dynamic> cleanAndDecodeJson(String text) => _cleanAndDecodeJson(text);
+
+  Future<String> generateSimpleText({
+    required String prompt,
+    String slotName = 'Lite',
+  }) async {
+    final keys = await _getKeys();
+    final models = slotName == 'Primary - Text' ? await _getPrimaryTextModels() : await _getLiteModels();
+    return await _generateWithGroqFallback(
+      geminiModels: models,
+      geminiKeys: keys,
+      contents: [Content.text(prompt)],
+      slotName: slotName,
+    );
   }
 
   Map<String, dynamic> _cleanAndDecodeJson(String text) {
@@ -4333,6 +4350,120 @@ Return ONLY the markdown explanation.
   String _cleanJsonText(String text) {
     return text.replaceAll('```json', '').replaceAll('```', '').trim();
   }
+
+  /// Analyzes uploaded question paper documents/images to extract real PYQ questions
+  /// with mark weightages (3, 6, 10 marks). If extracted count < maxQuestions, generates
+  /// supplementary PYQ questions based on the course syllabus to reach maxQuestions.
+  Future<PyqExtractionResult> analyzeAndExtractPyqQuestions({
+    required List<File> files,
+    required Book book,
+    required int maxQuestions,
+    void Function(double progress, String status)? onProgress,
+  }) async {
+    onProgress?.call(0.1, 'Preparing document parts...');
+
+    final List<Part> parts = [];
+    final prompt = '''
+You are an expert exam analyzer for the course "${book.title}".
+Syllabus / Course Context: "${book.description.isNotEmpty ? book.description : book.title}"
+Target Total Questions Desired: $maxQuestions
+
+Perform two tasks:
+1. EXTRACT QUESTIONS: Analyze the attached exam paper document/images carefully and extract all real questions found in the document. For each question, extract its title/text, detailed prompt, marks (e.g. 3, 6, 10), and map it to the relevant module title if applicable.
+2. GENERATE SUPPLEMENTARY QUESTIONS: If the total number of extracted questions is less than $maxQuestions, generate synthetic exam practice questions (matching the course syllabus and mark distributions 3, 6, or 10 marks) to fulfill the target requirement of $maxQuestions total questions.
+
+Respond strictly in JSON format with two lists:
+{
+  "extractedQuestions": [
+    {
+      "id": "ext_1",
+      "title": "Short Question Title",
+      "content": "Full question statement",
+      "marks": 3,
+      "moduleTitle": "Module 1"
+    }
+  ],
+  "generatedQuestions": [
+    {
+      "id": "gen_1",
+      "title": "Generated Question Title",
+      "content": "Full question statement",
+      "marks": 6,
+      "moduleTitle": "Module 2"
+    }
+  ]
+}
+''';
+
+    parts.add(TextPart(prompt));
+    onProgress?.call(0.3, 'Processing input files...');
+
+    final fileParts = await _buildFileParts(files);
+    parts.addAll(fileParts);
+
+    onProgress?.call(0.5, 'Analyzing exam paper & generating questions...');
+
+    try {
+      final text = await _generateWithGroqFallback(
+        geminiModels: ['gemini-3.5-flash', 'gemini-3.5-flash-lite'],
+        geminiKeys: await _getKeys(),
+        contents: [Content.multi(parts)],
+        slotName: 'Primary - Text',
+        generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+      );
+
+      onProgress?.call(0.9, 'Parsing extracted questions...');
+      final decoded = _cleanAndDecodeJson(text);
+
+      final List<PyqItem> extracted = [];
+      final List<PyqItem> generated = [];
+
+      final rawExt = decoded['extractedQuestions'] as List? ?? [];
+      for (int i = 0; i < rawExt.length; i++) {
+        if (rawExt[i] is Map) {
+          final m = Map<String, dynamic>.from(rawExt[i]);
+          extracted.add(PyqItem(
+            id: 'ext_${DateTime.now().millisecondsSinceEpoch}_$i',
+            title: m['title']?.toString() ?? 'Question ${i + 1}',
+            content: m['content']?.toString() ?? m['title']?.toString() ?? '',
+            marks: m['marks'] is num ? (m['marks'] as num).toInt() : 5,
+            moduleTitle: m['moduleTitle']?.toString(),
+            isGenerated: false,
+            source: 'extracted',
+          ));
+        }
+      }
+
+      final rawGen = decoded['generatedQuestions'] as List? ?? [];
+      for (int i = 0; i < rawGen.length; i++) {
+        if (rawGen[i] is Map) {
+          final m = Map<String, dynamic>.from(rawGen[i]);
+          generated.add(PyqItem(
+            id: 'gen_${DateTime.now().millisecondsSinceEpoch}_$i',
+            title: m['title']?.toString() ?? 'Practice Question ${i + 1}',
+            content: m['content']?.toString() ?? m['title']?.toString() ?? '',
+            marks: m['marks'] is num ? (m['marks'] as num).toInt() : 5,
+            moduleTitle: m['moduleTitle']?.toString(),
+            isGenerated: true,
+            source: 'generated',
+          ));
+        }
+      }
+
+      onProgress?.call(1.0, 'Completed!');
+      return PyqExtractionResult(
+        extractedQuestions: extracted,
+        generatedQuestions: generated,
+      );
+    } catch (e) {
+      print('[AiService] analyzeAndExtractPyqQuestions error: $e');
+      onProgress?.call(1.0, 'Failed');
+      return PyqExtractionResult(
+        extractedQuestions: [],
+        generatedQuestions: [],
+      );
+    }
+  }
 }
 
 class UnitManifestResult {
@@ -4340,4 +4471,14 @@ class UnitManifestResult {
   final List<LessonFormat> newFormats;
 
   UnitManifestResult({required this.units, required this.newFormats});
+}
+
+class PyqExtractionResult {
+  final List<PyqItem> extractedQuestions;
+  final List<PyqItem> generatedQuestions;
+
+  PyqExtractionResult({
+    required this.extractedQuestions,
+    required this.generatedQuestions,
+  });
 }

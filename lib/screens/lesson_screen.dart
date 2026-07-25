@@ -103,8 +103,12 @@ class _LessonScreenState extends State<LessonScreen> {
   int? _errorSelection;
 
   /// Self-rated confidence (MetacognitionService constants) for the current
-  /// slide, chosen before checking. Null = not rated (rating is optional).
+  /// slide, chosen before checking. Null = not rated (rating is required).
   int? _confidence;
+
+  /// Tracks continuous user discomfort (consecutive low-confidence or incorrect ratings).
+  int _discomfortCount = 0;
+  bool _hasPromptedDiscomfortAlert = false;
 
   /// Slides whose FIRST attempt was already logged to the metacognition
   /// service — wrong answers requeue slides, and only the first attempt may
@@ -749,6 +753,7 @@ class _LessonScreenState extends State<LessonScreen> {
   /// answers requeue slides — repeats never count for calibration or review
   /// scheduling).
   void _recordFirstAttempt(Slide slide, bool correct) {
+    _trackDiscomfort(correct);
     if (_attemptedSlideIds.contains(slide.id)) return;
     _attemptedSlideIds.add(slide.id);
     MetacognitionService.recordAnswer(
@@ -760,7 +765,163 @@ class _LessonScreenState extends State<LessonScreen> {
     );
   }
 
+  void _trackDiscomfort(bool correct) {
+    if (_confidence == MetacognitionService.confidenceGuessing ||
+        _confidence == MetacognitionService.confidenceUnsure ||
+        !correct) {
+      _discomfortCount++;
+    } else if (_confidence == MetacognitionService.confidenceConfident && correct) {
+      _discomfortCount = 0;
+    }
+
+    if (_discomfortCount >= 3 && !_hasPromptedDiscomfortAlert) {
+      _hasPromptedDiscomfortAlert = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showDiscomfortAlertDialog();
+      });
+    }
+  }
+
+  void _showDiscomfortAlertDialog() {
+    if (!mounted) return;
+    final feedbackController = TextEditingController();
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: ctx.colors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(
+              color: AppTheme.duoOrange.withValues(alpha: 0.5),
+              width: 1.5,
+            ),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.duoOrange.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  LucideIcons.helpCircle,
+                  color: AppTheme.duoOrange,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Having Trouble?',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: ctx.colors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'We noticed you might be struggling with these concepts. Tell us what is confusing so we can regenerate this lesson with better explanations!',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: ctx.colors.textSecondary,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: feedbackController,
+                maxLines: 3,
+                style: TextStyle(color: ctx.colors.textPrimary, fontSize: 14),
+                decoration: InputDecoration(
+                  hintText: 'What specifically was confusing? (optional)',
+                  hintStyle: TextStyle(color: ctx.colors.textFaint, fontSize: 13),
+                  filled: true,
+                  fillColor: ctx.colors.surfaceAlt,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ctx.colors.outline),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppTheme.duoBlue),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(
+                'Keep Trying',
+                style: TextStyle(
+                  color: ctx.colors.textFaint,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            DuoButton(
+              text: 'REGENERATE LESSON',
+              color: AppTheme.duoOrange,
+              shadowColor: AppTheme.duoOrangeDark,
+              onPressed: () async {
+                Navigator.of(ctx).pop();
+                final feedback = feedbackController.text.trim();
+                final prompt = feedback.isNotEmpty
+                    ? 'Learner reported difficulty with this lesson: "$feedback". Please simplify the explanations and provide clearer step-by-step examples.'
+                    : 'Learner showed continuous discomfort in this lesson. Please simplify concepts, provide clearer explanations, and adjust difficulty.';
+
+                if (widget.book != null &&
+                    widget.modIdx != null &&
+                    widget.secIdx != null &&
+                    widget.unitIdx != null &&
+                    widget.lessonIdx != null) {
+                  await GenerationManager.instance.regenerateLesson(
+                    book: widget.book!,
+                    modIdx: widget.modIdx!,
+                    secIdx: widget.secIdx!,
+                    unitIdx: widget.unitIdx!,
+                    lessonIdx: widget.lessonIdx!,
+                    customPrompt: prompt,
+                    highPriority: true,
+                  );
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          '⚡ High-priority lesson regeneration queued! It will update automatically when ready.',
+                        ),
+                        backgroundColor: AppTheme.duoOrange,
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _onTheoryContinue(Slide slide) {
+    _recordFirstAttempt(slide, true);
+    _nextSlide();
+  }
+
   bool _canCheck(Slide slide) {
+    if (_confidence == null) return false;
     if (slide.type == 'quiz') return _selectedQuizOption != null;
     if (slide.type == 'fill_in_blank' || slide.type == 'program') {
       return _blankInput.trim().isNotEmpty;
@@ -1259,17 +1420,17 @@ class _LessonScreenState extends State<LessonScreen> {
     }
   }
 
-  /// Compact optional confidence selector shown above CHECK. Rating is the
+  /// Compact confidence selector shown above CHECK/CONTINUE. Rating is the
   /// heart of the metacognitive loop: it feeds calibration stats and decides
   /// whether a correct-but-guessed answer still enters the review queue.
-  Widget _buildConfidenceRow() {
+  Widget _buildConfidenceRow({bool isTheory = false}) {
     Widget chip(int value, IconData icon, String label) {
       final selected = _confidence == value;
       return Expanded(
         child: GestureDetector(
           onTap: () => setState(() => _confidence = selected ? null : value),
           child: AnimatedContainer(
-            duration: Duration(milliseconds: 120),
+            duration: const Duration(milliseconds: 120),
             margin: const EdgeInsets.symmetric(horizontal: 4),
             padding: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
@@ -1279,6 +1440,7 @@ class _LessonScreenState extends State<LessonScreen> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: selected ? AppTheme.duoBlue : context.colors.outline,
+                width: selected ? 1.5 : 1.0,
               ),
             ),
             child: Column(
@@ -1288,7 +1450,7 @@ class _LessonScreenState extends State<LessonScreen> {
                   size: 16,
                   color: selected ? AppTheme.duoBlue : context.colors.textFaint,
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
                   label,
                   style: TextStyle(
@@ -1309,22 +1471,42 @@ class _LessonScreenState extends State<LessonScreen> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          chip(
-            MetacognitionService.confidenceGuessing,
-            LucideIcons.dices,
-            'GUESSING',
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Text(
+              isTheory
+                  ? 'HOW WELL DID YOU UNDERSTAND THIS CONCEPT?'
+                  : 'RATE YOUR CONFIDENCE:',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.8,
+                color: context.colors.textFaint,
+              ),
+              textAlign: TextAlign.center,
+            ),
           ),
-          chip(
-            MetacognitionService.confidenceUnsure,
-            LucideIcons.helpCircle,
-            'UNSURE',
-          ),
-          chip(
-            MetacognitionService.confidenceConfident,
-            LucideIcons.checkCircle2,
-            'SURE',
+          Row(
+            children: [
+              chip(
+                MetacognitionService.confidenceGuessing,
+                isTheory ? LucideIcons.frown : LucideIcons.dices,
+                isTheory ? 'LOST' : 'GUESSING',
+              ),
+              chip(
+                MetacognitionService.confidenceUnsure,
+                LucideIcons.helpCircle,
+                'UNSURE',
+              ),
+              chip(
+                MetacognitionService.confidenceConfident,
+                LucideIcons.checkCircle2,
+                isTheory ? 'GOT IT' : 'SURE',
+              ),
+            ],
           ),
         ],
       ),
@@ -1359,9 +1541,13 @@ class _LessonScreenState extends State<LessonScreen> {
       'numerical',
       'matching',
       'ordering',
+      'program',
     ].contains(slide.type);
     final feedbackColor = _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed;
     final wrongExplanation = _wrongQuizExplanation(slide);
+    final isTheory = !isInteractive;
+    final canContinueTheory = isTheory && _confidence != null;
+
     return Container(
       decoration: BoxDecoration(
         color: _answered ? feedbackColor.withValues(alpha: 0.1) : Colors.transparent,
@@ -1388,7 +1574,7 @@ class _LessonScreenState extends State<LessonScreen> {
             },
             child: (_answered && !_isCorrect)
                 ? Padding(
-                    key: ValueKey('incorrect_feedback'),
+                    key: const ValueKey('incorrect_feedback'),
                     padding: const EdgeInsets.only(bottom: 16),
                     child: Container(
                       padding: const EdgeInsets.all(16),
@@ -1437,9 +1623,10 @@ class _LessonScreenState extends State<LessonScreen> {
                   )
                 : const SizedBox.shrink(key: ValueKey('empty_feedback')),
           ),
-          if (isInteractive && !_answered) _buildConfidenceRow(),
+          if (isInteractive && !_answered) _buildConfidenceRow(isTheory: false),
+          if (isTheory) _buildConfidenceRow(isTheory: true),
           AnimatedSwitcher(
-            duration: Duration(milliseconds: 200),
+            duration: const Duration(milliseconds: 200),
             child: isInteractive && !_answered
                 ? DuoButton(
                     key: const ValueKey('check_button'),
@@ -1454,17 +1641,31 @@ class _LessonScreenState extends State<LessonScreen> {
                       if (_canCheck(slide)) _checkAnswer(slide);
                     },
                   )
-                : DuoButton(
-                    key: const ValueKey('continue_button'),
-                    text: _answered && !_isCorrect ? 'GOT IT' : 'CONTINUE',
-                    color: _answered && !_isCorrect
-                        ? AppTheme.duoRed
-                        : AppTheme.duoGreen,
-                    shadowColor: _answered && !_isCorrect
-                        ? AppTheme.duoRedDark
-                        : AppTheme.duoGreenDark,
-                    onPressed: _nextSlide,
-                  ),
+                : isTheory
+                    ? DuoButton(
+                        key: const ValueKey('theory_continue_button'),
+                        text: 'CONTINUE',
+                        color: canContinueTheory
+                            ? AppTheme.duoGreen
+                            : context.colors.outline,
+                        shadowColor: canContinueTheory
+                            ? AppTheme.duoGreenDark
+                            : context.colors.surfaceAlt,
+                        onPressed: () {
+                          if (canContinueTheory) _onTheoryContinue(slide);
+                        },
+                      )
+                    : DuoButton(
+                        key: const ValueKey('continue_button'),
+                        text: _answered && !_isCorrect ? 'GOT IT' : 'CONTINUE',
+                        color: _answered && !_isCorrect
+                            ? AppTheme.duoRed
+                            : AppTheme.duoGreen,
+                        shadowColor: _answered && !_isCorrect
+                            ? AppTheme.duoRedDark
+                            : AppTheme.duoGreenDark,
+                        onPressed: _nextSlide,
+                      ),
           ),
         ],
       ),

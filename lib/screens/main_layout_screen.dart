@@ -10,7 +10,6 @@ import '../services/generation_manager.dart';
 import 'book_dashboard_screen.dart';
 import 'practice_screen.dart';
 import 'summary_screen.dart';
-import 'pyq_tab_screen.dart';
 import 'course_settings_screen.dart';
 import 'course_edit_structure_screen.dart';
 import '../widgets/analytics_view.dart';
@@ -291,18 +290,6 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
       ),
       (context) => PracticeScreen(book: _currentBook),
       (context) => AnalyticsView(courseId: _currentBook.id),
-      (context) => PyqTabScreen(
-        book: _currentBook,
-        activeModule: _activeModule,
-        onBookUpdated: () async {
-          final freshest = await DatabaseService().getBookFromCache(_currentBook.id);
-          if (freshest != null && mounted) {
-            setState(() {
-              _currentBook = freshest;
-            });
-          }
-        },
-      ),
       (context) => SummaryScreen(
         book: _currentBook,
         activeModule: _activeModule,
@@ -343,9 +330,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                                 ? 'Practice Arena'
                                 : _currentIndex == 2
                                     ? 'Analytics'
-                                    : _currentIndex == 3
-                                        ? 'PYQ Analyzer'
-                                        : 'Video Class Finder',
+                                    : 'Video Class Finder',
                         style: TextStyle(
                           fontFamily: 'Nunito',
                           fontWeight: FontWeight.w900,
@@ -422,14 +407,12 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
           LucideIcons.map,
           LucideIcons.dumbbell,
           LucideIcons.barChart2,
-          LucideIcons.fileQuestion,
           LucideIcons.playCircle,
         ],
         tooltips: const [
           'Path',
           'Practice',
           'Analytics',
-          'PYQ',
           'Videos',
         ],
         onTap: (index) {
@@ -495,9 +478,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
           const SizedBox(height: 8),
           _buildSidebarNavItem(2, LucideIcons.barChart2, 'Analytics'),
           const SizedBox(height: 8),
-          _buildSidebarNavItem(3, LucideIcons.fileQuestion, 'PYQ'),
-          const SizedBox(height: 8),
-          _buildSidebarNavItem(4, LucideIcons.playCircle, 'Videos'),
+          _buildSidebarNavItem(3, LucideIcons.playCircle, 'Videos'),
           
           const Spacer(),
           

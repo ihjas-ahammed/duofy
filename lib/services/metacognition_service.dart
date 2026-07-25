@@ -391,15 +391,19 @@ class MetacognitionService {
     return due;
   }
 
-  static Future<int> dueCount({DateTime? now}) async => (await dueItems(now: now)).length;
+  static Future<int> dueCount({DateTime? now}) async {
+    final count = (await dueItems(now: now)).length;
+    return count > 5 ? 5 : count;
+  }
 
   /// Resolves due review items to their actual [Slide]s via local storage.
-  /// Shuffles candidate items for improved randomness, and excludes items reviewed today.
+  /// Capped at max 5 slides per Smart Review session.
   static Future<List<Slide>> resolveDueSlides({
-    int limit = 15,
+    int limit = 5,
     DateTime? now,
     bool shuffle = true,
   }) async {
+    final effectiveLimit = limit > 5 ? 5 : limit;
     final due = await dueItems(now: now, excludeReviewedToday: true);
     if (due.isEmpty) return [];
 
@@ -416,7 +420,7 @@ class MetacognitionService {
     var pruned = false;
 
     for (final item in candidateItems) {
-      if (slides.length >= limit) break;
+      if (slides.length >= effectiveLimit) break;
       Book? book;
       if (bookCache.containsKey(item.bookId)) {
         book = bookCache[item.bookId];

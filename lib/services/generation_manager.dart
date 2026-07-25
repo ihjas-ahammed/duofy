@@ -2555,6 +2555,7 @@ class GenerationManager extends ChangeNotifier {
     bool isScheduled = false,
     String? customPrompt,
     String? newFormatId,
+    bool highPriority = false,
   }) async {
     final lesson =
         book.modules[modIdx].sections[secIdx].units[unitIdx].lessons[lessonIdx];
@@ -2575,14 +2576,15 @@ class GenerationManager extends ChangeNotifier {
       unitId: book.modules[modIdx].sections[secIdx].units[unitIdx].id,
       generateGraphics: generateGraphics,
       isScheduled: isScheduled,
+      highPriority: highPriority,
       params: {
         'modIdx': modIdx,
         'secIdx': secIdx,
         'unitIdx': unitIdx,
         'lessonIdx': lessonIdx,
         'lessonId': lesson.id,
-        'customPrompt': ?customPrompt,
-        'newFormatId': ?newFormatId,
+        'customPrompt': customPrompt,
+        'newFormatId': newFormatId,
       },
     );
   }

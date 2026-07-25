@@ -232,7 +232,7 @@ class DatabaseService {
       final files = dir
           .listSync()
           .whereType<File>()
-          .where((f) => f.path.toLowerCase().endsWith('.json'));
+          .where((f) => f.path.toLowerCase().endsWith('.json') && !f.path.endsWith('_slides.json'));
       for (final f in files) {
         try {
           final txt = await f.readAsString();
@@ -306,20 +306,7 @@ class DatabaseService {
     }
 
     // 2. Strip slides from the Book JSON to build the skeleton book
-    final skeletonModules = book.modules.map((m) {
-      final skeletonSections = m.sections.map((s) {
-        final skeletonUnits = s.units.map((u) {
-          final skeletonLessons = u.lessons.map((l) {
-            return l.copyWith(slides: []); // Empty list
-          }).toList();
-          return u.copyWith(lessons: skeletonLessons);
-        }).toList();
-        return s.copyWith(units: skeletonUnits);
-      }).toList();
-      return m.copyWith(sections: skeletonSections);
-    }).toList();
-
-    final skeletonBook = book.copyWith(modules: skeletonModules);
+    final skeletonBook = buildSkeletonBook(book);
 
     if (kIsWeb) {
       final prefs = await SharedPreferences.getInstance();
@@ -327,12 +314,19 @@ class DatabaseService {
       return;
     }
 
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
     final target = _bookFile(dir, book.id);
     final tmp = File('${target.path}.tmp');
     try {
       await tmp.writeAsString(jsonEncode(skeletonBook.toJson()), flush: true);
-      if (await target.exists()) await target.delete();
-      await tmp.rename(target.path);
+      try {
+        await tmp.rename(target.path);
+      } catch (_) {
+        if (await target.exists()) await target.delete();
+        await tmp.rename(target.path);
+      }
     } catch (e) {
       print("[DatabaseService] _writeBookFile atomic write failed: $e. Falling back to direct write...");
       await target.writeAsString(jsonEncode(skeletonBook.toJson()), flush: true);
@@ -362,9 +356,21 @@ class DatabaseService {
         if (await file.exists()) {
           final txt = await file.readAsString();
           if (txt.trim().isNotEmpty) {
-            final List decoded = jsonDecode(txt);
-            final slides = decoded.map((s) => LatexUtils.fixSlideLatex(Slide.fromJson(Map<String, dynamic>.from(s)))).toList();
-            if (slides.isNotEmpty) return slides;
+            final decoded = jsonDecode(txt);
+            if (decoded is List) {
+              final List<Slide> slides = [];
+              for (final item in decoded) {
+                if (item is Map) {
+                  try {
+                    slides.add(LatexUtils.fixSlideLatex(
+                        Slide.fromJson(Map<String, dynamic>.from(item))));
+                  } catch (e) {
+                    print("[DatabaseService] Error parsing slide item: $e");
+                  }
+                }
+              }
+              if (slides.isNotEmpty) return slides;
+            }
           }
         }
       } catch (e) {
@@ -720,7 +726,8 @@ class DatabaseService {
 
       // Background push of local-newer books (non-blocking).
       for (final b in toPush) {
-        _userBooks.doc(b.id).set(b.toJson()).catchError((e) {
+        final skeleton = buildSkeletonBook(b);
+        _userBooks.doc(b.id).set(skeleton.toJson()).catchError((e) {
           print("[DatabaseService] Error syncing local book ${b.id} to remote: $e");
         });
       }
@@ -739,6 +746,23 @@ class DatabaseService {
       print("[DatabaseService] SYNC ERROR (returning local): $e");
       return _sorted(local.values);
     }
+  }
+
+  /// Helper to strip slides from a book structure for compact cloud backup or disk index storage.
+  static Book buildSkeletonBook(Book book) {
+    final skeletonModules = book.modules.map((m) {
+      final skeletonSections = m.sections.map((s) {
+        final skeletonUnits = s.units.map((u) {
+          final skeletonLessons = u.lessons.map((l) {
+            return l.copyWith(slides: []);
+          }).toList();
+          return u.copyWith(lessons: skeletonLessons);
+        }).toList();
+        return s.copyWith(units: skeletonUnits);
+      }).toList();
+      return m.copyWith(sections: skeletonSections);
+    }).toList();
+    return book.copyWith(modules: skeletonModules);
   }
 
   List<Book> _sorted(Iterable<Book> books) {
@@ -807,7 +831,8 @@ class DatabaseService {
 
     // 2. Optional cloud backup (background, non-blocking).
     if (await isCloudEnabled()) {
-      _userBooks.doc(updatedBook.id).set(updatedBook.toJson()).catchError((e) {
+      final skeletonBook = buildSkeletonBook(updatedBook);
+      _userBooks.doc(updatedBook.id).set(skeletonBook.toJson()).catchError((e) {
         print("[DatabaseService] Cloud push failed (book is still saved locally): $e");
       });
     }
@@ -875,7 +900,14 @@ class DatabaseService {
       isGlobal: true,
       updatedAt: DateTime.now().millisecondsSinceEpoch,
     );
-    await _globalBooks.doc(book.id).set(publishedBook.toJson());
+    final jsonMap = publishedBook.toJson();
+    final jsonStr = jsonEncode(jsonMap);
+    if (jsonStr.length > 950000) {
+      final skeleton = buildSkeletonBook(publishedBook);
+      await _globalBooks.doc(book.id).set(skeleton.toJson());
+    } else {
+      await _globalBooks.doc(book.id).set(jsonMap);
+    }
     // Also save this local copy with isGlobal = true to local database!
     await saveGeneratedBook(publishedBook);
     return true;
