@@ -921,6 +921,18 @@ class Book {
   /// source PDF.
   final bool mappingVerified;
 
+  /// Custom table of contents index text supplied or edited by the user.
+  final String? customIndexText;
+
+  /// Active density profile level ('Low', 'Medium', 'High', 'Extra', 'Max').
+  final String activeDensity;
+
+  /// Separate module trees for each density profile level.
+  final Map<String, List<Module>> densityVariants;
+
+  /// Returns the module tree for the currently active density profile level.
+  List<Module> get activeModules => densityVariants[activeDensity] ?? modules;
+
   static const List<String> defaultPlannerQuestions = [
     'Include core conceptual theory and definitions',
     'Include step-by-step worked examples',
@@ -951,7 +963,10 @@ class Book {
     this.bloomLevel = 'Remembering / Understanding',
     this.pageOffset,
     this.mappingVerified = false,
-  });
+    this.customIndexText,
+    this.activeDensity = 'Max',
+    Map<String, List<Module>>? densityVariants,
+  }) : densityVariants = densityVariants ?? {activeDensity: modules};
 
   factory Book.fromJson(Map<String, dynamic> json) {
     // ---- Format-list migration --------------------------------------------
@@ -1039,6 +1054,26 @@ class Book {
       return m.copyWith(sections: sections);
     }).toList();
 
+    final activeDensity = _str(json['activeDensity'], 'Max');
+    final customIndexText = _strOpt(json['customIndexText']);
+    final densityVariantsRaw = json['densityVariants'] as Map?;
+    final Map<String, List<Module>> densityVariants = {};
+    if (densityVariantsRaw != null) {
+      for (final entry in densityVariantsRaw.entries) {
+        final key = entry.key.toString();
+        final list = entry.value as List?;
+        if (list != null) {
+          densityVariants[key] = list
+              .map(
+                (m) => Module.fromJson(
+                  m is Map ? Map<String, dynamic>.from(m) : {},
+                ),
+              )
+              .toList();
+        }
+      }
+    }
+
     return Book(
       id: _str(json['id']),
       title: _str(json['title']),
@@ -1072,6 +1107,9 @@ class Book {
           ? (json['pageOffset'] as num).toInt()
           : int.tryParse(_str(json['pageOffset'])),
       mappingVerified: _bool(json['mappingVerified'], false),
+      customIndexText: customIndexText,
+      activeDensity: activeDensity,
+      densityVariants: densityVariants.isNotEmpty ? densityVariants : null,
     );
   }
 
@@ -1096,6 +1134,12 @@ class Book {
     'bloomLevel': bloomLevel,
     if (pageOffset != null) 'pageOffset': pageOffset,
     if (mappingVerified) 'mappingVerified': mappingVerified,
+    'activeDensity': activeDensity,
+    if (customIndexText != null) 'customIndexText': customIndexText,
+    'densityVariants': {
+      for (final entry in densityVariants.entries)
+        entry.key: entry.value.map((m) => m.toJson()).toList(),
+    },
   };
 
   List<LessonFormat> formatsForSection(Section section) {
@@ -1315,7 +1359,15 @@ class Book {
     String? bloomLevel,
     int? pageOffset,
     bool? mappingVerified,
+    String? customIndexText,
+    String? activeDensity,
+    Map<String, List<Module>>? densityVariants,
   }) {
+    final newActiveDensity = activeDensity ?? this.activeDensity;
+    final Map<String, List<Module>> updatedVariants = Map.from(densityVariants ?? this.densityVariants);
+    if (modules != null) {
+      updatedVariants[newActiveDensity] = modules;
+    }
     return Book(
       id: id ?? this.id,
       title: title ?? this.title,
@@ -1337,6 +1389,9 @@ class Book {
       bloomLevel: bloomLevel ?? this.bloomLevel,
       pageOffset: pageOffset ?? this.pageOffset,
       mappingVerified: mappingVerified ?? this.mappingVerified,
+      customIndexText: customIndexText ?? this.customIndexText,
+      activeDensity: newActiveDensity,
+      densityVariants: updatedVariants,
     );
   }
 

@@ -15,8 +15,8 @@
     "semantic_hash": ""
   },
   "lib/models/app_models.dart": {
-    "mtime": 1784959113.925651,
-    "ast_hash": "09233a7447f5230c453cf8a5e3286f8e",
+    "mtime": 1784963880.9238648,
+    "ast_hash": "81125d13484ee9e2cc9d59ca6d4f204a",
     "semantic_hash": ""
   },
   "lib/screens/main_layout_screen.dart": {
@@ -45,8 +45,8 @@
     "semantic_hash": ""
   },
   "lib/screens/home_screen.dart": {
-    "mtime": 1784957981.4566915,
-    "ast_hash": "32bfdb053270f2ccb5dab762fbc5140e",
+    "mtime": 1784964285.380552,
+    "ast_hash": "4d3b0a5070a7b1e031fe4ce8b961e870",
     "semantic_hash": ""
   },
   "lib/screens/pyq_tab_screen.dart": {
@@ -110,8 +110,8 @@
     "semantic_hash": ""
   },
   "lib/screens/generate_book_screen.dart": {
-    "mtime": 1784952867.7088828,
-    "ast_hash": "e9798f804ff238dba138fbcac502e207",
+    "mtime": 1784964197.0790007,
+    "ast_hash": "9422c36b6ff62660ece2248fb311d5eb",
     "semantic_hash": ""
   },
   "lib/screens/course_edit_structure_screen.dart": {
@@ -340,18 +340,18 @@
     "semantic_hash": ""
   },
   "lib/services/generation_manager.dart": {
-    "mtime": 1784961417.8864157,
-    "ast_hash": "f38ea2caf942954fe38381dea64556bb",
+    "mtime": 1784963614.2660131,
+    "ast_hash": "a9563eb453e32129fc1ec04541e1c5de",
     "semantic_hash": ""
   },
   "lib/services/ai_service.dart": {
-    "mtime": 1784960794.438449,
-    "ast_hash": "1016927939ba1cf048712987969c641c",
+    "mtime": 1784963886.0907102,
+    "ast_hash": "1edfd6c56dd2cc15ead32a243298bcf8",
     "semantic_hash": ""
   },
   "lib/services/prompt_service.dart": {
-    "mtime": 1784960477.663872,
-    "ast_hash": "2cc84aafe7c28b41c99594422b271fcd",
+    "mtime": 1784963560.5896642,
+    "ast_hash": "799bf38b7151aa17a90c1532254ae352",
     "semantic_hash": ""
   },
   "lib/services/notification_service.dart": {
@@ -1695,8 +1695,8 @@
     "semantic_hash": ""
   },
   "lib/widgets/slide_views/matching_view.dart": {
-    "mtime": 1784958060.9071782,
-    "ast_hash": "4a57bf4c7ef8b6442cff3c81a218a3b1",
+    "mtime": 1784964335.7056272,
+    "ast_hash": "0c9abb31c9914260b12c8fe18557b918",
     "semantic_hash": ""
   },
   "lib/widgets/slide_views/ordering_view.dart": {
@@ -2192,6 +2192,46 @@
   "lib/utils/latex_utils.dart": {
     "mtime": 1784959447.6978319,
     "ast_hash": "90b4c4592256fa5225e33af0c41b5e54",
+    "semantic_hash": ""
+  },
+  "lib/screens/ide/code_ide_screen.dart": {
+    "mtime": 1784965308.7959616,
+    "ast_hash": "0c355ba133bfa84482abcae764567f74",
+    "semantic_hash": ""
+  },
+  "lib/screens/ide/html_ide_screen.dart": {
+    "mtime": 1784965264.3653464,
+    "ast_hash": "36706d580065815db1164d51003b7088",
+    "semantic_hash": ""
+  },
+  "lib/screens/ide/latex_ide_screen.dart": {
+    "mtime": 1784965273.8735032,
+    "ast_hash": "a9afb053275f8db2aaa88715cf4b72a8",
+    "semantic_hash": ""
+  },
+  "lib/screens/ide/python_notebook_screen.dart": {
+    "mtime": 1784965254.7051828,
+    "ast_hash": "6221379d0fb8baca89893bdb1c6acacd",
+    "semantic_hash": ""
+  },
+  "lib/screens/ide/universal_code_runner_screen.dart": {
+    "mtime": 1784965281.9403172,
+    "ast_hash": "67a226378676de709fae544e92ed261c",
+    "semantic_hash": ""
+  },
+  "lib/services/code_storage_service.dart": {
+    "mtime": 1784964241.6567917,
+    "ast_hash": "ffa3e41e9cddb507130d4c5737458662",
+    "semantic_hash": ""
+  },
+  "lib/services/ide_settings_service.dart": {
+    "mtime": 1784965240.8053396,
+    "ast_hash": "4fe010bcb3c4405cf02afc27360d616a",
+    "semantic_hash": ""
+  },
+  "lib/widgets/ide_config_dialog.dart": {
+    "mtime": 1784965245.3692577,
+    "ast_hash": "7d1d50a7fab34d7bdb2e06960df90c99",
     "semantic_hash": ""
   }
 }

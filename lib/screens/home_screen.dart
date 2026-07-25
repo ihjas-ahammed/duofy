@@ -9,6 +9,7 @@ import '../models/app_models.dart';
 import '../services/database_service.dart';
 import '../services/progress_service.dart';
 import '../services/generation_manager.dart';
+import '../services/ai_service.dart';
 import '../services/learning_sync.dart';
 import '../services/update_service.dart';
 import '../services/walkthrough_service.dart';
@@ -30,6 +31,7 @@ import 'settings_screen.dart';
 import 'generate_book_screen.dart';
 import 'pdf_split_preview_screen.dart';
 import 'course_edit_structure_screen.dart';
+import 'ide/code_ide_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/global_state.dart';
 import '../main.dart';
@@ -1540,7 +1542,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       builders: [
                         (context) => _buildDesktopLibraryTab(activeTasks, screenWidth),
                         (context) => _buildAnalyticsTab(screenWidth),
-                        (context) => _buildPublishedTab(screenWidth),
+                        (context) => const CodeIdeScreen(),
                         (context) => const DocumentStoreScreen(),
                       ],
                     ),
@@ -1558,7 +1560,7 @@ class _HomeScreenState extends State<HomeScreen> {
               builders: [
                 (context) => _buildLibraryTab(activeTasks, screenWidth),
                 (context) => _buildAnalyticsTab(screenWidth),
-                (context) => _buildPublishedTab(screenWidth),
+                (context) => const CodeIdeScreen(),
                 (context) => const DocumentStoreScreen(),
               ],
             ),
@@ -1568,10 +1570,10 @@ class _HomeScreenState extends State<HomeScreen> {
               icons: const [
                 LucideIcons.bookOpen,
                 LucideIcons.barChart2,
-                LucideIcons.globe,
+                LucideIcons.code2,
                 LucideIcons.hardDrive,
               ],
-              tooltips: const ['Library', 'Analytics', 'Published', 'Doc Store'],
+              tooltips: const ['Library', 'Analytics', 'Code', 'Doc Store'],
               onTap: (index) {
                 setState(() {
                   _selectedTabIndex = index;
@@ -1639,7 +1641,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 8),
           _buildSidebarNavItem(1, LucideIcons.barChart2, 'Analytics'),
           const SizedBox(height: 8),
-          _buildSidebarNavItem(2, LucideIcons.globe, 'Published'),
+          _buildSidebarNavItem(2, LucideIcons.code2, 'Code Playground'),
           const SizedBox(height: 8),
           _buildSidebarNavItem(3, LucideIcons.hardDrive, 'Doc Store'),
 
@@ -2482,6 +2484,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                       ),
                       _buildMenuItem(
+                        icon: LucideIcons.sliders,
+                        title: 'Switch Density & Edit Index',
+                        subtitle: 'Change generation depth profile or edit course outline',
+                        iconColor: AppTheme.duoViolet,
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          _showEditCustomIndexDialog(book);
+                        },
+                      ),
+                      _buildMenuItem(
                         icon: LucideIcons.edit3,
                         title: 'Edit Course Structure',
                         subtitle: 'Rename modules/sections or re-map pages',
@@ -2732,6 +2744,311 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+        );
+      },
+    );
+  }
+
+  void _showEditCustomIndexDialog(Book book) {
+    final TextEditingController indexCtrl = TextEditingController(
+      text: book.customIndexText ??
+          book.modules.map((m) {
+            final secList = m.sections.map((s) => '  - ${s.title}').join('\n');
+            return '${m.title}\n$secList';
+          }).join('\n\n'),
+    );
+
+    double densityVal = 1.0;
+    switch (book.activeDensity.toLowerCase()) {
+      case 'low':
+        densityVal = 0.0;
+        break;
+      case 'high':
+        densityVal = 2.0;
+        break;
+      case 'extra':
+        densityVal = 3.0;
+        break;
+      case 'max':
+        densityVal = 4.0;
+        break;
+      case 'medium':
+      default:
+        densityVal = 1.0;
+        break;
+    }
+
+    String getDensityKey(double val) {
+      switch (val.round()) {
+        case 0:
+          return 'Low';
+        case 2:
+          return 'High';
+        case 3:
+          return 'Extra';
+        case 4:
+          return 'Max';
+        case 1:
+        default:
+          return 'Medium';
+      }
+    }
+
+    Color getDensityColor(double val) {
+      switch (val.round()) {
+        case 0:
+          return AppTheme.duoBlue;
+        case 2:
+          return AppTheme.duoOrange;
+        case 3:
+          return AppTheme.duoRed;
+        case 4:
+          return AppTheme.duoViolet;
+        case 1:
+        default:
+          return AppTheme.duoGreen;
+      }
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            final currentKey = getDensityKey(densityVal);
+            final currentColor = getDensityColor(densityVal);
+
+            return ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: context.colors.glassStrong,
+                    border: Border.all(color: context.colors.outline),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(28),
+                    ),
+                  ),
+                  padding: EdgeInsets.only(
+                    left: 20,
+                    right: 20,
+                    top: 24,
+                    bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+                  ),
+                  child: SafeArea(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: currentColor.withValues(alpha: 0.18),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: currentColor.withValues(alpha: 0.4),
+                                  ),
+                                ),
+                                child: Icon(
+                                  LucideIcons.sliders,
+                                  color: currentColor,
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'COURSE PROFILE & DENSITY',
+                                      style: TextStyle(
+                                        color: currentColor,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      book.title,
+                                      style: TextStyle(
+                                        color: context.colors.textPrimary,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'ACTIVE DENSITY PROFILE',
+                                style: TextStyle(
+                                  color: context.colors.textFaint,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: currentColor.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: currentColor.withValues(alpha: 0.4),
+                                  ),
+                                ),
+                                child: Text(
+                                  currentKey.toUpperCase(),
+                                  style: TextStyle(
+                                    color: currentColor,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          SliderTheme(
+                            data: SliderThemeData(
+                              activeTrackColor: currentColor,
+                              thumbColor: currentColor,
+                              inactiveTrackColor: context.colors.outline,
+                              overlayColor: currentColor.withValues(alpha: 0.2),
+                            ),
+                            child: Slider(
+                              value: densityVal,
+                              min: 0,
+                              max: 4,
+                              divisions: 4,
+                              onChanged: (val) {
+                                setModalState(() {
+                                  densityVal = val;
+                                });
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'CUSTOM INDEX OUTLINE',
+                            style: TextStyle(
+                              color: context.colors.textFaint,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: indexCtrl,
+                            maxLines: 5,
+                            style: TextStyle(
+                              color: context.colors.textPrimary,
+                              fontSize: 13,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Edit custom index outline...',
+                              hintStyle: TextStyle(
+                                color: context.colors.textFaint,
+                                fontSize: 12,
+                              ),
+                              filled: true,
+                              fillColor: context.colors.surface,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: context.colors.outline),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          DuoButton(
+                            text: 'Update & Switch Profile',
+                            color: currentColor,
+                            shadowColor: currentColor,
+                            onPressed: () async {
+                              Navigator.pop(ctx);
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (_) => Center(
+                                  child: Card(
+                                    color: context.colors.surface,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(24),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          CircularProgressIndicator(color: currentColor),
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            'Updating density profile...',
+                                            style: TextStyle(
+                                              color: context.colors.textPrimary,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+
+                              try {
+                                final newKey = getDensityKey(densityVal);
+                                final updatedBook = await AiService().updateCourseFromCustomIndex(
+                                  existingBook: book,
+                                  newIndexText: indexCtrl.text,
+                                  newDensity: newKey,
+                                );
+                                await DatabaseService().saveGeneratedBook(updatedBook);
+                                GenerationManager.instance.triggerBookUpdate(updatedBook);
+                                await _loadAllData(force: false);
+                                if (mounted) {
+                                  Navigator.pop(context); // dismiss spinner
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Switched to $newKey profile. Progress in other profiles preserved!'),
+                                      backgroundColor: AppTheme.duoGreen,
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  Navigator.pop(context); // dismiss spinner
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Error updating profile: $e')),
+                                  );
+                                }
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         );
       },
     );

@@ -1,16 +1,16 @@
 # Graph Report - duofy  (2026-07-25)
 
 ## Corpus Check
-- 345 files · ~601,346 words
+- 353 files · ~609,335 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 15323 nodes · 16528 edges · 3890 communities (343 shown, 3547 thin omitted)
+- 15505 nodes · 16796 edges · 3909 communities (361 shown, 3548 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 202 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `12bf4722`
+- Built from commit: `348ad55d`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -825,8 +825,11 @@ download_handler_on_before_download]]
 - [[_COMMUNITY_Community 794|Community 794]]
 - [[_COMMUNITY_Community 795|Community 795]]
 - [[_COMMUNITY_Community 796|Community 796]]
+- [[_COMMUNITY_Community 797|Community 797]]
+- [[_COMMUNITY_Community 798|Community 798]]
 - [[_COMMUNITY_Community 799|Community 799]]
 - [[_COMMUNITY_Community 800|Community 800]]
+- [[_COMMUNITY_Community 801|Community 801]]
 - [[_COMMUNITY_Community 802|Community 802]]
 - [[_COMMUNITY_Community 804|Community 804]]
 - [[_COMMUNITY_Community 805|Community 805]]
@@ -843,6 +846,7 @@ download_handler_on_before_download]]
 - [[_COMMUNITY_Community 816|Community 816]]
 - [[_COMMUNITY_Community 817|Community 817]]
 - [[_COMMUNITY_Community 818|Community 818]]
+- [[_COMMUNITY_Community 819|Community 819]]
 - [[_COMMUNITY_Community 820|Community 820]]
 - [[_COMMUNITY_Community 821|Community 821]]
 - [[_COMMUNITY_Community 822|Community 822]]
@@ -862,11 +866,18 @@ download_handler_on_before_download]]
 - [[_COMMUNITY_Community 836|Community 836]]
 - [[_COMMUNITY_Community 837|Community 837]]
 - [[_COMMUNITY_Community 838|Community 838]]
+- [[_COMMUNITY_Community 839|Community 839]]
 - [[_COMMUNITY_Community 840|Community 840]]
+- [[_COMMUNITY_Community 841|Community 841]]
+- [[_COMMUNITY_Community 842|Community 842]]
+- [[_COMMUNITY_Community 843|Community 843]]
 - [[_COMMUNITY_Community 846|Community 846]]
 - [[_COMMUNITY_Community 847|Community 847]]
 - [[_COMMUNITY_Community 848|Community 848]]
 - [[_COMMUNITY_Community 849|Community 849]]
+- [[_COMMUNITY_Community 850|Community 850]]
+- [[_COMMUNITY_Community 851|Community 851]]
+- [[_COMMUNITY_Community 852|Community 852]]
 - [[_COMMUNITY_Community 853|Community 853]]
 - [[_COMMUNITY_Community 854|Community 854]]
 - [[_COMMUNITY_Community 855|Community 855]]
@@ -3894,9 +3905,17 @@ download_handler_on_before_download]]
 - [[_COMMUNITY_Community 3898|Community 3898]]
 - [[_COMMUNITY_Community 3899|Community 3899]]
 - [[_COMMUNITY_Community 3900|Community 3900]]
+- [[_COMMUNITY_Community 3901|Community 3901]]
+- [[_COMMUNITY_Community 3902|Community 3902]]
+- [[_COMMUNITY_Community 3903|Community 3903]]
+- [[_COMMUNITY_Community 3904|Community 3904]]
+- [[_COMMUNITY_Community 3905|Community 3905]]
+- [[_COMMUNITY_Community 3906|Community 3906]]
+- [[_COMMUNITY_Community 3907|Community 3907]]
+- [[_COMMUNITY_Community 3908|Community 3908]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `state` - 88 edges
+1. `state` - 94 edges
 2. `WValue` - 88 edges
 3. `WebviewHandler` - 69 edges
 4. `CefRefPtr` - 42 edges
@@ -3908,25 +3927,25 @@ download_handler_on_before_download]]
 10. `WebviewPlugin` - 24 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `fl_register_plugins()` --calls--> `webview_cef_plugin_register_with_registrar()`  [INFERRED]
-  linux/flutter/generated_plugin_registrant.cc → packages/webview_cef/linux/webview_cef_plugin.cc
 - `WebviewCefPlugin` --inherits--> `Plugin`  [EXTRACTED]
   packages/webview_cef/windows/webview_cef_plugin.h → windows/flutter/ephemeral/cpp_client_wrapper/plugin_registrar.cc
-- `fl_register_plugins()` --calls--> `webview_cef_plugin_register_with_registrar()`  [INFERRED]
-  linux/flutter/generated_plugin_registrant.cc → packages/webview_cef/linux/webview_cef_plugin.cc
 - `_MyAppState` --inherits--> `state`  [EXTRACTED]
   packages/webview_cef/example/lib/main.dart → lib/services/generation_manager.dart
 - `WebViewState` --inherits--> `state`  [EXTRACTED]
   packages/webview_cef/lib/src/webview.dart → lib/services/generation_manager.dart
+- `fl_register_plugins()` --calls--> `webview_cef_plugin_register_with_registrar()`  [INFERRED]
+  linux/flutter/generated_plugin_registrant.cc → packages/webview_cef/linux/webview_cef_plugin.cc
+- `fl_register_plugins()` --calls--> `webview_cef_plugin_register_with_registrar()`  [INFERRED]
+  linux/flutter/generated_plugin_registrant.cc → packages/webview_cef/linux/webview_cef_plugin.cc
 
 ## Import Cycles
 - None detected.
 
-## Communities (3890 total, 3547 thin omitted)
+## Communities (3909 total, 3548 thin omitted)
 
 ### Community 0 - "bookmarks_screen.dart & web_webview_helper.dart"
-Cohesion: 0.03
-Nodes (64): Section, book, bookmark, _BookmarkMatch, build, _buildFloatingTargetButton, _buildLongPressMenu, _completedLessons (+56 more)
+Cohesion: 0.05
+Nodes (44): book, bookmark, _BookmarkMatch, build, _buildFloatingTargetButton, _buildLongPressMenu, _completedLessons, createState (+36 more)
 
 ### Community 2 - "../services/generation_manager.dart & applyUnit"
 Cohesion: 0.00
@@ -3934,7 +3953,7 @@ Nodes (1193): accessibility, activity, activitySquare, airplay, airVent, alarmCh
 
 ### Community 4 - "prompt_service.dart & lesson_node.dart"
 Cohesion: 0.03
-Nodes (66): Do not skip any, camera, canvasArt, chapterList, chapterStartsList, _coreSlideRules, ctx, cube (+58 more)
+Nodes (67): Do not skip any, INLINE vs DISPLAY, camera, canvasArt, chapterList, chapterStartsList, _coreSlideRules, ctx (+59 more)
 
 ### Community 5 - "../widgets/math_markdown.dart & qp_detail_scree..."
 Cohesion: 0.04
@@ -3942,7 +3961,7 @@ Nodes (46): blankAnswered, blankController, blankCorrect, build, _buildMath, cmd
 
 ### Community 7 - "book_dashboard_screen.dart & AlertDialog"
 Cohesion: 0.06
-Nodes (31): ConfettiController, accuracy, _animController, book, bookId, build, _buildDesktop, _buildMobile (+23 more)
+Nodes (31): Animation, ConfettiController, accuracy, _animController, book, bookId, build, _buildDesktop (+23 more)
 
 ### Community 8 - "../widgets/lesson_path.dart & lesson_accordion...."
 Cohesion: 0.03
@@ -3950,7 +3969,7 @@ Nodes (70): _amber, _bgStroke, book, _bottomPad, _centerX, completed, completedL
 
 ### Community 10 - "main_layout_screen.dart & course_edit_structure..."
 Cohesion: 0.04
-Nodes (48): let, build, buildCanvasArt, buildCanvasHtml, canvasAspect, CanvasDoubleTapDetector, _CanvasDoubleTapDetectorState, _CanvasFullScreenScreen (+40 more)
+Nodes (48): double? w,, build, buildCanvasArt, buildCanvasHtml, canvasAspect, CanvasDoubleTapDetector, _CanvasDoubleTapDetectorState, _CanvasFullScreenScreen (+40 more)
 
 ### Community 11 - "practice_screen.dart & AlertDialog"
 Cohesion: 0.04
@@ -3958,7 +3977,7 @@ Nodes (48): _activeModule, book, build, _buildModeGrid, _buildRangeBlock, _build
 
 ### Community 12 - "pdf_split_preview_screen.dart & services/notifi..."
 Cohesion: 0.03
-Nodes (68): activeCanvasRegensCount, analyzeDescriptiveAnswer, analyzePrerequisites, answers, _asInt, _attachArtToLesson, _buildFileParts, _buildNeighborContext (+60 more)
+Nodes (69): activeCanvasRegensCount, analyzeDescriptiveAnswer, analyzePrerequisites, answers, _asInt, _attachArtToLesson, _buildFileParts, _buildNeighborContext (+61 more)
 
 ### Community 13 - "ai_queue_screen.dart & ../models/ai_task.dart"
 Cohesion: 0.03
@@ -3966,11 +3985,11 @@ Nodes (64): File get, absolute, add, close, closeCode, closeReason, connect, cop
 
 ### Community 14 - "../widgets/lesson_assistant_chat.dart & _addSys..."
 Cohesion: 0.04
-Nodes (55): AudioPlayer, FlutterTts, WebSocket, _addSystemMessage, _addWavHeader, audioBytes, _audioPlayer, book (+47 more)
+Nodes (54): AudioPlayer, FlutterTts, WebSocket, _addSystemMessage, _addWavHeader, audioBytes, _audioPlayer, book (+46 more)
 
 ### Community 16 - "canvas_html_view.dart & buildCanvasArt"
-Cohesion: 0.14
-Nodes (15): GetDisplayHandler(), GetFocusHandler(), GetLifeSpanHandler(), GetLoadHandler(), GetRenderHandler(), add, injectTime, InjectUserScripts (+7 more)
+Cohesion: 0.20
+Nodes (9): add, injectTime, InjectUserScripts, retrieveLoadEndInjectScripts, retrieveLoadStartInjectScripts, script, ScriptInjectTime, UserScript (+1 more)
 
 ### Community 17 - "practice_session_screen.dart & lesson_complete_..."
 Cohesion: 0.03
@@ -3982,15 +4001,15 @@ Nodes (77): activeModule, _activeModuleIdx, activeSection, _activeSectionIdx, bo
 
 ### Community 27 - "generate_book_screen.dart & auto_index_screen.dart"
 Cohesion: 0.03
-Nodes (66): bookmarks_screen.dart, generate_book_screen.dart, book, books, _bookUpdateSubscription, _buildAnalyticsTab, _buildDragHandle, _buildFolderCard (+58 more)
+Nodes (67): generate_book_screen.dart, book, books, _bookUpdateSubscription, _buildAnalyticsTab, _buildDragHandle, _buildFolderCard, _buildFoldersList (+59 more)
 
 ### Community 29 - "main.dart & AlertDialog"
 Cohesion: 0.05
 Nodes (39): activeModule, _activeModuleIdx, activeSection, _activeSectionIdx, book, build, _buildVideoCard, _cachedVideos (+31 more)
 
 ### Community 33 - "../widgets/slide_views/fill_in_blank_view.dart ..."
-Cohesion: 0.04
-Nodes (54): calibration_card.dart, AnalyticsView, _AnalyticsViewState, build, _buildStatCard, _calculateAvgAccuracy, _calculateStreak, courseId (+46 more)
+Cohesion: 0.06
+Nodes (31): calibration_card.dart, AnalyticsView, _AnalyticsViewState, build, _buildStatCard, _calculateAvgAccuracy, _calculateStreak, courseId (+23 more)
 
 ### Community 34 - "platform_webview.dart & buildWebWebView"
 Cohesion: 0.04
@@ -4005,16 +4024,16 @@ Cohesion: 0.06
 Nodes (31): authStateChanges, _bootstrap, collection, createUserWithEmailAndPassword, _ctrl, _current, currentUser, delete (+23 more)
 
 ### Community 42 - "theme/app_theme.dart & dart:ui"
-Cohesion: 0.11
-Nodes (64): cursorAction(), HandleMethodCall(), initCallback(), webview_ptr_array_add(), webview_ptr_array_free(), webview_ptr_array_index(), webview_ptr_array_new_with_free_func(), webview_ptr_array_unref() (+56 more)
+Cohesion: 0.17
+Nodes (36): HandleMethodCall(), initCallback(), webview_ptr_array_add(), webview_ptr_array_free(), webview_ptr_array_new_with_free_func(), webview_ptr_array_unref(), webview_value_append(), webview_value_append_take() (+28 more)
 
 ### Community 43 - "../widgets/selectors/module_selector.dart & ../..."
 Cohesion: 0.03
-Nodes (58): MouseCursor, _assertJavascriptChannelNamesAreUnique, _browserId, build, _buildInner, _composingText, controller, createState (+50 more)
+Nodes (58): _assertJavascriptChannelNamesAreUnique, _browserId, build, _buildInner, _composingText, controller, createState, _creatingCompleter (+50 more)
 
 ### Community 44 - "generate_qp_screen.dart & ../widgets/file_selec..."
-Cohesion: 0.09
-Nodes (22): _aiService, applyGlobalShift, describe, _detectShift, MappingVerifier, matched, _matches, _matchThreshold (+14 more)
+Cohesion: 0.07
+Nodes (28): activeModule, _addQuestion, _alertShownForTaskId, book, _bookSub, build, _buildSourceTag, _cacheDirPath (+20 more)
 
 ### Community 45 - "pyq_complete_screen.dart & _formatDuration"
 Cohesion: 0.03
@@ -4030,7 +4049,7 @@ Nodes (34): _addSection, _addUnit, _bookIndices, build, _buildEditorRow, _commit
 
 ### Community 56 - "dart:async & ../services/auto_index_service.dart"
 Cohesion: 0.02
-Nodes (114): auto_index_service.dart, activeCanvasRegens, activeLessonRegens, activePyqTasks, activeQpTasks, activeSectionGenerations, activeSectionManifests, activeSlideRegens (+106 more)
+Nodes (114): activeCanvasRegens, activeLessonRegens, activePyqTasks, activeQpTasks, activeSectionGenerations, activeSectionManifests, activeSlideRegens, activeTasks (+106 more)
 
 ### Community 67 - "mini_progress_bar.dart & MiniProgressBar"
 Cohesion: 0.02
@@ -4038,11 +4057,11 @@ Nodes (107): authorId, authorName, blankAnswer, blankDistractors, bloomLevel, bo
 
 ### Community 70 - "../widgets/responsive_center.dart & ResponsiveC..."
 Cohesion: 0.04
-Nodes (53): _autoFetchBooks, b2Obj, build, _buildListContent, _buildModeSelector, _buildModeTab, _buildTab, _cacheDirPath (+45 more)
+Nodes (54): _autoFetchBooks, b2Obj, build, _buildListContent, _buildModeSelector, _buildModeTab, _buildTab, _cacheDirPath (+46 more)
 
 ### Community 73 - "IteratorImpl<IndexSequence<I...>>"
 Cohesion: 0.02
-Nodes (118): duo_button.dart, int?, interactive_proof_view.dart, mockBooks, Slide, bottomBar, build, ErrorSpottingView (+110 more)
+Nodes (103): duo_button.dart, interactive_proof_view.dart, mockBooks, bottomBar, build, isAnswered, isCorrect, OneWordView (+95 more)
 
 ### Community 75 - "CefScrollViewCToCpp"
 Cohesion: 0.03
@@ -4050,15 +4069,15 @@ Nodes (67): _addModelToSlot, AiProvidersScreen, _AiProvidersScreenState, build, 
 
 ### Community 80 - "CefRequestCToCpp"
 Cohesion: 0.08
-Nodes (24): _answersCtrl1, _answersCtrl2, build, _buildField, _canSubmit, _countSentences, _countWords, createState (+16 more)
+Nodes (25): _answersCtrl1, _answersCtrl2, build, _buildField, _canSubmit, _countSentences, _countWords, createState (+17 more)
 
 ### Community 83 - "CefMessageRouterBrowserSideImpl"
-Cohesion: 0.04
-Nodes (45): _answerController, _attachedPhotos, build, _checkAnswer, createState, DescriptiveView, _DescriptiveViewState, dispose (+37 more)
+Cohesion: 0.09
+Nodes (23): _answerController, _attachedPhotos, build, _checkAnswer, createState, DescriptiveView, _DescriptiveViewState, dispose (+15 more)
 
 ### Community 90 - "bool get"
-Cohesion: 0.04
-Nodes (61): dart:ui, Module, _IconHeaderButton, build, module, ModuleSummaryDetailScreen, WalkStep, _UnitFormatConfirmPanel (+53 more)
+Cohesion: 0.03
+Nodes (67): dart:ui, Module, _IconHeaderButton, B2PdfViewerScreen, CategoryTabs, build, module, ModuleSummaryDetailScreen (+59 more)
 
 ### Community 91 - "package:flutter/foundation.dart"
 Cohesion: 0.00
@@ -4066,7 +4085,7 @@ Nodes (1193): accessibility, activity, activitySquare, airplay, airVent, alarmCh
 
 ### Community 96 - "_SectionManifestPanel"
 Cohesion: 0.02
-Nodes (114): mapping_verifier.dart, notification_service.dart, PlatformFile, activeCanvasRegens, activeLessonRegens, activePyqTasks, activeQpTasks, activeSectionGenerations (+106 more)
+Nodes (114): auto_index_service.dart, mapping_verifier.dart, activeCanvasRegens, activeLessonRegens, activePyqTasks, activeQpTasks, activeSectionGenerations, activeSectionManifests (+106 more)
 
 ### Community 97 - "safe_pdf_viewer.dart"
 Cohesion: 0.05
@@ -4074,15 +4093,15 @@ Nodes (42): _addModule, _addSection, _addUnit, _applyShiftOffset, b2Obj, book, _
 
 ### Community 108 - "CefPostData"
 Cohesion: 0.02
-Nodes (112): authorId, authorName, blankAnswer, blankDistractors, bloomLevel, Book, bookIds, bookIndex (+104 more)
+Nodes (116): activeDensity, activeModules, authorId, authorName, blankAnswer, blankDistractors, bloomLevel, Book (+108 more)
 
 ### Community 111 - "lesson_node.dart"
-Cohesion: 0.05
-Nodes (37): build, _navigateToPrerequisite, _onSectionPdfPressed, _showMissingPdfDialog, _openPdfViewer, build, _buildAppBarActions, _buildDesktopLibraryTab (+29 more)
+Cohesion: 0.06
+Nodes (35): build, _navigateToPrerequisite, _onSectionPdfPressed, _showMissingPdfDialog, build, _buildAppBarActions, _buildDesktopLibraryTab, _buildDesktopSidebar (+27 more)
 
 ### Community 114 - "CefView"
 Cohesion: 0.02
-Nodes (95): ai_providers_screen.dart, ai_queue_screen.dart, dev/programming_slides_screen.dart, experiments_screen.dart, _autoFetchBooks, _autoGenerateModule1, _autoVerifyMappings, build (+87 more)
+Nodes (96): ai_providers_screen.dart, ai_queue_screen.dart, dev/programming_slides_screen.dart, experiments_screen.dart, _autoFetchBooks, _autoGenerateModule1, _autoVerifyMappings, build (+88 more)
 
 ### Community 119 - "MultiQueryManager"
 Cohesion: 0.07
@@ -4094,39 +4113,39 @@ Nodes (24): _activeBlankIndex, _assignedChipIds, _BlankOption, bottomBar, build,
 
 ### Community 129 - "Rhs"
 Cohesion: 0.06
-Nodes (32): DateTime?, ActiveRequestInfo, activeRequests, AiEstimator, _baseOverheads, defaultBaseOverhead, defaultRatePer1000Chars, estimatedDuration (+24 more)
+Nodes (33): DateTime?, Duration?, ActiveRequestInfo, activeRequests, AiEstimator, _baseOverheads, defaultBaseOverhead, defaultRatePer1000Chars (+25 more)
 
 ### Community 134 - "WebviewApp"
 Cohesion: 0.09
 Nodes (42): CefDOMNode, CefV8Context, CefV8Exception, CefV8StackTrace, OnBrowserCreated(), OnBrowserDestroyed(), OnContextCreated(), OnContextReleased() (+34 more)
 
 ### Community 139 - "win32_window.cpp"
-Cohesion: 0.03
-Nodes (62): book, build, createState, _customPromptCtrl, dispose, _generate, GenerateQpScreen, _GenerateQpScreenState (+54 more)
+Cohesion: 0.05
+Nodes (42): book, build, createState, _customPromptCtrl, dispose, _generate, GenerateQpScreen, _GenerateQpScreenState (+34 more)
 
 ### Community 142 - "TEST"
-Cohesion: 0.07
-Nodes (35): FlView, FlPluginRegistry, fl_register_plugins(), fl_register_plugins(), main(), GApplication, gboolean, gchar (+27 more)
+Cohesion: 0.09
+Nodes (31): FlView, main(), GApplication, gboolean, gchar, GObject, GtkApplication, MyApplicationClass (+23 more)
 
 ### Community 143 - "CefResourceRequestHandlerCppToC"
 Cohesion: 0.04
-Nodes (47): double get, int confidentTotal,, int guessingTotal,, int unsureTotal,, bookId, confidence, confidenceConfident, confidenceGuessing (+39 more)
+Nodes (48): double get, int confidentTotal,, int guessingTotal,, int unsureTotal,, bookId, CalibrationStats, confidence, confidenceConfident (+40 more)
 
 ### Community 149 - "panel_unittest.cc"
 Cohesion: 0.03
-Nodes (80): FloatingActionButtonLocation, _CustomFloatingActionButtonLocation, reference_pdf_viewer_screen.dart, activeModule, _activeModuleIdx, activeSection, _activeSectionIdx, book (+72 more)
+Nodes (77): activeModule, _activeModuleIdx, activeSection, _activeSectionIdx, book, BookDashboardScreen, _BookDashboardScreenState, bookId (+69 more)
 
 ### Community 154 - "HandleExceptionsInMethodIfSupported"
 Cohesion: 0.03
-Nodes (67): _actionCancelled, _actionLoadingText, _actionProgress, B2PdfViewerScreen, build, _buildContextActionItem, _buildEmptyState, _buildFolderGridItem (+59 more)
+Nodes (67): _actionCancelled, _actionLoadingText, _actionProgress, build, _buildContextActionItem, _buildEmptyState, _buildFolderGridItem, _buildFolderListItem (+59 more)
 
 ### Community 159 - "TitleTestHandler"
 Cohesion: 0.10
 Nodes (32): Intent, any, benign, build, _buildApp, context, build, main (+24 more)
 
 ### Community 160 - "CefRefPtr"
-Cohesion: 0.11
-Nodes (22): Point, Size, wchar_t, wstring, HWND, Scale(), Win32Window, child_content_ (+14 more)
+Cohesion: 0.14
+Nodes (20): OnCreate, Point, Size, wstring, HWND, Scale(), Win32Window, child_content_ (+12 more)
 
 ### Community 165 - "cef_translator_test.h"
 Cohesion: 0.10
@@ -4157,24 +4176,24 @@ Cohesion: 0.09
 Nodes (22): Completer, AiTask, bookId, completer, endTime, errorMessage, estimatedDuration, fromJson (+14 more)
 
 ### Community 215 - "CefXmlReader"
-Cohesion: 0.05
-Nodes (39): ../canvas_art_view.dart, mockBooks, List, activeSectionIdx, build, _getColor, sections, SectionSelector (+31 more)
+Cohesion: 0.08
+Nodes (24): ../canvas_art_view.dart, build, canvasIsLoading, _checkAnswer, createState, _currentStepIndex, didUpdateWidget, _editText (+16 more)
 
 ### Community 220 - "CefTextfield"
 Cohesion: 0.03
 Nodes (76): missing_files_banner.dart, _ActiveGeneratingNodeWrapper, _ActiveGeneratingNodeWrapperState, bgStrokeColor, book, _bottomPad, _centerX, completed (+68 more)
 
 ### Community 233 - "webview_cef_plugin.cc"
-Cohesion: 0.05
-Nodes (49): FlMethodCall, FlMethodChannel, FlPluginRegistrar, FlTextureRegistrar, gpointer, GtkWidget, initCEFProcesses(), method_call_cb() (+41 more)
+Cohesion: 0.08
+Nodes (36): FlMethodCall, FlMethodChannel, gpointer, GtkWidget, initCEFProcesses(), method_call_cb(), processKeyEventForCEF(), webview_cef_plugin_class_init() (+28 more)
 
 ### Community 252 - "CefAudioHandler"
-Cohesion: 0.05
-Nodes (36): guest_service.dart, compileSystemPrompt, _moduleIdOfUnit, PersonalizationService, prefExamplesFirst, prefLanguageLevel, prefTone, metacognition_service.dart (+28 more)
+Cohesion: 0.10
+Nodes (19): compileSystemPrompt, _moduleIdOfUnit, PersonalizationService, prefExamplesFirst, prefLanguageLevel, prefTone, metacognition_service.dart, package:flow/services/metacognition_service.dart (+11 more)
 
 ### Community 261 - "WebUITestHandler"
-Cohesion: 0.03
-Nodes (63): Book?, generate_qp_screen.dart, GenerationTask, book, build, ExamScreen, _openQp, GenerationTask (+55 more)
+Cohesion: 0.08
+Nodes (25): build, _buildCodeInput, _buildEditorView, _buildPreviewView, card, charset, colors, createState (+17 more)
 
 ### Community 269 - "FrameStatus"
 Cohesion: 0.05
@@ -4189,8 +4208,8 @@ Cohesion: 0.10
 Nodes (20): FlPixelBufferTexture, FlutterTexture, GError, webview_cef_texture_class_init(), webview_cef_texture_copy_pixels(), webview_cef_texture_init(), webview_cef_texture_new(), gboolean (+12 more)
 
 ### Community 274 - "cef_stream.h"
-Cohesion: 0.08
-Nodes (24): dart:math, calculateSectionTarget, clearSectionDeadline, DeadlineService, _getDeadlineKey, getMostUrgentActiveTarget, getSectionDeadline, _getStartDayCompletedKey (+16 more)
+Cohesion: 0.17
+Nodes (11): calculateSectionTarget, clearSectionDeadline, DeadlineService, _getDeadlineKey, getMostUrgentActiveTarget, getSectionDeadline, _getStartDayCompletedKey, _getTodayStr (+3 more)
 
 ### Community 284 - "G_DECLARE_INTERFACE"
 Cohesion: 0.14
@@ -4206,23 +4225,23 @@ Nodes (40): CefMainArgs, initCEFProcesses(), sendKeyEvent(), setCreateTextureFun
 
 ### Community 305 - "CefRequestContext"
 Cohesion: 0.03
-Nodes (69): ai_estimator.dart, personalization_service.dart, activeCanvasRegensCount, AiService, analyzeDescriptiveAnswer, analyzePrerequisites, answers, _asInt (+61 more)
+Nodes (70): ai_estimator.dart, activeCanvasRegensCount, AiService, analyzeDescriptiveAnswer, analyzePrerequisites, answers, _asInt, _attachArtToLesson (+62 more)
 
 ### Community 309 - "auto_index_pipeline_test.dart"
 Cohesion: 0.10
 Nodes (19): package:flow/services/auto_index_pipeline.dart, 230, 58, Botany, chapter1Page, cover, Harness, linkDestinations (+11 more)
 
 ### Community 312 - "PopoutWindowDelegate"
-Cohesion: 0.05
-Nodes (42): FocusNode, _backspace, bottomBar, build, _buildCalculationPreview, _buildKeypadButton, _buildMathKeypad, _clear (+34 more)
+Cohesion: 0.09
+Nodes (22): _backspace, bottomBar, build, _buildCalculationPreview, _buildKeypadButton, _buildMathKeypad, _clear, _controller (+14 more)
 
 ### Community 314 - "HSTSRedirectTest"
-Cohesion: 0.09
-Nodes (23): FbUser? get, authStateChanges, createUserWithEmailAndPassword, currentUser, displayName, email, _FaAuth, _FaUser (+15 more)
+Cohesion: 0.06
+Nodes (36): _activeSlide, _answered, _blankInput, build, _buildActionBottomBar, _buildSlideContent, _canCheck, _checkAnswer (+28 more)
 
 ### Community 318 - "WebviewCefTexture"
 Cohesion: 0.03
-Nodes (64): _answered, _applySlideEdit, _attemptedSlideIds, _blankInput, book, build, _buildActionBottomBar, _buildConfidenceRow (+56 more)
+Nodes (66): _answered, _applySlideEdit, _attemptedSlideIds, _blankInput, book, build, _buildActionBottomBar, _buildConfidenceRow (+58 more)
 
 ### Community 321 - "CefCookieManagerCToCpp"
 Cohesion: 0.03
@@ -4230,7 +4249,7 @@ Nodes (66): _addModelToSlot, AiProvidersScreen, _AiProvidersScreenState, build, 
 
 ### Community 326 - "TEST"
 Cohesion: 0.03
-Nodes (67): _actionCancelled, _actionLoadingText, _actionProgress, build, _buildContextActionItem, _buildEmptyState, _buildFolderGridItem, _buildFolderListItem (+59 more)
+Nodes (66): _actionCancelled, _actionLoadingText, _actionProgress, build, _buildContextActionItem, _buildEmptyState, _buildFolderGridItem, _buildFolderListItem (+58 more)
 
 ### Community 330 - "SimpleWindowDelegate"
 Cohesion: 0.10
@@ -4238,15 +4257,15 @@ Nodes (20): add, bookId, Bookmark, bookmarkedAt, BookmarkService, bookTitle, cop
 
 ### Community 332 - "GTestFlagSaver"
 Cohesion: 0.03
-Nodes (65): pdf_split_preview_screen.dart, book, books, _bookUpdateSubscription, _buildAnalyticsTab, _buildDragHandle, _buildFolderCard, _buildFoldersList (+57 more)
+Nodes (66): bookmarks_screen.dart, ide/code_ide_screen.dart, module_selection_screen.dart, book, books, _bookUpdateSubscription, _buildAnalyticsTab, _buildDragHandle (+58 more)
 
 ### Community 333 - "SendRecvTestHandler"
 Cohesion: 0.03
-Nodes (66): INLINE vs DISPLAY, camera, canvasArt, chapterList, chapterStartsList, _coreSlideRules, ctx, cube (+58 more)
+Nodes (68): camera, canvasArt, chapterList, chapterStartsList, _coreSlideRules, ctx, cube, _customHtmlGuide (+60 more)
 
 ### Community 334 - "wWinMain"
-Cohesion: 0.09
-Nodes (21): get, createWebView, _creatingCompleter, deleteCookie, dispose, initialize, _injectUserScriptIfNeeds, _injectUserScripts (+13 more)
+Cohesion: 0.06
+Nodes (29): mockBooks, List, ../../platform/file_image_shim.dart, activeSectionIdx, build, _getColor, sections, SectionSelector (+21 more)
 
 ### Community 343 - "StaticHttpRequestRunner"
 Cohesion: 0.08
@@ -4254,7 +4273,7 @@ Nodes (28): AndroidFlutterLocalNotificationsPlugin, cancel, cancelDailyReminder,
 
 ### Community 345 - "RefCountedThreadSafeBase"
 Cohesion: 0.11
-Nodes (18): File?, package:url_launcher/url_launcher.dart, UpdateInfo, _actions, _apk, build, createState, _download (+10 more)
+Nodes (18): File?, package:flutter_markdown/flutter_markdown.dart, UpdateInfo, _actions, _apk, build, createState, _download (+10 more)
 
 ### Community 348 - "AtomicFlag"
 Cohesion: 0.07
@@ -4265,16 +4284,16 @@ Cohesion: 0.03
 Nodes (64): absolute, add, close, closeCode, closeReason, connect, copy, create (+56 more)
 
 ### Community 353 - "FrameNavExpectationsRendererTestNestedIframes"
-Cohesion: 0.16
-Nodes (8): Flutter, RunnerTests, RunnerTests, RunnerTests, RunnerTests, UIKit, XCTest, XCTestCase
+Cohesion: 0.11
+Nodes (11): Flutter, GeneratedPluginRegistrant, +registerWithRegistry, NSObject, RunnerTests, RunnerTests, RunnerTests, RunnerTests (+3 more)
 
 ### Community 357 - "FlutterWindow"
 Cohesion: 0.04
-Nodes (64): DocumentStorePickerDialog, DownloadProgressDialog, _DocumentStorePickerDialog, _DocumentStorePickerDialogState, _DownloadProgressDialog, _DownloadProgressDialogState, DocumentStorePickerDialog, DocumentStorePickerDialogState (+56 more)
+Nodes (64): SectionBottomSheet, _SectionBottomSheetState, DocumentStorePickerDialog, DownloadProgressDialog, _DocumentStorePickerDialog, _DocumentStorePickerDialogState, _DownloadProgressDialog, _DownloadProgressDialogState (+56 more)
 
 ### Community 359 - "CefNavigationEntryVisitor"
 Cohesion: 0.03
-Nodes (61): Offset get, _activeSearchResult, addEventListener, _base64Data, build, canShowScrollHead, canShowScrollStatus, charset (+53 more)
+Nodes (61): package:syncfusion_flutter_pdfviewer/pdfviewer.dart, _activeSearchResult, addEventListener, _base64Data, build, canShowScrollHead, canShowScrollStatus, charset (+53 more)
 
 ### Community 364 - "CefBrowserProcessHandler"
 Cohesion: 0.07
@@ -4286,31 +4305,31 @@ Nodes (23): OnConsoleMessage?, package:webview_cef/src/webview.dart, LoadStartCb
 
 ### Community 372 - "FrameStatusMap"
 Cohesion: 0.06
-Nodes (32): fb/fb_auth.dart, learning_sync.dart, addXp, advancedModeNotifier, bookmarksNotifier, bumpBookmarks, bumpProgress, completeOnboarding (+24 more)
+Nodes (32): guest_service.dart, learning_sync.dart, addXp, advancedModeNotifier, bookmarksNotifier, bumpBookmarks, bumpProgress, completeOnboarding (+24 more)
 
 ### Community 374 - "GeneratedPluginRegistrant.swift"
 Cohesion: 0.23
 Nodes (19): audioplayers_darwin, cloud_firestore, device_info_plus, file_picker, firebase_auth, firebase_core, flutter_local_notifications, flutter_timezone (+11 more)
 
 ### Community 376 - "CefMediaRouteCToCpp"
-Cohesion: 0.05
-Nodes (42): auth_screen.dart, home_screen.dart, lesson_screen.dart, AuthGate, build, _buildAuthFlow, BookmarksScreen, _BookmarksScreenState (+34 more)
+Cohesion: 0.09
+Nodes (22): lesson_screen.dart, BookmarksScreen, _BookmarksScreenState, build, _buildEmpty, _buildTile, createState, _formatDate (+14 more)
 
 ### Community 384 - "FlutterWindow"
-Cohesion: 0.13
-Nodes (15): OnTitleChange(), OnTooltip(), setCookie(), cef_log_severity_t, CefBrowserSettings, CefClient, CefString, ErrorCode (+7 more)
+Cohesion: 0.09
+Nodes (25): DocumentReference, _CfCollection, _CfDoc, _CfFirestore, collection, _data, _db, delete (+17 more)
 
 ### Community 385 - "CefZipReader"
 Cohesion: 0.05
-Nodes (41): ../data/mock_books.dart, FbDocRef get, _bookFile, _booksDir, cloudSyncPrefKey, DatabaseService, _db, deleteBook (+33 more)
+Nodes (41): ../data/mock_books.dart, FbCollectionRef get, _bookFile, _booksDir, cloudSyncPrefKey, DatabaseService, _db, deleteBook (+33 more)
 
 ### Community 388 - "ResourceManagerTestHandler"
 Cohesion: 0.17
 Nodes (17): FlutterMethodChannel, FlutterPlugin, FlutterTextureRegistry, CefWrapper, -doMessageLoopWork, +encode_flvalue_to_wvalue, +encode_wvalue_to_flvalue, +getModifiersForEvent (+9 more)
 
 ### Community 391 - "TEST"
-Cohesion: 0.22
-Nodes (8): AppCrashRecoveryScreen, build, clearRecordedCrash, error, getRecordedCrash, onDismiss, recordCrash, stackTrace
+Cohesion: 0.28
+Nodes (26): cursorAction(), webview_ptr_array_index(), webview_value_equals(), webview_value_get_bool(), webview_value_get_by_key(), webview_value_get_double(), webview_value_get_double_list(), webview_value_get_float() (+18 more)
 
 ### Community 401 - "Hunk"
 Cohesion: 0.11
@@ -4318,23 +4337,23 @@ Nodes (17): chooseEffectiveOffset, computeOffset, corrections, _enforceIncreasin
 
 ### Community 408 - "CefFindHandler"
 Cohesion: 0.04
-Nodes (57): _tooltip, _assertJavascriptChannelNamesAreUnique, _browserId, build, _buildInner, _composingText, controller, createState (+49 more)
+Nodes (57): MouseCursor, _tooltip, _assertJavascriptChannelNamesAreUnique, _browserId, build, _buildInner, _composingText, controller (+49 more)
 
 ### Community 412 - "OnBeforePopup"
-Cohesion: 0.14
-Nodes (13): bottomBar, bubbleSize, build, ConceptPiecesView, hasCanvas, index, isLast, lessonCanvas (+5 more)
+Cohesion: 0.04
+Nodes (44): , Slide, build, charset, createState, CustomHtmlView, _CustomHtmlViewState, didUpdateWidget (+36 more)
 
 ### Community 417 - "TEST"
 Cohesion: 0.04
-Nodes (54): AudioRecorder, package:audioplayers/audioplayers.dart, package:google_generative_ai/google_generative_ai.dart, WebSocket?, _addSystemMessage, _addWavHeader, audioBytes, _audioPlayer (+46 more)
+Nodes (55): AudioRecorder, package:audioplayers/audioplayers.dart, package:flutter_tts/flutter_tts.dart, package:record/record.dart, WebSocket?, _addSystemMessage, _addWavHeader, audioBytes (+47 more)
 
 ### Community 424 - "CEF_CALLBACK permission_handler_on_request_media_access_permission"
-Cohesion: 0.08
-Nodes (28): my_application_activate(), my_application_class_init(), my_application_dispose(), my_application_init(), my_application_local_command_line(), my_application_new(), _MyApplication, dart_entrypoint_arguments (+20 more)
+Cohesion: 0.10
+Nodes (24): my_application_activate(), my_application_class_init(), my_application_dispose(), my_application_init(), my_application_local_command_line(), my_application_new(), _MyApplication, dart_entrypoint_arguments (+16 more)
 
 ### Community 433 - "Hunk"
-Cohesion: 0.17
-Nodes (11): QuestionPaper, build, _buildQuestionCard, qp, QpDetailScreen, build, _buildQuestionCard, qp (+3 more)
+Cohesion: 0.04
+Nodes (57): generate_qp_screen.dart, QuestionPaper, book, build, ExamScreen, _openQp, build, _formatDuration (+49 more)
 
 ### Community 438 - "PrintToPDF"
 Cohesion: 0.08
@@ -4350,23 +4369,23 @@ Nodes (53): AppColors get, static AppColors get, static Color get, static const 
 
 ### Community 446 - "client_prefs.cc"
 Cohesion: 0.04
-Nodes (54): _autoFetchBooks, b2Obj, build, _buildListContent, _buildModeSelector, _buildModeTab, _buildTab, _cacheDirPath (+46 more)
+Nodes (55): _autoFetchBooks, b2Obj, build, _buildListContent, _buildModeSelector, _buildModeTab, _buildTab, _cacheDirPath (+47 more)
 
 ### Community 447 - "CefPanel"
 Cohesion: 0.04
-Nodes (48): BoxFit, double? w,, build, buildCanvasArt, buildCanvasHtml, canvasAspect, CanvasDoubleTapDetector, _CanvasDoubleTapDetectorState (+40 more)
+Nodes (48): BoxFit, let, build, buildCanvasArt, buildCanvasHtml, canvasAspect, CanvasDoubleTapDetector, _CanvasDoubleTapDetectorState (+40 more)
 
 ### Community 456 - "WebView CEF"
 Cohesion: 0.17
 Nodes (11): Credits, Demo, Index, Linux <img src="https://1000logos.net/wp-content/uploads/2017/03/LINUX-LOGO.png" width="16">, macOS <img src="https://seeklogo.com/images/A/apple-logo-52C416BDDD-seeklogo.com.png" width="15">, Screenshots, Setting Up, Supported OSs (+3 more)
 
 ### Community 458 - "TestProperty"
-Cohesion: 0.20
-Nodes (10): bookId, BookRouteLoaderScreen, _BookRouteLoaderScreenState, build, createState, _error, initState, _isLoading (+2 more)
+Cohesion: 0.11
+Nodes (18): bookId, BookRouteLoaderScreen, _BookRouteLoaderScreenState, build, createState, _error, initState, _isLoading (+10 more)
 
 ### Community 459 - "_cef_composition_underline_t"
 Cohesion: 0.04
-Nodes (49): _ModuleRef? get, _activeModule, book, build, _buildModeGrid, _buildRangeBlock, _buildScopeSelector, color (+41 more)
+Nodes (49): practice_session_screen.dart, _activeModule, book, build, _buildModeGrid, _buildRangeBlock, _buildScopeSelector, color (+41 more)
 
 ### Community 467 - "TestSetup"
 Cohesion: 0.08
@@ -4385,8 +4404,8 @@ Cohesion: 0.22
 Nodes (8): package:flutter_markdown_latex/flutter_markdown_latex.dart, package:markdown/markdown.dart, document, extensionSet, inlineSyntaxes, main, nodes, text
 
 ### Community 483 - "CefMediaSinkCToCpp"
-Cohesion: 0.03
-Nodes (76): Color, IconData, build, _formatDuration, gradedResults, icon, iconColor, label (+68 more)
+Cohesion: 0.05
+Nodes (42): auth_screen.dart, home_screen.dart, AuthGate, build, _buildAuthFlow, MappingReport, color, context (+34 more)
 
 ### Community 493 - "CefUnresponsiveProcessCallback"
 Cohesion: 0.09
@@ -4402,11 +4421,11 @@ Nodes (6): AI Queue Cleanup Implementation Plan, Task 1: Remove the AI chunk sca
 
 ### Community 501 - "CefScrollView"
 Cohesion: 0.04
-Nodes (49): bookId, CalibrationStats, confidence, confidenceConfident, confidenceGuessing, confidenceUnsure, confidentAccuracy, confidentCorrect (+41 more)
+Nodes (48): bookId, confidence, confidenceConfident, confidenceGuessing, confidenceUnsure, confidentAccuracy, confidentCorrect, correct (+40 more)
 
 ### Community 504 - "learner_profile_card.dart"
-Cohesion: 0.11
-Nodes (19): activeModuleIdx, activeSectionIdx, book, build, completedLessons, createState, dispose, initState (+11 more)
+Cohesion: 0.05
+Nodes (37): activeModuleIdx, activeSectionIdx, book, build, completedLessons, createState, dispose, initState (+29 more)
 
 ### Community 505 - "Automatic Book Indexing Pipeline Implementation Plan"
 Cohesion: 0.22
@@ -4429,8 +4448,8 @@ Cohesion: 0.18
 Nodes (10): background_color, description, display, icons, name, orientation, prefer_related_applications, short_name (+2 more)
 
 ### Community 517 - "wWinMain"
-Cohesion: 0.17
-Nodes (12): build, _controllers, createState, didUpdateWidget, dispose, _disposeControllers, _initControllers, initState (+4 more)
+Cohesion: 0.09
+Nodes (22): FocusNode, _backspace, bottomBar, build, _buildCalculationPreview, _buildKeypadButton, _buildMathKeypad, _clear (+14 more)
 
 ### Community 519 - "Show"
 Cohesion: 0.29
@@ -4457,12 +4476,12 @@ Cohesion: 0.05
 Nodes (41): DocCategory, b2Obj, book, build, _buildListContent, _buildTab, _cacheDirPath, _cancelled (+33 more)
 
 ### Community 534 - "ostream"
-Cohesion: 0.18
-Nodes (11): Any, FlutterAppDelegate, AppDelegate, Any, Bool, AppDelegate, AppDelegate, Bool (+3 more)
+Cohesion: 0.19
+Nodes (10): FlutterAppDelegate, AppDelegate, Any, Bool, AppDelegate, AppDelegate, Bool, NSApplication (+2 more)
 
 ### Community 537 - "CEF_CALLBACK drag_handler_on_drag_enter"
-Cohesion: 0.08
-Nodes (24): activeModule, book, build, _buildSourceTag, _cacheDirPath, createState, _customPromptCtrl, _deleteQuestion (+16 more)
+Cohesion: 0.18
+Nodes (23): FlValue, webview_ptr_array_new_with_free_func(), webview_value_get_by_string(), webview_value_new(), webview_value_new_bool(), webview_value_new_double(), webview_value_new_double_list(), webview_value_new_float() (+15 more)
 
 ### Community 539 - "pack_project"
 Cohesion: 0.31
@@ -4478,7 +4497,7 @@ Nodes (9): CefBrowserView, CefBrowserViewDelegate, CefSize, CefView, CefWindow, 
 
 ### Community 542 - "OsStackTraceGetterInterface"
 Cohesion: 0.05
-Nodes (41): FbCollectionRef get, _bookFile, _booksDir, cloudSyncPrefKey, DatabaseService, _db, deleteBook, _deleteBookFile (+33 more)
+Nodes (41): FbDocRef get, _bookFile, _booksDir, cloudSyncPrefKey, DatabaseService, _db, deleteBook, _deleteBookFile (+33 more)
 
 ### Community 544 - "wWinMain"
 Cohesion: 0.06
@@ -4497,8 +4516,8 @@ Cohesion: 0.07
 Nodes (27): [26.7.25] — 2026-07-25, [26.x] — historical development log, [27.0.0] — 2026-07-07 · "Pro" release, Added — a real metacognitive loop, Added — first-run experience, Added & Improved, Added — new exercise types, Added — web support (+19 more)
 
 ### Community 552 - "ToParamWithType"
-Cohesion: 0.04
-Nodes (49): book, bookmark, _BookmarkMatch, build, _buildFloatingTargetButton, _buildLongPressMenu, _completedLessons, createState (+41 more)
+Cohesion: 0.05
+Nodes (41): book, bookmark, _BookmarkMatch, build, _buildFloatingTargetButton, _buildLongPressMenu, _completedLessons, createState (+33 more)
 
 ### Community 554 - "Environment"
 Cohesion: 0.05
@@ -4506,7 +4525,7 @@ Nodes (42): document_store_screen.dart, DocCategory, b2Obj, book, build, _buildL
 
 ### Community 560 - "OsStackTraceGetterInterface"
 Cohesion: 0.09
-Nodes (22): bool get, FbCore, initializeApp, _initialized, useFiredart, fd_backend.dart, ../../firebase_options.dart, android (+14 more)
+Nodes (21): FbCore, initializeApp, _initialized, useFiredart, fd_backend.dart, ../../firebase_options.dart, android, DefaultFirebaseOptions (+13 more)
 
 ### Community 561 - "RefCountedThreadSafeBase"
 Cohesion: 0.05
@@ -4525,8 +4544,8 @@ Cohesion: 0.05
 Nodes (39): activeModule, _activeModuleIdx, activeSection, _activeSectionIdx, book, build, _buildVideoCard, _cachedVideos (+31 more)
 
 ### Community 571 - "SystemErrorCodeToString"
-Cohesion: 0.06
-Nodes (35): Directory, build, createState, _deleteFolder, dir, fileCount, folderId, _folders (+27 more)
+Cohesion: 0.12
+Nodes (17): build, createState, _deleteFolder, dir, fileCount, folderId, _folders, initState (+9 more)
 
 ### Community 572 - "GeneratedPluginRegistrant"
 Cohesion: 0.33
@@ -4538,7 +4557,7 @@ Nodes (8): handle_new_rx_page(), __lldb_init_module(), Intercept NOTIFY_DEBUGGER
 
 ### Community 577 - "_cef_urlrequest_client_t"
 Cohesion: 0.05
-Nodes (38): lesson_complete_screen.dart, _answered, _blankInput, book, build, _buildContent, _canCheck, _checkAnswer (+30 more)
+Nodes (37): lesson_complete_screen.dart, _answered, _blankInput, book, build, _buildContent, _canCheck, _checkAnswer (+29 more)
 
 ### Community 580 - "AddFilters"
 Cohesion: 0.06
@@ -4553,24 +4572,24 @@ Cohesion: 0.06
 Nodes (34): authStateChanges, _bootstrap, collection, createUserWithEmailAndPassword, _ctrl, _current, currentUser, delete (+26 more)
 
 ### Community 587 - "FunctorTraits<R (__stdcall Receiver::*)(Args...) const>"
-Cohesion: 0.07
-Nodes (28): database_service.dart, global_state.dart, bookmarksKey, completedKey, decodeBookmarks, LearningSync, _legacyCompletedKey, _legacyKeysMigrated (+20 more)
+Cohesion: 0.05
+Nodes (43): database_service.dart, fb/fb_auth.dart, global_state.dart, bookmarksKey, completedKey, decodeBookmarks, LearningSync, _legacyCompletedKey (+35 more)
 
 ### Community 589 - "parse_snapshot"
 Cohesion: 0.50
 Nodes (4): parse_snapshot(), Parses the snapshot content and yields (filename, file_content) tuples., Reads the snapshot file and updates the project files accordingly., update_project_from_snapshot()
 
 ### Community 605 - "RefCountedThreadSafe"
-Cohesion: 0.06
-Nodes (35): _answered, _blankInput, book, build, _buildContent, _canCheck, _checkAnswer, _completedQuestions (+27 more)
+Cohesion: 0.05
+Nodes (38): pyq_complete_screen.dart, _answered, _blankInput, book, build, _buildContent, _canCheck, _checkAnswer (+30 more)
 
 ### Community 607 - "IOException"
-Cohesion: 0.17
-Nodes (8): flutter(), flutter(), flutter(), flutter(), namespace, namespace, namespace, namespace
+Cohesion: 0.09
+Nodes (23): _addCell, build, _buildCellCard, _cells, _codeControllers, createState, _deleteCell, dispose (+15 more)
 
 ### Community 611 - "CefTraceEndOnScopeClose"
 Cohesion: 0.06
-Nodes (34): dart:convert, advanceTo, courseBasicAlgebra, _courseKey, coursePython, _donePrefsKey, finish, instance (+26 more)
+Nodes (32): advanceTo, courseBasicAlgebra, _courseKey, coursePython, _donePrefsKey, finish, instance, isActive (+24 more)
 
 ### Community 613 - "GeneratedPluginRegistrant"
 Cohesion: 0.09
@@ -4578,14 +4597,14 @@ Nodes (22): fb_core.dart, authStateChanges, createUserWithEmailAndPassword, curr
 
 ### Community 618 - "Book"
 Cohesion: 0.04
-Nodes (56): lesson_node.dart, Book, book, BookCard, build, onDelete, onTap, progress (+48 more)
+Nodes (51): lesson_node.dart, Book, book, BookCard, build, onDelete, onTap, progress (+43 more)
 
 ### Community 626 - "cef_dump_without_crashing.cc"
 Cohesion: 0.06
-Nodes (35): import builtins
+Nodes (38): dart:convert, import builtins
 import socket, import json
 import, import sys
-import, base64, duration, exitCode, graphicsBase64, _instance (+27 more)
+import, base64, duration, exitCode, graphicsBase64 (+30 more)
 
 ### Community 630 - "MainActivity"
 Cohesion: 0.40
@@ -4601,19 +4620,19 @@ Nodes (9): CefCommandLine, GetProcessType(), OnBeforeChildProcessLaunch(), OnBef
 
 ### Community 633 - "OsrDragEvents"
 Cohesion: 0.06
-Nodes (33): activeInputCompleter, _addCell, awaitingRealtimeInput, build, _buildCellCard, _buildCellOutput, _cells, _clearOutputs (+25 more)
+Nodes (33): pyplot as, activeInputCompleter, _addCell, awaitingRealtimeInput, build, _buildCellCard, _buildCellOutput, _cells (+25 more)
 
 ### Community 634 - "FunctorTraits<R (Receiver::*)(Args...)>"
 Cohesion: 0.08
 Nodes (25): abi, _apkFileFor, apkUrl, cachedApk, changelog, checkForUpdate, downloadApk, downloadProgress (+17 more)
 
 ### Community 637 - "cef_lock_impl.cc"
-Cohesion: 0.10
-Nodes (17): CefWrapper, -doMessageLoopWork, -encode_flvalue_to_wvalue, -encode_wvalue_to_flvalue, -getModifiersForEvent, -handleMethodCallWrapperresult, -init, -isKeyPadEvent (+9 more)
+Cohesion: 0.18
+Nodes (8): -copyPixelBuffer, -init, -onFramewidthheight, Foundation, RegisterGeneratedPlugins(), RegisterGeneratedPlugins(), FlutterPluginRegistry, WebviewCefTexture
 
 ### Community 648 - "util_gtk.cc"
-Cohesion: 0.03
-Nodes (69): _activeSlide, _answered, _blankInput, build, _buildActionBottomBar, _buildSlideContent, _canCheck, _checkAnswer (+61 more)
+Cohesion: 0.06
+Nodes (35): _activeSlide, _answered, _blankInput, build, _buildActionBottomBar, _buildSlideContent, _canCheck, _checkAnswer (+27 more)
 
 ### Community 663 - "FunctorTraits<RepeatingCallback<R(Args...)>>"
 Cohesion: 0.18
@@ -4621,35 +4640,35 @@ Nodes (11): bottomBar, build, createState, _current, initState, isAnswered, isCo
 
 ### Community 664 - "cef_scoped_policy.h"
 Cohesion: 0.06
-Nodes (34): import numpy as np, activeInputCompleter, _addCell, awaitingRealtimeInput, build, _buildCellCard, _buildCellOutput, _cells (+26 more)
+Nodes (33): import numpy as np, activeInputCompleter, _addCell, awaitingRealtimeInput, build, _buildCellCard, _buildCellOutput, _cells (+25 more)
 
 ### Community 665 - "shutdown_checker.h"
 Cohesion: 0.06
 Nodes (34): _addSection, _addUnit, _bookIndices, build, _buildEditorRow, _commitSplits, createState, dispose (+26 more)
 
 ### Community 666 - "binary_transfer_test.h"
-Cohesion: 0.15
-Nodes (11): DartProject, FlutterWindow(), FlutterWindow, flutter_controller_, FlutterWindow::FlutterWindow(), OnDestroy, project_, DartProject (+3 more)
+Cohesion: 0.18
+Nodes (9): FlutterWindow, flutter_controller_, OnDestroy, project_, DartProject, FlutterViewController, unique_ptr, optional (+1 more)
 
 ### Community 667 - "binding_test.h"
-Cohesion: 0.06
-Nodes (32): AnimationController, animate, build, child, createState, _ctrl, _depthOffset, didUpdateWidget (+24 more)
+Cohesion: 0.07
+Nodes (31): animate, build, child, createState, _ctrl, _depthOffset, didUpdateWidget, dispose (+23 more)
 
 ### Community 668 - "dialog_test.h"
-Cohesion: 0.15
-Nodes (13): , build, charset, createState, CustomHtmlView, _CustomHtmlViewState, didUpdateWidget, _handleMessage (+5 more)
+Cohesion: 0.08
+Nodes (24): cellType, codeContent, CodeStorageService, content, deleteProject, fromJson, getProjects, graphicsBase64 (+16 more)
 
 ### Community 669 - "hang_test.h"
 Cohesion: 0.06
 Nodes (32): ../code_highlighter.dart, answered, bottomBar, build, _buildAnswerField, _buildResultPane, _buildSuggestionBank, _buildSuggestions (+24 more)
 
 ### Community 670 - "media_router_test.h"
-Cohesion: 0.18
-Nodes (10): base, calculateModuleProgress, calculateModuleProgressDouble, calculateSectionProgress, calculateSectionProgressDouble, calculateUnitProgress, dark, done (+2 more)
+Cohesion: 0.04
+Nodes (38): base, calculateModuleProgress, calculateModuleProgressDouble, calculateSectionProgress, calculateSectionProgressDouble, calculateUnitProgress, dark, done (+30 more)
 
 ### Community 671 - "preferences_test.h"
-Cohesion: 0.07
-Nodes (31): animate, build, child, createState, _ctrl, _depthOffset, didUpdateWidget, dispose (+23 more)
+Cohesion: 0.06
+Nodes (32): AnimationController, animate, build, child, createState, _ctrl, _depthOffset, didUpdateWidget (+24 more)
 
 ### Community 673 - "scheme_test.h"
 Cohesion: 0.07
@@ -4665,19 +4684,19 @@ Nodes (29): _activeUnitId, book, build, _buildLessonTile, _buildPlaceholderLesso
 
 ### Community 676 - "urlrequest_test.h"
 Cohesion: 0.07
-Nodes (30): Animation, package:confetti/confetti.dart, accuracy, _animController, book, bookId, build, _buildDesktop (+22 more)
+Nodes (30): package:confetti/confetti.dart, accuracy, _animController, book, bookId, build, _buildDesktop, _buildMobile (+22 more)
 
 ### Community 677 - "window_test.h"
-Cohesion: 0.18
-Nodes (10): string, vector, JSValue, arrayValue, boolValue, doubleValue, intValue, objectValue (+2 more)
+Cohesion: 0.11
+Nodes (19): ../models/ai_task.dart, AiQueueScreen, _AiQueueScreenState, _booksMap, build, _buildCourseHeader, _buildHierarchicalList, _buildModuleDropdown (+11 more)
 
 ### Community 678 - "ipc_performance_test.h"
-Cohesion: 0.07
-Nodes (31): _answered, build, _correct, createState, _formatInfo, _header, _ProgramCard, _ProgramCardState (+23 more)
+Cohesion: 0.12
+Nodes (16): _answered, build, _correct, createState, _formatInfo, _header, _ProgramCard, _ProgramCardState (+8 more)
 
 ### Community 679 - "performance_test.h"
-Cohesion: 0.07
-Nodes (28): AutoIndexPipeline, AutoIndexResult, _chapter1FromLinks, chapter1StartPage, _expandToc, _finish, indexPages, isComplete (+20 more)
+Cohesion: 0.12
+Nodes (14): getPlatformVersion, methodChannel, MethodChannelWebviewCef, package:webview_cef/webview_cef_method_channel.dart, getPlatformVersion, methodChannel, MethodChannelWebviewCef, channel (+6 more)
 
 ### Community 680 - "client_switches.cc"
 Cohesion: 0.07
@@ -4685,19 +4704,19 @@ Nodes (29): applicationKey, B2Credentials, B2Object, B2Service, bucketName, _cop
 
 ### Community 681 - "client_switches.h"
 Cohesion: 0.07
-Nodes (29): applicationKey, B2Credentials, B2Object, B2Service, bucketName, _copyObjectDirect, deleteObject, _deletePartDirect (+21 more)
+Nodes (29): package:crypto/crypto.dart, applicationKey, B2Credentials, B2Object, B2Service, bucketName, _copyObjectDirect, deleteObject (+21 more)
 
 ### Community 684 - "array_"
 Cohesion: 0.18
 Nodes (28): ByteStreamReader, ByteStreamWriter, DecodeAndProcessResponseEnvelopeInternal(), DecodeMessageInternal(), DecodeMethodCallInternal(), EncodedTypeForValue(), EncodeErrorEnvelopeInternal(), EncodeMessageInternal() (+20 more)
 
 ### Community 685 - "GenerationManager"
-Cohesion: 0.67
-Nodes (3): ChangeNotifier, GenerationManager, GenerationManager
+Cohesion: 0.50
+Nodes (4): ChangeNotifier, GenerationManager, GenerationManager, IdeSettingsService
 
 ### Community 686 - "Community 686"
 Cohesion: 0.08
-Nodes (26): ai_service.dart, AiService, auto_index_pipeline.dart, AiService, _aiService, AutoIndexService, _collectBookmarks, _extractLinkDestinations (+18 more)
+Nodes (27): ai_service.dart, AiService, auto_index_pipeline.dart, AiService, _aiService, AutoIndexService, _collectBookmarks, _extractLinkDestinations (+19 more)
 
 ### Community 688 - "Community 688"
 Cohesion: 0.08
@@ -4710,12 +4729,12 @@ Cohesion: 0.09
 Nodes (18): flutter(), flutter(), flutter(), SetMethodCallHandler(), DecodeAndProcessResponseEnvelope(), flutter(), flutter(), flutter() (+10 more)
 
 ### Community 690 - "FunctorTraits<R(__fastcall*)(Args...)>"
-Cohesion: 0.09
-Nodes (23): book, build, createState, _currentIndex, dispose, _goToNextSection, _goToPreviousSection, initialSection (+15 more)
+Cohesion: 0.03
+Nodes (77): build, createState, _deleteFile, directory, file, _files, folderId, initState (+69 more)
 
 ### Community 691 - "Community 691"
 Cohesion: 0.07
-Nodes (26): package:device_info_plus/device_info_plus.dart, package:open_filex/open_filex.dart, abi, _apkFileFor, apkUrl, cachedApk, changelog, checkForUpdate (+18 more)
+Nodes (26): package:device_info_plus/device_info_plus.dart, package:package_info_plus/package_info_plus.dart, abi, _apkFileFor, apkUrl, cachedApk, changelog, checkForUpdate (+18 more)
 
 ### Community 693 - "Community 693"
 Cohesion: 0.07
@@ -4730,8 +4749,8 @@ Cohesion: 0.29
 Nodes (7): webview_value, ref_count, type, webview_value, ref_count, type, WValueType
 
 ### Community 696 - "Community 696"
-Cohesion: 0.31
-Nodes (7): HWND, LPARAM, LRESULT, MessageHandler(), UINT, WPARAM, MessageHandler
+Cohesion: 0.22
+Nodes (10): DartProject, HWND, LPARAM, LRESULT, FlutterWindow(), MessageHandler(), UINT, WPARAM (+2 more)
 
 ### Community 697 - "Community 697"
 Cohesion: 0.08
@@ -4743,27 +4762,27 @@ Nodes (25): _assigned, bottomBar, _boundLeftFor, build, _chip, createState, didU
 
 ### Community 699 - "Community 699"
 Cohesion: 0.08
-Nodes (25): _answersCtrl1, _answersCtrl2, build, _buildField, _canSubmit, _countSentences, _countWords, createState (+17 more)
+Nodes (24): _answersCtrl1, _answersCtrl2, build, _buildField, _canSubmit, _countSentences, _countWords, createState (+16 more)
 
 ### Community 700 - "Community 700"
-Cohesion: 0.05
-Nodes (38): AiQueueScreen, _AiQueueScreenState, _booksMap, build, _buildCourseHeader, _buildHierarchicalList, _buildModuleDropdown, _buildSectionDropdown (+30 more)
+Cohesion: 0.11
+Nodes (19): AiQueueScreen, _AiQueueScreenState, _booksMap, build, _buildCourseHeader, _buildHierarchicalList, _buildModuleDropdown, _buildSectionDropdown (+11 more)
 
 ### Community 701 - "ViewsOverlayBrowser::ViewsOverlayBrowser"
-Cohesion: 0.05
-Nodes (42): CollectionReference, DocumentReference, _CfCollection, _CfDoc, collection, _data, _db, delete (+34 more)
+Cohesion: 0.09
+Nodes (24): CollectionReference, _CfCollection, _CfDoc, _CfFirestore, collection, _data, _db, delete (+16 more)
 
 ### Community 702 - "Community 702"
-Cohesion: 0.22
-Nodes (9): CefBrowserSettings, CefClient, CefPopupFeatures, CefWindowInfo, loadUrl(), OnBeforePopup(), openDevTools(), CefDictionaryValue (+1 more)
+Cohesion: 0.14
+Nodes (14): IconData, _addItem, build, commitPending, _controller, createState, hintText, initialItems (+6 more)
 
 ### Community 703 - "Community 703"
-Cohesion: 0.07
-Nodes (27): DesktopWebView, build, createState, DesktopWebView, desktopWebViewEnsureInitialized, _DesktopWebViewState, didUpdateWidget, dispose (+19 more)
+Cohesion: 0.08
+Nodes (24): build, createState, DesktopWebView, desktopWebViewEnsureInitialized, didUpdateWidget, dispose, html, _initFuture (+16 more)
 
 ### Community 704 - "Community 704"
-Cohesion: 0.28
-Nodes (8): WebviewCefPlatform, package:webview_cef/webview_cef.dart, PlatformInterface, getPlatformVersion, initialPlatform, main, MockPlatformInterfaceMixin, MockWebviewCefPlatform
+Cohesion: 0.05
+Nodes (35): bool get, AutoIndexPipeline, AutoIndexResult, _chapter1FromLinks, chapter1StartPage, _expandToc, _finish, indexPages (+27 more)
 
 ### Community 705 - "Community 705"
 Cohesion: 0.08
@@ -4771,27 +4790,27 @@ Nodes (24): _activitiesKey, clearBookProgress, clearLessonProgress, clearLessons
 
 ### Community 706 - "Community 706"
 Cohesion: 0.08
-Nodes (24): static Future, build, createState, DesktopWebView, desktopWebViewEnsureInitialized, didUpdateWidget, dispose, html (+16 more)
+Nodes (24): package:webview_windows/webview_windows.dart, build, createState, DesktopWebView, desktopWebViewEnsureInitialized, didUpdateWidget, dispose, html (+16 more)
 
 ### Community 708 - "Community 708"
 Cohesion: 0.08
-Nodes (25): background, buildTextSpan, CodeEditingController, CodeHighlighter, CodeTheme, comment, dark, function (+17 more)
+Nodes (24): background, buildTextSpan, CodeHighlighter, CodeTheme, comment, dark, function, _generic (+16 more)
 
 ### Community 709 - "Community 709"
 Cohesion: 0.11
 Nodes (21): BinaryMessageHandler, BinaryMessenger, BinaryReply, BinaryMessengerImpl(), ForwardToHandler(), RegisterTexture(), ReplyManager(), ResizeChannel() (+13 more)
 
 ### Community 710 - "Community 710"
-Cohesion: 0.08
-Nodes (24): InjectUserScripts?, package:flutter/widgets.dart, createWebView, _creatingCompleter, deleteCookie, dispose, initialize, _injectUserScriptIfNeeds (+16 more)
+Cohesion: 0.05
+Nodes (45): get, InjectUserScripts?, package:flutter/widgets.dart, createWebView, _creatingCompleter, deleteCookie, dispose, initialize (+37 more)
 
 ### Community 711 - "Community 711"
-Cohesion: 0.14
-Nodes (13): bottomBar, bubbleSize, build, ConceptPiecesView, hasCanvas, index, isLast, lessonCanvas (+5 more)
+Cohesion: 0.15
+Nodes (12): auth, breakpoint, build, child, content, form, maxWidth, mobile (+4 more)
 
 ### Community 712 - "Community 712"
-Cohesion: 0.10
-Nodes (20): build, createState, _deleteFile, directory, file, _files, folderId, initState (+12 more)
+Cohesion: 0.06
+Nodes (29): Book?, Directory, pdf_folder_screen.dart, build, createState, _deleteFolder, dir, fileCount (+21 more)
 
 ### Community 713 - "Community 713"
 Cohesion: 0.08
@@ -4802,20 +4821,20 @@ Cohesion: 0.09
 Nodes (22): default, android, ios, macos, web, windows, lib/firebase_options.dart, appId (+14 more)
 
 ### Community 715 - "Community 715"
-Cohesion: 0.15
-Nodes (12): Lesson, progress_service.dart, book, lesson, lessonIdx, modIdx, NextUp, NextUpService (+4 more)
+Cohesion: 0.08
+Nodes (23): Lesson, Lesson, book, lesson, lessonIdx, modIdx, NextUp, NextUpService (+15 more)
 
 ### Community 716 - "Community 716"
-Cohesion: 0.11
-Nodes (18): body, build, _buildProgrammerQuestion, color, _controller, createState, dispose, _finish (+10 more)
+Cohesion: 0.24
+Nodes (10): OnCreate, HWND, Win32Window, child_content_, GetClientArea, OnCreate, OnDestroy, quit_on_close_ (+2 more)
 
 ### Community 717 - "Community 717"
-Cohesion: 0.06
-Nodes (32): ../../services/python_runner_service.dart, answered, bottomBar, build, _buildAnswerField, _buildResultPane, _buildSuggestionBank, _buildSuggestions (+24 more)
+Cohesion: 0.07
+Nodes (31): answered, bottomBar, build, _buildAnswerField, _buildResultPane, _buildSuggestionBank, _buildSuggestions, _code (+23 more)
 
 ### Community 718 - "Community 718"
-Cohesion: 0.09
-Nodes (22): _aiService, applyGlobalShift, describe, _detectShift, MappingVerifier, matched, _matches, _matchThreshold (+14 more)
+Cohesion: 0.22
+Nodes (9): CefWrapper, -doMessageLoopWork, -encode_flvalue_to_wvalue, -encode_wvalue_to_flvalue, -getModifiersForEvent, -handleMethodCallWrapperresult, -init, -isKeyPadEvent (+1 more)
 
 ### Community 720 - "Community 720"
 Cohesion: 0.08
@@ -4830,12 +4849,12 @@ Cohesion: 0.09
 Nodes (21): AiTask, bookId, completer, endTime, errorMessage, estimatedDuration, fromJson, generateGraphics (+13 more)
 
 ### Community 723 - "Community 723"
-Cohesion: 0.11
-Nodes (13): flutter(), flutter(), flutter(), flutter(), flutter(), flutter(), Set, namespace (+5 more)
+Cohesion: 0.10
+Nodes (15): flutter(), flutter(), flutter(), flutter(), flutter(), flutter(), flutter(), Set (+7 more)
 
 ### Community 724 - "Community 724"
-Cohesion: 0.13
-Nodes (59): WValue, webview_ptr_array_add(), webview_ptr_array_free(), webview_ptr_array_index(), webview_ptr_array_new_with_free_func(), webview_ptr_array_unref(), webview_value_append(), webview_value_append_take() (+51 more)
+Cohesion: 0.16
+Nodes (38): webview_ptr_array_add(), webview_ptr_array_free(), webview_ptr_array_index(), webview_ptr_array_unref(), webview_value_append(), webview_value_append_take(), webview_value_destroy(), webview_value_equals() (+30 more)
 
 ### Community 725 - "Community 725"
 Cohesion: 0.11
@@ -4843,56 +4862,56 @@ Nodes (13): package:flow/services/page_mapping.dart, package:flow/services/pytho
 
 ### Community 726 - "Community 726"
 Cohesion: 0.22
-Nodes (9): PaintElementType, RectList, onFocusedNodeChangeMessage, OnImeCompositionRangeChanged, onImeCompositionRangeChangedMessage, onJavaScriptChannelMessage, OnPaint, onPaintCallback (+1 more)
+Nodes (8): int?, bottomBar, build, ErrorSpottingView, isAnswered, isCorrect, selectedIndex, slide
 
 ### Community 727 - "Community 727"
 Cohesion: 0.10
 Nodes (20): add, bookId, Bookmark, bookmarkedAt, BookmarkService, bookTitle, copyWith, fromJson (+12 more)
 
 ### Community 728 - "Community 728"
-Cohesion: 0.13
-Nodes (15): Unit, UnitGenTask, book, build, createState, generationTask, isGenerated, _isPressed (+7 more)
+Cohesion: 0.04
+Nodes (53): GenerationTask, Unit, GenerationTask, UnitGenTask, build, GeneratingBookCard, onTap, task (+45 more)
 
 ### Community 729 - "Community 729"
-Cohesion: 0.11
-Nodes (19): body, build, _buildProgrammerQuestion, color, _controller, createState, dispose, _finish (+11 more)
+Cohesion: 0.05
+Nodes (37): body, build, _buildProgrammerQuestion, color, _controller, createState, dispose, _finish (+29 more)
 
 ### Community 730 - "Community 730"
-Cohesion: 0.11
-Nodes (18): Duration?, build, _color, createState, didUpdateWidget, dispose, estimatedDuration, initState (+10 more)
+Cohesion: 0.29
+Nodes (5): wchar_t, WindowClassRegistrar, class_registered_, GetWindowClass, instance_
 
 ### Community 731 - "Community 731"
 Cohesion: 0.11
-Nodes (19): Color get, double?, build, _color, createState, didUpdateWidget, dispose, estimatedDuration (+11 more)
+Nodes (18): Color get, build, _color, createState, didUpdateWidget, dispose, estimatedDuration, initState (+10 more)
 
 ### Community 732 - "Community 732"
 Cohesion: 0.14
 Nodes (14): _applyReminder, build, createState, DailyGoalCard, _DailyGoalCardState, _goal, _goals, initState (+6 more)
 
 ### Community 733 - "Community 733"
-Cohesion: 0.10
-Nodes (21): package:flutter/gestures.dart, book, build, createState, _currentIndex, dispose, _goToNextSection, _goToPreviousSection (+13 more)
+Cohesion: 0.12
+Nodes (16): IdeSettings get, copyWith, fontSize, forceDarkMode, _instance, _keyDarkMode, _keyFontSize, _keyLineNumbers (+8 more)
 
 ### Community 734 - "Community 734"
 Cohesion: 0.11
 Nodes (19): animate, build, child, color, createState, DuoButton, _DuoButtonState, DuoIconButton (+11 more)
 
 ### Community 735 - "Community 735"
-Cohesion: 0.12
-Nodes (16): build, DesktopWebView, desktopWebViewEnsureInitialized, html, onJsError, onMessage, useDesktopWebView, ../platform_webview.dart (+8 more)
+Cohesion: 0.22
+Nodes (8): ValueChanged, build, DesktopWebView, desktopWebViewEnsureInitialized, html, onJsError, onMessage, useDesktopWebView
 
 ### Community 736 - "Community 736"
 Cohesion: 0.11
 Nodes (17): chooseEffectiveOffset, computeOffset, corrections, _enforceIncreasing, _fillMissingStarts, _leadingNumbering, _nonWord, _normalize (+9 more)
 
 ### Community 737 - "Community 737"
-Cohesion: 0.17
-Nodes (13): class MockWebviewCefPlatform
-    with, package:webview_cef/webview_cef_method_channel.dart, package:webview_cef/webview_cef_platform_interface.dart, MethodChannelWebviewCef, WebviewCefPlatform, channel, main, platform (+5 more)
+Cohesion: 0.16
+Nodes (16): class MockWebviewCefPlatform
+    with, WebviewCefPlatform, package:webview_cef/webview_cef.dart, package:webview_cef/webview_cef_platform_interface.dart, WebviewCefPlatform, getPlatformVersion, initialPlatform, main (+8 more)
 
 ### Community 738 - "Community 738"
-Cohesion: 0.08
-Nodes (23): auth, breakpoint, build, child, content, form, maxWidth, mobile (+15 more)
+Cohesion: 0.17
+Nodes (11): auth, breakpoint, build, child, content, form, maxWidth, mobile (+3 more)
 
 ### Community 739 - "Community 739"
 Cohesion: 0.19
@@ -4907,8 +4926,8 @@ Cohesion: 0.12
 Nodes (16): Chapter 1 Introduction to, Chapter 3, Chapter 4 Plant, package:flow/services/toc_matcher.dart, 230, 245, 58, Botany (+8 more)
 
 ### Community 742 - "Community 742"
-Cohesion: 0.15
-Nodes (13): AddPlugin(), ClearPlugins(), GetInstance(), OnRegistrarDestroyed(), PluginRegistrar(), flutter(), flutter(), Plugin (+5 more)
+Cohesion: 0.12
+Nodes (15): flutter(), AddPlugin(), ClearPlugins(), GetInstance(), OnRegistrarDestroyed(), PluginRegistrar(), flutter(), flutter() (+7 more)
 
 ### Community 743 - "Community 743"
 Cohesion: 0.12
@@ -4916,19 +4935,19 @@ Nodes (16): dart:html, dart:ui_web, build, buildWebWebView, createState, dispose
 
 ### Community 744 - "Community 744"
 Cohesion: 0.12
-Nodes (16): build, createState, didUpdateWidget, ensureInitialized, html, initState, _load, onJsError (+8 more)
+Nodes (16): desktop_webview_io.dart, build, createState, didUpdateWidget, ensureInitialized, html, initState, _load (+8 more)
 
 ### Community 745 - "Community 745"
-Cohesion: 0.26
-Nodes (10): Create(), UpdateTheme(), Destroy(), GetThisFromHandle(), GetWindowClass(), OnCreate(), OnDestroy(), Scale() (+2 more)
+Cohesion: 0.14
+Nodes (18): Create(), UpdateTheme(), RECT, Destroy(), GetClientArea(), GetThisFromHandle(), GetWindowClass(), OnCreate() (+10 more)
 
 ### Community 746 - "Community 746"
-Cohesion: 0.14
-Nodes (10): flutter(), flutter(), flutter(), flutter(), flutter(), namespace, namespace, namespace (+2 more)
+Cohesion: 0.10
+Nodes (15): Any, flutter(), flutter(), flutter(), flutter(), flutter(), flutter(), flutter() (+7 more)
 
 ### Community 747 - "Community 747"
-Cohesion: 0.16
-Nodes (17): OnCreate, Size, wstring, HWND, Scale(), Win32Window, child_content_, CreateAndShow (+9 more)
+Cohesion: 0.15
+Nodes (13): Point, Size, wchar_t, wstring, Scale(), CreateAndShow, Destroy, SetQuitOnClose (+5 more)
 
 ### Community 748 - "Community 748"
 Cohesion: 0.13
@@ -4947,8 +4966,8 @@ Cohesion: 0.33
 Nodes (5): WindowClassRegistrar, class_registered_, GetWindowClass, instance_, UnregisterWindowClass
 
 ### Community 752 - "Community 752"
-Cohesion: 0.25
-Nodes (6): GetWindowClass(), wchar_t, WindowClassRegistrar, class_registered_, GetWindowClass, instance_
+Cohesion: 0.09
+Nodes (23): authStateChanges, createUserWithEmailAndPassword, currentUser, displayName, email, _FaAuth, _FaUser, FbAuth (+15 more)
 
 ### Community 753 - "Community 753"
 Cohesion: 0.29
@@ -4971,32 +4990,32 @@ Cohesion: 0.15
 Nodes (13): allCookies, _controller, createState, dispose, initPlatformState, initState, MyApp, _MyAppState (+5 more)
 
 ### Community 758 - "Community 758"
-Cohesion: 0.38
-Nodes (5): CefCookie, getVisitedCookies(), Visit(), map, string
+Cohesion: 0.13
+Nodes (15): _answered, build, _correct, createState, _formatInfo, _header, _ProgramCard, _ProgramCardState (+7 more)
 
 ### Community 759 - "Community 759"
-Cohesion: 0.10
-Nodes (20): build, createState, _deleteFile, directory, file, _files, folderId, initState (+12 more)
+Cohesion: 0.67
+Nodes (3): Directory, File, FileSystemEntity
 
 ### Community 760 - "Community 760"
 Cohesion: 0.15
 Nodes (13): package:webview_cef/src/webview_inject_user_script.dart, allCookies, build, _controller, createState, dispose, initPlatformState, initState (+5 more)
 
 ### Community 761 - "Community 761"
-Cohesion: 0.40
-Nodes (6): OnCreate, RECT, GetClientArea(), SetChildContent(), GetClientArea, SetChildContent
+Cohesion: 0.05
+Nodes (46): build, _buildCodeInput, _buildPreviewView, charset, createState, dispose, existingProject, id (+38 more)
 
 ### Community 762 - "Community 762"
-Cohesion: 0.15
-Nodes (11): FlutterViewController(), HandleTopLevelWindowProc(), view_id(), FlutterViewId, DartProject, HWND, LPARAM, LRESULT (+3 more)
+Cohesion: 0.09
+Nodes (22): _aiService, applyGlobalShift, describe, _detectShift, MappingVerifier, matched, _matches, _matchThreshold (+14 more)
 
 ### Community 763 - "Community 763"
 Cohesion: 0.21
 Nodes (11): getPlatformVersion, _instance, _token, package:plugin_platform_interface/plugin_platform_interface.dart, getPlatformVersion, _instance, _token, static final Object (+3 more)
 
 ### Community 764 - "Community 764"
-Cohesion: 0.18
-Nodes (11): AuthScreen, _AuthScreenState, build, createState, _emailCtrl, _isLoading, _isSignUp, _passwordCtrl (+3 more)
+Cohesion: 0.22
+Nodes (9): AuthScreen, _AuthScreenState, build, createState, _isLoading, _passwordCtrl, _submit, _usernameCtrl (+1 more)
 
 ### Community 765 - "Community 765"
 Cohesion: 0.17
@@ -5008,39 +5027,39 @@ Nodes (6): CefBrowserView, CefView, CefWindow, SimpleBrowserViewDelegate, Simple
 
 ### Community 767 - "Community 767"
 Cohesion: 0.13
-Nodes (15): desktop_webview_io.dart, build, createState, didUpdateWidget, ensureInitialized, html, initState, _load (+7 more)
+Nodes (15): package:webview_flutter/webview_flutter.dart, build, createState, didUpdateWidget, ensureInitialized, html, initState, _load (+7 more)
 
 ### Community 768 - "Community 768"
-Cohesion: 0.17
-Nodes (11): GlobalKey, body, CoachMark, CoachMarkController, hole, maybeShow, paint, shouldRepaint (+3 more)
+Cohesion: 0.09
+Nodes (22): _aiService, applyGlobalShift, describe, _detectShift, MappingVerifier, matched, _matches, _matchThreshold (+14 more)
 
 ### Community 769 - "Community 769"
 Cohesion: 0.15
 Nodes (12): Automatic Book Indexing Pipeline — Design, Error handling, Goals, `lib/screens/auto_index_screen.dart`, `lib/screens/generate_book_screen.dart`, `lib/screens/index_picker_screen.dart`, New component: `lib/services/toc_matcher.dart`, Non-goals (+4 more)
 
 ### Community 770 - "Community 770"
-Cohesion: 0.15
-Nodes (15): optional, HWND, LPARAM, LRESULT, MessageHandler(), UINT, WPARAM, FlutterWindow (+7 more)
+Cohesion: 0.16
+Nodes (14): HWND, LPARAM, LRESULT, MessageHandler(), UINT, WPARAM, FlutterWindow, flutter_controller_ (+6 more)
 
 ### Community 771 - "Community 771"
-Cohesion: 0.13
-Nodes (15): StreamSubscription?, build, buildWebWebView, createState, dispose, htmlContent, initState, _instanceTag (+7 more)
+Cohesion: 0.10
+Nodes (20): html_ide_screen.dart, build, _buildHeader, _buildIdeCard, _buildProjectsList, _buildToolGrid, CodeIdeScreen, _CodeIdeScreenState (+12 more)
 
 ### Community 772 - "Community 772"
 Cohesion: 0.50
 Nodes (3): RegisterGeneratedPlugins(), RegisterGeneratedPlugins(), FlutterPluginRegistry
 
 ### Community 773 - "Community 773"
-Cohesion: 0.13
-Nodes (14): fb_auth.dart, _CfFirestore, FbFirestore, FdFirestoreBackend, FdFirestoreBackend, initializeFiredart, noSuchMethod, fb_firestore.dart (+6 more)
+Cohesion: 0.29
+Nodes (6): fb_auth.dart, initializeFiredart, noSuchMethod, fb_firestore.dart, initializeFiredart, noSuchMethod
 
 ### Community 774 - "Community 774"
 Cohesion: 0.20
 Nodes (8): flutter(), flutter(), flutter(), flutter(), namespace, namespace, namespace, namespace
 
 ### Community 775 - "Community 775"
-Cohesion: 0.67
-Nodes (3): Directory, File, FileSystemEntity
+Cohesion: 0.11
+Nodes (18): double?, build, _color, createState, didUpdateWidget, dispose, estimatedDuration, initState (+10 more)
 
 ### Community 776 - "Community 776"
 Cohesion: 0.38
@@ -5055,16 +5074,16 @@ Cohesion: 0.18
 Nodes (11): Exception, FbAuthException, FileSystemException, HttpException, IOException, SocketException, FbAuthException, FileSystemException (+3 more)
 
 ### Community 779 - "Community 779"
-Cohesion: 0.40
-Nodes (3): GeneratedPluginRegistrant, +registerWithRegistry, NSObject
+Cohesion: 0.13
+Nodes (15): StreamSubscription?, build, buildWebWebView, createState, dispose, htmlContent, initState, _instanceTag (+7 more)
 
 ### Community 780 - "Community 780"
-Cohesion: 0.17
-Nodes (11): package:flow/services/ai_service.dart, package:flow/services/mapping_verifier.dart, package:flow/services/pdf_service.dart, book, extractPagesText, files, headings, main (+3 more)
+Cohesion: 0.13
+Nodes (15): OnTitleChange(), OnTooltip(), setCookie(), cef_log_severity_t, CefBrowserSettings, CefClient, CefString, ErrorCode (+7 more)
 
 ### Community 781 - "Community 781"
-Cohesion: 0.40
-Nodes (5): WebviewManager, WebViewController, WebviewManager, WebViewController, ValueNotifier
+Cohesion: 0.08
+Nodes (24): activeModule, book, build, _buildSourceTag, _cacheDirPath, createState, _customPromptCtrl, _deleteQuestion (+16 more)
 
 ### Community 782 - "Community 782"
 Cohesion: 0.29
@@ -5079,20 +5098,20 @@ Cohesion: 0.20
 Nodes (9): 0.0.1, 0.0.3, 0.0.5, 0.0.6, 0.0.7, 0.0.8, 0.0.9, 0.1.0 (+1 more)
 
 ### Community 785 - "Community 785"
-Cohesion: 0.15
-Nodes (17): Point, RECT, Destroy(), GetClientArea(), GetThisFromHandle(), OnCreate(), OnDestroy(), Scale() (+9 more)
+Cohesion: 0.24
+Nodes (12): RECT, Destroy(), GetClientArea(), GetThisFromHandle(), GetWindowClass(), OnCreate(), OnDestroy(), Scale() (+4 more)
 
 ### Community 786 - "Community 786"
-Cohesion: 0.17
-Nodes (11): Lesson, book, lesson, lessonIdx, modIdx, NextUp, NextUpService, resolve (+3 more)
+Cohesion: 0.13
+Nodes (13): dart:math, calculateSectionTarget, clearSectionDeadline, DeadlineService, _getDeadlineKey, getMostUrgentActiveTarget, getSectionDeadline, _getStartDayCompletedKey (+5 more)
 
 ### Community 787 - "Community 787"
-Cohesion: 0.18
-Nodes (15): guint, KeyboardCode, GdkEventToWindowsKeyCode(), GetCefStateModifiers(), GetControlCharacter(), GetWindowsKeyCodeWithoutLocation(), KeyboardCodeFromXKeysym(), GdkEventToWindowsKeyCode() (+7 more)
+Cohesion: 0.33
+Nodes (8): guint, KeyboardCode, GdkEventToWindowsKeyCode(), GetCefStateModifiers(), GetControlCharacter(), GetWindowsKeyCodeWithoutLocation(), KeyboardCodeFromXKeysym(), GdkEventKey
 
 ### Community 788 - "Community 788"
-Cohesion: 0.50
-Nodes (4): cef_cursor_type_t, CefCursorHandle, OnCursorChange, onCursorChangedEvent
+Cohesion: 0.14
+Nodes (13): bottomBar, bubbleSize, build, ConceptPiecesView, hasCanvas, index, isLast, lessonCanvas (+5 more)
 
 ### Community 789 - "Community 789"
 Cohesion: 0.22
@@ -5103,12 +5122,12 @@ Cohesion: 0.25
 Nodes (7): client, configuration_version, project_info, firebase_url, project_id, project_number, storage_bucket
 
 ### Community 791 - "Community 791"
-Cohesion: 0.18
-Nodes (9): getPlatformVersion, methodChannel, MethodChannelWebviewCef, getPlatformVersion, methodChannel, channel, main, platform (+1 more)
+Cohesion: 0.13
+Nodes (13): package:flow/models/app_models.dart, package:flow/services/ai_service.dart, package:flow/services/mapping_verifier.dart, package:flow/services/pdf_service.dart, book, extractPagesText, files, headings (+5 more)
 
 ### Community 792 - "Community 792"
-Cohesion: 0.67
-Nodes (3): Directory, File, FileSystemEntity
+Cohesion: 0.20
+Nodes (9): Color, activeColor, blur, build, currentIndex, GlassyNavBar, icons, onTap (+1 more)
 
 ### Community 793 - "Community 793"
 Cohesion: 0.25
@@ -5126,6 +5145,14 @@ Nodes (7): 🚀 Auto-update, 📚 Content & setup, 🎯 Deadlines & progress, �
 Cohesion: 0.29
 Nodes (6): apks, arm64-v8a, armeabi-v7a, changelogPath, versionCode, versionName
 
+### Community 797 - "Community 797"
+Cohesion: 0.15
+Nodes (11): FlutterViewController(), HandleTopLevelWindowProc(), view_id(), FlutterViewId, DartProject, HWND, LPARAM, LRESULT (+3 more)
+
+### Community 798 - "Community 798"
+Cohesion: 0.48
+Nodes (6): GetDisplayHandler(), GetFocusHandler(), GetLifeSpanHandler(), GetLoadHandler(), GetRenderHandler(), virtual
+
 ### Community 799 - "Community 799"
 Cohesion: 0.29
 Nodes (6): AI Queue Cleanup Implementation Plan, Task 1: Remove the AI chunk scan, Task 2: Toast all AI task failures, Task 3: Remove the Pause AI feature, Task 4: Quick-run for scheduled tasks, Task 5: Final verification
@@ -5134,9 +5161,13 @@ Nodes (6): AI Queue Cleanup Implementation Plan, Task 1: Remove the AI chunk sca
 Cohesion: 0.29
 Nodes (6): 1. Remove the 10-page AI chunk scan, 2. Show all AI task failures as toasts, 3. Remove the Pause AI feature, 4. Quick-run for scheduled tasks, AI Queue Cleanup — Design, Error handling / testing
 
+### Community 801 - "Community 801"
+Cohesion: 0.13
+Nodes (12): FlPluginRegistrar, FlPluginRegistry, fl_register_plugins(), fl_register_plugins(), my_application_activate(), webview_cef_plugin_register_with_registrar(), FlPluginRegistry, fl_register_plugins() (+4 more)
+
 ### Community 802 - "Community 802"
 Cohesion: 0.03
-Nodes (59): EdgeInsetsGeometry, build, height, MiniProgressBar, percentage, showText, activeSectionIdx, build (+51 more)
+Nodes (61): EdgeInsetsGeometry, AppCrashRecoveryScreen, build, clearRecordedCrash, error, getRecordedCrash, onDismiss, recordCrash (+53 more)
 
 ### Community 804 - "Community 804"
 Cohesion: 0.40
@@ -5174,6 +5205,10 @@ Nodes (3): CefJSBridge(), CefJSHandler(), class
 Cohesion: 0.67
 Nodes (3): ADDITIONAL, PromptService, PromptService
 
+### Community 819 - "Community 819"
+Cohesion: 0.67
+Nodes (3): SafePdfViewerController, PdfViewerController, SafePdfViewerController
+
 ### Community 823 - "Community 823"
 Cohesion: 0.40
 Nodes (3): DartProject, FlutterWindow(), FlutterWindow::FlutterWindow()
@@ -5182,25 +5217,81 @@ Nodes (3): DartProject, FlutterWindow(), FlutterWindow::FlutterWindow()
 Cohesion: 0.67
 Nodes (3): WebPdfTextSearchResult, PdfTextSearchResult, WebPdfTextSearchResult
 
+### Community 839 - "Community 839"
+Cohesion: 0.17
+Nodes (11): GlobalKey, body, CoachMark, CoachMarkController, hole, maybeShow, paint, shouldRepaint (+3 more)
+
+### Community 841 - "Community 841"
+Cohesion: 0.18
+Nodes (10): string, vector, JSValue, arrayValue, boolValue, doubleValue, intValue, objectValue (+2 more)
+
+### Community 842 - "Community 842"
+Cohesion: 0.20
+Nodes (10): ../services/ide_settings_service.dart, IdeSettings, build, createState, _current, IdeConfigDialog, _IdeConfigDialogState, initState (+2 more)
+
+### Community 843 - "Community 843"
+Cohesion: 0.22
+Nodes (9): CefBrowserSettings, CefClient, CefPopupFeatures, CefWindowInfo, loadUrl(), OnBeforePopup(), openDevTools(), CefDictionaryValue (+1 more)
+
+### Community 850 - "Community 850"
+Cohesion: 0.22
+Nodes (9): PaintElementType, RectList, onFocusedNodeChangeMessage, OnImeCompositionRangeChanged, onImeCompositionRangeChangedMessage, onJavaScriptChannelMessage, OnPaint, onPaintCallback (+1 more)
+
+### Community 851 - "Community 851"
+Cohesion: 0.39
+Nodes (7): GdkEventToWindowsKeyCode(), GetCefStateModifiers(), GetControlCharacter(), GetWindowsKeyCodeWithoutLocation(), guint, KeyboardCode, KeyboardCodeFromXKeysym()
+
+### Community 852 - "Community 852"
+Cohesion: 0.38
+Nodes (5): CefCookie, getVisitedCookies(), Visit(), map, string
+
+### Community 3901 - "Community 3901"
+Cohesion: 0.33
+Nodes (5): FlTextureRegistrar, WebviewTextureRenderer, register_, texture, WebviewCefTexture
+
+### Community 3902 - "Community 3902"
+Cohesion: 0.40
+Nodes (4): FlTextureRegistrar, WebviewTextureRenderer, register_, texture
+
+### Community 3903 - "Community 3903"
+Cohesion: 0.40
+Nodes (5): WebviewManager, WebViewController, WebviewManager, WebViewController, ValueNotifier
+
+### Community 3904 - "Community 3904"
+Cohesion: 0.50
+Nodes (4): cef_cursor_type_t, CefCursorHandle, OnCursorChange, onCursorChangedEvent
+
+### Community 3905 - "Community 3905"
+Cohesion: 0.67
+Nodes (3): DesktopWebView, _DesktopWebViewState, _DesktopWebViewState
+
+### Community 3906 - "Community 3906"
+Cohesion: 0.67
+Nodes (3): FloatingActionButtonLocation, _CustomFloatingActionButtonLocation, _CustomFloatingActionButtonLocation
+
+### Community 3908 - "Community 3908"
+Cohesion: 0.67
+Nodes (3): Directory, File, FileSystemEntity
+
 ## Knowledge Gaps
-- **9024 isolated node(s):** `PreToolUse`, `allow`, `BeforeTool`, `version`, `configurations` (+9019 more)
+- **9166 isolated node(s):** `PreToolUse`, `allow`, `BeforeTool`, `version`, `configurations` (+9161 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **3547 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **3548 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `map` connect `MatcherBase` to `../services/generation_manager.dart & applyUnit`, `window_test.h`?**
-  _High betweenness centrality (0.093) - this node is a cross-community bridge._
-- **Why does `JSValue` connect `window_test.h` to `MatcherBase`, `cef_translator_test.h`?**
-  _High betweenness centrality (0.018) - this node is a cross-community bridge._
-- **Why does `WebviewHandler` connect `course_questionnaire_screen.dart & generate_boo...` to `FlutterWindow`, `AddObserver`, `WebviewApp`, `MatcherBase`, `CefUnresponsiveProcessCallback`, `WebviewPlugin`, `CefFocusHandler`, `Community 788`, `Community 726`, `Community 702`?**
+- **Why does `map` connect `MatcherBase` to `Community 841`, `../services/generation_manager.dart & applyUnit`?**
+  _High betweenness centrality (0.090) - this node is a cross-community bridge._
+- **Why does `JSValue` connect `Community 841` to `MatcherBase`, `cef_translator_test.h`?**
+  _High betweenness centrality (0.021) - this node is a cross-community bridge._
+- **Why does `WebviewCefPlugin` connect `WebviewCefPlugin` to `wWinMain`, `Community 742`, `WebviewPlugin`?**
   _High betweenness centrality (0.016) - this node is a cross-community bridge._
 - **What connects `PreToolUse`, `allow`, `BeforeTool` to the rest of the system?**
-  _9032 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _9174 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `bookmarks_screen.dart & web_webview_helper.dart` be split into smaller, more focused modules?**
-  _Cohesion score 0.031701631701631705 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.045454545454545456 - nodes in this community are weakly interconnected._
 - **Should `../services/generation_manager.dart & applyUnit` be split into smaller, more focused modules?**
   _Cohesion score 0.0016750418760469012 - nodes in this community are weakly interconnected._
 - **Should `prompt_service.dart & lesson_node.dart` be split into smaller, more focused modules?**
-  _Cohesion score 0.029850746268656716 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.029411764705882353 - nodes in this community are weakly interconnected._

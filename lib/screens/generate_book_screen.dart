@@ -31,9 +31,59 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
   final List<File> _selectedFiles = [];
   final List<File> _syllabusFiles = [];
   final TextEditingController _customPromptController = TextEditingController();
+  final TextEditingController _customIndexController = TextEditingController();
   final TextEditingController _titleController = TextEditingController();
+  double _densitySliderValue = 1.0;
   bool _autoFetchBooks = true;
   bool _isScanningSyllabus = false;
+
+  String get _currentDensityKey {
+    switch (_densitySliderValue.round()) {
+      case 0:
+        return 'Low';
+      case 2:
+        return 'High';
+      case 3:
+        return 'Extra';
+      case 4:
+        return 'Max';
+      case 1:
+      default:
+        return 'Medium';
+    }
+  }
+
+  String get _densityLabel {
+    switch (_densitySliderValue.round()) {
+      case 0:
+        return 'Low (1–2 Units, 6–8 Lessons/Unit)';
+      case 2:
+        return 'High (5–6 Units, 12–16 Lessons/Unit)';
+      case 3:
+        return 'Extra (7–8 Units, 16–20 Lessons/Unit)';
+      case 4:
+        return 'Max (9–10+ Units, 20–25+ Lessons/Unit)';
+      case 1:
+      default:
+        return 'Medium (3–4 Units, 8–12 Lessons/Unit)';
+    }
+  }
+
+  Color get _densityColor {
+    switch (_densitySliderValue.round()) {
+      case 0:
+        return AppTheme.duoBlue;
+      case 2:
+        return AppTheme.duoOrange;
+      case 3:
+        return AppTheme.duoRed;
+      case 4:
+        return AppTheme.duoViolet;
+      case 1:
+      default:
+        return AppTheme.duoGreen;
+    }
+  }
 
   /// True while the first-run walkthrough is driving this screen: we force
   /// Course mode, pre-fill the title, and — on Continue — seed a ready-made
@@ -48,6 +98,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
     // prompt alone is enough to generate), so rebuild as the user types.
     _titleController.addListener(_onTextChanged);
     _customPromptController.addListener(_onTextChanged);
+    _customIndexController.addListener(_onTextChanged);
 
     final walk = WalkthroughService.instance;
     if (walk.isActive) {
@@ -70,7 +121,8 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
     return _selectedFiles.isNotEmpty ||
         _syllabusFiles.isNotEmpty ||
         _titleController.text.trim().isNotEmpty ||
-        _customPromptController.text.trim().isNotEmpty;
+        _customPromptController.text.trim().isNotEmpty ||
+        _customIndexController.text.trim().isNotEmpty;
   }
 
   Future<void> _loadPreferences() async {
@@ -85,6 +137,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
   @override
   void dispose() {
     _customPromptController.dispose();
+    _customIndexController.dispose();
     _titleController.dispose();
     super.dispose();
   }
@@ -995,12 +1048,15 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
         if (_mode == GenerationMode.handout) {
           _showHandoutPrompt(_selectedFiles, presetTitle ?? filename);
         } else {
+          final customIndex = _customIndexController.text.trim();
           GenerationManager.instance.startBookGeneration(
             _selectedFiles,
             presetTitle ?? filename,
             indexFiles: const [],
             chapter1AbsolutePages: const [],
             customInstructions: customPrompt.isNotEmpty ? customPrompt : null,
+            customIndexText: customIndex.isNotEmpty ? customIndex : null,
+            activeDensity: _currentDensityKey,
             syllabusFiles: finalSyllabusFiles,
             isHandout: false,
           );
@@ -1360,6 +1416,172 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                             borderSide: const BorderSide(
                               color: AppTheme.duoGreen,
                             ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'COURSE DEPTH',
+                            style: TextStyle(
+                              color: context.colors.textFaint,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _densityColor.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: _densityColor.withValues(alpha: 0.4),
+                              ),
+                            ),
+                            child: Text(
+                              _currentDensityKey.toUpperCase(),
+                              style: TextStyle(
+                                color: _densityColor,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      SliderTheme(
+                        data: SliderThemeData(
+                          activeTrackColor: _densityColor,
+                          thumbColor: _densityColor,
+                          inactiveTrackColor: context.colors.outline,
+                          overlayColor: _densityColor.withValues(alpha: 0.2),
+                        ),
+                        child: Slider(
+                          value: _densitySliderValue,
+                          min: 0,
+                          max: 4,
+                          divisions: 4,
+                          onChanged: (val) {
+                            setState(() {
+                              _densitySliderValue = val;
+                            });
+                          },
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Low',
+                              style: TextStyle(
+                                color: context.colors.textFaint,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Medium',
+                              style: TextStyle(
+                                color: context.colors.textFaint,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'High',
+                              style: TextStyle(
+                                color: context.colors.textFaint,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Extra',
+                              style: TextStyle(
+                                color: context.colors.textFaint,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Max',
+                              style: TextStyle(
+                                color: context.colors.textFaint,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: context.colors.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: context.colors.outline),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(LucideIcons.sliders, color: _densityColor, size: 18),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                _densityLabel,
+                                style: TextStyle(
+                                  color: context.colors.textSecondary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'CUSTOM INDEX OUTLINE (VERBATIM)',
+                        style: TextStyle(
+                          color: context.colors.textFaint,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _customIndexController,
+                        maxLines: 4,
+                        style: TextStyle(
+                          color: context.colors.textPrimary,
+                          fontSize: 14,
+                        ),
+                        decoration: InputDecoration(
+                          hintText:
+                              'Paste custom table of contents outline...\nAI will strictly follow this structure.',
+                          hintStyle: TextStyle(
+                            color: context.colors.textFaint,
+                            fontSize: 13,
+                          ),
+                          filled: true,
+                          fillColor: context.colors.surface,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: context.colors.outline),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppTheme.duoGreen),
                           ),
                         ),
                       ),

@@ -924,6 +924,8 @@ Important Rules:
     String? forcedApiKey,
     List<List<int>>? chapterStarts,
     List<File>? sourceFiles,
+    String? customIndexText,
+    String activeDensity = 'Medium',
   }) async {
     await _checkPause();
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
@@ -1431,7 +1433,11 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
     onProgress?.call('Finalizing structure…', 1.0);
     return Book.fromJson(
       assembled,
-    ).copyWith(customInstructions: customInstructions);
+    ).copyWith(
+      customInstructions: customInstructions,
+      customIndexText: customIndexText,
+      activeDensity: activeDensity,
+    );
   }
 
   /// Stage-2 helper: details the sections of ONE [chapter] via
@@ -4185,6 +4191,143 @@ Return ONLY the markdown explanation.
       }
     }
     return 'Failed to generate explanation. Please check your internet connection and API keys.';
+  }
+
+  Future<Book> switchBookDensityProfile(Book book, String newDensity) async {
+    final currentDensity = book.activeDensity;
+    final Map<String, List<Module>> updatedVariants = Map.from(book.densityVariants);
+    
+    // Save current active modules to current density variant slot
+    updatedVariants[currentDensity] = List.from(book.modules);
+
+    if (updatedVariants.containsKey(newDensity) && updatedVariants[newDensity]!.isNotEmpty) {
+      // Density profile already exists! Switch instantly with full progress intact!
+      return book.copyWith(
+        activeDensity: newDensity,
+        modules: updatedVariants[newDensity],
+        densityVariants: updatedVariants,
+      );
+    }
+
+    // Profile does not exist yet for newDensity.
+    // Create new structure skeleton based on existing module outlines with ungenerated units.
+    final newModules = book.modules.map((m) {
+      return m.copyWith(
+        sections: m.sections.map((s) {
+          return s.copyWith(
+            units: [],
+            unitsGenerated: false,
+          );
+        }).toList(),
+      );
+    }).toList();
+
+    updatedVariants[newDensity] = newModules;
+
+    return book.copyWith(
+      activeDensity: newDensity,
+      modules: newModules,
+      densityVariants: updatedVariants,
+    );
+  }
+
+  Future<Book> updateCourseFromCustomIndex({
+    required Book existingBook,
+    required String newIndexText,
+    required String newDensity,
+  }) async {
+    List<Module> newModules = existingBook.modules;
+    if (newIndexText.trim().isNotEmpty) {
+      try {
+        final keys = await _getKeys();
+        final modelsToTry = await _getLiteModels();
+        final prompt = PromptService.parseCustomIndexText.replaceAll('%custom_index_text%', newIndexText.trim());
+
+        final text = await _generateWithGroqFallback(
+          geminiModels: modelsToTry,
+          geminiKeys: keys,
+          contents: [Content.multi([TextPart(prompt)])],
+          slotName: 'Lite',
+          generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+        );
+        final meta = _cleanAndDecodeJson(text);
+
+        final rawModules = meta['modules'] as List?;
+        if (rawModules != null && rawModules.isNotEmpty) {
+          final existingModulesMap = {
+            for (final m in existingBook.modules) m.title.trim().toLowerCase(): m,
+          };
+
+          final parsedList = <Module>[];
+          for (int i = 0; i < rawModules.length; i++) {
+            final rm = rawModules[i] is Map ? Map<String, dynamic>.from(rawModules[i]) : {};
+            final title = rm['title']?.toString() ?? 'Module ${i + 1}';
+            final matchedExisting = existingModulesMap[title.trim().toLowerCase()];
+
+            if (matchedExisting != null) {
+              final rawSections = rm['sections'] as List? ?? [];
+              final existingSecMap = {
+                for (final s in matchedExisting.sections) s.title.trim().toLowerCase(): s,
+              };
+              final updatedSections = List<Section>.from(matchedExisting.sections);
+              for (int j = 0; j < rawSections.length; j++) {
+                final rs = rawSections[j] is Map ? Map<String, dynamic>.from(rawSections[j]) : {};
+                final secTitle = rs['title']?.toString() ?? 'Section ${j + 1}';
+                if (!existingSecMap.containsKey(secTitle.trim().toLowerCase())) {
+                  updatedSections.add(
+                    Section(
+                      id: '${matchedExisting.id}-s${updatedSections.length + 1}',
+                      title: secTitle,
+                      description: rs['description']?.toString() ?? '',
+                      color: 'duo-blue',
+                      units: const [],
+                    ),
+                  );
+                }
+              }
+              parsedList.add(matchedExisting.copyWith(sections: updatedSections));
+            } else {
+              final modId = 'm${parsedList.length + 1}';
+              final rawSections = rm['sections'] as List? ?? [];
+              final sections = <Section>[];
+              for (int j = 0; j < rawSections.length; j++) {
+                final rs = rawSections[j] is Map ? Map<String, dynamic>.from(rawSections[j]) : {};
+                sections.add(
+                  Section(
+                    id: '$modId-s${j + 1}',
+                    title: rs['title']?.toString() ?? 'Section ${j + 1}',
+                    description: rs['description']?.toString() ?? '',
+                    color: 'duo-blue',
+                    units: const [],
+                  ),
+                );
+              }
+              parsedList.add(
+                Module(
+                  id: modId,
+                  title: title,
+                  description: rm['description']?.toString() ?? '',
+                  sections: sections,
+                  practiceQuestions: const [],
+                ),
+              );
+            }
+          }
+          if (parsedList.isNotEmpty) {
+            newModules = parsedList;
+          }
+        }
+      } catch (e) {
+        print('[AiService] updateCourseFromCustomIndex error: $e');
+      }
+    }
+
+    final updatedBook = existingBook.copyWith(
+      customIndexText: newIndexText,
+      modules: newModules,
+    );
+
+    return switchBookDensityProfile(updatedBook, newDensity);
   }
 
   String _cleanJsonText(String text) {

@@ -15,8 +15,8 @@
     "semantic_hash": ""
   },
   "lib/models/app_models.dart": {
-    "mtime": 1784959113.925651,
-    "ast_hash": "09233a7447f5230c453cf8a5e3286f8e",
+    "mtime": 1784963880.9238648,
+    "ast_hash": "81125d13484ee9e2cc9d59ca6d4f204a",
     "semantic_hash": ""
   },
   "lib/screens/main_layout_screen.dart": {
@@ -45,8 +45,8 @@
     "semantic_hash": ""
   },
   "lib/screens/home_screen.dart": {
-    "mtime": 1784957981.4566915,
-    "ast_hash": "32bfdb053270f2ccb5dab762fbc5140e",
+    "mtime": 1784964285.380552,
+    "ast_hash": "4d3b0a5070a7b1e031fe4ce8b961e870",
     "semantic_hash": ""
   },
   "lib/screens/pyq_tab_screen.dart": {
@@ -110,8 +110,8 @@
     "semantic_hash": ""
   },
   "lib/screens/generate_book_screen.dart": {
-    "mtime": 1784952867.7088828,
-    "ast_hash": "e9798f804ff238dba138fbcac502e207",
+    "mtime": 1784964197.0790007,
+    "ast_hash": "9422c36b6ff62660ece2248fb311d5eb",
     "semantic_hash": ""
   },
   "lib/screens/course_edit_structure_screen.dart": {
@@ -340,18 +340,18 @@
     "semantic_hash": ""
   },
   "lib/services/generation_manager.dart": {
-    "mtime": 1784961417.8864157,
-    "ast_hash": "f38ea2caf942954fe38381dea64556bb",
+    "mtime": 1784963614.2660131,
+    "ast_hash": "a9563eb453e32129fc1ec04541e1c5de",
     "semantic_hash": ""
   },
   "lib/services/ai_service.dart": {
-    "mtime": 1784960794.438449,
-    "ast_hash": "1016927939ba1cf048712987969c641c",
+    "mtime": 1784963886.0907102,
+    "ast_hash": "1edfd6c56dd2cc15ead32a243298bcf8",
     "semantic_hash": ""
   },
   "lib/services/prompt_service.dart": {
-    "mtime": 1784960477.663872,
-    "ast_hash": "2cc84aafe7c28b41c99594422b271fcd",
+    "mtime": 1784963560.5896642,
+    "ast_hash": "799bf38b7151aa17a90c1532254ae352",
     "semantic_hash": ""
   },
   "lib/services/notification_service.dart": {
@@ -465,8 +465,8 @@
     "semantic_hash": ""
   },
   "android/settings.gradle.kts": {
-    "mtime": 1784953736.4670708,
-    "ast_hash": "83746a05fdae67fb22ae4703f6c17a1c",
+    "mtime": 1784962814.2288468,
+    "ast_hash": "5d507d9b22a9c00ef812d64e6e598699",
     "semantic_hash": ""
   },
   "disable-keyboard.py": {
@@ -1790,8 +1790,8 @@
     "semantic_hash": ""
   },
   ".github/workflows/android.yml": {
-    "mtime": 1784952863.3661706,
-    "ast_hash": "369fe61c5e1b80637c45c39c8fb917ec",
+    "mtime": 1784962819.2604191,
+    "ast_hash": "4e173719f36c5b8db351723bea6c9329",
     "semantic_hash": ""
   },
   ".github/workflows/windows.yml": {
@@ -2192,6 +2192,36 @@
   "lib/utils/latex_utils.dart": {
     "mtime": 1784959447.6978319,
     "ast_hash": "90b4c4592256fa5225e33af0c41b5e54",
+    "semantic_hash": ""
+  },
+  "lib/screens/ide/code_ide_screen.dart": {
+    "mtime": 1784964271.4203243,
+    "ast_hash": "ebcf4d0a384879468bf800fae82c9beb",
+    "semantic_hash": ""
+  },
+  "lib/screens/ide/html_ide_screen.dart": {
+    "mtime": 1784964253.9299526,
+    "ast_hash": "49d6586e8354c87f2c8af58997b2d35b",
+    "semantic_hash": ""
+  },
+  "lib/screens/ide/latex_ide_screen.dart": {
+    "mtime": 1784964259.559501,
+    "ast_hash": "205c2d4a8f4abb42bc5ded1f6833ef5f",
+    "semantic_hash": ""
+  },
+  "lib/screens/ide/python_notebook_screen.dart": {
+    "mtime": 1784964248.5394237,
+    "ast_hash": "be359333cffde924b7a3f3957e80cc25",
+    "semantic_hash": ""
+  },
+  "lib/screens/ide/universal_code_runner_screen.dart": {
+    "mtime": 1784964265.4892626,
+    "ast_hash": "91660525bef57b299fe43e47daded6ab",
+    "semantic_hash": ""
+  },
+  "lib/services/code_storage_service.dart": {
+    "mtime": 1784964241.6567917,
+    "ast_hash": "ffa3e41e9cddb507130d4c5737458662",
     "semantic_hash": ""
   }
 }

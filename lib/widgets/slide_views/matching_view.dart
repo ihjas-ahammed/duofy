@@ -39,9 +39,6 @@ class _MatchingViewState extends State<MatchingView> {
   late List<int> _rightOrder; // pair indices, shuffled for the right column
   final Map<int, int> _assigned = {}; // left pair index -> right pair index
   int? _selectedLeft;
-  late Widget _titleWidget;
-  late List<Widget> _leftChips; // by pair index
-  late List<Widget> _rightChips; // by pair index
 
   static const List<Color> _pairColors = [
     AppTheme.duoBlue,
@@ -72,43 +69,6 @@ class _MatchingViewState extends State<MatchingView> {
     _pairs = widget.slide.matchPairs ?? [];
     _rightOrder = List.generate(_pairs.length, (i) => i)
       ..shuffle(math.Random(widget.slide.id.hashCode));
-
-    _titleWidget = MathMarkdown(
-      key: ValueKey('title_${widget.slide.id}'),
-      data: widget.slide.content.isNotEmpty
-          ? widget.slide.content
-          : 'Match each item with its pair.',
-      textStyle: TextStyle(
-        fontSize: 17,
-        color: context.colors.textPrimary,
-        fontWeight: FontWeight.bold,
-      ),
-    );
-
-    _leftChips = [
-      for (var i = 0; i < _pairs.length; i++)
-        MathMarkdown(
-          key: ValueKey('left_${widget.slide.id}_$i'),
-          data: _pairs[i].left,
-          textStyle: TextStyle(
-            fontSize: 14,
-            color: context.colors.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-    ];
-    _rightChips = [
-      for (var i = 0; i < _pairs.length; i++)
-        MathMarkdown(
-          key: ValueKey('right_${widget.slide.id}_$i'),
-          data: _pairs[i].right,
-          textStyle: TextStyle(
-            fontSize: 14,
-            color: context.colors.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-    ];
   }
 
   Color _pairColor(int leftIndex) =>
@@ -214,6 +174,44 @@ class _MatchingViewState extends State<MatchingView> {
 
   @override
   Widget build(BuildContext context) {
+    final titleWidget = MathMarkdown(
+      key: ValueKey('title_${widget.slide.id}'),
+      data: widget.slide.content.isNotEmpty
+          ? widget.slide.content
+          : 'Match each item with its pair.',
+      textStyle: TextStyle(
+        fontSize: 17,
+        color: context.colors.textPrimary,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+
+    final leftChips = [
+      for (var i = 0; i < _pairs.length; i++)
+        MathMarkdown(
+          key: ValueKey('left_${widget.slide.id}_$i'),
+          data: _pairs[i].left,
+          textStyle: TextStyle(
+            fontSize: 14,
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+    ];
+
+    final rightChips = [
+      for (var i = 0; i < _pairs.length; i++)
+        MathMarkdown(
+          key: ValueKey('right_${widget.slide.id}_$i'),
+          data: _pairs[i].right,
+          textStyle: TextStyle(
+            fontSize: 14,
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+    ];
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: CustomScrollView(
@@ -255,7 +253,7 @@ class _MatchingViewState extends State<MatchingView> {
                       ),
                       Padding(
                         padding: const EdgeInsets.all(20),
-                        child: _titleWidget,
+                        child: titleWidget,
                       ),
                     ],
                   ),
@@ -270,7 +268,7 @@ class _MatchingViewState extends State<MatchingView> {
                         children: [
                           for (var i = 0; i < _pairs.length; i++)
                             _chip(
-                              child: _leftChips[i],
+                              child: leftChips[i],
                               bound: _assigned.containsKey(i),
                               color: _pairColor(i),
                               highlighted: _selectedLeft == i,
@@ -294,7 +292,7 @@ class _MatchingViewState extends State<MatchingView> {
                               builder: (context) {
                                 final boundLeft = _boundLeftFor(rightIndex);
                                 return _chip(
-                                  child: _rightChips[rightIndex],
+                                  child: rightChips[rightIndex],
                                   bound: boundLeft != null,
                                   color: boundLeft != null
                                       ? _pairColor(boundLeft)

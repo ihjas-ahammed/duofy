@@ -764,6 +764,8 @@ class GenerationManager extends ChangeNotifier {
     List<List<int>>? chapterStarts,
     List<File> sourceFiles = const [],
     String? parentTaskId,
+    String? customIndexText,
+    String activeDensity = 'Medium',
   }) async {
     final task = AiTask(
       id: 'skeleton_${DateTime.now().millisecondsSinceEpoch}',
@@ -782,6 +784,8 @@ class GenerationManager extends ChangeNotifier {
         'chapterStarts': ?chapterStarts,
         'sourceFilesPaths': sourceFiles.map((f) => f.path).toList(),
         'parentTaskId': ?parentTaskId,
+        'customIndexText': customIndexText,
+        'activeDensity': activeDensity,
       },
     );
     _enqueueTaskObject(task);
@@ -943,6 +947,9 @@ class GenerationManager extends ChangeNotifier {
       ch1Pages = backgroundCh1Pages;
     }
 
+    final customIndexText = task.params['customIndexText'] as String?;
+    final activeDensity = task.params['activeDensity'] as String? ?? 'Medium';
+
     final result = await _aiService.generateBookSkeleton(
       indexFiles,
       filename,
@@ -952,6 +959,8 @@ class GenerationManager extends ChangeNotifier {
       isHandout: isHandout,
       chapterStarts: chapterStarts,
       sourceFiles: sourceFiles,
+      customIndexText: customIndexText,
+      activeDensity: activeDensity,
       onProgress: (status, progress) {
         task.statusMessage = status;
         task.progress = progress;
@@ -1837,6 +1846,8 @@ class GenerationManager extends ChangeNotifier {
     List<String>? plannerQuestions,
     List<String>? selectedQuestions,
     String? bloomLevel,
+    String? customIndexText,
+    String activeDensity = 'Medium',
   }) async {
     sourceFiles = sourceFiles.toList();
     final taskId = DateTime.now().millisecondsSinceEpoch.toString();
@@ -1890,6 +1901,8 @@ class GenerationManager extends ChangeNotifier {
         chapterStarts: chapterStarts,
         sourceFiles: sourceFiles,
         parentTaskId: taskId,
+        customIndexText: customIndexText,
+        activeDensity: activeDensity,
       );
 
       stopwatch.stop();

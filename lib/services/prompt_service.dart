@@ -501,6 +501,103 @@ Return ONLY valid JSON matching this exact structure (do NOT wrap in markdown co
   ]
 }
 ''';
+
+  static String densityBlock(String density) {
+    switch (density.toLowerCase()) {
+      case 'low':
+        return '''
+GENERATION DENSITY THRESHOLD (LOW / EASY REVIEW):
+- Break this section into EXACTLY 1 to 2 units (typically 1 unit).
+- For each unit, plan EXACTLY 6 to 8 bite-sized lessons.
+- Slide count per lesson MUST be EXACTLY 5 slides.
+''';
+      case 'high':
+        return '''
+GENERATION DENSITY THRESHOLD (HIGH / DEEP DIVE):
+- Break this section into EXACTLY 5 to 6 units.
+- For each unit, plan EXACTLY 12 to 16 bite-sized lessons.
+- Slide count per lesson MUST be EXACTLY 5 slides.
+''';
+      case 'extra':
+        return '''
+GENERATION DENSITY THRESHOLD (EXTRA / COMPREHENSIVE):
+- Break this section into EXACTLY 7 to 8 units.
+- For each unit, plan EXACTLY 16 to 20 bite-sized lessons.
+- Slide count per lesson MUST be EXACTLY 5 slides.
+''';
+      case 'max':
+        return '''
+GENERATION DENSITY THRESHOLD (MAX / EXHAUSTIVE):
+- Break this section into 9 or more units (exhaustive breakdown).
+- For each unit, plan EXACTLY 20 to 25 bite-sized lessons.
+- Slide count per lesson MUST be EXACTLY 5 slides.
+''';
+      case 'medium':
+      default:
+        return '''
+GENERATION DENSITY THRESHOLD (MEDIUM / STANDARD):
+- Break this section into EXACTLY 3 to 4 units.
+- For each unit, plan EXACTLY 8 to 12 bite-sized lessons.
+- Slide count per lesson MUST be EXACTLY 5 slides.
+''';
+    }
+  }
+
+  static const String customIndexChapterList =
+      '''You are an expert curriculum designer. A custom table of contents index has been explicitly provided by the user for the course titled "%filename%".
+
+CUSTOM INDEX TEXT (STRICT MANDATE):
+%custom_index_text%
+
+%custom_instructions%
+
+CRITICAL RULES:
+1. You MUST strictly follow the provided custom index text above to extract modules/chapters and sections. Do NOT invent, skip, or hallucinate chapters outside of what is specified in the custom index.
+2. Group the topics cleanly into modules and sections as outlined in the custom index.
+3. Return ONLY valid JSON matching this exact structure:
+{
+  "title": "%filename%",
+  "description": "Course based on custom index outline",
+  "chapters": [
+    {
+      "id": "m1",
+      "title": "Module 1 Title",
+      "description": "Module description",
+      "sections": [
+        {
+          "id": "m1-s1",
+          "title": "Section 1.1 Title",
+          "description": "Section description"
+        }
+      ]
+    }
+  ]
+}''';
+
+  static const String parseCustomIndexText =
+      '''You are an AI data parser. Parse the following custom course table of contents index text into a structured JSON array of modules and sections.
+
+CUSTOM INDEX TEXT:
+%custom_index_text%
+
+Return ONLY valid JSON matching this exact structure:
+{
+  "modules": [
+    {
+      "id": "m1",
+      "title": "Module Title",
+      "description": "Short description",
+      "sections": [
+        {
+          "id": "m1-s1",
+          "title": "Section Title",
+          "description": "Short description"
+        }
+      ]
+    }
+  ]
+}''';
+
   static const String unitManifest =
       '''You are an expert curriculum designer. The attached PDF is the content of ONE section of a textbook:
 Section title: "%section_title%"
@@ -508,6 +605,8 @@ Section description: "%section_description%"
 
 TARGET COGNITIVE LEVEL (BLOOM'S TAXONOMY):
 %bloom_level%
+
+%density_instructions%
 
 EXISTING LESSON FORMATS IN THIS COURSE:
 %format_catalog%
