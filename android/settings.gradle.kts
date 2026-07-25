@@ -9,16 +9,22 @@ run {
     if (existingEnv.isNullOrBlank()) {
         try {
             val userHome = System.getProperty("user.home")
-            val pubCacheDir = java.io.File(userHome, "AppData/Local/Pub/Cache/hosted/pub.dev")
-            if (pubCacheDir.exists()) {
-                pubCacheDir.walk().filter { it.name == "build.gradle" && it.parentFile.name == "android" && it.parentFile.parentFile.name.startsWith("serious_python_android") }.forEach { gradleFile ->
-                    val content = gradleFile.readText()
-                    if (content.contains("throw new InvalidUserDataException(\"SERIOUS_PYTHON_SITE_PACKAGES environment variable is not set.\")")) {
-                        val patchedContent = content.replace(
-                            "throw new InvalidUserDataException(\"SERIOUS_PYTHON_SITE_PACKAGES environment variable is not set.\")",
-                            "srcDir = \"\${rootProject.rootDir}/build/dummy_site_packages\""
-                        )
-                        gradleFile.writeText(patchedContent)
+            val possiblePubCaches = listOfNotNull(
+                System.getenv("PUB_CACHE")?.let { java.io.File(it, "hosted/pub.dev") },
+                java.io.File(userHome, ".pub-cache/hosted/pub.dev"),
+                java.io.File(userHome, "AppData/Local/Pub/Cache/hosted/pub.dev")
+            )
+            for (pubCacheDir in possiblePubCaches) {
+                if (pubCacheDir.exists()) {
+                    pubCacheDir.walk().filter { it.name == "build.gradle" && it.parentFile.name == "android" && it.parentFile.parentFile.name.startsWith("serious_python_android") }.forEach { gradleFile ->
+                        val content = gradleFile.readText()
+                        if (content.contains("throw new InvalidUserDataException(\"SERIOUS_PYTHON_SITE_PACKAGES environment variable is not set.\")")) {
+                            val patchedContent = content.replace(
+                                "throw new InvalidUserDataException(\"SERIOUS_PYTHON_SITE_PACKAGES environment variable is not set.\")",
+                                "srcDir = \"\${rootProject.rootDir}/build/dummy_site_packages\""
+                            )
+                            gradleFile.writeText(patchedContent)
+                        }
                     }
                 }
             }

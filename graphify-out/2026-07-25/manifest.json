@@ -50,8 +50,8 @@
     "semantic_hash": ""
   },
   "lib/screens/pyq_tab_screen.dart": {
-    "mtime": 1784961297.7326705,
-    "ast_hash": "8fce6c73a6bdd71665095b0c3dc0fa00",
+    "mtime": 1784961383.9424305,
+    "ast_hash": "20130507f01601132c83e71e1173cea2",
     "semantic_hash": ""
   },
   "lib/screens/settings_screen.dart": {
@@ -340,8 +340,8 @@
     "semantic_hash": ""
   },
   "lib/services/generation_manager.dart": {
-    "mtime": 1784960782.2495112,
-    "ast_hash": "6d78823daca042ca4edeed41c7d1fb72",
+    "mtime": 1784961417.8864157,
+    "ast_hash": "f38ea2caf942954fe38381dea64556bb",
     "semantic_hash": ""
   },
   "lib/services/ai_service.dart": {
@@ -1280,8 +1280,8 @@
     "semantic_hash": ""
   },
   "pubspec.yaml": {
-    "mtime": 1784952868.8949351,
-    "ast_hash": "cb0378b4cb5e699ab7c363a43743b8b4",
+    "mtime": 1784962112.0949354,
+    "ast_hash": "7a61b8b4491b38503ade60bddec3fc2f",
     "semantic_hash": ""
   },
   "update.md": {
@@ -1785,8 +1785,8 @@
     "semantic_hash": ""
   },
   "CHANGELOG.md": {
-    "mtime": 1784367457.053214,
-    "ast_hash": "fd5f6ddcd4634286d05ab1416c8d53fb",
+    "mtime": 1784962121.1928456,
+    "ast_hash": "2419caf5db0c38a24d3c485e96c4eb34",
     "semantic_hash": ""
   },
   ".github/workflows/android.yml": {
@@ -1865,8 +1865,8 @@
     "semantic_hash": ""
   },
   "builds/latest.json": {
-    "mtime": 1784952866.4055905,
-    "ast_hash": "a87e475730749893f474fe23ac8f02e3",
+    "mtime": 1784962115.9337623,
+    "ast_hash": "59e9bf70ed1609841225ca8d1b8c0fc6",
     "semantic_hash": ""
   },
   "lib/services/update_service.dart": {
@@ -2180,13 +2180,13 @@
     "semantic_hash": ""
   },
   "builds/whatsnew/26.7.25.md": {
-    "mtime": 1784952866.4158387,
-    "ast_hash": "0460074d95d2ad9a8a025bee60e5cdf8",
+    "mtime": 1784962118.4419646,
+    "ast_hash": "7a221dacde1ed2bfaf50aee19a5de56f",
     "semantic_hash": ""
   },
   "release.txt": {
-    "mtime": 1784952868.9306262,
-    "ast_hash": "dee3c7e5d6f66ac361a11748952b8217",
+    "mtime": 1784962113.737351,
+    "ast_hash": "924a8cc903dc82fad5921faa2713b1cb",
     "semantic_hash": ""
   },
   "lib/utils/latex_utils.dart": {

@@ -51,6 +51,8 @@ jobs:
           echo "vcode=$VCODE" >> $GITHUB_OUTPUT
 
       - name: Build release APK (split per ABI + obfuscated symbols)
+        env:
+          SERIOUS_PYTHON_SITE_PACKAGES: ${{ github.workspace }}/android/build/dummy_site_packages
         run: flutter build apk --release --split-per-abi --obfuscate --split-debug-info=build/app/outputs/symbols
 
       - name: Copy APKs to builds directory
