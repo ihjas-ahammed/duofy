@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:file_picker/file_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:path_provider/path_provider.dart';
@@ -38,11 +39,30 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
   String? _selectedSectionId;
   final TextEditingController _customPromptCtrl = TextEditingController();
   String? _cacheDirPath;
+  late Book _currentBook;
+  StreamSubscription<Book>? _bookSub;
 
   @override
   void initState() {
     super.initState();
+    _currentBook = widget.book;
     _initCacheDir();
+    _bookSub = GenerationManager.instance.bookUpdates.listen((updatedBook) {
+      if (updatedBook.id == widget.book.id && mounted) {
+        setState(() {
+          _currentBook = updatedBook;
+        });
+        widget.onBookUpdated();
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(PyqTabScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.book != widget.book) {
+      _currentBook = widget.book;
+    }
   }
 
   Future<void> _initCacheDir() async {
@@ -96,7 +116,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
     if (!mounted) return;
     final B2Object? selected = await showDialog<B2Object>(
       context: context,
-      builder: (ctx) => const DocumentStorePickerDialog(forSyllabus: false),
+      builder: (ctx) => const DocumentStorePickerDialog(forPyq: true),
     );
 
     if (selected != null && mounted) {
@@ -148,12 +168,13 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
       widget.activeModule ?? (_ownModuleNotifier ??= ValueNotifier<int>(0));
 
   int get _moduleIdx {
-    if (widget.book.modules.isEmpty) return 0;
-    return _moduleNotifier.value.clamp(0, widget.book.modules.length - 1);
+    if (_currentBook.modules.isEmpty) return 0;
+    return _moduleNotifier.value.clamp(0, _currentBook.modules.length - 1);
   }
 
   @override
   void dispose() {
+    _bookSub?.cancel();
     _customPromptCtrl.dispose();
     _ownModuleNotifier?.dispose();
     super.dispose();
@@ -174,10 +195,14 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
   }
 
   void _startAnalysis() {
-    final pyqTask = GenerationManager.instance.activePyqTasks[widget.book.id];
-    if (pyqTask != null) return;
+    final pyqTask = GenerationManager.instance.activePyqTasks[_currentBook.id];
+    if (pyqTask != null) {
+      print('[PYQ_DIAGNOSTIC] _startAnalysis ignored: pyqTask is already running for book ${_currentBook.id}');
+      return;
+    }
 
     if (_selectedFiles.isEmpty) {
+      print('[PYQ_DIAGNOSTIC] _startAnalysis failed: _selectedFiles is empty');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please select at least one exam paper PDF/Image.'),
@@ -186,52 +211,21 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
       return;
     }
 
-    if (widget.book.modules.isEmpty) return;
-    final moduleIdx = _moduleIdx;
-    final currentModule = widget.book.modules[moduleIdx];
-
-    // Only extract for sections in the CURRENT module that have lessons.
-    final hasLessons = currentModule.sections.any(
-      (s) => s.units.any((u) => u.isGenerated && u.lessons.isNotEmpty),
-    );
-
-    if (!hasLessons) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: context.colors.surface,
-          title: Text(
-            'No Lessons in This Module',
-            style: TextStyle(
-              color: context.colors.textPrimary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Text(
-            'We can only extract questions for sections that have generated lessons. '
-            'Generate lessons in "${currentModule.title}" first, or switch to a module that has them on the Path tab.',
-            style: TextStyle(color: context.colors.textSecondary),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text(
-                'OK',
-                style: TextStyle(color: AppTheme.duoBlue),
-              ),
-            ),
-          ],
-        ),
-      );
-      return;
+    if (_currentBook.modules.isEmpty) {
+      print('[PYQ_DIAGNOSTIC] _startAnalysis warning: _currentBook.modules is empty');
     }
-
+    final moduleIdx = _moduleIdx;
     final customInstructions = _customPromptCtrl.text.trim();
 
+    for (int i = 0; i < _selectedFiles.length; i++) {
+      final sf = _selectedFiles[i];
+      print('[PYQ_DIAGNOSTIC] Selected File #$i: ${sf.name} (path: ${sf.path ?? "memory"})');
+    }
+
     GenerationManager.instance.startPyqAnalysis(
-      widget.book.id,
+      _currentBook.id,
       _selectedFiles,
-      widget.book,
+      _currentBook,
       customInstructions: customInstructions.isNotEmpty
           ? customInstructions
           : null,
@@ -250,6 +244,373 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
       _selectedFiles.clear();
       _customPromptCtrl.clear();
     });
+  }
+
+  Future<void> _updateBookAndSave(Book updatedBook) async {
+    setState(() {
+      _currentBook = updatedBook;
+    });
+    await DatabaseService().saveGeneratedBook(updatedBook);
+    widget.onBookUpdated();
+  }
+
+  Future<void> _saveAllQuestions() async {
+    final freshest = (await DatabaseService().getBookFromCache(_currentBook.id)) ?? _currentBook;
+    await DatabaseService().saveGeneratedBook(freshest);
+    widget.onBookUpdated();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('All questions saved successfully! Available in Practice tab.'),
+          backgroundColor: AppTheme.duoGreen,
+        ),
+      );
+    }
+  }
+
+  void _addQuestion(Section section) async {
+    final titleCtrl = TextEditingController(
+      text: 'Question ${section.pyqQuestions.length + 1}',
+    );
+    final contentCtrl = TextEditingController();
+    final answerCtrl = TextEditingController();
+    String selectedType = 'one_word';
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: context.colors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: context.colors.outline),
+          ),
+          titlePadding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.duoGreen.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  LucideIcons.plusCircle,
+                  color: AppTheme.duoGreen,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Add Question',
+                      style: TextStyle(
+                        color: context.colors.textPrimary,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 18,
+                      ),
+                    ),
+                    Text(
+                      section.title,
+                      style: TextStyle(
+                        color: context.colors.textFaint,
+                        fontSize: 12,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: 480,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 8),
+                  Text(
+                    'QUESTION TYPE',
+                    style: TextStyle(
+                      color: context.colors.textFaint,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setDialogState(() => selectedType = 'one_word'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              color: selectedType == 'one_word'
+                                  ? AppTheme.duoBlue.withValues(alpha: 0.2)
+                                  : context.colors.surfaceAlt,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: selectedType == 'one_word'
+                                    ? AppTheme.duoBlue
+                                    : context.colors.outline,
+                                width: selectedType == 'one_word' ? 2 : 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  LucideIcons.fileText,
+                                  size: 16,
+                                  color: selectedType == 'one_word'
+                                      ? AppTheme.duoBlue
+                                      : context.colors.textFaint,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'One Word / Short',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: selectedType == 'one_word'
+                                        ? AppTheme.duoBlue
+                                        : context.colors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setDialogState(() => selectedType = 'proof'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              color: selectedType == 'proof'
+                                  ? AppTheme.duoViolet.withValues(alpha: 0.2)
+                                  : context.colors.surfaceAlt,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: selectedType == 'proof'
+                                    ? AppTheme.duoViolet
+                                    : context.colors.outline,
+                                width: selectedType == 'proof' ? 2 : 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  LucideIcons.binary,
+                                  size: 16,
+                                  color: selectedType == 'proof'
+                                      ? AppTheme.duoViolet
+                                      : context.colors.textFaint,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Proof / Long Q',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: selectedType == 'proof'
+                                        ? AppTheme.duoViolet
+                                        : context.colors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'QUESTION TITLE',
+                    style: TextStyle(
+                      color: context.colors.textFaint,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: titleCtrl,
+                    style: TextStyle(color: context.colors.textPrimary, fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: 'e.g. Question 1',
+                      hintStyle: TextStyle(color: context.colors.textFaint),
+                      filled: true,
+                      fillColor: context.colors.surfaceAlt,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: context.colors.outline),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: context.colors.outline),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppTheme.duoBlue, width: 2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'QUESTION STATEMENT / CONTENT',
+                    style: TextStyle(
+                      color: context.colors.textFaint,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: contentCtrl,
+                    maxLines: 4,
+                    minLines: 3,
+                    style: TextStyle(color: context.colors.textPrimary, fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: 'Enter question text or math equation (e.g. Prove that \$E = mc^2\$)...',
+                      hintStyle: TextStyle(color: context.colors.textFaint),
+                      filled: true,
+                      fillColor: context.colors.surfaceAlt,
+                      contentPadding: const EdgeInsets.all(14),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: context.colors.outline),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: context.colors.outline),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppTheme.duoBlue, width: 2),
+                      ),
+                    ),
+                  ),
+                  if (selectedType == 'one_word') ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      'REFERENCE ANSWER',
+                      style: TextStyle(
+                        color: context.colors.textFaint,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: answerCtrl,
+                      style: TextStyle(color: context.colors.textPrimary, fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: 'Enter expected answer...',
+                        hintStyle: TextStyle(color: context.colors.textFaint),
+                        filled: true,
+                        fillColor: context.colors.surfaceAlt,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: context.colors.outline),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: context.colors.outline),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppTheme.duoGreen, width: 2),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: context.colors.textFaint,
+                side: BorderSide(color: context.colors.outline),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.duoGreen,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
+              icon: const Icon(LucideIcons.check, size: 16),
+              label: const Text('Save Question', style: TextStyle(fontWeight: FontWeight.bold)),
+              onPressed: () {
+                if (contentCtrl.text.trim().isEmpty) return;
+                Navigator.pop(ctx, true);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result == true) {
+      final title = titleCtrl.text.trim().isNotEmpty
+          ? titleCtrl.text.trim()
+          : 'Question ${section.pyqQuestions.length + 1}';
+      final content = contentCtrl.text.trim();
+      final answer = answerCtrl.text.trim();
+
+      final newSlide = Slide(
+        id: 'pyq_${DateTime.now().millisecondsSinceEpoch}',
+        type: selectedType,
+        title: title,
+        content: content,
+        blankAnswer: selectedType == 'one_word' ? (answer.isNotEmpty ? answer : null) : null,
+        source: 'generated',
+      );
+
+      final updatedQuestions = List<Slide>.from(section.pyqQuestions)..add(newSlide);
+      final updatedModules = _currentBook.modules.map((m) {
+        final updatedSecs = m.sections.map((s) {
+          if (s.id == section.id) {
+            return s.copyWith(pyqQuestions: updatedQuestions);
+          }
+          return s;
+        }).toList();
+        return m.copyWith(sections: updatedSecs);
+      }).toList();
+
+      final newBook = _currentBook.copyWith(modules: updatedModules);
+      await _updateBookAndSave(newBook);
+    }
+
+    titleCtrl.dispose();
+    contentCtrl.dispose();
+    answerCtrl.dispose();
   }
 
   void _editQuestion(Section section, int slideIndex, Slide slide) async {
@@ -479,6 +840,80 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
     );
   }
 
+  bool _alertShownForTaskId = false;
+
+  void _checkAndShowNoQuestionsAlert(QpGenTask? task) {
+    if (task != null && task.isError && !_alertShownForTaskId) {
+      _alertShownForTaskId = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: context.colors.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: AppTheme.duoRed.withValues(alpha: 0.5)),
+            ),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.duoRed.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    LucideIcons.alertCircle,
+                    color: AppTheme.duoRed,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'No Questions Found',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              task.status.isNotEmpty
+                  ? task.status
+                  : 'No exam questions were found in the uploaded document. Please ensure the file contains legible questions.',
+              style: TextStyle(
+                color: context.colors.textSecondary,
+                fontSize: 14,
+              ),
+            ),
+            actions: [
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.duoRed,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  GenerationManager.instance.clearPyqError(_currentBook.id);
+                },
+                child: const Text('OK', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        );
+      });
+    } else if (task == null || !task.isError) {
+      _alertShownForTaskId = false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -488,11 +923,12 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
       ]),
       builder: (context, _) {
         final pyqTask =
-            GenerationManager.instance.activePyqTasks[widget.book.id];
+            GenerationManager.instance.activePyqTasks[_currentBook.id];
+        _checkAndShowNoQuestionsAlert(pyqTask);
 
-        final currentModule = widget.book.modules.isEmpty
+        final currentModule = _currentBook.modules.isEmpty
             ? null
-            : widget.book.modules[_moduleIdx];
+            : _currentBook.modules[_moduleIdx];
 
         // Only show questions extracted for the currently open module.
         final List<Section> sectionsWithPyqs = [];
@@ -516,7 +952,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                         horizontal: 24,
                         vertical: 16,
                       ),
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(18),
                       decoration: AppTheme.glassOf(context).copyWith(
                         border: Border.all(
                           color: pyqTask.isError
@@ -525,46 +961,77 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                           width: 2,
                         ),
                       ),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          if (pyqTask.isError)
-                            const Icon(
-                              LucideIcons.alertTriangle,
-                              color: AppTheme.duoRed,
-                              size: 24,
-                            )
-                          else
-                            const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                color: AppTheme.duoBlue,
-                                strokeWidth: 3,
+                          Row(
+                            children: [
+                              if (pyqTask.isError)
+                                const Icon(
+                                  LucideIcons.alertTriangle,
+                                  color: AppTheme.duoRed,
+                                  size: 24,
+                                )
+                              else
+                                const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    color: AppTheme.duoBlue,
+                                    strokeWidth: 3,
+                                  ),
+                                ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  pyqTask.status,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    color: pyqTask.isError
+                                        ? AppTheme.duoRed
+                                        : context.colors.textPrimary,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
-                            ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Text(
-                              pyqTask.status,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: pyqTask.isError
-                                    ? AppTheme.duoRed
-                                    : context.colors.textPrimary,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                              if (!pyqTask.isError && pyqTask.progress != null) ...[
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${((pyqTask.progress ?? 0) * 100).toInt()}%',
+                                  style: const TextStyle(
+                                    color: AppTheme.duoBlue,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                              if (pyqTask.isError)
+                                IconButton(
+                                  icon: Icon(
+                                    LucideIcons.x,
+                                    color: context.colors.textFaint,
+                                  ),
+                                  onPressed: () => GenerationManager.instance
+                                      .clearPyqError(widget.book.id),
+                                ),
+                            ],
                           ),
-                          if (pyqTask.isError)
-                            IconButton(
-                              icon: Icon(
-                                LucideIcons.x,
-                                color: context.colors.textFaint,
+                          if (!pyqTask.isError) ...[
+                            const SizedBox(height: 12),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: LinearProgressIndicator(
+                                value: pyqTask.progress,
+                                minHeight: 8,
+                                backgroundColor: AppTheme.duoBlue.withValues(alpha: 0.2),
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                  AppTheme.duoBlue,
+                                ),
                               ),
-                              onPressed: () => GenerationManager.instance
-                                  .clearPyqError(widget.book.id),
                             ),
+                          ],
                         ],
                       ),
                     ),
@@ -703,16 +1170,34 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                 ),
 
                 SliverPadding(
-                  padding: const EdgeInsets.only(left: 24, top: 16, bottom: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                   sliver: SliverToBoxAdapter(
-                    child: Text(
-                      'VERIFY EXTRACTED QUESTIONS',
-                      style: TextStyle(
-                        color: context.colors.textFaint,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.5,
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'VERIFY',
+                          style: TextStyle(
+                            color: context.colors.textFaint,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                        if (sectionsWithPyqs.isNotEmpty)
+                          ElevatedButton.icon(
+                            icon: const Icon(LucideIcons.checkCheck, size: 16),
+                            label: const Text('Save Questions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.duoGreen,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            onPressed: _saveAllQuestions,
+                          ),
+                      ],
                     ),
                   ),
                 ),
@@ -754,7 +1239,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                       ),
                     ),
                   )
-                else
+                else ...[
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     sliver: SliverList(
@@ -790,11 +1275,32 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                                       fontSize: 12,
                                     ),
                                   ),
-                                  trailing: Icon(
-                                    isExpanded
-                                        ? LucideIcons.chevronUp
-                                        : LucideIcons.chevronDown,
-                                    color: context.colors.textFaint,
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      TextButton.icon(
+                                        icon: const Icon(
+                                          LucideIcons.plus,
+                                          size: 14,
+                                          color: AppTheme.duoBlue,
+                                        ),
+                                        label: const Text(
+                                          'Add Q',
+                                          style: TextStyle(
+                                            color: AppTheme.duoBlue,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        onPressed: () => _addQuestion(section),
+                                      ),
+                                      Icon(
+                                        isExpanded
+                                            ? LucideIcons.chevronUp
+                                            : LucideIcons.chevronDown,
+                                        color: context.colors.textFaint,
+                                      ),
+                                    ],
                                   ),
                                   onTap: () {
                                     setState(() {
@@ -829,101 +1335,85 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                                         ),
                                       ),
                                       child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.stretch,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 2,
-                                                    ),
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 8,
+                                                  vertical: 4,
+                                                ),
                                                 decoration: BoxDecoration(
-                                                  color:
-                                                      slide.type == 'one_word'
-                                                      ? AppTheme.duoBlue
-                                                            .withValues(alpha: 0.2)
-                                                      : AppTheme.duoViolet
-                                                            .withValues(alpha: 0.2),
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
+                                                  color: slide.type == 'one_word'
+                                                      ? AppTheme.duoBlue.withValues(alpha: 0.15)
+                                                      : AppTheme.duoViolet.withValues(alpha: 0.15),
+                                                  borderRadius: BorderRadius.circular(6),
                                                 ),
                                                 child: Text(
-                                                  slide.type == 'one_word'
-                                                      ? 'ONE WORD'
-                                                      : 'PROOF/BIG Q',
+                                                  slide.type == 'one_word' ? 'One Word' : 'Proof',
                                                   style: TextStyle(
-                                                    color:
-                                                        slide.type == 'one_word'
+                                                    color: slide.type == 'one_word'
                                                         ? AppTheme.duoBlue
                                                         : AppTheme.duoViolet,
                                                     fontSize: 10,
-                                                    fontWeight: FontWeight.w900,
+                                                    fontWeight: FontWeight.bold,
                                                   ),
                                                 ),
                                               ),
-                                              SizedBox(width: 6),
-                                              _buildSourceTag(slide.source),
-                                              const Spacer(),
-                                              IconButton(
-                                                icon: Icon(
-                                                  LucideIcons.edit3,
-                                                  size: 16,
-                                                  color:
-                                                      context.colors.textFaint,
-                                                ),
-                                                onPressed: () => _editQuestion(
-                                                  section,
-                                                  qIdx,
-                                                  slide,
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  slide.title,
+                                                  style: TextStyle(
+                                                    color: context.colors.textPrimary,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 13,
+                                                  ),
                                                 ),
                                               ),
                                               IconButton(
                                                 icon: Icon(
                                                   LucideIcons.trash2,
                                                   size: 16,
-                                                  color: AppTheme.duoRed,
+                                                  color: context.colors.textFaint,
                                                 ),
-                                                onPressed: () =>
-                                                    _deleteQuestion(
-                                                      section,
-                                                      qIdx,
-                                                    ),
+                                                onPressed: () async {
+                                                  final updatedQuestions = List<Slide>.from(section.pyqQuestions)..removeAt(qIdx);
+                                                  final updatedModules = _currentBook.modules.map((m) {
+                                                    final updatedSecs = m.sections.map((s) {
+                                                      if (s.id == section.id) {
+                                                        return s.copyWith(pyqQuestions: updatedQuestions);
+                                                      }
+                                                      return s;
+                                                    }).toList();
+                                                    return m.copyWith(sections: updatedSecs);
+                                                  }).toList();
+
+                                                  final newBook = _currentBook.copyWith(modules: updatedModules);
+                                                  await _updateBookAndSave(newBook);
+                                                },
                                               ),
                                             ],
                                           ),
-                                          const SizedBox(height: 8),
+                                          const SizedBox(height: 4),
                                           Text(
-                                            slide.title,
+                                            slide.content,
                                             style: TextStyle(
-                                              color: context.colors.textPrimary,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 13,
+                                              color: context.colors.textSecondary,
+                                              fontSize: 12,
                                             ),
                                           ),
-                                          SizedBox(height: 4),
-                                          MathMarkdown(
-                                            data: slide.content,
-                                            textStyle: TextStyle(
-                                              color:
-                                                  context.colors.textSecondary,
-                                              fontSize: 13,
-                                            ),
-                                          ),
-                                          if (slide.type == 'one_word' &&
-                                              slide.blankAnswer != null) ...[
-                                            const SizedBox(height: 8),
+                                          if (slide.blankAnswer != null && slide.blankAnswer!.isNotEmpty) ...[
+                                            const SizedBox(height: 6),
                                             RichText(
                                               text: TextSpan(
                                                 children: [
                                                   TextSpan(
                                                     text: 'Reference Answer: ',
                                                     style: TextStyle(
-                                                      color: context
-                                                          .colors
-                                                          .textFaint,
+                                                      color: context.colors.textFaint,
                                                       fontSize: 12,
                                                     ),
                                                   ),
@@ -931,8 +1421,7 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                                                     text: slide.blankAnswer,
                                                     style: const TextStyle(
                                                       color: AppTheme.duoGreen,
-                                                      fontWeight:
-                                                          FontWeight.bold,
+                                                      fontWeight: FontWeight.bold,
                                                       fontSize: 12,
                                                     ),
                                                   ),
@@ -945,6 +1434,21 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                                     );
                                   },
                                 ),
+                                Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: OutlinedButton.icon(
+                                    icon: const Icon(LucideIcons.plus, size: 16),
+                                    label: const Text('Add Question to Section'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: AppTheme.duoBlue,
+                                      side: const BorderSide(color: AppTheme.duoBlue),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    onPressed: () => _addQuestion(section),
+                                  ),
+                                ),
                               ],
                             ],
                           ),
@@ -952,6 +1456,31 @@ class _PyqTabScreenState extends State<PyqTabScreen> {
                       }, childCount: sectionsWithPyqs.length),
                     ),
                   ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      child: Center(
+                        child: ElevatedButton.icon(
+                          icon: const Icon(LucideIcons.save, size: 18),
+                          label: const Text(
+                            'Save All Questions to Course',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.duoGreen,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            elevation: 2,
+                          ),
+                          onPressed: _saveAllQuestions,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
                 const SliverToBoxAdapter(child: SizedBox(height: 120)),
               ],
             ),

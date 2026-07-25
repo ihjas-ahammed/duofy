@@ -139,7 +139,6 @@ LATEX / MARKDOWN-MATH GUIDE (READ CAREFULLY — most generation errors come from
     '"step_by_step" or "proof" slides: `content` is the overall problem statement. `interactiveSteps` is an array mapping the stages. An interactive step can be static (`stepText` only) or a question (`prompt` and `options`).',
     '"matching" slides: `content` is a one-line instruction (e.g. "Match each quantity with its unit."). `matchPairs` is an array of 3-6 `{"left": "...", "right": "..."}` objects where each right item belongs to exactly one left item. Keep both sides short (1-6 words). Use for term↔definition, symbol↔meaning, cause↔effect.',
     '"ordering" slides: `content` is a one-line instruction. `orderItems` is an array of 3-6 short strings listed in the CORRECT order — the app shuffles them for the learner. Use for procedures, derivation steps, chronological sequences, algorithms.',
-    '"error_spotting" slides: `content` states the problem being solved. `proofSteps` is an array of 3-6 short solution steps of which EXACTLY ONE contains a plausible conceptual mistake; `errorIndex` is the 0-based index of that flawed step. The mistake must be instructive (a real misconception), never a typo.',
     '"flashcard" slides: `content` is a recall prompt ("State the formula for…", "What is …?"); `blankAnswer` is the complete answer revealed on the back. Use for definitions, formulas, and key facts worth memorizing. No options.',
     '"program" slides: `content` is an optional one-line description. `code` MUST contain the source code block containing exactly one blank written as three underscores (`___`). `blankAnswer` is the correct code token to fill the blank. `blankDistractors` is an array of 3 incorrect code tokens. `language` is the language name (e.g., "python", "javascript", "latex", "html").',
     '"try_yourself" slides: `content` is an optional one-line instruction. `code` is the starter source code loaded into the interactive runner. `language` is the language name (e.g., "python", "javascript", "latex", "html"). `packages` is an optional array of packages to load (e.g. ["matplotlib", "numpy", "pandas"] for python). No blank or options.',
@@ -177,11 +176,11 @@ PEDAGOGY (HOW TO TEACH — apply these while following the schema rules):
   1. FIRST SLIDE HANDS-ON IMMERSION: In the first lesson of a programming course or unit, IMMEDIATELY let the learner edit and execute code in a `try_yourself` runner slide (e.g. print 'Hello, World!' or basic syntax) right at the start of the lesson! Do NOT start programming lessons with walls of static text.
   2. EVERY CODE EXAMPLE MUST BE RUNNABLE: Every single code snippet, syntax rule, algorithm, or code example presented MUST be provided as an interactive `try_yourself` code runner slide or `program` fill-in-the-blank slide so the user runs and tests the code live in our runner.
 - OBJECTIVES FIRST: begin each lesson with a short "theory" slide stating, in 1-3 bullet lines, what the learner will be able to do afterwards.
-- RETRIEVAL PRACTICE: at least one third of each lesson's slides must make the learner PRODUCE an answer (quiz, fill_in_blank, one_word, numerical, matching, ordering, error_spotting, flashcard, program) — reading alone does not build memory.
+- RETRIEVAL PRACTICE: at least one third of each lesson's slides must make the learner PRODUCE an answer (quiz, fill_in_blank, one_word, numerical, matching, ordering, flashcard, program) — reading alone does not build memory.
 - WORKED EXAMPLE → FADED PRACTICE: teach procedures by first walking a fully worked example (proof/step_by_step), then a partially completed one the learner finishes, then a problem they solve alone (numerical/quiz).
 - INTERLEAVING: vary slide types instead of long same-type runs, and let later questions briefly revisit earlier concepts of THIS unit.
 - ONE IDEA PER SLIDE: never pack multiple new concepts into a single slide; add a slide instead.
-- MATCH THE ASSESSMENT TO THE SKILL: memorize → flashcard/one_word; discriminate → quiz/matching; sequence → ordering; evaluate → error_spotting; compute → numerical; construct → proof/step_by_step; coding → try_yourself / program.''';
+- MATCH THE ASSESSMENT TO THE SKILL: memorize → flashcard/one_word; discriminate → quiz/matching; sequence → ordering; compute → numerical; construct → proof/step_by_step; coding → try_yourself / program.''';
 
   /// JSON return-schema examples per slide type, shared by the single-slide
   /// prompts so new types are always documented alongside the old ones.
@@ -195,7 +194,6 @@ PEDAGOGY (HOW TO TEACH — apply these while following the schema rules):
 - "proof" / "step_by_step": {"id": "%slide_id%", "type": "proof", "title": "Title", "content": "...", "interactiveSteps": [{"prompt": "...", "options": [...]}, {"stepText": "..."}]}
 - "matching": {"id": "%slide_id%", "type": "matching", "title": "Title", "content": "Match each item.", "matchPairs": [{"left": "Force", "right": "newton"}, {"left": "Energy", "right": "joule"}]}
 - "ordering": {"id": "%slide_id%", "type": "ordering", "title": "Title", "content": "Arrange the steps.", "orderItems": ["First step", "Second step", "Third step"]}
-- "error_spotting": {"id": "%slide_id%", "type": "error_spotting", "title": "Title", "content": "This solution has one mistake.", "proofSteps": ["Step 1 ...", "Step 2 ...", "Step 3 ..."], "errorIndex": 1}
 - "flashcard": {"id": "%slide_id%", "type": "flashcard", "title": "Title", "content": "State the formula for ...", "blankAnswer": "The formula ..."}
 - "descriptive": {"id": "%slide_id%", "type": "descriptive", "title": "Title", "content": "Question asking for paragraph/upload response"}
 - "custom_html": {"id": "%slide_id%", "type": "custom_html", "title": "Title", "content": "Markdown instructions", "interactiveCanvasHtml": "HTML code"}
@@ -482,7 +480,7 @@ Section description: "%section_description%"
 Analyze the pedagogical needs of the attached PDF content. Generate up to 10 custom lesson formats tailored specifically to the material (e.g., "Theory Focus" for conceptual parts, "Worked Example" for problem solving, "Derivation/Proof Walkthrough" for mathematical content, or specialized formats like "Lab Experiment Analysis", "Case Study Walkthrough", etc.).
 
 Each format should have a descriptive name, a pedagogical description of when the AI should select it, and a list of slide templates. Each slide template must define:
-- `type`: one of "theory", "concept_pieces", "quiz", "fill_in_blank", "one_word", "numerical", "proof", "step_by_step", "matching", "ordering", "error_spotting", "flashcard", "descriptive", "custom_html", "program", "try_yourself"
+- `type`: one of "theory", "concept_pieces", "quiz", "fill_in_blank", "one_word", "numerical", "proof", "step_by_step", "matching", "ordering", "flashcard", "descriptive", "custom_html", "program", "try_yourself"
 - `condition`: optional condition when to show it
 - `description`: description of slide structure
 
@@ -526,7 +524,7 @@ TASK:
 CRITICAL RULES:
 1. Cover the entire content of the attached PDF. Do not skip topics.
 2. Each unit should be roughly self-contained and digestible in one short study session.
-3. For custom formats, the slide `type` must be one of: "theory", "concept_pieces", "quiz", "fill_in_blank", "one_word", "numerical", "proof", "step_by_step", "matching", "ordering", "error_spotting", "flashcard", "descriptive", "custom_html", "program", "try_yourself".
+3. For custom formats, the slide `type` must be one of: "theory", "concept_pieces", "quiz", "fill_in_blank", "one_word", "numerical", "proof", "step_by_step", "matching", "ordering", "flashcard", "descriptive", "custom_html", "program", "try_yourself".
 4. BY DEFAULT, NEVER NEGLECT EXAMPLE AND EXERCISE QUESTIONS.
 5. IF THE SECTION CONTAINS EXERCISE/PRACTICE QUESTIONS (often at the end of the section/chapter, e.g. in math/science textbooks), you MUST create a dedicated unit specifically for these exercises (e.g., "Practice Exercises"). This exercises unit must be structured such that the exercises are treated as individual lessons (taking them one by one/problem-by-problem) to ensure comprehensive, hands-on practice.
 6. PROGRAMMING vs NON-PROGRAMMING DISCRIMINATION (STRICTEST RULE): Automatically detect if this course/section explicitly requires programming or coding syntax (e.g., Python, JavaScript, C/C++, Java, HTML, CSS, SQL, Dart, Rust, Go). IF AND ONLY IF the course is a programming course, you may generate programming formats with 'program' or 'try_yourself' slide types. FOR ALL NON-PROGRAMMING COURSES (e.g., History, Biology, Chemistry, Literature, Economics, Physics, Mathematics, Philosophy, etc.), YOU MUST NEVER INCLUDE 'program' OR 'try_yourself' SLIDE TYPES OR PROGRAMMING FORMATS.
@@ -589,7 +587,7 @@ CRITICAL DUOLINGO-STYLE MICRO-LEARNING RULES:
 For the chosen format, evaluate its slide templates. You can include a slide multiple times (e.g. more than one of the same kind) if needed for the topic, or only once, as long as its condition logically applies.
 3. NO STORY MODE: never frame content as a story, scenario, anecdote, or narrative ("Imagine you are...", "Sara walks into a shop...", etc.). Present theory and concepts directly and factually.
 4. EXAMPLES AND EXERCISE QUESTIONS: BY DEFAULT, NEVER NEGLECT EXAMPLE AND EXERCISES QUESTIONS. If this unit represents or contains exercise questions/practice problems, you MUST take/plan them as individual lessons, one by one (i.e. one lesson per exercise question/problem), rather than grouping them into a single lesson or omitting them.
-5. AVAILABLE SLIDE TYPES you may plan with (respect each format's own templates first): theory, concept_pieces, quiz, fill_in_blank, one_word, numerical, proof, step_by_step, matching, ordering, error_spotting, flashcard, descriptive, custom_html, program, try_yourself. Prefer matching for term↔definition sets, ordering for procedures, error_spotting to probe misconceptions after a worked example, and flashcard for must-memorize facts and formulas.
+5. AVAILABLE SLIDE TYPES you may plan with (respect each format's own templates first): theory, concept_pieces, quiz, fill_in_blank, one_word, numerical, proof, step_by_step, matching, ordering, flashcard, descriptive, custom_html, program, try_yourself. Prefer matching for term↔definition sets, ordering for procedures, and flashcard for must-memorize facts and formulas.
 6. PROGRAMMING vs NON-PROGRAMMING DISCRIMINATION (STRICT): IF AND ONLY IF this unit explicitly involves programming or software engineering (e.g. Python, JavaScript, C/C++, Java, SQL, HTML, CSS), plan 'program' and 'try_yourself' slide types. FOR ALL NON-PROGRAMMING COURSES (e.g. History, Biology, Chemistry, Literature, Economics, Physics, Math, General Science), NEVER plan 'program' or 'try_yourself' slide types.
 ''';
 
@@ -936,13 +934,90 @@ RULES:
   ]
 }''';
 
+  static String getMultiSectionPyqExtractionPrompt({
+    required List<Map<String, String>> sections,
+    String? moduleTitle,
+    String? customInstructions,
+    String? syllabusContext,
+  }) {
+    final sectionsBlock = sections
+        .map(
+          (s) =>
+              "- Section ID: ${s['id']}\n  Title: ${s['title']}\n  Description: ${s['description']}",
+        )
+        .join("\n\n");
+
+    final instBlock = instructionsBlock(customInstructions);
+    final modBlock = moduleTitle != null && moduleTitle.trim().isNotEmpty
+        ? "- Module Name: $moduleTitle\n"
+        : "";
+    final syllabusBlock = syllabusContext != null && syllabusContext.trim().isNotEmpty
+        ? "\nCOURSE SYLLABUS PDF / CONTEXT:\n$syllabusContext\n"
+        : "";
+
+    return '''You are an exam-paper transcription assistant. Your PRIMARY job is to EXTRACT questions that genuinely appear in the attached exam paper(s) — transcribing them faithfully — NOT to invent new ones.
+
+Read the attached paper(s) carefully and pull out all exam questions, assigning each question to the most appropriate section from the section list below. Reproduce each question's wording, numbers, and intent as faithfully as the source allows (you may fix obvious OCR/scan/formatting glitches and re-wrap math into LaTeX, but do NOT change what is being asked).
+
+AVAILABLE SECTIONS TO MAP TO:
+$sectionsBlock
+
+MODULE & SYLLABUS CONTEXT:
+$modBlock$syllabusBlock
+$instBlock
+
+HONESTY ABOUT PROVENANCE (critical):
+Every question you return MUST include a "source" field with one of:
+- "extracted": question actually appears in the paper.
+- "generated": question was created/paraphrased by you.
+
+TYPES OF QUESTIONS TO EXTRACT:
+1. "one_word": Short recall questions that have a one-word or short-phrase answer.
+2. "proof": Detailed, multi-step questions, mathematical proofs, derivations, or long-form calculations.
+
+RULES:
+1. LaTeX formatting: every backslash \\ in math MUST be written as \\\\ because the response must be valid JSON. Wrap inline math in \$...\$ and display math in \$\$...
+2. Assign each question to the best matching "sectionId" from the section list above.
+
+Return ONLY a JSON object:
+{
+  "questions": [
+    {
+      "id": "unique_id_string",
+      "sectionId": "section_id_from_above_list",
+      "type": "one_word" | "proof",
+      "source": "extracted" | "generated",
+      "title": "Question Title",
+      "content": "Full question statement",
+      "blankAnswer": "Reference answer (for one_word)",
+      "interactiveSteps": [
+        {
+          "prompt": "Step prompt",
+          "stepText": "Step solution text",
+          "options": [
+            {
+              "id": "opt_1",
+              "text": "Option text",
+              "isCorrect": true,
+              "explanation": "Explanation"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}''';
+  }
+
   static String getPyqExtractionPrompt({
     required String sectionTitle,
     required String sectionDesc,
+    String? moduleTitle,
     required List<String> unitTitles,
     required List<Slide> existingQuestions,
     required List<Map<String, String>> otherSections,
     String? customInstructions,
+    String? syllabusContext,
   }) {
     final existingBlocks = existingQuestions.isEmpty
         ? "None"
@@ -960,16 +1035,22 @@ RULES:
               .join("\n");
 
     final instBlock = instructionsBlock(customInstructions);
+    final modBlock = moduleTitle != null && moduleTitle.trim().isNotEmpty
+        ? "- Module Name: $moduleTitle\n"
+        : "";
+    final syllabusBlock = syllabusContext != null && syllabusContext.trim().isNotEmpty
+        ? "\nCOURSE SYLLABUS PDF / CONTEXT:\n$syllabusContext\n"
+        : "";
 
     return '''You are an exam-paper transcription assistant. Your PRIMARY job is to EXTRACT questions that genuinely appear in the attached exam paper(s) — transcribing them faithfully — NOT to invent new ones.
 
-Read the attached paper(s) carefully and pull out the questions that fall under the following course section. Reproduce each question's wording, numbers, and intent as faithfully as the source allows (you may fix obvious OCR/scan/formatting glitches and re-wrap math into LaTeX, but do NOT change what is being asked).
+Read the attached paper(s) carefully and pull out the questions that fall strictly under the following MODULE, SECTION, AND SYLLABUS SCOPE. Reproduce each question's wording, numbers, and intent as faithfully as the source allows (you may fix obvious OCR/scan/formatting glitches and re-wrap math into LaTeX, but do NOT change what is being asked).
 
-SECTION DETAILS:
-- Title: $sectionTitle
-- Description: $sectionDesc
-- Subtopics/Units: ${unitTitles.join(', ')}
-
+MODULE & SECTION SCOPE:
+$modBlock- Section Title: $sectionTitle
+- Section Description: $sectionDesc
+- Units: ${unitTitles.join(', ')}
+$syllabusBlock
 $instBlock
 
 HONESTY ABOUT PROVENANCE (read carefully — this is critical):

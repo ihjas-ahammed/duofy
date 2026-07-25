@@ -133,8 +133,8 @@ class AppTheme {
     textSecondary: Color(0xFF334155), // Dark slate body text
     textFaint: Color(0xFF64748B), // Slate gray captions
     outline: Color(0xFFCBD5E1), // Crisp slate borders
-    glassFill: Color(0xF2F8FAFC),
-    glassStrong: Color(0xFAFFFFFF),
+    glassFill: Color(0x33FFFFFF), // Translucent sheer glass fill (maximum transparency)
+    glassStrong: Color(0x66FFFFFF), // Frosted sheer glass container (maximum transparency)
     shadow: Color(0x140F172A),
   );
 

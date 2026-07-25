@@ -64,36 +64,53 @@ class TheoryView extends StatelessWidget {
                     ),
                   ),
                 ...parts
+                    .asMap().entries
                     .map(
-                      (p) => Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.all(24),
-                        decoration: AppTheme.glassOf(context).copyWith(
-                          borderRadius: hasCanvas
-                              ? const BorderRadius.vertical(
-                                  bottom: Radius.circular(24),
-                                )
-                              : BorderRadius.circular(24),
-                          color: context.colors.surfaceAlt,
-                          border: hasCanvas
-                              ? Border(
-                                  left: BorderSide(
-                                    color: context.colors.outline,
-                                  ),
-                                  right: BorderSide(
-                                    color: context.colors.outline,
-                                  ),
-                                  bottom: BorderSide(
-                                    color: context.colors.outline,
-                                  ),
-                                )
-                              : null,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
+                      (entry) {
+                        final idx = entry.key;
+                        final p = entry.value;
+                        final accents = [AppTheme.duoBlue, AppTheme.duoViolet, AppTheme.duoGreen, AppTheme.duoOrange];
+                        final cardAccent = accents[idx % accents.length];
+
+                        return Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: context.colors.isDark
+                                ? context.colors.surface
+                                : Colors.white,
+                            borderRadius: hasCanvas
+                                ? const BorderRadius.vertical(
+                                    bottom: Radius.circular(24),
+                                  )
+                                : BorderRadius.circular(24),
+                            border: Border.all(
+                              color: cardAccent.withValues(alpha: 0.35),
+                              width: 1.5,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: cardAccent.withValues(alpha: 0.08),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                height: 4,
+                                color: cardAccent,
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(24),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
                             if (hasCanvas && slide.title.isNotEmpty)
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 16.0),
@@ -128,11 +145,14 @@ class TheoryView extends StatelessWidget {
                                 ),
                               );
                             }),
-                          ],
-                        ),
-                      ),
-                    )
-                    ,
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
               ],
             ),
           ),

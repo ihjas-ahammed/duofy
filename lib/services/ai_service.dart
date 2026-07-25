@@ -8,6 +8,7 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pdfx/pdfx.dart' as pdfx;
 import '../models/app_models.dart';
+import '../utils/latex_utils.dart';
 import '../main.dart' show showRateLimitDialog;
 import 'prompt_service.dart';
 import 'page_mapping.dart';
@@ -2026,7 +2027,7 @@ In the returned JSON, for every chapter object in the "chapters" array, you MUST
               }
             }
             seenSuffixes.add(suffix);
-            return s.copyWith(id: '$uniqueLessonId-$suffix');
+            return LatexUtils.fixSlideLatex(s.copyWith(id: '$uniqueLessonId-$suffix'));
           }).toList();
           return lesson.copyWith(
             id: uniqueLessonId,
@@ -2356,7 +2357,7 @@ If all lessons are 100% correct, respond with:
           final text = response.text;
           if (text == null || text.trim().isEmpty) continue;
           final jsonMap = _cleanAndDecodeJson(text);
-          final fresh = Slide.fromJson(jsonMap);
+          final fresh = LatexUtils.fixSlideLatex(Slide.fromJson(jsonMap));
           // Preserve the slide's identity and type; the model only supplies
           // the new content/options. Keep any existing diagram SVG.
           return fresh.copyWith(
@@ -2993,6 +2994,109 @@ Do not include any explanation or other text.
     throw lastException ?? Exception('Failed to generate Question Paper.');
   }
 
+  Future<List<Slide>> extractAllPyqQuestions({
+    required List<dynamic> files,
+    required List<Section> sections,
+    String? moduleTitle,
+    String? customInstructions,
+    String? forcedApiKey,
+    String? syllabusContext,
+    void Function(double progress, String status)? onProgress,
+  }) async {
+    await _checkPause();
+    print('[PYQ_DIAGNOSTIC] extractAllPyqQuestions triggered with ${files.length} files and ${sections.length} sections.');
+    onProgress?.call(0.1, 'Converting exam paper pages...');
+
+    final List<Part> fileParts = await _buildFileParts(files);
+    print('[PYQ_DIAGNOSTIC] _buildFileParts completed. Total parts produced: ${fileParts.length}');
+    if (fileParts.isEmpty) {
+      print('[PYQ_DIAGNOSTIC] WARNING: _buildFileParts returned 0 parts!');
+      onProgress?.call(1.0, 'No pages rendered.');
+      return [];
+    }
+
+    onProgress?.call(0.4, 'Analyzing exam paper with AI...');
+    final keys = await _getKeys(forcedApiKey: forcedApiKey);
+    final modelsToTry = await _getLiteModels();
+    print('[PYQ_DIAGNOSTIC] Models to try: $modelsToTry, API keys count: ${keys.length}');
+
+    final sectionsMeta = sections
+        .map(
+          (s) => {
+            'id': s.id,
+            'title': s.title,
+            'description': s.description,
+          },
+        )
+        .toList();
+
+    final prompt = PromptService.getMultiSectionPyqExtractionPrompt(
+      sections: sectionsMeta,
+      moduleTitle: moduleTitle,
+      customInstructions: customInstructions,
+      syllabusContext: syllabusContext,
+    );
+
+    final List<Part> parts = [TextPart(prompt), ...fileParts];
+
+    Exception? lastException;
+    for (var modelName in modelsToTry) {
+      for (var apiKey in keys) {
+        try {
+          final maskedKey = apiKey.length > 8 ? '${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}' : '***';
+          print('[PYQ_DIAGNOSTIC] Sending prompt to GenerativeModel($modelName) with key $maskedKey...');
+          onProgress?.call(0.6, 'Extracting questions ($modelName)...');
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: apiKey,
+            generationConfig: GenerationConfig(
+              responseMimeType: 'application/json',
+            ),
+          );
+
+          final response = await _retryTransient(
+            () => model
+                .generateContent([Content.multi(parts)])
+                .timeout(const Duration(minutes: 5)),
+            onRetry: (a, e) => print(
+              '[PYQ_DIAGNOSTIC] Multi-section PYQ extract transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
+            ),
+          );
+
+          print('[PYQ_DIAGNOSTIC] AI response received for $modelName. Text null? ${response.text == null}. Text length: ${response.text?.length ?? 0}');
+
+          if (response.text != null) {
+            onProgress?.call(0.9, 'Parsing extracted questions...');
+            final jsonMap = _cleanAndDecodeJson(response.text!);
+            final questionsList = jsonMap['questions'] as List?;
+            print('[PYQ_DIAGNOSTIC] JSON decoded successfully. Questions list count: ${questionsList?.length ?? 0}');
+            if (questionsList == null) return [];
+
+            final parsedSlides = questionsList.map((q) {
+              final map = Map<String, dynamic>.from(q);
+              final declared = (map['source'] ?? '')
+                  .toString()
+                  .trim()
+                  .toLowerCase();
+              final source = declared == 'extracted' ? 'extracted' : 'generated';
+              final slide = LatexUtils.fixSlideLatex(Slide.fromJson(map)).copyWith(source: source);
+              // preserve sectionId in JSON map
+              slide.toJson()['sectionId'] = map['sectionId'];
+              return slide;
+            }).toList();
+
+            print('[PYQ_DIAGNOSTIC] Parsed ${parsedSlides.length} slide(s) from AI response.');
+            return parsedSlides;
+          }
+        } catch (e, stack) {
+          lastException = Exception('Failed to extract PYQs: $e');
+          print('[PYQ_DIAGNOSTIC] Multi-section PYQ extract error ($modelName): $e\n$stack');
+        }
+      }
+    }
+    throw lastException ?? Exception('Failed to extract PYQ questions.');
+  }
+
   Future<List<Slide>> extractPyqQuestionsForSection({
     required List<dynamic> files,
     required Section section,
@@ -3000,18 +3104,24 @@ Do not include any explanation or other text.
     required List<Map<String, String>> otherSections,
     String? customInstructions,
     String? forcedApiKey,
+    String? moduleTitle,
+    String? syllabusContext,
+    void Function(int count, double progress, String status)? onProgress,
   }) async {
     await _checkPause();
+    onProgress?.call(0, 0.1, 'Preparing exam papers...');
     final keys = await _getKeys(forcedApiKey: forcedApiKey);
     final modelsToTry = await _getLiteModels();
 
     final prompt = PromptService.getPyqExtractionPrompt(
       sectionTitle: section.title,
       sectionDesc: section.description,
+      moduleTitle: moduleTitle,
       unitTitles: section.units.map((u) => u.title).toList(),
       existingQuestions: existingQuestions,
       otherSections: otherSections,
       customInstructions: customInstructions,
+      syllabusContext: syllabusContext,
     );
 
     List<Part> parts = [TextPart(prompt)];
@@ -3021,6 +3131,7 @@ Do not include any explanation or other text.
     for (var modelName in modelsToTry) {
       for (var apiKey in keys) {
         try {
+          onProgress?.call(0, 0.3, 'Analyzing with AI ($modelName)...');
           final model = GenerativeModel(
             model: modelName,
             apiKey: apiKey,
@@ -3039,15 +3150,14 @@ Do not include any explanation or other text.
           );
 
           if (response.text != null) {
+            onProgress?.call(0, 0.8, 'Parsing extracted questions...');
             final jsonMap = _cleanAndDecodeJson(response.text!);
             final questionsList = jsonMap['questions'] as List?;
-            if (questionsList == null) return [];
-            // Honour the model's self-declared provenance instead of blindly
-            // tagging everything as extracted. Only an explicit "extracted"
-            // counts as lifted-from-the-paper; anything else (including a
-            // missing/unknown value) is treated as AI-generated, so invented
-            // questions can never masquerade as real exam questions.
-            return questionsList.map((q) {
+            if (questionsList == null) {
+              onProgress?.call(0, 1.0, 'No questions found.');
+              return [];
+            }
+            final parsedSlides = questionsList.map((q) {
               final map = Map<String, dynamic>.from(q);
               final declared = (map['source'] ?? '')
                   .toString()
@@ -3056,8 +3166,11 @@ Do not include any explanation or other text.
               final source = declared == 'extracted'
                   ? 'extracted'
                   : 'generated';
-              return Slide.fromJson(map).copyWith(source: source);
+              return LatexUtils.fixSlideLatex(Slide.fromJson(map)).copyWith(source: source);
             }).toList();
+
+            onProgress?.call(parsedSlides.length, 1.0, 'Extracted ${parsedSlides.length} question(s).');
+            return parsedSlides;
           }
         } catch (e) {
           lastException = Exception(
@@ -3176,7 +3289,7 @@ Do not include any explanation or other text.
         ),
       );
       final jsonMap = _cleanAndDecodeJson(text);
-      final slide = Slide.fromJson(jsonMap);
+      final slide = LatexUtils.fixSlideLatex(Slide.fromJson(jsonMap));
       return slide;
     } catch (e) {
       lastErr = e;

@@ -266,7 +266,8 @@ class _PracticeScreenState extends State<PracticeScreen> {
     final List<Slide> out = [];
     final Set<String> seen = {};
     for (final s in _selectedSections) {
-      if (s.units.any((u) => selectedUnitIds.contains(u.id))) {
+      final bool matchesUnits = s.units.isEmpty || s.units.any((u) => selectedUnitIds.contains(u.id));
+      if (matchesUnits) {
         for (final q in s.pyqQuestions) {
           if (seen.add(q.content.trim().toLowerCase())) {
             out.add(q);

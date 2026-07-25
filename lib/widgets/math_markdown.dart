@@ -4,6 +4,7 @@ import 'package:flutter_markdown_latex/flutter_markdown_latex.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:markdown/markdown.dart' as md;
 import '../theme/app_theme.dart';
+import '../utils/latex_utils.dart';
 
 /// GitHub-flavored markdown with inline KaTeX-style math, rendered natively.
 ///
@@ -41,18 +42,7 @@ class MathMarkdown extends StatelessWidget {
   });
 
   String _sanitize(String input) {
-    var s = input;
-
-    // Normalise alternative math delimiters → $ / $$ before the markdown
-    // parser runs so LatexInlineSyntax always has a consistent delimiter.
-    s = s.replaceAll(r'\[', r'$$');
-    s = s.replaceAll(r'\]', r'$$');
-    s = s.replaceAll(r'\(', r'$');
-    s = s.replaceAll(r'\)', r'$');
-
-    // The AI is prompted to double-escape LaTeX (\\frac → \frac in the
-    // runtime string). Fix ALL double-escaped commands, not just a handful.
-    s = s.replaceAllMapped(RegExp(r'\\\\([a-zA-Z]+)'), (m) => '\\${m[1]}');
+    var s = LatexUtils.fixUnclosedLatex(input);
 
     // HTML entities that occasionally appear in AI output
     s = s.replaceAll('&amp;', '&');

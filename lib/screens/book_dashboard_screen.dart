@@ -1,3 +1,5 @@
+import 'package:flow/services/ai_service.dart';
+
 import '../platform/io_shim.dart';
 import 'dart:ui';
 import 'dart:async';
@@ -55,6 +57,8 @@ class BookDashboardScreen extends StatefulWidget {
 }
 
 class _BookDashboardScreenState extends State<BookDashboardScreen> {
+  late Book _currentBook;
+  StreamSubscription<Book>? _bookUpdatesSub;
   List<String> _completedLessons = [];
   bool _hasMissingFiles = false;
 
@@ -71,29 +75,31 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
   @override
   void initState() {
     super.initState();
+    _currentBook = widget.book;
     _activeModuleIdx = widget.initialModuleIdx ?? 0;
     _activeSectionIdx = widget.initialSectionIdx ?? 0;
     _loadProgress();
     _checkMissingFiles();
     _loadLastResumed();
-    // Publish the initial module so the PYQ tab is scoped correctly even before
-    // the user switches modules (_loadLastResumed updates it asynchronously).
+    _refreshBookFromStorage();
+
     widget.activeModule?.value = _activeModuleIdx;
     widget.activeSection?.value = _activeSectionIdx;
-    // Refresh completion state whenever progress changes anywhere (a lesson/
-    // unit/section/module marked finished or cleared, or a cloud sync merge),
-    // so the lesson path always reflects the latest status.
-    GlobalState.progressNotifier.addListener(_loadProgress);
 
-    // Walkthrough: reaching the seeded course's dashboard means "open the
-    // course" is done — now nudge the user into the first unit.
+    GlobalState.progressNotifier.addListener(_loadProgress);
+    GenerationManager.instance.addListener(_onGenManagerChanged);
+    _bookUpdatesSub = GenerationManager.instance.bookUpdates.listen((updatedBook) {
+      if (updatedBook.id == _currentBook.id && mounted) {
+        _refreshBookFromStorage(updatedBook);
+      }
+    });
+
     final walk = WalkthroughService.instance;
     if (walk.step.value == WalkStep.openCourse &&
-        widget.book.id == walk.seededBookId) {
+        _currentBook.id == walk.seededBookId) {
       walk.advanceTo(WalkStep.tryUnit);
     }
 
-    // First-visit tour of the path header (runs once; see CoachMarkController).
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(milliseconds: 600), () {
         if (!mounted) return;
@@ -127,9 +133,28 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
 
   @override
   void dispose() {
+    _bookUpdatesSub?.cancel();
+    GenerationManager.instance.removeListener(_onGenManagerChanged);
     GlobalState.progressNotifier.removeListener(_loadProgress);
     _targetCollapseTimer?.cancel();
     super.dispose();
+  }
+
+  void _onGenManagerChanged() {
+    if (mounted) {
+      _refreshBookFromStorage();
+    }
+  }
+
+  Future<void> _refreshBookFromStorage([Book? book]) async {
+    final fresh = book ?? await DatabaseService().getBookFromCache(_currentBook.id);
+    if (fresh != null && mounted) {
+      setState(() {
+        _currentBook = fresh;
+      });
+      widget.onBookUpdated(fresh);
+      _loadProgress();
+    }
   }
 
   Future<void> _loadLastResumed() async {
@@ -165,6 +190,8 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.book.id != widget.book.id ||
         oldWidget.book.updatedAt != widget.book.updatedAt) {
+      _currentBook = widget.book;
+      _refreshBookFromStorage();
       _checkMissingFiles();
     }
   }
@@ -175,7 +202,7 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       return;
     }
     bool missing = false;
-    for (final m in widget.book.modules) {
+    for (final m in _currentBook.modules) {
       for (final s in m.sections) {
         // New-flow: section owns the PDF chunk.
         if (s.startPage != null && s.endPage != null) {
@@ -203,12 +230,12 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
 
   Future<void> _loadProgress() async {
     final comp = await ProgressService.getCompletedLessons();
-    final courseXp = await ProgressService.getXpForCourse(widget.book.id);
+    final courseXp = await ProgressService.getXpForCourse(_currentBook.id);
     GlobalState.xpNotifier.value = courseXp;
     if (mounted) setState(() => _completedLessons = comp);
     final urgent = await DeadlineService.instance.getMostUrgentActiveTarget(
-      widget.book.id,
-      widget.book,
+      _currentBook.id,
+      _currentBook,
       comp,
     );
     if (mounted) {
@@ -226,8 +253,8 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
     final moduleIdx = _mostUrgentTarget!['moduleIdx'] as int;
     final sectionIdx = _mostUrgentTarget!['sectionIdx'] as int;
 
-    final mIdx = _activeModuleIdx.clamp(0, widget.book.modules.length - 1);
-    final activeMod = widget.book.modules[mIdx];
+    final mIdx = _activeModuleIdx.clamp(0, _currentBook.modules.length - 1);
+    final activeMod = _currentBook.modules[mIdx];
     final sIdx = activeMod.sections.isEmpty 
         ? 0 
         : _activeSectionIdx.clamp(0, activeMod.sections.length - 1);
@@ -255,16 +282,20 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
       height: 48,
       width: buttonWidth,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: context.colors.isDark
+            ? color.withValues(alpha: 0.15)
+            : Colors.white.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: _targetButtonExpanded ? color.withValues(alpha: 0.3) : Colors.transparent,
-          width: _targetButtonExpanded ? 1.5 : 0.0,
+          color: _targetButtonExpanded
+              ? color.withValues(alpha: 0.4)
+              : (context.colors.isDark ? color.withValues(alpha: 0.2) : color.withValues(alpha: 0.3)),
+          width: _targetButtonExpanded ? 1.5 : 1.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 6,
+            color: context.colors.shadow,
+            blurRadius: 8,
             offset: const Offset(0, 3),
           ),
         ],

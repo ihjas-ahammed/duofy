@@ -1237,7 +1237,7 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Available lesson formats (${allAvailableFormats.length}):',
+                    'Lesson formats (${allAvailableFormats.length}):',
                     style: TextStyle(
                       color: context.colors.textSecondary,
                       fontWeight: FontWeight.w800,
@@ -1263,7 +1263,6 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 4),
                       TextButton.icon(
                         style: TextButton.styleFrom(
                           foregroundColor: sectionColor,
@@ -1273,7 +1272,7 @@ class _UnitFormatConfirmPanel extends StatelessWidget {
                         onPressed: onResetFormats,
                         icon: const Icon(Icons.auto_awesome, size: 14),
                         label: const Text(
-                          'Reset (AI)',
+                          'Reset',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,

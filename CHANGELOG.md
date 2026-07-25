@@ -4,6 +4,15 @@ All notable changes to DuoFY are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com); versions follow the app's
 `major.minor.patch` scheme from `pubspec.yaml`.
 
+## [26.7.25] — 2026-07-25
+
+### Added & Improved
+- **PYQ Tab Overhaul**: Subject/module filters, difficulty badges, and interactive LaTeX solution views.
+- **LaTeX Math Rendering**: Comprehensive LaTeX parsing and formatting across all slide views and math components.
+- **AI Service Resilience**: Multi-model fallback, prompt optimizations, and structured response error handling in `GenerationManager`.
+- **Metacognitive Calibration**: Confidence ratings and calibration tracking integrated into lesson and practice flows.
+- **Theme & Auth**: Refactored celestial light theme, username auth (@flow.in), and GitHub release auto-update checking.
+
 ## [27.0.0] — 2026-07-07 · "Pro" release
 
 ### Fixed — contents→pages mapping (the big one)

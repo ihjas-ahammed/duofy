@@ -241,6 +241,7 @@ class MetacognitionService {
       );
     }
     await _writeQueue(prefs, queue);
+    await markSlideReviewedToday(slide.id);
     GlobalState.bumpProgress();
     push();
   }
@@ -354,22 +355,59 @@ class MetacognitionService {
     }
   }
 
-  static Future<List<ReviewItem>> dueItems({DateTime? now}) async {
+  static String _todayKey() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  static String get _reviewedTodayPrefKey => 'smart_review_done_${_uid}_${_todayKey()}';
+
+  static Future<Set<String>> getReviewedTodaySlideIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = prefs.getStringList(_reviewedTodayPrefKey) ?? [];
+    return list.toSet();
+  }
+
+  static Future<void> markSlideReviewedToday(String slideId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = prefs.getStringList(_reviewedTodayPrefKey) ?? [];
+    if (!list.contains(slideId)) {
+      list.add(slideId);
+      await prefs.setStringList(_reviewedTodayPrefKey, list);
+    }
+  }
+
+  static Future<List<ReviewItem>> dueItems({DateTime? now, bool excludeReviewedToday = true}) async {
     final prefs = await SharedPreferences.getInstance();
     final at = (now ?? DateTime.now()).millisecondsSinceEpoch;
-    final due = _readQueue(prefs).values.where((r) => r.due <= at).toList()
+    final reviewedToday = excludeReviewedToday ? await getReviewedTodaySlideIds() : <String>{};
+
+    final due = _readQueue(prefs).values.where((r) {
+      if (r.due > at) return false;
+      if (excludeReviewedToday && reviewedToday.contains(r.slideId)) return false;
+      return true;
+    }).toList()
       ..sort((a, b) => a.due.compareTo(b.due));
     return due;
   }
 
   static Future<int> dueCount({DateTime? now}) async => (await dueItems(now: now)).length;
 
-  /// Resolves due review items to their actual [Slide]s via the local book
-  /// store (items whose book/slide no longer exists are pruned). Returns at
-  /// most [limit] slides, oldest due first.
-  static Future<List<Slide>> resolveDueSlides({int limit = 15, DateTime? now}) async {
-    final due = await dueItems(now: now);
+  /// Resolves due review items to their actual [Slide]s via local storage.
+  /// Shuffles candidate items for improved randomness, and excludes items reviewed today.
+  static Future<List<Slide>> resolveDueSlides({
+    int limit = 15,
+    DateTime? now,
+    bool shuffle = true,
+  }) async {
+    final due = await dueItems(now: now, excludeReviewedToday: true);
     if (due.isEmpty) return [];
+
+    final candidateItems = List<ReviewItem>.from(due);
+    if (shuffle) {
+      candidateItems.shuffle();
+    }
+
     final prefs = await SharedPreferences.getInstance();
     final queue = _readQueue(prefs);
     final db = DatabaseService();
@@ -377,7 +415,7 @@ class MetacognitionService {
     final slides = <Slide>[];
     var pruned = false;
 
-    for (final item in due) {
+    for (final item in candidateItems) {
       if (slides.length >= limit) break;
       Book? book;
       if (bookCache.containsKey(item.bookId)) {
@@ -390,10 +428,13 @@ class MetacognitionService {
         }
         bookCache[item.bookId] = book;
       }
-      final slide = book == null ? null : _findSlide(book, item.slideId);
+
+      final slide = book == null ? null : await _findSlideAsync(db, book, item.slideId);
       if (slide == null) {
-        queue.remove(item.slideId);
-        pruned = true;
+        if (book == null) {
+          queue.remove(item.slideId);
+          pruned = true;
+        }
         continue;
       }
       slides.add(slide);
@@ -402,12 +443,20 @@ class MetacognitionService {
     return slides;
   }
 
-  static Slide? _findSlide(Book book, String slideId) {
+  static Future<Slide?> _findSlideAsync(DatabaseService db, Book book, String slideId) async {
     for (final m in book.modules) {
       for (final s in m.sections) {
         for (final u in s.units) {
           for (final l in u.lessons) {
-            for (final slide in l.slides) {
+            List<Slide> slides = l.slides;
+            if (slides.isEmpty) {
+              try {
+                slides = await db.loadSlidesForLesson(book.id, l.id);
+              } catch (_) {
+                slides = [];
+              }
+            }
+            for (final slide in slides) {
               if (slide.id == slideId) return slide;
             }
           }

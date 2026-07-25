@@ -72,7 +72,8 @@ class UnitGenTask {
 class QpGenTask {
   String status;
   bool isError;
-  QpGenTask({required this.status, this.isError = false});
+  double? progress;
+  QpGenTask({required this.status, this.isError = false, this.progress});
 }
 
 class GenerationManager extends ChangeNotifier {
@@ -301,11 +302,13 @@ class GenerationManager extends ChangeNotifier {
           activeQpTasks[task.bookId] = QpGenTask(
             status: statusMsg,
             isError: isError,
+            progress: task.progress,
           );
         } else if (task.type == 'pyq') {
           activePyqTasks[task.bookId] = QpGenTask(
             status: statusMsg,
             isError: isError,
+            progress: task.progress,
           );
         }
       }
@@ -671,12 +674,21 @@ class GenerationManager extends ChangeNotifier {
       task.statusMessage = 'Completed';
       task.endTime = DateTime.now();
     } catch (e) {
-      task.status = 'failed';
-      task.statusMessage = 'Failed';
-      task.errorMessage = e.toString();
-      task.endTime = DateTime.now();
-      task.completer.completeError(e);
-      _notifyTaskFailure(task);
+      final int retryCount = (task.params['retryCount'] as int? ?? 0);
+      if (retryCount < 3) {
+        task.params['retryCount'] = retryCount + 1;
+        task.status = 'queued';
+        task.statusMessage = 'Retrying (${retryCount + 1}/3)...';
+        print('[GenerationManager] Retrying task ${task.id} (attempt ${retryCount + 1}): $e');
+        await Future.delayed(Duration(seconds: (retryCount + 1) * 2));
+      } else {
+        task.status = 'failed';
+        task.statusMessage = 'Failed';
+        task.errorMessage = e.toString();
+        task.endTime = DateTime.now();
+        task.completer.completeError(e);
+        _notifyTaskFailure(task);
+      }
     } finally {
       if (isCanvasRegen) {
         AiService.activeCanvasRegensCount =
@@ -1438,8 +1450,30 @@ class GenerationManager extends ChangeNotifier {
       indeterminate: true,
     );
 
+    print('[PYQ_DIAGNOSTIC] _runPyqGenerationForTask starting for bookId: ${book.id}, moduleIndex: $moduleIndex, files count: ${files.length}');
     try {
       Book freshestBook = (await _dbService.getBookFromCache(book.id)) ?? book;
+      print('[PYQ_DIAGNOSTIC] Freshest book retrieved: "${freshestBook.title}" (modules: ${freshestBook.modules.length})');
+
+      if (freshestBook.modules.isEmpty) {
+        print('[PYQ_DIAGNOSTIC] Course has no modules. Creating default module & section.');
+        final defaultSec = Section(
+          id: 'sec_pyq_default_${DateTime.now().millisecondsSinceEpoch}',
+          title: 'General Questions',
+          description: 'Extracted Past Year Exam Questions',
+          color: '#58CC02',
+          units: [],
+        );
+        final defaultMod = Module(
+          id: 'mod_pyq_default_${DateTime.now().millisecondsSinceEpoch}',
+          title: 'Exam Preparation',
+          description: 'Past Year Exam Question Practice',
+          sections: [defaultSec],
+          practiceQuestions: [],
+        );
+        freshestBook = freshestBook.copyWith(modules: [defaultMod]);
+        await _dbService.saveGeneratedBook(freshestBook);
+      }
 
       // Scope extraction to a single module when one is given (the module the
       // user has open on the Path tab). Questions stay within that module — the
@@ -1453,19 +1487,32 @@ class GenerationManager extends ChangeNotifier {
 
       List<Section> activeSections = [];
       for (final m in scopedModules) {
-        for (final s in m.sections) {
-          final hasLessons = s.units.any(
-            (u) => u.isGenerated && u.lessons.isNotEmpty,
-          );
-          if (hasLessons) {
-            activeSections.add(s);
-          }
-        }
+        activeSections.addAll(m.sections);
       }
+      print('[PYQ_DIAGNOSTIC] Scoped modules count: ${scopedModules.length}, Active sections count: ${activeSections.length}');
+
       if (activeSections.isEmpty) {
-        throw Exception(
-          "This module has no sections with generated lessons yet. Please generate lessons first.",
+        print('[PYQ_DIAGNOSTIC] Active sections list is empty. Creating default section.');
+        final defaultSec = Section(
+          id: 'sec_pyq_default_${DateTime.now().millisecondsSinceEpoch}',
+          title: 'General Questions',
+          description: 'Extracted Past Year Exam Questions',
+          color: '#58CC02',
+          units: [],
         );
+        activeSections.add(defaultSec);
+        final updatedMods = List<Module>.from(freshestBook.modules);
+        final modIdx = (moduleIndex != null &&
+                moduleIndex >= 0 &&
+                moduleIndex < updatedMods.length)
+            ? moduleIndex
+            : 0;
+        final updatedSecs = List<Section>.from(updatedMods[modIdx].sections)
+          ..add(defaultSec);
+        updatedMods[modIdx] =
+            updatedMods[modIdx].copyWith(sections: updatedSecs);
+        freshestBook = freshestBook.copyWith(modules: updatedMods);
+        await _dbService.saveGeneratedBook(freshestBook);
       }
 
       final Map<String, List<Slide>> newSlidesForSections = {};
@@ -1473,69 +1520,68 @@ class GenerationManager extends ChangeNotifier {
         newSlidesForSections[s.id] = [];
       }
 
-      // Only offer the in-scope sections as cross-assignment targets so a
-      // question never leaks into another module.
-      final List<Map<String, String>> otherSectionsMeta = scopedModules
-          .expand((m) => m.sections)
-          .map((s) => {'id': s.id, 'title': s.title})
-          .toList();
+      final parentModule = scopedModules.isNotEmpty
+          ? scopedModules.first
+          : (freshestBook.modules.isNotEmpty ? freshestBook.modules.first : null);
+      final moduleTitle = parentModule?.title;
 
-      for (int i = 0; i < activeSections.length; i++) {
-        final sec = activeSections[i];
-        task.statusMessage =
-            'Extracting questions for: ${sec.title} (${i + 1}/${activeSections.length})...';
-        task.progress = i / activeSections.length;
+      final syllabusContext = freshestBook.description.isNotEmpty
+          ? freshestBook.description
+          : freshestBook.title;
+
+      print('[PYQ_DIAGNOSTIC] Calling _aiService.extractAllPyqQuestions with ${files.length} files and ${activeSections.length} sections...');
+      task.statusMessage = 'Extracting questions from paper...';
+      task.progress = 0.1;
+      notifyListeners();
+
+      final extractedQuestions = await _aiService.extractAllPyqQuestions(
+        files: files,
+        sections: activeSections,
+        moduleTitle: moduleTitle,
+        customInstructions: customInstructions,
+        forcedApiKey: apiKey,
+        syllabusContext: syllabusContext,
+        onProgress: (progress, status) {
+          print('[PYQ_DIAGNOSTIC] AI Progress (${(progress * 100).toInt()}%): $status');
+          task.statusMessage = status;
+          task.progress = progress;
+          notifyListeners();
+        },
+      );
+
+      print('[PYQ_DIAGNOSTIC] Total extracted questions returned: ${extractedQuestions.length}');
+
+      if (extractedQuestions.isEmpty) {
+        print('[PYQ_DIAGNOSTIC] 0 questions extracted from uploaded document.');
+        final qpTask = activePyqTasks[book.id];
+        if (qpTask != null) {
+          qpTask.isError = true;
+          qpTask.status = 'No exam questions were found in the uploaded paper. Please check that the PDF/image contains clear exam questions.';
+        }
         notifyListeners();
-
-        final existingInSec = List<Slide>.from(sec.pyqQuestions);
-        final newlyExtractedInSec = newSlidesForSections[sec.id] ?? [];
-        final totalExisting = [...existingInSec, ...newlyExtractedInSec];
-
-        final extracted = await _aiService.extractPyqQuestionsForSection(
-          files: files,
-          section: sec,
-          existingQuestions: totalExisting,
-          otherSections: otherSectionsMeta
-              .where((s) => s['id'] != sec.id)
-              .toList(),
-          customInstructions: customInstructions,
-          forcedApiKey: apiKey,
+        await NotificationService.cancel(notifId);
+        await NotificationService.showActionable(
+          notifId,
+          "No Questions Found",
+          "No exam questions were found in the uploaded paper. Please try uploading a clearer file.",
+          "warning",
         );
+        return;
+      }
 
-        for (final q in extracted) {
-          if (!isDuplicate(q, totalExisting)) {
-            newSlidesForSections[sec.id]!.add(q);
+      for (final q in extractedQuestions) {
+        final targetSectionId = (q.toJson()['sectionId'] ?? '').toString();
+        print('[PYQ_DIAGNOSTIC] Extracted Question "${q.title}" mapped to target sectionId: $targetSectionId');
+        if (newSlidesForSections.containsKey(targetSectionId)) {
+          final existingInSec = newSlidesForSections[targetSectionId]!;
+          if (!isDuplicate(q, existingInSec)) {
+            newSlidesForSections[targetSectionId]!.add(q);
           }
-          final otherIds = q.toJson()['otherSupportedSectionIds'] as List?;
-          if (otherIds != null) {
-            for (final otherIdRaw in otherIds) {
-              final otherId = otherIdRaw.toString();
-              final hasSection = freshestBook.modules
-                  .expand((m) => m.sections)
-                  .any((s) => s.id == otherId);
-              if (hasSection) {
-                final otherSec = freshestBook.modules
-                    .expand((m) => m.sections)
-                    .firstWhere((s) => s.id == otherId);
-                final otherHasLessons = otherSec.units.any(
-                  (u) => u.isGenerated && u.lessons.isNotEmpty,
-                );
-                if (otherHasLessons) {
-                  newSlidesForSections.putIfAbsent(otherId, () => []);
-                  final existingInOther = List<Slide>.from(
-                    otherSec.pyqQuestions,
-                  );
-                  final newlyExtractedInOther = newSlidesForSections[otherId]!;
-                  final totalExistingOther = [
-                    ...existingInOther,
-                    ...newlyExtractedInOther,
-                  ];
-                  if (!isDuplicate(q, totalExistingOther)) {
-                    newSlidesForSections[otherId]!.add(q);
-                  }
-                }
-              }
-            }
+        } else if (activeSections.isNotEmpty) {
+          final defaultSecId = activeSections.first.id;
+          final existingInSec = newSlidesForSections[defaultSecId]!;
+          if (!isDuplicate(q, existingInSec)) {
+            newSlidesForSections[defaultSecId]!.add(q);
           }
         }
       }
@@ -1555,13 +1601,15 @@ class GenerationManager extends ChangeNotifier {
       await _dbService.saveGeneratedBook(finalBook);
       _bookUpdateController.add(finalBook);
       await NotificationService.cancel(notifId);
+      print('[PYQ_DIAGNOSTIC] PYQ extraction completed successfully! Saved book "${finalBook.title}"');
       task.completer.complete(null);
-    } catch (e) {
+    } catch (e, stack) {
+      print('[PYQ_DIAGNOSTIC] CRITICAL EXCEPTION in _runPyqGenerationForTask: $e\n$stack');
       await NotificationService.cancel(notifId);
       await NotificationService.showActionable(
         notifId,
         "PYQ Analysis Failed",
-        "Failed to extract exam questions.",
+        "Failed to extract exam questions: $e",
         "error",
       );
       rethrow;

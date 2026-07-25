@@ -18,7 +18,7 @@ import '../widgets/slide_views/descriptive_view.dart';
 import '../widgets/slide_views/custom_html_view.dart';
 import '../widgets/slide_views/matching_view.dart';
 import '../widgets/slide_views/ordering_view.dart';
-import '../widgets/slide_views/error_spotting_view.dart';
+
 import '../widgets/slide_views/flashcard_view.dart';
 
 class ExperimentsScreen extends StatefulWidget {
@@ -235,20 +235,6 @@ class _ExperimentsScreenState extends State<ExperimentsScreen> {
         "Subtract 3 from both sides",
         "Conclude \$x = 4\$",
       ],
-    },
-    'error_spotting': {
-      "id": "preset_error_spotting",
-      "type": "error_spotting",
-      "title": "Find the Mistake",
-      "content":
-          "This solution of \$x^2 - 4 = 0\$ contains one wrong step. Tap it.",
-      "proofSteps": [
-        "Start with \$x^2 - 4 = 0\$",
-        "Factor: \$(x-2)(x+2) = 0\$",
-        "So \$x - 2 = 0\$ or \$x + 2 = 0\$",
-        "Therefore \$x = 2\$ is the only solution",
-      ],
-      "errorIndex": 3,
     },
     'flashcard': {
       "id": "preset_flashcard",
@@ -609,9 +595,6 @@ class _ExperimentPreviewScreenState extends State<ExperimentPreviewScreen> {
           }
         }
       }
-    } else if (_activeSlide.type == 'error_spotting') {
-      correct =
-          _errorSelection != null && _errorSelection == _activeSlide.errorIndex;
     }
 
     if (correct) {
@@ -640,7 +623,6 @@ class _ExperimentPreviewScreenState extends State<ExperimentPreviewScreen> {
           _matchingAssignments.length == (_activeSlide.matchPairs?.length ?? 0);
     }
     if (_activeSlide.type == 'ordering') return _orderingCurrent.isNotEmpty;
-    if (_activeSlide.type == 'error_spotting') return _errorSelection != null;
     return true;
   }
 
@@ -674,13 +656,6 @@ class _ExperimentPreviewScreenState extends State<ExperimentPreviewScreen> {
         for (var i = 0; i < items.length; i++) '${i + 1}. ${items[i]}',
       ].join('\n\n');
     }
-    if (slide.type == 'error_spotting') {
-      final steps = slide.proofSteps ?? [];
-      final idx = slide.errorIndex ?? -1;
-      return (idx >= 0 && idx < steps.length)
-          ? 'Step ${idx + 1}: ${steps[idx]}'
-          : '';
-    }
     return '';
   }
 
@@ -692,7 +667,6 @@ class _ExperimentPreviewScreenState extends State<ExperimentPreviewScreen> {
       'numerical',
       'matching',
       'ordering',
-      'error_spotting',
     ].contains(slide.type);
     final feedbackColor = _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed;
 
@@ -841,15 +815,6 @@ class _ExperimentPreviewScreenState extends State<ExperimentPreviewScreen> {
           isAnswered: _answered,
           isCorrect: _isCorrect,
           onChanged: (order) => setState(() => _orderingCurrent = order),
-          bottomBar: bottomBar,
-        );
-      case 'error_spotting':
-        return ErrorSpottingView(
-          slide: slide,
-          selectedIndex: _errorSelection,
-          isAnswered: _answered,
-          isCorrect: _isCorrect,
-          onSelect: (i) => setState(() => _errorSelection = i),
           bottomBar: bottomBar,
         );
       case 'flashcard':

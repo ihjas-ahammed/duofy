@@ -39,27 +39,61 @@ class OneWordView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: AppTheme.glassOf(context),
-                  child: MathMarkdown(
-                    data: slide.content,
-                    textStyle: TextStyle(
-                      fontSize: 18,
-                      color: context.colors.textPrimary,
-                      fontWeight: FontWeight.bold,
+                  decoration: BoxDecoration(
+                    color: context.colors.isDark
+                        ? context.colors.surface
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: AppTheme.duoBlue.withValues(alpha: 0.3),
+                      width: 1.5,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.duoBlue.withValues(alpha: 0.08),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Container(
+                        height: 4,
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [AppTheme.duoBlue, AppTheme.duoViolet, AppTheme.duoGreen],
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: MathMarkdown(
+                          data: slide.content,
+                          textStyle: TextStyle(
+                            fontSize: 18,
+                            color: context.colors.textPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                SizedBox(height: 32),
+                const SizedBox(height: 32),
                 Container(
-                  padding: EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: context.colors.surfaceAlt,
+                    color: context.colors.isDark
+                        ? context.colors.surfaceAlt
+                        : AppTheme.duoBlue.withValues(alpha: 0.04),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: isAnswered
                           ? (isCorrect ? AppTheme.duoGreen : AppTheme.duoRed)
-                          : context.colors.outline,
+                          : AppTheme.duoBlue.withValues(alpha: 0.4),
                       width: 2,
                     ),
                   ),

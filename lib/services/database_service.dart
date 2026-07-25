@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
 import '../data/mock_books.dart';
+import '../utils/latex_utils.dart';
 import 'guest_service.dart';
 import 'fb/fb_auth.dart';
 import 'fb/fb_firestore.dart';
@@ -280,21 +281,22 @@ class DatabaseService {
   Future<void> _writeBookFile(String forUid, Book book) async {
     final dir = await _booksDir(forUid);
 
-    // 1. Separate slides and save them to individual JSON files
+    // 1. Separate slides and save them to individual JSON files (with LaTeX fixing)
     for (final m in book.modules) {
       for (final s in m.sections) {
         for (final u in s.units) {
           for (final l in u.lessons) {
             if (l.slides.isNotEmpty) {
+              final fixedSlides = l.slides.map((slide) => LatexUtils.fixSlideLatex(slide)).toList();
               if (kIsWeb) {
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.setString(
                   'web_book_${forUid}_${book.id}_lesson_${l.id}_slides',
-                  jsonEncode(l.slides.map((s) => s.toJson()).toList()),
+                  jsonEncode(fixedSlides.map((s) => s.toJson()).toList()),
                 );
               } else {
                 final slidesFile = File('${dir.path}/${book.id}_lesson_${l.id}_slides.json');
-                final slidesJson = jsonEncode(l.slides.map((s) => s.toJson()).toList());
+                final slidesJson = jsonEncode(fixedSlides.map((s) => s.toJson()).toList());
                 await slidesFile.writeAsString(slidesJson, flush: true);
               }
             }
@@ -347,26 +349,45 @@ class DatabaseService {
         final txt = prefs.getString('web_book_${uid}_${bookId}_lesson_${lessonId}_slides');
         if (txt != null && txt.trim().isNotEmpty) {
           final List decoded = jsonDecode(txt);
-          return decoded.map((s) => Slide.fromJson(Map<String, dynamic>.from(s))).toList();
+          final slides = decoded.map((s) => LatexUtils.fixSlideLatex(Slide.fromJson(Map<String, dynamic>.from(s)))).toList();
+          if (slides.isNotEmpty) return slides;
         }
       } catch (e) {
         print("[DatabaseService] loadSlidesForLesson web error: $e");
       }
-      return [];
+    } else {
+      try {
+        final dir = await _booksDir(uid);
+        final file = File('${dir.path}/${bookId}_lesson_${lessonId}_slides.json');
+        if (await file.exists()) {
+          final txt = await file.readAsString();
+          if (txt.trim().isNotEmpty) {
+            final List decoded = jsonDecode(txt);
+            final slides = decoded.map((s) => LatexUtils.fixSlideLatex(Slide.fromJson(Map<String, dynamic>.from(s)))).toList();
+            if (slides.isNotEmpty) return slides;
+          }
+        }
+      } catch (e) {
+        print("[DatabaseService] loadSlidesForLesson error: $e");
+      }
     }
-    try {
-      final dir = await _booksDir(uid);
-      final file = File('${dir.path}/${bookId}_lesson_${lessonId}_slides.json');
-      if (await file.exists()) {
-        final txt = await file.readAsString();
-        if (txt.trim().isNotEmpty) {
-          final List decoded = jsonDecode(txt);
-          return decoded.map((s) => Slide.fromJson(Map<String, dynamic>.from(s))).toList();
+
+    // Fallback: check in-memory cache for slides
+    final memBook = _mem[uid]?[bookId];
+    if (memBook != null) {
+      for (final m in memBook.modules) {
+        for (final s in m.sections) {
+          for (final u in s.units) {
+            for (final l in u.lessons) {
+              if (l.id == lessonId && l.slides.isNotEmpty) {
+                return l.slides;
+              }
+            }
+          }
         }
       }
-    } catch (e) {
-      print("[DatabaseService] loadSlidesForLesson error: $e");
     }
+
     return [];
   }
 
@@ -738,9 +759,35 @@ class DatabaseService {
   /// Returns the freshest in-memory copy of [bookId] (or null). Backed by the
   /// file store, so partial mutations during generation read each other's
   /// latest writes without re-reading the disk every time.
-  Future<Book?> getBookFromCache(String bookId) async {
+  Future<Book?> getBookFromCache(String bookId, {bool forceDiskReload = false}) async {
+    final u = uid;
+    if (forceDiskReload) {
+      _mem.remove(u);
+    }
     final books = await _ensureLoaded();
-    return books[bookId];
+    final cached = books[bookId];
+    if (cached != null) return cached;
+
+    // Direct disk fallback
+    if (!kIsWeb) {
+      try {
+        final dir = await _booksDir(u);
+        final f = _bookFile(dir, bookId);
+        if (await f.exists()) {
+          final txt = await f.readAsString();
+          if (txt.trim().isNotEmpty) {
+            final b = Book.fromJson(Map<String, dynamic>.from(jsonDecode(txt)));
+            if (b.id.isNotEmpty) {
+              books[b.id] = b;
+              return b;
+            }
+          }
+        }
+      } catch (e) {
+        print("[DatabaseService] Direct disk fallback error for $bookId: $e");
+      }
+    }
+    return null;
   }
 
   Future<void> saveGeneratedBook(Book book) async {

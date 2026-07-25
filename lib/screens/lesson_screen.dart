@@ -15,6 +15,7 @@ import '../services/math_evaluator_service.dart';
 import '../widgets/canvas_art_view.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/math_markdown.dart';
+import '../utils/latex_utils.dart';
 import '../widgets/responsive_center.dart';
 import '../widgets/slide_views/quiz_view.dart';
 import '../widgets/slide_views/fill_in_blank_view.dart';
@@ -29,7 +30,7 @@ import '../widgets/slide_views/program_view.dart';
 import '../widgets/slide_views/code_runner_view.dart';
 import '../widgets/slide_views/matching_view.dart';
 import '../widgets/slide_views/ordering_view.dart';
-import '../widgets/slide_views/error_spotting_view.dart';
+
 import '../widgets/slide_views/flashcard_view.dart';
 import '../widgets/lesson_assistant_chat.dart';
 import 'lesson_complete_screen.dart';
@@ -130,7 +131,7 @@ class _LessonScreenState extends State<LessonScreen> {
   void initState() {
     super.initState();
     _startTime = DateTime.now();
-    _lesson = widget.lesson;
+    _lesson = LatexUtils.fixLessonLatex(widget.lesson);
 
     if (_lesson.slides.isEmpty && widget.book != null) {
       _loadingSlides = true;
@@ -146,7 +147,7 @@ class _LessonScreenState extends State<LessonScreen> {
     final slides = await DatabaseService().loadSlidesForLesson(bookId, _lesson.id);
     if (mounted) {
       setState(() {
-        _lesson = _lesson.copyWith(slides: slides);
+        _lesson = LatexUtils.fixLessonLatex(_lesson.copyWith(slides: slides));
         _loadingSlides = false;
         _buildSlideQueue();
         _initAfterSlidesReady();
@@ -198,6 +199,7 @@ class _LessonScreenState extends State<LessonScreen> {
     final unitIdx = widget.unitIdx!;
 
     Unit? nextUnit;
+    Section? nextSection;
     int nextModIdx = modIdx;
     int nextSecIdx = secIdx;
     int nextUnitIdx = unitIdx + 1;
@@ -206,91 +208,118 @@ class _LessonScreenState extends State<LessonScreen> {
     if (nextUnitIdx < book.modules[modIdx].sections[secIdx].units.length) {
       nextUnit = book.modules[modIdx].sections[secIdx].units[nextUnitIdx];
     } else {
-      // Check next section in current module
+      // Last unit of the current section: check next section in current module
       nextSecIdx = secIdx + 1;
       nextUnitIdx = 0;
       if (nextSecIdx < book.modules[modIdx].sections.length) {
-        if (book.modules[modIdx].sections[nextSecIdx].units.isNotEmpty) {
-          nextUnit =
-              book.modules[modIdx].sections[nextSecIdx].units[nextUnitIdx];
-        }
+        nextSection = book.modules[modIdx].sections[nextSecIdx];
       } else {
         // Check next module
         nextModIdx = modIdx + 1;
         nextSecIdx = 0;
-        nextUnitIdx = 0;
-        if (nextModIdx < book.modules.length) {
-          if (book.modules[nextModIdx].sections.isNotEmpty &&
-              book.modules[nextModIdx].sections.first.units.isNotEmpty) {
-            nextUnit = book.modules[nextModIdx].sections.first.units.first;
-          }
+        if (nextModIdx < book.modules.length &&
+            book.modules[nextModIdx].sections.isNotEmpty) {
+          nextSection = book.modules[nextModIdx].sections.first;
         }
+      }
+
+      if (nextSection != null && nextSection.units.isNotEmpty) {
+        nextUnit = nextSection.units.first;
       }
     }
 
-    if (nextUnit != null && !nextUnit.isGenerated) {
+    // Determine if next unit needs generation or if next section needs planning & generation
+    final bool hasUnplannedNextSection = nextUnit == null &&
+        nextSection != null &&
+        (nextSection.units.isEmpty || nextSection.needsUnitManifest);
+    final bool hasUngeneratedNextUnit =
+        nextUnit != null && !nextUnit.isGenerated;
+
+    if (!hasUngeneratedNextUnit && !hasUnplannedNextSection) return;
+
+    // Prevent duplicate prompting if task is already running or queued
+    if (hasUngeneratedNextUnit) {
       final inQueue = GenerationManager.instance.queue.any(
         (t) =>
             t.unitId == nextUnit!.id &&
             (t.status == 'queued' || t.status == 'running'),
       );
       if (inQueue) return;
+    } else if (hasUnplannedNextSection) {
+      final sectionQueued = GenerationManager.instance.queue.any(
+        (t) =>
+            t.sectionId == nextSection!.id &&
+            (t.status == 'queued' || t.status == 'running'),
+      );
+      if (sectionQueued) return;
+    }
 
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: context.colors.surface,
-          title: Text(
-            'Generate Next Unit?',
-            style: TextStyle(
-              color: context.colors.textPrimary,
-              fontWeight: FontWeight.bold,
+    final String unitNamePrompt = nextUnit != null
+        ? '"${nextUnit.title}"'
+        : 'in section "${nextSection!.title}"';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.colors.surface,
+        title: Text(
+          'Generate Next Unit?',
+          style: TextStyle(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'The next unit $unitNamePrompt is not generated yet.\n\n'
+          'Would you like to auto-generate it in the background now so it is ready when you get there?',
+          style: TextStyle(color: context.colors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(
+              'Later',
+              style: TextStyle(color: context.colors.textFaint),
             ),
           ),
-          content: Text(
-            'The next unit "${nextUnit!.title}" is not generated yet.\n\n'
-            'Would you like to auto-generate it in the background now so it is ready when you get there?',
-            style: TextStyle(color: context.colors.textSecondary),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(
-                'Later',
-                style: TextStyle(color: context.colors.textFaint),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(ctx).pop();
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              if (nextUnit != null) {
                 GenerationManager.instance.startUnitGeneration(
-                  nextUnit!,
+                  nextUnit,
                   book,
                   nextModIdx,
                   nextSecIdx,
                   nextUnitIdx,
                 );
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Generation for "${nextUnit.title}" started in the background.',
-                    ),
-                    backgroundColor: AppTheme.duoBlue,
-                  ),
+              } else if (nextSection != null) {
+                GenerationManager.instance.startSectionGeneration(
+                  book,
+                  nextModIdx,
+                  nextSecIdx,
                 );
-              },
-              child: const Text(
-                'Generate',
-                style: TextStyle(
-                  color: AppTheme.duoBlue,
-                  fontWeight: FontWeight.bold,
+              }
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text(
+                    'Generation for next unit started in the background.',
+                  ),
+                  backgroundColor: AppTheme.duoBlue,
                 ),
+              );
+            },
+            child: const Text(
+              'Generate',
+              style: TextStyle(
+                color: AppTheme.duoBlue,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ],
-        ),
-      );
-    }
+          ),
+        ],
+      ),
+    );
   }
 
   void _triggerBackgroundCanvasGeneration() {
@@ -447,7 +476,7 @@ class _LessonScreenState extends State<LessonScreen> {
   }
 
   void _buildSlideQueue() {
-    _slideQueue = List.of(_lesson.slides);
+    _slideQueue = _lesson.slides.where((s) => s.type != 'error_spotting').toList();
     _maxProgress = 0;
 
     for (var slide in _slideQueue) {
@@ -462,7 +491,6 @@ class _LessonScreenState extends State<LessonScreen> {
         'custom_html',
         'matching',
         'ordering',
-        'error_spotting',
         'flashcard',
       ].contains(slide.type)) {
         _totalInteractive++;
@@ -683,8 +711,6 @@ class _LessonScreenState extends State<LessonScreen> {
           }
         }
       }
-    } else if (slide.type == 'error_spotting') {
-      correct = _errorSelection != null && _errorSelection == slide.errorIndex;
     }
 
     setState(() {
@@ -746,7 +772,6 @@ class _LessonScreenState extends State<LessonScreen> {
           _matchingAssignments.isNotEmpty;
     }
     if (slide.type == 'ordering') return _orderingCurrent.isNotEmpty;
-    if (slide.type == 'error_spotting') return _errorSelection != null;
     return true;
   }
 
@@ -782,13 +807,6 @@ class _LessonScreenState extends State<LessonScreen> {
       return [
         for (var i = 0; i < items.length; i++) '${i + 1}. ${items[i]}',
       ].join('\n\n');
-    }
-    if (slide.type == 'error_spotting') {
-      final steps = slide.proofSteps ?? [];
-      final idx = slide.errorIndex ?? -1;
-      return (idx >= 0 && idx < steps.length)
-          ? 'Step ${idx + 1}: ${steps[idx]}'
-          : '';
     }
     return '';
   }
@@ -1341,7 +1359,6 @@ class _LessonScreenState extends State<LessonScreen> {
       'numerical',
       'matching',
       'ordering',
-      'error_spotting',
     ].contains(slide.type);
     final feedbackColor = _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed;
     final wrongExplanation = _wrongQuizExplanation(slide);
@@ -1645,15 +1662,6 @@ class _LessonScreenState extends State<LessonScreen> {
           isAnswered: _answered,
           isCorrect: _isCorrect,
           onChanged: (order) => setState(() => _orderingCurrent = order),
-          bottomBar: bottomBar,
-        );
-      case 'error_spotting':
-        return ErrorSpottingView(
-          slide: slide,
-          selectedIndex: _errorSelection,
-          isAnswered: _answered,
-          isCorrect: _isCorrect,
-          onSelect: (i) => setState(() => _errorSelection = i),
           bottomBar: bottomBar,
         );
       case 'flashcard':

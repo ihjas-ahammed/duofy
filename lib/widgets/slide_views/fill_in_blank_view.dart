@@ -264,9 +264,41 @@ class _FillInBlankViewState extends State<FillInBlankView> {
               child: Column(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: AppTheme.glassOf(context),
-                    child: MathMarkdown(data: updatedContent),
+                    decoration: BoxDecoration(
+                      color: context.colors.isDark
+                          ? context.colors.surface
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AppTheme.duoBlue.withValues(alpha: 0.3),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.duoBlue.withValues(alpha: 0.08),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Container(
+                          height: 4,
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [AppTheme.duoBlue, AppTheme.duoViolet, AppTheme.duoGreen],
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: MathMarkdown(data: updatedContent),
+                        ),
+                      ],
+                    ),
                   ),
                   if (numBlanks > 1 && !widget.isAnswered) ...[
                     const SizedBox(height: 20),

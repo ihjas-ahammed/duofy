@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
+import '../services/bookmark_service.dart';
 import '../theme/app_theme.dart';
 import '../services/progress_service.dart';
 import 'dart:ui';
@@ -12,7 +13,7 @@ import '../utils/progress_utils.dart';
 import 'section_selection_screen.dart';
 import 'main_layout_screen.dart';
 import '../services/deadline_service.dart';
-import '../services/bookmark_service.dart';
+import '../services/database_service.dart';
 import 'lesson_screen.dart';
 
 
@@ -26,6 +27,8 @@ class ModuleSelectionScreen extends StatefulWidget {
 }
 
 class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
+  late Book _currentBook;
+  StreamSubscription<Book>? _bookUpdatesSub;
   List<String> _completedLessons = [];
   bool _isLoading = true;
   Map<String, dynamic>? _mostUrgentTarget;
@@ -38,16 +41,43 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
   @override
   void initState() {
     super.initState();
+    _currentBook = widget.book;
     _loadProgress();
     _loadLastLessonInfo();
+    _refreshBookFromStorage();
     GlobalState.progressNotifier.addListener(_loadProgress);
+    GenerationManager.instance.addListener(_onGenManagerChanged);
+    _bookUpdatesSub = GenerationManager.instance.bookUpdates.listen((updatedBook) {
+      if (updatedBook.id == _currentBook.id && mounted) {
+        _refreshBookFromStorage(updatedBook);
+      }
+    });
   }
 
   @override
   void dispose() {
+    _bookUpdatesSub?.cancel();
+    GenerationManager.instance.removeListener(_onGenManagerChanged);
     GlobalState.progressNotifier.removeListener(_loadProgress);
     _targetCollapseTimer?.cancel();
     super.dispose();
+  }
+
+  void _onGenManagerChanged() {
+    if (mounted) {
+      _refreshBookFromStorage();
+    }
+  }
+
+  Future<void> _refreshBookFromStorage([Book? book]) async {
+    final fresh = book ?? await DatabaseService().getBookFromCache(_currentBook.id);
+    if (fresh != null && mounted) {
+      setState(() {
+        _currentBook = fresh;
+      });
+      _loadProgress();
+      _loadLastLessonInfo();
+    }
   }
 
   Future<void> _loadProgress() async {
@@ -59,8 +89,8 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
         });
       }
       final urgent = await DeadlineService.instance.getMostUrgentActiveTarget(
-        widget.book.id,
-        widget.book,
+        _currentBook.id,
+        _currentBook,
         _completedLessons,
       );
       if (mounted) {
@@ -79,13 +109,13 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
   Future<void> _loadLastLessonInfo() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final lessonId = prefs.getString('last_lesson_id_${widget.book.id}');
-      final modIdx = prefs.getInt('last_mod_idx_${widget.book.id}');
-      final secIdx = prefs.getInt('last_sec_idx_${widget.book.id}');
+      final lessonId = prefs.getString('last_lesson_id_${_currentBook.id}');
+      final modIdx = prefs.getInt('last_mod_idx_${_currentBook.id}');
+      final secIdx = prefs.getInt('last_sec_idx_${_currentBook.id}');
 
       if (lessonId != null && modIdx != null && secIdx != null) {
-        if (modIdx >= 0 && modIdx < widget.book.modules.length) {
-          final module = widget.book.modules[modIdx];
+        if (modIdx >= 0 && modIdx < _currentBook.modules.length) {
+          final module = _currentBook.modules[modIdx];
           if (secIdx >= 0 && secIdx < module.sections.length) {
             final section = module.sections[secIdx];
             for (final unit in section.units) {
@@ -331,9 +361,9 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                     ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      itemCount: widget.book.modules.length,
+                      itemCount: _currentBook.modules.length,
                       itemBuilder: (context, index) {
-                        final module = widget.book.modules[index];
+                        final module = _currentBook.modules[index];
 
                         // Calculate totals
                         final progress = calculateModuleProgressDouble(module, _completedLessons);
@@ -353,12 +383,12 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => SectionSelectionScreen(
-                                    book: widget.book,
+                                    book: _currentBook,
                                     moduleIdx: index,
                                     module: module,
                                   ),
                                 ),
-                              );
+                              ).then((_) => _refreshBookFromStorage());
                             },
                             onLongPress: () => _showModuleLongPressMenu(index),
                             child: Padding(
@@ -625,6 +655,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
       isScheduled: isScheduled,
     );
 
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: context.colors.surface,
@@ -1090,16 +1121,20 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
       height: 48,
       width: buttonWidth,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: context.colors.isDark
+            ? color.withValues(alpha: 0.15)
+            : Colors.white.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: _targetButtonExpanded ? color.withValues(alpha: 0.3) : Colors.transparent,
-          width: _targetButtonExpanded ? 1.5 : 0.0,
+          color: _targetButtonExpanded
+              ? color.withValues(alpha: 0.4)
+              : (context.colors.isDark ? color.withValues(alpha: 0.2) : color.withValues(alpha: 0.3)),
+          width: _targetButtonExpanded ? 1.5 : 1.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 6,
+            color: context.colors.shadow,
+            blurRadius: 8,
             offset: const Offset(0, 3),
           ),
         ],

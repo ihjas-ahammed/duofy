@@ -109,13 +109,6 @@ class SlideTemplate {
       description: 'Drag shuffled steps into the correct sequence.',
     ),
     SlideTemplate(
-      type: 'error_spotting',
-      condition:
-          'Only after a worked example or proof, to probe a common misconception.',
-      description:
-          'A worked solution with exactly one flawed step the learner must find.',
-    ),
-    SlideTemplate(
       type: 'flashcard',
       condition:
           'Only for facts, definitions, or formulas the learner must memorize verbatim.',
@@ -784,18 +777,6 @@ class LessonFormat {
   ];
 
   static List<LessonFormat> defaultProgrammingFormats(String title, String desc) {
-    final titleLower = title.toLowerCase();
-    final descLower = desc.toLowerCase();
-    String lang = 'python';
-    if (titleLower.contains('python') || descLower.contains('python')) lang = 'python';
-    else if (titleLower.contains('javascript') || titleLower.contains(' js') || descLower.contains('javascript') || descLower.contains(' js')) lang = 'javascript';
-    else if (titleLower.contains('html') || descLower.contains('html')) lang = 'html';
-    else if (titleLower.contains('css') || descLower.contains('css')) lang = 'css';
-    else if (titleLower.contains('latex') || descLower.contains('latex')) lang = 'latex';
-    else if (titleLower.contains('java') || descLower.contains('java')) lang = 'java';
-    else if (titleLower.contains('dart') || descLower.contains('dart')) lang = 'dart';
-    else if (titleLower.contains('rust') || descLower.contains('rust')) lang = 'rust';
-
     return [
       LessonFormat(
         id: 'coding-theory',
@@ -865,11 +846,6 @@ class LessonFormat {
             type: 'try_yourself',
             condition: 'Always',
             description: 'An interactive coding runner with the complete solution preloaded to play with.',
-          ),
-          SlideTemplate(
-            type: 'error_spotting',
-            condition: 'Always',
-            description: 'A buggy version of the code where the learner has to locate the single flawed line.',
           ),
         ],
       ),

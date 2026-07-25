@@ -169,19 +169,51 @@ class _DescriptiveViewState extends State<DescriptiveView> {
 
                       // Question Card
                       Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: AppTheme.glassOf(context),
-                        child: MathMarkdown(
-                          data: widget.slide.content,
-                          textStyle: TextStyle(
-                            fontSize: 17,
-                            color: context.colors.textPrimary,
-                            fontWeight: FontWeight.bold,
-                            height: 1.4,
+                        decoration: BoxDecoration(
+                          color: context.colors.isDark
+                              ? context.colors.surface
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: AppTheme.duoBlue.withValues(alpha: 0.3),
+                            width: 1.5,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.duoBlue.withValues(alpha: 0.08),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Container(
+                              height: 4,
+                              decoration: const BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [AppTheme.duoBlue, AppTheme.duoViolet, AppTheme.duoGreen],
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: MathMarkdown(
+                                data: widget.slide.content,
+                                textStyle: TextStyle(
+                                  fontSize: 17,
+                                  color: context.colors.textPrimary,
+                                  fontWeight: FontWeight.bold,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      SizedBox(height: 20),
+                      const SizedBox(height: 20),
 
                       // Text Input Area
                       Text(
@@ -193,7 +225,7 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                           letterSpacing: 1.5,
                         ),
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       TextField(
                         controller: _answerController,
                         maxLines: 8,
@@ -213,18 +245,21 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                             fontSize: 14,
                           ),
                           filled: true,
-                          fillColor: context.colors.surfaceAlt,
+                          fillColor: context.colors.isDark
+                              ? context.colors.surfaceAlt
+                              : AppTheme.duoBlue.withValues(alpha: 0.04),
                           contentPadding: const EdgeInsets.all(16),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide(
-                              color: context.colors.outline,
+                              color: AppTheme.duoBlue.withValues(alpha: 0.3),
                             ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide(
-                              color: context.colors.outline,
+                              color: AppTheme.duoBlue.withValues(alpha: 0.3),
+                              width: 1.5,
                             ),
                           ),
                           focusedBorder: OutlineInputBorder(

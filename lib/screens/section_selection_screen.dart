@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
+import '../services/bookmark_service.dart';
 import '../theme/app_theme.dart';
 import '../services/progress_service.dart';
 import '../utils/progress_utils.dart';
@@ -10,7 +11,7 @@ import '../services/global_state.dart';
 import '../services/generation_manager.dart';
 import 'main_layout_screen.dart';
 import '../services/deadline_service.dart';
-import '../services/bookmark_service.dart';
+import '../services/database_service.dart';
 import 'lesson_screen.dart';
 
 class SectionSelectionScreen extends StatefulWidget {
@@ -32,6 +33,9 @@ class SectionSelectionScreen extends StatefulWidget {
 }
 
 class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
+  late Book _currentBook;
+  late Module _currentModule;
+  StreamSubscription<Book>? _bookUpdatesSub;
   List<String> _completedLessons = [];
   bool _isLoading = true;
   Map<int, Map<String, dynamic>> _sectionTargets = {};
@@ -45,16 +49,46 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
   @override
   void initState() {
     super.initState();
+    _currentBook = widget.book;
+    _currentModule = widget.module;
     _loadProgress();
+    _refreshBookFromStorage();
     GlobalState.progressNotifier.addListener(_loadProgress);
+    GenerationManager.instance.addListener(_onGenManagerChanged);
+    _bookUpdatesSub = GenerationManager.instance.bookUpdates.listen((updatedBook) {
+      if (updatedBook.id == _currentBook.id && mounted) {
+        _refreshBookFromStorage(updatedBook);
+      }
+    });
   }
 
   @override
   void dispose() {
+    _bookUpdatesSub?.cancel();
+    GenerationManager.instance.removeListener(_onGenManagerChanged);
     GlobalState.progressNotifier.removeListener(_loadProgress);
     _targetCollapseTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onGenManagerChanged() {
+    if (mounted) {
+      _refreshBookFromStorage();
+    }
+  }
+
+  Future<void> _refreshBookFromStorage([Book? book]) async {
+    final fresh = book ?? await DatabaseService().getBookFromCache(_currentBook.id);
+    if (fresh != null && mounted) {
+      setState(() {
+        _currentBook = fresh;
+        if (widget.moduleIdx >= 0 && widget.moduleIdx < fresh.modules.length) {
+          _currentModule = fresh.modules[widget.moduleIdx];
+        }
+      });
+      _loadDeadlines();
+    }
   }
 
   Future<void> _loadProgress() async {
@@ -90,12 +124,12 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
 
   Future<void> _loadDeadlines() async {
     final targets = <int, Map<String, dynamic>>{};
-    for (var sIdx = 0; sIdx < widget.module.sections.length; sIdx++) {
-      final totalLessons = widget.book.getEstimatedLessonsUpToSection(widget.moduleIdx, sIdx);
-      final completedInSec = widget.book.getCompletedLessonsUpToSection(widget.moduleIdx, sIdx, _completedLessons);
+    for (var sIdx = 0; sIdx < _currentModule.sections.length; sIdx++) {
+      final totalLessons = _currentBook.getEstimatedLessonsUpToSection(widget.moduleIdx, sIdx);
+      final completedInSec = _currentBook.getCompletedLessonsUpToSection(widget.moduleIdx, sIdx, _completedLessons);
 
       final metrics = await DeadlineService.instance.calculateSectionTarget(
-        bookId: widget.book.id,
+        bookId: _currentBook.id,
         moduleIdx: widget.moduleIdx,
         sectionIdx: sIdx,
         totalLessons: totalLessons,
@@ -186,7 +220,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            widget.module.title,
+                            _currentModule.title,
                             style: TextStyle(
                               color: context.colors.textPrimary,
                               fontSize: 20,
@@ -195,7 +229,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                           ),
                           SizedBox(height: 6),
                           Text(
-                            widget.module.description,
+                            _currentModule.description,
                             style: TextStyle(
                               color: context.colors.textFaint,
                               fontSize: 13,
@@ -216,7 +250,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                       ),
                     ),
                     SizedBox(height: 12),
-                    widget.module.sections.isEmpty
+                    _currentModule.sections.isEmpty
                         ? Center(
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 40),
@@ -231,16 +265,16 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                         : ListView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            itemCount: widget.module.sections.length,
+                            itemCount: _currentModule.sections.length,
                             itemBuilder: (context, index) {
-                              final section = widget.module.sections[index];
+                              final section = _currentModule.sections[index];
                               final Color sectionColor = SectionColors.base(
                                 section.color,
                               );
 
                               final progress = calculateSectionProgressDouble(section, _completedLessons);
-                              final totalLessons = widget.book.getEstimatedLessonsForSection(section);
-                              final totalUnits = widget.book.getEstimatedUnitsForSection(section);
+                              final totalLessons = _currentBook.getEstimatedLessonsForSection(section);
+                              final totalUnits = _currentBook.getEstimatedUnitsForSection(section);
 
                               _sectionKeys.putIfAbsent(index, () => GlobalKey());
                               final key = _sectionKeys[index]!;
@@ -282,12 +316,12 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                                         context,
                                         MaterialPageRoute(
                                           builder: (_) => MainLayoutScreen(
-                                            book: widget.book,
+                                            book: _currentBook,
                                             initialModuleIdx: widget.moduleIdx,
                                             initialSectionIdx: index,
                                           ),
                                         ),
-                                      ).then((_) => _loadProgress());
+                                      ).then((_) => _refreshBookFromStorage());
                                     },
                                     onLongPress: () =>
                                         _showSectionLongPressMenu(widget.moduleIdx, index),
@@ -542,6 +576,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
       sectionIdx,
     );
 
+    if (!mounted) return;
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: currentDeadline ?? DateTime.now().add(Duration(days: 7)),
@@ -564,12 +599,13 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
 
     if (picked != null) {
       await DeadlineService.instance.setSectionDeadline(
-        widget.book.id,
+        _currentBook.id,
         widget.moduleIdx,
         sectionIdx,
         picked,
       );
       await _loadDeadlines();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Deadline set to ${picked.toLocal().toString().substring(0, 10)}')),
       );
@@ -632,11 +668,11 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
     final List<_BookmarkMatch> matches = [];
 
     for (var bm in bookmarks) {
-      if (bm.bookId != widget.book.id) continue;
+      if (bm.bookId != _currentBook.id) continue;
       bool found = false;
-      for (int m = 0; m < widget.book.modules.length; m++) {
+      for (int m = 0; m < _currentBook.modules.length; m++) {
         if (m != widget.moduleIdx) continue;
-        final module = widget.book.modules[m];
+        final module = _currentBook.modules[m];
         for (int s = 0; s < module.sections.length; s++) {
           final section = module.sections[s];
           for (int u = 0; u < section.units.length; u++) {
@@ -934,16 +970,20 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
       height: 48,
       width: buttonWidth,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: context.colors.isDark
+            ? color.withValues(alpha: 0.15)
+            : Colors.white.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: _targetButtonExpanded ? color.withValues(alpha: 0.3) : Colors.transparent,
-          width: _targetButtonExpanded ? 1.5 : 0.0,
+          color: _targetButtonExpanded
+              ? color.withValues(alpha: 0.4)
+              : (context.colors.isDark ? color.withValues(alpha: 0.2) : color.withValues(alpha: 0.3)),
+          width: _targetButtonExpanded ? 1.5 : 1.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 6,
+            color: context.colors.shadow,
+            blurRadius: 8,
             offset: const Offset(0, 3),
           ),
         ],

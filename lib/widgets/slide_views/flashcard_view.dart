@@ -68,55 +68,77 @@ class _FlashcardViewState extends State<FlashcardView> {
                           ..rotateY(showBack ? math.pi : 0),
                         child: Container(
                           width: double.infinity,
-                          constraints: BoxConstraints(minHeight: 260),
-                          padding: const EdgeInsets.all(24),
+                          constraints: const BoxConstraints(minHeight: 260),
                           decoration: BoxDecoration(
                             color: showBack
-                                ? AppTheme.duoGreen.withValues(alpha: 0.08)
-                                : context.colors.surfaceAlt,
+                                ? AppTheme.duoGreen.withValues(alpha: 0.12)
+                                : (context.colors.isDark
+                                    ? AppTheme.duoBlue.withValues(alpha: 0.1)
+                                    : Colors.white),
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
                               color: showBack
-                                  ? AppTheme.duoGreen.withValues(alpha: 0.5)
-                                  : AppTheme.duoBlue.withValues(alpha: 0.4),
+                                  ? AppTheme.duoGreen
+                                  : AppTheme.duoBlue.withValues(alpha: 0.5),
                               width: 2,
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: (showBack ? AppTheme.duoGreen : AppTheme.duoBlue).withValues(alpha: 0.1),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
+                          clipBehavior: Clip.antiAlias,
                           child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
-                                showBack
-                                    ? 'ANSWER'
-                                    : 'RECALL, THEN TAP TO FLIP',
-                                style: TextStyle(
-                                  color: showBack
-                                      ? AppTheme.duoGreen
-                                      : context.colors.textFaint,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 10,
-                                  letterSpacing: 1.5,
+                              Container(
+                                height: 4,
+                                color: showBack ? AppTheme.duoGreen : AppTheme.duoBlue,
+                              ),
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(24),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        showBack
+                                            ? 'ANSWER'
+                                            : 'RECALL, THEN TAP TO FLIP',
+                                        style: TextStyle(
+                                          color: showBack
+                                              ? AppTheme.duoGreen
+                                              : context.colors.textFaint,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 10,
+                                          letterSpacing: 1.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      MathMarkdown(
+                                        data: showBack
+                                            ? (widget.slide.blankAnswer ?? '')
+                                            : widget.slide.content,
+                                        textStyle: TextStyle(
+                                          fontSize: 19,
+                                          color: context.colors.textPrimary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      if (!showBack) ...[
+                                        const SizedBox(height: 20),
+                                        Icon(
+                                          LucideIcons.refreshCw,
+                                          color: context.colors.textFaint,
+                                          size: 18,
+                                        ),
+                                      ],
+                                    ],
+                                  ),
                                 ),
                               ),
-                              SizedBox(height: 16),
-                              MathMarkdown(
-                                data: showBack
-                                    ? (widget.slide.blankAnswer ?? '')
-                                    : widget.slide.content,
-                                textStyle: TextStyle(
-                                  fontSize: 19,
-                                  color: context.colors.textPrimary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              if (!showBack) ...[
-                                SizedBox(height: 20),
-                                Icon(
-                                  LucideIcons.refreshCw,
-                                  color: context.colors.textFaint,
-                                  size: 18,
-                                ),
-                              ],
                             ],
                           ),
                         ),

@@ -98,26 +98,73 @@ class QuizView extends StatelessWidget {
                 // Fallback to hide empty dark container if AI fails to populate content
                 if (slide.content.isNotEmpty)
                   Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: AppTheme.glassOf(context),
-                    child: MathMarkdown(
-                      data: slide.content,
-                      textStyle: TextStyle(
-                        fontSize: 18,
-                        color: context.colors.textPrimary,
-                        fontWeight: FontWeight.bold,
+                    decoration: BoxDecoration(
+                      color: context.colors.isDark
+                          ? AppTheme.glassOf(context).color
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AppTheme.duoBlue.withValues(alpha: 0.3),
+                        width: 1.5,
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.duoBlue.withValues(alpha: 0.08),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Container(
+                          height: 4,
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [AppTheme.duoBlue, AppTheme.duoViolet, AppTheme.duoGreen],
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: MathMarkdown(
+                            data: slide.content,
+                            textStyle: TextStyle(
+                              fontSize: 18,
+                              color: context.colors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
 
                 if (slide.content.isNotEmpty) const SizedBox(height: 24),
 
                 if (slide.options != null)
-                  ...slide.options!.map((opt) {
+                  ...slide.options!.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final opt = entry.value;
                     final isSelected = selectedOptionId == opt.id;
+                    final optionLetter = String.fromCharCode(65 + index);
+                    final badgeColors = [
+                      AppTheme.duoBlue,
+                      AppTheme.duoViolet,
+                      AppTheme.duoOrange,
+                      context.colors.secondary,
+                      AppTheme.duoGreen,
+                    ];
+                    final optionAccent = badgeColors[index % badgeColors.length];
 
-                    Color borderColor = context.colors.outline;
-                    Color bgColor = context.colors.surfaceAlt;
+                    Color borderColor = context.colors.isDark
+                        ? optionAccent.withValues(alpha: 0.3)
+                        : optionAccent.withValues(alpha: 0.4);
+                    Color bgColor = context.colors.isDark
+                        ? optionAccent.withValues(alpha: 0.08)
+                        : optionAccent.withValues(alpha: 0.06);
 
                     if (isAnswered) {
                       if (opt.isCorrect) {
@@ -130,8 +177,8 @@ class QuizView extends StatelessWidget {
                         bgColor = Colors.transparent;
                       }
                     } else if (isSelected) {
-                      borderColor = AppTheme.duoBlue;
-                      bgColor = AppTheme.duoBlue.withValues(alpha: 0.2);
+                      borderColor = optionAccent;
+                      bgColor = optionAccent.withValues(alpha: 0.22);
                     }
 
                     return Padding(
@@ -149,31 +196,65 @@ class QuizView extends StatelessWidget {
                                 ? null
                                 : () => _editOption(context, opt),
                             borderRadius: BorderRadius.circular(16),
-                            child: Container(
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
                               padding: EdgeInsets.fromLTRB(
-                                16,
-                                16,
-                                onUpdateSlide == null ? 16 : 36,
-                                16,
+                                14,
+                                14,
+                                onUpdateSlide == null ? 14 : 34,
+                                14,
                               ),
-                              constraints: BoxConstraints(minHeight: 48),
-                              alignment: Alignment.centerLeft,
+                              constraints: const BoxConstraints(minHeight: 52),
                               decoration: BoxDecoration(
                                 color: bgColor,
                                 border: Border.all(
                                   color: borderColor,
-                                  width: 2,
+                                  width: isSelected ? 2.5 : 1.5,
                                 ),
                                 borderRadius: BorderRadius.circular(16),
                               ),
-                              child: MathMarkdown(
-                                data: opt.text,
-                                selectable: false,
-                                textStyle: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: context.colors.textPrimary,
-                                ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 28,
+                                    height: 28,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? optionAccent
+                                          : optionAccent.withValues(alpha: 0.18),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: optionAccent.withValues(alpha: 0.4),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      optionLetter,
+                                      style: TextStyle(
+                                        color: isSelected
+                                            ? Colors.white
+                                            : (context.colors.isDark
+                                                ? optionAccent
+                                                : optionAccent),
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: MathMarkdown(
+                                      data: opt.text,
+                                      selectable: false,
+                                      textStyle: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: context.colors.textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),

@@ -1066,7 +1066,7 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(
               width: double.infinity,
               child: DuoButton(
-                text: 'Upload a PDF',
+                text: 'Create!',
                 color: AppTheme.duoGreen,
                 shadowColor: AppTheme.duoGreenDark,
                 onPressed: () {
@@ -3558,7 +3558,7 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               color: isHovered
                   ? AppTheme.duoBlue.withValues(alpha: 0.15)
-                  : context.colors.surfaceAlt,
+                  : context.colors.surface,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isHovered ? AppTheme.duoBlue : context.colors.outline,
@@ -3577,7 +3577,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: CircularProgressIndicator(
                         value: progress,
                         strokeWidth: 3.5,
-                        backgroundColor: context.colors.surfaceAlt,
+                        backgroundColor: context.colors.isDark
+                            ? context.colors.outline
+                            : AppTheme.duoBlue.withValues(alpha: 0.15),
                         valueColor: AlwaysStoppedAnimation<Color>(
                           progress == 1.0
                               ? AppTheme.duoGreen

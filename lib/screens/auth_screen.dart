@@ -100,7 +100,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Welcome to Duofy',
+                  'Welcome to Flow',
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.w900,

@@ -186,10 +186,24 @@ class _MatchingViewState extends State<MatchingView> {
             alignment: Alignment.centerLeft,
             decoration: BoxDecoration(
               color: bound
-                  ? color.withValues(alpha: 0.12)
-                  : context.colors.surfaceAlt,
+                  ? color.withValues(alpha: 0.16)
+                  : (context.colors.isDark
+                      ? color.withValues(alpha: 0.06)
+                      : Colors.white),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: border, width: 2),
+              border: Border.all(
+                color: border == context.colors.outline
+                    ? color.withValues(alpha: 0.3)
+                    : border,
+                width: highlighted || bound ? 2.5 : 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: (bound ? color : border).withValues(alpha: 0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: child,
           ),
@@ -210,9 +224,41 @@ class _MatchingViewState extends State<MatchingView> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: AppTheme.glassOf(context),
-                  child: _titleWidget,
+                  decoration: BoxDecoration(
+                    color: context.colors.isDark
+                        ? context.colors.surface
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: AppTheme.duoViolet.withValues(alpha: 0.3),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.duoViolet.withValues(alpha: 0.08),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Container(
+                        height: 4,
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [AppTheme.duoViolet, Color(0xFF0284C7), AppTheme.duoGreen],
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: _titleWidget,
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 20),
                 Row(

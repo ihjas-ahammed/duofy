@@ -68,17 +68,49 @@ class _OrderingViewState extends State<OrderingView> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
-            padding: const EdgeInsets.all(20),
-            decoration: AppTheme.glassOf(context),
-            child: MathMarkdown(
-              data: widget.slide.content.isNotEmpty
-                  ? widget.slide.content
-                  : 'Drag the steps into the correct order.',
-              textStyle: TextStyle(
-                fontSize: 17,
-                color: context.colors.textPrimary,
-                fontWeight: FontWeight.bold,
+            decoration: BoxDecoration(
+              color: context.colors.isDark
+                  ? context.colors.surface
+                  : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppTheme.duoViolet.withValues(alpha: 0.3),
+                width: 1.5,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.duoViolet.withValues(alpha: 0.08),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  height: 4,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppTheme.duoViolet, AppTheme.duoBlue, AppTheme.duoGreen],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: MathMarkdown(
+                    data: widget.slide.content.isNotEmpty
+                        ? widget.slide.content
+                        : 'Drag the steps into the correct order.',
+                    textStyle: TextStyle(
+                      fontSize: 17,
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),
@@ -98,11 +130,21 @@ class _OrderingViewState extends State<OrderingView> {
               },
               itemBuilder: (context, i) {
                 final item = _current[i];
+                final stepColors = [
+                  AppTheme.duoBlue,
+                  AppTheme.duoViolet,
+                  AppTheme.duoOrange,
+                  context.colors.secondary,
+                  AppTheme.duoGreen,
+                ];
+                final stepAccent = stepColors[i % stepColors.length];
+
                 final resultColor = widget.isAnswered
                     ? (i < correct.length && correct[i] == item
                           ? AppTheme.duoGreen
                           : AppTheme.duoRed)
                     : null;
+
                 return Container(
                   key: ValueKey('order-$item'),
                   margin: const EdgeInsets.only(bottom: 10),
@@ -111,12 +153,23 @@ class _OrderingViewState extends State<OrderingView> {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: context.colors.surfaceAlt,
+                    color: resultColor != null
+                        ? resultColor.withValues(alpha: 0.12)
+                        : (context.colors.isDark
+                            ? stepAccent.withValues(alpha: 0.08)
+                            : Colors.white),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: resultColor ?? context.colors.outline,
-                      width: 2,
+                      color: resultColor ?? stepAccent.withValues(alpha: 0.4),
+                      width: 1.5,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (resultColor ?? stepAccent).withValues(alpha: 0.06),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Row(
                     children: [
@@ -125,15 +178,18 @@ class _OrderingViewState extends State<OrderingView> {
                         height: 28,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: (resultColor ?? AppTheme.duoBlue).withValues(
-                            alpha: 0.15,
+                          color: (resultColor ?? stepAccent).withValues(
+                            alpha: 0.18,
                           ),
                           shape: BoxShape.circle,
+                          border: Border.all(
+                            color: (resultColor ?? stepAccent).withValues(alpha: 0.4),
+                          ),
                         ),
                         child: Text(
                           '${i + 1}',
                           style: TextStyle(
-                            color: resultColor ?? AppTheme.duoBlue,
+                            color: resultColor ?? stepAccent,
                             fontWeight: FontWeight.w900,
                             fontSize: 13,
                           ),

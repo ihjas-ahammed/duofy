@@ -984,8 +984,13 @@ class _SourcePdfUploadScreenState extends State<SourcePdfUploadScreen> {
 
 class DocumentStorePickerDialog extends StatefulWidget {
   final bool forSyllabus;
+  final bool forPyq;
 
-  const DocumentStorePickerDialog({super.key, required this.forSyllabus});
+  const DocumentStorePickerDialog({
+    super.key,
+    this.forSyllabus = false,
+    this.forPyq = false,
+  });
 
   @override
   State<DocumentStorePickerDialog> createState() =>
@@ -1007,9 +1012,9 @@ class DocumentStorePickerDialogState
   @override
   void initState() {
     super.initState();
-    _selectedCategory = widget.forSyllabus
-        ? DocCategory.syllabus
-        : DocCategory.reference;
+    _selectedCategory = widget.forPyq
+        ? DocCategory.pyq
+        : (widget.forSyllabus ? DocCategory.syllabus : DocCategory.reference);
     _initCacheDir();
     _loadFiles();
   }
@@ -1185,18 +1190,27 @@ class DocumentStorePickerDialogState
               ),
               child: Row(
                 children: [
-                  Expanded(
-                    child: _buildTab(
-                      DocCategory.reference,
-                      'Reference',
-                      LucideIcons.bookOpen,
+                  if (!widget.forPyq) ...[
+                    Expanded(
+                      child: _buildTab(
+                        DocCategory.reference,
+                        'Reference',
+                        LucideIcons.bookOpen,
+                      ),
                     ),
-                  ),
+                    Expanded(
+                      child: _buildTab(
+                        DocCategory.syllabus,
+                        'Syllabus',
+                        LucideIcons.fileSpreadsheet,
+                      ),
+                    ),
+                  ],
                   Expanded(
                     child: _buildTab(
-                      DocCategory.syllabus,
-                      'Syllabus',
-                      LucideIcons.fileSpreadsheet,
+                      DocCategory.pyq,
+                      'PYQs',
+                      LucideIcons.fileQuestion,
                     ),
                   ),
                 ],
