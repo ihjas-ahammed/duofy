@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import '../main.dart' show scaffoldMessengerKey;
 import '../models/app_models.dart';
 import '../models/ai_task.dart';
+import 'error_capture_service.dart';
 import 'pdf_service.dart';
 import 'database_service.dart';
 import 'ai_service.dart';
@@ -169,13 +170,21 @@ class GenerationManager extends ChangeNotifier {
   /// messenger (e.g. during startup) is silently ignored.
   void _notifyTaskFailure(AiTask task) {
     try {
+      final reason = task.errorMessage ?? 'Unknown error';
+      ErrorCaptureService.instance.reportError(
+        reason,
+        null,
+        category: 'Generation Error',
+        processName: task.title,
+      );
+
       final messenger = scaffoldMessengerKey.currentState;
       if (messenger == null) return;
-      var reason = task.errorMessage ?? 'Unknown error';
-      if (reason.length > 120) reason = '${reason.substring(0, 120)}…';
+      var shortReason = reason;
+      if (shortReason.length > 120) shortReason = '${shortReason.substring(0, 120)}…';
       messenger.showSnackBar(
         SnackBar(
-          content: Text('AI task failed: ${task.title}\n$reason'),
+          content: Text('AI task failed: ${task.title}\n$shortReason'),
           backgroundColor: const Color(0xFFB00020),
           duration: const Duration(seconds: 5),
         ),

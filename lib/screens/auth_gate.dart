@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../services/fb/fb_auth.dart';
 import '../services/global_state.dart';
+import '../widgets/realtime_progress_bar.dart';
 import 'home_screen.dart';
 import 'auth_screen.dart';
 import 'onboarding/onboarding_screen.dart';
@@ -37,7 +38,16 @@ class AuthGate extends StatelessWidget {
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Scaffold(
-                    body: Center(child: CircularProgressIndicator()),
+                    body: Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 24.0),
+                        child: RealtimeProgressBar(
+                          title: 'Connecting to Auth Service',
+                          progress: 0.50,
+                          processName: 'Verifying user session...',
+                        ),
+                      ),
+                    ),
                   );
                 }
                 

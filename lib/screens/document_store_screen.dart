@@ -1635,27 +1635,141 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
               child: PdfThumbnailWidget(pdfObj: file, cloudFiles: _files),
             ),
 
-            // 2. Subtle Cloud status indicator
-            if (!isCached)
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: context.colors.outline),
+            // 2. Top Bar (Cloud / Sync Status Indicator & Overflow Menu)
+            Positioned(
+              top: 0,
+              left: 10,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (!isCached)
+                    Container(
+                      height: 28,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.white24, width: 0.8),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(LucideIcons.cloud, color: Colors.white70, size: 12),
+                          SizedBox(width: 4),
+                          Text(
+                            'Cloud',
+                            style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    Container(
+                      height: 28,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.duoGreen.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(LucideIcons.check, color: Colors.white, size: 12),
+                          SizedBox(width: 4),
+                          Text(
+                            'Saved',
+                            style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  
+                  // Top-Right Compact Menu Button
+                  Material(
+                    color: Colors.transparent,
+                    child: PopupMenuButton<String>(
+                      icon: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.7),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white24, width: 0.8),
+                        ),
+                        child: const Icon(LucideIcons.moreVertical, color: Colors.white, size: 14),
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 140),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      color: context.colors.surface,
+                      onSelected: (val) {
+                        if (val == 'view') {
+                          _downloadAndView(file);
+                        } else if (val == 'redownload') {
+                          _downloadAndView(file, forceRedownload: true);
+                        } else if (val == 'delete') {
+                          _deleteFile(file);
+                        } else if (val == 'menu') {
+                          _showContextMenu(file);
+                        }
+                      },
+                      itemBuilder: (ctx) => [
+                        PopupMenuItem(
+                          value: 'view',
+                          height: 36,
+                          child: Row(
+                            children: [
+                              Icon(isCached ? LucideIcons.eye : LucideIcons.download, size: 14, color: isCached ? AppTheme.duoBlue : AppTheme.duoGreen),
+                              const SizedBox(width: 8),
+                              Text(isCached ? 'Open & View' : 'Download', style: TextStyle(fontSize: 12, color: ctx.colors.textPrimary, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                        if (isCached)
+                          PopupMenuItem(
+                            value: 'redownload',
+                            height: 36,
+                            child: Row(
+                              children: [
+                                Icon(LucideIcons.refreshCw, size: 14, color: ctx.colors.textSecondary),
+                                const SizedBox(width: 8),
+                                Text('Redownload', style: TextStyle(fontSize: 12, color: ctx.colors.textPrimary, fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                          ),
+                        PopupMenuItem(
+                          value: 'menu',
+                          height: 36,
+                          child: Row(
+                            children: [
+                              Icon(LucideIcons.settings, size: 14, color: ctx.colors.textSecondary),
+                              const SizedBox(width: 8),
+                              Text('Options', style: TextStyle(fontSize: 12, color: ctx.colors.textPrimary, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuDivider(height: 1),
+                        PopupMenuItem(
+                          value: 'delete',
+                          height: 36,
+                          child: const Row(
+                            children: [
+                              Icon(LucideIcons.trash2, size: 14, color: AppTheme.duoRed),
+                              SizedBox(width: 8),
+                              Text('Delete', style: TextStyle(fontSize: 12, color: AppTheme.duoRed, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: const Icon(
-                    LucideIcons.cloud,
-                    color: Colors.white70,
-                    size: 10,
-                  ),
-                ),
+                ],
               ),
+            ),
 
-            // 3. Bottom Gradient & Actions
+            // 3. Bottom Gradient & Actions Container
             Positioned(
               bottom: 0,
               left: 0,
@@ -1664,8 +1778,8 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.black.withValues(alpha: 0.9),
-                      Colors.black.withValues(alpha: 0.5),
+                      Colors.black.withValues(alpha: 0.95),
+                      Colors.black.withValues(alpha: 0.65),
                       Colors.transparent,
                     ],
                     begin: Alignment.bottomCenter,
@@ -1674,9 +1788,9 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                 ),
                 padding: const EdgeInsets.only(
                   left: 10,
-                  right: 6,
+                  right: 8,
                   bottom: 8,
-                  top: 24,
+                  top: 20,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1689,72 +1803,59 @@ class _DocumentStoreScreenState extends State<DocumentStoreScreen> {
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
+                        height: 1.2,
                       ),
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 4),
 
-                    // Actions
+                    // Actions & Size Bar
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          file.sizeFormatted,
-                          style: TextStyle(
-                            color: context.colors.textFaint,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
+                        Expanded(
+                          child: Text(
+                            file.sizeFormatted,
+                            style: TextStyle(
+                              color: context.colors.textFaint,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // View/Download
-                            IconButton(
-                              icon: Icon(
-                                isCached
-                                    ? LucideIcons.eye
-                                    : LucideIcons.download,
-                                color: isCached
-                                    ? AppTheme.duoBlue
-                                    : AppTheme.duoGreen,
-                                size: 16,
-                              ),
-                              constraints: BoxConstraints(),
-                              padding: const EdgeInsets.all(6),
-                              tooltip: isCached ? 'Open & View' : 'Download',
-                              onPressed: () => _downloadAndView(file),
+                        const SizedBox(width: 4),
+                        // Primary View/Download action button
+                        InkWell(
+                          onTap: () => _downloadAndView(file),
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isCached ? AppTheme.duoBlue : AppTheme.duoGreen,
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            // Redownload / Retry
-                            if (isCached)
-                              IconButton(
-                                icon: Icon(
-                                  LucideIcons.refreshCw,
-                                  color: context.colors.textSecondary,
-                                  size: 16,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isCached ? LucideIcons.eye : LucideIcons.download,
+                                  color: Colors.white,
+                                  size: 12,
                                 ),
-                                constraints: const BoxConstraints(),
-                                padding: const EdgeInsets.all(6),
-                                tooltip: 'Redownload (Force Fetch)',
-                                onPressed: () => _downloadAndView(
-                                  file,
-                                  forceRedownload: true,
+                                const SizedBox(width: 4),
+                                Text(
+                                  isCached ? 'View' : 'Get',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                            // Delete
-                            IconButton(
-                              icon: const Icon(
-                                LucideIcons.trash2,
-                                color: AppTheme.duoRed,
-                                size: 16,
-                              ),
-                              constraints: const BoxConstraints(),
-                              padding: const EdgeInsets.all(6),
-                              tooltip: 'Delete',
-                              onPressed: () => _deleteFile(file),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ],
                     ),

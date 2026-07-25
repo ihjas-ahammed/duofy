@@ -17,6 +17,8 @@ import 'dart:ui';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'screens/app_crash_recovery_screen.dart';
+import 'services/error_capture_service.dart';
+import 'widgets/global_error_capture_layer.dart';
 
 // Global Navigation Key to handle routing from notifications anywhere
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -288,11 +290,20 @@ void main() async {
     FlutterError.onError = (FlutterErrorDetails details) {
       FlutterError.presentError(details);
       debugPrint("FLUTTER FRAMEWORK ERROR: ${details.exception}");
+      ErrorCaptureService.instance.reportError(
+        details.exception,
+        details.stack,
+        category: 'UI Render Error',
+      );
     };
 
     PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
       debugPrint("UNCAUGHT PROCESS ERROR: $error\n$stack");
-      AppCrashRecoveryScreen.recordCrash(error, stack);
+      ErrorCaptureService.instance.reportError(
+        error,
+        stack,
+        category: 'Process Error',
+      );
       if (!_looksNonFatal(error)) {
         showGlobalErrorAlert(error, stack);
       }
@@ -379,6 +390,14 @@ void main() async {
       startupError = "${startupError ?? ""}\nPrefs Init Error: $e\n$stack";
     }
 
+    if (startupError != null) {
+      ErrorCaptureService.instance.reportError(
+        startupError!,
+        null,
+        category: 'Startup Error',
+      );
+    }
+
     if (recordedCrash != null) {
       runApp(AppCrashRecoveryScreen(
         error: recordedCrash['error'] ?? 'Unknown App Crash',
@@ -392,7 +411,11 @@ void main() async {
     }
   }, (Object error, StackTrace stack) {
     debugPrint("ZONED GLOBAL ERROR: $error\n$stack");
-    AppCrashRecoveryScreen.recordCrash(error, stack);
+    ErrorCaptureService.instance.reportError(
+      error,
+      stack,
+      category: 'Runtime Error',
+    );
     if (!_looksNonFatal(error)) {
       showGlobalErrorAlert(error, stack);
     }
@@ -431,11 +454,13 @@ class FlowApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
-      builder: (context, child) => Stack(
-        children: [
-          ?child,
-          const Positioned.fill(child: WalkthroughBanner()),
-        ],
+      builder: (context, child) => GlobalErrorCaptureLayer(
+        child: Stack(
+          children: [
+            ?child,
+            const Positioned.fill(child: WalkthroughBanner()),
+          ],
+        ),
       ),
       home: const AuthGate(),
       shortcuts: <ShortcutActivator, Intent>{

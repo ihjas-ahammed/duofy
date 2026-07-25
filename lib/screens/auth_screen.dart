@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../services/fb/fb_auth.dart';
 import '../services/global_state.dart';
+import '../services/loading_progress_controller.dart';
+import '../services/error_capture_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/responsive_center.dart';
+import '../widgets/realtime_progress_bar.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -49,34 +52,45 @@ class _AuthScreenState extends State<AuthScreen> {
         : 'duofy_secret_${rawInput.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '')}';
 
     setState(() => _isLoading = true);
+    LoadingProgressController.instance.startLoading('Validating input...');
 
     try {
+      await Future.delayed(const Duration(milliseconds: 250));
+      LoadingProgressController.instance.updateStep(0.40, 'Authenticating user...');
       try {
         await FbAuth.instance.signInWithEmailAndPassword(
           email: email,
           password: password,
         );
+        LoadingProgressController.instance.updateStep(0.85, 'Loading user session...');
       } catch (_) {
         // Fallback: automatically create account if it doesn't exist yet
+        LoadingProgressController.instance.updateStep(0.60, 'Creating new account...');
         final user = await FbAuth.instance.createUserWithEmailAndPassword(
           email: email,
           password: password,
         );
+        LoadingProgressController.instance.updateStep(0.85, 'Updating user profile...');
         await user.updateDisplayName(username);
       }
-    } on FbAuthException catch (e) {
+      LoadingProgressController.instance.updateStep(1.0, 'Login complete!');
+      await Future.delayed(const Duration(milliseconds: 200));
+    } on FbAuthException catch (e, stack) {
+      ErrorCaptureService.instance.reportError(e, stack, category: 'Auth Error', processName: 'Login');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.message ?? 'Authentication error')),
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      ErrorCaptureService.instance.reportError(e, stack, category: 'Auth Error', processName: 'Login');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Login error: $e')),
         );
       }
     } finally {
+      LoadingProgressController.instance.stopLoading();
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -180,8 +194,15 @@ class _AuthScreenState extends State<AuthScreen> {
                 const SizedBox(height: 24),
 
                 if (_isLoading)
-                  const Center(
-                    child: CircularProgressIndicator(color: AppTheme.duoBlue),
+                  ValueListenableBuilder<LoadingStep>(
+                    valueListenable: LoadingProgressController.instance.loadingNotifier,
+                    builder: (context, step, _) {
+                      return RealtimeProgressBar(
+                        title: 'Signing In',
+                        progress: step.progress,
+                        processName: step.processName,
+                      );
+                    },
                   )
                 else
                   DuoButton(

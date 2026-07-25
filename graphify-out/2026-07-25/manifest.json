@@ -1695,8 +1695,8 @@
     "semantic_hash": ""
   },
   "lib/widgets/slide_views/matching_view.dart": {
-    "mtime": 1784958060.9071782,
-    "ast_hash": "4a57bf4c7ef8b6442cff3c81a218a3b1",
+    "mtime": 1784964335.7056272,
+    "ast_hash": "0c9abb31c9914260b12c8fe18557b918",
     "semantic_hash": ""
   },
   "lib/widgets/slide_views/ordering_view.dart": {
@@ -2195,33 +2195,43 @@
     "semantic_hash": ""
   },
   "lib/screens/ide/code_ide_screen.dart": {
-    "mtime": 1784964271.4203243,
-    "ast_hash": "ebcf4d0a384879468bf800fae82c9beb",
+    "mtime": 1784965308.7959616,
+    "ast_hash": "0c355ba133bfa84482abcae764567f74",
     "semantic_hash": ""
   },
   "lib/screens/ide/html_ide_screen.dart": {
-    "mtime": 1784964253.9299526,
-    "ast_hash": "49d6586e8354c87f2c8af58997b2d35b",
+    "mtime": 1784965264.3653464,
+    "ast_hash": "36706d580065815db1164d51003b7088",
     "semantic_hash": ""
   },
   "lib/screens/ide/latex_ide_screen.dart": {
-    "mtime": 1784964259.559501,
-    "ast_hash": "205c2d4a8f4abb42bc5ded1f6833ef5f",
+    "mtime": 1784965273.8735032,
+    "ast_hash": "a9afb053275f8db2aaa88715cf4b72a8",
     "semantic_hash": ""
   },
   "lib/screens/ide/python_notebook_screen.dart": {
-    "mtime": 1784964248.5394237,
-    "ast_hash": "be359333cffde924b7a3f3957e80cc25",
+    "mtime": 1784965254.7051828,
+    "ast_hash": "6221379d0fb8baca89893bdb1c6acacd",
     "semantic_hash": ""
   },
   "lib/screens/ide/universal_code_runner_screen.dart": {
-    "mtime": 1784964265.4892626,
-    "ast_hash": "91660525bef57b299fe43e47daded6ab",
+    "mtime": 1784965281.9403172,
+    "ast_hash": "67a226378676de709fae544e92ed261c",
     "semantic_hash": ""
   },
   "lib/services/code_storage_service.dart": {
     "mtime": 1784964241.6567917,
     "ast_hash": "ffa3e41e9cddb507130d4c5737458662",
+    "semantic_hash": ""
+  },
+  "lib/services/ide_settings_service.dart": {
+    "mtime": 1784965240.8053396,
+    "ast_hash": "4fe010bcb3c4405cf02afc27360d616a",
+    "semantic_hash": ""
+  },
+  "lib/widgets/ide_config_dialog.dart": {
+    "mtime": 1784965245.3692577,
+    "ast_hash": "7d1d50a7fab34d7bdb2e06960df90c99",
     "semantic_hash": ""
   }
 }
