@@ -23,6 +23,7 @@ import '../widgets/next_up_card.dart';
 import '../widgets/smart_review_card.dart';
 import '../widgets/responsive_center.dart';
 import '../widgets/lazy_indexed_stack.dart';
+import '../widgets/realtime_progress_bar.dart';
 
 import 'package:flutter/foundation.dart';
 import 'main_layout_screen.dart';
@@ -58,6 +59,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, double> progressMap = {};
   List<String> _completedLessons = [];
   bool isLoading = true;
+  double loadingProgress = 0.15;
+  String loadingProcessName = "Initializing app storage...";
+  bool isSyncingBackground = false;
+  String backgroundSyncStatus = "";
   int _selectedTabIndex = 0;
 
   bool _isListView = true;
@@ -106,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     _prevActiveTasks = List.from(GenerationManager.instance.activeTasks);
     _loadAllData(force: false);
-    _syncRemoteData();
+    unawaited(_syncRemoteData());
 
     GenerationManager.instance.addListener(_handleGenerationTasksChange);
     _bookUpdateSubscription = GenerationManager.instance.bookUpdates.listen((
@@ -192,10 +197,30 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadAllData({bool force = false}) async {
+    if (mounted && isLoading) {
+      setState(() {
+        loadingProgress = 0.25;
+        loadingProcessName = "Reading local courses...";
+      });
+    }
     // 1. Fetch Local Cache immediately
     final fetched = await _db.fetchBooks(forceRefresh: false);
+
+    if (mounted && isLoading) {
+      setState(() {
+        loadingProgress = 0.50;
+        loadingProcessName = "Loading cached community courses & folders...";
+      });
+    }
     final globals = await _db.fetchGlobalBooks(useCacheOnly: true);
     final fetchedFolders = await _db.fetchFolders();
+
+    if (mounted && isLoading) {
+      setState(() {
+        loadingProgress = 0.75;
+        loadingProcessName = "Calculating lesson progress...";
+      });
+    }
     final completed = await ProgressService.getCompletedLessons();
     final completedSet = completed.toSet();
 
@@ -216,45 +241,47 @@ class _HomeScreenState extends State<HomeScreen> {
         progressMap = prog;
         _completedLessons = completed;
         folders = fetchedFolders;
+        loadingProgress = 1.0;
+        loadingProcessName = "Ready!";
         isLoading = false;
       });
     }
 
     // 2. Perform background sync if force is true
     if (force) {
-      _syncRemoteData();
+      unawaited(_syncRemoteData());
     }
   }
 
   Future<void> _syncRemoteData() async {
-    bool anyFailed = false;
+    if (mounted) {
+      setState(() {
+        isSyncingBackground = true;
+        backgroundSyncStatus = "Syncing cloud updates in background...";
+      });
+    }
     try {
       // Run sync operations in parallel to load faster (especially when offline or on a low network)
-      final results = await Future.wait([
+      final results = await Future.wait<dynamic>(<Future<dynamic>>[
         LearningSync.pullAndMerge().catchError((e) {
           print("[HomeScreen] pullAndMerge error: $e");
-          anyFailed = true;
           return false;
         }),
         _db.fetchBooks(forceRefresh: true)
             .catchError((e) {
               print("[HomeScreen] fetchBooks error: $e");
-              anyFailed = true;
               return <Book>[];
             }),
         _db.fetchGlobalBooks(useCacheOnly: false).catchError((e) {
           print("[HomeScreen] fetchGlobalBooks error: $e");
-          anyFailed = true;
           return <Book>[];
         }),
-        _db.fetchFolders().catchError((e) {
+        _db.fetchFolders(forceRefresh: true).catchError((e) {
           print("[HomeScreen] fetchFolders error: $e");
-          anyFailed = true;
           return <CourseFolder>[];
         }),
         ProgressService.getCompletedLessons().catchError((e) {
           print("[HomeScreen] getCompletedLessons error: $e");
-          anyFailed = true;
           return <String>[];
         }),
       ]);
@@ -280,21 +307,17 @@ class _HomeScreenState extends State<HomeScreen> {
           progressMap = prog;
           _completedLessons = completed;
           folders = fetchedFolders;
+          isSyncingBackground = false;
+          backgroundSyncStatus = "";
         });
-        if (anyFailed) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Some data couldn't sync — showing cached content"),
-            ),
-          );
-        }
       }
     } catch (e) {
       print("[HomeScreen] Background sync error: $e");
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Sync failed — showing cached content")),
-        );
+        setState(() {
+          isSyncingBackground = false;
+          backgroundSyncStatus = "";
+        });
       }
     }
   }
@@ -1521,8 +1544,15 @@ class _HomeScreenState extends State<HomeScreen> {
           if (isLoading) {
             return Scaffold(
               backgroundColor: context.colors.background,
-              body: const Center(
-                child: CircularProgressIndicator(color: AppTheme.duoBlue),
+              body: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: RealtimeProgressBar(
+                    title: 'Loading Flow',
+                    progress: loadingProgress,
+                    processName: loadingProcessName,
+                  ),
+                ),
               ),
             );
           }

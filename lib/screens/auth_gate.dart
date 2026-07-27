@@ -33,10 +33,19 @@ class AuthGate extends StatelessWidget {
               return const HomeScreen();
             }
             
+            // Local-first / fast loading: If currentUser is already cached, enter HomeScreen immediately
+            final currentUser = FbAuth.instance.currentUser;
+            if (currentUser != null && !forceAuth) {
+              return const HomeScreen();
+            }
+
             return StreamBuilder<FbUser?>(
               stream: FbAuth.instance.authStateChanges(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
+                  if (FbAuth.instance.currentUser != null && !forceAuth) {
+                    return const HomeScreen();
+                  }
                   return const Scaffold(
                     body: Center(
                       child: Padding(

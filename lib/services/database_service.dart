@@ -661,7 +661,7 @@ class DatabaseService {
     }
 
     // Cloud enabled: return local immediately unless a refresh was requested.
-    if (!forceRefresh && local.isNotEmpty) {
+    if (!forceRefresh) {
       return _sorted(local.values);
     }
 
@@ -871,7 +871,7 @@ class DatabaseService {
       }
     }
 
-    if (useCacheOnly && cachedGlobals.isNotEmpty) return cachedGlobals;
+    if (useCacheOnly) return cachedGlobals;
     // Community browsing needs the network; respect the local-first toggle unless forced.
     if (!forceNetwork && !await isCloudEnabled()) return cachedGlobals;
 
@@ -943,7 +943,7 @@ class DatabaseService {
     }
   }
 
-  Future<List<CourseFolder>> fetchFolders() async {
+  Future<List<CourseFolder>> fetchFolders({bool forceRefresh = false}) async {
     final prefs = await SharedPreferences.getInstance();
     final u = uid;
     final key = 'user_folders_$u';
@@ -958,7 +958,7 @@ class DatabaseService {
       }
     }
 
-    if (isGuestId(u) || !await isCloudEnabled()) {
+    if (!forceRefresh || isGuestId(u) || !await isCloudEnabled()) {
       return local;
     }
 

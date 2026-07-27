@@ -85,7 +85,7 @@ class LearningSync {
 
     await MetacognitionService.pullAndMerge();
     await db.syncUserSettingsToLocal();
-    await db.fetchFolders();
+    await db.fetchFolders(forceRefresh: true);
 
     final remote = await db.fetchLearningState();
     if (remote == null) return false;

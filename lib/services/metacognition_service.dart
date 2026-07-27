@@ -241,7 +241,7 @@ class MetacognitionService {
       );
     }
     await _writeQueue(prefs, queue);
-    await markSlideReviewedToday(slide.id);
+    await markSlideReviewedToday(slide.id, now: at);
     GlobalState.bumpProgress();
     push();
   }
@@ -355,32 +355,32 @@ class MetacognitionService {
     }
   }
 
-  static String _todayKey() {
-    final now = DateTime.now();
-    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  static String _todayKey([DateTime? now]) {
+    final n = now ?? DateTime.now();
+    return '${n.year}-${n.month.toString().padLeft(2, '0')}-${n.day.toString().padLeft(2, '0')}';
   }
 
-  static String get _reviewedTodayPrefKey => 'smart_review_done_${_uid}_${_todayKey()}';
+  static String _reviewedTodayPrefKey([DateTime? now]) => 'smart_review_done_${_uid}_${_todayKey(now)}';
 
-  static Future<Set<String>> getReviewedTodaySlideIds() async {
+  static Future<Set<String>> getReviewedTodaySlideIds({DateTime? now}) async {
     final prefs = await SharedPreferences.getInstance();
-    final list = prefs.getStringList(_reviewedTodayPrefKey) ?? [];
+    final list = prefs.getStringList(_reviewedTodayPrefKey(now)) ?? [];
     return list.toSet();
   }
 
-  static Future<void> markSlideReviewedToday(String slideId) async {
+  static Future<void> markSlideReviewedToday(String slideId, {DateTime? now}) async {
     final prefs = await SharedPreferences.getInstance();
-    final list = prefs.getStringList(_reviewedTodayPrefKey) ?? [];
+    final list = prefs.getStringList(_reviewedTodayPrefKey(now)) ?? [];
     if (!list.contains(slideId)) {
       list.add(slideId);
-      await prefs.setStringList(_reviewedTodayPrefKey, list);
+      await prefs.setStringList(_reviewedTodayPrefKey(now), list);
     }
   }
 
   static Future<List<ReviewItem>> dueItems({DateTime? now, bool excludeReviewedToday = true}) async {
     final prefs = await SharedPreferences.getInstance();
     final at = (now ?? DateTime.now()).millisecondsSinceEpoch;
-    final reviewedToday = excludeReviewedToday ? await getReviewedTodaySlideIds() : <String>{};
+    final reviewedToday = excludeReviewedToday ? await getReviewedTodaySlideIds(now: now) : <String>{};
 
     final due = _readQueue(prefs).values.where((r) {
       if (r.due > at) return false;

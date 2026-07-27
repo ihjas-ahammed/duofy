@@ -4,6 +4,13 @@ All notable changes to DuoFY are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com); versions follow the app's
 `major.minor.patch` scheme from `pubspec.yaml`.
 
+## [26.7.28] — 2026-07-28
+
+### Added & Improved
+- **Fast Local Loading & Background Sync**: Optimized initial loading path to load local cache and user session instantly (~0ms, same speed as offline). All cloud synchronization (remote courses, global library, folders, learning progress) now executes asynchronously in the background (`unawaited`).
+- **Real-Time Loading Status**: Integrated `RealtimeProgressBar` into initial loading screens and added real-time status process descriptions ("Reading local courses...", "Loading cached community courses & folders...", "Calculating lesson progress...", "Syncing cloud updates in background...").
+- **Organized Screenshots**: Organized root screenshot image files into `docs/screenshots/`.
+
 ## [26.7.25] — 2026-07-25
 
 ### Added & Improved
