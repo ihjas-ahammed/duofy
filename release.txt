@@ -1,7 +1,8 @@
-26.7.25
-2026072502
+26.8.1
+2026080101
 https://github.com/ihjas-ahammed/duofy/releases/latest
-- Overhaul PYQ tab screen with subject filtering and interactive solution rendering
-- Enhance LaTeX math parsing and rendering across all lesson slide views
-- Improve AI service resilience with multi-model fallback and structured response handling
-- Integrate metacognitive confidence rating and calibration tracking
+- Introduce Gamified Daily Goals with 20 predefined objective templates and infinite procedural goal generation
+- Real-time animated floating daily goal progress toasts during lessons and practice activities
+- Daily Goals stats integration and dedicated screen with objective progress, reward claiming, and streak progression
+- Daily Goals popup automatically presented on first daily app open when progress improvements exist
+- Default theme mode set to dark theme for maximum stability

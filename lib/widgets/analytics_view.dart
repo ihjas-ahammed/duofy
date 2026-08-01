@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../services/progress_service.dart';
 import '../services/database_service.dart';
+import '../services/daily_goals_service.dart';
+import '../models/daily_goal.dart';
+import '../screens/daily_goals_screen.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import 'calibration_card.dart';
@@ -410,7 +413,8 @@ class _AnalyticsViewState extends State<AnalyticsView> {
                   ],
                 ),
                 const SizedBox(height: 16),
-
+                _buildDailyGoalsCard(context),
+                const SizedBox(height: 16),
                 const CalibrationCard(),
 
                 // Last 7 Days XP Graph Card
@@ -843,6 +847,164 @@ class _AnalyticsViewState extends State<AnalyticsView> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildDailyGoalsCard(BuildContext context) {
+    return FutureBuilder<List<DailyGoal>>(
+      future: DailyGoalsService.instance.getTodayGoals(),
+      builder: (context, snapshot) {
+        final goals = snapshot.data ?? [];
+        final completedCount = goals.where((g) => g.isCompleted).length;
+        final totalCount = goals.where((g) => !g.isBonus).length;
+        final overallRatio = totalCount > 0 ? (completedCount / totalCount).clamp(0.0, 1.0) : 0.0;
+
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const DailyGoalsScreen()),
+            );
+          },
+          child: AppTheme.applyGlassBlur(
+            borderRadius: 24,
+            color: context.colors.glassStrong,
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: AppTheme.duoOrange.withValues(alpha: 0.3),
+                  width: 1.5,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppTheme.duoOrange.withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          LucideIcons.target,
+                          color: AppTheme.duoOrange,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'DAILY GOALS',
+                              style: TextStyle(
+                                color: AppTheme.duoOrange,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 10,
+                                letterSpacing: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '$completedCount of $totalCount Objectives Finished',
+                              style: TextStyle(
+                                color: context.colors.textPrimary,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 16,
+                                fontFamily: 'Nunito',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        LucideIcons.chevronRight,
+                        color: context.colors.textFaint,
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      height: 8,
+                      color: context.colors.surfaceAlt,
+                      child: FractionallySizedBox(
+                        alignment: Alignment.centerLeft,
+                        widthFactor: overallRatio,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: completedCount >= totalCount
+                                  ? [AppTheme.duoGreen, const Color(0xFF10B981)]
+                                  : [AppTheme.duoOrange, const Color(0xFFFF8C00)],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      for (final goal in goals.take(3)) ...[
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                            margin: const EdgeInsets.only(right: 6),
+                            decoration: BoxDecoration(
+                              color: goal.isCompleted
+                                  ? AppTheme.duoGreen.withValues(alpha: 0.1)
+                                  : context.colors.surfaceAlt,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: goal.isCompleted
+                                    ? AppTheme.duoGreen
+                                    : context.colors.outline,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  goal.isCompleted ? LucideIcons.checkCircle2 : goal.icon,
+                                  color: goal.isCompleted ? AppTheme.duoGreen : AppTheme.duoOrange,
+                                  size: 14,
+                                ),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    goal.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: goal.isCompleted
+                                          ? AppTheme.duoGreen
+                                          : context.colors.textSecondary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

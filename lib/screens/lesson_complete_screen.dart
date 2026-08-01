@@ -9,6 +9,7 @@ import '../services/global_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/combo_badge.dart';
+import '../widgets/daily_goals_complete_card.dart';
 
 class LessonCompleteScreen extends StatefulWidget {
   final int xpEarned;
@@ -435,7 +436,9 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen>
                     ],
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
+                const DailyGoalsCompleteCard(),
+                const SizedBox(height: 24),
                 _reflectionRow,
                 const SizedBox(height: 32),
                 SizedBox(width: 280, child: _continueButton),
@@ -488,7 +491,9 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen>
                 ),
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 16),
+            _staggered(0.5, const DailyGoalsCompleteCard()),
+            const SizedBox(height: 16),
             _reflectionRow,
             const SizedBox(height: 24),
             _continueButton,

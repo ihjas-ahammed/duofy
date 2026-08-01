@@ -87,6 +87,8 @@ class AppTheme {
   static const Color duoVioletDark = Color(0xFF7C3AED);
   static const Color duoOrange = Color(0xFFFFC94D);
   static const Color duoOrangeDark = Color(0xFFD97706);
+  static const Color duoYellow = Color(0xFFFBBF24);
+  static const Color duoYellowDark = Color(0xFFD97706);
 
   static const AppColors darkColors = AppColors(
     brightness: Brightness.dark,

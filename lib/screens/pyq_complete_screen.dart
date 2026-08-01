@@ -4,6 +4,7 @@ import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/responsive_center.dart';
 import '../widgets/math_markdown.dart';
+import '../widgets/daily_goals_complete_card.dart';
 
 class PyqCompleteScreen extends StatelessWidget {
   final List<Map<String, dynamic>> gradedResults;
@@ -115,7 +116,9 @@ class PyqCompleteScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 16),
+                      const DailyGoalsCompleteCard(),
+                      const SizedBox(height: 24),
 
                       Text(
                         'GRADED PYQ RESULTS',

@@ -44,6 +44,7 @@ import 'package:file_picker/file_picker.dart';
 import '../platform/io_shim.dart';
 import 'source_pdf_upload_screen.dart';
 import '../services/b2_service.dart';
+import '../widgets/daily_goals_popup.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -132,6 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       _checkForAppUpdate();
       _maybeStartWalkthrough();
+      DailyGoalsPopup.checkAndShow(context);
       // The writing-style survey is no longer forced on first launch — the
       // onboarding walkthrough handles first-run, and the survey lives on as
       // an optional Settings → Personalization card.

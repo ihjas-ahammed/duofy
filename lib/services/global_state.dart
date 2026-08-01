@@ -41,7 +41,7 @@ class GlobalState {
   /// `theme_mode` pref and persisted by the listener installed in main.dart,
   /// which also keeps AppTheme.currentBrightness in sync.
   static final ValueNotifier<ThemeMode> themeModeNotifier =
-      ValueNotifier<ThemeMode>(ThemeMode.system);
+      ValueNotifier<ThemeMode>(ThemeMode.dark);
 
   /// Power-user mode: reveals per-node generate/schedule menus, model
   /// ladders, concurrency, automation and experiments. Off by default for

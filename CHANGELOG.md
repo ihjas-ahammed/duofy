@@ -4,6 +4,15 @@ All notable changes to DuoFY are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com); versions follow the app's
 `major.minor.patch` scheme from `pubspec.yaml`.
 
+## [26.8.1] — 2026-08-01
+
+### Added & Improved
+- **Gamified Daily Goals System**: 20 pre-defined goal templates (lessons, XP, accuracy, units, modules, practice) + infinite procedural goal generation algorithm.
+- **Floating Progress Bar Toasts**: Real-time animated floating toasts notifying progress updates during lessons and practice activities.
+- **Stats Integration & Daily Goals Screen**: Integrated Daily Goals into Analytics view and built full screen with animated objective progress, reward claiming (+XP), and chest streak progression.
+- **Conditional Launch Popup**: Daily launch popup presenting objectives when progress improvements exist.
+- **Dark Theme Default**: Dark theme set as default mode across the app for optimal visual stability.
+
 ## [26.7.28] — 2026-07-28
 
 ### Added & Improved
