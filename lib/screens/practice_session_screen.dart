@@ -20,6 +20,7 @@ import '../services/progress_service.dart';
 import '../services/math_evaluator_service.dart';
 import 'pyq_complete_screen.dart';
 import 'lesson_complete_screen.dart';
+import '../widgets/combo_badge.dart';
 
 class PracticeSessionScreen extends StatefulWidget {
   final Book book;
@@ -509,6 +510,11 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     setState(() {
       _answered = true;
       _isCorrect = correct;
+      if (correct) {
+        GlobalState.incrementCombo();
+      } else {
+        GlobalState.resetCombo();
+      }
     });
   }
 
@@ -646,15 +652,34 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: Icon(LucideIcons.x),
-          onPressed: () => Navigator.pop(context),
+          icon: const Icon(LucideIcons.x),
+          onPressed: () {
+            GlobalState.resetCombo();
+            Navigator.pop(context);
+          },
         ),
-        title: LinearProgressIndicator(
-          value: progress,
-          backgroundColor: context.colors.outline,
-          color: AppTheme.duoViolet,
-          minHeight: 12,
-          borderRadius: BorderRadius.circular(6),
+        title: Row(
+          children: [
+            ValueListenableBuilder<int>(
+              valueListenable: GlobalState.comboNotifier,
+              builder: (context, combo, _) {
+                if (combo < 2) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: ComboBadge(combo: combo, isCompact: true),
+                );
+              },
+            ),
+            Expanded(
+              child: LinearProgressIndicator(
+                value: progress,
+                backgroundColor: context.colors.outline,
+                color: AppTheme.duoViolet,
+                minHeight: 12,
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+          ],
         ),
       ),
       body: ResponsiveCenter(

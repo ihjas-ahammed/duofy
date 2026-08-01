@@ -3,7 +3,15 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
 void showToast(BuildContext context, String message) {
-  final overlayState = Overlay.of(context);
+  final overlayState = Overlay.maybeOf(context, rootOverlay: true) ?? Overlay.maybeOf(context);
+  if (overlayState == null) {
+    try {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } catch (_) {}
+    return;
+  }
   final overlayEntry = OverlayEntry(
     builder: (context) => Positioned(
       bottom: 110.0,

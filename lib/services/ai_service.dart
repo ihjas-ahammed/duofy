@@ -2784,13 +2784,22 @@ Do not include any explanation or other text.
       final decoded = _cleanAndDecodeJson(text);
       final formatsJson = decoded['lessonFormats'] as List?;
       if (formatsJson != null) {
-        return formatsJson
+        final parsed = formatsJson
             .map(
               (f) => LessonFormat.fromJson(
                 f is Map ? Map<String, dynamic>.from(f) : {},
               ),
             )
             .toList();
+
+        final combinedText = '${section.title} ${section.description}';
+        final isProgCourse = Book.isProgrammingCourse(combinedText);
+
+        final filtered = isProgCourse
+            ? parsed
+            : parsed.where((f) => !Book.hasProgrammingSlidesOrName(f)).toList();
+
+        return filtered.take(10).toList();
       }
     } catch (e) {
       lastException = e as Exception;
@@ -2891,14 +2900,8 @@ Do not include any explanation or other text.
       final newFormats = <LessonFormat>[];
       final formatsData = jsonMap['newLessonFormats'] as List?;
 
-      final combinedText = '${bookContext.title} ${section.title} ${section.description}'.toLowerCase();
-      final programmingKw = [
-        'python', 'javascript', 'c++', 'cpp', 'java', 'html', 'css', 'sql', 'dart',
-        'rust', 'go', 'coding', 'programming', 'software engineering', 'data structures',
-        'algorithms', 'computer science', 'code syntax', 'web dev', 'react', 'flutter',
-        'compiler', 'interpreter'
-      ];
-      final isProgCourse = programmingKw.any((kw) => combinedText.contains(kw));
+      final combinedText = '${bookContext.title} ${bookContext.description} ${section.title} ${section.description}';
+      final isProgCourse = Book.isProgrammingCourse(combinedText);
 
       final existingIds = formats.map((f) => f.id.toLowerCase()).toSet();
       final existingNames = formats.map((f) => f.name.toLowerCase()).toSet();
@@ -2916,21 +2919,8 @@ Do not include any explanation or other text.
               }
 
               // 2. Non-programming course filtering
-              if (!isProgCourse) {
-                final hasProgSlides = parsedFormat.slides.any(
-                  (s) => s.type == 'program' || s.type == 'try_yourself',
-                );
-                final nameLower = parsedFormat.name.toLowerCase();
-                final idLower = parsedFormat.id.toLowerCase();
-                final isProgName = nameLower.contains('code') ||
-                    nameLower.contains('syntax') ||
-                    nameLower.contains('programming') ||
-                    idLower.contains('code') ||
-                    idLower.contains('syntax');
-
-                if (hasProgSlides || isProgName) {
-                  continue; // Skip programming format for non-programming course
-                }
+              if (!isProgCourse && Book.hasProgrammingSlidesOrName(parsedFormat)) {
+                continue; // Skip programming format for non-programming course
               }
 
               newFormats.add(parsedFormat);
@@ -2941,7 +2931,6 @@ Do not include any explanation or other text.
 
       // 3. Cap to max 10 formats per section
       final cappedNewFormats = newFormats.take(10).toList();
-
       return UnitManifestResult(units: units, newFormats: cappedNewFormats);
     } catch (e) {
       lastException = e as Exception;

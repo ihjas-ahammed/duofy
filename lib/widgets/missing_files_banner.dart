@@ -1,11 +1,7 @@
-import '../platform/io_shim.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:file_picker/file_picker.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
-import '../services/generation_manager.dart';
-
 import '../screens/source_pdf_upload_screen.dart';
 
 class MissingFilesBanner extends StatelessWidget {

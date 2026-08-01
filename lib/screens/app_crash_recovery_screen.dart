@@ -116,13 +116,16 @@ class AppCrashRecoveryScreen extends StatelessWidget {
                       border: Border.all(color: context.colors.outline),
                     ),
                     child: SingleChildScrollView(
-                      child: SelectableText(
-                        '$error\n\nSTACK TRACE:\n$stackTrace',
-                        style: const TextStyle(
-                          color: AppTheme.duoRed,
-                          fontFamily: 'monospace',
-                          fontSize: 11.5,
-                          height: 1.4,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: SelectableText(
+                          '$error\n\nSTACK TRACE:\n$stackTrace',
+                          style: const TextStyle(
+                            color: AppTheme.duoRed,
+                            fontFamily: 'monospace',
+                            fontSize: 11.5,
+                            height: 1.4,
+                          ),
                         ),
                       ),
                     ),

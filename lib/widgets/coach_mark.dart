@@ -33,7 +33,8 @@ class CoachMarkController {
     await prefs.setBool(prefsKey, true);
     if (!context.mounted) return;
 
-    final overlay = Overlay.of(context, rootOverlay: true);
+    final overlay = Overlay.maybeOf(context, rootOverlay: true) ?? Overlay.maybeOf(context);
+    if (overlay == null) return;
     final shown = marks.take(3).toList();
     for (var i = 0; i < shown.length; i++) {
       final mark = shown[i];

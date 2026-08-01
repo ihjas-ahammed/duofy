@@ -612,28 +612,47 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                 )
               else if (hasOptions)
                 !_isSubmitted
-                    ? DuoButton(
-                        text: 'Check Step',
-                        color: _selectedOptionId != null
-                            ? AppTheme.duoBlue
-                            : Colors.grey.shade700,
-                        shadowColor: _selectedOptionId != null
-                            ? AppTheme.duoBlueDark
-                            : Colors.grey.shade800,
-                        onPressed: () {
-                          if (_selectedOptionId != null) _checkAnswer();
-                        },
-                      )
-                    : DuoButton(
-                        text: _isCorrect ? 'Continue' : 'Try Again',
-                        color: _isCorrect ? AppTheme.duoGreen : AppTheme.duoRed,
-                        shadowColor: _isCorrect
-                            ? AppTheme.duoGreenDark
-                            : AppTheme.duoRedDark,
-                        onPressed: _isCorrect
-                            ? _handleNextInteractive
-                            : _resetInteraction,
-                      )
+                    ? (_selectedOptionId != null
+                        ? DuoButton(
+                            text: 'Check Step',
+                            color: AppTheme.duoBlue,
+                            shadowColor: AppTheme.duoBlueDark,
+                            onPressed: _checkAnswer,
+                          )
+                        : DuoButton(
+                            text: 'Skip Step',
+                            color: AppTheme.duoOrange,
+                            shadowColor: AppTheme.duoOrangeDark,
+                            onPressed: _handleNextInteractive,
+                          ))
+                    : (_isCorrect
+                        ? DuoButton(
+                            text: 'Continue',
+                            color: AppTheme.duoGreen,
+                            shadowColor: AppTheme.duoGreenDark,
+                            onPressed: _handleNextInteractive,
+                          )
+                        : Row(
+                            children: [
+                              Expanded(
+                                child: DuoButton(
+                                  text: 'Try Again',
+                                  color: context.colors.surfaceAlt,
+                                  shadowColor: context.colors.outline,
+                                  onPressed: _resetInteraction,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: DuoButton(
+                                  text: 'Continue',
+                                  color: AppTheme.duoRed,
+                                  shadowColor: AppTheme.duoRedDark,
+                                  onPressed: _handleNextInteractive,
+                                ),
+                              ),
+                            ],
+                          ))
               else
                 DuoButton(
                   text: 'Next Step',

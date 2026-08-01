@@ -248,34 +248,112 @@ void main() async {
 
     // Prevent raw red screen crashes with custom UI error widget
     ErrorWidget.builder = (FlutterErrorDetails details) {
-      final ctx = navigatorKey.currentContext;
-      final textPrimaryColor = ctx != null ? ctx.colors.textPrimary : AppTheme.darkColors.textPrimary;
-      final textSecondaryColor = ctx != null ? ctx.colors.textSecondary : AppTheme.darkColors.textSecondary;
-      return Container(
-        padding: const EdgeInsets.all(16),
-        color: AppTheme.surface,
-        child: Center(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.error_outline, color: Colors.redAccent, size: 36),
-                const SizedBox(height: 12),
-                Text(
-                  "UI Render Error",
-                  style: TextStyle(color: textPrimaryColor, fontWeight: FontWeight.bold, fontSize: 16),
+      try {
+        final errorMsg = details.exceptionAsString();
+        final stackMsg = details.stack?.toString() ?? '';
+
+        return Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            color: const Color(0xFF0F172A),
+            child: SafeArea(
+              child: Center(
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 600),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E293B),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppTheme.duoRed.withValues(alpha: 0.4)),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.warning_amber_rounded, color: AppTheme.duoRed, size: 24),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                "UI Render Error",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0F172A),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white24),
+                          ),
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: SelectableText(
+                              "$errorMsg\n\n$stackMsg",
+                              style: const TextStyle(
+                                color: AppTheme.duoRed,
+                                fontSize: 11,
+                                fontFamily: 'monospace',
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(color: Colors.white24),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                icon: const Icon(Icons.copy, size: 14, color: Colors.white),
+                                label: const Text('Copy Error Log', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                                onPressed: () {
+                                  Clipboard.setData(ClipboardData(text: "$errorMsg\n\n$stackMsg"));
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  details.exceptionAsString(),
-                  style: TextStyle(color: textSecondaryColor, fontSize: 12, fontFamily: 'monospace'),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      );
+        );
+      } catch (_) {
+        return Material(
+          color: const Color(0xFF0F172A),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SingleChildScrollView(
+                  child: SelectableText(
+                    details.exceptionAsString(),
+                    style: const TextStyle(color: AppTheme.duoRed, fontFamily: 'monospace', fontSize: 12),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
     };
 
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);

@@ -183,18 +183,20 @@ class _PermissiveLatexInlineSyntax extends md.InlineSyntax {
   @override
   bool onMatch(md.InlineParser parser, Match match) {
     final raw = match.group(0) ?? '';
+    if (raw.isEmpty) return false;
 
     // Determine which delimiter matched.
     var display = false;
     var delimLen = 1;
     for (final d in _delimiters) {
-      if (raw.startsWith(d.left) && raw.endsWith(d.right)) {
+      if (raw.startsWith(d.left) && raw.endsWith(d.right) && raw.length >= d.left.length + d.right.length) {
         display = d.display;
         delimLen = d.left.length;
         break;
       }
     }
 
+    if (raw.length < delimLen * 2) return false;
     final equation = raw.substring(delimLen, raw.length - delimLen);
     final element = md.Element.text('latex', equation);
     element.attributes['MathStyle'] = display ? 'display' : 'text';

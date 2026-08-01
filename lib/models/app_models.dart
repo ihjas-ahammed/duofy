@@ -197,38 +197,6 @@ class LessonFormat {
       slides: SlideTemplate.defaultTemplate,
     ),
     LessonFormat(
-      id: 'code-playground',
-      name: 'Code Playground & Walkthrough',
-      description:
-          'Hands-on programming lesson: interactive code runner, syntax fill-in, live code execution.',
-      slides: [
-        SlideTemplate(
-          type: 'try_yourself',
-          condition: 'Always',
-          description:
-              'Hands-on code runner slide: starter code for the learner to edit and run live (e.g., print "Hello, World!").',
-        ),
-        SlideTemplate(
-          type: 'theory',
-          condition: 'Always',
-          description:
-              'Concise explanation of the code concept or function used in 1-2 sentences.',
-        ),
-        SlideTemplate(
-          type: 'program',
-          condition: 'Always',
-          description:
-              'Interactive code fill-in-the-blank slide over syntax-highlighted code block.',
-        ),
-        SlideTemplate(
-          type: 'try_yourself',
-          condition: 'Always',
-          description:
-              'Challenge code runner slide where the learner modifies parameters or extends the program.',
-        ),
-      ],
-    ),
-    LessonFormat(
       id: 'worked-example',
       name: 'Worked Example & Procedure',
       description: 'A single solved problem broken into interactive steps.',
@@ -968,13 +936,38 @@ class Book {
     Map<String, List<Module>>? densityVariants,
   }) : densityVariants = densityVariants ?? {activeDensity: modules};
 
+  static bool isProgrammingCourse(String text) {
+    final lower = text.toLowerCase();
+    final programmingKeywords = [
+      'python', 'javascript', 'js', 'html', 'css', 'latex', 'java', 'cpp', 'c++', 
+      'c language', 'dart', 'rust', 'go', 'golang', 'sql', 'programming', 'coding', 
+      'software development', 'software engineering', 'computer science', 'code syntax',
+      'scripting', 'algorithm', 'data structure', 'web dev', 'react', 'flutter',
+      'compiler', 'interpreter', 'assembly', 'php', 'swift', 'kotlin'
+    ];
+    return programmingKeywords.any((kw) => lower.contains(kw));
+  }
+
+  static bool hasProgrammingSlidesOrName(LessonFormat format) {
+    final hasProgSlides = format.slides.any(
+      (s) => s.type == 'program' || s.type == 'try_yourself',
+    );
+    final nameLower = format.name.toLowerCase();
+    final idLower = format.id.toLowerCase();
+    final descLower = format.description.toLowerCase();
+    return hasProgSlides ||
+        nameLower.contains('code') ||
+        nameLower.contains('syntax') ||
+        nameLower.contains('programming') ||
+        nameLower.contains('playground') ||
+        idLower.contains('code') ||
+        idLower.contains('syntax') ||
+        idLower.contains('playground') ||
+        descLower.contains('programming') ||
+        descLower.contains('code runner');
+  }
+
   factory Book.fromJson(Map<String, dynamic> json) {
-    // ---- Format-list migration --------------------------------------------
-    // Three cases to handle, in order of preference:
-    //   1. Modern: `lessonFormats` array + `defaultFormatId`.
-    //   2. Legacy: a single `lessonTemplate` slide list — wrap into one
-    //      "Default" format so existing books keep working unchanged.
-    //   3. Brand-new book with neither: use the starter pack.
     List<LessonFormat> formats;
     String defaultId;
     final formatsJson = json['lessonFormats'] as List?;
@@ -1009,13 +1002,9 @@ class Book {
       ];
       defaultId = 'default';
     } else {
-      final titleStr = _str(json['title']).toLowerCase();
-      final descStr = _str(json['description']).toLowerCase();
-      final programmingKeywords = [
-        'python', 'javascript', 'html', 'css', 'latex', 'java', 'cpp', 'c++', 
-        'dart', 'rust', 'programming', 'coding', 'software development', 'computer science'
-      ];
-      final isProgramming = programmingKeywords.any((kw) => titleStr.contains(kw) || descStr.contains(kw));
+      final titleStr = _str(json['title']);
+      final descStr = _str(json['description']);
+      final isProgramming = isProgrammingCourse('$titleStr $descStr');
       if (isProgramming) {
         formats = LessonFormat.defaultProgrammingFormats(titleStr, descStr);
       } else {
@@ -1043,13 +1032,25 @@ class Book {
         .toList() ??
         [];
 
-    // Ensure every section has its own separate copy of formats so they don't fall back to sharing the book's formats list.
+    final bookTitleStr = _str(json['title']);
+    final bookDescStr = _str(json['description']);
+    final isProgBook = isProgrammingCourse('$bookTitleStr $bookDescStr');
+
+    // Ensure every section has its own separate copy of formats, capped at 10 max.
     final modules = parsedModules.map((m) {
       final sections = m.sections.map((s) {
-        if (s.lessonFormats == null || s.lessonFormats!.isEmpty) {
-          return s.copyWith(lessonFormats: formats.map((f) => f.copyWith()).toList());
+        var secFormats = s.lessonFormats;
+        if (secFormats == null || secFormats.isEmpty) {
+          secFormats = formats.map((f) => f.copyWith()).toList();
         }
-        return s;
+        if (!isProgBook) {
+          secFormats = secFormats.where((f) => !hasProgrammingSlidesOrName(f)).toList();
+        }
+        secFormats = secFormats.take(10).toList();
+        if (secFormats.isEmpty) {
+          secFormats = LessonFormat.defaultFormats.map((f) => f.copyWith()).toList();
+        }
+        return s.copyWith(lessonFormats: secFormats);
       }).toList();
       return m.copyWith(sections: sections);
     }).toList();
@@ -1143,10 +1144,19 @@ class Book {
   };
 
   List<LessonFormat> formatsForSection(Section section) {
-    if (section.lessonFormats != null && section.lessonFormats!.isNotEmpty) {
-      return section.lessonFormats!;
+    final rawFormats = (section.lessonFormats != null && section.lessonFormats!.isNotEmpty)
+        ? section.lessonFormats!
+        : lessonFormats;
+
+    final isProg = isProgrammingCourse('$title $description ${section.title} ${section.description}');
+    List<LessonFormat> filtered = rawFormats;
+    if (!isProg) {
+      filtered = rawFormats.where((f) => !hasProgrammingSlidesOrName(f)).toList();
     }
-    return lessonFormats;
+    if (filtered.isEmpty) {
+      filtered = LessonFormat.defaultFormats;
+    }
+    return filtered.take(10).toList();
   }
 
   /// Returns the format the AI should use for [lesson] — its explicit

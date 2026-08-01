@@ -5,8 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/app_models.dart';
 import '../services/metacognition_service.dart';
+import '../services/global_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
+import '../widgets/combo_badge.dart';
 
 class LessonCompleteScreen extends StatefulWidget {
   final int xpEarned;
@@ -170,6 +172,16 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen>
             color: Colors.amber,
           ),
           textAlign: TextAlign.center,
+        ),
+        ValueListenableBuilder<int>(
+          valueListenable: GlobalState.comboNotifier,
+          builder: (context, combo, _) {
+            if (combo < 2) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: ComboBadge(combo: combo),
+            );
+          },
         ),
       ],
     ),

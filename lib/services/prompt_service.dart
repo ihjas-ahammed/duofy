@@ -484,6 +484,10 @@ Each format should have a descriptive name, a pedagogical description of when th
 - `condition`: optional condition when to show it
 - `description`: description of slide structure
 
+CRITICAL RULES:
+1. MAXIMUM 10 FORMATS: You MUST generate AT MOST 10 distinct custom lesson formats per section.
+2. PROGRAMMING vs NON-PROGRAMMING DISCRIMINATION (STRICTEST RULE): Automatically detect if this course/section explicitly requires programming or coding syntax (e.g., Python, JavaScript, C/C++, Java, HTML, CSS, SQL, Dart, Rust, Go, LaTeX). IF AND ONLY IF the course is a programming course, you may generate programming formats with 'program' or 'try_yourself' slide types. FOR ALL NON-PROGRAMMING COURSES (e.g., History, Biology, Chemistry, Literature, Economics, Physics, Mathematics, Philosophy, etc.), YOU MUST NEVER INCLUDE 'program' OR 'try_yourself' SLIDE TYPES OR PROGRAMMING FORMATS.
+
 Return ONLY valid JSON matching this exact structure (do NOT wrap in markdown code blocks, do NOT output anything else):
 {
   "lessonFormats": [

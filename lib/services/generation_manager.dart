@@ -1215,26 +1215,33 @@ class GenerationManager extends ChangeNotifier {
       final modules = List<Module>.from(baseBook.modules);
       final sections = List<Section>.from(modules[modIdx].sections);
 
+      final combinedText = '${baseBook.title} ${baseBook.description} ${sections[secIdx].title} ${sections[secIdx].description}';
+      final isProgCourse = Book.isProgrammingCourse(combinedText);
+
+      final List<LessonFormat> existingFormats = (sections[secIdx].lessonFormats != null && sections[secIdx].lessonFormats!.isNotEmpty)
+          ? sections[secIdx].lessonFormats!
+          : baseBook.lessonFormats;
+
       final List<LessonFormat> updatedSectionFormats = [];
+      for (final ef in existingFormats) {
+        if (!isProgCourse && Book.hasProgrammingSlidesOrName(ef)) continue;
+        if (!updatedSectionFormats.any((lf) => lf.id == ef.id || lf.name.toLowerCase() == ef.name.toLowerCase())) {
+          updatedSectionFormats.add(ef);
+        }
+      }
+
       for (final nf in newFormats) {
-        final alreadyExists = updatedSectionFormats.any(
-          (lf) =>
-              lf.id == nf.id || lf.name.toLowerCase() == nf.name.toLowerCase(),
-        );
-        if (!alreadyExists) {
+        if (!isProgCourse && Book.hasProgrammingSlidesOrName(nf)) continue;
+        if (!updatedSectionFormats.any((lf) => lf.id == nf.id || lf.name.toLowerCase() == nf.name.toLowerCase())) {
           updatedSectionFormats.add(nf);
         }
       }
 
       if (updatedSectionFormats.isEmpty) {
-        if (sections[secIdx].lessonFormats != null &&
-            sections[secIdx].lessonFormats!.isNotEmpty) {
-          updatedSectionFormats.addAll(sections[secIdx].lessonFormats!);
-        } else {
-          updatedSectionFormats.addAll(
-            baseBook.lessonFormats.map((f) => f.copyWith()).toList(),
-          );
-        }
+        final fallback = isProgCourse
+            ? LessonFormat.defaultProgrammingFormats(baseBook.title, baseBook.description)
+            : LessonFormat.defaultFormats;
+        updatedSectionFormats.addAll(fallback);
       }
 
       // Enforce max 10 lesson formats per section limit

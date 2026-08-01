@@ -33,6 +33,7 @@ import '../widgets/slide_views/ordering_view.dart';
 
 import '../widgets/slide_views/flashcard_view.dart';
 import '../widgets/lesson_assistant_chat.dart';
+import '../widgets/combo_badge.dart';
 import 'lesson_complete_screen.dart';
 
 class LessonScreen extends StatefulWidget {
@@ -634,6 +635,9 @@ class _LessonScreenState extends State<LessonScreen> {
         ),
       );
       if (mounted) {
+        if (result != true) {
+          GlobalState.resetCombo();
+        }
         Navigator.pop(context, result);
       }
     }
@@ -720,7 +724,12 @@ class _LessonScreenState extends State<LessonScreen> {
     setState(() {
       _answered = true;
       _isCorrect = correct;
-      if (correct) _correctAttempts++;
+      if (correct) {
+        _correctAttempts++;
+        GlobalState.incrementCombo();
+      } else {
+        GlobalState.resetCombo();
+      }
     });
 
     if (!correct) {
@@ -922,6 +931,7 @@ class _LessonScreenState extends State<LessonScreen> {
 
   bool _canCheck(Slide slide) {
     if (_confidence == null) return false;
+    if (_confidence == MetacognitionService.confidenceGuessing) return true;
     if (slide.type == 'quiz') return _selectedQuizOption != null;
     if (slide.type == 'fill_in_blank' || slide.type == 'program') {
       return _blankInput.trim().isNotEmpty;
@@ -934,6 +944,18 @@ class _LessonScreenState extends State<LessonScreen> {
     }
     if (slide.type == 'ordering') return _orderingCurrent.isNotEmpty;
     return true;
+  }
+
+  bool _hasEnteredAnswer(Slide slide) {
+    if (slide.type == 'quiz') return _selectedQuizOption != null;
+    if (slide.type == 'fill_in_blank' || slide.type == 'program') {
+      return _blankInput.trim().isNotEmpty;
+    }
+    if (slide.type == 'one_word') return _wordInput.trim().isNotEmpty;
+    if (slide.type == 'numerical') return _numericInput.trim().isNotEmpty;
+    if (slide.type == 'matching') return _matchingAssignments.isNotEmpty;
+    if (slide.type == 'ordering') return _orderingCurrent.isNotEmpty;
+    return false;
   }
 
   bool _isCustomBottomBar(Slide slide) {
@@ -1256,7 +1278,10 @@ class _LessonScreenState extends State<LessonScreen> {
       ),
     );
 
-    if (confirmed == true && mounted) Navigator.pop(context);
+    if (confirmed == true && mounted) {
+      GlobalState.resetCombo();
+      Navigator.pop(context);
+    }
   }
 
   Future<void> _promptDeleteSlide(Slide slide) async {
@@ -1625,17 +1650,40 @@ class _LessonScreenState extends State<LessonScreen> {
           ),
           if (isInteractive && !_answered) _buildConfidenceRow(isTheory: false),
           if (isTheory) _buildConfidenceRow(isTheory: true),
+          ValueListenableBuilder<int>(
+            valueListenable: GlobalState.comboNotifier,
+            builder: (context, combo, _) {
+              if (!_answered || !_isCorrect || combo < 2) {
+                return const SizedBox.shrink();
+              }
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Center(
+                  child: ComboBadge(
+                    combo: combo,
+                    isCompact: false,
+                  ),
+                ),
+              );
+            },
+          ),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
             child: isInteractive && !_answered
                 ? DuoButton(
                     key: const ValueKey('check_button'),
-                    text: 'CHECK',
+                    text: (_confidence == MetacognitionService.confidenceGuessing && !_hasEnteredAnswer(slide))
+                        ? 'SKIP'
+                        : 'CHECK',
                     color: _canCheck(slide)
-                        ? AppTheme.duoGreen
+                        ? ((_confidence == MetacognitionService.confidenceGuessing && !_hasEnteredAnswer(slide))
+                            ? AppTheme.duoOrange
+                            : AppTheme.duoGreen)
                         : context.colors.outline,
                     shadowColor: _canCheck(slide)
-                        ? AppTheme.duoGreenDark
+                        ? ((_confidence == MetacognitionService.confidenceGuessing && !_hasEnteredAnswer(slide))
+                            ? AppTheme.duoOrangeDark
+                            : AppTheme.duoGreenDark)
                         : context.colors.surfaceAlt,
                     onPressed: () {
                       if (_canCheck(slide)) _checkAnswer(slide);
@@ -1875,6 +1923,9 @@ class _LessonScreenState extends State<LessonScreen> {
               _answered = true;
               if (remembered) {
                 _correctAttempts++;
+                GlobalState.incrementCombo();
+              } else {
+                GlobalState.resetCombo();
               }
             });
             if (!remembered) {
@@ -1988,8 +2039,8 @@ class _LessonScreenState extends State<LessonScreen> {
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                   child: Container(
-                    height: 64,
-                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    height: 56,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
                     decoration: BoxDecoration(
                       color: context.colors.surfaceAlt,
                       borderRadius: const BorderRadius.vertical(
@@ -2003,20 +2054,27 @@ class _LessonScreenState extends State<LessonScreen> {
                       children: [
                         GestureDetector(
                           onTap: _confirmExit,
-                          child: Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                            ),
+                          child: SizedBox(
+                            width: 36,
+                            height: 36,
                             child: Icon(
                               LucideIcons.x,
                               color: context.colors.textFaint,
-                              size: 28,
+                              size: 24,
                             ),
                           ),
                         ),
-                        SizedBox(width: 16),
+                        const SizedBox(width: 6),
+                        ValueListenableBuilder<int>(
+                          valueListenable: GlobalState.comboNotifier,
+                          builder: (context, combo, _) {
+                            if (combo < 2) return const SizedBox.shrink();
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 6.0),
+                              child: ComboBadge(combo: combo, isCompact: true),
+                            );
+                          },
+                        ),
                         Expanded(
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
@@ -2032,12 +2090,12 @@ class _LessonScreenState extends State<LessonScreen> {
                                         const AlwaysStoppedAnimation<Color>(
                                           AppTheme.duoGreen,
                                         ),
-                                    minHeight: 16,
+                                    minHeight: 14,
                                   ),
                             ),
                           ),
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
                           '$remaining left',
                           style: TextStyle(
@@ -2046,26 +2104,26 @@ class _LessonScreenState extends State<LessonScreen> {
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        SizedBox(width: 12),
+                        const SizedBox(width: 6),
                         GestureDetector(
                           onTap: () => _openAssistant(),
                           child: SizedBox(
-                            width: 40,
-                            height: 48,
+                            width: 34,
+                            height: 36,
                             child: Icon(
                               LucideIcons.messageCircle,
                               color: AppTheme.duoBlue,
-                              size: 22,
+                              size: 20,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        if (_canBookmark)
+                        if (_canBookmark) ...[
+                          const SizedBox(width: 4),
                           GestureDetector(
                             onTap: _toggleBookmark,
                             child: SizedBox(
-                              width: 40,
-                              height: 48,
+                              width: 34,
+                              height: 36,
                               child: Icon(
                                 _isBookmarked
                                     ? LucideIcons.bookmark
@@ -2073,12 +2131,13 @@ class _LessonScreenState extends State<LessonScreen> {
                                 color: _isBookmarked
                                     ? AppTheme.duoOrange
                                     : context.colors.textFaint,
-                                size: 22,
+                                size: 20,
                               ),
                             ),
                           ),
-                        if (_canBookmark) const SizedBox(width: 8),
-                        if (_canRegenerateCanvas)
+                        ],
+                        if (_canRegenerateCanvas) ...[
+                          const SizedBox(width: 4),
                           AnimatedBuilder(
                             animation: GenerationManager.instance,
                             builder: (context, _) {
@@ -2091,13 +2150,13 @@ class _LessonScreenState extends State<LessonScreen> {
                                     ? null
                                     : () => _promptRegenerateSlide(slide),
                                 child: SizedBox(
-                                  width: 40,
-                                  height: 48,
+                                  width: 32,
+                                  height: 36,
                                   child: Center(
                                     child: busy
                                         ? SizedBox(
-                                            width: 20,
-                                            height: 20,
+                                            width: 18,
+                                            height: 18,
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2.5,
                                               valueColor:
@@ -2109,26 +2168,27 @@ class _LessonScreenState extends State<LessonScreen> {
                                         : Icon(
                                             LucideIcons.refreshCcw,
                                             color: context.colors.textFaint,
-                                            size: 22,
+                                            size: 20,
                                           ),
                                   ),
                                 ),
                               );
                             },
                           ),
-                        if (_canRegenerateCanvas)
+                          const SizedBox(width: 4),
                           GestureDetector(
                             onTap: () => _promptDeleteSlide(slide),
                             child: SizedBox(
-                              width: 40,
-                              height: 48,
+                              width: 32,
+                              height: 36,
                               child: Icon(
                                 LucideIcons.trash2,
                                 color: AppTheme.duoRed,
-                                size: 22,
+                                size: 20,
                               ),
                             ),
                           ),
+                        ],
                       ],
                     ),
                   ),

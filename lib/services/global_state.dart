@@ -18,8 +18,13 @@ class GlobalState {
   /// Bumped whenever the bookmark set changes (added/removed/opened).
   static final ValueNotifier<int> bookmarksNotifier = ValueNotifier<int>(0);
 
+  /// Reactive combo counter tracking consecutive correct answers across lessons.
+  static final ValueNotifier<int> comboNotifier = ValueNotifier<int>(0);
+
   static void bumpProgress() => progressNotifier.value++;
   static void bumpBookmarks() => bookmarksNotifier.value++;
+  static void incrementCombo() => comboNotifier.value++;
+  static void resetCombo() => comboNotifier.value = 0;
 
   // Guest mode state indicator
   static final ValueNotifier<bool> isGuestNotifier = ValueNotifier<bool>(false);
