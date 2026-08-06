@@ -181,7 +181,14 @@ class _UniversalCodeRunnerScreenState
         final lineCount = _codeController.text.split('\n').length;
         final lineNumbersText = List.generate(lineCount, (i) => '${i + 1}').join('\n');
 
-        return Scaffold(
+        final strut = StrutStyle(
+      fontFamily: 'monospace',
+      fontSize: settings.fontSize,
+      height: 1.4,
+      forceStrutHeight: true,
+    );
+
+    return Scaffold(
           appBar: AppBar(
             title: TextField(
               controller: _titleController,
@@ -277,6 +284,7 @@ class _UniversalCodeRunnerScreenState
                             padding: const EdgeInsets.only(right: 10.0),
                             child: Text(
                               lineNumbersText,
+                              strutStyle: strut,
                               style: TextStyle(
                                 fontFamily: 'monospace',
                                 fontSize: settings.fontSize,
@@ -298,6 +306,7 @@ class _UniversalCodeRunnerScreenState
                             controller: _codeController,
                             maxLines: settings.wordWrap ? null : 1,
                             expands: settings.wordWrap,
+                            strutStyle: strut,
                             style: TextStyle(
                               fontFamily: 'monospace',
                               fontSize: settings.fontSize,
@@ -306,6 +315,8 @@ class _UniversalCodeRunnerScreenState
                             ),
                             decoration: InputDecoration(
                               border: InputBorder.none,
+                              contentPadding: EdgeInsets.zero,
+                              isDense: true,
                               hintText: 'Write code here...',
                               hintStyle: TextStyle(
                                 color: isDark ? const Color(0xFF6E7781) : const Color(0xFF8C959F),

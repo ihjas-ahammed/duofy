@@ -57,6 +57,9 @@ class CodeHighlighter {
       case 'lua':
       case 'sql':
         return '--';
+      case 'latex':
+      case 'tex':
+        return '%';
       default:
         return '//';
     }
@@ -153,6 +156,18 @@ class CodeHighlighter {
         }
         push(code.substring(i, j), theme.function);
         i = j;
+        continue;
+      }
+
+      // LaTeX command \command
+      if (c == '\\') {
+        var j = i + 1;
+        while (j < n && _isIdentPart(code[j])) {
+          j++;
+        }
+        final endPos = (j == i + 1 && j < n) ? j + 1 : j;
+        push(code.substring(i, endPos), theme.keyword);
+        i = endPos;
         continue;
       }
 

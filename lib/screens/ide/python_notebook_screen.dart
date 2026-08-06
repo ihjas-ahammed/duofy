@@ -428,6 +428,12 @@ plt.show()''',
                       padding: const EdgeInsets.only(right: 10.0),
                       child: Text(
                         lineNumbersText,
+                        strutStyle: StrutStyle(
+                          fontFamily: 'monospace',
+                          fontSize: settings.fontSize,
+                          height: 1.4,
+                          forceStrutHeight: true,
+                        ),
                         style: TextStyle(
                           fontFamily: 'monospace',
                           fontSize: settings.fontSize,
@@ -448,6 +454,12 @@ plt.show()''',
                     child: TextField(
                       controller: codeCtrl,
                       maxLines: settings.wordWrap ? null : 1,
+                      strutStyle: StrutStyle(
+                        fontFamily: 'monospace',
+                        fontSize: settings.fontSize,
+                        height: 1.4,
+                        forceStrutHeight: true,
+                      ),
                       style: TextStyle(
                         fontFamily: 'monospace',
                         fontSize: settings.fontSize,
@@ -456,6 +468,7 @@ plt.show()''',
                       ),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
                         isDense: true,
                       ),
                       onChanged: (val) {

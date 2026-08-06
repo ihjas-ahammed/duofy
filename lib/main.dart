@@ -71,6 +71,11 @@ bool _looksNonFatal(Object error) {
     'failed to load image',
     'imagecodecexception',
     'codec',
+    'no overlay widget found',
+    'rawtooltip',
+    'overlay widget ancestor',
+    'duplicate key',
+    'duplicate globalkey',
   ];
   return benign.any((fragment) => s.contains(fragment));
 }
@@ -251,6 +256,15 @@ void main() async {
     ErrorWidget.builder = (FlutterErrorDetails details) {
       try {
         final errorMsg = details.exceptionAsString();
+        final errLower = errorMsg.toLowerCase();
+
+        // Ignore transient hot-reload overlay/tooltip warnings cleanly
+        if (errLower.contains('no overlay widget found') ||
+            errLower.contains('rawtooltip') ||
+            errLower.contains('overlay widget ancestor')) {
+          return const SizedBox.shrink();
+        }
+
         final stackMsg = details.stack?.toString() ?? '';
 
         return Material(

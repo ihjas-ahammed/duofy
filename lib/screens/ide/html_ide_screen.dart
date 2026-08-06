@@ -286,6 +286,13 @@ ${_jsController.text}
     final lineCount = controller.text.split('\n').length;
     final lineNumbersText = List.generate(lineCount, (i) => '${i + 1}').join('\n');
 
+    final strut = StrutStyle(
+      fontFamily: 'monospace',
+      fontSize: settings.fontSize,
+      height: 1.4,
+      forceStrutHeight: true,
+    );
+
     return Container(
       color: editorBg,
       padding: const EdgeInsets.all(12),
@@ -297,6 +304,7 @@ ${_jsController.text}
               padding: const EdgeInsets.only(right: 10.0),
               child: Text(
                 lineNumbersText,
+                strutStyle: strut,
                 style: TextStyle(
                   fontFamily: 'monospace',
                   fontSize: settings.fontSize,
@@ -318,6 +326,7 @@ ${_jsController.text}
               controller: controller,
               maxLines: settings.wordWrap ? null : 1,
               expands: settings.wordWrap,
+              strutStyle: strut,
               style: TextStyle(
                 fontFamily: 'monospace',
                 fontSize: settings.fontSize,
@@ -326,6 +335,8 @@ ${_jsController.text}
               ),
               decoration: InputDecoration(
                 border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+                isDense: true,
                 hintText: hint,
                 hintStyle: TextStyle(
                   color: isDark ? const Color(0xFF6E7781) : const Color(0xFF8C959F),
