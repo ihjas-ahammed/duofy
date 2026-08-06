@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 import '../theme/app_theme.dart';
 import '../services/b2_service.dart';
@@ -2060,6 +2061,21 @@ class B2PdfViewerScreen extends StatelessWidget {
                 }
               } else {
                 Share.shareXFiles([XFile(file.path)], text: filename);
+              }
+            },
+          ),
+          IconButton(
+            icon: const Icon(LucideIcons.externalLink),
+            tooltip: 'Open in External App',
+            onPressed: () async {
+              final result = await OpenFilex.open(file.path);
+              if (result.type != ResultType.done && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Could not open file: ${result.message}'),
+                    backgroundColor: AppTheme.duoRed,
+                  ),
+                );
               }
             },
           ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
@@ -102,6 +103,22 @@ class _ReferencePdfViewerScreenState extends State<ReferencePdfViewerScreen> {
     }
   }
 
+  void _openExternalPdf() async {
+    final currentSection = _pdfSections[_currentIndex];
+    if (currentSection.pdfPath != null &&
+        File(currentSection.pdfPath!).existsSync()) {
+      final result = await OpenFilex.open(currentSection.pdfPath!);
+      if (result.type != ResultType.done && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not open file: ${result.message}'),
+            backgroundColor: AppTheme.duoRed,
+          ),
+        );
+      }
+    }
+  }
+
   void _goToPreviousSection() {
     if (_currentIndex > 0) {
       setState(() {
@@ -161,6 +178,16 @@ class _ReferencePdfViewerScreenState extends State<ReferencePdfViewerScreen> {
             ),
             tooltip: 'Share PDF',
             onPressed: _isDocumentLoaded ? _sharePdf : null,
+          ),
+          // External App Action
+          IconButton(
+            icon: Icon(
+              LucideIcons.externalLink,
+              color: context.colors.textSecondary,
+              size: 20,
+            ),
+            tooltip: 'Open in External App',
+            onPressed: _isDocumentLoaded ? _openExternalPdf : null,
           ),
           VerticalDivider(
             color: context.colors.outline,

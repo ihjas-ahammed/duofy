@@ -13,6 +13,8 @@ import 'reference_pdf_viewer_screen.dart';
 import 'course_settings_screen.dart';
 import '../services/b2_service.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/app_models.dart';
 import '../theme/app_theme.dart';
 import '../services/generation_manager.dart';
@@ -1234,20 +1236,76 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
   Widget _buildSyllabusButton({required bool expand}) {
     final button = InkWell(
       onTap: () {
+        final syllabusFile = File(widget.book.syllabusPath!);
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => Scaffold(
+            builder: (ctx) => Scaffold(
               appBar: AppBar(
                 title: Text(
                   '${widget.book.title} - Syllabus',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                backgroundColor: context.colors.background,
+                backgroundColor: ctx.colors.background,
+                actions: [
+                  IconButton(
+                    icon: const Icon(LucideIcons.share2),
+                    tooltip: Platform.isLinux ? 'Save Document As' : 'Share Document',
+                    onPressed: () async {
+                      if (Platform.isLinux) {
+                        final savePath = await FilePicker.platform.saveFile(
+                          dialogTitle: 'Save Syllabus PDF',
+                          fileName: '${widget.book.title}_Syllabus.pdf',
+                          type: FileType.custom,
+                          allowedExtensions: ['pdf'],
+                        );
+                        if (savePath != null) {
+                          try {
+                            await syllabusFile.copy(savePath);
+                            if (ctx.mounted) {
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                SnackBar(content: Text('Saved successfully to $savePath')),
+                              );
+                            }
+                          } catch (e) {
+                            if (ctx.mounted) {
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error saving file: $e'),
+                                  backgroundColor: AppTheme.duoRed,
+                                ),
+                              );
+                            }
+                          }
+                        }
+                      } else {
+                        Share.shareXFiles(
+                          [XFile(syllabusFile.path)],
+                          text: '${widget.book.title} - Syllabus',
+                        );
+                      }
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(LucideIcons.externalLink),
+                    tooltip: 'Open in External App',
+                    onPressed: () async {
+                      final result = await OpenFilex.open(syllabusFile.path);
+                      if (result.type != ResultType.done && ctx.mounted) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          SnackBar(
+                            content: Text('Could not open file: ${result.message}'),
+                            backgroundColor: AppTheme.duoRed,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ],
               ),
-              body: SafePdfViewer(file: File(widget.book.syllabusPath!)),
+              body: SafePdfViewer(file: syllabusFile),
             ),
           ),
         );

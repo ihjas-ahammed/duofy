@@ -1,6 +1,7 @@
 import '../platform/io_shim.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:file_picker/file_picker.dart';
 import '../widgets/safe_pdf_viewer.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -144,12 +145,34 @@ class _PdfFolderScreenState extends State<PdfFolderScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => Scaffold(
+        builder: (ctx) => Scaffold(
           appBar: AppBar(
             title: Text(
               meta.unitName,
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
             ),
+            actions: [
+              IconButton(
+                icon: const Icon(LucideIcons.share2),
+                tooltip: Platform.isLinux ? 'Save Document As' : 'Share Document',
+                onPressed: () => _sharePdf(meta),
+              ),
+              IconButton(
+                icon: const Icon(LucideIcons.externalLink),
+                tooltip: 'Open in External App',
+                onPressed: () async {
+                  final result = await OpenFilex.open(meta.file.path);
+                  if (result.type != ResultType.done && ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      SnackBar(
+                        content: Text('Could not open file: ${result.message}'),
+                        backgroundColor: AppTheme.duoRed,
+                      ),
+                    );
+                  }
+                },
+              ),
+            ],
           ),
           body: SafePdfViewer(file: meta.file),
         ),
