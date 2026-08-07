@@ -13,7 +13,9 @@ import 'main_layout_screen.dart';
 import 'pyq_panel_screen.dart';
 import '../services/deadline_service.dart';
 import '../services/database_service.dart';
+import '../services/module_notes_service.dart';
 import 'lesson_screen.dart';
+import 'module_notes_viewer_screen.dart';
 
 class SectionSelectionScreen extends StatefulWidget {
   final Book book;
@@ -46,6 +48,8 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
   final ScrollController _scrollController = ScrollController();
   final Map<int, GlobalKey> _sectionKeys = {};
   bool _hasScrolled = false;
+  bool _hasModuleNotes = false;
+  String? _moduleNotesPdfPath;
 
   @override
   void initState() {
@@ -53,6 +57,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
     _currentBook = widget.book;
     _currentModule = widget.module;
     _loadProgress();
+    _checkNotesStatus();
     _refreshBookFromStorage();
     GlobalState.progressNotifier.addListener(_loadProgress);
     GenerationManager.instance.addListener(_onGenManagerChanged);
@@ -89,8 +94,76 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
         }
       });
       _loadDeadlines();
+      _checkNotesStatus();
     }
   }
+
+  Future<void> _checkNotesStatus() async {
+    final hasNotes = await ModuleNotesService.instance.hasNotes(_currentBook.id, _currentModule.id);
+    final pdfPath = hasNotes ? await ModuleNotesService.instance.getNotesPdfPath(_currentBook.id, _currentModule.id) : null;
+    if (mounted) {
+      setState(() {
+        _hasModuleNotes = hasNotes;
+        _moduleNotesPdfPath = pdfPath;
+      });
+    }
+  }
+
+  void _openNotes() async {
+    final pdfPath = _moduleNotesPdfPath ?? await ModuleNotesService.instance.getNotesPdfPath(_currentBook.id, _currentModule.id);
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ModuleNotesViewerScreen(
+            book: _currentBook,
+            module: _currentModule,
+            moduleIndex: widget.moduleIdx,
+            pdfPath: pdfPath,
+            onRegenerateRequested: () {
+              Navigator.pop(context);
+              _startNoteGen();
+            },
+          ),
+        ),
+      ).then((_) => _checkNotesStatus());
+    }
+  }
+
+
+  void _startNoteGen() {
+    ModuleNotesService.instance.startBackgroundNotesGeneration(
+      book: _currentBook,
+      module: _currentModule,
+      moduleIndex: widget.moduleIdx,
+    );
+
+    final job = ModuleNotesService.instance.getJob(_currentBook.id, _currentModule.id);
+    if (job != null) {
+      void onJobUpdate() {
+        if (!mounted) return;
+        setState(() {});
+        if (job.isCompleted) {
+          job.removeListener(onJobUpdate);
+          _checkNotesStatus();
+        } else if (job.isFailed) {
+          job.removeListener(onJobUpdate);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Note Generation Failed: ${job.status}')),
+          );
+        }
+      }
+      job.addListener(onJobUpdate);
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Started background note generation for "${_currentModule.title}". Progress notifications active!'),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
 
   Future<void> _loadProgress() async {
     try {
@@ -248,6 +321,52 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                               fontSize: 13,
                               height: 1.4,
                             ),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              if (!_hasModuleNotes)
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                                      side: const BorderSide(color: AppTheme.duoBlue, width: 1.5),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                    icon: const Icon(LucideIcons.sparkles, size: 16, color: AppTheme.duoBlue),
+                                    label: const Text(
+                                      'Quick Generate Module Notes',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w900,
+                                        color: AppTheme.duoBlue,
+                                      ),
+                                    ),
+                                    onPressed: _startNoteGen,
+                                  ),
+                                )
+                              else
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppTheme.duoBlue,
+                                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      elevation: 0,
+                                    ),
+                                    icon: const Icon(LucideIcons.bookOpenCheck, size: 16, color: Colors.white),
+                                    label: const Text(
+                                      'Open Module Notes (PDF)',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w900,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    onPressed: _openNotes,
+                                  ),
+                                ),
+                            ],
                           ),
                         ],
                       ),

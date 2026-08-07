@@ -15,7 +15,9 @@ import 'section_selection_screen.dart';
 import 'main_layout_screen.dart';
 import '../services/deadline_service.dart';
 import '../services/database_service.dart';
+import '../services/module_notes_service.dart';
 import 'lesson_screen.dart';
+import 'module_notes_viewer_screen.dart';
 
 
 class ModuleSelectionScreen extends StatefulWidget {
@@ -38,6 +40,8 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
   String? _lastLessonTitle;
   int? _lastModIdx;
   int? _lastSecIdx;
+  Map<String, bool> _moduleNotesMap = {};
+  Map<String, String?> _moduleNotesPathMap = {};
 
   @override
   void initState() {
@@ -45,6 +49,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
     _currentBook = widget.book;
     _loadProgress();
     _loadLastLessonInfo();
+    _checkNotesAvailability();
     _refreshBookFromStorage();
     GlobalState.progressNotifier.addListener(_loadProgress);
     GenerationManager.instance.addListener(_onGenManagerChanged);
@@ -78,8 +83,161 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
       });
       _loadProgress();
       _loadLastLessonInfo();
+      _checkNotesAvailability();
     }
   }
+
+  Future<void> _checkNotesAvailability() async {
+    final notesMap = <String, bool>{};
+    final pathMap = <String, String?>{};
+    for (final m in _currentBook.modules) {
+      final hasNotes = await ModuleNotesService.instance.hasNotes(_currentBook.id, m.id);
+      notesMap[m.id] = hasNotes;
+      if (hasNotes) {
+        pathMap[m.id] = await ModuleNotesService.instance.getNotesPdfPath(_currentBook.id, m.id);
+      }
+    }
+    if (mounted) {
+      setState(() {
+        _moduleNotesMap = notesMap;
+        _moduleNotesPathMap = pathMap;
+      });
+    }
+  }
+
+  void _openModuleNotes(int modIdx) async {
+    final module = _currentBook.modules[modIdx];
+    final pdfPath = _moduleNotesPathMap[module.id] ?? await ModuleNotesService.instance.getNotesPdfPath(_currentBook.id, module.id);
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ModuleNotesViewerScreen(
+            book: _currentBook,
+            module: module,
+            moduleIndex: modIdx,
+            pdfPath: pdfPath,
+            onRegenerateRequested: () {
+              Navigator.pop(context);
+              _promptRegenerateNotes(modIdx);
+            },
+          ),
+        ),
+      ).then((_) => _checkNotesAvailability());
+    }
+  }
+
+
+  void _promptRegenerateNotes(int modIdx) {
+    final module = _currentBook.modules[modIdx];
+    final reasonCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.colors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(LucideIcons.refreshCw, color: AppTheme.duoBlue, size: 22),
+            const SizedBox(width: 8),
+            Text(
+              'Regenerate Module Notes',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: context.colors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Why do you want to regenerate notes for "${module.title}"?',
+              style: TextStyle(
+                fontSize: 14,
+                color: context.colors.textFaint,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: reasonCtrl,
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: 'e.g. Include more formal proofs, focus on Cayley tables and sub-group examples...',
+                hintStyle: TextStyle(fontSize: 13, color: context.colors.textFaint.withValues(alpha: 0.6)),
+                filled: true,
+                fillColor: context.colors.background,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: context.colors.outline),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.duoBlue,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            icon: const Icon(LucideIcons.sparkles, size: 16, color: Colors.white),
+            label: const Text('Regenerate Notes', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _startNoteGeneration(modIdx, userRegenReason: reasonCtrl.text.trim());
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _startNoteGeneration(int modIdx, {String? userRegenReason}) {
+    final module = _currentBook.modules[modIdx];
+    
+    // Start background job asynchronously (just like PYQ evaluation)
+    ModuleNotesService.instance.startBackgroundNotesGeneration(
+      book: _currentBook,
+      module: module,
+      moduleIndex: modIdx,
+      userRegenReason: userRegenReason,
+    );
+
+    final job = ModuleNotesService.instance.getJob(_currentBook.id, module.id);
+    if (job != null) {
+      void onJobUpdate() {
+        if (!mounted) return;
+        setState(() {});
+        if (job.isCompleted) {
+          job.removeListener(onJobUpdate);
+          _checkNotesAvailability();
+        } else if (job.isFailed) {
+          job.removeListener(onJobUpdate);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Note Generation Failed: ${job.status}')),
+          );
+        }
+      }
+      job.addListener(onJobUpdate);
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Started background note generation for "${module.title}". Notifications will report progress!'),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
 
   Future<void> _loadProgress() async {
     try {
@@ -502,6 +660,115 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                         ),
                                       ),
                                     ],
+                                  ),
+                                  const SizedBox(height: 16),
+
+                                  // Quick Generate / Open Module Notes Button Row
+                                  Builder(
+                                    builder: (ctx) {
+                                      final job = ModuleNotesService.instance.getJob(_currentBook.id, module.id);
+                                      if (job != null && job.isRunning) {
+                                        return Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.duoBlue.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(color: AppTheme.duoBlue.withValues(alpha: 0.3)),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  Expanded(
+                                                    child: Text(
+                                                      job.status,
+                                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.duoBlue),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Text(
+                                                    '${(job.progress * 100).toInt()}%',
+                                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.duoBlue),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 6),
+                                              ClipRRect(
+                                                borderRadius: BorderRadius.circular(4),
+                                                child: LinearProgressIndicator(
+                                                  value: job.progress,
+                                                  minHeight: 4,
+                                                  backgroundColor: context.colors.outline,
+                                                  valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.duoBlue),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }
+
+                                      final hasNotes = _moduleNotesMap[module.id] ?? false;
+                                      return Row(
+                                        children: [
+                                          if (!hasNotes)
+                                            Expanded(
+                                              child: OutlinedButton.icon(
+                                                style: OutlinedButton.styleFrom(
+                                                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                                                  side: const BorderSide(color: AppTheme.duoBlue, width: 1.5),
+                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                ),
+                                                icon: const Icon(LucideIcons.sparkles, size: 16, color: AppTheme.duoBlue),
+                                                label: const Text(
+                                                  'Quick Generate Module Notes',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w900,
+                                                    color: AppTheme.duoBlue,
+                                                  ),
+                                                ),
+                                                onPressed: () => _startNoteGeneration(index),
+                                              ),
+                                            )
+                                          else ...[
+                                            Expanded(
+                                              child: ElevatedButton.icon(
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: AppTheme.duoBlue,
+                                                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                  elevation: 0,
+                                                ),
+                                                icon: const Icon(LucideIcons.bookOpenCheck, size: 16, color: Colors.white),
+                                                label: const Text(
+                                                  'Open Module Notes (PDF)',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w900,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                                onPressed: () => _openModuleNotes(index),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            IconButton(
+                                              style: IconButton.styleFrom(
+                                                backgroundColor: context.colors.outline.withValues(alpha: 0.3),
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                              ),
+                                              icon: const Icon(LucideIcons.refreshCw, size: 16),
+                                              tooltip: 'Regenerate Module Notes',
+                                              onPressed: () => _promptRegenerateNotes(index),
+                                            ),
+                                          ],
+                                        ],
+                                      );
+                                    },
                                   ),
                                 ],
                               ),

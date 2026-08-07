@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Section 1: Binary Operations — Study Notes</title>
+    
+    <!-- MathJax 3 Configuration -->
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+    <style>
+        /* BOOK / TEXTBOOK MONOCHROME STYLING */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Georgia, "Times New Roman", Times, serif;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #111111;
+            background-color: #f4f4f6;
+            padding: 2rem 1rem;
+        }
+
+        .book-container {
+            max-width: 850px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 3.5rem 4rem;
+            border: 1px solid #d1d5db;
+        }
+
+        /* HEADER / CHAPTER TITLE */
+        .chapter-header {
+            border-bottom: 2px solid #111111;
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .chapter-number {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #444444;
+            margin-bottom: 0.25rem;
+        }
+
+        .chapter-title {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: #000000;
+            letter-spacing: -0.02em;
+        }
+
+        /* SECTION HEADINGS */
+        .section-heading {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #111111;
+            border-bottom: 1px solid #111111;
+            padding-bottom: 0.3rem;
+            margin-top: 2.5rem;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            text-align: justify;
+        }
+
+        /* LATEX / TEXTBOOK ENVIRONMENT BOXES */
+        .env-box {
+            border: 1px solid #222222;
+            background-color: #fafafa;
+            padding: 1.25rem;
+            margin: 1.25rem 0;
+        }
+
+        .env-title {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #000000;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .env-tag {
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid #000000;
+            padding: 0.1rem 0.4rem;
+            text-transform: uppercase;
+            background: #ffffff;
+        }
+
+        /* PROOF ENVIRONMENT */
+        .proof-block {
+            margin-top: 0.75rem;
+            padding-left: 1rem;
+            border-left: 2px solid #333333;
+            font-style: normal;
+        }
+
+        .proof-title {
+            font-style: italic;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .qedsymbol {
+            float: right;
+            font-size: 1.1rem;
+        }
+
+        /* WARNING / ALERT BOX */
+        .warning-box {
+            border: 1px stroke #111111;
+            border-left: 4px solid #111111;
+            background-color: #f5f5f5;
+            padding: 1rem 1.25rem;
+            margin: 1.25rem 0;
+        }
+
+        .warning-title {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 0.4rem;
+            text-transform: uppercase;
+        }
+
+        /* EXAMPLES GRID & LISTS */
+        .example-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .example-card {
+            border: 1px solid #333333;
+            padding: 1rem;
+            background-color: #ffffff;
+        }
+
+        .example-card h4 {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 0.95rem;
+            margin-bottom: 0.4rem;
+            border-bottom: 1px solid #dddddd;
+            padding-bottom: 0.25rem;
+        }
+
+        .status-tag {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            display: inline-block;
+            padding: 0.1rem 0.4rem;
+            border: 1px solid #111111;
+            margin-bottom: 0.4rem;
+        }
+
+        .status-valid { background-color: #eeeeee; color: #000000; }
+        .status-invalid { background-color: #000000; color: #ffffff; }
+
+        /* TABLES & VISUALS */
+        .cayley-table {
+            border-collapse: collapse;
+            margin: 0.75rem auto;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 0.95rem;
+        }
+
+        .cayley-table td, .cayley-table th {
+            border: 1px solid #000000;
+            padding: 0.4rem 0.8rem;
+            text-align: center;
+        }
+
+        .cayley-table th {
+            background-color: #e5e5e5;
+            font-weight: bold;
+        }
+
+        .cayley-table td.highlight {
+            background-color: #e0e0e0;
+            font-weight: bold;
+        }
+
+        .diagram-box {
+            border: 1px solid #333333;
+            padding: 1rem;
+            background: #ffffff;
+            margin: 1rem 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        ul, ol {
+            padding-left: 1.5rem;
+            margin: 0.5rem 0;
+        }
+
+        li {
+            margin-bottom: 0.3rem;
+        }
+
+        /* PRINT STYLING FOR PDF / HARDCOPY */
+        @media print {
+            body {
+                background: #ffffff;
+                padding: 0;
+                font-size: 12pt;
+            }
+
+            .book-container {
+                border: none;
+                padding: 0;
+                max-width: 100%;
+            }
+
+            @page {
+                margin: 2cm;
+            }
+
+            .env-box, .example-card, .warning-box, .diagram-box {
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="book-container">
+
+    <!-- CHAPTER TITLE -->
+    <header class="chapter-header">
+        <div class="chapter-number">Section 1</div>
+        <h1 class="chapter-title">Binary Operations</h1>
+    </header>
+
+    <!-- SECTION 1: THEORY -->
+    <section>
+        <h2 class="section-heading">1. Theory & Core Concepts</h2>
+        
+        <p>
+            The transition from elementary school arithmetic to high school algebra involves using letters to represent unknown numbers and studying basic equations. Abstract algebra takes the next step in abstraction: not only are the variables unknown, but the <em>actual operations involved may also be unknown</em>. We study sets equipped with binary operations possessing properties similar to addition and multiplication.
+        </p>
+
+        <div class="warning-box">
+            <div class="warning-title">Some Words of Warning: Two Essential Conditions</div>
+            <p>
+                When attempting to define a binary operation $\ast$ on a set $S$, we must guarantee that:
+            </p>
+            <ol>
+                <li><strong>Everywhere Defined & Well-Defined:</strong> Exactly <em>one element</em> of $S$ is assigned to <em>each possible ordered pair</em> of elements of $S$. If no element is assigned to some pairs, $\ast$ is <em>not everywhere defined</em>. If ambiguity exists, $\ast$ is <em>not well-defined</em>.</li>
+                <li><strong>Closure:</strong> For each ordered pair of elements of $S$, the assigned element must reside back inside $S$. If this is violated, $S$ is <em>not closed under $\ast$</em>.</li>
+            </ol>
+        </div>
+
+        <p>
+            <strong>Induced Operations:</strong> If $\ast$ is an operation on $S$ and $H$ is a subset of $S$, $H$ is closed under $\ast$ if $a \ast b \in H$ for all $a, b \in H$. In this case, restricting $\ast$ to $H$ gives the <strong>induced operation</strong> of $\ast$ on $H$.
+        </p>
+    </section>
+
+    <!-- SECTION 2: DEFINITIONS & PROOFS -->
+    <section>
+        <h2 class="section-heading">2. Definitions & Formal Proofs</h2>
+
+        <!-- DEFINITION 1.1 -->
+        <div class="env-box">
+            <div class="env-title">
+                <span>1.1 Definition (Binary Operation)</span>
+                <span class="env-tag">Definition</span>
+            </div>
+            <p style="margin:0;">
+                A <strong>binary operation</strong> $\ast$ on a set $S$ is a function mapping $S \times S$ into $S$. For each $(a, b) \in S \times S$, we denote the element $\ast((a, b))$ of $S$ by $a \ast b$.
+            </p>
+        </div>
+
+        <!-- DEFINITION 1.4 -->
+        <div class="env-box">
+            <div class="env-title">
+                <span>1.4 Definition (Closure & Induced Operation)</span>
+                <span class="env-tag">Definition</span>
+            </div>
+            <p style="margin:0;">
+                Let $\ast$ be an operation on $S$ and let $H$ be a subset of $S$. The subset $H$ is <strong>closed under $\ast$</strong> if for all $a,b \in H$ we also have $a \ast b \in H$. In this case, the operation on $H$ given by restricting $\ast$ to $H$ is the <strong>induced operation</strong> of $\ast$ on $H$.
+            </p>
+        </div>
+
+        <!-- DEFINITIONS 1.11 & 1.12 -->
+        <div class="env-box">
+            <div class="env-title">
+                <span>1.11 & 1.12 Definitions (Commutativity & Associativity)</span>
+                <span class="env-tag">Definition</span>
+            </div>
+            <p>
+                • An operation $\ast$ on a set $S$ is <strong>commutative</strong> if $a \ast b = b \ast a$ for all $a, b \in S$.
+            </p>
+            <p style="margin:0;">
+                • An operation $\ast$ on a set $S$ is <strong>associative</strong> if $(a \ast b) \ast c = a \ast (b \ast c)$ for all $a, b, c \in S$.
+            </p>
+        </div>
+
+        <!-- THEOREM 1.13 WITH FULL PROOF -->
+        <div class="env-box">
+            <div class="env-title">
+                <span>1.13 Theorem (Associativity of Function Composition)</span>
+                <span class="env-tag">Theorem</span>
+            </div>
+            <p>
+                Let $S$ be a set and let $f, g,$ and $h$ be functions mapping $S$ into $S$. Then composition of functions is associative:
+                \[ f \circ (g \circ h) = (f \circ g) \circ h \]
+            </p>
+            <div class="proof-block">
+                <div class="proof-title">Proof.</div>
+                <p>
+                    To show these two functions are equal, we must show that they give the same assignment to each $x \in S$. Computing we find that
+                    \[ (f \circ (g \circ h))(x) = f((g \circ h)(x)) = f(g(h(x))) \]
+                    and
+                    \[ ((f \circ g) \circ h)(x) = (f \circ g)(h(x)) = f(g(h(x))), \]
+                    so the same element $f(g(h(x)))$ of $S$ is indeed obtained.
+                    <span class="qedsymbol">$\blacksquare$</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- DEFINITION 1.14 -->
+        <div class="env-box">
+            <div class="env-title">
+                <span>1.14 Definition (Identity Element)</span>
+                <span class="env-tag">Definition</span>
+            </div>
+            <p style="margin:0;">
+                Let $S$ be a set with binary operation $\ast$. If $e \in S$ has the property that for all $a \in S$,
+                \[ a \ast e = e \ast a = a, \]
+                then $e$ is called an <strong>identity element</strong> for $\ast$.
+            </p>
+        </div>
+
+        <!-- THEOREM 1.15 WITH FULL PROOF -->
+        <div class="env-box">
+            <div class="env-title">
+                <span>1.15 Theorem (Uniqueness of Identity Element)</span>
+                <span class="env-tag">Theorem</span>
+            </div>
+            <p>
+                A set $S$ with binary operation $\ast$ has <strong>at most one</strong> identity element.
+            </p>
+            <div class="proof-block">
+                <div class="proof-title">Proof.</div>
+                <p>
+                    We need to show that there cannot be two different identity elements. To do this, we assume that both $e$ and $e'$ are identities and show that $e = e'$.
+                </p>
+                <p>
+                    Consider the element $e \ast e'$. Since $e$ is an identity, $e \ast e' = e'$. But $e \ast e' = e$ because $e'$ is also an identity. Therefore $e = e'$.
+                    <span class="qedsymbol">$\blacksquare$</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- DEFINITION 1.17 -->
+        <div class="env-box">
+            <div class="env-title">
+                <span>1.17 Definition (Inverse Element)</span>
+                <span class="env-tag">Definition</span>
+            </div>
+            <p style="margin:0;">
+                If $\ast$ is an operation on the set $S$ and $S$ has an identity element $e$, then for any $x \in S$, an <strong>inverse of $x$</strong> is an element $x' \in S$ such that:
+                \[ x \ast x' = x' \ast x = e \]
+            </p>
+        </div>
+    </section>
+
+    <!-- SECTION 3: EXAMPLES & COUNTEREXAMPLES -->
+    <section>
+        <h2 class="section-heading">3. Examples, Counterexamples & Pitfalls</h2>
+
+        <div class="example-grid">
+            <!-- Matrix Addition -->
+            <div class="example-card">
+                <h4>1.3 Example: Matrix Addition $M(\mathbb{R})$</h4>
+                <span class="status-tag status-invalid">Not an Operation</span>
+                <p>
+                    Let $M(\mathbb{R})$ be the set of all matrices with real entries. Usual matrix addition $+$ is <em>not</em> an operation on $M(\mathbb{R})$ because $A + B$ is undefined for matrices having different numbers of rows or columns.
+                </p>
+            </div>
+
+            <!-- Nonzero Reals -->
+            <div class="example-card">
+                <h4>1.5 Example: Nonzero Reals $\mathbb{R}^*$</h4>
+                <span class="status-tag status-invalid">Not Closed</span>
+                <p>
+                    Usual addition $+$ on $\mathbb{R}$ does not induce an operation on $\mathbb{R}^*$ (nonzero reals) because $2 \in \mathbb{R}^*$ and $-2 \in \mathbb{R}^*$, but $2 + (-2) = 0 \notin \mathbb{R}^*$.
+                </p>
+            </div>
+
+            <!-- Positive Squares -->
+            <div class="example-card">
+                <h4>1.6 Example: Squares $H = \{n^2 \mid n \in \mathbb{Z}^+\}$</h4>
+                <p>
+                    • <strong>Under Addition:</strong> <span class="status-tag status-invalid">Not Closed</span> ($1^2 = 1, 2^2 = 4 \in H$, but $1+4=5 \notin H$).<br>
+                    • <strong>Under Multiplication:</strong> <span class="status-tag status-valid">Closed</span> ($r=n^2, s=m^2 \implies rs = (nm)^2 \in H$).
+                </p>
+            </div>
+
+            <!-- Custom Operations -->
+            <div class="example-card">
+                <h4>1.8–1.10 Examples: Custom Operations</h4>
+                <p>
+                    • <strong>$a \ast b = \min(a,b)$:</strong> Commutative & Associative (programmed into GPS systems).<br>
+                    • <strong>$a \ast' b = a$:</strong> Associative, but <em>Non-commutative</em> ($2 \ast' 3 = 2 \neq 3$).<br>
+                    • <strong>$a \ast'' b = \min(a,b) + 2$:</strong> <em>Non-associative</em> ($(2 \ast'' 5) \ast'' 9 = 6 \neq 4 = 2 \ast'' (5 \ast'' 9)$).
+                </p>
+            </div>
+
+            <!-- Division -->
+            <div class="example-card">
+                <h4>1.26 Example: Formula $a \ast b = a / b$</h4>
+                <p>
+                    • <strong>On $\mathbb{Q}$:</strong> <span class="status-tag status-invalid">Invalid</span> ($2 \ast 0 = 2/0$ is undefined).<br>
+                    • <strong>On $\mathbb{Q}^*$:</strong> <span class="status-tag status-valid">Valid Operation</span>.<br>
+                    • <strong>On $\mathbb{Z}^+$:</strong> <span class="status-tag status-invalid">Not Closed</span> ($1 \ast 2 = 1/2 \notin \mathbb{Z}^+$).
+                </p>
+            </div>
+
+            <!-- Function Division & Ambiguity -->
+            <div class="example-card">
+                <h4>1.27–1.30 Examples: Function & Set Cases</h4>
+                <p>
+                    • <strong>$f \ast g = f/g$ on $F$:</strong> <span class="status-tag status-invalid">Not Closed</span> ($g(x)=0$ creates undefined points).<br>
+                    • <strong>Function greater than $f$ and $g$:</strong> <span class="status-tag status-invalid">Not Well-Defined</span> (Vague; ambiguous assignment).<br>
+                    • <strong>Shortest person taller than $a, b$:</strong> <span class="status-tag status-invalid">Not Everywhere Defined</span> (Fails if $a$ or $b$ is the tallest person).
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 4: VISUAL DIAGRAMS & CAYLEY TABLES -->
+    <section>
+        <h2 class="section-heading">4. Visual Diagrams & Cayley Tables</h2>
+
+        <p><strong>1. Mapping Diagram of Binary Operation $\ast : S \times S \to S$</strong></p>
+        <div class="diagram-box">
+            <svg width="500" height="150" viewBox="0 0 500 150" xmlns="http://www.w3.org/2000/svg">
+                <!-- Domain Ellipse -->
+                <ellipse cx="100" cy="75" rx="70" ry="50" fill="#ffffff" stroke="#111111" stroke-width="1.5"/>
+                <text x="100" y="40" font-family="sans-serif" font-size="11" font-weight="bold" text-anchor="middle">Domain S × S</text>
+                <circle cx="100" cy="85" r="3" fill="#111111"/>
+                <text x="100" y="105" font-family="serif" font-size="13" text-anchor="middle">(a, b)</text>
+
+                <!-- Arrow -->
+                <path d="M 180 75 Q 250 45 310 70" fill="none" stroke="#111111" stroke-width="1.5" marker-end="url(#arrow-head)"/>
+                <text x="250" y="50" font-family="serif" font-size="13" font-style="italic" text-anchor="middle">operation *</text>
+
+                <!-- Arrowhead Marker -->
+                <defs>
+                    <marker id="arrow-head" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#111111"/>
+                    </marker>
+                </defs>
+
+                <!-- Target Ellipse -->
+                <ellipse cx="400" cy="75" rx="70" ry="50" fill="#ffffff" stroke="#111111" stroke-width="1.5"/>
+                <text x="400" y="40" font-family="sans-serif" font-size="11" font-weight="bold" text-anchor="middle">Codomain S</text>
+                <circle cx="400" cy="85" r="3" fill="#111111"/>
+                <text x="400" y="105" font-family="serif" font-size="13" text-anchor="middle">a * b</text>
+            </svg>
+        </div>
+
+        <p style="margin-top: 1.5rem;"><strong>2. Decision Flowchart: Verifying a Binary Operation</strong></p>
+        <div class="diagram-box">
+            <svg width="600" height="200" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+                <!-- Start -->
+                <rect x="10" y="75" width="100" height="40" stroke="#111111" fill="#ffffff" stroke-width="1.5"/>
+                <text x="60" y="99" font-family="sans-serif" font-size="10" font-weight="bold" text-anchor="middle">Rule * on S</text>
+
+                <line x1="110" y1="95" x2="160" y2="95" stroke="#111111" stroke-width="1.5" marker-end="url(#arrow-head)"/>
+
+                <!-- Condition 1 -->
+                <polygon points="220,55 280,95 220,135 160,95" fill="#f8f8f8" stroke="#111111" stroke-width="1.5"/>
+                <text x="220" y="90" font-family="sans-serif" font-size="9" font-weight="bold" text-anchor="middle">Defined for ALL</text>
+                <text x="220" y="102" font-family="sans-serif" font-size="9" font-weight="bold" text-anchor="middle">(a,b) ∈ S×S?</text>
+
+                <!-- No 1 -->
+                <line x1="220" y1="135" x2="220" y2="165" stroke="#111111" stroke-width="1.5" marker-end="url(#arrow-head)"/>
+                <rect x="170" y="165" width="100" height="25" fill="#e5e5e5" stroke="#111111"/>
+                <text x="220" y="181" font-family="sans-serif" font-size="9" font-weight="bold" text-anchor="middle">Not an Operation</text>
+
+                <!-- Yes 1 -->
+                <line x1="280" y1="95" x2="330" y2="95" stroke="#111111" stroke-width="1.5" marker-end="url(#arrow-head)"/>
+
+                <!-- Condition 2 -->
+                <polygon points="390,55 450,95 390,135 330,95" fill="#f8f8f8" stroke="#111111" stroke-width="1.5"/>
+                <text x="390" y="90" font-family="sans-serif" font-size="9" font-weight="bold" text-anchor="middle">Result a*b ∈ S</text>
+                <text x="390" y="102" font-family="sans-serif" font-size="9" font-weight="bold" text-anchor="middle">(Closed)?</text>
+
+                <!-- No 2 -->
+                <line x1="390" y1="135" x2="390" y2="165" stroke="#111111" stroke-width="1.5" marker-end="url(#arrow-head)"/>
+                <rect x="340" y="165" width="100" height="25" fill="#e5e5e5" stroke="#111111"/>
+                <text x="390" y="181" font-family="sans-serif" font-size="9" font-weight="bold" text-anchor="middle">Not Closed</text>
+
+                <!-- Yes 2 -->
+                <line x1="450" y1="95" x2="490" y2="95" stroke="#111111" stroke-width="1.5" marker-end="url(#arrow-head)"/>
+                <rect x="490" y="75" width="100" height="40" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+                <text x="540" y="94" font-family="sans-serif" font-size="9" font-weight="bold" text-anchor="middle">VALID BINARY</text>
+                <text x="540" y="106" font-family="sans-serif" font-size="9" font-weight="bold" text-anchor="middle">OPERATION</text>
+            </svg>
+        </div>
+
+        <p style="margin-top: 1.5rem;"><strong>3. Cayley Tables & Symmetry Criterion</strong></p>
+        <p>
+            An operation defined by a finite table is <strong>commutative</strong> if and only if the entries in the body are symmetric with respect to the main diagonal running from upper-left to lower-right.
+        </p>
+
+        <div style="display: flex; gap: 2rem; justify-content: center; margin-top: 1rem; flex-wrap: wrap;">
+            <div>
+                <p style="text-align: center; font-size: 0.9rem; font-weight: bold;">Table 1.20: Non-Commutative</p>
+                <p style="text-align: center; font-size: 0.8rem; color: #555;">($a \ast b = c \neq a = b \ast a$)</p>
+                <table class="cayley-table">
+                    <tr><th>$\ast$</th><th>a</th><th>b</th><th>c</th></tr>
+                    <tr><th>a</th><td>b</td><td class="highlight">c</td><td>b</td></tr>
+                    <tr><th>b</th><td class="highlight">a</td><td>c</td><td>b</td></tr>
+                    <tr><th>c</th><td>c</td><td>b</td><td>a</td></tr>
+                </table>
+            </div>
+
+            <div>
+                <p style="text-align: center; font-size: 0.9rem; font-weight: bold;">Table 1.25: Symmetric with Identity $e$</p>
+                <p style="text-align: center; font-size: 0.8rem; color: #555;">(Commutative: $a \ast b = b \ast a = c$)</p>
+                <table class="cayley-table">
+                    <tr><th>$\ast$</th><th>e</th><th>a</th><th>b</th><th>c</th></tr>
+                    <tr><th>e</th><td style="background:#eeeeee;">e</td><td>a</td><td>b</td><td>c</td></tr>
+                    <tr><th>a</th><td>a</td><td style="background:#eeeeee;">c</td><td class="highlight">c</td><td>a</td></tr>
+                    <tr><th>b</th><td>b</td><td class="highlight">c</td><td style="background:#eeeeee;">e</td><td>c</td></tr>
+                    <tr><th>c</th><td>c</td><td>a</td><td>b</td><td style="background:#eeeeee;">b</td></tr>
+                </table>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+</body>
+</html>
