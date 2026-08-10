@@ -19,6 +19,21 @@ class ModuleNotesHtmlBuilder {
       sectionsHtml.writeln('<section>');
       sectionsHtml.writeln('  <h2 class="section-heading">${_escapeHtml(heading.toString())}</h2>');
 
+      // Key Takeaways & Concise Core Concepts
+      final keyConcepts = secMap['keyConcepts'] ?? secMap['keyTakeaways'] ?? secMap['highlights'];
+      if (keyConcepts is List && keyConcepts.isNotEmpty) {
+        sectionsHtml.writeln('  <div class="key-concepts-box">');
+        sectionsHtml.writeln('    <div class="key-concepts-title">Key Concepts & Summary</div>');
+        sectionsHtml.writeln('    <ul class="key-concepts-list">');
+        for (var kc in keyConcepts) {
+          if (kc != null && kc.toString().trim().isNotEmpty) {
+            sectionsHtml.writeln('      <li>${kc.toString()}</li>');
+          }
+        }
+        sectionsHtml.writeln('    </ul>');
+        sectionsHtml.writeln('  </div>');
+      }
+
       // Paragraphs / Theory
       final paragraphs = secMap['contentParagraphs'] ?? secMap['paragraphs'] ?? secMap['theory'];
       if (paragraphs is List) {
@@ -310,6 +325,38 @@ class ModuleNotesHtmlBuilder {
             text-transform: uppercase;
             letter-spacing: 0.05em;
             word-break: break-word;
+        }
+
+        /* KEY CONCEPTS BOX */
+        .key-concepts-box {
+            background-color: #f8fafc;
+            border-left: 4px solid #059669;
+            border-radius: 4px;
+            padding: 0.85rem 1rem;
+            margin: 1rem 0 1.25rem 0;
+            width: 100%;
+        }
+
+        .key-concepts-title {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 0.82rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #047857;
+            margin-bottom: 0.5rem;
+        }
+
+        .key-concepts-list {
+            margin: 0;
+            padding-left: 1.2rem;
+            color: #1e293b;
+            font-size: 0.95rem;
+        }
+
+        .key-concepts-list li {
+            margin-bottom: 0.4rem;
+            line-height: 1.5;
         }
 
         p {

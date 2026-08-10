@@ -748,7 +748,7 @@ function render(){
     return _shell(body, script, code);
   }
 
-  /// LaTeX: typeset with LaTeX.js from CDN.
+  /// LaTeX: typeset with KaTeX & Math preprocessor.
   static String _latex(String code) {
     final body = '''
 <div class="bar"><span class="lang">LATEX</span>
@@ -760,7 +760,7 @@ function render(){
     final script = '''
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/latex.js/dist/latex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex/dist/contrib/auto-render.min.js"></script>
 <script>
 function \$(id){ return document.getElementById(id); }
 window.__initRunner = function(){
@@ -769,17 +769,15 @@ window.__initRunner = function(){
 };
 function render(){
   try {
-    const gen = latexjs.parse(\$('editor').value, { generator: new latexjs.HtmlGenerator({ hyphenate:false }) });
-    \$('out').innerHTML = '';
-    \$('out').appendChild(gen.domFragment());
-    
-    // Inject LaTeX.js document styling (Computer Modern font, layout, etc.) dynamically
-    const oldStyles = document.getElementById('latex-styles');
-    if (oldStyles) { oldStyles.remove(); }
-    const container = document.createElement('div');
-    container.id = 'latex-styles';
-    container.appendChild(gen.stylesAndScripts("https://cdn.jsdelivr.net/npm/latex.js/dist/"));
-    document.head.appendChild(container);
+    const raw = \$('editor').value;
+    let html = raw.replace(/\\\\section\\*?\\{([^}]+)\\}/g, '<h2 style="font-size:18px;margin:12px 0;">\$1</h2>')
+                  .replace(/\\\\subsection\\*?\\{([^}]+)\\}/g, '<h3 style="font-size:15px;margin:10px 0;">\$1</h3>')
+                  .replace(/\\\\textbf\\{([^}]+)\\}/g, '<b>\$1</b>')
+                  .replace(/\\\\textit\\{([^}]+)\\}/g, '<i>\$1</i>');
+    \$('out').innerHTML = html;
+    if (window.renderMathInElement) {
+      renderMathInElement(\$('out'));
+    }
   } catch (e) { \$('out').textContent = String(e); }
 }
 </script>

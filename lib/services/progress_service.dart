@@ -6,7 +6,6 @@ import 'learning_sync.dart';
 import 'fb/fb_auth.dart';
 import 'database_service.dart';
 import 'guest_service.dart';
-import 'daily_goals_service.dart';
 
 class ProgressService {
   /// Returns the current user's UID (or unique guest ID when not signed in).
@@ -229,7 +228,6 @@ class ProgressService {
     final ids = unit.lessons.map((l) => l.id).toList();
     ids.add(unit.id);
     await markLessonsCompleted(ids, bookId);
-    await DailyGoalsService.instance.updateProgressOnActivity(unitsCompleted: 1);
   }
 
   static Future<void> clearUnitProgress(Unit unit, String bookId) async {
@@ -246,7 +244,6 @@ class ProgressService {
       ids.addAll(u.lessons.map((l) => l.id));
     }
     await markLessonsCompleted(ids, bookId);
-    await DailyGoalsService.instance.updateProgressOnActivity(sectionsCompleted: 1);
   }
 
   static Future<void> clearSectionProgress(Section section, String bookId) async {
@@ -270,7 +267,6 @@ class ProgressService {
       }
     }
     await markLessonsCompleted(ids, bookId);
-    await DailyGoalsService.instance.updateProgressOnActivity(modulesCompleted: 1);
   }
 
   static Future<void> clearModuleProgress(Module module, String bookId) async {
@@ -314,21 +310,6 @@ class ProgressService {
     list.add(jsonEncode(log));
     await prefs.setStringList(_activitiesKey, list);
     _onProgressChanged();
-
-    // Trigger Daily Goals progress updates!
-    final isLesson = activityType == 'lesson';
-    final isPractice = activityType == 'practice';
-    final isPerfect = accuracy == 100;
-    final timeSpentMinutes = (timeSpent / 60).round();
-
-    await DailyGoalsService.instance.updateProgressOnActivity(
-      xpGained: xp,
-      lessonsCompleted: isLesson ? 1 : 0,
-      perfectLessons: isLesson && isPerfect ? 1 : 0,
-      practiceQuestions: isPractice ? 1 : 0,
-      timeSpentMinutes: timeSpentMinutes > 0 ? timeSpentMinutes : 1,
-      accuracy: accuracy.toDouble(),
-    );
   }
 
   static Future<List<Map<String, dynamic>>> getActivityLogs() async {

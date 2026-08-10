@@ -102,62 +102,62 @@ class _ComboBadgeState extends State<ComboBadge>
     super.dispose();
   }
 
-  // Visual Theme configuration based on Combo Tier
+  // Visual Theme configuration based on Combo Tier & Color Psychology
   _ComboStyle _getStyle(int combo) {
     if (combo >= 5) {
-      // Supercharged Cyber Plasma
+      // Tier 4: Apex Celestial Flow (Violet -> Purple -> Electric Cyan) - Focus & Mastery
       return _ComboStyle(
         gradient: const LinearGradient(
-          colors: [Color(0xFF00F2FE), Color(0xFF4FACFE), Color(0xFF6100FF)],
+          colors: [Color(0xFFA78BFA), Color(0xFF7C3AED), Color(0xFF22D3EE)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        glowColor: const Color(0xFF00F2FE),
+        glowColor: const Color(0xFFA78BFA),
         textColor: Colors.white,
-        iconColor: const Color(0xFFFFE600),
-        borderColors: [const Color(0xFF00F2FE), Colors.white],
+        iconColor: const Color(0xFF22D3EE),
+        borderColors: [const Color(0xFFC4B5FD), Colors.white],
         labelPrefix: 'COMBO ',
       );
     } else if (combo == 4) {
-      // Electric Pink / Purple
+      // Tier 3: Burning Fire Crimson (Red -> Crimson) - High Performance & Passion
       return _ComboStyle(
         gradient: const LinearGradient(
-          colors: [Color(0xFFEC4899), Color(0xFFA855F7)],
+          colors: [Color(0xFFF87171), Color(0xFFDC2626), Color(0xFF991B1B)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        glowColor: const Color(0xFFEC4899),
+        glowColor: const Color(0xFFF87171),
         textColor: Colors.white,
-        iconColor: const Color(0xFFFFD700),
-        borderColors: [const Color(0xFFF472B6), Colors.white],
+        iconColor: const Color(0xFFFFC94D),
+        borderColors: [const Color(0xFFFCA5A5), Colors.white],
         labelPrefix: 'x',
       );
     } else if (combo == 3) {
-      // Fire Orange
+      // Tier 2: Warm Amber & Duo Orange (Gold -> Orange) - Heat & Energy
       return _ComboStyle(
         gradient: const LinearGradient(
-          colors: [Color(0xFFFF5722), Color(0xFFF97316)],
+          colors: [Color(0xFFFFC94D), Color(0xFFF59E0B), Color(0xFFD97706)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        glowColor: const Color(0xFFFF5722),
-        textColor: Colors.white,
-        iconColor: const Color(0xFFFFEB3B),
-        borderColors: [const Color(0xFFFF8A65), Colors.white],
+        glowColor: const Color(0xFFFFC94D),
+        textColor: const Color(0xFF0F172A),
+        iconColor: Colors.white,
+        borderColors: [const Color(0xFFFDE68A), Colors.white],
         labelPrefix: 'x',
       );
     } else {
-      // Gold / Yellow (x2)
+      // Tier 1: Duo Emerald Green (Green -> Dark Emerald) - Growth & Momentum
       return _ComboStyle(
         gradient: const LinearGradient(
-          colors: [Color(0xFFFFB800), Color(0xFFF59E0B)],
+          colors: [Color(0xFF34D399), Color(0xFF059669), Color(0xFF047857)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        glowColor: const Color(0xFFFFB800),
-        textColor: const Color(0xFF1E1B4B),
-        iconColor: const Color(0xFFFFFFFF),
-        borderColors: [const Color(0xFFFDE047), Colors.white],
+        glowColor: const Color(0xFF34D399),
+        textColor: Colors.white,
+        iconColor: const Color(0xFFFFC94D),
+        borderColors: [const Color(0xFFA7F3D0), Colors.white],
         labelPrefix: 'x',
       );
     }

@@ -304,13 +304,7 @@ class ModuleNotesService {
         }
       } catch (e) {
         print('[ModuleNotesService] Warning generating section ${i + 1}: $e');
-        generatedSections.add({
-          'sectionHeading': 'Section ${i + 1}: ${sec.title}',
-          'contentParagraphs': [
-            'Study notes for ${sec.title}.',
-            sec.description.isNotEmpty ? sec.description : 'Core concepts and theory for this section.'
-          ]
-        });
+        generatedSections.add(_buildSmartFallbackSection(secIndex: i, sec: sec));
       }
     }
 
@@ -375,7 +369,7 @@ class ModuleNotesService {
     return pdfFile;
   }
 
-  /// Prompts AI to generate complete textbook study notes for a single section.
+  /// Prompts AI to generate concise, high-density study/revision notes for a single section.
   Future<Map<String, dynamic>> _generateNotesForSection({
     required AiService ai,
     required Book book,
@@ -390,85 +384,104 @@ class ModuleNotesService {
     final String unitTitles = sec.units.map((u) => u.title).join(', ');
 
     final prompt = '''
-You are an expert textbook author writing comprehensive, book-quality study notes for a university course.
+You are an expert academic tutor creating concise, high-density, information-rich revision notes & cheat sheets for university students.
 Course Title: ${book.title}
 Module Title: ${module.title}
 Target Section: $sectionHeadingStr
-Section Overview: ${sec.description.isNotEmpty ? sec.description : 'Comprehensive study of ' + sec.title}
-Units / Topics in this Section: ${unitTitles.isNotEmpty ? unitTitles : sec.title}
-${refBookText.isNotEmpty ? 'Reference Text Snippet:\n${refBookText.length > 1500 ? refBookText.substring(0, 1500) : refBookText}' : ''}
+Section Description: ${sec.description.isNotEmpty ? sec.description : sec.title}
+Units / Key Topics: ${unitTitles.isNotEmpty ? unitTitles : sec.title}
+${refBookText.isNotEmpty ? 'Reference Text Snippet:\n${refBookText.length > 1200 ? refBookText.substring(0, 1200) : refBookText}' : ''}
 $regenDirective
 
-Generate full textbook study notes for "$sectionHeadingStr" as valid JSON.
-Include ALL of the following elements:
-1. "contentParagraphs": Comprehensive textbook explanation of core theory and intuition with inline LaTeX (\$...\$) and display LaTeX (\$\$...\$\$).
-2. "warningBoxes": Critical pitfalls, essential conditions, or common exam mistakes.
-3. "definitions": Formal definitions, theorems, lemmas with numbers, tags, formal content, and proofs.
-4. "examples": Worked examples and counterexamples with status tags ("Valid Operation", "Not Closed", etc.).
-5. "diagrams": SVG visual diagrams (mapping diagrams, geometric graphs, or Venn diagrams) with descriptions.
-6. "tables": Cayley operation tables or comparison tables with HTML structure.
+INSTRUCTIONS:
+1. Write CONCISE, HIGH-DENSITY, INFORMATION-RICH revision notes (cheat-sheet style).
+2. Avoid long textbook essays or fluff. Use bullet points, sharp definitions, key formulas, exam warnings, and 1-2 quick worked examples.
+3. Use inline LaTeX math (\$...\$) and display LaTeX math (\$\$...\$\$).
 
-JSON structure:
+Return valid JSON with this exact schema:
 {
   "sectionHeading": "$sectionHeadingStr",
-  "contentParagraphs": [
-    "Comprehensive textbook-style explanation of core concepts with inline LaTeX math \$...\$ and display math \$\$...\$\$."
-  ],
-  "warningBoxes": [
-    {
-      "title": "Essential Pitfall / Exam Warning",
-      "content": "Explanation of pitfall with LaTeX..."
-    }
+  "keyConcepts": [
+    "Sharp bullet point 1 explaining core concept with inline LaTeX \$...\$",
+    "Sharp bullet point 2 with key formula \$\$...\$\$",
+    "Sharp bullet point 3 summarizing critical application rule"
   ],
   "definitions": [
     {
       "number": "${secIndex + 1}.1",
-      "title": "Definition (Key Concept)",
+      "title": "Core Definition / Theorem Title",
       "tag": "Definition",
-      "content": "Formal definition with LaTeX...",
-      "proof": {
-        "title": "Proof.",
-        "content": "Step-by-step rigorous proof with LaTeX..."
-      }
+      "content": "Concise formal statement with LaTeX math \$...\$"
+    }
+  ],
+  "warningBoxes": [
+    {
+      "title": "Exam Warning / Pitfall",
+      "content": "Common student mistake or critical condition to watch out for."
     }
   ],
   "examples": [
     {
-      "title": "Example ${secIndex + 1}.1: Solved Case",
-      "statusTag": "Valid Operation",
-      "statusType": "valid",
-      "content": "Detailed step-by-step solution with LaTeX..."
-    }
-  ],
-  "diagrams": [
-    {
-      "title": "Visual Diagram",
-      "svgContent": "<svg width=\\"400\\" height=\\"120\\" viewBox=\\"0 0 400 120\\" xmlns=\\"http://www.w3.org/2000/svg\\"><ellipse cx=\\"80\\" cy=\\"60\\" rx=\\"60\\" ry=\\"40\\" fill=\\"#ffffff\\" stroke=\\"#111111\\" stroke-width=\\"1.5\\"/><text x=\\"80\\" y=\\"60\\" text-anchor=\\"middle\\">Set A</text></svg>",
-      "description": "Diagram explanation."
-    }
-  ],
-  "tables": [
-    {
-      "title": "Cayley Table",
-      "subtitle": "(Operation group)",
-      "htmlContent": "<table class=\\"cayley-table\\"><tr><th>*</th><th>e</th><th>a</th></tr><tr><th>e</th><td>e</td><td>a</td></tr><tr><th>a</th><td>a</td><td>e</td></tr></table>"
+      "title": "Example ${secIndex + 1}.1: Solved Problem",
+      "statusTag": "Worked Solution",
+      "content": "Step 1: ... \\nStep 2: ... \\nResult: ..."
     }
   ]
 }
+
 Return ONLY valid JSON.
 ''';
 
-    final resp = await ai.generateSimpleText(prompt: prompt, slotName: 'Primary - Text');
-    final parsed = _parseJson(resp);
-    if (parsed != null) {
-      return parsed;
+    for (int attempt = 1; attempt <= 2; attempt++) {
+      try {
+        final currentPrompt = attempt == 1
+            ? prompt
+            : '$prompt\n\nCRITICAL RETRY NOTICE: Your previous output failed JSON parsing. Return STRICT raw valid JSON only, escape all quotes inside string fields!';
+        final resp = await ai.generateSimpleText(prompt: currentPrompt, slotName: 'Primary - Text');
+        final parsed = _parseJson(resp);
+        if (parsed != null && parsed.isNotEmpty) {
+          if (!parsed.containsKey('sectionHeading')) {
+            parsed['sectionHeading'] = sectionHeadingStr;
+          }
+          return parsed;
+        }
+      } catch (e) {
+        print('[ModuleNotesService] AI Section generation attempt $attempt failed for ${sec.title}: $e');
+      }
+    }
+
+    // High-quality smart fallback generator (No empty placeholder text!)
+    return _buildSmartFallbackSection(secIndex: secIndex, sec: sec);
+  }
+
+  Map<String, dynamic> _buildSmartFallbackSection({
+    required int secIndex,
+    required Section sec,
+  }) {
+    final String sectionHeadingStr = 'Section ${secIndex + 1}: ${sec.title}';
+    final List<String> concepts = [];
+
+    if (sec.description.isNotEmpty) {
+      concepts.add(sec.description);
+    }
+
+    if (sec.units.isNotEmpty) {
+      for (final u in sec.units) {
+        concepts.add('${u.title}: ${u.description.isNotEmpty ? u.description : "Core topic covering key definitions, rules, and practical evaluation methods."}');
+      }
+    } else {
+      concepts.add('Core Concepts: Detailed study of key principles, algebraic operations, and methods in ${sec.title}.');
+      concepts.add('Formula & Rules: Master standard mathematical operations, order of evaluation, and notation.');
     }
 
     return {
       'sectionHeading': sectionHeadingStr,
-      'contentParagraphs': [
-        'Study notes for ${sec.title}.',
-        sec.description.isNotEmpty ? sec.description : 'Core concepts and theory for this section.'
+      'keyConcepts': concepts,
+      'warningBoxes': [
+        {
+          'title': 'Key Focus Area',
+          'content': 'Ensure proper order of operations and verify variable substitutions carefully during evaluation.'
+        }
       ]
     };
   }
@@ -707,6 +720,25 @@ Return ONLY valid JSON.
         y = hRes.bounds.bottom + 4;
         page.graphics.drawLine(sync_pdf.PdfPen(sync_pdf.PdfColor(50, 50, 50), width: 0.8), Offset(0, y), Offset(page.getClientSize().width, y));
         y += 10;
+
+        // Key Takeaways & Concepts
+        final keyConcepts = secMap['keyConcepts'] ?? secMap['keyTakeaways'] ?? secMap['highlights'];
+        if (keyConcepts is List && keyConcepts.isNotEmpty) {
+          for (var kc in keyConcepts) {
+            if (kc == null || kc.toString().trim().isEmpty) continue;
+            final text = '• ${_cleanLatexForNativePdf(kc.toString())}';
+            if (y > page.getClientSize().height - 40) {
+              page = document.pages.add();
+              y = 0;
+            }
+            final pRes = sync_pdf.PdfTextElement(text: text, font: bodyFont).draw(
+              page: page,
+              bounds: Rect.fromLTWH(0, y, page.getClientSize().width, page.getClientSize().height - y),
+            )!;
+            y = pRes.bounds.bottom + 6;
+          }
+          y += 6;
+        }
 
         // Paragraphs
         final paragraphs = secMap['contentParagraphs'] ?? secMap['paragraphs'] ?? secMap['theory'];

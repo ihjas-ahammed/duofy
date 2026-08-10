@@ -398,28 +398,36 @@ class DatabaseService {
   }
 
   Future<void> _deleteBookFile(String forUid, String id) async {
-    if (kIsWeb) {
+    try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('web_book_${forUid}_$id');
       final keys = prefs.getKeys();
       for (final key in keys) {
-        if (key.startsWith('web_book_${forUid}_${id}_lesson_')) {
+        if (key.contains('_$id') || key.startsWith('web_book_${forUid}_${id}_')) {
           await prefs.remove(key);
         }
       }
-      return;
-    }
+    } catch (_) {}
+
+    if (kIsWeb) return;
+
     try {
       final dir = await _booksDir(forUid);
       final f = _bookFile(dir, id);
       if (await f.exists()) await f.delete();
 
-      // Clean up lesson slides
-      final files = dir.listSync().whereType<File>();
-      for (final file in files) {
-        final filename = file.path.split('/').last;
-        if (filename.startsWith('${id}_lesson_') && filename.endsWith('_slides.json')) {
-          await file.delete();
+      final tmp = File('${f.path}.tmp');
+      if (await tmp.exists()) await tmp.delete();
+
+      if (await dir.exists()) {
+        final files = dir.listSync().whereType<File>();
+        for (final file in files) {
+          final filename = file.path.split('/').last;
+          if (filename.startsWith('${id}_') || filename.contains(id)) {
+            try {
+              await file.delete();
+            } catch (_) {}
+          }
         }
       }
     } catch (e) {
@@ -687,8 +695,16 @@ class DatabaseService {
       final List<Book> toPush = [];
       final Set<String> idsToWrite = {};
 
+      final prefs = await SharedPreferences.getInstance();
+      final deletedSet = (prefs.getStringList('deleted_books_$uid') ?? []).toSet();
+
       // 1. Check for remote-only books (remote has them, local doesn't)
       for (final remoteBook in remote.values) {
+        if (deletedSet.contains(remoteBook.id)) {
+          // Permanently delete from cloud as well and skip resurrecting
+          _userBooks.doc(remoteBook.id).delete().catchError((_) {});
+          continue;
+        }
         if (!local.containsKey(remoteBook.id)) {
           idsToWrite.add(remoteBook.id);
         }
@@ -738,7 +754,6 @@ class DatabaseService {
       }
 
       // Record successful sync time
-      final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('last_db_sync_time', DateTime.now().millisecondsSinceEpoch);
 
       return _sorted(merged.values);
@@ -818,6 +833,15 @@ class DatabaseService {
     final scopedBook = book.scopeBookIds(book.id);
     final updatedBook = scopedBook.copyWith(updatedAt: DateTime.now().millisecondsSinceEpoch);
 
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final deletedList = prefs.getStringList('deleted_books_$uid') ?? [];
+      if (deletedList.contains(updatedBook.id)) {
+        deletedList.remove(updatedBook.id);
+        await prefs.setStringList('deleted_books_$uid', deletedList);
+      }
+    } catch (_) {}
+
     // 1. Local file store first — this is the source of truth and must succeed
     //    for the book to appear in the UI. Only this one book's file is
     //    rewritten, so per-lesson streaming saves stay cheap.
@@ -841,14 +865,25 @@ class DatabaseService {
   Future<void> deleteBook(String id) async {
     final books = await _ensureLoaded();
     books.remove(id);
+    _mem[uid]?.remove(id);
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final deletedList = prefs.getStringList('deleted_books_$uid') ?? [];
+      if (!deletedList.contains(id)) {
+        deletedList.add(id);
+        await prefs.setStringList('deleted_books_$uid', deletedList);
+      }
+    } catch (_) {}
+
     await _deleteBookFile(uid, id);
 
-    if (await isCloudEnabled()) {
-      try {
+    try {
+      if (!isGuestId(uid)) {
         await _userBooks.doc(id).delete();
-      } catch (e) {
-        print("[DatabaseService] Cloud delete failed: $e");
       }
+    } catch (e) {
+      print("[DatabaseService] Cloud delete failed for $id: $e");
     }
   }
 

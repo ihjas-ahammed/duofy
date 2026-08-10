@@ -5,6 +5,7 @@ import '../../services/code_storage_service.dart';
 import '../../services/ide_settings_service.dart';
 import '../../services/python_runner_service.dart';
 import '../../theme/app_theme.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../widgets/code_highlighter.dart';
 import '../../widgets/duo_button.dart';
 import '../../widgets/ide_config_dialog.dart';
@@ -46,23 +47,46 @@ class _PythonNotebookScreenState extends State<PythonNotebookScreen> {
         NotebookCell(
           id: 'c1',
           cellType: 'markdown',
-          content: '# Python Notebook\nRun interactive Python code, create data visualizations with Matplotlib, and experiment live!',
+          content: '# Python Data Science Notebook\nRun interactive Python code, use NumPy array calculations, handle `input()`, and render live Matplotlib charts!',
         ),
       );
       _cells.add(
         NotebookCell(
           id: 'c2',
           cellType: 'code',
-          content: '''import matplotlib.pyplot as plt
-import math
+          content: '''import numpy as np
+import matplotlib.pyplot as plt
 
-x = [i * 0.1 for i in range(0, 100)]
-y = [math.sin(val) for val in x]
+print("Testing NumPy array calculation...")
+x = np.linspace(0, 10, 100)
+y = np.sin(x)
 
 plt.plot(x, y, color='blue', label='sin(x)')
-plt.title("Live Matplotlib Sine Wave")
+plt.title("NumPy & Matplotlib Live Sine Wave")
 plt.xlabel("x")
 plt.ylabel("sin(x)")
+plt.legend()
+plt.grid(True)
+plt.show()''',
+        ),
+      );
+      _cells.add(
+        NotebookCell(
+          id: 'c3',
+          cellType: 'code',
+          content: '''import numpy as np
+import matplotlib.pyplot as plt
+
+amp = float(input("Enter wave amplitude (e.g. 5): "))
+freq = float(input("Enter wave frequency (e.g. 2): "))
+
+x = np.linspace(0, 10, 100)
+y = amp * np.cos(freq * x)
+
+plt.plot(x, y, color='red', label='Interactive Cosine')
+plt.title(f"Interactive Cosine Wave (Amp={amp}, Freq={freq})")
+plt.xlabel("x")
+plt.ylabel("y")
 plt.legend()
 plt.grid(True)
 plt.show()''',
@@ -139,7 +163,69 @@ plt.show()''',
       cell.graphicsBase64 = null;
     });
 
-    final res = await PythonRunnerService.instance.runCode(code);
+    final res = await PythonRunnerService.instance.runCode(
+      code,
+      onInputRequest: (prompt) async {
+        final inputCtrl = TextEditingController();
+        String result = '';
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: context.colors.surface,
+            title: Row(
+              children: [
+                const Icon(LucideIcons.terminal, color: AppTheme.duoBlue, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Python Input Request',
+                  style: TextStyle(
+                    color: context.colors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  prompt.trim().isNotEmpty ? prompt : 'Python script is asking for input:',
+                  style: TextStyle(fontSize: 13, color: context.colors.textPrimary),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: inputCtrl,
+                  autofocus: true,
+                  style: TextStyle(color: context.colors.textPrimary, fontFamily: 'monospace'),
+                  decoration: InputDecoration(
+                    hintText: 'Enter value...',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onSubmitted: (val) {
+                    result = val;
+                    Navigator.pop(ctx);
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.duoBlue),
+                onPressed: () {
+                  result = inputCtrl.text;
+                  Navigator.pop(ctx);
+                },
+                child: const Text('Submit'),
+              ),
+            ],
+          ),
+        );
+        return result;
+      },
+    );
 
     if (mounted) {
       setState(() {
@@ -236,7 +322,7 @@ plt.show()''',
               children: [
                 Expanded(
                   child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     itemCount: _cells.length,
                     itemBuilder: (ctx, idx) {
                       final cell = _cells[idx];
@@ -245,7 +331,7 @@ plt.show()''',
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: context.colors.surface,
                     border: Border(top: BorderSide(color: context.colors.outline)),
@@ -291,14 +377,14 @@ plt.show()''',
     if (cell.cellType == 'markdown') {
       final mdCtrl = _mdControllers[cell.id]!;
       return Card(
-        margin: const EdgeInsets.only(bottom: 16),
+        margin: const EdgeInsets.only(bottom: 8),
         color: context.colors.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           side: BorderSide(color: context.colors.outline),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(14.0),
+          padding: const EdgeInsets.all(10.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -307,10 +393,10 @@ plt.show()''',
                 children: [
                   Row(
                     children: [
-                      Icon(LucideIcons.fileText, color: AppTheme.duoViolet, size: 16),
-                      const SizedBox(width: 6),
+                      Icon(LucideIcons.fileText, color: AppTheme.duoViolet, size: 14),
+                      const SizedBox(width: 4),
                       Text(
-                        'TEXT (MARKDOWN)',
+                        'TEXT CELL [${index + 1}]',
                         style: TextStyle(
                           color: AppTheme.duoViolet,
                           fontSize: 10,
@@ -321,33 +407,34 @@ plt.show()''',
                     ],
                   ),
                   IconButton(
-                    icon: Icon(LucideIcons.trash2, color: AppTheme.duoRed, size: 16),
+                    icon: Icon(LucideIcons.trash2, color: AppTheme.duoRed, size: 14),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                     onPressed: () => _deleteCell(index),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               TextField(
                 controller: mdCtrl,
-                maxLines: 3,
+                maxLines: null,
                 style: TextStyle(
                   color: context.colors.textPrimary,
                   fontSize: settings.fontSize,
                 ),
-                decoration: InputDecoration(
-                  hintText: 'Type markdown or text...',
-                  filled: true,
-                  fillColor: context.colors.glassStrong,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: context.colors.outline),
-                  ),
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  hintText: 'Type markdown / notes here...',
+                  isDense: true,
                 ),
-                onChanged: (val) => cell.content = val,
+                onChanged: (val) {
+                  setState(() {
+                    cell.content = val;
+                  });
+                },
               ),
               if (mdCtrl.text.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                const Divider(),
+                const Divider(height: 12),
                 MathMarkdown(data: mdCtrl.text),
               ],
             ],
@@ -359,18 +446,15 @@ plt.show()''',
     final codeCtrl = _codeControllers[cell.id]!;
     codeCtrl.theme = isDark ? CodeTheme.dark : CodeTheme.light;
 
-    final lineCount = cell.content.split('\n').length;
-    final lineNumbersText = List.generate(lineCount, (i) => '${i + 1}').join('\n');
-
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 8),
       color: context.colors.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: context.colors.outline),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14.0),
+        padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -379,8 +463,8 @@ plt.show()''',
               children: [
                 Row(
                   children: [
-                    Icon(LucideIcons.code2, color: AppTheme.duoBlue, size: 16),
-                    const SizedBox(width: 6),
+                    Icon(LucideIcons.code2, color: AppTheme.duoBlue, size: 14),
+                    const SizedBox(width: 4),
                     Text(
                       'PYTHON CELL [${index + 1}]',
                       style: TextStyle(
@@ -397,98 +481,69 @@ plt.show()''',
                     IconButton(
                       icon: isRunning
                           ? const SizedBox(
-                              width: 16,
-                              height: 16,
+                              width: 14,
+                              height: 14,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : Icon(LucideIcons.play, color: AppTheme.duoGreen, size: 20),
+                          : Icon(LucideIcons.play, color: AppTheme.duoGreen, size: 18),
+                      padding: const EdgeInsets.all(4),
+                      constraints: const BoxConstraints(),
                       onPressed: isRunning ? null : () => _runCell(cell),
                     ),
+                    const SizedBox(width: 8),
                     IconButton(
-                      icon: Icon(LucideIcons.trash2, color: AppTheme.duoRed, size: 16),
+                      icon: Icon(LucideIcons.trash2, color: AppTheme.duoRed, size: 14),
+                      padding: const EdgeInsets.all(4),
+                      constraints: const BoxConstraints(),
                       onPressed: () => _deleteCell(index),
                     ),
                   ],
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             Container(
               decoration: BoxDecoration(
                 color: editorBg,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: context.colors.outline),
               ),
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (settings.showLineNumbers) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(right: 10.0),
-                      child: Text(
-                        lineNumbersText,
-                        strutStyle: StrutStyle(
-                          fontFamily: 'monospace',
-                          fontSize: settings.fontSize,
-                          height: 1.4,
-                          forceStrutHeight: true,
-                        ),
-                        style: TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: settings.fontSize,
-                          color: isDark ? const Color(0xFF6E7781) : const Color(0xFF8C959F),
-                          height: 1.4,
-                        ),
-                        textAlign: TextAlign.right,
-                      ),
-                    ),
-                    Container(
-                      width: 1,
-                      height: (lineCount * (settings.fontSize * 1.4)).clamp(24, 200),
-                      color: context.colors.outline.withValues(alpha: 0.5),
-                    ),
-                    const SizedBox(width: 10),
-                  ],
-                  Expanded(
-                    child: TextField(
-                      controller: codeCtrl,
-                      maxLines: settings.wordWrap ? null : 1,
-                      strutStyle: StrutStyle(
-                        fontFamily: 'monospace',
-                        fontSize: settings.fontSize,
-                        height: 1.4,
-                        forceStrutHeight: true,
-                      ),
-                      style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: settings.fontSize,
-                        color: editorText,
-                        height: 1.4,
-                      ),
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.zero,
-                        isDense: true,
-                      ),
-                      onChanged: (val) {
-                        setState(() {
-                          cell.content = val;
-                        });
-                      },
-                    ),
-                  ),
-                ],
+              padding: const EdgeInsets.all(8),
+              child: TextField(
+                controller: codeCtrl,
+                maxLines: settings.wordWrap ? null : 1,
+                strutStyle: StrutStyle(
+                  fontFamily: 'monospace',
+                  fontSize: settings.fontSize,
+                  height: 1.4,
+                  forceStrutHeight: true,
+                ),
+                style: TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: settings.fontSize,
+                  color: editorText,
+                  height: 1.4,
+                ),
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
+                  isDense: true,
+                ),
+                onChanged: (val) {
+                  setState(() {
+                    cell.content = val;
+                  });
+                },
               ),
             ),
             if (cell.outputStdout != null || cell.outputStderr != null || (cell.graphicsBase64 != null && cell.graphicsBase64!.isNotEmpty)) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: consoleBg,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: context.colors.outline),
                 ),
                 child: Column(
@@ -502,7 +557,7 @@ plt.show()''',
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     if (cell.outputStdout != null && cell.outputStdout!.isNotEmpty)
                       SelectableText(
                         cell.outputStdout!,
@@ -512,25 +567,54 @@ plt.show()''',
                           color: consoleText,
                         ),
                       ),
-                    if (cell.outputStderr != null && cell.outputStderr!.isNotEmpty)
-                      SelectableText(
-                        cell.outputStderr!,
-                        style: TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: settings.fontSize * 0.9,
-                          color: isDark ? const Color(0xFFF38BA8) : const Color(0xFFB91C1C),
+                    if (cell.outputStderr != null && cell.outputStderr!.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF2A1215) : const Color(0xFFFEF2F2),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: Colors.redAccent.withValues(alpha: 0.5)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(LucideIcons.alertTriangle, color: Colors.redAccent, size: 14),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'ERROR / TRACEBACK:',
+                                  style: TextStyle(
+                                    color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            SelectableText(
+                              cell.outputStderr!,
+                              style: TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: settings.fontSize * 0.9,
+                                color: isDark ? const Color(0xFFF87171) : const Color(0xFFB91C1C),
+                                height: 1.3,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                    ],
                     if (cell.graphicsBase64 != null)
                       for (final img in cell.graphicsBase64!)
                         Padding(
                           padding: const EdgeInsets.only(top: 8.0),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
-                            child: Image.memory(
-                              base64Decode(img),
-                              fit: BoxFit.contain,
-                            ),
+                            child: _buildGraphicWidget(img),
                           ),
                         ),
                   ],
@@ -541,5 +625,27 @@ plt.show()''',
         ),
       ),
     );
+  }
+
+  Widget _buildGraphicWidget(String rawBase64) {
+    try {
+      final decodedBytes = base64Decode(rawBase64);
+      final decodedStr = utf8.decode(decodedBytes, allowMalformed: true);
+      if (decodedStr.contains('<svg')) {
+        return SvgPicture.string(
+          decodedStr,
+          fit: BoxFit.contain,
+        );
+      }
+      return Image.memory(
+        decodedBytes,
+        fit: BoxFit.contain,
+      );
+    } catch (_) {
+      return Image.memory(
+        base64Decode(rawBase64),
+        fit: BoxFit.contain,
+      );
+    }
   }
 }

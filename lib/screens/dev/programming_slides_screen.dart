@@ -67,7 +67,7 @@ class ProgrammingSlidesScreen extends StatelessWidget {
       id: 'r_latex',
       type: 'try_yourself',
       title: 'LaTeX preview',
-      content: 'Typeset with LaTeX.js.',
+      content: 'Typeset with TeX Live online engine.',
       language: 'latex',
       code: r'The quadratic formula: $x = \frac{-b \pm \sqrt{b^2-4ac}}{2a}$.',
     ),

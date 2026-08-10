@@ -7,7 +7,6 @@ import 'services/global_state.dart';
 import 'services/notification_service.dart';
 import 'screens/auth_gate.dart';
 import 'widgets/walkthrough_banner.dart';
-import 'widgets/floating_daily_goal_toast.dart';
 import 'screens/settings_screen.dart';
 import 'screens/book_route_loader_screen.dart';
 import 'services/learning_sync.dart';
@@ -551,13 +550,11 @@ class FlowApp extends StatelessWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
       builder: (context, child) => GlobalErrorCaptureLayer(
-        child: FloatingDailyGoalListener(
-          child: Stack(
-            children: [
-              ?child,
-              const Positioned.fill(child: WalkthroughBanner()),
-            ],
-          ),
+        child: Stack(
+          children: [
+            ?child,
+            const Positioned.fill(child: WalkthroughBanner()),
+          ],
         ),
       ),
       home: const AuthGate(),

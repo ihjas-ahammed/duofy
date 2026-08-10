@@ -8,7 +8,6 @@ import '../services/database_service.dart';
 import '../services/secrets_service.dart';
 import '../services/guest_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/daily_goal_card.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/learner_profile_card.dart';
 import '../widgets/responsive_center.dart';
@@ -1412,18 +1411,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildAppearanceCard(),
               const SizedBox(height: 32),
 
-              const Text(
-                'Learning',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Set a daily XP goal and an optional study reminder.',
-                style: TextStyle(color: context.colors.textFaint, fontSize: 12),
-              ),
-              SizedBox(height: 16),
-              const DailyGoalCard(),
-              const SizedBox(height: 32),
+
 
               const Text(
                 'Personalization',
@@ -1772,18 +1760,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildAppearanceCard(),
           const SizedBox(height: 32),
 
-          const Text(
-            'Learning Goal',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Set a daily XP goal and an optional study reminder.',
-            style: TextStyle(color: context.colors.textFaint, fontSize: 12),
-          ),
-          SizedBox(height: 16),
-          const DailyGoalCard(),
-          const SizedBox(height: 32),
+
 
           const Text(
             'Storage & Sync',

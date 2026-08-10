@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -5,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 import '../../models/app_models.dart';
 import '../../services/code_storage_service.dart';
 import '../../services/ide_settings_service.dart';
@@ -12,7 +15,6 @@ import '../../services/fb/fb_auth.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/code_highlighter.dart';
 import '../../widgets/ide_config_dialog.dart';
-import '../../widgets/platform_webview.dart';
 import '../reference_pdf_viewer_screen.dart';
 
 class LatexIdeScreen extends StatefulWidget {
@@ -29,8 +31,6 @@ class _LatexIdeScreenState extends State<LatexIdeScreen> {
   late TextEditingController _titleController;
   late CodeEditingController _texController;
   bool _isSaving = false;
-  String _selectedTemplate = 'Hello World';
-  List<Map<String, String>> _activeCompletions = [];
 
   static String get _authorName {
     final u = FbAuth.instance.currentUser;
@@ -39,64 +39,6 @@ class _LatexIdeScreenState extends State<LatexIdeScreen> {
     }
     return 'Flow Learner';
   }
-
-  final List<Map<String, String>> _snippets = [
-    {'label': 'Cite', 'snippet': r'\cite{key}'},
-    {'label': 'BibTeX Item', 'snippet': "\\bibitem{key}\nAuthor (Year). \\textit{Title}."},
-    {'label': 'Index Term', 'snippet': r'\index{KeyTerm}'},
-    {'label': 'Print Index', 'snippet': r'\printindex'},
-    {'label': 'Fraction', 'snippet': r'\frac{a}{b}'},
-    {'label': 'Exponent', 'snippet': r'x^{2}'},
-    {'label': 'Subscript', 'snippet': r'x_{i}'},
-    {'label': 'Square Root', 'snippet': r'\sqrt{x}'},
-    {'label': 'Integral', 'snippet': r'\int_{0}^{\infty} f(x) \, dx'},
-    {'label': 'Summation', 'snippet': r'\sum_{n=1}^{\infty} a_n'},
-    {'label': 'Limit', 'snippet': r'\lim_{x \to 0}'},
-    {'label': 'Matrix', 'snippet': "\\begin{bmatrix}\n a & b \\\\\n c & d\n\\end{bmatrix}"},
-    {'label': 'Align Eq', 'snippet': "\\begin{align}\n f(x) &= a x^2 + b x + c \\\\\n g(x) &= \\sin(x)\n\\end{align}"},
-    {'label': 'Use Package', 'snippet': r'\usepackage{makeidx,amsmath,graphicx,hyperref}'},
-    {'label': 'Alpha', 'snippet': r'\alpha'},
-    {'label': 'Beta', 'snippet': r'\beta'},
-    {'label': 'Theta', 'snippet': r'\theta'},
-    {'label': 'Pi', 'snippet': r'\pi'},
-    {'label': 'Infinity', 'snippet': r'\infty'},
-  ];
-
-  final List<Map<String, String>> _completionDatabase = [
-    {'trigger': r'\cite', 'display': r'\cite{key}', 'insert': r'\cite{}'},
-    {'trigger': r'\bibitem', 'display': r'\bibitem{key}', 'insert': r'\bibitem{}'},
-    {'trigger': r'\bibliography', 'display': r'\begin{thebibliography}{99} ... \end{thebibliography}', 'insert': "\\begin{thebibliography}{99}\n\\bibitem{key}\nAuthor. \\textit{Title}.\n\\end{thebibliography}"},
-    {'trigger': r'\makeindex', 'display': r'\makeindex', 'insert': r'\makeindex'},
-    {'trigger': r'\index', 'display': r'\index{term}', 'insert': r'\index{}'},
-    {'trigger': r'\printindex', 'display': r'\printindex', 'insert': r'\printindex'},
-    {'trigger': r'\begin', 'display': r'\begin{...} ... \end{...}', 'insert': "\\begin{matrix}\n  \n\\end{matrix}"},
-    {'trigger': r'\section', 'display': r'\section{Title}', 'insert': r'\section{}'},
-    {'trigger': r'\subsection', 'display': r'\subsection{Title}', 'insert': r'\subsection{}'},
-    {'trigger': r'\subsubsection', 'display': r'\subsubsection{Title}', 'insert': r'\subsubsection{}'},
-    {'trigger': r'\frac', 'display': r'\frac{num}{den}', 'insert': r'\frac{}{}'},
-    {'trigger': r'\sqrt', 'display': r'\sqrt{x}', 'insert': r'\sqrt{}'},
-    {'trigger': r'\usepackage', 'display': r'\usepackage{package}', 'insert': r'\usepackage{}'},
-    {'trigger': r'\documentclass', 'display': r'\documentclass[11pt]{article}', 'insert': r'\documentclass[11pt]{article}'},
-    {'trigger': r'\textbf', 'display': r'\textbf{bold text}', 'insert': r'\textbf{}'},
-    {'trigger': r'\textit', 'display': r'\textit{italic text}', 'insert': r'\textit{}'},
-    {'trigger': r'\sum', 'display': r'\sum_{i=1}^{n}', 'insert': r'\sum_{i=1}^{n}'},
-    {'trigger': r'\int', 'display': r'\int_{a}^{b}', 'insert': r'\int_{a}^{b}'},
-    {'trigger': r'\lim', 'display': r'\lim_{x \to 0}', 'insert': r'\lim_{x \to 0}'},
-    {'trigger': r'\align', 'display': r'\begin{align} ... \end{align}', 'insert': "\\begin{align}\n  \n\\end{align}"},
-    {'trigger': r'\matrix', 'display': r'\begin{bmatrix} ... \end{bmatrix}', 'insert': "\\begin{bmatrix}\n  a & b \\\\\n  c & d\n\\end{bmatrix}"},
-    {'trigger': r'\table', 'display': r'\begin{table} ... \end{table}', 'insert': "\\begin{table}[h]\n  \\centering\n  \\begin{tabular}{cc}\n    a & b \\\\\n  \\end{tabular}\n  \\caption{Caption}\n\\end{table}"},
-    {'trigger': r'\figure', 'display': r'\begin{figure} ... \end{figure}', 'insert': "\\begin{figure}[h]\n  \\centering\n  \\caption{Caption}\n\\end{figure}"},
-    {'trigger': r'\alpha', 'display': r'\alpha', 'insert': r'\alpha'},
-    {'trigger': r'\beta', 'display': r'\beta', 'insert': r'\beta'},
-    {'trigger': r'\gamma', 'display': r'\gamma', 'insert': r'\gamma'},
-    {'trigger': r'\theta', 'display': r'\theta', 'insert': r'\theta'},
-    {'trigger': r'\pi', 'display': r'\pi', 'insert': r'\pi'},
-    {'trigger': r'\sigma', 'display': r'\sigma', 'insert': r'\sigma'},
-    {'trigger': r'\omega', 'display': r'\omega', 'insert': r'\omega'},
-    {'trigger': r'\infty', 'display': r'\infty', 'insert': r'\infty'},
-    {'trigger': r'\partial', 'display': r'\partial', 'insert': r'\partial'},
-    {'trigger': r'\nabla', 'display': r'\nabla', 'insert': r'\nabla'},
-  ];
 
   Map<String, String> get _templates => {
     'Hello World': r'''\documentclass{article}
@@ -302,6 +244,8 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
 \end{document}''',
   };
 
+  Timer? _autosaveTimer;
+
   @override
   void initState() {
     super.initState();
@@ -318,119 +262,176 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
     );
 
     _texController.addListener(_onTextChanged);
+    _titleController.addListener(_onTextChanged);
   }
 
   @override
   void dispose() {
+    _autosaveTimer?.cancel();
     _texController.removeListener(_onTextChanged);
+    _titleController.removeListener(_onTextChanged);
     _titleController.dispose();
     _texController.dispose();
     super.dispose();
   }
 
   void _onTextChanged() {
-    final text = _texController.text;
-    final selection = _texController.selection;
-
-    if (!selection.isCollapsed || selection.start <= 0) {
-      if (_activeCompletions.isNotEmpty) {
-        setState(() {
-          _activeCompletions = [];
-        });
+    _autosaveTimer?.cancel();
+    _autosaveTimer = Timer(const Duration(milliseconds: 1500), () {
+      if (mounted) {
+        _saveProject(silent: true);
       }
-      return;
-    }
-
-    final pos = selection.start;
-    final lastBackslash = text.lastIndexOf('\\', pos - 1);
-
-    if (lastBackslash != -1 && pos - lastBackslash <= 15) {
-      final query = text.substring(lastBackslash, pos).toLowerCase();
-      final matches = _completionDatabase.where((item) {
-        return item['trigger']!.toLowerCase().startsWith(query) ||
-            item['display']!.toLowerCase().contains(query);
-      }).toList();
-
-      setState(() {
-        _activeCompletions = matches;
-      });
-    } else {
-      if (_activeCompletions.isNotEmpty) {
-        setState(() {
-          _activeCompletions = [];
-        });
-      }
-    }
-  }
-
-  void _applyCompletion(Map<String, String> item) {
-    final text = _texController.text;
-    final selection = _texController.selection;
-    final pos = selection.start >= 0 ? selection.start : text.length;
-    final lastBackslash = text.lastIndexOf('\\', pos - 1);
-
-    final start = lastBackslash != -1 ? lastBackslash : pos;
-    final insertText = item['insert']!;
-    final newText = text.replaceRange(start, pos, insertText);
-
-    int cursorOffset = start + insertText.length;
-    final emptyBraceIndex = insertText.indexOf('{}');
-    if (emptyBraceIndex != -1) {
-      cursorOffset = start + emptyBraceIndex + 1;
-    }
-
-    _texController.value = TextEditingValue(
-      text: newText,
-      selection: TextSelection.collapsed(offset: cursorOffset),
-    );
-
-    setState(() {
-      _activeCompletions = [];
     });
-  }
-
-  void _insertSnippet(String snippet) {
-    final text = _texController.text;
-    final selection = _texController.selection;
-    final start = selection.start >= 0 ? selection.start : text.length;
-    final end = selection.end >= 0 ? selection.end : text.length;
-    final newText = text.replaceRange(start, end, snippet);
-    _texController.value = TextEditingValue(
-      text: newText,
-      selection: TextSelection.collapsed(offset: start + snippet.length),
-    );
   }
 
   void _loadTemplate(String name) {
     if (_templates.containsKey(name)) {
       setState(() {
-        _selectedTemplate = name;
         _texController.text = _templates[name]!;
       });
     }
   }
 
-  void _openPdfPreview() {
+  Future<void> _openPdfPreview() async {
     final title = _titleController.text.trim().isEmpty
         ? 'LaTeX Studio'
         : _titleController.text.trim();
+    final texCode = _texController.text;
 
-    debugPrint('[LaTeX Op] User triggered RUN LaTeX for project "$title"');
+    FocusScope.of(context).unfocus();
+    _saveProject(silent: true);
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => LatexPdfPreviewScreen(
-          title: title,
-          texCode: _texController.text,
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.colors.surface,
+        content: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12.0),
+          child: Row(
+            children: [
+              const CircularProgressIndicator(color: AppTheme.duoGreen),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Compiling LaTeX PDF...',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: context.colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Connecting to online TeX Live API...',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.colors.textFaint,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
+
+    bool isOnlineSuccess = false;
+    bool isNetworkUnavailable = false;
+    String? onlineErrorMessage;
+
+    try {
+      final encodedTex = Uri.encodeComponent(texCode);
+      final uri = Uri.parse('https://latexonline.cc/compile?text=$encodedTex');
+      final response = await http.get(uri).timeout(const Duration(seconds: 25));
+
+      if (response.statusCode == 200 &&
+          response.bodyBytes.length > 100 &&
+          response.bodyBytes[0] == 37 &&
+          response.bodyBytes[1] == 80) { // %PDF
+        isOnlineSuccess = true;
+
+        final tempDir = await getTemporaryDirectory();
+        final sanitizedTitle = title
+            .replaceAll(RegExp(r'[^\w\s-]'), '_')
+            .replaceAll(' ', '_');
+        final filePath = '${tempDir.path}/${sanitizedTitle}_compiled.pdf';
+        final file = File(filePath);
+        await file.writeAsBytes(response.bodyBytes);
+
+        if (mounted) Navigator.of(context).pop(); // Dismiss loading dialog
+
+        await _openPdfInViewer(file.path, title, 'Compiled TeX Live Output PDF');
+      } else {
+        final fullErrorBody = utf8.decode(response.bodyBytes, allowMalformed: true).trim();
+        onlineErrorMessage = fullErrorBody.isNotEmpty
+            ? fullErrorBody
+            : 'Server returned HTTP status ${response.statusCode} with an empty body.';
+
+        if (mounted) Navigator.of(context).pop();
+      }
+    } on SocketException catch (_) {
+      isNetworkUnavailable = true;
+      if (mounted) Navigator.of(context).pop();
+    } on TimeoutException catch (_) {
+      isNetworkUnavailable = true;
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      final errStr = e.toString().toLowerCase();
+      if (errStr.contains('socket') ||
+          errStr.contains('network') ||
+          errStr.contains('clientexception') ||
+          errStr.contains('failed to connect') ||
+          errStr.contains('unreachable')) {
+        isNetworkUnavailable = true;
+      } else {
+        onlineErrorMessage = e.toString();
+      }
+      if (mounted) Navigator.of(context).pop();
+    }
+
+    if (!isOnlineSuccess) {
+      if (isNetworkUnavailable) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Network unavailable: Generating offline LaTeX document...'),
+              backgroundColor: AppTheme.duoViolet,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+
+        try {
+          final offlineFile = await _generateOfflinePdf(title, texCode);
+          await _openPdfInViewer(offlineFile.path, '$title (Offline)', 'Offline Generated LaTeX PDF');
+        } catch (offlineErr) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Offline LaTeX generation error: $offlineErr'),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+          }
+        }
+      } else if (onlineErrorMessage != null && mounted) {
+        _showCompilationErrorDialog(onlineErrorMessage);
+      }
+    }
   }
 
-  Future<void> _saveProject() async {
-    setState(() {
-      _isSaving = true;
-    });
+  Future<void> _saveProject({bool silent = false}) async {
+    if (!_isSaving && mounted) {
+      setState(() {
+        _isSaving = true;
+      });
+    }
 
     final project = IdeProject(
       id: _projectId,
@@ -449,12 +450,15 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
       setState(() {
         _isSaving = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('LaTeX Project saved!'),
-          backgroundColor: AppTheme.duoGreen,
-        ),
-      );
+      if (!silent) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('LaTeX Project saved!'),
+            backgroundColor: AppTheme.duoGreen,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 
@@ -476,59 +480,59 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
           },
           child: Scaffold(
             appBar: AppBar(
-              titleSpacing: 0,
-              title: Container(
-                constraints: const BoxConstraints(maxWidth: 160),
-                child: TextField(
-                  controller: _titleController,
-                  style: TextStyle(
-                    color: context.colors.textPrimary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    hintText: 'LaTeX Title...',
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 8),
-                  ),
+              title: TextField(
+                controller: _titleController,
+                style: TextStyle(
+                  color: context.colors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 17,
+                ),
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  hintText: 'LaTeX Title...',
+                  isDense: true,
                 ),
               ),
               actions: [
-                // Prominent Mobile Compact RUN LaTeX Button
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-                  child: ElevatedButton.icon(
-                    onPressed: _openPdfPreview,
-                    icon: const Icon(LucideIcons.play, size: 12, color: Colors.white),
-                    label: const Text(
-                      'RUN',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.duoGreen,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(60, 36),
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
+                // Play Icon Button Only (Normal Icon Button)
+                IconButton(
+                  icon: const Icon(LucideIcons.play, color: AppTheme.duoGreen, size: 20),
+                  tooltip: 'Run / Preview PDF',
+                  onPressed: _openPdfPreview,
                 ),
-                // Template Selector Menu
+                // Single Menu Button for ALL options to save space
                 PopupMenuButton<String>(
-                  icon: const Icon(LucideIcons.fileText, size: 20),
-                  tooltip: 'Load Template',
-                  onSelected: _loadTemplate,
+                  icon: const Icon(LucideIcons.moreVertical, size: 20),
+                  tooltip: 'More Options',
+                  onSelected: (val) {
+                    if (val.startsWith('template:')) {
+                      _loadTemplate(val.replaceFirst('template:', ''));
+                    } else if (val == 'settings') {
+                      IdeConfigDialog.show(context);
+                    } else if (val == 'save') {
+                      _saveProject(silent: false);
+                    }
+                  },
                   itemBuilder: (ctx) => [
+                    PopupMenuItem(
+                      value: 'save',
+                      child: Row(
+                        children: [
+                          Icon(_isSaving ? LucideIcons.loader : LucideIcons.save, size: 16, color: AppTheme.duoGreen),
+                          const SizedBox(width: 10),
+                          const Text('Save Document'),
+                          const Spacer(),
+                          const Text('Autosave On', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuDivider(),
                     const PopupMenuItem(
-                      value: 'Hello World',
+                      enabled: false,
+                      child: Text('LOAD TEMPLATE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
+                    ),
+                    const PopupMenuItem(
+                      value: 'template:Hello World',
                       child: Row(
                         children: [
                           Icon(LucideIcons.fileText, size: 16, color: AppTheme.duoGreen),
@@ -538,7 +542,7 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
                       ),
                     ),
                     const PopupMenuItem(
-                      value: 'Indexed Book (makeidx)',
+                      value: 'template:Indexed Book (makeidx)',
                       child: Row(
                         children: [
                           Icon(LucideIcons.bookmark, size: 16, color: AppTheme.duoViolet),
@@ -548,17 +552,17 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
                       ),
                     ),
                     const PopupMenuItem(
-                      value: 'Academic Paper',
+                      value: 'template:Academic Paper',
                       child: Row(
                         children: [
                           Icon(LucideIcons.bookOpen, size: 16, color: AppTheme.duoBlue),
                           SizedBox(width: 8),
-                          Text('Academic Paper (Citations & Bib)'),
+                          Text('Academic Paper'),
                         ],
                       ),
                     ),
                     const PopupMenuItem(
-                      value: 'Math & Physics',
+                      value: 'template:Math & Physics',
                       child: Row(
                         children: [
                           Icon(LucideIcons.zap, size: 16, color: AppTheme.duoViolet),
@@ -568,7 +572,7 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
                       ),
                     ),
                     const PopupMenuItem(
-                      value: 'Beamer Slides',
+                      value: 'template:Beamer Slides',
                       child: Row(
                         children: [
                           Icon(LucideIcons.presentation, size: 16, color: AppTheme.duoOrange),
@@ -578,74 +582,32 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
                       ),
                     ),
                     const PopupMenuItem(
-                      value: 'Resume / CV',
+                      value: 'template:Resume / CV',
                       child: Row(
                         children: [
                           Icon(LucideIcons.userCheck, size: 16, color: AppTheme.duoGreen),
                           SizedBox(width: 8),
-                          Text('Resume / Curriculum Vitae'),
+                          Text('Resume / CV'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuDivider(),
+                    const PopupMenuItem(
+                      value: 'settings',
+                      child: Row(
+                        children: [
+                          Icon(LucideIcons.slidersHorizontal, size: 16),
+                          SizedBox(width: 10),
+                          Text('Editor Settings'),
                         ],
                       ),
                     ),
                   ],
                 ),
-                IconButton(
-                  icon: const Icon(LucideIcons.slidersHorizontal, size: 20),
-                  tooltip: 'Settings',
-                  onPressed: () => IdeConfigDialog.show(context),
-                ),
-                IconButton(
-                  icon: _isSaving
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(LucideIcons.save, size: 20),
-                  tooltip: 'Save Document',
-                  onPressed: _saveProject,
-                ),
               ],
             ),
             body: SafeArea(
-              child: Column(
-                children: [
-                  // Snippet & Symbol Toolbar
-                  SizedBox(
-                    height: 44,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      itemCount: _snippets.length,
-                      itemBuilder: (ctx, i) {
-                        final sym = _snippets[i];
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 6.0),
-                          child: ActionChip(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            backgroundColor: context.colors.glassStrong,
-                            side: BorderSide(color: context.colors.outline),
-                            label: Text(
-                              sym['label']!,
-                              style: const TextStyle(
-                                color: AppTheme.duoViolet,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            onPressed: () => _insertSnippet(sym['snippet']!),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const Divider(height: 1),
-                  // Full Height Code Editor Page
-                  Expanded(
-                    child: _buildCodeInput(isDark, settings),
-                  ),
-                ],
-              ),
+              child: _buildCodeInput(isDark, settings),
             ),
           ),
         );
@@ -656,9 +618,6 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
   Widget _buildCodeInput(bool isDark, IdeSettings settings) {
     final editorBg = isDark ? const Color(0xFF0D1117) : const Color(0xFFF8FAFC);
     final editorText = isDark ? const Color(0xFFE6EDF3) : const Color(0xFF0F172A);
-
-    final lineCount = _texController.text.split('\n').length;
-    final lineNumbersText = List.generate(lineCount, (i) => '${i + 1}').join('\n');
 
     final strut = StrutStyle(
       fontFamily: 'monospace',
@@ -673,703 +632,393 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
       child: Column(
         children: [
           Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (settings.showLineNumbers) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(right: 10.0),
-                    child: Text(
-                      lineNumbersText,
-                      strutStyle: strut,
-                      style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: settings.fontSize,
-                        color: isDark ? const Color(0xFF6E7781) : const Color(0xFF8C959F),
-                        height: 1.4,
-                      ),
-                      textAlign: TextAlign.right,
-                    ),
-                  ),
-                  Container(
-                    width: 1,
-                    height: (lineCount * (settings.fontSize * 1.4)).clamp(24, 2000),
-                    color: context.colors.outline.withValues(alpha: 0.5),
-                  ),
-                  const SizedBox(width: 10),
-                ],
-                Expanded(
-                  child: TextField(
-                    controller: _texController,
-                    maxLines: null,
-                    keyboardType: TextInputType.multiline,
-                    strutStyle: strut,
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: settings.fontSize,
-                      color: editorText,
-                      height: 1.4,
-                    ),
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
-                      isDense: true,
-                      hintText: r'Write LaTeX code... Type \ for instant autocompletion',
-                      hintStyle: TextStyle(
-                        color: isDark ? const Color(0xFF6E7781) : const Color(0xFF8C959F),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Instant Autocomplete Bar
-          if (_activeCompletions.isNotEmpty) ...[
-            Container(
-              height: 44,
-              margin: const EdgeInsets.only(bottom: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppTheme.duoViolet.withValues(alpha: 0.4)),
+            child: TextField(
+              controller: _texController,
+              maxLines: null,
+              keyboardType: TextInputType.multiline,
+              strutStyle: strut,
+              style: TextStyle(
+                fontFamily: 'monospace',
+                fontSize: settings.fontSize,
+                color: editorText,
+                height: 1.4,
               ),
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: _activeCompletions.length,
-                itemBuilder: (ctx, i) {
-                  final item = _activeCompletions[i];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                    child: ChoiceChip(
-                      selected: false,
-                      backgroundColor: AppTheme.duoViolet.withValues(alpha: 0.15),
-                      side: const BorderSide(color: AppTheme.duoViolet),
-                      label: Row(
-                        children: [
-                          Icon(LucideIcons.code, size: 12, color: AppTheme.duoViolet),
-                          const SizedBox(width: 4),
-                          Text(
-                            item['display']!,
-                            style: const TextStyle(
-                              color: AppTheme.duoViolet,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'monospace',
-                            ),
-                          ),
-                        ],
-                      ),
-                      onSelected: (_) => _applyCompletion(item),
-                    ),
-                  );
-                },
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+                isDense: true,
+                hintText: r'Write LaTeX code...',
+                hintStyle: TextStyle(
+                  color: isDark ? const Color(0xFF6E7781) : const Color(0xFF8C959F),
+                  fontSize: 12,
+                ),
               ),
             ),
-          ],
-          // Bottom hint bar (Overflow-safe)
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: context.colors.outline.withValues(alpha: 0.3))),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Template: $_selectedTemplate | Type \\ for instant autocomplete',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: context.colors.textFaint,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '${_texController.text.length} chars | $lineCount lines',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: context.colors.textFaint,
-                  ),
-                ),
-              ],
-            ),
           ),
-        ],
-      ),
-    );
-  }
-}
+          // Bottom status bar (Line & Column tracking)
+          ListenableBuilder(
+            listenable: _texController,
+            builder: (context, _) {
+              final selection = _texController.selection;
+              final text = _texController.text;
+              final lines = text.split('\n');
+              final totalLines = lines.isEmpty ? 1 : lines.length;
 
-/// Dedicated PDF Preview Screen with latexonline.cc TeX Live GET API Integration & Built-in Document Viewer Launching
-class LatexPdfPreviewScreen extends StatefulWidget {
-  final String title;
-  final String texCode;
+              int currentLine = 1;
+              int currentCol = 1;
+              if (selection.start >= 0 && selection.start <= text.length) {
+                final sub = text.substring(0, selection.start);
+                currentLine = sub.split('\n').length;
+                final lastNL = sub.lastIndexOf('\n');
+                currentCol = selection.start - (lastNL == -1 ? 0 : lastNL + 1) + 1;
+              }
 
-  const LatexPdfPreviewScreen({
-    super.key,
-    required this.title,
-    required this.texCode,
-  });
-
-  @override
-  State<LatexPdfPreviewScreen> createState() => _LatexPdfPreviewScreenState();
-}
-
-class _LatexPdfPreviewScreenState extends State<LatexPdfPreviewScreen> {
-  final List<String> _opLogs = [];
-  bool _isCompilingPdf = false;
-
-  void _addLog(String message) {
-    final timeStr = DateTime.now().toIso8601String().split('T')[1].substring(0, 8);
-    final logLine = '[$timeStr] $message';
-    debugPrint('[LaTeX Op Log] $logLine');
-    if (mounted) {
-      setState(() {
-        _opLogs.add(logLine);
-      });
-    }
-  }
-
-  Future<void> _compileAndOpenDocumentViewer() async {
-    if (_isCompilingPdf) return;
-
-    setState(() {
-      _isCompilingPdf = true;
-    });
-
-    _addLog('Starting latexonline.cc TeX Live GET API compilation request...');
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: context.colors.surface,
-        content: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12.0),
-          child: Row(
-            children: [
-              const CircularProgressIndicator(color: AppTheme.duoGreen),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              return Container(
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: context.colors.outline.withValues(alpha: 0.3))),
+                ),
+                child: Row(
                   children: [
                     Text(
-                      'Compiling TeX Live PDF...',
+                      'Line $currentLine of $totalLines',
                       style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: context.colors.textPrimary,
+                        fontSize: 11,
+                        color: context.colors.textFaint,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const Spacer(),
                     Text(
-                      'Connecting to latexonline.cc API',
+                      'Col $currentCol  |  ${text.length} chars',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         color: context.colors.textFaint,
                       ),
                     ),
                   ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    try {
-      final encodedTex = Uri.encodeComponent(widget.texCode);
-      final uri = Uri.parse('https://latexonline.cc/compile?text=$encodedTex');
-      final response = await http.get(uri).timeout(const Duration(seconds: 35));
-
-      if (mounted) Navigator.of(context).pop(); // Dismiss loading dialog
-
-      setState(() {
-        _isCompilingPdf = false;
-      });
-
-      if (response.statusCode == 200 &&
-          response.bodyBytes.length > 100 &&
-          response.bodyBytes[0] == 37 &&
-          response.bodyBytes[1] == 80) { // %P
-        _addLog('SUCCESS: TeX Live PDF compiled (${response.bodyBytes.length} bytes).');
-
-        final tempDir = await getTemporaryDirectory();
-        final sanitizedTitle = widget.title
-            .replaceAll(RegExp(r'[^\w\s-]'), '_')
-            .replaceAll(' ', '_');
-        final filePath = '${tempDir.path}/${sanitizedTitle}_compiled.pdf';
-        final file = File(filePath);
-        await file.writeAsBytes(response.bodyBytes);
-
-        _addLog('Saved PDF to local storage: $filePath');
-
-        if (!mounted) return;
-
-        final sec = Section(
-          id: 'sec_latex_1',
-          title: widget.title,
-          description: 'Compiled TeX Live Output PDF',
-          color: '#22c55e',
-          units: const [],
-          pdfPath: file.path,
-        );
-
-        final defaultFormats = LessonFormat.defaultFormats;
-        final book = Book(
-          id: 'latex_output_${DateTime.now().millisecondsSinceEpoch}',
-          title: widget.title,
-          description: 'LaTeX Document',
-          icon: 'file-text',
-          modules: const [],
-          lessonFormats: defaultFormats,
-          defaultFormatId: defaultFormats.isNotEmpty ? defaultFormats.first.id : 'default',
-        );
-
-        // Open directly in our Document Viewer!
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ReferencePdfViewerScreen(
-              book: book,
-              initialSection: sec,
-            ),
-          ),
-        );
-      } else {
-        _addLog('ERROR: Online TeX Live compilation failed with HTTP ${response.statusCode}');
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('TeX Live Online compilation error (HTTP ${response.statusCode}).'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) Navigator.of(context).pop();
-      setState(() {
-        _isCompilingPdf = false;
-      });
-      _addLog('ERROR: Request exception: $e');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Compilation request error: $e'),
-          backgroundColor: Colors.orangeAccent,
-        ),
-      );
-    }
-  }
-
-  String get _htmlPreviewEngine {
-    final b64Code = base64Encode(utf8.encode(widget.texCode));
-    return r'''<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>LaTeX PDF Preview</title>
-  <script>
-    function sendLog(msg) {
-      console.log("[JS Op Log] " + msg);
-      if (window.DuoMessageChannel) {
-        window.DuoMessageChannel.postMessage(msg);
-      }
-    }
-    sendLog("1. WebView DOM Initialized. Preparing LaTeX parser & package polyfills...");
-
-    function triggerCompileAndOpenPdf() {
-      sendLog("Save/Print PDF clicked: Triggering latexonline.cc compilation...");
-      if (window.DuoMessageChannel) {
-        window.DuoMessageChannel.postMessage("ACTION_COMPILE_TEX_LIVE");
-      } else {
-        window.print();
-      }
-    }
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/latex.js/dist/latex.min.js" 
-          onload="sendLog('2. latex.js CDN script loaded successfully.')" 
-          onerror="sendLog('2. WARNING: CDN script load failed! Activating fallback parser.')"></script>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background-color: #0f172a;
-      color: #f8fafc;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    .toolbar {
-      background: #1e293b;
-      border-bottom: 1px solid #334155;
-      padding: 8px 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      flex-wrap: wrap;
-    }
-    .tabs {
-      display: flex;
-      gap: 4px;
-      background: #0f172a;
-      padding: 3px;
-      border-radius: 8px;
-    }
-    .tab {
-      padding: 6px 12px;
-      font-size: 11px;
-      font-weight: 700;
-      border-radius: 6px;
-      cursor: pointer;
-      color: #94a3b8;
-      transition: all 0.2s;
-    }
-    .tab.active {
-      background: #334155;
-      color: #ffffff;
-    }
-    .btn {
-      background: #22c55e;
-      color: #ffffff;
-      border: none;
-      padding: 6px 14px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .btn:hover { background: #16a34a; }
-    .content-area {
-      flex: 1;
-      padding: 16px;
-      display: flex;
-      justify-content: center;
-      background: #090d16;
-      overflow-y: auto;
-    }
-    #document-paper {
-      background: #ffffff;
-      color: #0f172a;
-      padding: 24px;
-      border-radius: 8px;
-      width: 100%;
-      max-width: 850px;
-      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
-      min-height: 800px;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-    #log-wrapper {
-      background: #0f172a;
-      color: #38bdf8;
-      font-family: monospace;
-      font-size: 12px;
-      padding: 16px;
-      width: 100%;
-      max-width: 850px;
-      border-radius: 8px;
-      white-space: pre-wrap;
-      display: none;
-      border: 1px solid #334155;
-    }
-    .loading-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 40px;
-      gap: 16px;
-    }
-    .spinner {
-      width: 36px;
-      height: 36px;
-      border: 4px solid #334155;
-      border-top-color: #6366f1;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-  </style>
-</head>
-<body>
-  <div class="toolbar">
-    <div class="tabs">
-      <div id="tab-doc" class="tab active" onclick="switchView('doc')">Document View</div>
-      <div id="tab-log" class="tab" onclick="switchView('log')">Compiler Log</div>
-    </div>
-    <div>
-      <button class="btn" onclick="triggerCompileAndOpenPdf()">Save / Print PDF</button>
-    </div>
-  </div>
-
-  <div class="content-area">
-    <div id="document-paper">
-      <div class="loading-container">
-        <div class="spinner"></div>
-        <div style="font-weight: 600; color: #64748b;">Typesetting LaTeX Document...</div>
-      </div>
-    </div>
-    <div id="log-wrapper"></div>
-  </div>
-
-  <script>
-    const b64Data = "''' + b64Code + r'''";
-    const rawCode = decodeURIComponent(escape(atob(b64Data)));
-    sendLog("3. Decoded base64 TeX payload (" + rawCode.length + " characters).");
-
-    function switchView(view) {
-      document.getElementById('tab-doc').classList.toggle('active', view === 'doc');
-      document.getElementById('tab-log').classList.toggle('active', view === 'log');
-      document.getElementById('document-paper').style.display = view === 'doc' ? 'block' : 'none';
-      document.getElementById('log-wrapper').style.display = view === 'log' ? 'block' : 'none';
-    }
-
-    function preprocessTeX(inputCode) {
-      let src = inputCode;
-
-      // 1. Move preamble \title{}, \author{}, \date{} inside \begin{document} if placed before it
-      if (src.includes('\\begin{document}')) {
-        const docParts = src.split('\\begin{document}');
-        let preamble = docParts[0];
-        let body = docParts.slice(1).join('\\begin{document}');
-        
-        let movedHeaders = '';
-        const headerRegex = /\\(title|author|date)\{([\s\S]*?)\}/g;
-        preamble = preamble.replace(headerRegex, function(match) {
-          movedHeaders += match + '\n';
-          return '';
-        });
-
-        src = preamble + '\\begin{document}\n' + movedHeaders + body;
-      }
-
-      // 2. Polyfill & strip package declarations latex.js doesn't natively parse
-      src = src.replace(/\\usepackage(\[[^\]]*\])?\{[^}]*\}/g, '% package loaded');
-      src = src.replace(/\\makeindex/g, '% makeindex polyfill initialized');
-      src = src.replace(/\\geometry\{[^}]*\}/g, '% geometry settings');
-      src = src.replace(/\\hypersetup\{[^}]*\}/g, '% hypersetup settings');
-      src = src.replace(/\\usetheme\{[^}]*\}/g, '% beamer theme');
-      src = src.replace(/\\usecolortheme\{[^}]*\}/g, '% beamer color theme');
-      src = src.replace(/\\newtheorem\{([^}]+)\}\{([^}]+)\}/g, '% newtheorem $1');
-      src = src.replace(/\\centerline\{([^}]+)\}/g, '\\begin{center} $1 \\end{center}');
-      src = src.replace(/\\vspace\{[^}]*\}/g, '\n');
-      src = src.replace(/\\hrule/g, '\\rule{\\linewidth}{0.4pt}');
-
-      // 3. Inline macro safety replacements (e.g. \textsuperscript, \textsubscript)
-      src = src.replace(/\\textsuperscript\{([^}]+)\}/g, '^{$1}');
-      src = src.replace(/\\textsubscript\{([^}]+)\}/g, '_{$1}');
-
-      // 4. Citation key polyfill: convert \cite{key} to [1], [2] or [key] so latex.js never throws unknown macro
-      const bibKeys = [];
-      const bibRegex = /\\bibitem\{([^}]+)\}/g;
-      let bMatch;
-      while ((bMatch = bibRegex.exec(src)) !== null) {
-        bibKeys.push(bMatch[1]);
-      }
-
-      src = src.replace(/\\cite\{([^}]+)\}/g, function(fullMatch, key) {
-        const idx = bibKeys.indexOf(key);
-        if (idx !== -1) {
-          return '[' + (idx + 1) + ']';
-        }
-        return '[' + key + ']';
-      });
-
-      // 5. Polyfill thebibliography environment for latex.js
-      if (src.includes('\\begin{thebibliography}')) {
-        let bibCounter = 1;
-        src = src.replace(/\\begin\{thebibliography\}(\{[^}]*\})?/g, '\n\\section*{References}\n\\begin{description}\n');
-        src = src.replace(/\\bibitem\{([^}]+)\}/g, function(match, key) {
-          const itemTag = '[' + bibCounter + ']';
-          bibCounter++;
-          return '\\item[' + itemTag + '] ';
-        });
-        src = src.replace(/\\end\{thebibliography\}/g, '\\end{description}\n');
-      }
-
-      // 6. makeidx support: collect \index{...} terms
-      const indexTerms = [];
-      src = src.replace(/\\index\{([^}]+)\}/g, function(match, term) {
-        if (!indexTerms.includes(term)) indexTerms.push(term);
-        return term;
-      });
-
-      // Handle \printindex -> format Index section using standard description environment
-      if (src.includes('\\printindex')) {
-        indexTerms.sort();
-        let indexHtml = '\n\\section*{Index}\n\\begin{description}\n';
-        indexTerms.forEach(function(t) {
-          indexHtml += '  \\item[' + t + '] Page 1\n';
-        });
-        indexHtml += '\\end{description}\n';
-        src = src.replace(/\\printindex/g, indexHtml);
-      }
-
-      // 7. Beamer slides support
-      src = src.replace(/\\begin\{frame\}\{([^}]+)\}/g, '\\section{$1}\n\\begin{quote}');
-      src = src.replace(/\\end\{frame\}/g, '\\end{quote}');
-      src = src.replace(/\\begin\{block\}\{([^}]+)\}/g, '\\textbf{$1:}\n');
-      src = src.replace(/\\end\{block\}/g, '');
-      src = src.replace(/\\frame\{\\titlepage\}/g, '\\maketitle');
-
-      // 8. Hyperref & url support
-      src = src.replace(/\\href\{([^}]+)\}\{([^}]+)\}/g, '$2 ($1)');
-      src = src.replace(/\\url\{([^}]+)\}/g, '$1');
-
-      // 9. Sanitize unescaped & in titles or text mode (outside matrix/align/tabular)
-      src = src.replace(/([^\\])&/g, '$1\\&');
-
-      return src;
-    }
-
-    function renderLaTeX() {
-      const startTime = Date.now();
-      sendLog("4. Executing renderLaTeX()...");
-      const processedCode = preprocessTeX(rawCode);
-      
-      try {
-        if (typeof latexjs !== 'undefined' && latexjs.parse) {
-          sendLog("5. Using latexjs AST parser with citation & bibliography polyfills...");
-          const generator = new latexjs.HtmlGenerator({ hyphenate: false });
-          const doc = latexjs.parse(processedCode, { generator: generator });
-          const paper = document.getElementById('document-paper');
-          paper.innerHTML = '';
-          paper.appendChild(doc.domFragment());
-          const elapsed = Date.now() - startTime;
-          sendLog("6. SUCCESS: LaTeX document rendered in " + elapsed + " ms.");
-        } else {
-          sendLog("5. Fallback: latexjs not available, using instant HTML formatter...");
-          const paper = document.getElementById('document-paper');
-          let html = processedCode;
-          html = html.replace(/\\section\*?\{([^}]+)\}/g, '<h2>$1</h2>');
-          html = html.replace(/\\subsection\*?\{([^}]+)\}/g, '<h3>$1</h3>');
-          html = html.replace(/\\textbf\{([^}]+)\}/g, '<b>$1</b>');
-          html = html.replace(/\\textit\{([^}]+)\}/g, '<i>$1</i>');
-          html = html.replace(/\\\[([\s\S]*?)\\\]/g, '<div style="font-family:monospace; margin:12px 0; background:#f1f5f9; padding:10px; border-radius:4px; font-weight:bold;">$1</div>');
-          html = html.replace(/\\begin\{document\}/g, '');
-          html = html.replace(/\\end\{document\}/g, '');
-          html = html.replace(/\\documentclass.*?\n/g, '');
-          html = html.replace(/\\title\{([^}]+)\}/g, '<h1 style="text-align:center; margin-bottom:8px;">$1</h1>');
-          html = html.replace(/\\author\{([^}]+)\}/g, '<div style="text-align:center; color:#64748b; font-weight:bold;">$1</div>');
-          html = html.replace(/\\maketitle/g, '<hr style="margin:16px 0; border:none; border-top:1px solid #cbd5e1;"/>');
-          html = html.replace(/\n/g, '<br/>');
-
-          paper.innerHTML = '<div style="font-family:serif; padding:10px;">' + html + '</div>';
-          const elapsed = Date.now() - startTime;
-          sendLog("6. SUCCESS: Fallback document rendered in " + elapsed + " ms.");
-        }
-      } catch (e) {
-        sendLog("6. ERROR: LaTeX Exception: " + e.message);
-        document.getElementById('document-paper').innerHTML = '<div style="color:#ef4444; font-weight:bold; padding:20px;">LaTeX Render Error: ' + e.message + '</div>';
-        document.getElementById('log-wrapper').textContent = 'LaTeX Operations & Diagnostics Log:\nError: ' + e.message + '\n\nSource Code:\n' + rawCode;
-        switchView('log');
-      }
-    }
-
-    setTimeout(renderLaTeX, 20);
-  </script>
-</body>
-</html>''';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.colors.background,
-      appBar: AppBar(
-        backgroundColor: context.colors.background,
-        title: Text(
-          '${widget.title} - PDF Preview',
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(LucideIcons.fileDown),
-            tooltip: 'Compile & Open in Document Viewer',
-            onPressed: _compileAndOpenDocumentViewer,
-          ),
-          IconButton(
-            icon: const Icon(LucideIcons.terminal),
-            tooltip: 'View Operations Log',
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                backgroundColor: context.colors.surface,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                ),
-                builder: (ctx) => Container(
-                  padding: const EdgeInsets.all(16),
-                  height: 400,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'LaTeX Operations & Diagnostic Logs',
-                        style: TextStyle(
-                          color: context.colors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0F172A),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: ListView.builder(
-                            itemCount: _opLogs.length,
-                            itemBuilder: (c, idx) => Text(
-                              _opLogs[idx],
-                              style: const TextStyle(
-                                color: Color(0xFF38BDF8),
-                                fontFamily: 'monospace',
-                                fontSize: 11,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               );
             },
           ),
         ],
       ),
-      body: SafeArea(
-        child: PlatformWebView(
-          html: _htmlPreviewEngine,
-          onMessage: (msg) {
-            if (msg == 'ACTION_COMPILE_TEX_LIVE') {
-              _compileAndOpenDocumentViewer();
-            } else {
-              _addLog(msg);
-            }
-          },
-          onJsError: (err) => _addLog('JS ERROR: $err'),
+    );
+  }
+
+  Future<void> _openPdfInViewer(String filePath, String pdfTitle, String description) async {
+    if (!mounted) return;
+    final sec = Section(
+      id: 'sec_latex_1',
+      title: pdfTitle,
+      description: description,
+      color: '#22c55e',
+      units: const [],
+      pdfPath: filePath,
+    );
+
+    final defaultFormats = LessonFormat.defaultFormats;
+    final book = Book(
+      id: 'latex_output_${DateTime.now().millisecondsSinceEpoch}',
+      title: pdfTitle,
+      description: 'LaTeX Document',
+      icon: 'file-text',
+      modules: const [],
+      lessonFormats: defaultFormats,
+      defaultFormatId: defaultFormats.isNotEmpty ? defaultFormats.first.id : 'default',
+    );
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ReferencePdfViewerScreen(
+          book: book,
+          initialSection: sec,
         ),
       ),
     );
+  }
+
+  void _showCompilationErrorDialog(String fullErrorLog) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.colors.surface,
+        title: Row(
+          children: [
+            const Icon(LucideIcons.alertTriangle, color: Colors.redAccent, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Online Compilation Error',
+              style: TextStyle(color: context.colors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Container(
+          width: double.maxFinite,
+          constraints: const BoxConstraints(maxHeight: 320),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0F172A),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.redAccent.withValues(alpha: 0.5)),
+          ),
+          child: SingleChildScrollView(
+            child: SelectableText(
+              fullErrorLog,
+              style: const TextStyle(
+                color: Color(0xFFFCA5A5),
+                fontFamily: 'monospace',
+                fontSize: 11,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<File> _generateOfflinePdf(String title, String texCode) async {
+    final pdf = pw.Document();
+
+    String docTitle = title;
+    String docAuthor = '';
+    String docDate = '';
+
+    final tMatch = RegExp(r'\\title\{([\s\S]*?)\}').firstMatch(texCode);
+    if (tMatch != null && tMatch.group(1)!.trim().isNotEmpty) {
+      docTitle = tMatch.group(1)!.replaceAll(RegExp(r'\\[a-zA-Z]+'), '').trim();
+    }
+    final aMatch = RegExp(r'\\author\{([\s\S]*?)\}').firstMatch(texCode);
+    if (aMatch != null) {
+      docAuthor = aMatch.group(1)!.replaceAll(RegExp(r'\\[a-zA-Z]+'), '').trim();
+    }
+    final dMatch = RegExp(r'\\date\{([\s\S]*?)\}').firstMatch(texCode);
+    if (dMatch != null) {
+      final nowStr = DateTime.now().toString().split(' ')[0];
+      docDate = dMatch.group(1)!.replaceAll(r'\today', nowStr).replaceAll(RegExp(r'\\[a-zA-Z]+'), '').trim();
+    }
+
+    final customMacros = <String, String>{};
+    final macroRegex = RegExp(r'\\(?:newcommand|def)\{?\\([a-zA-Z]+)\}?\{([\s\S]*?)\}');
+    for (final match in macroRegex.allMatches(texCode)) {
+      final name = match.group(1);
+      final body = match.group(2);
+      if (name != null && body != null) {
+        customMacros[name] = body;
+      }
+    }
+
+    var processedTex = texCode;
+    customMacros.forEach((name, replacement) {
+      processedTex = processedTex.replaceAll('\\$name', replacement);
+    });
+
+    final lines = processedTex.split('\n');
+    final contentWidgets = <pw.Widget>[];
+
+    final bibItems = <String, String>{};
+    final indexTerms = <String>{};
+    int citationCounter = 1;
+
+    for (final rawLine in lines) {
+      final line = rawLine.trim();
+      final bMatch = RegExp(r'\\bibitem\{([^}]+)\}').firstMatch(line);
+      if (bMatch != null) {
+        bibItems[bMatch.group(1)!] = '[${citationCounter++}]';
+      }
+      final idxMatch = RegExp(r'\\index\{([^}]+)\}').firstMatch(line);
+      if (idxMatch != null) {
+        indexTerms.add(idxMatch.group(1)!);
+      }
+    }
+
+    bool inCodeBlock = false;
+    final codeBuffer = StringBuffer();
+
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim();
+      if (line.isEmpty || line.startsWith('%')) continue;
+
+      if (line.startsWith(r'\documentclass') ||
+          line.startsWith(r'\usepackage') ||
+          line.startsWith(r'\begin{document}') ||
+          line.startsWith(r'\end{document}') ||
+          line.startsWith(r'\title') ||
+          line.startsWith(r'\author') ||
+          line.startsWith(r'\date') ||
+          line.startsWith(r'\makeindex')) {
+        continue;
+      }
+
+      if (line.startsWith(r'\maketitle')) {
+        contentWidgets.add(
+          pw.Center(
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.center,
+              children: [
+                pw.Text(docTitle, style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900), textAlign: pw.TextAlign.center),
+                if (docAuthor.isNotEmpty) ...[
+                  pw.SizedBox(height: 4),
+                  pw.Text(docAuthor, style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700)),
+                ],
+                if (docDate.isNotEmpty) ...[
+                  pw.SizedBox(height: 2),
+                  pw.Text(docDate, style: pw.TextStyle(fontSize: 10, fontStyle: pw.FontStyle.italic, color: PdfColors.grey600)),
+                ],
+                pw.SizedBox(height: 12),
+                pw.Divider(thickness: 0.5, color: PdfColors.grey400),
+                pw.SizedBox(height: 12),
+              ],
+            ),
+          ),
+        );
+        continue;
+      }
+
+      if (line.startsWith(r'\begin{lstlisting}') || line.startsWith(r'\begin{minted}')) {
+        inCodeBlock = true;
+        codeBuffer.clear();
+        continue;
+      }
+      if (line.startsWith(r'\end{lstlisting}') || line.startsWith(r'\end{minted}')) {
+        inCodeBlock = false;
+        contentWidgets.add(
+          pw.Container(
+            width: double.infinity,
+            margin: const pw.EdgeInsets.symmetric(vertical: 6),
+            padding: const pw.EdgeInsets.all(10),
+            decoration: const pw.BoxDecoration(
+              color: PdfColors.grey900,
+              borderRadius: pw.BorderRadius.all(pw.Radius.circular(4)),
+            ),
+            child: pw.Text(
+              codeBuffer.toString(),
+              style: pw.TextStyle(color: PdfColors.green300, fontSize: 10, font: pw.Font.courier()),
+            ),
+          ),
+        );
+        continue;
+      }
+      if (inCodeBlock) {
+        codeBuffer.writeln(line);
+        continue;
+      }
+
+      if (line.startsWith(r'\section')) {
+        final secTitle = line.replaceAll(RegExp(r'\\section\*?\{([^}]+)\}'), r'$1');
+        contentWidgets.add(pw.SizedBox(height: 14));
+        contentWidgets.add(pw.Text(secTitle, style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)));
+        contentWidgets.add(pw.Divider(thickness: 0.5, color: PdfColors.blue900));
+        contentWidgets.add(pw.SizedBox(height: 4));
+        continue;
+      } else if (line.startsWith(r'\subsection')) {
+        final subTitle = line.replaceAll(RegExp(r'\\subsection\*?\{([^}]+)\}'), r'$1');
+        contentWidgets.add(pw.SizedBox(height: 10));
+        contentWidgets.add(pw.Text(subTitle, style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: PdfColors.blue700)));
+        contentWidgets.add(pw.SizedBox(height: 2));
+        continue;
+      }
+
+      if (line.startsWith(r'\[') || line.endsWith(r'\]') || line.startsWith(r'\begin{equation') || line.startsWith(r'\begin{align')) {
+        final eq = line
+            .replaceAll(RegExp(r'\\(begin|end)\{(align\*?|equation\*?)\}'), '')
+            .replaceAll(r'\[', '')
+            .replaceAll(r'\]', '')
+            .replaceAll(r'\\', ' ')
+            .trim();
+        if (eq.isNotEmpty) {
+          contentWidgets.add(
+            pw.Container(
+              width: double.infinity,
+              margin: const pw.EdgeInsets.symmetric(vertical: 8),
+              padding: const pw.EdgeInsets.all(8),
+              decoration: const pw.BoxDecoration(color: PdfColors.grey100),
+              child: pw.Center(child: pw.Text(eq, style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900))),
+            ),
+          );
+        }
+        continue;
+      }
+
+      if (line.startsWith(r'\begin{thebibliography}')) {
+        contentWidgets.add(pw.SizedBox(height: 14));
+        contentWidgets.add(pw.Text('References', style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)));
+        contentWidgets.add(pw.Divider(thickness: 0.5, color: PdfColors.blue900));
+        contentWidgets.add(pw.SizedBox(height: 4));
+        continue;
+      }
+      if (line.startsWith(r'\bibitem')) {
+        final keyMatch = RegExp(r'\\bibitem\{([^}]+)\}').firstMatch(line);
+        final key = keyMatch?.group(1) ?? '';
+        final tag = bibItems[key] ?? '[1]';
+        final textAfter = line.replaceAll(RegExp(r'\\bibitem\{[^}]+\}'), '').trim();
+        contentWidgets.add(
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(top: 4, bottom: 2),
+            child: pw.Row(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.SizedBox(width: 28, child: pw.Text(tag, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900))),
+                pw.Expanded(child: pw.Text(textAfter, style: const pw.TextStyle(fontSize: 10, lineSpacing: 2))),
+              ],
+            ),
+          ),
+        );
+        continue;
+      }
+
+      if (line.startsWith(r'\printindex')) {
+        if (indexTerms.isNotEmpty) {
+          contentWidgets.add(pw.SizedBox(height: 14));
+          contentWidgets.add(pw.Text('Index', style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)));
+          contentWidgets.add(pw.Divider(thickness: 0.5, color: PdfColors.blue900));
+          contentWidgets.add(pw.SizedBox(height: 4));
+          for (final term in indexTerms) {
+            contentWidgets.add(pw.Text(term, style: const pw.TextStyle(fontSize: 10)));
+          }
+        }
+        continue;
+      }
+
+      var cleanLine = line
+          .replaceAll(RegExp(r'\\cite\{([^}]+)\}'), r'[1]')
+          .replaceAll(RegExp(r'\\index\{([^}]+)\}'), r'$1')
+          .replaceAll(RegExp(r'\\textbf\{([^}]+)\}'), r'$1')
+          .replaceAll(RegExp(r'\\textit\{([^}]+)\}'), r'$1')
+          .replaceAll(RegExp(r'\\underline\{([^}]+)\}'), r'$1')
+          .replaceAll(RegExp(r'\\[a-zA-Z]+'), '');
+
+      if (cleanLine.isNotEmpty) {
+        contentWidgets.add(
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(bottom: 6),
+            child: pw.Text(
+              cleanLine,
+              style: const pw.TextStyle(fontSize: 11, lineSpacing: 3),
+            ),
+          ),
+        );
+      }
+    }
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(36),
+        build: (pw.Context ctx) => contentWidgets,
+      ),
+    );
+
+    final outputDir = await getTemporaryDirectory();
+    final file = File('${outputDir.path}/${title.replaceAll(' ', '_')}_offline.pdf');
+    await file.writeAsBytes(await pdf.save());
+    return file;
   }
 }

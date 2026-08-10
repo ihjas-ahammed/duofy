@@ -4,6 +4,14 @@ All notable changes to DuoFY are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com); versions follow the app's
 `major.minor.patch` scheme from `pubspec.yaml`.
 
+## [26.8.8] — 2026-08-10
+
+### Added & Improved
+- **Python Data Science Engine**: Integrated SeriousPython multi-architecture runtime (`arm64-v8a`, `armeabi-v7a`, `x86_64`) pre-packaged with `numpy`, `matplotlib`, `seaborn`, `scikit-learn`, `pandas`, and `scipy`.
+- **Interactive Python Notebook**: Live `input()` dialog prompts during Python execution and vector SVG rendering for Matplotlib plots.
+- **Automatic Asset Hash Sync**: Automated hash verification for `app.zip.hash` to purge stale site-packages caches on app updates.
+- **Concise Study Notes Generator**: Updated AI prompt and rendering engine for high-density cheat-sheet study notes with native PDF fallback support.
+
 ## [26.8.1] — 2026-08-01
 
 ### Added & Improved
