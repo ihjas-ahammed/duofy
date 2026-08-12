@@ -15,6 +15,6 @@ Track progress for expanding all 14 academic discipline directories down to Leve
 - [x] **09_Arts_and_Fine_Arts** (ALL sub-sub-topics fully populated with `keytoflow.md` study guides!)
 - [x] **10_Law_and_Legal_Studies** (ALL sub-sub-topics fully populated with `keytoflow.md` study guides!)
 - [x] **11_Business_and_Commerce** (ALL sub-sub-topics fully populated with `keytoflow.md` study guides!)
-- [ ] **12_Communication_and_Media** (Journalism, Mass Comm, Public Relations, Digital Media)
+- [x] **12_Communication_and_Media** (ALL sub-sub-topics fully populated with `keytoflow.md` study guides!)
 - [ ] **13_Public_Policy_and_Social_Services** (Public Admin, IR & Diplomacy, Public Policy, Social Work, Urban Planning)
 - [ ] **14_Education** (Educational Psych, Curriculum, Leadership/Policy, Special Ed, EdTech)
