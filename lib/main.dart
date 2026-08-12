@@ -5,6 +5,7 @@ import 'theme/app_theme.dart';
 import 'services/fb/fb_core.dart';
 import 'services/global_state.dart';
 import 'services/notification_service.dart';
+import 'services/home_widget_service.dart';
 import 'screens/auth_gate.dart';
 import 'widgets/walkthrough_banner.dart';
 import 'screens/settings_screen.dart';
@@ -414,8 +415,9 @@ void main() async {
 
     try {
       await NotificationService.init();
+      await HomeWidgetService.instance.init();
     } catch (e, stack) {
-      startupError = "${startupError ?? ""}\nNotification Init Error: $e\n$stack";
+      startupError = "${startupError ?? ""}\nNotification/HomeWidget Init Error: $e\n$stack";
     }
 
     try {

@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/notification_service.dart';
+import '../services/home_widget_service.dart';
 import '../theme/app_theme.dart';
 
 /// Settings card for the daily XP goal and the optional study reminder.
@@ -53,6 +54,7 @@ class _DailyGoalCardState extends State<DailyGoalCard> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('daily_goal_xp', goal);
     setState(() => _goal = goal);
+    await HomeWidgetService.instance.publishStreak();
   }
 
   Future<void> _applyReminder() async {

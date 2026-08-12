@@ -8,6 +8,8 @@ import '../main.dart';
 import '../services/generation_manager.dart';
 import '../screens/pdf_split_preview_screen.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
 
@@ -87,6 +89,9 @@ class NotificationService {
     } catch (e) {
       debugPrint('[NotificationService] Error processing launch notification: $e');
     }
+
+    // Ensure scheduled daily reminder is active
+    await ensureAutoScheduledReminder();
   }
 
   static Future<void> _onSelectNotification(NotificationResponse response) async {
@@ -224,6 +229,29 @@ class NotificationService {
       );
     } catch (e) {
       debugPrint('[NotificationService] Failed to schedule daily reminder: $e');
+    }
+  }
+
+  /// Automatically checks SharedPreferences and schedules/refreshes the daily study reminder.
+  static Future<void> ensureAutoScheduledReminder() async {
+    if (kIsWeb) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final enabled = prefs.getBool('daily_reminder_enabled') ?? true;
+      if (!enabled) return;
+
+      final t = prefs.getString('daily_reminder_time');
+      TimeOfDay time = const TimeOfDay(hour: 19, minute: 0);
+      if (t != null && t.contains(':')) {
+        final parts = t.split(':');
+        time = TimeOfDay(
+          hour: int.tryParse(parts[0]) ?? 19,
+          minute: int.tryParse(parts[1]) ?? 0,
+        );
+      }
+      await scheduleDailyReminder(time);
+    } catch (e) {
+      debugPrint('[NotificationService] ensureAutoScheduledReminder failed: $e');
     }
   }
 

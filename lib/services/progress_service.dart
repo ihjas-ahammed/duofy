@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
 import 'global_state.dart';
 import 'learning_sync.dart';
+import 'home_widget_service.dart';
 import 'fb/fb_auth.dart';
 import 'database_service.dart';
 import 'guest_service.dart';
@@ -23,6 +24,7 @@ class ProgressService {
     GlobalState.bumpProgress();
     // Fire-and-forget cloud backup (no-op when cloud sync is disabled).
     LearningSync.push();
+    HomeWidgetService.instance.publishStreak();
   }
 
   static Future<List<String>> getCompletedLessons() async {
