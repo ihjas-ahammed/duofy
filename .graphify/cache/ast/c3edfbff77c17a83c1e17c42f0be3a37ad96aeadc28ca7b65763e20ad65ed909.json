@@ -1,0 +1,1 @@
+{"nodes":[{"id":"python_app_main","label":"main.py","file_type":"code","source_file":"python_app/main.py","source_location":"L1"}],"edges":[{"source":"python_app_main","target":"sys","relation":"imports","confidence":"EXTRACTED","source_file":"python_app/main.py","source_location":"L2","weight":1}]}

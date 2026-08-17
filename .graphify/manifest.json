@@ -1,0 +1,1726 @@
+{
+  "android/app/build.gradle.kts": {
+    "mtime": 1785176875681.3862,
+    "hash": "f53b9c8055563ac2bc4cf9f49f2310a6"
+  },
+  "android/app/src/main/kotlin/com/example/duofy/MainActivity.kt": {
+    "mtime": 1784820577813.3716,
+    "hash": "c29d9fabd5984e2d7af8091506cb3c07"
+  },
+  "android/build.gradle.kts": {
+    "mtime": 1784820577816.2776,
+    "hash": "f11f360aed44d4f6871b398346af14f0"
+  },
+  "android/settings.gradle.kts": {
+    "mtime": 1785176875683.3865,
+    "hash": "129c23fb6e3f70259892779fa5a2173b"
+  },
+  "disable-keyboard.py": {
+    "mtime": 1784820580642.938,
+    "hash": "2b9ff591732eacd15decfef4b15d9aa9"
+  },
+  "graphify-out/ast_extract.py": {
+    "mtime": 1784820581066.3772,
+    "hash": "43a2d14ce50e9447dd78dff0c50618f6"
+  },
+  "graphify-out/build_graph.py": {
+    "mtime": 1784820581066.3772,
+    "hash": "7d71a2c588dd3d9192e1f9113b82abdd"
+  },
+  "graphify-out/check_cache.py": {
+    "mtime": 1784820581385.387,
+    "hash": "90bec06af1df2b3110b4819355c167d7"
+  },
+  "graphify-out/detect.py": {
+    "mtime": 1784820581385.387,
+    "hash": "24f3302e8bd074c0601a883195986c77"
+  },
+  "graphify-out/make_chunks.py": {
+    "mtime": 1784820581544.3918,
+    "hash": "9380320357dcec573c83a5209f109e8c"
+  },
+  "graphify-out/merge_all.py": {
+    "mtime": 1784820581545.392,
+    "hash": "bbed3fb64884c450349fdd6da95fbe41"
+  },
+  "graphify-out/merge_semantic.py": {
+    "mtime": 1784820581545.392,
+    "hash": "52e9d730806bd2b4f3112d7b30738784"
+  },
+  "graphify-out/run_ast.ps1": {
+    "mtime": 1784820581545.392,
+    "hash": "843cf27405753d72df7aedd3cfc124b7"
+  },
+  "graphify-out/run_detect.ps1": {
+    "mtime": 1784820581545.392,
+    "hash": "323e0303c87a523defc59a31782c2eb5"
+  },
+  "graphify-out/run_python.ps1": {
+    "mtime": 1784820581545.392,
+    "hash": "7831d12755375e6fca7ec6cba9de94f8"
+  },
+  "graphify-out/setup_graphify.ps1": {
+    "mtime": 1784820581545.392,
+    "hash": "f1b8f910564deea665c3f45de4779f07"
+  },
+  "graphify-out/test_sig.py": {
+    "mtime": 1784820581545.392,
+    "hash": "e7c8493b44a29ce30b41b4189b625b0d"
+  },
+  "ios/Runner/AppDelegate.swift": {
+    "mtime": 1784820581549.524,
+    "hash": "303ca46dbd58544be7b816861d70a27c"
+  },
+  "ios/Runner/Runner-Bridging-Header.h": {
+    "mtime": 1784820581553.7007,
+    "hash": "e07862ac930ed4d8479185d52c6cc66d"
+  },
+  "ios/RunnerTests/RunnerTests.swift": {
+    "mtime": 1784820581553.7007,
+    "hash": "a225a382d14d7b16b6f602a5c1d49331"
+  },
+  "lib/data/mock_books.dart": {
+    "mtime": 1784820581554.3923,
+    "hash": "b6525142d239a41b8f5d653bfd3344fb"
+  },
+  "lib/firebase_options.dart": {
+    "mtime": 1784820581554.3923,
+    "hash": "be76e1f9a6fc6be8724182af46be4e2f"
+  },
+  "lib/main.dart": {
+    "mtime": 1786377892049.2583,
+    "hash": "1dcf01d94c844c776c916ad7fbc7eb0d"
+  },
+  "lib/models/ai_task.dart": {
+    "mtime": 1784921713461.8044,
+    "hash": "16ba407949442f8ab36bb70f2cae47c6"
+  },
+  "lib/models/app_models.dart": {
+    "mtime": 1785588236188.1897,
+    "hash": "516bbe474969918a04144d3f492b103e"
+  },
+  "lib/models/daily_goal.dart": {
+    "mtime": 1785590971627.9934,
+    "hash": "a80e82d817b6e8523efd9a4e9a5e7416"
+  },
+  "lib/models/pyq_models.dart": {
+    "mtime": 1785176876037.4011,
+    "hash": "17036472f40c61dffa0041b91db4b311"
+  },
+  "lib/platform/file_image_io.dart": {
+    "mtime": 1784921713215.1008,
+    "hash": "d2e721f60955458b636619f8c2e736b8"
+  },
+  "lib/platform/file_image_shim.dart": {
+    "mtime": 1784921713215.5996,
+    "hash": "96b8a7bdb922fcae9d9592dc1ddb050a"
+  },
+  "lib/platform/file_image_web.dart": {
+    "mtime": 1784921713215.365,
+    "hash": "ff2e61e2df4b520ea3ac95b24f218d94"
+  },
+  "lib/platform/io_shim.dart": {
+    "mtime": 1784921713215.8608,
+    "hash": "8b914529943ea9c93d270e8294fe227a"
+  },
+  "lib/platform/io_stub.dart": {
+    "mtime": 1784921713214.8757,
+    "hash": "379193c250ac08f98bec9fb7b2999606"
+  },
+  "lib/platform/isolate_shim.dart": {
+    "mtime": 1784921713216.2732,
+    "hash": "ae02128f41f50773fce3c8e9a45efe2f"
+  },
+  "lib/platform/isolate_shim_io.dart": {
+    "mtime": 1784921713216.0662,
+    "hash": "5845ec9413cb906cc8fd74aa1b5aede2"
+  },
+  "lib/platform/isolate_shim_web.dart": {
+    "mtime": 1784921713216.4485,
+    "hash": "57293f61935a45b57f6233de9acd3b55"
+  },
+  "lib/screens/ai_providers_screen.dart": {
+    "mtime": 1784921943514.0173,
+    "hash": "48a2f8d01d3554a219a0399576f76589"
+  },
+  "lib/screens/ai_queue_screen.dart": {
+    "mtime": 1784921713318.9783,
+    "hash": "ac2db48cb61da8286933ec0ff70fea04"
+  },
+  "lib/screens/app_crash_recovery_screen.dart": {
+    "mtime": 1785589471323.5469,
+    "hash": "139553cc4b462234976f2ac9f0fa050f"
+  },
+  "lib/screens/auth_gate.dart": {
+    "mtime": 1785177397983.1414,
+    "hash": "1982de5a77a5c9576a0ba13d92ae3d59"
+  },
+  "lib/screens/auth_screen.dart": {
+    "mtime": 1785176876038.4011,
+    "hash": "55432bf5bf8529fed402cdcb816e421e"
+  },
+  "lib/screens/book_dashboard_screen.dart": {
+    "mtime": 1785979670976.6677,
+    "hash": "8dc8ed08bda3ac361b8430a9532967f3"
+  },
+  "lib/screens/book_route_loader_screen.dart": {
+    "mtime": 1784921713422.7192,
+    "hash": "5c6e94de942d0c2a78b46c5ea723a79c"
+  },
+  "lib/screens/bookmarks_screen.dart": {
+    "mtime": 1784921713411.3723,
+    "hash": "a7a591a59ea8e80b7ba927ac136286b1"
+  },
+  "lib/screens/course_edit_structure_screen.dart": {
+    "mtime": 1784921713360.9482,
+    "hash": "52d1b33900b94241826b5ce9ebf6ef5d"
+  },
+  "lib/screens/course_settings_screen.dart": {
+    "mtime": 1785176876038.4011,
+    "hash": "f32e82c7dc9bad9d59acbcc997e89c35"
+  },
+  "lib/screens/daily_goals_screen.dart": {
+    "mtime": 1785591503267.3286,
+    "hash": "31bb92128f6709d47e9ffbdc38792bd7"
+  },
+  "lib/screens/dev/programming_slides_screen.dart": {
+    "mtime": 1786377882286.0325,
+    "hash": "d76419f1f07ddc11744861d19390b88b"
+  },
+  "lib/screens/document_store_screen.dart": {
+    "mtime": 1785979685080.9946,
+    "hash": "5c585ec90cef0ca2089ffc48a42de388"
+  },
+  "lib/screens/exam_screen.dart": {
+    "mtime": 1784921713423.3022,
+    "hash": "33bb9c5b15501757072bcd016a7a00b9"
+  },
+  "lib/screens/experiments_screen.dart": {
+    "mtime": 1785176876039.4011,
+    "hash": "38dd82f56c8f8b015a9277c5dbb733a9"
+  },
+  "lib/screens/generate_book_screen.dart": {
+    "mtime": 1785176876039.4011,
+    "hash": "5257ebeb1bcc264b9bb29137e76f8f5d"
+  },
+  "lib/screens/generate_qp_screen.dart": {
+    "mtime": 1784921713385.5608,
+    "hash": "50b39c7e41a908d5341d7d30b1ecea08"
+  },
+  "lib/screens/home_screen.dart": {
+    "mtime": 1786377914537.777,
+    "hash": "00848621fffcb060c47124f626adb1fa"
+  },
+  "lib/screens/ide/code_ide_screen.dart": {
+    "mtime": 1785176876040.4011,
+    "hash": "0c355ba133bfa84482abcae764567f74"
+  },
+  "lib/screens/ide/html_ide_screen.dart": {
+    "mtime": 1785981509122.335,
+    "hash": "ed94c749e52dff53d91e6a0673c8ceec"
+  },
+  "lib/screens/ide/latex_ide_screen.dart": {
+    "mtime": 1786378451220.913,
+    "hash": "3f26863937e497f5a3f26100033f3feb"
+  },
+  "lib/screens/ide/python_notebook_screen.dart": {
+    "mtime": 1786381245938.8823,
+    "hash": "1deccb796966570e1804992667d93c4a"
+  },
+  "lib/screens/ide/universal_code_runner_screen.dart": {
+    "mtime": 1785981518171.5627,
+    "hash": "5dbbb704513a397159f7e9381833b083"
+  },
+  "lib/screens/lesson_complete_screen.dart": {
+    "mtime": 1786377925842.0374,
+    "hash": "5f7a68079d9ad51140175c199fe4ed5b"
+  },
+  "lib/screens/lesson_screen.dart": {
+    "mtime": 1785588615504.836,
+    "hash": "35ea707a6ddaec38d4ece11c6bddccee"
+  },
+  "lib/screens/main_layout_screen.dart": {
+    "mtime": 1785176876041.4116,
+    "hash": "676519eac071f1e50effd73aeac79ead"
+  },
+  "lib/screens/metacognition_setup_screen.dart": {
+    "mtime": 1784921937722.8506,
+    "hash": "67fc4e2520bf9ba36f0cd6a5f6479d36"
+  },
+  "lib/screens/module_notes_viewer_screen.dart": {
+    "mtime": 1786112459945.1245,
+    "hash": "b4e2bcdad5485e9ddda900172bd72543"
+  },
+  "lib/screens/module_selection_screen.dart": {
+    "mtime": 1786112459946.1245,
+    "hash": "2dd74a9a6b4c96f37368eb1d227814af"
+  },
+  "lib/screens/module_summary_detail_screen.dart": {
+    "mtime": 1784921713366.8823,
+    "hash": "70912fad562a13208233f137edb9e5c7"
+  },
+  "lib/screens/onboarding/onboarding_screen.dart": {
+    "mtime": 1784921713458.976,
+    "hash": "ab88f9def50350078d0865e39ffc8196"
+  },
+  "lib/screens/pdf_browser_screen.dart": {
+    "mtime": 1784921713323.3357,
+    "hash": "758170aa32b7bc0566902e0bcb99ff30"
+  },
+  "lib/screens/pdf_folder_screen.dart": {
+    "mtime": 1785979714028.6658,
+    "hash": "5ad7bc9e5a9066928f3cb82cb57f6401"
+  },
+  "lib/screens/pdf_split_preview_screen.dart": {
+    "mtime": 1784921713382.8823,
+    "hash": "f1c52c392be79432864e2cdebb4e1abe"
+  },
+  "lib/screens/practice_screen.dart": {
+    "mtime": 1785176876041.4116,
+    "hash": "31e25782f48cb2092ad70a34e38461ac"
+  },
+  "lib/screens/practice_session_screen.dart": {
+    "mtime": 1785588320374.21,
+    "hash": "5d8a0be76cf7c5c474fe729d7f9d6a6f"
+  },
+  "lib/screens/pyq_complete_screen.dart": {
+    "mtime": 1786378118889.4456,
+    "hash": "d2fee5c0c19e666f759d83d35b4dae92"
+  },
+  "lib/screens/pyq_exam_screen.dart": {
+    "mtime": 1785176876041.4116,
+    "hash": "cf642d4b3d561d5e3879a6faa3cba7a1"
+  },
+  "lib/screens/pyq_panel_screen.dart": {
+    "mtime": 1785176876041.4116,
+    "hash": "a7847ce3838dac30117288f5cb7d566f"
+  },
+  "lib/screens/pyq_score_history_screen.dart": {
+    "mtime": 1785176876041.4116,
+    "hash": "40af36c74a99cb2cfec74a8ddaef1016"
+  },
+  "lib/screens/pyq_tab_screen.dart": {
+    "mtime": 1785176876042.4014,
+    "hash": "5b94bf3b4bfe86347ace746b6669e4cc"
+  },
+  "lib/screens/python_ide_screen.dart": {
+    "mtime": 1784922227004.0222,
+    "hash": "dc7a25d93a0a020daab369ab0b6cd696"
+  },
+  "lib/screens/qp_detail_screen.dart": {
+    "mtime": 1784921713322.048,
+    "hash": "9d3435efff1ef75b4959fbe1db2cb5f0"
+  },
+  "lib/screens/reference_pdf_viewer_screen.dart": {
+    "mtime": 1785979687236.0447,
+    "hash": "42ea22a7bb1460a02a3281a02718c239"
+  },
+  "lib/screens/section_selection_screen.dart": {
+    "mtime": 1786112459946.1245,
+    "hash": "c6af55b0197a11b4851b7355eaee9a4a"
+  },
+  "lib/screens/settings_screen.dart": {
+    "mtime": 1786377948360.5552,
+    "hash": "eb72a6ee3e5728571ea3d4d8b607075d"
+  },
+  "lib/screens/source_pdf_upload_screen.dart": {
+    "mtime": 1785176876042.4014,
+    "hash": "28c80be02b565cc2a5239c35b55c9fb4"
+  },
+  "lib/screens/summary_screen.dart": {
+    "mtime": 1784921713389.2524,
+    "hash": "b9c98777f3735822db20b3ffebc63943"
+  },
+  "lib/services/ai_estimator.dart": {
+    "mtime": 1784921713202.863,
+    "hash": "74fb7f29d69bdb0a301f4271283faaa4"
+  },
+  "lib/services/ai_service.dart": {
+    "mtime": 1785588459169.1868,
+    "hash": "e1ead3198106fc67440a6f4b77d82f51"
+  },
+  "lib/services/auto_index_pipeline.dart": {
+    "mtime": 1784921713210.6274,
+    "hash": "5ad0e3f789af7cc6615533d6ae5eb1f6"
+  },
+  "lib/services/auto_index_service.dart": {
+    "mtime": 1784921713187.8477,
+    "hash": "249874b5d30b7246d1002b9760324f40"
+  },
+  "lib/services/b2_service.dart": {
+    "mtime": 1784921713147.6824,
+    "hash": "a7f0c84d7679aed937c116e6daa80894"
+  },
+  "lib/services/bookmark_service.dart": {
+    "mtime": 1784921713174.852,
+    "hash": "621ee7002856e03edf91172668fbf52c"
+  },
+  "lib/services/code_storage_service.dart": {
+    "mtime": 1785176876043.4014,
+    "hash": "ffa3e41e9cddb507130d4c5737458662"
+  },
+  "lib/services/daily_goals_service.dart": {
+    "mtime": 1785590979847.1697,
+    "hash": "5ea8133e2d45a8ad23c0a7a171c00f96"
+  },
+  "lib/services/database_service.dart": {
+    "mtime": 1786378085792.6943,
+    "hash": "561c0e2acea2d56c480d59e2a0c51598"
+  },
+  "lib/services/deadline_service.dart": {
+    "mtime": 1784921713198.3066,
+    "hash": "177d22566d345615f292dea9b396c158"
+  },
+  "lib/services/error_capture_service.dart": {
+    "mtime": 1785176876043.4014,
+    "hash": "8083e8d3dc4049d5d9517f809155186f"
+  },
+  "lib/services/fb/fb_auth.dart": {
+    "mtime": 1784921713214.2383,
+    "hash": "e145fe8aa9cce15e11052d979ced83c0"
+  },
+  "lib/services/fb/fb_core.dart": {
+    "mtime": 1785176876043.4014,
+    "hash": "33e2adec8abfeb33f5c09b3dd5c2c512"
+  },
+  "lib/services/fb/fb_firestore.dart": {
+    "mtime": 1784921713212.592,
+    "hash": "9f2826e5489c1c3cdf122075610235ce"
+  },
+  "lib/services/fb/fd_backend.dart": {
+    "mtime": 1784921713213.6453,
+    "hash": "b25494dedf30a9d716c7d6147ff2d55b"
+  },
+  "lib/services/fb/fd_backend_stub.dart": {
+    "mtime": 1784921713212.9304,
+    "hash": "5b3930ae9ad1e7ac8dffa96e5a13be25"
+  },
+  "lib/services/generation_manager.dart": {
+    "mtime": 1785588169641.023,
+    "hash": "c33e6259f05bca24023e393dd6a30d35"
+  },
+  "lib/services/global_state.dart": {
+    "mtime": 1785593779599.2444,
+    "hash": "ffdcabf53f2ef4bffd8e0e5dc33aa547"
+  },
+  "lib/services/guest_service.dart": {
+    "mtime": 1784921713208.2869,
+    "hash": "e473d6cd7e9b15f7b0995c06865b824b"
+  },
+  "lib/services/ide_settings_service.dart": {
+    "mtime": 1785176876043.4014,
+    "hash": "4fe010bcb3c4405cf02afc27360d616a"
+  },
+  "lib/services/learning_sync.dart": {
+    "mtime": 1785177793924.8948,
+    "hash": "859979381ee7e68b9b65c80400bd2c6b"
+  },
+  "lib/services/loading_progress_controller.dart": {
+    "mtime": 1785176876043.4014,
+    "hash": "529c00cc944129989583e9a4b7ebde66"
+  },
+  "lib/services/mapping_verifier.dart": {
+    "mtime": 1784921713187.233,
+    "hash": "e7f03a1a38b94f4e87b0891fe6f1d7d4"
+  },
+  "lib/services/math_evaluator_service.dart": {
+    "mtime": 1784921713143.245,
+    "hash": "31735a55120bf0b18b8114caa87fd1dd"
+  },
+  "lib/services/metacognition_service.dart": {
+    "mtime": 1785177504350.9573,
+    "hash": "53cd0c0ccc8f21dda4574377f5410497"
+  },
+  "lib/services/module_notes_html_builder.dart": {
+    "mtime": 1786378653488.4114,
+    "hash": "cca463e27da816fa4e8cf7a4d4cd78be"
+  },
+  "lib/services/module_notes_service.dart": {
+    "mtime": 1786378667950.7322,
+    "hash": "6a1a09db6c97178c98cb7a666bf3b1d8"
+  },
+  "lib/services/next_up_service.dart": {
+    "mtime": 1784921713150.9246,
+    "hash": "91d981600278cd44cf17ef3bb53c29d5"
+  },
+  "lib/services/notification_service.dart": {
+    "mtime": 1785176876044.4014,
+    "hash": "7e2a3e3a05414babf088bfe027931eee"
+  },
+  "lib/services/page_mapping.dart": {
+    "mtime": 1784921713209.8965,
+    "hash": "0e807b0c1cfa4bca664ae0fec321a1f5"
+  },
+  "lib/services/pdf_service.dart": {
+    "mtime": 1784820581570.3928,
+    "hash": "c7e128af36d743e220a1bc51d58b52d3"
+  },
+  "lib/services/personalization_service.dart": {
+    "mtime": 1784921713197.3474,
+    "hash": "0761cdb7573c4ae0462a957fe2a2730d"
+  },
+  "lib/services/progress_service.dart": {
+    "mtime": 1786377901160.4685,
+    "hash": "e36d174951adbfe428c51d99e2868503"
+  },
+  "lib/services/prompt_service.dart": {
+    "mtime": 1785588176723.1438,
+    "hash": "9265132d16168090718f9909437d6b4c"
+  },
+  "lib/services/pyq_exam_service.dart": {
+    "mtime": 1785176876044.4014,
+    "hash": "2cc3d8b7fce79507f90fdd5a0711c7e2"
+  },
+  "lib/services/python_runner_service.dart": {
+    "mtime": 1786380565327.776,
+    "hash": "d2bedccfbf5caeaa12ca2e0ae8f22d86"
+  },
+  "lib/services/toc_matcher.dart": {
+    "mtime": 1784921713175.803,
+    "hash": "741b9921777bb3c020827f4f75468571"
+  },
+  "lib/services/update_service.dart": {
+    "mtime": 1784922830835.5842,
+    "hash": "5a5a829d90484c7efe0946144ef0932d"
+  },
+  "lib/services/usage_limit_service.dart": {
+    "mtime": 1784921713201.2468,
+    "hash": "c8fbeb3717180e68b1671f04af929263"
+  },
+  "lib/services/walkthrough_service.dart": {
+    "mtime": 1784921713185.9365,
+    "hash": "7c1fa7a624a14473a508d00e3372ef47"
+  },
+  "lib/theme/app_theme.dart": {
+    "mtime": 1785591112080.0078,
+    "hash": "320c96ce515b4e0aa64fcfff82670948"
+  },
+  "lib/utils/latex_utils.dart": {
+    "mtime": 1785176876044.4014,
+    "hash": "90b4c4592256fa5225e33af0c41b5e54"
+  },
+  "lib/utils/progress_utils.dart": {
+    "mtime": 1784921713142.1248,
+    "hash": "be2e3e31aea04c963f20c10fdea28c95"
+  },
+  "lib/utils/toast_utils.dart": {
+    "mtime": 1785589455924.2434,
+    "hash": "9da6b7f70c29175c68b11e9b827deb18"
+  },
+  "lib/widgets/analytics_view.dart": {
+    "mtime": 1786377972205.1023,
+    "hash": "7d554685543079b06a4dbe9d20791f5e"
+  },
+  "lib/widgets/book_card.dart": {
+    "mtime": 1784921713239.2834,
+    "hash": "cb53d3dbc60a86ff48b17aecd8508d3d"
+  },
+  "lib/widgets/bottom_sheets/section_bottom_sheet.dart": {
+    "mtime": 1784921907876.9888,
+    "hash": "0670995a76a1ee7d4099198e89ee705d"
+  },
+  "lib/widgets/calibration_card.dart": {
+    "mtime": 1784921713249.8481,
+    "hash": "b51ee3a71d4c80ee2a591746c9c77b58"
+  },
+  "lib/widgets/canvas_art_view.dart": {
+    "mtime": 1785589690515.9463,
+    "hash": "8cebf5386101832738bda0e99cbcb9ba"
+  },
+  "lib/widgets/canvas_html_view.dart": {
+    "mtime": 1784921900987.789,
+    "hash": "579d4a4663e3ec5dde11e69eb79faa3f"
+  },
+  "lib/widgets/coach_mark.dart": {
+    "mtime": 1785589459097.306,
+    "hash": "7c1978eab405bd2ae2dcab38f6790a29"
+  },
+  "lib/widgets/code_highlighter.dart": {
+    "mtime": 1785980771299.2515,
+    "hash": "49227ee4eae92ed7f43f908fd43e1ed2"
+  },
+  "lib/widgets/combo_badge.dart": {
+    "mtime": 1786377982664.342,
+    "hash": "015d56989cef6a92bbdaff44f25bf2b3"
+  },
+  "lib/widgets/community_book_card.dart": {
+    "mtime": 1784921713247.6636,
+    "hash": "47b7ee9257ecdf61e0013bd2205453cb"
+  },
+  "lib/widgets/compact_book_card.dart": {
+    "mtime": 1784921713225.5476,
+    "hash": "1d2d54b552652f186df516f2e7df4b2f"
+  },
+  "lib/widgets/compact_book_list_item.dart": {
+    "mtime": 1784921713217.269,
+    "hash": "55448033f48e1422f7096d5f3e6f187d"
+  },
+  "lib/widgets/daily_goal_card.dart": {
+    "mtime": 1784921713231.5159,
+    "hash": "b6680cec83f1024e84cf514bb639cfa8"
+  },
+  "lib/widgets/daily_goals_complete_card.dart": {
+    "mtime": 1785593796077.5068,
+    "hash": "13ee3af3a3a0228004e79d5737ef9f22"
+  },
+  "lib/widgets/daily_goals_popup.dart": {
+    "mtime": 1785593787862.3755,
+    "hash": "51a5fcfe3131c348bce0598ffe0a6f5b"
+  },
+  "lib/widgets/desktop_webview_io.dart": {
+    "mtime": 1784921713220.441,
+    "hash": "6304b0118f40075aa424ed13b39367da"
+  },
+  "lib/widgets/desktop_webview_stub.dart": {
+    "mtime": 1784921713231.9568,
+    "hash": "ee6af9c6ce7ac9c27da84177028803b3"
+  },
+  "lib/widgets/duo_button.dart": {
+    "mtime": 1785589648721.0972,
+    "hash": "ea9face1935df4c15c2fb6d943bc2e42"
+  },
+  "lib/widgets/file_selection_list.dart": {
+    "mtime": 1784921713223.5593,
+    "hash": "849e2fd0f96243741997c6d7ad97235e"
+  },
+  "lib/widgets/floating_daily_goal_toast.dart": {
+    "mtime": 1785591717446.0767,
+    "hash": "918bf213bedbe35e4fb1cfadbce0ff9c"
+  },
+  "lib/widgets/generating_book_card.dart": {
+    "mtime": 1784921713256.2642,
+    "hash": "d448e4cd8f835b7a46d98b8c7c87077c"
+  },
+  "lib/widgets/glassy_nav_bar.dart": {
+    "mtime": 1784921713222.9382,
+    "hash": "f1ba38c78be34d95987395373551c2df"
+  },
+  "lib/widgets/global_error_capture_layer.dart": {
+    "mtime": 1785176876044.4014,
+    "hash": "966df10e0e4becfe1cbba0bf5ef9fbca"
+  },
+  "lib/widgets/ide_config_dialog.dart": {
+    "mtime": 1785176876044.4014,
+    "hash": "7d1d50a7fab34d7bdb2e06960df90c99"
+  },
+  "lib/widgets/lazy_indexed_stack.dart": {
+    "mtime": 1784921713228.5244,
+    "hash": "f36af71663c7997f1aca07c8c722b671"
+  },
+  "lib/widgets/learner_profile_card.dart": {
+    "mtime": 1784921713252.46,
+    "hash": "e5834129edeb5554d08689ec240722d5"
+  },
+  "lib/widgets/lesson_accordion.dart": {
+    "mtime": 1784921713251.1008,
+    "hash": "4a4d36ef7b9df6a2fb8043b383781e33"
+  },
+  "lib/widgets/lesson_assistant_chat.dart": {
+    "mtime": 1784921713244.4424,
+    "hash": "5124ecbc5735a4ac38e5459a6037b50b"
+  },
+  "lib/widgets/lesson_node.dart": {
+    "mtime": 1784921986811.2593,
+    "hash": "a09e1388b57a953062343bc8f2e6cef3"
+  },
+  "lib/widgets/lesson_path.dart": {
+    "mtime": 1785176876045.4014,
+    "hash": "1408ca153009a63dbce3bfecd77e3904"
+  },
+  "lib/widgets/math_markdown.dart": {
+    "mtime": 1785589610781.3303,
+    "hash": "926637f852635389935b81e405309bce"
+  },
+  "lib/widgets/mini_progress_bar.dart": {
+    "mtime": 1784921713255.1606,
+    "hash": "32139a74d6531aec2f1f692075b4f777"
+  },
+  "lib/widgets/missing_files_banner.dart": {
+    "mtime": 1785589655521.235,
+    "hash": "ee8b1f9dbf63a4d159a5de3bd6cf290d"
+  },
+  "lib/widgets/next_up_card.dart": {
+    "mtime": 1784921713229.991,
+    "hash": "2df6231e6e8c5b2797f75c97c1e7e475"
+  },
+  "lib/widgets/platform_webview.dart": {
+    "mtime": 1784921713238.3645,
+    "hash": "2311ddb19468bb57533370bf05e50808"
+  },
+  "lib/widgets/qp_card.dart": {
+    "mtime": 1784921713255.5278,
+    "hash": "cd209d3d54ee44c311be344d74225338"
+  },
+  "lib/widgets/quick_review_sheet.dart": {
+    "mtime": 1784921713263.2488,
+    "hash": "13b447cc5ba3188108e09f34cb2cc9ec"
+  },
+  "lib/widgets/real_progress_bar.dart": {
+    "mtime": 1784921713232.8955,
+    "hash": "231891a6817d34be29b854985f95ae09"
+  },
+  "lib/widgets/realtime_progress_bar.dart": {
+    "mtime": 1785176876045.4014,
+    "hash": "9a7d3f4b5ce5e6d617005c34685b50a4"
+  },
+  "lib/widgets/repair_alignment_dialog.dart": {
+    "mtime": 1784921713224.5676,
+    "hash": "d4bbcec7af59a231490089b3e3039877"
+  },
+  "lib/widgets/responsive_center.dart": {
+    "mtime": 1784921713233.486,
+    "hash": "95699b40d7810a883b7ce9f33eda7275"
+  },
+  "lib/widgets/safe_pdf_viewer.dart": {
+    "mtime": 1784921713268.548,
+    "hash": "7326cc125f711b01cb106de0b29f1188"
+  },
+  "lib/widgets/selectors/module_selector.dart": {
+    "mtime": 1784921713272.7751,
+    "hash": "73fea70b7b7c9ec554f4cc7e1d4b23f0"
+  },
+  "lib/widgets/selectors/section_selector.dart": {
+    "mtime": 1784921713273.4795,
+    "hash": "32b5a9e39649324b896b28edfc4de3ed"
+  },
+  "lib/widgets/slide_views/code_runner_view.dart": {
+    "mtime": 1786377878032.9343,
+    "hash": "0e0ebd058aa42ff8a00cdd4daca81b45"
+  },
+  "lib/widgets/slide_views/concept_pieces_view.dart": {
+    "mtime": 1784921713280.5837,
+    "hash": "1dd67065f67269cb0e3b5b6db4bc4de8"
+  },
+  "lib/widgets/slide_views/custom_html_view.dart": {
+    "mtime": 1784921713295.478,
+    "hash": "b12e47e679b5befb0bdf7e5f6ca0c014"
+  },
+  "lib/widgets/slide_views/descriptive_view.dart": {
+    "mtime": 1785176876045.4014,
+    "hash": "19cc506285b1a9c1a124830079de41ac"
+  },
+  "lib/widgets/slide_views/error_spotting_view.dart": {
+    "mtime": 1785176876045.4014,
+    "hash": "743d783dd076137efbcf101d64d77356"
+  },
+  "lib/widgets/slide_views/fill_in_blank_view.dart": {
+    "mtime": 1785176876045.4014,
+    "hash": "a5aef90621e574a3ca2f87e714a39ae9"
+  },
+  "lib/widgets/slide_views/flashcard_view.dart": {
+    "mtime": 1785176876045.4014,
+    "hash": "64b1a17e1d76d58d8eb018ce9badeb30"
+  },
+  "lib/widgets/slide_views/interactive_proof_view.dart": {
+    "mtime": 1785588601538.4487,
+    "hash": "30450a40592bde8486e7c0e52d64f704"
+  },
+  "lib/widgets/slide_views/interactive_webview.dart": {
+    "mtime": 1784921713274.2346,
+    "hash": "ab56ae566e0b5a8d10b6d7ea42c50c8a"
+  },
+  "lib/widgets/slide_views/matching_view.dart": {
+    "mtime": 1785176876045.4014,
+    "hash": "83c8ad9c6e99844be215257569eb541c"
+  },
+  "lib/widgets/slide_views/numerical_view.dart": {
+    "mtime": 1785176876045.4014,
+    "hash": "4e827ad0a651425bf08adac60d779822"
+  },
+  "lib/widgets/slide_views/one_word_view.dart": {
+    "mtime": 1785176876045.4014,
+    "hash": "4db0f27d9ba9d787acfea80666706709"
+  },
+  "lib/widgets/slide_views/ordering_view.dart": {
+    "mtime": 1785176876046.4014,
+    "hash": "e252125eb31b8d42bd5a2076797e7c39"
+  },
+  "lib/widgets/slide_views/program_view.dart": {
+    "mtime": 1784922232675.1797,
+    "hash": "ede45aa4610f4049a722486cf23706ac"
+  },
+  "lib/widgets/slide_views/pyq_one_word_view.dart": {
+    "mtime": 1784921713282.971,
+    "hash": "149c5200198e2ed89a8e38171419509f"
+  },
+  "lib/widgets/slide_views/quiz_view.dart": {
+    "mtime": 1785176876046.4014,
+    "hash": "3583ea2d8c0a520fc3e854e8137b1924"
+  },
+  "lib/widgets/slide_views/step_by_step_view.dart": {
+    "mtime": 1784921713275.446,
+    "hash": "14584e288dde9d6f6c0764f940da57e5"
+  },
+  "lib/widgets/slide_views/theory_view.dart": {
+    "mtime": 1785176876046.4014,
+    "hash": "2cd5e19879d5bc8ca65eacb8e212deaa"
+  },
+  "lib/widgets/smart_review_card.dart": {
+    "mtime": 1785176876046.4014,
+    "hash": "e2a71e56e569a4706016466c5a3a775e"
+  },
+  "lib/widgets/string_list_manager.dart": {
+    "mtime": 1784921713228.0034,
+    "hash": "ada4792f429135a62a35c608173bfc7a"
+  },
+  "lib/widgets/unit_header.dart": {
+    "mtime": 1784921713262.2612,
+    "hash": "ed397f70d98d179e3301e72f1a946eb5"
+  },
+  "lib/widgets/update_dialog.dart": {
+    "mtime": 1784921713218.6978,
+    "hash": "f336f3071082cd54a19dbcd466611109"
+  },
+  "lib/widgets/walkthrough_banner.dart": {
+    "mtime": 1784921713249.3362,
+    "hash": "87e5940eaa30d3cecaf1027a39a0178d"
+  },
+  "lib/widgets/web_webview_helper.dart": {
+    "mtime": 1784921713248.6277,
+    "hash": "ebf673362f37e1204a272b8f8e396237"
+  },
+  "lib/widgets/web_webview_stub.dart": {
+    "mtime": 1784921713238.5508,
+    "hash": "8a4252b412d666f82535feae339d24e0"
+  },
+  "linux/flutter/generated_plugin_registrant.cc": {
+    "mtime": 1784820581591.915,
+    "hash": "41052b35cded7b2e88c0099efb2d6804"
+  },
+  "linux/flutter/generated_plugin_registrant.h": {
+    "mtime": 1784820581591.915,
+    "hash": "d295462c9da9f7fef22dc86c34492318"
+  },
+  "linux/runner/main.cc": {
+    "mtime": 1784820581592.4285,
+    "hash": "4d7e8fd98d58fa7e970e602e8e3e3be6"
+  },
+  "linux/runner/my_application.cc": {
+    "mtime": 1784820581592.4285,
+    "hash": "5ffd035c4bdca43dc3183ee6cdd9830e"
+  },
+  "linux/runner/my_application.h": {
+    "mtime": 1784820581592.4285,
+    "hash": "326a85d68857137fdfe8698a0c071baf"
+  },
+  "macos/Flutter/GeneratedPluginRegistrant.swift": {
+    "mtime": 1784820581593.0723,
+    "hash": "270c7d28c980c501e23d33689178423e"
+  },
+  "macos/Runner/AppDelegate.swift": {
+    "mtime": 1784820581594.1477,
+    "hash": "2a7411ae3e7c6715525b94b6f8d2e80b"
+  },
+  "macos/Runner/MainFlutterWindow.swift": {
+    "mtime": 1784820581598.6335,
+    "hash": "4a747b1f256d62a2bbb79bd976891eb5"
+  },
+  "macos/RunnerTests/RunnerTests.swift": {
+    "mtime": 1784820581598.6335,
+    "hash": "97d3a20fd20a063c192e886d1822b4a8"
+  },
+  "packages/lucide_icons/lib/lucide_icons.dart": {
+    "mtime": 1784820581602.3938,
+    "hash": "24c254b8cb1994232b49337d6e8ad67d"
+  },
+  "packages/webview_cef/common/webview_app.cc": {
+    "mtime": 1784820581603.7444,
+    "hash": "e5e8432eea8a1df0ade7691599003e21"
+  },
+  "packages/webview_cef/common/webview_app.h": {
+    "mtime": 1784820581604.2634,
+    "hash": "f0feccce05974d487fe3b40f8752061d"
+  },
+  "packages/webview_cef/common/webview_cookieVisitor.cc": {
+    "mtime": 1784820581604.2634,
+    "hash": "017869a4651d1b3940541141d9d6f5e3"
+  },
+  "packages/webview_cef/common/webview_cookieVisitor.h": {
+    "mtime": 1784820581604.2634,
+    "hash": "ebb92fe0e3be0bd37bd9441cf3b404bd"
+  },
+  "packages/webview_cef/common/webview_handler.cc": {
+    "mtime": 1784820581604.2634,
+    "hash": "9403dfaae9fd25831fce4cbc893b016e"
+  },
+  "packages/webview_cef/common/webview_handler.h": {
+    "mtime": 1784820581604.2634,
+    "hash": "e09abe54a04cb94ffafca62c40603c82"
+  },
+  "packages/webview_cef/common/webview_js_handler.cc": {
+    "mtime": 1784820581604.2634,
+    "hash": "a65312a27875295d1cf4aea90940df27"
+  },
+  "packages/webview_cef/common/webview_js_handler.h": {
+    "mtime": 1784820581604.2634,
+    "hash": "14e9fb90816fc090b88832291e8a4d70"
+  },
+  "packages/webview_cef/common/webview_plugin.cc": {
+    "mtime": 1784820581604.2634,
+    "hash": "5beea833e1289e24e879f1e427c953dd"
+  },
+  "packages/webview_cef/common/webview_plugin.h": {
+    "mtime": 1784820581604.3938,
+    "hash": "e313fe403b263bc21bfc2fea697c251d"
+  },
+  "packages/webview_cef/common/webview_value.cc": {
+    "mtime": 1784820581604.3938,
+    "hash": "e2b1d23a1a8516ed1c9812260cf1eb27"
+  },
+  "packages/webview_cef/common/webview_value.h": {
+    "mtime": 1784820581604.3938,
+    "hash": "5341c4112de8060b673124a77496f084"
+  },
+  "packages/webview_cef/example/lib/main.dart": {
+    "mtime": 1784820581605.6174,
+    "hash": "d6cfd1599a97a34c1bdb7f85d322c5d1"
+  },
+  "packages/webview_cef/example/linux/flutter/generated_plugin_registrant.cc": {
+    "mtime": 1784820581606.1226,
+    "hash": "8b46e693acca766fa017ea2597c3e349"
+  },
+  "packages/webview_cef/example/linux/flutter/generated_plugin_registrant.h": {
+    "mtime": 1784820581606.1226,
+    "hash": "d295462c9da9f7fef22dc86c34492318"
+  },
+  "packages/webview_cef/example/linux/main.cc": {
+    "mtime": 1784820581606.1226,
+    "hash": "b125ecc57c82390c6bea633ccdb6d117"
+  },
+  "packages/webview_cef/example/linux/my_application.cc": {
+    "mtime": 1784820581606.1226,
+    "hash": "fe609addf2493d2e2039391baf06f867"
+  },
+  "packages/webview_cef/example/linux/my_application.h": {
+    "mtime": 1784820581606.1226,
+    "hash": "7bd839b67ebee22174be9f4da4521b6f"
+  },
+  "packages/webview_cef/example/macos/Flutter/GeneratedPluginRegistrant.swift": {
+    "mtime": 1784820581608.4805,
+    "hash": "8a4cc4fa4883f54f5cfee992ec70b926"
+  },
+  "packages/webview_cef/example/macos/Runner/AppDelegate.swift": {
+    "mtime": 1784820581609.4475,
+    "hash": "4249e4e94c9319793ec6d815b15ace61"
+  },
+  "packages/webview_cef/example/macos/Runner/MainFlutterWindow.swift": {
+    "mtime": 1784820581609.8706,
+    "hash": "da69378dd4558360d3f2132c07003750"
+  },
+  "packages/webview_cef/example/test/widget_test.dart": {
+    "mtime": 1784820581609.8706,
+    "hash": "879d806f7488eb79462eb7b52b1e617c"
+  },
+  "packages/webview_cef/example/windows/flutter/generated_plugin_registrant.cc": {
+    "mtime": 1784820581610.7285,
+    "hash": "a8f91348d8d9090f22ec69d597c41e1f"
+  },
+  "packages/webview_cef/example/windows/flutter/generated_plugin_registrant.h": {
+    "mtime": 1784820581610.7285,
+    "hash": "0ea33875f9f8e118f9c2ded03e2e2835"
+  },
+  "packages/webview_cef/example/windows/runner/flutter_window.cpp": {
+    "mtime": 1784820581611.012,
+    "hash": "33cfe7edb15df580c3b9f20c12337c60"
+  },
+  "packages/webview_cef/example/windows/runner/flutter_window.h": {
+    "mtime": 1784820581611.012,
+    "hash": "79bea736711adda00c49419a39a4a0b4"
+  },
+  "packages/webview_cef/example/windows/runner/main.cpp": {
+    "mtime": 1784820581611.012,
+    "hash": "60270936c4406c9fcde4f6363ea6ebfd"
+  },
+  "packages/webview_cef/example/windows/runner/resource.h": {
+    "mtime": 1784820581611.012,
+    "hash": "c8f809a4f8d3f2f625e358fd90f72fee"
+  },
+  "packages/webview_cef/example/windows/runner/utils.cpp": {
+    "mtime": 1784820581611.012,
+    "hash": "fb30235ce8e718f4a34b6392d0480a91"
+  },
+  "packages/webview_cef/example/windows/runner/utils.h": {
+    "mtime": 1784820581611.012,
+    "hash": "c741fb9cddbf3a62f4688b6cca39ddcc"
+  },
+  "packages/webview_cef/example/windows/runner/win32_window.cpp": {
+    "mtime": 1784820581611.012,
+    "hash": "5912f5ea9be16f88da68751ea557e86a"
+  },
+  "packages/webview_cef/example/windows/runner/win32_window.h": {
+    "mtime": 1784820581611.012,
+    "hash": "fb1ab730377ad5aa5c1dee1cfdc5a093"
+  },
+  "packages/webview_cef/lib/src/webview.dart": {
+    "mtime": 1784820581612.015,
+    "hash": "32a59652a4cc16d6ae40cf0c29581c15"
+  },
+  "packages/webview_cef/lib/src/webview_events_listener.dart": {
+    "mtime": 1784820581612.1992,
+    "hash": "e37fd5e9496f70999e4cee167e7bb5e9"
+  },
+  "packages/webview_cef/lib/src/webview_inject_user_script.dart": {
+    "mtime": 1784820581612.1992,
+    "hash": "ca03f2640215af5db78b0a4061ffa94a"
+  },
+  "packages/webview_cef/lib/src/webview_javascript.dart": {
+    "mtime": 1784820581612.1992,
+    "hash": "f28b27f87eabb4686f0ffde76fa9bcea"
+  },
+  "packages/webview_cef/lib/src/webview_manager.dart": {
+    "mtime": 1784820581612.1992,
+    "hash": "924d0f41b3e301501e683bece0c1296a"
+  },
+  "packages/webview_cef/lib/src/webview_textinput.dart": {
+    "mtime": 1784820581612.1992,
+    "hash": "d84115dee453f68f7dc5a6ca06277d0c"
+  },
+  "packages/webview_cef/lib/src/webview_tooltip.dart": {
+    "mtime": 1784820581612.1992,
+    "hash": "9cdb943c8161332cbd8a1caf80bd5e26"
+  },
+  "packages/webview_cef/lib/webview_cef.dart": {
+    "mtime": 1784820581612.1992,
+    "hash": "e8c733d5877d56e6873ae34cc5734750"
+  },
+  "packages/webview_cef/lib/webview_cef_method_channel.dart": {
+    "mtime": 1784820581612.1992,
+    "hash": "ebc9767067ee99c0eb430641cd6ee72b"
+  },
+  "packages/webview_cef/lib/webview_cef_platform_interface.dart": {
+    "mtime": 1784820581612.1992,
+    "hash": "b52d8ab31e3aec15626860699bb5ceb1"
+  },
+  "packages/webview_cef/linux/include/webview_cef/webview_cef_plugin.h": {
+    "mtime": 1784820581612.8801,
+    "hash": "096b89251054184679548b13ffbcf893"
+  },
+  "packages/webview_cef/linux/webview_cef_keyevent.h": {
+    "mtime": 1784820581613.2788,
+    "hash": "a935d542249320de3b25a7509c363c93"
+  },
+  "packages/webview_cef/linux/webview_cef_plugin.cc": {
+    "mtime": 1784820581613.2788,
+    "hash": "80d3c455f1ff087c403cd61ac5747ad4"
+  },
+  "packages/webview_cef/linux/webview_cef_texture.h": {
+    "mtime": 1784820581613.2788,
+    "hash": "1ad472897998c018698c9ea1ccf7eaa9"
+  },
+  "packages/webview_cef/macos/Classes/CefWrapper.h": {
+    "mtime": 1784820581613.8457,
+    "hash": "ba60b89748b3787ef2961a28afb47966"
+  },
+  "packages/webview_cef/macos/Classes/CefWrapper.mm": {
+    "mtime": 1784820581614.0044,
+    "hash": "25b76eaae15cf669d2718ce974896a7c"
+  },
+  "packages/webview_cef/macos/Classes/WebviewCefPlugin.h": {
+    "mtime": 1784820581614.0044,
+    "hash": "24ec09ef6876d60db38a949c21e35c45"
+  },
+  "packages/webview_cef/macos/Classes/WebviewCefPlugin.m": {
+    "mtime": 1784820581614.0044,
+    "hash": "c58d144604ecc9f2d8ca39c428be2bab"
+  },
+  "packages/webview_cef/macos/Classes/WebviewCefTexture.h": {
+    "mtime": 1784820581614.0044,
+    "hash": "68de0c51e7a3ff13bc573c5cf958b89d"
+  },
+  "packages/webview_cef/macos/Classes/WebviewCefTexture.mm": {
+    "mtime": 1784820581614.0044,
+    "hash": "2417f10cf4144703b1e9a72c589cff14"
+  },
+  "packages/webview_cef/macos/Classes/cef_bridge.cc": {
+    "mtime": 1784820581614.0044,
+    "hash": "8f67f30e77df3a13ba47bf4f2937b1e6"
+  },
+  "packages/webview_cef/test/webview_cef_method_channel_test.dart": {
+    "mtime": 1784820581614.0044,
+    "hash": "65f5f9a8152c7eb2045e91d3c6b05a3c"
+  },
+  "packages/webview_cef/test/webview_cef_test.dart": {
+    "mtime": 1784820581614.6223,
+    "hash": "3292d95455b3c8c979f79df47ba50cc5"
+  },
+  "packages/webview_cef/test/webview_main_test.dart": {
+    "mtime": 1784820581614.6223,
+    "hash": "8dfbf57a882eecea5d24d81e8981ba16"
+  },
+  "packages/webview_cef/windows/include/webview_cef/webview_cef_plugin_c_api.h": {
+    "mtime": 1784820581614.8777,
+    "hash": "c02a17b318702d2d59d54e06a45c4622"
+  },
+  "packages/webview_cef/windows/webview_cef_keyevent.h": {
+    "mtime": 1784820581614.8777,
+    "hash": "ad85e0bfc3c1384e613f2052be249c19"
+  },
+  "packages/webview_cef/windows/webview_cef_plugin.cpp": {
+    "mtime": 1784820581614.8777,
+    "hash": "49908e852fdc4a76f5686937d767456b"
+  },
+  "packages/webview_cef/windows/webview_cef_plugin.h": {
+    "mtime": 1784820581614.8777,
+    "hash": "e56d54b85066a74896e3e7d4f03c94e8"
+  },
+  "packages/webview_cef/windows/webview_cef_plugin_c_api.cpp": {
+    "mtime": 1784820581614.8777,
+    "hash": "c19e94f6ddcdc09b7bce6242f9865f97"
+  },
+  "packup.py": {
+    "mtime": 1784820581614.8777,
+    "hash": "25443fd5e21aca14477f0fa785953ee9"
+  },
+  "scratch.dart": {
+    "mtime": 1784820581616.3943,
+    "hash": "59eca222cd83a0340834ac4b81162e30"
+  },
+  "test/auto_index_pipeline_test.dart": {
+    "mtime": 1784820581643.395,
+    "hash": "e12d22b12df28cc1e53560e444751f01"
+  },
+  "test/mapping_verifier_test.dart": {
+    "mtime": 1784820581644.3357,
+    "hash": "3a94605241f94a4191e6bdada5597919"
+  },
+  "test/math_evaluator_test.dart": {
+    "mtime": 1784820581644.3357,
+    "hash": "e21da5978eb085d6616d5fabf0143fe0"
+  },
+  "test/module_notes_test.dart": {
+    "mtime": 1786112459946.1245,
+    "hash": "a8f4b9cee961f1e1f1051c4341fea699"
+  },
+  "test/page_mapping_test.dart": {
+    "mtime": 1784820581644.3357,
+    "hash": "95e35b169c40767e6a9348f2539eacf6"
+  },
+  "test/pdfx_test.dart": {
+    "mtime": 1784820581644.3357,
+    "hash": "39ed917d65f991211c5c6dcced0ce875"
+  },
+  "test/python_runner_test.dart": {
+    "mtime": 1784820581644.3357,
+    "hash": "bceff11ff0876f3361bb327f5b14407c"
+  },
+  "test/review_scheduler_test.dart": {
+    "mtime": 1784820581644.3357,
+    "hash": "0cf5246ce2cb55fc94e53b7e67aee870"
+  },
+  "test/slide_parsing_test.dart": {
+    "mtime": 1784820581644.3357,
+    "hash": "af326a44cbcd0bd40f47427c35685612"
+  },
+  "test/syncfusion_math_test.dart": {
+    "mtime": 1786112459946.1245,
+    "hash": "5c751701fef77639c92ea3c260112c73"
+  },
+  "test/toc_matcher_test.dart": {
+    "mtime": 1784820581644.3357,
+    "hash": "d97a1e6bf8d4800e8060f40dfa55121f"
+  },
+  "test/walkthrough_course_test.dart": {
+    "mtime": 1784820581644.3357,
+    "hash": "c8743e726d71ad57f91d047574af9cf3"
+  },
+  "test/widget_test.dart": {
+    "mtime": 1784820581644.3357,
+    "hash": "272a7b658c81c97166dbca41c7051b98"
+  },
+  "update.py": {
+    "mtime": 1784820581644.395,
+    "hash": "b12f91ea8664cdfbea430f60380b2407"
+  },
+  "windows/flutter/generated_plugin_registrant.cc": {
+    "mtime": 1784820581647.3245,
+    "hash": "4a4598351e05005ecc233ecf811121af"
+  },
+  "windows/flutter/generated_plugin_registrant.h": {
+    "mtime": 1784820581647.3245,
+    "hash": "0ea33875f9f8e118f9c2ded03e2e2835"
+  },
+  "windows/runner/flutter_window.cpp": {
+    "mtime": 1784820581647.6025,
+    "hash": "9b92b95a9eecce25e3e9d356688d0cb6"
+  },
+  "windows/runner/flutter_window.h": {
+    "mtime": 1784820581647.6025,
+    "hash": "79bea736711adda00c49419a39a4a0b4"
+  },
+  "windows/runner/main.cpp": {
+    "mtime": 1784820581647.6025,
+    "hash": "c799d0896a0027ad2d772b649fbf1345"
+  },
+  "windows/runner/resource.h": {
+    "mtime": 1784820581647.6025,
+    "hash": "c8f809a4f8d3f2f625e358fd90f72fee"
+  },
+  "windows/runner/utils.cpp": {
+    "mtime": 1784820581647.6025,
+    "hash": "9b5697b276c8ad67a02ec12ad2c09851"
+  },
+  "windows/runner/utils.h": {
+    "mtime": 1784820581647.6025,
+    "hash": "c741fb9cddbf3a62f4688b6cca39ddcc"
+  },
+  "windows/runner/win32_window.cpp": {
+    "mtime": 1784820581647.6025,
+    "hash": "928e86a2be27eca688669dce6c9177d9"
+  },
+  "windows/runner/win32_window.h": {
+    "mtime": 1784820581647.6025,
+    "hash": "5a4cf051798d7e6931ee0405a4523c8f"
+  },
+  ".agents/rules/graphify.md": {
+    "mtime": 1784820577800.5254,
+    "hash": "f1e53ecc9194573d3c28fc116c743a2e"
+  },
+  ".agents/workflows/graphify.md": {
+    "mtime": 1784820577800.5254,
+    "hash": "0bc020d491fca99550c1ea3de0a5f862"
+  },
+  ".github/copilot-instructions.md": {
+    "mtime": 1784820577801.1062,
+    "hash": "ec2dc0dc7bef63488889f34de2f5584d"
+  },
+  ".github/workflows/android.yml": {
+    "mtime": 1785176875681.3862,
+    "hash": "17fbc9fe29ca2e1960f1060e1572562b"
+  },
+  ".github/workflows/windows.yml": {
+    "mtime": 1784820577801.4094,
+    "hash": "9fef65e54f05c83037099ad562e211fa"
+  },
+  "AGENTS.md": {
+    "mtime": 1784820577801.563,
+    "hash": "6a47d64fcc136324ca395065a707ef76"
+  },
+  "CHANGELOG.md": {
+    "mtime": 1786381519598.801,
+    "hash": "513c63dde1abbf4eb7b92b421d86b627"
+  },
+  "CLAUDE.md": {
+    "mtime": 1784820577801.563,
+    "hash": "82efb97a359f5c7290bf2513d14686be"
+  },
+  "GEMINI.md": {
+    "mtime": 1784820577801.563,
+    "hash": "82efb97a359f5c7290bf2513d14686be"
+  },
+  "README.md": {
+    "mtime": 1784820577808.2773,
+    "hash": "fc6a9daa1328d78194029530dd904d8d"
+  },
+  "ai.md": {
+    "mtime": 1784820577809.2773,
+    "hash": "11e12d88683293604b2ef6019beed9fe"
+  },
+  "analysis_options.yaml": {
+    "mtime": 1784820577809.2773,
+    "hash": "37e640c10c8ad8edbb76e173850f058d"
+  },
+  "android/build/reports/problems/problems-report.html": {
+    "mtime": 1785176875683.3865,
+    "hash": "cd8d258989df15c133c49c7d1bfa80a4"
+  },
+  "builds/latest.txt": {
+    "mtime": 1786112459945.1245,
+    "hash": "11c1e82b72949c965044c8cf6b5b5829"
+  },
+  "builds/whatsnew/26.7.15.md": {
+    "mtime": 1784820580641.3643,
+    "hash": "32d1c23d7da26c85067350236a58b407"
+  },
+  "builds/whatsnew/26.7.22.md": {
+    "mtime": 1784820580642.938,
+    "hash": "ec5872f2b5877c1bf525722acc1c9a76"
+  },
+  "builds/whatsnew/26.7.25.md": {
+    "mtime": 1785176875940.397,
+    "hash": "7a221dacde1ed2bfaf50aee19a5de56f"
+  },
+  "builds/whatsnew/26.7.26.md": {
+    "mtime": 1785176875940.397,
+    "hash": "8eafdeed12aaa2a31da389d6965a360e"
+  },
+  "builds/whatsnew/26.7.28.md": {
+    "mtime": 1785587606109.7996,
+    "hash": "3a4f801a0f4c5d01ef1c8cb148c5b821"
+  },
+  "builds/whatsnew/26.8.1.md": {
+    "mtime": 1785594285874.2876,
+    "hash": "75a5c0db3ec86ec84d4b4d5a801c9f9d"
+  },
+  "builds/whatsnew/26.8.6.md": {
+    "mtime": 1785982657396.881,
+    "hash": "d8698ec2dcbd3f5a406d9cb2144dae36"
+  },
+  "builds/whatsnew/26.8.7.md": {
+    "mtime": 1786112459945.1245,
+    "hash": "c3c35d89098d1ca286e9fa4e0ecc14cc"
+  },
+  "devtools_options.yaml": {
+    "mtime": 1784820580642.938,
+    "hash": "d1ff5187b1b67653e7357395895e8449"
+  },
+  "docs/SECURITY.md": {
+    "mtime": 1784820580642.938,
+    "hash": "7a16a6047aaa22d014c95be5df2d2464"
+  },
+  "docs/example_note.html": {
+    "mtime": 1786112459945.1245,
+    "hash": "5fbfcf04e8f073611538d0d56f50d7bb"
+  },
+  "docs/superpowers/plans/2026-07-04-ai-queue-cleanup.md": {
+    "mtime": 1784820580643.1453,
+    "hash": "f11b4c2122434ef6896fb62ceef9dc00"
+  },
+  "docs/superpowers/plans/2026-07-04-auto-indexing-pipeline.md": {
+    "mtime": 1784820580643.4524,
+    "hash": "f4de2c40ab6c94f4981f276663eb9cdd"
+  },
+  "docs/superpowers/specs/2026-07-04-ai-queue-cleanup-design.md": {
+    "mtime": 1784820580643.4524,
+    "hash": "34203fd0d4a0e07b95c8f882fbdbb2d9"
+  },
+  "docs/superpowers/specs/2026-07-04-auto-indexing-design.md": {
+    "mtime": 1784820580643.6382,
+    "hash": "9e60c39fc83ad03739eaea478d7f6761"
+  },
+  "future.md": {
+    "mtime": 1784820580643.6382,
+    "hash": "a79d93be929d45320fd65a4208a63948"
+  },
+  "graphify-out/2026-07-04/GRAPH_REPORT.md": {
+    "mtime": 1784820580644.3643,
+    "hash": "4f58e9073c9b038218611c07a5a7216f"
+  },
+  "graphify-out/2026-07-07/GRAPH_REPORT.md": {
+    "mtime": 1784820580732.367,
+    "hash": "47807dfcfecfbe210f74dee5916895ad"
+  },
+  "graphify-out/2026-07-08/GRAPH_REPORT.md": {
+    "mtime": 1784820580786.986,
+    "hash": "897cda8240a6d9271dcde6a10f479d6b"
+  },
+  "graphify-out/2026-07-10/GRAPH_REPORT.md": {
+    "mtime": 1784820580827.6558,
+    "hash": "954887f2953bbb9648633a84c9e476ef"
+  },
+  "graphify-out/2026-07-12/GRAPH_REPORT.md": {
+    "mtime": 1784820580853.1467,
+    "hash": "3e566242d4cbc69616c08d8c672a822c"
+  },
+  "graphify-out/2026-07-13/GRAPH_REPORT.md": {
+    "mtime": 1784820580937.3733,
+    "hash": "24a2bdc1f59c85dc50c48cd24ef201d5"
+  },
+  "graphify-out/2026-07-14/GRAPH_REPORT.md": {
+    "mtime": 1784820580969.3743,
+    "hash": "1e34721369d6694f7785e1864965002c"
+  },
+  "graphify-out/2026-07-15/GRAPH_REPORT.md": {
+    "mtime": 1784820581010.9363,
+    "hash": "5eccafa983e27fbe0dc75329b66a9fb2"
+  },
+  "graphify-out/2026-07-22/GRAPH_REPORT.md": {
+    "mtime": 1784820581024.0476,
+    "hash": "bc55c669d3c3b581175fc6adc2d20177"
+  },
+  "graphify-out/2026-07-25/GRAPH_REPORT.md": {
+    "mtime": 1785176875945.3972,
+    "hash": "67b09de88a9e4dd10f5184fd66b83bd3"
+  },
+  "graphify-out/GRAPH_REPORT.md": {
+    "mtime": 1785176875962.398,
+    "hash": "13d20539276ed664fb6dcdba52e3515a"
+  },
+  "ios/Runner/Assets.xcassets/LaunchImage.imageset/README.md": {
+    "mtime": 1784820581553.2595,
+    "hash": "e175e436acacf76c814d83532d0b662c"
+  },
+  "latest.txt": {
+    "mtime": 1786112459945.1245,
+    "hash": "11c1e82b72949c965044c8cf6b5b5829"
+  },
+  "linux/CMakeLists.txt": {
+    "mtime": 1784820581591.567,
+    "hash": "42a4a8a69d92ceedf56690f30989edc6"
+  },
+  "linux/flutter/CMakeLists.txt": {
+    "mtime": 1784820581591.567,
+    "hash": "46690fb8ffaf7d227d8bc4713f31140d"
+  },
+  "linux/runner/CMakeLists.txt": {
+    "mtime": 1784820581591.915,
+    "hash": "6d75431dc21756981b53a7494c836311"
+  },
+  "packages/lucide_icons/pubspec.yaml": {
+    "mtime": 1784820581602.3938,
+    "hash": "3d3a2a5da1e2f09b1ad27e41e4dc8498"
+  },
+  "packages/webview_cef/CHANGELOG.md": {
+    "mtime": 1784820581602.3938,
+    "hash": "f7d798f449890a576ee721dab96ee191"
+  },
+  "packages/webview_cef/README.md": {
+    "mtime": 1784820581603.7444,
+    "hash": "4997e53ca173252750ad65e9d761b5e2"
+  },
+  "packages/webview_cef/analysis_options.yaml": {
+    "mtime": 1784820581603.7444,
+    "hash": "e0b429a27bd86f8a3f1d0542e5f70362"
+  },
+  "packages/webview_cef/example/README.md": {
+    "mtime": 1784820581604.3938,
+    "hash": "fb92681b619824e4dd3ebd59e0f376b3"
+  },
+  "packages/webview_cef/example/analysis_options.yaml": {
+    "mtime": 1784820581605.6174,
+    "hash": "90ca05185a2de012cebf6fb9f85f3598"
+  },
+  "packages/webview_cef/example/linux/CMakeLists.txt": {
+    "mtime": 1784820581605.6174,
+    "hash": "12a25f5d79c5831471c1229cf75ef73c"
+  },
+  "packages/webview_cef/example/linux/flutter/CMakeLists.txt": {
+    "mtime": 1784820581605.9788,
+    "hash": "46690fb8ffaf7d227d8bc4713f31140d"
+  },
+  "packages/webview_cef/example/pubspec.yaml": {
+    "mtime": 1784820581609.8706,
+    "hash": "cc867bd60ba466947097fd7e4b17171a"
+  },
+  "packages/webview_cef/example/windows/CMakeLists.txt": {
+    "mtime": 1784820581609.8706,
+    "hash": "19996e8d224f1b34037af63eb9e41cb6"
+  },
+  "packages/webview_cef/example/windows/flutter/CMakeLists.txt": {
+    "mtime": 1784820581610.626,
+    "hash": "7fcf749e1f5907bc37e680385971ae1c"
+  },
+  "packages/webview_cef/example/windows/runner/CMakeLists.txt": {
+    "mtime": 1784820581610.7285,
+    "hash": "a8aaa9de6edd3b0f3a8eb3957d45799a"
+  },
+  "packages/webview_cef/linux/CMakeLists.txt": {
+    "mtime": 1784820581612.1992,
+    "hash": "75637a1da4562527f64a9f52c4ec3f63"
+  },
+  "packages/webview_cef/pubspec.yaml": {
+    "mtime": 1784820581614.0044,
+    "hash": "ba40ed9f1742d1b0bd7fc51c9d7494bb"
+  },
+  "packages/webview_cef/windows/CMakeLists.txt": {
+    "mtime": 1784820581614.6223,
+    "hash": "8c79955dd5932aff8c1d86832ddfdf81"
+  },
+  "project_snapshot.txt": {
+    "mtime": 1784820581615.394,
+    "hash": "a4ca11bfc36afb07a52c81961c570c4f"
+  },
+  "project_snapshot_out.txt": {
+    "mtime": 1784820581615.394,
+    "hash": "c648e9b1b6733a83e67dbff73fbffde2"
+  },
+  "pubspec.yaml": {
+    "mtime": 1786381515623.7253,
+    "hash": "eba4b57ff77ac030dd9d5db633593338"
+  },
+  "release.txt": {
+    "mtime": 1785594282066.214,
+    "hash": "325f821dde3f5c90c33f6a1072ec4909"
+  },
+  "update.md": {
+    "mtime": 1784820581644.395,
+    "hash": "71f9949c8f5fd9f74ba0a8ac108937d1"
+  },
+  "web/index.html": {
+    "mtime": 1784820581646.0444,
+    "hash": "6e74a9f75110cd021734652017afdc57"
+  },
+  "windows/CMakeLists.txt": {
+    "mtime": 1784820581647.1206,
+    "hash": "6687efc56f58d35299c1ab242b097865"
+  },
+  "windows/flutter/CMakeLists.txt": {
+    "mtime": 1784820581647.1206,
+    "hash": "0c500410e3259a9a053797dc1c28070e"
+  },
+  "windows/runner/CMakeLists.txt": {
+    "mtime": 1784820581647.3245,
+    "hash": "e99a99b5cc82a168fc557eb23b8d5a96"
+  },
+  "METACOGNITION.pdf": {
+    "mtime": 1784820577807.277,
+    "hash": "285c97368daff9e056b85f91f160ba6f"
+  },
+  "android/app/src/main/res/drawable-hdpi/ic_launcher_foreground.png": {
+    "mtime": 1784820577813.7063,
+    "hash": "c0d77f725e188c162f2aff10c11ea3e6"
+  },
+  "android/app/src/main/res/drawable-mdpi/ic_launcher_foreground.png": {
+    "mtime": 1784820577813.7063,
+    "hash": "f25ca56f3464129a6b0a4d6a589298f0"
+  },
+  "android/app/src/main/res/drawable-xhdpi/ic_launcher_foreground.png": {
+    "mtime": 1784820577813.7063,
+    "hash": "a62392ce596b3445ac4f63f0ddc399f3"
+  },
+  "android/app/src/main/res/drawable-xxhdpi/ic_launcher_foreground.png": {
+    "mtime": 1784820577814.2773,
+    "hash": "907704509b613d1dcd5b2b23e1e71805"
+  },
+  "android/app/src/main/res/drawable-xxxhdpi/ic_launcher_foreground.png": {
+    "mtime": 1784820577814.2773,
+    "hash": "7a404501ad515d103a9c12f7ec99e40c"
+  },
+  "android/app/src/main/res/mipmap-hdpi/ic_launcher.png": {
+    "mtime": 1784820577814.2773,
+    "hash": "c2dab3a7d820be18253496ce578caebf"
+  },
+  "android/app/src/main/res/mipmap-mdpi/ic_launcher.png": {
+    "mtime": 1784820577815.2773,
+    "hash": "cc3d43d22a0d0c855b4ba165c4330a7c"
+  },
+  "android/app/src/main/res/mipmap-xhdpi/ic_launcher.png": {
+    "mtime": 1784820577815.2773,
+    "hash": "2f7632dac4cdd4f9cb500caad1e23a2f"
+  },
+  "android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png": {
+    "mtime": 1784820577815.2773,
+    "hash": "aee493396ce03a20af30419416958574"
+  },
+  "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png": {
+    "mtime": 1784820577815.2773,
+    "hash": "07d60146c0103d263be72200465954fe"
+  },
+  "assets/images/icon.png": {
+    "mtime": 1784820577822.2776,
+    "hash": "d569d3199b3b3a5f2661cf914074c4e8"
+  },
+  "assets/images/icon.svg": {
+    "mtime": 1784820577823.7175,
+    "hash": "2d00f0f409e29a861ab4aa4e77d63b0c"
+  },
+  "assets/images/icon_foreground.png": {
+    "mtime": 1784820577823.7175,
+    "hash": "d9c6c845110e910570a3466f10d1296c"
+  },
+  "docs/screenshots/screenshot.png": {
+    "mtime": 1784820581617.3943,
+    "hash": "4c9eba41e73bd5a17ac721a1aff85363"
+  },
+  "docs/screenshots/screenshot_actual_pos.png": {
+    "mtime": 1784820581619.3943,
+    "hash": "85bb33a65162949c2063b40e1705be04"
+  },
+  "docs/screenshots/screenshot_after_restart.png": {
+    "mtime": 1784820581622.3943,
+    "hash": "eb9ea8027d804188d30ec014f7de6219"
+  },
+  "docs/screenshots/screenshot_continue.png": {
+    "mtime": 1784820581622.3943,
+    "hash": "b9563f76aee7acc954cf7d4ba65bc6d0"
+  },
+  "docs/screenshots/screenshot_dialog_open.png": {
+    "mtime": 1784820581623.3943,
+    "hash": "fb029b003ddf17248a2feb5ea2e5f932"
+  },
+  "docs/screenshots/screenshot_mouse.png": {
+    "mtime": 1784820581624.3945,
+    "hash": "dd13fedae88995c491c463cf469f28ac"
+  },
+  "docs/screenshots/screenshot_new_material.png": {
+    "mtime": 1784820581628.3945,
+    "hash": "8aee81f1bdf427396aaa14287061118f"
+  },
+  "docs/screenshots/screenshot_now.png": {
+    "mtime": 1785176876050.4016,
+    "hash": "834fe58b8eefde6a41217aaee792c0b5"
+  },
+  "docs/screenshots/screenshot_restore.png": {
+    "mtime": 1784820581642.395,
+    "hash": "2eabb22ec344c8330d0b56df16d9d417"
+  },
+  "ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png": {
+    "mtime": 1784820581550.392,
+    "hash": "5c9fb4d121bbd2d3cd6cb19236589cfb"
+  },
+  "ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@1x.png": {
+    "mtime": 1784820581550.392,
+    "hash": "505b69488136dbe215d841e0cc10bf44"
+  },
+  "ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@2x.png": {
+    "mtime": 1784820581550.392,
+    "hash": "b4d277045677e25e073f561ae36f2fca"
+  },
+  "ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@3x.png": {
+    "mtime": 1784820581550.392,
+    "hash": "ef029f649911f03c6edff9ae9eeb2b80"
+  },
+  "ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@1x.png": {
+    "mtime": 1784820581550.392,
+    "hash": "53a84a99f1157dd6d459939b9796a5b3"
+  },
+  "ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@2x.png": {
+    "mtime": 1784820581550.392,
+    "hash": "840ab51d70c61ed44c6015526537d526"
+  },
+  "ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@3x.png": {
+    "mtime": 1784820581550.392,
+    "hash": "e2d886dc7b54bf531ba7cf712f8d99e6"
+  },
+  "ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@1x.png": {
+    "mtime": 1784820581550.392,
+    "hash": "b4d277045677e25e073f561ae36f2fca"
+  },
+  "ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@2x.png": {
+    "mtime": 1784820581550.392,
+    "hash": "8ad805f0cc152e35b1509c7afa29f802"
+  },
+  "ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@3x.png": {
+    "mtime": 1784820581550.392,
+    "hash": "6abe60b1192522c0faa67db7980f3c03"
+  },
+  "ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-50x50@1x.png": {
+    "mtime": 1784820581550.392,
+    "hash": "0d4cecb9a568882fa1f490ff24b86328"
+  },
+  "ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-50x50@2x.png": {
+    "mtime": 1784820581550.392,
+    "hash": "7d4a8bd3d6c40b44c25430e57f868f07"
+  },
+  "ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-57x57@1x.png": {
+    "mtime": 1784820581551.392,
+    "hash": "e0845b2dba7cc3057010d429f042f4a6"
+  },
+  "ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-57x57@2x.png": {
+    "mtime": 1784820581551.392,
+    "hash": "a1705535a892b0f13049ad390af11611"
+  },
+  "ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@2x.png": {
+    "mtime": 1784820581551.392,
+    "hash": "6abe60b1192522c0faa67db7980f3c03"
+  },
+  "ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@3x.png": {
+    "mtime": 1784820581551.392,
+    "hash": "5c4f3130872d55965214001829624c5c"
+  },
+  "ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-72x72@1x.png": {
+    "mtime": 1784820581551.392,
+    "hash": "c2dab3a7d820be18253496ce578caebf"
+  },
+  "ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-72x72@2x.png": {
+    "mtime": 1784820581551.392,
+    "hash": "aee493396ce03a20af30419416958574"
+  },
+  "ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@1x.png": {
+    "mtime": 1784820581551.392,
+    "hash": "d6138a44ffcc6ebc92e260485e50911c"
+  },
+  "ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@2x.png": {
+    "mtime": 1784820581551.392,
+    "hash": "b906abe70b7932328cd31619d6ecb5a4"
+  },
+  "ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-83.5x83.5@2x.png": {
+    "mtime": 1784820581551.392,
+    "hash": "c12d2b2428a7e6587e8009f236cc8871"
+  },
+  "ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage.png": {
+    "mtime": 1784820581553.2595,
+    "hash": "978c1bee49d7ad5fc1a4d81099b13e18"
+  },
+  "ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@2x.png": {
+    "mtime": 1784820581553.2595,
+    "hash": "978c1bee49d7ad5fc1a4d81099b13e18"
+  },
+  "ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@3x.png": {
+    "mtime": 1784820581553.2595,
+    "hash": "978c1bee49d7ad5fc1a4d81099b13e18"
+  },
+  "macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_1024.png": {
+    "mtime": 1784820581595.3936,
+    "hash": "6698ea4f386c1fcc20c33e8b7d003427"
+  },
+  "macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_128.png": {
+    "mtime": 1784820581596.3936,
+    "hash": "e37551607b7061bcc53b47d3f23c95bb"
+  },
+  "macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_16.png": {
+    "mtime": 1784820581596.3936,
+    "hash": "e95309baf8094a605dca775eee70e534"
+  },
+  "macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_256.png": {
+    "mtime": 1784820581596.3936,
+    "hash": "5c91e7c00a7f14e8074a8684e5b272ae"
+  },
+  "macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_32.png": {
+    "mtime": 1784820581596.3936,
+    "hash": "9a7f476d1769dfb4c5ae64392906cb06"
+  },
+  "macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_512.png": {
+    "mtime": 1784820581596.3936,
+    "hash": "968ac3da76b021052fbed0afa1162e24"
+  },
+  "macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_64.png": {
+    "mtime": 1784820581597.3936,
+    "hash": "f3567dd8957b72164c4fc927a61a4238"
+  },
+  "packages/webview_cef/example/macos/Assets.xcassets/AppIcon.appiconset/app_icon_1024.png": {
+    "mtime": 1784820581607.5254,
+    "hash": "c9becc9105f8cabce934d20c7bfb6aac"
+  },
+  "packages/webview_cef/example/macos/Assets.xcassets/AppIcon.appiconset/app_icon_128.png": {
+    "mtime": 1784820581607.5254,
+    "hash": "3ded30823804caaa5ccc944067c54a36"
+  },
+  "packages/webview_cef/example/macos/Assets.xcassets/AppIcon.appiconset/app_icon_16.png": {
+    "mtime": 1784820581607.5254,
+    "hash": "8bf511604bc6ed0a6aeb380c5113fdcf"
+  },
+  "packages/webview_cef/example/macos/Assets.xcassets/AppIcon.appiconset/app_icon_256.png": {
+    "mtime": 1784820581607.5254,
+    "hash": "dfe2c93d1536ae02f085cc63faa3430e"
+  },
+  "packages/webview_cef/example/macos/Assets.xcassets/AppIcon.appiconset/app_icon_32.png": {
+    "mtime": 1784820581607.5254,
+    "hash": "8e0ae58e362a6636bdfccbc04da2c58c"
+  },
+  "packages/webview_cef/example/macos/Assets.xcassets/AppIcon.appiconset/app_icon_512.png": {
+    "mtime": 1784820581607.5254,
+    "hash": "0ad44039155424738917502c69667699"
+  },
+  "packages/webview_cef/example/macos/Assets.xcassets/AppIcon.appiconset/app_icon_64.png": {
+    "mtime": 1784820581607.5254,
+    "hash": "04e7b6ef05346c70b663ca1d97de3ad5"
+  },
+  "web/favicon.png": {
+    "mtime": 1784820581644.395,
+    "hash": "742b4a125ec3158b04c227aacd0c0baf"
+  },
+  "web/icons/Icon-192.png": {
+    "mtime": 1784820581645.5142,
+    "hash": "87ce8d9b809eb18b48e40d253d2238da"
+  },
+  "web/icons/Icon-512.png": {
+    "mtime": 1784820581646.0444,
+    "hash": "9465b24c006f9c5ba37fafd0bf3e8d6c"
+  },
+  "web/icons/Icon-maskable-192.png": {
+    "mtime": 1784820581646.0444,
+    "hash": "87ce8d9b809eb18b48e40d253d2238da"
+  },
+  "web/icons/Icon-maskable-512.png": {
+    "mtime": 1784820581646.0444,
+    "hash": "9465b24c006f9c5ba37fafd0bf3e8d6c"
+  },
+  "python_app/main.py": {
+    "mtime": 1786379438372.6013,
+    "hash": "428f568642a9606e7bcf0462edad9588"
+  },
+  "requirements.txt": {
+    "mtime": 1786379285963.3672,
+    "hash": "730c6443c7c29c53cef620d83153b751"
+  }
+}
