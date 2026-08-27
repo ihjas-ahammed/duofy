@@ -8,7 +8,9 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../models/app_models.dart';
+import '../../services/ai_service.dart';
 import '../../services/code_storage_service.dart';
 import '../../services/ide_settings_service.dart';
 import '../../services/fb/fb_auth.dart';
@@ -346,11 +348,20 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
     String? onlineErrorMessage;
 
     try {
-      final encodedTex = Uri.encodeComponent(texCode);
-      final uri = Uri.parse('https://latexonline.cc/compile?text=$encodedTex');
-      final response = await http.get(uri).timeout(const Duration(seconds: 25));
+      // 1. Primary: POST request with JSON payload to https://latex.ytotech.com/builds/sync
+      // This completely overcomes HTTP GET / URL length limits (compiles documents of any size).
+      final response = await http.post(
+        Uri.parse('https://latex.ytotech.com/builds/sync'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'compiler': 'pdflatex',
+          'resources': [
+            {'main': true, 'content': texCode}
+          ]
+        }),
+      ).timeout(const Duration(seconds: 35));
 
-      if (response.statusCode == 200 &&
+      if ((response.statusCode == 200 || response.statusCode == 201) &&
           response.bodyBytes.length > 100 &&
           response.bodyBytes[0] == 37 &&
           response.bodyBytes[1] == 80) { // %PDF
@@ -368,9 +379,50 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
 
         await _openPdfInViewer(file.path, title, 'Compiled TeX Live Output PDF');
       } else {
-        final fullErrorBody = utf8.decode(response.bodyBytes, allowMalformed: true).trim();
-        onlineErrorMessage = fullErrorBody.isNotEmpty
-            ? fullErrorBody
+        final rawBody = utf8.decode(response.bodyBytes, allowMalformed: true).trim();
+        String extractedLog = rawBody;
+        try {
+          final decoded = jsonDecode(rawBody);
+          if (decoded is Map) {
+            final logFiles = decoded['log_files'];
+            if (logFiles is Map && logFiles.isNotEmpty) {
+              extractedLog = logFiles.values.first.toString();
+            } else if (decoded['logs'] != null && decoded['logs'].toString().isNotEmpty) {
+              extractedLog = decoded['logs'].toString();
+            } else if (decoded['error'] != null) {
+              extractedLog = decoded['error'].toString();
+            }
+          }
+        } catch (_) {}
+
+        // If primary returned a 5xx server failure and texCode is small, try fallback
+        if (response.statusCode >= 500 && texCode.length < 2500) {
+          try {
+            final encodedTex = Uri.encodeComponent(texCode);
+            final fallbackUri = Uri.parse('https://latexonline.cc/compile?text=$encodedTex');
+            final fallbackResp = await http.get(fallbackUri).timeout(const Duration(seconds: 20));
+            if (fallbackResp.statusCode == 200 &&
+                fallbackResp.bodyBytes.length > 100 &&
+                fallbackResp.bodyBytes[0] == 37 &&
+                fallbackResp.bodyBytes[1] == 80) {
+              isOnlineSuccess = true;
+              final tempDir = await getTemporaryDirectory();
+              final sanitizedTitle = title
+                  .replaceAll(RegExp(r'[^\w\s-]'), '_')
+                  .replaceAll(' ', '_');
+              final filePath = '${tempDir.path}/${sanitizedTitle}_compiled.pdf';
+              final file = File(filePath);
+              await file.writeAsBytes(fallbackResp.bodyBytes);
+
+              if (mounted) Navigator.of(context).pop();
+              await _openPdfInViewer(file.path, title, 'Compiled TeX Live Output PDF');
+              return;
+            }
+          } catch (_) {}
+        }
+
+        onlineErrorMessage = extractedLog.isNotEmpty
+            ? extractedLog
             : 'Server returned HTTP status ${response.statusCode} with an empty body.';
 
         if (mounted) Navigator.of(context).pop();
@@ -421,7 +473,7 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
           }
         }
       } else if (onlineErrorMessage != null && mounted) {
-        _showCompilationErrorDialog(onlineErrorMessage);
+        _showCompilationErrorDialog(onlineErrorMessage, texCode);
       }
     }
   }
@@ -738,7 +790,7 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
     );
   }
 
-  void _showCompilationErrorDialog(String fullErrorLog) {
+  void _showCompilationErrorDialog(String fullErrorLog, String texCode) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -747,9 +799,15 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
           children: [
             const Icon(LucideIcons.alertTriangle, color: Colors.redAccent, size: 20),
             const SizedBox(width: 8),
-            Text(
-              'Online Compilation Error',
-              style: TextStyle(color: context.colors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
+            Expanded(
+              child: Text(
+                'Online Compilation Error',
+                style: TextStyle(
+                  color: context.colors.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         ),
@@ -775,11 +833,52 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
           ),
         ),
         actions: [
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.duoGreen,
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+            icon: const Icon(LucideIcons.sparkles, size: 16),
+            label: const Text(
+              'Explain Error with AI',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _explainErrorWithAi(fullErrorLog, texCode);
+            },
+          ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
             child: const Text('Close'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _explainErrorWithAi(String fullErrorLog, String texCode) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _LatexErrorAiExplainerSheet(
+        texCode: texCode,
+        errorLog: fullErrorLog,
+        onApplyFix: (newCode) {
+          setState(() {
+            _texController.text = newCode;
+          });
+          _saveProject(silent: true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('AI Fix applied successfully!'),
+              backgroundColor: AppTheme.duoGreen,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        },
       ),
     );
   }
@@ -1020,5 +1119,461 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
     final file = File('${outputDir.path}/${title.replaceAll(' ', '_')}_offline.pdf');
     await file.writeAsBytes(await pdf.save());
     return file;
+  }
+}
+
+class _LatexErrorAiExplainerSheet extends StatefulWidget {
+  final String texCode;
+  final String errorLog;
+  final ValueChanged<String> onApplyFix;
+
+  const _LatexErrorAiExplainerSheet({
+    required this.texCode,
+    required this.errorLog,
+    required this.onApplyFix,
+  });
+
+  @override
+  State<_LatexErrorAiExplainerSheet> createState() =>
+      _LatexErrorAiExplainerSheetState();
+}
+
+class _LatexErrorAiExplainerSheetState
+    extends State<_LatexErrorAiExplainerSheet> {
+  bool _isLoading = true;
+  String? _errorMessage;
+  Map<String, dynamic>? _explanationResult;
+  bool _isCopied = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchExplanation();
+  }
+
+  Future<void> _fetchExplanation() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final res = await AiService().explainLatexError(
+        texCode: widget.texCode,
+        errorLog: widget.errorLog,
+      );
+      if (mounted) {
+        setState(() {
+          _explanationResult = res;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString().replaceAll('Exception:', '').trim();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = context.colors.isDark;
+    final surfaceColor = context.colors.surface;
+    final textPrimary = context.colors.textPrimary;
+    final textSecondary = context.colors.textSecondary;
+    final textFaint = context.colors.textFaint;
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
+      ),
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 6),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: textFaint.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.duoGreen.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      LucideIcons.sparkles,
+                      color: AppTheme.duoGreen,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'AI Error Diagnosis & Fix',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: textPrimary,
+                          ),
+                        ),
+                        Text(
+                          'Automated TeX debugging & correction',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(LucideIcons.x, size: 20),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            // Content
+            Expanded(
+              child: _buildBody(isDark, textPrimary, textSecondary, textFaint),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody(
+    bool isDark,
+    Color textPrimary,
+    Color textSecondary,
+    Color textFaint,
+  ) {
+    if (_isLoading) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(
+                width: 44,
+                height: 44,
+                child: CircularProgressIndicator(
+                  color: AppTheme.duoGreen,
+                  strokeWidth: 3,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Analyzing LaTeX code & error log...',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: textPrimary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Detecting syntax typos, missing packages, and generating a validated fix.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(LucideIcons.alertCircle,
+                  color: Colors.redAccent, size: 40),
+              const SizedBox(height: 12),
+              Text(
+                'Failed to generate AI diagnosis',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: textPrimary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                _errorMessage!,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: textSecondary),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.duoGreen,
+                  foregroundColor: Colors.white,
+                ),
+                icon: const Icon(LucideIcons.refreshCw, size: 16),
+                label: const Text('Try Again'),
+                onPressed: _fetchExplanation,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final summary =
+        _explanationResult?['summary']?.toString() ?? 'Error diagnosis';
+    final lineHint = _explanationResult?['lineHint']?.toString();
+    final explanation = _explanationResult?['explanation']?.toString() ?? '';
+    final fixedCode = _explanationResult?['fixedCode']?.toString();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Summary Banner
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.redAccent.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border:
+                  Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(LucideIcons.alertTriangle,
+                        color: Colors.redAccent, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        summary,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (lineHint != null && lineHint.trim().isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      lineHint,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.redAccent,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Detailed Markdown Explanation
+          Text(
+            'DIAGNOSIS & SOLUTION',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.8,
+              color: textFaint,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color:
+                  isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: context.colors.outline.withValues(alpha: 0.3),
+              ),
+            ),
+            child: MarkdownBody(
+              data: explanation,
+              selectable: true,
+              styleSheet:
+                  MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+                p: TextStyle(fontSize: 13, height: 1.4, color: textPrimary),
+                code: TextStyle(
+                  backgroundColor: isDark
+                      ? const Color(0xFF1E293B)
+                      : const Color(0xFFE2E8F0),
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                  color: isDark
+                      ? const Color(0xFF93C5FD)
+                      : const Color(0xFF1D4ED8),
+                ),
+                codeblockDecoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF0D1117)
+                      : const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                      color: context.colors.outline.withValues(alpha: 0.2)),
+                ),
+              ),
+            ),
+          ),
+
+          // Corrected Code Box if available
+          if (fixedCode != null && fixedCode.trim().isNotEmpty) ...[
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Text(
+                  'CORRECTED LATEX CODE',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.8,
+                    color: textFaint,
+                  ),
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  ),
+                  icon: Icon(
+                    _isCopied ? LucideIcons.check : LucideIcons.copy,
+                    size: 14,
+                    color: _isCopied ? AppTheme.duoGreen : textSecondary,
+                  ),
+                  label: Text(
+                    _isCopied ? 'Copied' : 'Copy Code',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: _isCopied ? AppTheme.duoGreen : textSecondary,
+                    ),
+                  ),
+                  onPressed: () async {
+                    await Clipboard.setData(ClipboardData(text: fixedCode));
+                    setState(() => _isCopied = true);
+                    Future.delayed(const Duration(seconds: 2), () {
+                      if (mounted) setState(() => _isCopied = false);
+                    });
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Container(
+              width: double.infinity,
+              constraints: const BoxConstraints(maxHeight: 220),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0D1117),
+                borderRadius: BorderRadius.circular(10),
+                border:
+                    Border.all(color: AppTheme.duoGreen.withValues(alpha: 0.4)),
+              ),
+              child: SingleChildScrollView(
+                child: SelectableText(
+                  fixedCode,
+                  style: const TextStyle(
+                    color: Color(0xFFE6EDF3),
+                    fontFamily: 'monospace',
+                    fontSize: 11,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Apply Fix Button
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.duoGreen,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+                icon: const Icon(LucideIcons.checkCircle2, size: 18),
+                label: const Text(
+                  'Apply Fix to Editor',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  widget.onApplyFix(fixedCode);
+                },
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }

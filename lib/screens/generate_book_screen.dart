@@ -36,6 +36,22 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
   double _densitySliderValue = 1.0;
   bool _autoFetchBooks = true;
   bool _isScanningSyllabus = false;
+  bool _isProgrammingCourse = false;
+  bool _userManuallyToggledProgramming = false;
+  String _selectedProgrammingLanguage = 'Auto-Detect';
+  final List<String> _programmingLanguages = [
+    'Auto-Detect',
+    'Python',
+    'JavaScript',
+    'C / C++',
+    'Java',
+    'HTML & CSS',
+    'SQL',
+    'Dart / Flutter',
+    'Rust',
+    'Go',
+    'Other'
+  ];
 
   String get _currentDensityKey {
     switch (_densitySliderValue.round()) {
@@ -110,6 +126,23 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
   }
 
   void _onTextChanged() {
+    final title = _titleController.text.trim();
+    if (title.isNotEmpty && !_userManuallyToggledProgramming) {
+      final isProg = Book.isProgrammingCourse(title);
+      if (isProg && !_isProgrammingCourse) {
+        _isProgrammingCourse = true;
+        final lower = title.toLowerCase();
+        for (final lang in _programmingLanguages) {
+          if (lang != 'Auto-Detect' && lang != 'Other') {
+            final key = lang.toLowerCase().split(' ').first;
+            if (lower.contains(key)) {
+              _selectedProgrammingLanguage = lang;
+              break;
+            }
+          }
+        }
+      }
+    }
     if (mounted) setState(() {});
   }
 
@@ -1042,6 +1075,21 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                   : 'New Course');
 
         final customPrompt = _customPromptController.text.trim();
+        String effectiveInstructions = customPrompt;
+        if (_isProgrammingCourse) {
+          final langDirective = _selectedProgrammingLanguage == 'Auto-Detect'
+              ? '[Programming Course] Include interactive coding exercises, program fill-in-blank, and try_yourself runnable code slides.'
+              : '[Programming Course: $_selectedProgrammingLanguage] Include interactive coding exercises, program fill-in-blank, and try_yourself runnable code slides for $_selectedProgrammingLanguage.';
+          effectiveInstructions = effectiveInstructions.isEmpty
+              ? langDirective
+              : '$effectiveInstructions\n$langDirective';
+        } else {
+          final nonProgDirective = '[Non-Programming Subject] Strictly NEVER include coding slides (program, try_yourself) or programming formats.';
+          effectiveInstructions = effectiveInstructions.isEmpty
+              ? nonProgDirective
+              : '$effectiveInstructions\n$nonProgDirective';
+        }
+
         final presetTitle = _titleController.text.trim().isEmpty
             ? null
             : _titleController.text.trim();
@@ -1054,7 +1102,7 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
             presetTitle ?? filename,
             indexFiles: const [],
             chapter1AbsolutePages: const [],
-            customInstructions: customPrompt.isNotEmpty ? customPrompt : null,
+            customInstructions: effectiveInstructions.isNotEmpty ? effectiveInstructions : null,
             customIndexText: customIndex.isNotEmpty ? customIndex : null,
             activeDensity: _currentDensityKey,
             syllabusFiles: finalSyllabusFiles,
@@ -1545,6 +1593,148 @@ class _GenerateBookScreenState extends State<GenerateBookScreen> {
                                 ),
                               ),
                             ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'CODING & PROGRAMMING EXERCISES',
+                            style: TextStyle(
+                              color: context.colors.textFaint,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          if (_isProgrammingCourse)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppTheme.duoBlue.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: AppTheme.duoBlue.withValues(alpha: 0.4),
+                                ),
+                              ),
+                              child: Text(
+                                _selectedProgrammingLanguage.toUpperCase(),
+                                style: const TextStyle(
+                                  color: AppTheme.duoBlue,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: context.colors.surface,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: _isProgrammingCourse
+                                ? AppTheme.duoBlue.withValues(alpha: 0.5)
+                                : context.colors.outline,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  LucideIcons.code,
+                                  color: _isProgrammingCourse
+                                      ? AppTheme.duoBlue
+                                      : context.colors.textFaint,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Include Interactive Coding Slides',
+                                        style: TextStyle(
+                                          color: context.colors.textPrimary,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Generates runnable code runners (try_yourself) & fill-in-blank coding exercises',
+                                        style: TextStyle(
+                                          color: context.colors.textFaint,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Switch(
+                                  value: _isProgrammingCourse,
+                                  activeColor: AppTheme.duoBlue,
+                                  onChanged: (val) {
+                                    setState(() {
+                                      _isProgrammingCourse = val;
+                                      _userManuallyToggledProgramming = true;
+                                    });
+                                  },
+                                ),
+                              ],
+                            ),
+                            if (_isProgrammingCourse) ...[
+                              const SizedBox(height: 14),
+                              const Divider(height: 1),
+                              const SizedBox(height: 12),
+                              Text(
+                                'TARGET PROGRAMMING LANGUAGE',
+                                style: TextStyle(
+                                  color: context.colors.textFaint,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: _programmingLanguages.map((lang) {
+                                  final isSel = _selectedProgrammingLanguage == lang;
+                                  return ChoiceChip(
+                                    label: Text(
+                                      lang,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                                        color: isSel ? Colors.white : context.colors.textPrimary,
+                                      ),
+                                    ),
+                                    selected: isSel,
+                                    selectedColor: AppTheme.duoBlue,
+                                    backgroundColor: context.colors.surfaceAlt,
+                                    onSelected: (selected) {
+                                      if (selected) {
+                                        setState(() {
+                                          _selectedProgrammingLanguage = lang;
+                                        });
+                                      }
+                                    },
+                                  );
+                                }).toList(),
+                              ),
+                            ],
                           ],
                         ),
                       ),

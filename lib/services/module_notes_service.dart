@@ -8,6 +8,7 @@ import 'package:syncfusion_flutter_pdf/pdf.dart' as sync_pdf;
 import '../models/app_models.dart';
 import 'ai_service.dart';
 import 'module_notes_html_builder.dart';
+import 'latex_json_repairer.dart';
 import 'pdf_service.dart';
 import 'notification_service.dart';
 
@@ -54,9 +55,25 @@ class ModuleNotesJob {
   }
 }
 
-class ModuleNotesService {
+class ModuleNotesService extends ChangeNotifier {
   ModuleNotesService._();
   static final ModuleNotesService instance = ModuleNotesService._();
+
+  static const List<String> availableDepths = [
+    'Min (Quick Summary)',
+    'Low (Concise Lecture)',
+    'Medium (Standard Depth)',
+    'High (Detailed & Rigorous)',
+    'Max (Exhaustive & Full Proofs)',
+  ];
+
+  static const List<String> depthShortLabels = [
+    'Min',
+    'Low',
+    'Medium',
+    'High',
+    'Max',
+  ];
 
   static String _prefKey(String bookId, String moduleId) => 'module_note_pdf_${bookId}_$moduleId';
   static String _jobKey(String bookId, String moduleId) => '${bookId}_$moduleId';
@@ -64,6 +81,34 @@ class ModuleNotesService {
   final Map<String, ModuleNotesJob> _activeJobs = {};
 
   ModuleNotesJob? getJob(String bookId, String moduleId) => _activeJobs[_jobKey(bookId, moduleId)];
+
+  /// Deletes all cached notes (PDF and HTML) for a module.
+  Future<void> deleteNotes(String bookId, String moduleId) async {
+    final dir = await getApplicationDocumentsDirectory();
+    final notesDir = Directory('${dir.path}/notes');
+
+    final filePaths = [
+      '${notesDir.path}/module_note_${bookId}_$moduleId.pdf',
+      '${notesDir.path}/module_note_${bookId}_$moduleId.html',
+      '${notesDir.path}/module_note_${bookId}_${moduleId}_rendered.html',
+    ];
+
+    for (final p in filePaths) {
+      final f = File(p);
+      if (f.existsSync()) {
+        try {
+          f.deleteSync();
+        } catch (e) {
+          print('[ModuleNotesService] Error deleting note file $p: $e');
+        }
+      }
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_prefKey(bookId, moduleId));
+    _activeJobs.remove(_jobKey(bookId, moduleId));
+    notifyListeners();
+  }
 
   /// Ensures that local mathjax.js script exists in notes directory for offline Headless Chrome rendering.
   Future<File?> _ensureLocalMathJax(Directory notesDir) async {
@@ -155,6 +200,7 @@ class ModuleNotesService {
     required Module module,
     required int moduleIndex,
     String? userRegenReason,
+    String depth = 'High (Detailed & Rigorous)',
   }) async {
     final key = _jobKey(book.id, module.id);
     final job = ModuleNotesJob(
@@ -162,11 +208,12 @@ class ModuleNotesService {
       moduleId: module.id,
       moduleTitle: module.title,
       progress: 0.05,
-      status: 'Starting Module Notes Generation...',
+      status: 'Starting Module Notes Generation (Depth: $depth)...',
       isRunning: true,
     );
     _activeJobs[key] = job;
     job.notify();
+    notifyListeners();
 
     final notifId = (key.hashCode).abs() % 100000 + 10000;
     await NotificationService.showProgress(
@@ -183,10 +230,12 @@ class ModuleNotesService {
         module: module,
         moduleIndex: moduleIndex,
         userRegenReason: userRegenReason,
+        depth: depth,
         onProgress: (pStatus, pProgress) async {
           job.progress = pProgress;
           job.status = pStatus;
           job.notify();
+          notifyListeners();
 
           await NotificationService.showProgress(
             notifId,
@@ -204,6 +253,7 @@ class ModuleNotesService {
       job.progress = 1.0;
       job.status = 'Completed!';
       job.notify();
+      notifyListeners();
 
       await NotificationService.cancel(notifId);
       await NotificationService.showActionable(
@@ -218,6 +268,7 @@ class ModuleNotesService {
       job.isFailed = true;
       job.status = 'Failed: $e';
       job.notify();
+      notifyListeners();
 
       await NotificationService.cancel(notifId);
       await NotificationService.showActionable(
@@ -235,12 +286,13 @@ class ModuleNotesService {
     required Module module,
     required int moduleIndex,
     String? userRegenReason,
+    String depth = 'High (Detailed & Rigorous)',
     void Function(String status, double progress)? onProgress,
   }) async {
     final timestamp = DateTime.now().toIso8601String();
-    print('[ModuleNotesService][$timestamp] Generating section-by-section module notes for Book "${book.title}", Module ${moduleIndex + 1}: "${module.title}"');
+    print('[ModuleNotesService][$timestamp] Generating section-by-section module notes for Book "${book.title}", Module ${moduleIndex + 1}: "${module.title}" [Depth: $depth]');
 
-    onProgress?.call('Reading reference materials & syllabus...', 0.05);
+    onProgress?.call('Reading reference materials & previous version...', 0.05);
 
     String refBookText = '';
     if (book.syllabusPath != null && book.syllabusPath!.isNotEmpty) {
@@ -255,9 +307,30 @@ class ModuleNotesService {
       }
     }
 
+    // Read previous notes version if available to feed into regeneration prompt
+    String? previousNotesText;
+    try {
+      final prevHtmlPath = await getNotesHtmlPath(book.id, module.id);
+      if (prevHtmlPath != null && File(prevHtmlPath).existsSync()) {
+        final rawHtml = await File(prevHtmlPath).readAsString();
+        final stripped = rawHtml
+            .replaceAll(RegExp(r'<style[\s\S]*?</style>', caseSensitive: false), '')
+            .replaceAll(RegExp(r'<script[\s\S]*?</script>', caseSensitive: false), '')
+            .replaceAll(RegExp(r'<[^>]+>'), ' ')
+            .replaceAll(RegExp(r'\s+'), ' ')
+            .trim();
+        if (stripped.length > 50) {
+          previousNotesText = stripped.length > 4000 ? stripped.substring(0, 4000) : stripped;
+          print('[ModuleNotesService] Ingested previous version (${previousNotesText.length} chars) for regeneration.');
+        }
+      }
+    } catch (e) {
+      print('[ModuleNotesService] Notice: could not load previous notes: $e');
+    }
+
     final ai = AiService();
     final String regenDirective = (userRegenReason != null && userRegenReason.trim().isNotEmpty)
-        ? '\nUSER REGENERATION REQUEST / REASON: "${userRegenReason.trim()}". Make sure to prioritize these requirements in every section.'
+        ? '\nUSER REGENERATION REQUEST / REASON: "${userRegenReason.trim()}". Prioritize these requirements and improvements across all sections.'
         : '';
 
     final List<Map<String, dynamic>> generatedSections = [];
@@ -275,17 +348,19 @@ class ModuleNotesService {
 
     final int totalSecs = sectionsToGenerate.length;
 
-    // Generate detailed notes FOR EVERY SECTION in the module sequentially
+    // Generate detailed notes FOR EVERY SECTION in the module sequentially (2 passes per section)
     for (int i = 0; i < totalSecs; i++) {
       final sec = sectionsToGenerate[i];
-      final double secProgress = 0.10 + (i / totalSecs) * 0.75;
-      final String progressMsg = 'Section ${i + 1}/$totalSecs: "${sec.title}"...';
+      final double secBaseProgress = 0.10 + (i / totalSecs) * 0.75;
+      final double secHalfProgress = secBaseProgress + (0.75 / totalSecs) * 0.5;
 
-      onProgress?.call(progressMsg, secProgress);
-      print('[ModuleNotesService] Generating section ${i + 1}/$totalSecs: "${sec.title}"');
+      // Pass 1: Initial lecture note generation with proofs & SVG diagrams
+      onProgress?.call('Section ${i + 1}/$totalSecs: Drafting lecture notes & SVG diagrams ("${sec.title}")...', secBaseProgress);
+      print('[ModuleNotesService] Pass 1: Generating section ${i + 1}/$totalSecs: "${sec.title}"');
 
+      Map<String, dynamic> secNote;
       try {
-        final secNote = await _generateNotesForSection(
+        secNote = await _generateNotesForSection(
           ai: ai,
           book: book,
           module: module,
@@ -294,17 +369,36 @@ class ModuleNotesService {
           totalSections: totalSecs,
           refBookText: refBookText,
           regenDirective: regenDirective,
+          previousNotesText: previousNotesText,
+          depth: depth,
         );
-
-        final extractedList = _extractSectionMaps(secNote);
-        if (extractedList.isNotEmpty) {
-          generatedSections.addAll(extractedList);
-        } else {
-          generatedSections.add(secNote);
-        }
       } catch (e) {
         print('[ModuleNotesService] Warning generating section ${i + 1}: $e');
-        generatedSections.add(_buildSmartFallbackSection(secIndex: i, sec: sec));
+        secNote = _buildSmartFallbackSection(secIndex: i, sec: sec);
+      }
+
+      // Pass 2: LaTeX Math input error fixer & SVG/content validator pass
+      onProgress?.call('Section ${i + 1}/$totalSecs: Auditing LaTeX & fixing math input errors...', secHalfProgress);
+      print('[ModuleNotesService] Pass 2: Auditing LaTeX math and SVG for section ${i + 1}/$totalSecs: "${sec.title}"');
+
+      try {
+        secNote = await _refineAndFixMathErrors(
+          ai: ai,
+          book: book,
+          module: module,
+          sec: sec,
+          rawJson: secNote,
+          depth: depth,
+        );
+      } catch (e) {
+        print('[ModuleNotesService] Math error audit pass fallback: $e');
+      }
+
+      final extractedList = _extractSectionMaps(secNote);
+      if (extractedList.isNotEmpty) {
+        generatedSections.addAll(extractedList);
+      } else {
+        generatedSections.add(secNote);
       }
     }
 
@@ -369,7 +463,7 @@ class ModuleNotesService {
     return pdfFile;
   }
 
-  /// Prompts AI to generate concise, high-density study/revision notes for a single section.
+  /// Pass 1: Prompts AI to generate concise, highly dense academic lecture notes with proofs, SVG diagrams, and no narrative fluff.
   Future<Map<String, dynamic>> _generateNotesForSection({
     required AiService ai,
     required Book book,
@@ -379,52 +473,114 @@ class ModuleNotesService {
     required int totalSections,
     required String refBookText,
     required String regenDirective,
+    String? previousNotesText,
+    required String depth,
   }) async {
     final String sectionHeadingStr = 'Section ${secIndex + 1}: ${sec.title}';
     final String unitTitles = sec.units.map((u) => u.title).join(', ');
 
+    final String prevNotesContext = (previousNotesText != null && previousNotesText.isNotEmpty)
+        ? '''
+PREVIOUS VERSION OF NOTES (FIRST VERSION TO IMPROVE/EXPAND):
+"""
+$previousNotesText
+"""
+CRITICAL REGENERATION DIRECTIVES:
+- The user is REGENERATING these notes to make them significantly more thorough, comprehensive, and clear.
+- CRITICALLY EXPAND and ENRICH all explanations, definitions, derivations, and proofs.
+- DO NOT OMIT ANY THEORY OR THEOREM. PROVIDE FULL, RIGOROUS, STEP-BY-STEP PROOFS FOR EVERY THEOREM/THEORY.
+- Address user feedback: "${regenDirective.isNotEmpty ? regenDirective : 'Expand depth, ensure full rigorous proofs for all theorems, and align with target depth.'}"
+'''
+        : '';
+
     final prompt = '''
-You are an expert academic tutor creating concise, high-density, information-rich revision notes & cheat sheets for university students.
-Course Title: ${book.title}
-Module Title: ${module.title}
-Target Section: $sectionHeadingStr
-Section Description: ${sec.description.isNotEmpty ? sec.description : sec.title}
-Units / Key Topics: ${unitTitles.isNotEmpty ? unitTitles : sec.title}
-${refBookText.isNotEmpty ? 'Reference Text Snippet:\n${refBookText.length > 1200 ? refBookText.substring(0, 1200) : refBookText}' : ''}
+You are an expert academic professor and textbook author creating dense, technical, comprehensive university lecture notes.
+
+COURSE: ${book.title}
+MODULE: ${module.title}
+TARGET SECTION: $sectionHeadingStr
+SECTION DESCRIPTION: ${sec.description.isNotEmpty ? sec.description : sec.title}
+KEY TOPICS / UNITS: ${unitTitles.isNotEmpty ? unitTitles : sec.title}
+TARGET NOTE DEPTH: $depth (Min to Max Scale)
+${refBookText.isNotEmpty ? 'REFERENCE TEXT / SYLLABUS SNIPPET:\n${refBookText.length > 1500 ? refBookText.substring(0, 1500) : refBookText}' : ''}
+$prevNotesContext
 $regenDirective
 
-INSTRUCTIONS:
-1. Write CONCISE, HIGH-DENSITY, INFORMATION-RICH revision notes (cheat-sheet style).
-2. Avoid long textbook essays or fluff. Use bullet points, sharp definitions, key formulas, exam warnings, and 1-2 quick worked examples.
-3. Use inline LaTeX math (\$...\$) and display LaTeX math (\$\$...\$\$).
+CRITICAL PEDAGOGICAL INSTRUCTIONS:
+1. PURE ACADEMIC LECTURE NOTE STYLE (NO STORYTELLING / NO META INFO / NO PREREQUISITES):
+   - Do NOT write conversational intros, storytelling, or rhetorical fluff (e.g., "Imagine you are...", "Let us embark on...", "Have you ever wondered...").
+   - Do NOT include meta-information sections, prerequisite checklists, syllabus requirements, or background requirements. Jump directly into formal technical definitions, theoretical mechanics, and theorems.
+   - Every paragraph must be dense, technical, precise, and directly explain definitions, theorems, mathematical mechanics, or analytical properties.
+2. DEPTH CALIBRATION ($depth):
+   - Min/Low: Sharp summary bullet points, core formulas, essential theorem statements, and concise proofs.
+   - Medium/High/Max: Comprehensive technical paragraphs, step-by-step rigorous proofs for EVERY theorem ending with \$\\blacksquare\$, detailed worked examples, and SVG diagrams.
+3. DETAILED STEP-BY-STEP PROOFS FOR EVERY THEORY & THEOREM:
+   - For EVERY theorem, lemma, proposition, and theoretical statement, you MUST provide a complete, rigorous, step-by-step mathematical/logical proof with clear explanations for each step.
+   - Conclude every proof with \$\\blacksquare\$ (Q.E.D.).
+   - For definitions/axioms without a proof, provide an in-depth "Significance & Intuition" breakdown in the proof block.
+4. INLINE SVG DIAGRAMS (STRICTLY NO LATEX INSIDE SVG):
+   - Include 1 or 2 standalone, beautiful, clean SVG vector diagrams in the "diagrams" array.
+   - Use valid SVG XML: `<svg viewBox="0 0 450 200" xmlns="http://www.w3.org/2000/svg">...</svg>` with labeled geometric elements, curves, axes, or state graphs.
+   - CRITICAL RULE: NEVER use LaTeX math tags (\$...\$ or \$\$...\$\$) inside SVG or `<text>` elements. MathJax cannot parse LaTeX inside SVGs. Use clean plain text labels or standard Unicode symbols (e.g. θ, π, f(x), x², A ∪ B, →, ≤, ≥, √) directly.
+5. RICH WORKED EXAMPLES:
+   - Include 2 to 4 detailed step-by-step worked examples showing exact problem setups, calculation steps, and final results with LaTeX.
+6. EXAM WARNINGS & PITFALLS:
+   - Detail common student misconceptions, conditions where theorems fail (with counterexamples), and critical exam tips.
+7. LATEX FORMATTING:
+   - Use inline LaTeX math (\$...\$) and display block LaTeX math (\$\$...\$\$) for all equations, symbols, and formulas in text. Ensure all backslashes and quotes are properly escaped in JSON.
 
 Return valid JSON with this exact schema:
 {
   "sectionHeading": "$sectionHeadingStr",
   "keyConcepts": [
-    "Sharp bullet point 1 explaining core concept with inline LaTeX \$...\$",
-    "Sharp bullet point 2 with key formula \$\$...\$\$",
-    "Sharp bullet point 3 summarizing critical application rule"
+    "Technical summary point 1 with inline LaTeX \$...\$",
+    "Technical summary point 2 synthesizing core formula \$\$...\$\$"
+  ],
+  "contentParagraphs": [
+    "Direct technical lecture explanation 1 defining the analytical framework and core mechanics...",
+    "Direct technical lecture explanation 2 detailing properties, behavior, and relationships..."
   ],
   "definitions": [
     {
       "number": "${secIndex + 1}.1",
-      "title": "Core Definition / Theorem Title",
+      "title": "Core Theorem / Theory Title",
+      "tag": "Theorem",
+      "content": "Formal mathematical/theoretical statement with full conditions and notations using LaTeX (\$...\$ and \$\$...\$\$).",
+      "proof": {
+        "title": "Proof.",
+        "content": "Step 1: ... \\nStep 2: ... \\nStep 3: ... Thus the statement is proven. \$\\blacksquare\$"
+      }
+    },
+    {
+      "number": "${secIndex + 1}.2",
+      "title": "Fundamental Definition Title",
       "tag": "Definition",
-      "content": "Concise formal statement with LaTeX math \$...\$"
+      "content": "Precise formal definition with LaTeX math.",
+      "proof": {
+        "title": "Significance & Intuition.",
+        "content": "Detailed technical explanation of why this definition is structured this way and how it is applied."
+      }
     }
   ],
   "warningBoxes": [
     {
-      "title": "Exam Warning / Pitfall",
-      "content": "Common student mistake or critical condition to watch out for."
+      "title": "Common Pitfall / Exam Trap",
+      "content": "Critical condition or misconception where assumptions fail."
     }
   ],
   "examples": [
     {
       "title": "Example ${secIndex + 1}.1: Solved Problem",
       "statusTag": "Worked Solution",
-      "content": "Step 1: ... \\nStep 2: ... \\nResult: ..."
+      "statusType": "valid",
+      "content": "Problem Statement: ... \\n\\nSolution:\\nStep 1: ... \\nStep 2: ... \\n\\nFinal Result: \$\$...\$\$"
+    }
+  ],
+  "diagrams": [
+    {
+      "title": "Concept Vector Diagram",
+      "svgContent": "<svg viewBox=\\"0 0 400 160\\" xmlns=\\"http://www.w3.org/2000/svg\\"><rect width=\\"400\\" height=\\"160\\" fill=\\"#f8fafc\\" rx=\\"8\\"/><circle cx=\\"100\\" cy=\\"80\\" r=\\"35\\" stroke=\\"#2563eb\\" stroke-width=\\"2\\" fill=\\"#dbeafe\\"/><circle cx=\\"300\\" cy=\\"80\\" r=\\"35\\" stroke=\\"#059669\\" stroke-width=\\"2\\" fill=\\"#dcfce7\\"/><line x1=\\"140\\" y1=\\"80\\" x2=\\"260\\" y2=\\"80\\" stroke=\\"#334155\\" stroke-width=\\"2\\" stroke-dasharray=\\"4\\"/><text x=\\"100\\" y=\\"85\\" text-anchor=\\"middle\\" font-size=\\"12\\" font-family=\\"sans-serif\\" fill=\\"#1e293b\\">Set A</text><text x=\\"300\\" y=\\"85\\" text-anchor=\\"middle\\" font-size=\\"12\\" font-family=\\"sans-serif\\" fill=\\"#1e293b\\">Set B</text><text x=\\"200\\" y=\\"70\\" text-anchor=\\"middle\\" font-size=\\"12\\" font-family=\\"sans-serif\\" fill=\\"#2563eb\\">f: A &rarr; B</text></svg>",
+      "description": "Visual diagram illustrating the mapping between sets."
     }
   ]
 }
@@ -436,7 +592,7 @@ Return ONLY valid JSON.
       try {
         final currentPrompt = attempt == 1
             ? prompt
-            : '$prompt\n\nCRITICAL RETRY NOTICE: Your previous output failed JSON parsing. Return STRICT raw valid JSON only, escape all quotes inside string fields!';
+            : '$prompt\n\nCRITICAL RETRY NOTICE: Your previous output failed JSON parsing. Return STRICT raw valid JSON only, escape all quotes and backslashes inside string fields!';
         final resp = await ai.generateSimpleText(prompt: currentPrompt, slotName: 'Primary - Text');
         final parsed = _parseJson(resp);
         if (parsed != null && parsed.isNotEmpty) {
@@ -450,8 +606,62 @@ Return ONLY valid JSON.
       }
     }
 
-    // High-quality smart fallback generator (No empty placeholder text!)
+    // High-quality smart fallback generator
     return _buildSmartFallbackSection(secIndex: secIndex, sec: sec);
+  }
+
+  /// Pass 2: Audits the generated section note JSON to fix LaTeX syntax errors (unbalanced braces, broken macros, bad escapes) and validate SVG diagrams.
+  Future<Map<String, dynamic>> _refineAndFixMathErrors({
+    required AiService ai,
+    required Book book,
+    required Module module,
+    required Section sec,
+    required Map<String, dynamic> rawJson,
+    required String depth,
+  }) async {
+    final rawJsonStr = jsonEncode(rawJson);
+
+    final refinePrompt = '''
+You are a master LaTeX syntax auditor and technical lecture note editor.
+Review and audit the following study note JSON for Section "${sec.title}" in Course "${book.title}".
+
+RAW INPUT JSON:
+```json
+$rawJsonStr
+```
+
+CRITICAL VALIDATION & CORRECTION INSTRUCTIONS:
+1. FIX ALL LATEX SYNTAX / MATH INPUT ERRORS:
+   - Carefully check every LaTeX math expression in inline math (\$...\$) and display block math (\$\$...\$\$).
+   - Fix unbalanced curly braces ({...}), unmatched brackets ([...]), or missing arguments in commands like \\frac{a}{b}, \\sqrt{x}, \\sum_{i=1}^n, \\int_a^b.
+   - Convert any non-standard or unsupported commands into standard AMS-LaTeX supported by MathJax 3.
+   - Ensure proper escaping in JSON strings (double backslashes for commands like \\\\frac, \\\\alpha, \\\\blacksquare).
+2. REMOVE UNWANTED STORY-LIKE PARAGRAPHS, NARRATIVE FLUFF & META REQUIREMENTS:
+   - Strip out any conversational intros, storytelling, prerequisite requirement checklists, syllabus requirements, or meta-commentary.
+   - Retain only dense, rigorous, technical academic lecture explanations, definitions, and mechanics.
+3. VALIDATE SVG DIAGRAMS & STRIP LATEX FROM SVGs:
+   - Ensure all SVG code in diagrams has valid XML syntax with viewBox, xmlns="http://www.w3.org/2000/svg", and clean vector shapes.
+   - CRITICAL: NEVER leave LaTeX delimiters (\$...\$ or \$\$...\$\$) inside SVG or `<text>` elements. Replace any with plain readable text or Unicode symbols (e.g. replace '\$f(x)\$' with 'f(x)', '\$\\theta\$' with 'θ').
+4. PRESERVE FULL THEOREMS & DETAILED STEP-BY-STEP PROOFS:
+   - Do NOT delete or truncate theorems, definitions, proofs, or worked examples. Every theorem must have a complete step-by-step proof ending with \$Q.E.D.\$ (or \\blacksquare).
+
+Return ONLY the refined, 100% syntactically valid JSON.
+''';
+
+    try {
+      final resp = await ai.generateSimpleText(prompt: refinePrompt, slotName: 'Primary - Text');
+      final parsed = _parseJson(resp);
+      if (parsed != null && parsed.isNotEmpty) {
+        if (!parsed.containsKey('sectionHeading') && rawJson.containsKey('sectionHeading')) {
+          parsed['sectionHeading'] = rawJson['sectionHeading'];
+        }
+        return parsed;
+      }
+    } catch (e) {
+      print('[ModuleNotesService] Notice: Math error fixer pass encountered an issue for ${sec.title}: $e. Using pass 1 output.');
+    }
+
+    return rawJson;
   }
 
   Map<String, dynamic> _buildSmartFallbackSection({
@@ -477,6 +687,10 @@ Return ONLY valid JSON.
     return {
       'sectionHeading': sectionHeadingStr,
       'keyConcepts': concepts,
+      'contentParagraphs': [
+        '${sec.title} forms a foundational component of this module. A rigorous understanding requires examining its core definitions, theoretical underpinnings, and analytical methods.',
+        if (sec.description.isNotEmpty) sec.description,
+      ],
       'warningBoxes': [
         {
           'title': 'Key Focus Area',
@@ -768,20 +982,34 @@ Return ONLY valid JSON.
               String textStr = content is List ? content.join('\n• ') : content.toString();
               textStr = _cleanLatexForNativePdf(textStr);
 
-              if (y > page.getClientSize().height - 80) {
+              if (y > page.getClientSize().height - 70) {
                 page = document.pages.add();
                 y = 0;
               }
 
               final boxWidth = page.getClientSize().width;
+              final startY = y;
+
+              // Title
+              final titleRes = sync_pdf.PdfTextElement(text: title.toString().toUpperCase(), font: boldFont).draw(
+                page: page,
+                bounds: Rect.fromLTWH(8, startY + 6, boxWidth - 16, page.getClientSize().height - startY - 10),
+              )!;
+              y = titleRes.bounds.bottom + 4;
+
+              // Body
+              final textRes = sync_pdf.PdfTextElement(text: textStr, font: bodyFont).draw(
+                page: page,
+                bounds: Rect.fromLTWH(8, y, boxWidth - 16, page.getClientSize().height - y),
+              )!;
+              y = textRes.bounds.bottom + 8;
+
+              // Draw border around warning box
               page.graphics.drawRectangle(
                 pen: sync_pdf.PdfPen(sync_pdf.PdfColor(20, 20, 20), width: 1),
-                brush: sync_pdf.PdfSolidBrush(sync_pdf.PdfColor(245, 245, 245)),
-                bounds: Rect.fromLTWH(0, y, boxWidth, 55),
+                bounds: Rect.fromLTWH(0, startY, boxWidth, y - startY),
               );
-              page.graphics.drawString(title.toString().toUpperCase(), boldFont, bounds: Rect.fromLTWH(8, y + 6, boxWidth - 16, 16));
-              page.graphics.drawString(textStr, bodyFont, bounds: Rect.fromLTWH(8, y + 24, boxWidth - 16, 30));
-              y += 65;
+              y += 10;
             }
           }
         }
@@ -799,33 +1027,75 @@ Return ONLY valid JSON.
 
               final displayTitle = number.toString().isNotEmpty ? '$number $title' : title.toString();
 
-              if (y > page.getClientSize().height - 100) {
+              if (y > page.getClientSize().height - 80) {
                 page = document.pages.add();
                 y = 0;
               }
 
               final boxWidth = page.getClientSize().width;
+              final startBoxY = y;
+
+              // Title + Tag
+              final titleRes = sync_pdf.PdfTextElement(text: '${displayTitle.toUpperCase()}  [${tag.toString().toUpperCase()}]', font: boldFont).draw(
+                page: page,
+                bounds: Rect.fromLTWH(8, startBoxY + 6, boxWidth - 16, page.getClientSize().height - startBoxY - 10),
+              )!;
+              y = titleRes.bounds.bottom + 4;
+
+              // Content
+              if (content.isNotEmpty) {
+                final contentRes = sync_pdf.PdfTextElement(text: content, font: bodyFont).draw(
+                  page: page,
+                  bounds: Rect.fromLTWH(8, y, boxWidth - 16, page.getClientSize().height - y),
+                )!;
+                y = contentRes.bounds.bottom + 6;
+              }
+
+              // Draw box border
               page.graphics.drawRectangle(
                 pen: sync_pdf.PdfPen(sync_pdf.PdfColor(30, 30, 30), width: 1),
-                brush: sync_pdf.PdfSolidBrush(sync_pdf.PdfColor(250, 250, 250)),
-                bounds: Rect.fromLTWH(0, y, boxWidth, 65),
+                bounds: Rect.fromLTWH(0, startBoxY, boxWidth, y - startBoxY + 4),
               );
-              page.graphics.drawString(displayTitle.toUpperCase(), boldFont, bounds: Rect.fromLTWH(8, y + 6, boxWidth - 80, 16));
-              page.graphics.drawString('[${tag.toString().toUpperCase()}]', boldFont, bounds: Rect.fromLTWH(boxWidth - 75, y + 6, 70, 16));
-              page.graphics.drawString(content, bodyFont, bounds: Rect.fromLTWH(8, y + 24, boxWidth - 16, 35));
-              y += 75;
+              y += 8;
 
+              // Proof Block (if present)
               if (proof != null) {
-                String proofText = proof is Map ? (proof['content'] ?? '') : proof.toString();
-                proofText = _cleanLatexForNativePdf(proofText);
-                if (y > page.getClientSize().height - 40) {
-                  page = document.pages.add();
-                  y = 0;
+                String proofTitle = 'Proof.';
+                String proofText = '';
+                if (proof is Map) {
+                  proofTitle = (proof['title'] ?? 'Proof.').toString();
+                  proofText = (proof['content'] ?? '').toString();
+                } else {
+                  proofText = proof.toString();
                 }
-                page.graphics.drawLine(sync_pdf.PdfPen(sync_pdf.PdfColor(80, 80, 80), width: 2), Offset(10, y), Offset(10, y + 30));
-                page.graphics.drawString('Proof.', italicFont, bounds: Rect.fromLTWH(18, y, boxWidth - 20, 14));
-                page.graphics.drawString(proofText, bodyFont, bounds: Rect.fromLTWH(18, y + 14, boxWidth - 20, 25));
-                y += 35;
+                proofText = _cleanLatexForNativePdf(proofText);
+
+                if (proofText.trim().isNotEmpty) {
+                  if (y > page.getClientSize().height - 60) {
+                    page = document.pages.add();
+                    y = 0;
+                  }
+
+                  final proofStartY = y;
+                  final pTitleRes = sync_pdf.PdfTextElement(text: proofTitle, font: italicFont).draw(
+                    page: page,
+                    bounds: Rect.fromLTWH(18, y, boxWidth - 24, page.getClientSize().height - y),
+                  )!;
+                  y = pTitleRes.bounds.bottom + 2;
+
+                  final pTextRes = sync_pdf.PdfTextElement(text: '$proofText [Q.E.D.]', font: bodyFont).draw(
+                    page: page,
+                    bounds: Rect.fromLTWH(18, y, boxWidth - 24, page.getClientSize().height - y),
+                  )!;
+                  y = pTextRes.bounds.bottom + 8;
+
+                  // Left vertical proof bar
+                  page.graphics.drawLine(
+                    sync_pdf.PdfPen(sync_pdf.PdfColor(80, 80, 80), width: 2),
+                    Offset(10, proofStartY),
+                    Offset(10, y - 4),
+                  );
+                }
               }
             }
           }
@@ -846,17 +1116,26 @@ Return ONLY valid JSON.
               }
 
               final boxWidth = page.getClientSize().width;
+              final startExY = y;
+
+              final exTitle = tag.toString().isNotEmpty ? '$title (${tag.toString()})' : title.toString();
+              final titleRes = sync_pdf.PdfTextElement(text: exTitle, font: boldFont).draw(
+                page: page,
+                bounds: Rect.fromLTWH(8, startExY + 6, boxWidth - 16, page.getClientSize().height - startExY - 10),
+              )!;
+              y = titleRes.bounds.bottom + 4;
+
+              final contentRes = sync_pdf.PdfTextElement(text: content, font: bodyFont).draw(
+                page: page,
+                bounds: Rect.fromLTWH(8, y, boxWidth - 16, page.getClientSize().height - y),
+              )!;
+              y = contentRes.bounds.bottom + 6;
+
               page.graphics.drawRectangle(
                 pen: sync_pdf.PdfPen(sync_pdf.PdfColor(100, 100, 100), width: 0.8),
-                brush: sync_pdf.PdfSolidBrush(sync_pdf.PdfColor(255, 255, 255)),
-                bounds: Rect.fromLTWH(0, y, boxWidth, 55),
+                bounds: Rect.fromLTWH(0, startExY, boxWidth, y - startExY + 4),
               );
-              page.graphics.drawString(title.toString(), boldFont, bounds: Rect.fromLTWH(8, y + 6, boxWidth - 16, 16));
-              if (tag.toString().isNotEmpty) {
-                page.graphics.drawString('Status: ${tag.toString()}', italicFont, bounds: Rect.fromLTWH(8, y + 22, boxWidth - 16, 14));
-              }
-              page.graphics.drawString(content, bodyFont, bounds: Rect.fromLTWH(8, y + 36, boxWidth - 16, 16));
-              y += 65;
+              y += 10;
             }
           }
         }
@@ -877,24 +1156,6 @@ Return ONLY valid JSON.
   }
 
   Map<String, dynamic>? _parseJson(String text) {
-    try {
-      String cleaned = text.trim();
-      if (cleaned.contains('```json')) {
-        cleaned = cleaned.split('```json')[1].split('```')[0];
-      } else if (cleaned.contains('```')) {
-        final parts = cleaned.split('```');
-        if (parts.length >= 2) cleaned = parts[1];
-      }
-      cleaned = cleaned.trim();
-      final int start = cleaned.indexOf('{');
-      final int end = cleaned.lastIndexOf('}');
-      if (start != -1 && end != -1 && end >= start) {
-        cleaned = cleaned.substring(start, end + 1);
-        return jsonDecode(cleaned) as Map<String, dynamic>;
-      }
-    } catch (e) {
-      print('[ModuleNotesService] _parseJson warning: $e');
-    }
-    return null;
+    return LatexJsonRepairer.parse(text);
   }
 }

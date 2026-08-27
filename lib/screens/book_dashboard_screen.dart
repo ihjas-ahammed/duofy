@@ -2903,8 +2903,11 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
         Navigator.of(context).pop();
       }
 
+      final combinedText = '${widget.book.title} ${widget.book.description} ${section.title} ${section.description} ${widget.book.customInstructions ?? ''} ${section.customInstructions ?? ''}';
+      final isProg = Book.isProgrammingCourse(combinedText);
       final List<LessonFormat> finalFormats = [];
       for (final gf in generatedFormats) {
+        if (!isProg && Book.hasProgrammingSlidesOrName(gf)) continue;
         final alreadyExists = finalFormats.any(
           (lf) =>
               lf.id == gf.id || lf.name.toLowerCase() == gf.name.toLowerCase(),
@@ -2914,9 +2917,15 @@ class _BookDashboardScreenState extends State<BookDashboardScreen> {
         }
       }
 
+      final cappedFormats = (finalFormats.isNotEmpty
+          ? finalFormats
+          : (isProg
+              ? LessonFormat.defaultProgrammingFormats(widget.book.title, widget.book.description)
+              : LessonFormat.defaultFormats)).take(10).toList();
+
       final modules = List<Module>.from(widget.book.modules);
       final sections = List<Section>.from(modules[modIdx].sections);
-      sections[secIdx] = sections[secIdx].copyWith(lessonFormats: finalFormats);
+      sections[secIdx] = sections[secIdx].copyWith(lessonFormats: cappedFormats);
       modules[modIdx] = modules[modIdx].copyWith(sections: sections);
       final newBook = widget.book.copyWith(modules: modules);
       await DatabaseService().saveGeneratedBook(newBook);

@@ -2900,7 +2900,7 @@ Do not include any explanation or other text.
       final newFormats = <LessonFormat>[];
       final formatsData = jsonMap['newLessonFormats'] as List?;
 
-      final combinedText = '${bookContext.title} ${bookContext.description} ${section.title} ${section.description}';
+      final combinedText = '${bookContext.title} ${bookContext.description} ${section.title} ${section.description} ${bookContext.customInstructions ?? ''} ${section.customInstructions ?? ''} ${customInstructions ?? ''}';
       final isProgCourse = Book.isProgrammingCourse(combinedText);
 
       final existingIds = formats.map((f) => f.id.toLowerCase()).toSet();
@@ -3652,6 +3652,77 @@ Return ONLY a JSON object matching this schema:
       }
     }
     throw lastException ?? Exception('Failed to analyze descriptive answer.');
+  }
+
+  Future<Map<String, dynamic>> explainLatexError({
+    required String texCode,
+    required String errorLog,
+    String? forcedApiKey,
+  }) async {
+    await _checkPause();
+    final keys = await _getKeys(forcedApiKey: forcedApiKey);
+    final liteModels = await _getLiteModels();
+
+    final prompt = '''You are an expert LaTeX and TeX compiler debugging assistant.
+A user attempted to compile the following LaTeX document, but the TeX compiler returned errors.
+
+LATEX SOURCE CODE:
+```latex
+$texCode
+```
+
+COMPILATION LOG / ERROR OUTPUT:
+```
+$errorLog
+```
+
+Analyze the error carefully.
+1. Identify the exact root cause of the error (e.g. missing package, undefined control sequence, syntax typo, unmatched brackets/environments, math mode errors).
+2. Point out the exact line number or code segment causing the issue.
+3. Provide a clear, plain-language explanation of how to fix it in Markdown.
+4. Provide the fully corrected, complete LaTeX source code that will compile cleanly.
+
+Return ONLY a valid JSON object matching this schema:
+{
+  "summary": "One sentence summary of the error",
+  "explanation": "Clear explanation of what caused the error and how to fix it in Markdown format",
+  "fixedCode": "The complete corrected LaTeX source code",
+  "lineHint": "e.g. Line 14: \\invalidcommand is undefined"
+}''';
+
+    Exception? lastException;
+    for (var modelName in liteModels) {
+      for (var apiKey in keys) {
+        try {
+          final model = GenerativeModel(
+            model: modelName,
+            apiKey: apiKey,
+            generationConfig: GenerationConfig(
+              responseMimeType: 'application/json',
+            ),
+          );
+
+          final response = await _retryTransient(
+            () => model
+                .generateContent([Content.text(prompt)])
+                .timeout(const Duration(seconds: 30)),
+            onRetry: (a, e) => print(
+              '[AiService] LaTeX error explanation transient ($modelName) attempt $a: ${_cleanErrMsg(e)}',
+            ),
+          );
+
+          if (response.text != null) {
+            final jsonMap = _cleanAndDecodeJson(response.text!);
+            return Map<String, dynamic>.from(jsonMap);
+          }
+        } catch (e) {
+          lastException = Exception(
+            'LaTeX error explanation failed ($modelName): ${_cleanErrMsg(e)}',
+          );
+        }
+      }
+    }
+    throw lastException ?? Exception('Failed to explain LaTeX error.');
   }
 
   Future<List<Map<String, String>>?> extractSyllabusBooks(

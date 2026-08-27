@@ -61,6 +61,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
     _refreshBookFromStorage();
     GlobalState.progressNotifier.addListener(_loadProgress);
     GenerationManager.instance.addListener(_onGenManagerChanged);
+    ModuleNotesService.instance.addListener(_onNotesServiceUpdated);
     _bookUpdatesSub = GenerationManager.instance.bookUpdates.listen((updatedBook) {
       if (updatedBook.id == _currentBook.id && mounted) {
         _refreshBookFromStorage(updatedBook);
@@ -73,9 +74,17 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
     _bookUpdatesSub?.cancel();
     GenerationManager.instance.removeListener(_onGenManagerChanged);
     GlobalState.progressNotifier.removeListener(_loadProgress);
+    ModuleNotesService.instance.removeListener(_onNotesServiceUpdated);
     _targetCollapseTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onNotesServiceUpdated() {
+    if (mounted) {
+      setState(() {});
+      _checkNotesStatus();
+    }
   }
 
   void _onGenManagerChanged() {
@@ -120,9 +129,13 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
             module: _currentModule,
             moduleIndex: widget.moduleIdx,
             pdfPath: pdfPath,
+            onNotesDeleted: () => _checkNotesStatus(),
+            onRegenerateWithSettings: (depth, reason) {
+              _startNoteGen(depth: depth, userRegenReason: reason);
+            },
             onRegenerateRequested: () {
               Navigator.pop(context);
-              _startNoteGen();
+              _promptGenerateOrRegenerateNotes(isRegen: true);
             },
           ),
         ),
@@ -130,13 +143,232 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
     }
   }
 
+  void _promptGenerateOrRegenerateNotes({bool isRegen = true}) {
+    final reasonCtrl = TextEditingController();
+    double depthSliderValue = 3.0; // Defaults to High
 
-  void _startNoteGen() {
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (dialogCtx, setDialogState) {
+          final int depthIdx = depthSliderValue.round().clamp(0, ModuleNotesService.availableDepths.length - 1);
+          final String selectedDepth = ModuleNotesService.availableDepths[depthIdx];
+
+          return AlertDialog(
+            backgroundColor: context.colors.surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: [
+                Icon(isRegen ? LucideIcons.refreshCw : LucideIcons.sparkles, color: AppTheme.duoBlue, size: 22),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    isRegen ? 'Regenerate Module Notes' : 'Generate Module Notes',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: context.colors.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'NOTE DEPTH',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                          color: context.colors.textFaint,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppTheme.duoBlue.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppTheme.duoBlue.withValues(alpha: 0.4)),
+                        ),
+                        child: Text(
+                          selectedDepth,
+                          style: const TextStyle(
+                            color: AppTheme.duoBlue,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  SliderTheme(
+                    data: SliderThemeData(
+                      activeTrackColor: AppTheme.duoBlue,
+                      thumbColor: AppTheme.duoBlue,
+                      inactiveTrackColor: context.colors.outline,
+                      overlayColor: AppTheme.duoBlue.withValues(alpha: 0.2),
+                    ),
+                    child: Slider(
+                      value: depthSliderValue,
+                      min: 0,
+                      max: (ModuleNotesService.availableDepths.length - 1).toDouble(),
+                      divisions: ModuleNotesService.availableDepths.length - 1,
+                      onChanged: (val) {
+                        setDialogState(() {
+                          depthSliderValue = val;
+                        });
+                      },
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: ModuleNotesService.depthShortLabels.map((lbl) {
+                        return Text(
+                          lbl,
+                          style: TextStyle(
+                            color: context.colors.textFaint,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    isRegen ? 'Reason / Focus for regeneration:' : 'Custom focus or notes instructions (optional):',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.colors.textPrimary),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: reasonCtrl,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      hintText: 'e.g. Detailed step-by-step proofs, visual vector diagrams, deep theoretical analysis...',
+                      hintStyle: TextStyle(fontSize: 12, color: context.colors.textFaint.withValues(alpha: 0.6)),
+                      filled: true,
+                      fillColor: context.colors.background,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: context.colors.outline),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              if (_hasModuleNotes)
+                TextButton.icon(
+                  style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+                  icon: const Icon(LucideIcons.trash2, size: 16),
+                  label: const Text('Delete Notes'),
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await _deleteNotes();
+                  },
+                ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.duoBlue,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: const Icon(LucideIcons.sparkles, size: 16, color: Colors.white),
+                label: Text(
+                  isRegen ? 'Regenerate Notes' : 'Generate Notes',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _startNoteGen(
+                    depth: selectedDepth,
+                    userRegenReason: reasonCtrl.text.trim().isNotEmpty ? reasonCtrl.text.trim() : null,
+                  );
+                },
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _deleteNotes() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.colors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(LucideIcons.trash2, color: Colors.redAccent, size: 22),
+            const SizedBox(width: 8),
+            Text(
+              'Delete Module Notes?',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: context.colors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to delete the study notes for "${_currentModule.title}"? You can regenerate them at any time.',
+          style: TextStyle(color: context.colors.textSecondary, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await ModuleNotesService.instance.deleteNotes(_currentBook.id, _currentModule.id);
+      _checkNotesStatus();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Notes for "${_currentModule.title}" deleted.')),
+        );
+      }
+    }
+  }
+
+  void _startNoteGen({String? userRegenReason, String depth = 'High (Detailed & Rigorous)'}) {
     ModuleNotesService.instance.startBackgroundNotesGeneration(
       book: _currentBook,
       module: _currentModule,
       moduleIndex: widget.moduleIdx,
+      userRegenReason: userRegenReason,
+      depth: depth,
     );
+
+    setState(() {});
 
     final job = ModuleNotesService.instance.getJob(_currentBook.id, _currentModule.id);
     if (job != null) {
@@ -158,7 +390,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Started background note generation for "${_currentModule.title}". Progress notifications active!'),
+        content: Text('Started background note generation for "${_currentModule.title}" ($depth). Progress notifications active!'),
         duration: const Duration(seconds: 3),
       ),
     );
@@ -323,50 +555,110 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              if (!_hasModuleNotes)
-                                Expanded(
-                                  child: OutlinedButton.icon(
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                                      side: const BorderSide(color: AppTheme.duoBlue, width: 1.5),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    ),
-                                    icon: const Icon(LucideIcons.sparkles, size: 16, color: AppTheme.duoBlue),
-                                    label: const Text(
-                                      'Quick Generate Module Notes',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w900,
-                                        color: AppTheme.duoBlue,
+                          Builder(
+                            builder: (ctx) {
+                              final job = ModuleNotesService.instance.getJob(_currentBook.id, _currentModule.id);
+                              if (job != null && job.isRunning) {
+                                return Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.duoBlue.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: AppTheme.duoBlue.withValues(alpha: 0.3)),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              job.status,
+                                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.duoBlue),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            '${(job.progress * 100).toInt()}%',
+                                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.duoBlue),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: LinearProgressIndicator(
+                                          value: job.progress,
+                                          minHeight: 4,
+                                          backgroundColor: context.colors.outline,
+                                          valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.duoBlue),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+
+                              return Row(
+                                children: [
+                                  if (!_hasModuleNotes)
+                                    Expanded(
+                                      child: OutlinedButton.icon(
+                                        style: OutlinedButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                                          side: const BorderSide(color: AppTheme.duoBlue, width: 1.5),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        ),
+                                        icon: const Icon(LucideIcons.sparkles, size: 16, color: AppTheme.duoBlue),
+                                        label: const Text(
+                                          'Quick Generate Module Notes',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w900,
+                                            color: AppTheme.duoBlue,
+                                          ),
+                                        ),
+                                        onPressed: () => _promptGenerateOrRegenerateNotes(isRegen: false),
+                                      ),
+                                    )
+                                  else ...[
+                                    Expanded(
+                                      child: ElevatedButton.icon(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppTheme.duoBlue,
+                                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                          elevation: 0,
+                                        ),
+                                        icon: const Icon(LucideIcons.bookOpenCheck, size: 16, color: Colors.white),
+                                        label: const Text(
+                                          'Open Module Notes (PDF)',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w900,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        onPressed: _openNotes,
                                       ),
                                     ),
-                                    onPressed: _startNoteGen,
-                                  ),
-                                )
-                              else
-                                Expanded(
-                                  child: ElevatedButton.icon(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppTheme.duoBlue,
-                                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                      elevation: 0,
-                                    ),
-                                    icon: const Icon(LucideIcons.bookOpenCheck, size: 16, color: Colors.white),
-                                    label: const Text(
-                                      'Open Module Notes (PDF)',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w900,
-                                        color: Colors.white,
+                                    const SizedBox(width: 8),
+                                    IconButton(
+                                      style: IconButton.styleFrom(
+                                        backgroundColor: context.colors.outline.withValues(alpha: 0.3),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                       ),
+                                      icon: const Icon(LucideIcons.refreshCw, size: 16),
+                                      tooltip: 'Regenerate Module Notes',
+                                      onPressed: () => _promptGenerateOrRegenerateNotes(isRegen: true),
                                     ),
-                                    onPressed: _openNotes,
-                                  ),
-                                ),
-                            ],
+                                  ],
+                                ],
+                              );
+                            },
                           ),
                         ],
                       ),

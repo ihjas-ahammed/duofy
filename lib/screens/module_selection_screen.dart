@@ -53,6 +53,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
     _refreshBookFromStorage();
     GlobalState.progressNotifier.addListener(_loadProgress);
     GenerationManager.instance.addListener(_onGenManagerChanged);
+    ModuleNotesService.instance.addListener(_onNotesServiceUpdated);
     _bookUpdatesSub = GenerationManager.instance.bookUpdates.listen((updatedBook) {
       if (updatedBook.id == _currentBook.id && mounted) {
         _refreshBookFromStorage(updatedBook);
@@ -65,8 +66,16 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
     _bookUpdatesSub?.cancel();
     GenerationManager.instance.removeListener(_onGenManagerChanged);
     GlobalState.progressNotifier.removeListener(_loadProgress);
+    ModuleNotesService.instance.removeListener(_onNotesServiceUpdated);
     _targetCollapseTimer?.cancel();
     super.dispose();
+  }
+
+  void _onNotesServiceUpdated() {
+    if (mounted) {
+      setState(() {});
+      _checkNotesAvailability();
+    }
   }
 
   void _onGenManagerChanged() {
@@ -117,9 +126,13 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
             module: module,
             moduleIndex: modIdx,
             pdfPath: pdfPath,
+            onNotesDeleted: () => _checkNotesAvailability(),
+            onRegenerateWithSettings: (depth, reason) {
+              _startNoteGeneration(modIdx, depth: depth, userRegenReason: reason);
+            },
             onRegenerateRequested: () {
               Navigator.pop(context);
-              _promptRegenerateNotes(modIdx);
+              _promptRegenerateNotes(modIdx, isRegen: true);
             },
           ),
         ),
@@ -127,22 +140,186 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
     }
   }
 
-
-  void _promptRegenerateNotes(int modIdx) {
+  void _promptRegenerateNotes(int modIdx, {bool isRegen = true}) {
     final module = _currentBook.modules[modIdx];
     final reasonCtrl = TextEditingController();
+    double depthSliderValue = 3.0; // Defaults to High
+    final hasNotes = _moduleNotesMap[module.id] ?? false;
 
     showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (dialogCtx, setDialogState) {
+          final int depthIdx = depthSliderValue.round().clamp(0, ModuleNotesService.availableDepths.length - 1);
+          final String selectedDepth = ModuleNotesService.availableDepths[depthIdx];
+
+          return AlertDialog(
+            backgroundColor: context.colors.surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: [
+                Icon(isRegen ? LucideIcons.refreshCw : LucideIcons.sparkles, color: AppTheme.duoBlue, size: 22),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    isRegen ? 'Regenerate Module Notes' : 'Generate Module Notes',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: context.colors.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'NOTE DEPTH',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                          color: context.colors.textFaint,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppTheme.duoBlue.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppTheme.duoBlue.withValues(alpha: 0.4)),
+                        ),
+                        child: Text(
+                          selectedDepth,
+                          style: const TextStyle(
+                            color: AppTheme.duoBlue,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  SliderTheme(
+                    data: SliderThemeData(
+                      activeTrackColor: AppTheme.duoBlue,
+                      thumbColor: AppTheme.duoBlue,
+                      inactiveTrackColor: context.colors.outline,
+                      overlayColor: AppTheme.duoBlue.withValues(alpha: 0.2),
+                    ),
+                    child: Slider(
+                      value: depthSliderValue,
+                      min: 0,
+                      max: (ModuleNotesService.availableDepths.length - 1).toDouble(),
+                      divisions: ModuleNotesService.availableDepths.length - 1,
+                      onChanged: (val) {
+                        setDialogState(() {
+                          depthSliderValue = val;
+                        });
+                      },
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: ModuleNotesService.depthShortLabels.map((lbl) {
+                        return Text(
+                          lbl,
+                          style: TextStyle(
+                            color: context.colors.textFaint,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    isRegen ? 'Reason / Focus for regeneration:' : 'Custom focus or notes instructions (optional):',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.colors.textPrimary),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: reasonCtrl,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      hintText: 'e.g. Detailed step-by-step proofs, visual vector diagrams, deep theoretical analysis...',
+                      hintStyle: TextStyle(fontSize: 12, color: context.colors.textFaint.withValues(alpha: 0.6)),
+                      filled: true,
+                      fillColor: context.colors.background,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: context.colors.outline),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              if (hasNotes)
+                TextButton.icon(
+                  style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+                  icon: const Icon(LucideIcons.trash2, size: 16),
+                  label: const Text('Delete Notes'),
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await _deleteNotes(modIdx);
+                  },
+                ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.duoBlue,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: const Icon(LucideIcons.sparkles, size: 16, color: Colors.white),
+                label: Text(
+                  isRegen ? 'Regenerate Notes' : 'Generate Notes',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _startNoteGeneration(
+                    modIdx,
+                    depth: selectedDepth,
+                    userRegenReason: reasonCtrl.text.trim().isNotEmpty ? reasonCtrl.text.trim() : null,
+                  );
+                },
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _deleteNotes(int modIdx) async {
+    final module = _currentBook.modules[modIdx];
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.colors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            const Icon(LucideIcons.refreshCw, color: AppTheme.duoBlue, size: 22),
+            const Icon(LucideIcons.trash2, color: Colors.redAccent, size: 22),
             const SizedBox(width: 8),
             Text(
-              'Regenerate Module Notes',
+              'Delete Module Notes?',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -151,66 +328,51 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
             ),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Why do you want to regenerate notes for "${module.title}"?',
-              style: TextStyle(
-                fontSize: 14,
-                color: context.colors.textFaint,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: reasonCtrl,
-              maxLines: 3,
-              decoration: InputDecoration(
-                hintText: 'e.g. Include more formal proofs, focus on Cayley tables and sub-group examples...',
-                hintStyle: TextStyle(fontSize: 13, color: context.colors.textFaint.withValues(alpha: 0.6)),
-                filled: true,
-                fillColor: context.colors.background,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: context.colors.outline),
-                ),
-              ),
-            ),
-          ],
+        content: Text(
+          'Are you sure you want to delete the study notes for "${module.title}"? You can regenerate them at any time.',
+          style: TextStyle(color: context.colors.textSecondary, fontSize: 14),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () => Navigator.pop(ctx, false),
             child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
           ),
-          ElevatedButton.icon(
+          ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.duoBlue,
+              backgroundColor: Colors.redAccent,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            icon: const Icon(LucideIcons.sparkles, size: 16, color: Colors.white),
-            label: const Text('Regenerate Notes', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            onPressed: () {
-              Navigator.pop(ctx);
-              _startNoteGeneration(modIdx, userRegenReason: reasonCtrl.text.trim());
-            },
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
+
+    if (confirmed == true) {
+      await ModuleNotesService.instance.deleteNotes(_currentBook.id, module.id);
+      _checkNotesAvailability();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Notes for "${module.title}" deleted.')),
+        );
+      }
+    }
   }
 
-  void _startNoteGeneration(int modIdx, {String? userRegenReason}) {
+  void _startNoteGeneration(int modIdx, {String? userRegenReason, String depth = 'High (Detailed & Rigorous)'}) {
     final module = _currentBook.modules[modIdx];
     
-    // Start background job asynchronously (just like PYQ evaluation)
+    // Start background job asynchronously
     ModuleNotesService.instance.startBackgroundNotesGeneration(
       book: _currentBook,
       module: module,
       moduleIndex: modIdx,
       userRegenReason: userRegenReason,
+      depth: depth,
     );
+
+    setState(() {});
 
     final job = ModuleNotesService.instance.getJob(_currentBook.id, module.id);
     if (job != null) {
@@ -232,7 +394,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Started background note generation for "${module.title}". Notifications will report progress!'),
+        content: Text('Started background note generation for "${module.title}" ($depth). Notifications will report progress!'),
         duration: const Duration(seconds: 3),
       ),
     );
@@ -731,7 +893,7 @@ class _ModuleSelectionScreenState extends State<ModuleSelectionScreen> {
                                                     color: AppTheme.duoBlue,
                                                   ),
                                                 ),
-                                                onPressed: () => _startNoteGeneration(index),
+                                                onPressed: () => _promptRegenerateNotes(index, isRegen: false),
                                               ),
                                             )
                                           else ...[

@@ -108,12 +108,24 @@ class CodeHighlighter {
         continue;
       }
 
-      // Strings: triple, then single/double, then backtick
-      final quote = _stringQuoteAt(code, i);
+      // Strings: triple, then single/double, then backtick (disabled for LaTeX/TeX where quotes are not strings)
+      final quote = _stringQuoteAt(code, i, lang);
       if (quote != null) {
         final stop = _stringEnd(code, i, quote);
         push(code.substring(i, stop), theme.string);
         i = stop;
+        continue;
+      }
+
+      // LaTeX math delimiters $ and $$
+      if ((lang == 'latex' || lang == 'tex') && c == '\$') {
+        if (startsWith('\$\$')) {
+          push('\$\$', theme.function);
+          i += 2;
+        } else {
+          push('\$', theme.function);
+          i += 1;
+        }
         continue;
       }
 
@@ -159,15 +171,18 @@ class CodeHighlighter {
         continue;
       }
 
-      // LaTeX command \command
+      // LaTeX command \command or escaped char (e.g. \documentclass, \alpha, \{, \$, \\)
       if (c == '\\') {
         var j = i + 1;
-        while (j < n && _isIdentPart(code[j])) {
-          j++;
+        if (j < n && _isAlpha(code[j])) {
+          while (j < n && _isAlpha(code[j])) {
+            j++;
+          }
+        } else if (j < n) {
+          j++; // single non-alpha escaped character
         }
-        final endPos = (j == i + 1 && j < n) ? j + 1 : j;
-        push(code.substring(i, endPos), theme.keyword);
-        i = endPos;
+        push(code.substring(i, j), theme.keyword);
+        i = j;
         continue;
       }
 
@@ -177,7 +192,11 @@ class CodeHighlighter {
     return out;
   }
 
-  static String? _stringQuoteAt(String s, int i) {
+  static String? _stringQuoteAt(String s, int i, String lang) {
+    // In LaTeX, single quotes (') and double apostrophes ('') and double quotes (")
+    // are closing quotation marks, accents, or prime derivatives ($f'(x)$), NOT string literals.
+    if (lang == 'latex' || lang == 'tex') return null;
+
     if (s.startsWith('"""', i)) return '"""';
     if (s.startsWith("'''", i)) return "'''";
     final c = s[i];
@@ -199,6 +218,10 @@ class CodeHighlighter {
   }
 
   static bool _isDigit(String c) => c.codeUnitAt(0) >= 48 && c.codeUnitAt(0) <= 57;
+  static bool _isAlpha(String c) {
+    final u = c.codeUnitAt(0);
+    return (u >= 65 && u <= 90) || (u >= 97 && u <= 122);
+  }
   static bool _isNumberChar(String c) =>
       _isDigit(c) || c == '.' || c == 'x' || c == 'e' || c == '_' ||
       (c.toLowerCase().codeUnitAt(0) >= 97 && c.toLowerCase().codeUnitAt(0) <= 102);

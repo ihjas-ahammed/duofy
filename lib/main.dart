@@ -82,6 +82,9 @@ bool _looksNonFatal(Object error) {
 
 void showGlobalErrorAlert(Object error, StackTrace? stack) {
   debugPrint("GLOBAL ERROR OCCURRED: $error\n$stack");
+  // Never show developer error alerts to end users in release builds
+  if (kReleaseMode) return;
+
   final context = navigatorKey.currentContext;
   if (context != null) {
     if (_isGlobalErrorDialogOpen) return;
@@ -95,15 +98,8 @@ void showGlobalErrorAlert(Object error, StackTrace? stack) {
       }
       showDialog(
         context: currentContext,
-        barrierDismissible: false,
+        barrierDismissible: true,
         builder: (ctx) {
-          if (!kDebugMode) {
-            Future.delayed(const Duration(seconds: 3), () {
-              if (_isGlobalErrorDialogOpen && ctx.mounted) {
-                Navigator.of(ctx).pop();
-              }
-            });
-          }
           return AlertDialog(
             backgroundColor: ctx.colors.surface,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -254,6 +250,9 @@ void main() async {
 
     // Prevent raw red screen crashes with custom UI error widget
     ErrorWidget.builder = (FlutterErrorDetails details) {
+      if (kReleaseMode) {
+        return const SizedBox.shrink();
+      }
       try {
         final errorMsg = details.exceptionAsString();
         final errLower = errorMsg.toLowerCase();

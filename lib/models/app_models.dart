@@ -325,59 +325,6 @@ class LessonFormat {
       ],
     ),
     LessonFormat(
-      id: 'chunking-focus',
-      name: 'Chunking Focus',
-      description:
-          'Breaking down a large, intimidating concept into tiny, digestible pieces (chunks) before assembling them.',
-      slides: [
-        SlideTemplate(
-          type: 'concept_pieces',
-          condition: 'Always',
-          description: 'Introduce the pieces of the chunk individually.',
-        ),
-        SlideTemplate(
-          type: 'fill_in_blank',
-          condition: 'Always',
-          description: 'Test recall on one specific piece of the chunk.',
-        ),
-        SlideTemplate(
-          type: 'theory',
-          condition: 'Always',
-          description:
-              'Show how the pieces connect together into the final "chunk".',
-        ),
-        SlideTemplate(
-          type: 'quiz',
-          condition: 'Always',
-          description: 'Test understanding of the fully assembled chunk.',
-        ),
-      ],
-    ),
-    LessonFormat(
-      id: 'spaced-review',
-      name: 'Spaced Review',
-      description:
-          'A format dedicated to reviewing past material while lightly introducing a new hook.',
-      slides: [
-        SlideTemplate(
-          type: 'quiz',
-          condition: 'Always',
-          description: 'A question from a previous topic.',
-        ),
-        SlideTemplate(
-          type: 'numerical',
-          condition: 'If applicable',
-          description: 'A calculation from a previous topic.',
-        ),
-        SlideTemplate(
-          type: 'theory',
-          condition: 'Always',
-          description:
-              'A brief introduction to today\'s new topic connecting it to the reviewed material.',
-        ),
-      ],
-    ),
-    LessonFormat(
       id: 'concrete-examples',
       name: 'Concrete Examples',
       description: 'Real-world grounding of abstract, theoretical ideas.',
@@ -398,54 +345,6 @@ class LessonFormat {
           condition: 'Always',
           description:
               'Ask the learner to identify whether a new real-world scenario fits the rule.',
-        ),
-      ],
-    ),
-    LessonFormat(
-      id: 'feynman-technique',
-      name: 'Feynman Technique',
-      description:
-          'Teaching a concept using extremely simple language, as if to a child, avoiding jargon.',
-      slides: [
-        SlideTemplate(
-          type: 'theory',
-          condition: 'Always',
-          description: 'Explain the core idea using zero technical jargon.',
-        ),
-        SlideTemplate(
-          type: 'concept_pieces',
-          condition: 'Always',
-          description: 'Break down why it works using an intuitive analogy.',
-        ),
-        SlideTemplate(
-          type: 'fill_in_blank',
-          condition: 'Always',
-          description: 'Check understanding of the simple analogy.',
-        ),
-      ],
-    ),
-    LessonFormat(
-      id: 'contrasting-cases',
-      name: 'Contrasting Cases',
-      description:
-          'Comparing two similar but distinct concepts to highlight their key differences.',
-      slides: [
-        SlideTemplate(
-          type: 'theory',
-          condition: 'Always',
-          description: 'Introduce Concept A and Concept B side-by-side.',
-        ),
-        SlideTemplate(
-          type: 'concept_pieces',
-          condition: 'Always',
-          description:
-              'Highlight exactly what makes them different (the boundary condition).',
-        ),
-        SlideTemplate(
-          type: 'quiz',
-          condition: 'Always',
-          description:
-              'Present a scenario and ask if it is Concept A or Concept B.',
         ),
       ],
     ),
@@ -472,31 +371,6 @@ class LessonFormat {
           condition: 'Always',
           description:
               'Explain the correct reasoning and why the mistake is common.',
-        ),
-      ],
-    ),
-    LessonFormat(
-      id: 'rule-abstraction',
-      name: 'Rule Abstraction',
-      description:
-          'Deriving a general rule from several specific examples (inductive learning).',
-      slides: [
-        SlideTemplate(
-          type: 'concept_pieces',
-          condition: 'Always',
-          description:
-              'Show 3 different examples that all share a hidden underlying pattern.',
-        ),
-        SlideTemplate(
-          type: 'quiz',
-          condition: 'Always',
-          description:
-              'Ask the learner to guess the underlying rule or pattern.',
-        ),
-        SlideTemplate(
-          type: 'theory',
-          condition: 'Always',
-          description: 'Formally state the abstracted rule.',
         ),
       ],
     ),
@@ -528,102 +402,6 @@ class LessonFormat {
       ],
     ),
     LessonFormat(
-      id: 'desirable-difficulty',
-      name: 'Desirable Difficulty',
-      description:
-          'A deliberately hard problem without immediate hints, forcing deep cognitive effort.',
-      slides: [
-        SlideTemplate(
-          type: 'theory',
-          condition: 'Always',
-          description:
-              'Set up a challenging problem that requires synthesizing multiple ideas.',
-        ),
-        SlideTemplate(
-          type: 'numerical',
-          condition: 'If a number is expected',
-          description: 'The hard problem itself.',
-        ),
-        SlideTemplate(
-          type: 'step_by_step',
-          condition: 'Always',
-          description: 'Break down the solution after they have attempted it.',
-        ),
-      ],
-    ),
-    LessonFormat(
-      id: 'generation-effect',
-      name: 'Generation Effect',
-      description:
-          'Attempting to solve or guess an answer before being taught the material.',
-      slides: [
-        SlideTemplate(
-          type: 'quiz',
-          condition: 'Always',
-          description:
-              'Ask an intuitive question about a topic they haven\'t learned yet.',
-        ),
-        SlideTemplate(
-          type: 'theory',
-          condition: 'Always',
-          description:
-              'Explain the actual theory, showing whether their intuition was right.',
-        ),
-        SlideTemplate(
-          type: 'concept_pieces',
-          condition: 'Always',
-          description: 'Formalize the new knowledge.',
-        ),
-      ],
-    ),
-    LessonFormat(
-      id: 'analogical-transfer',
-      name: 'Analogical Transfer',
-      description:
-          'Applying a solution from one context to a totally different, unfamiliar context.',
-      slides: [
-        SlideTemplate(
-          type: 'theory',
-          condition: 'Always',
-          description: 'Remind the learner of a known solution in Context X.',
-        ),
-        SlideTemplate(
-          type: 'theory',
-          condition: 'Always',
-          description: 'Introduce a seemingly different problem in Context Y.',
-        ),
-        SlideTemplate(
-          type: 'quiz',
-          condition: 'Always',
-          description: 'Ask them to apply the mechanism from X to solve Y.',
-        ),
-      ],
-    ),
-    LessonFormat(
-      id: 'metacognition-check',
-      name: 'Metacognition Check',
-      description: 'Evaluating one\'s own understanding and mental models.',
-      slides: [
-        SlideTemplate(
-          type: 'theory',
-          condition: 'Always',
-          description: 'Summarize a complex topic briefly.',
-        ),
-        SlideTemplate(
-          type: 'quiz',
-          condition: 'Always',
-          description:
-              'A highly tricky distractor question that tests deep understanding versus surface illusion of competence.',
-        ),
-        SlideTemplate(
-          type: 'theory',
-          condition: 'Always',
-          description:
-              'Explain why the tricky distractor catches people off guard.',
-        ),
-      ],
-    ),
-    LessonFormat(
       id: 'synthesis-challenge',
       name: 'Synthesis Challenge',
       description:
@@ -643,102 +421,6 @@ class LessonFormat {
           type: 'numerical',
           condition: 'If applicable',
           description: 'Final calculation of the synthesized problem.',
-        ),
-      ],
-    ),
-    LessonFormat(
-      id: 'priming-preview',
-      name: 'Priming Preview',
-      description:
-          'A brief, lightweight preview of advanced topics without expecting mastery yet.',
-      slides: [
-        SlideTemplate(
-          type: 'theory',
-          condition: 'Always',
-          description: 'Show a glimpse of a future, more advanced topic.',
-        ),
-        SlideTemplate(
-          type: 'concept_pieces',
-          condition: 'Always',
-          description: 'Point out what makes it interesting or useful.',
-        ),
-        SlideTemplate(
-          type: 'one_word',
-          condition: 'Always',
-          description: 'A very basic vocabulary check on the new concept name.',
-        ),
-      ],
-    ),
-    LessonFormat(
-      id: 'visual-dual-coding',
-      name: 'Visual Dual-Coding',
-      description:
-          'Relies heavily on visual or structural layout to pair with text.',
-      slides: [
-        SlideTemplate(
-          type: 'custom_html',
-          condition: 'Always',
-          description:
-              'An interactive or highly visual representation of the concept.',
-        ),
-        SlideTemplate(
-          type: 'theory',
-          condition: 'Always',
-          description: 'Textual explanation linking to what they just saw.',
-        ),
-        SlideTemplate(
-          type: 'quiz',
-          condition: 'Always',
-          description: 'Test understanding of the visual relationship.',
-        ),
-      ],
-    ),
-    LessonFormat(
-      id: 'deliberate-practice',
-      name: 'Deliberate Practice',
-      description:
-          'Targeted practice on a specific sub-skill with immediate feedback.',
-      slides: [
-        SlideTemplate(
-          type: 'theory',
-          condition: 'Always',
-          description: 'Isolate the specific sub-skill being practiced.',
-        ),
-        SlideTemplate(
-          type: 'step_by_step',
-          condition: 'Always',
-          description: 'Walk through executing this single sub-skill.',
-        ),
-        SlideTemplate(
-          type: 'quiz',
-          condition: 'Always',
-          description: 'A rapid check to ensure the sub-skill is mastered.',
-        ),
-      ],
-    ),
-    LessonFormat(
-      id: 'first-principles',
-      name: 'First Principles',
-      description:
-          'Breaking a complex problem down to its most fundamental, undeniable truths.',
-      slides: [
-        SlideTemplate(
-          type: 'theory',
-          condition: 'Always',
-          description:
-              'Strip away the complexity and state the absolute fundamental truth (first principle).',
-        ),
-        SlideTemplate(
-          type: 'concept_pieces',
-          condition: 'Always',
-          description:
-              'Build the complex idea back up logically from the first principle.',
-        ),
-        SlideTemplate(
-          type: 'quiz',
-          condition: 'Always',
-          description:
-              'Test if the logic connecting the principle to the conclusion holds.',
         ),
       ],
     ),
@@ -938,12 +620,18 @@ class Book {
 
   static bool isProgrammingCourse(String text) {
     final lower = text.toLowerCase();
+    if (lower.contains('[non-programming subject]') || lower.contains('non-programming subject')) {
+      return false;
+    }
+    if (lower.contains('[programming course') || lower.contains('programming course:')) {
+      return true;
+    }
     final programmingKeywords = [
-      'python', 'javascript', 'js', 'html', 'css', 'latex', 'java', 'cpp', 'c++', 
-      'c language', 'dart', 'rust', 'go', 'golang', 'sql', 'programming', 'coding', 
-      'software development', 'software engineering', 'computer science', 'code syntax',
-      'scripting', 'algorithm', 'data structure', 'web dev', 'react', 'flutter',
-      'compiler', 'interpreter', 'assembly', 'php', 'swift', 'kotlin'
+      'python', 'javascript', 'typescript', 'html', 'css', 'java', 'cpp', 'c++', 
+      'c language', 'c#', 'csharp', 'dart', 'flutter', 'rust', 'golang', 'sql', 
+      'programming in', 'coding in', 'software engineering', 'web development', 
+      'react', 'node.js', 'kotlin', 'swift', 'php', 'with go', 'in go', 'go lang', 
+      'go programming'
     ];
     return programmingKeywords.any((kw) => lower.contains(kw));
   }
@@ -1148,13 +836,15 @@ class Book {
         ? section.lessonFormats!
         : lessonFormats;
 
-    final isProg = isProgrammingCourse('$title $description ${section.title} ${section.description}');
+    final isProg = isProgrammingCourse('$title $description ${section.title} ${section.description} ${customInstructions ?? ''} ${section.customInstructions ?? ''}');
     List<LessonFormat> filtered = rawFormats;
     if (!isProg) {
       filtered = rawFormats.where((f) => !hasProgrammingSlidesOrName(f)).toList();
     }
     if (filtered.isEmpty) {
-      filtered = LessonFormat.defaultFormats;
+      filtered = isProg
+          ? LessonFormat.defaultProgrammingFormats(title, description)
+          : LessonFormat.defaultFormats;
     }
     return filtered.take(10).toList();
   }

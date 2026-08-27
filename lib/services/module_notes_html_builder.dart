@@ -147,15 +147,18 @@ class ModuleNotesHtmlBuilder {
           if (diag is Map) {
             final dMap = Map<String, dynamic>.from(diag);
             final title = dMap['title'] ?? '';
-            final svg = dMap['svgContent'] ?? dMap['svg'] ?? '';
+            String svg = (dMap['svgContent'] ?? dMap['svg'] ?? '').toString();
             final desc = dMap['description'] ?? '';
+
+            // Strip accidental LaTeX $...$ or $$...$$ delimiters from SVG labels so SVG text renders cleanly
+            svg = svg.replaceAllMapped(RegExp(r'\${1,2}([^\$]+)\${1,2}'), (m) => m.group(1) ?? '');
 
             if (title.toString().isNotEmpty) {
               sectionsHtml.writeln('  <p style="margin-top: 1.5rem;"><strong>${_escapeHtml(title.toString())}</strong></p>');
             }
-            if (svg.toString().isNotEmpty) {
+            if (svg.isNotEmpty) {
               sectionsHtml.writeln('  <div class="diagram-box">');
-              sectionsHtml.writeln('    ${svg.toString()}');
+              sectionsHtml.writeln('    $svg');
               sectionsHtml.writeln('  </div>');
             }
             if (desc.toString().isNotEmpty) {
@@ -199,12 +202,20 @@ class ModuleNotesHtmlBuilder {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>${_escapeHtml(chapterNumber)}: ${_escapeHtml(chapterTitle)} — Study Notes</title>
     
-    <!-- MathJax 3 Configuration with Callback -->
+    <!-- MathJax 3 Configuration with Error Handling Fallback -->
     <script>
         MathJax = {
             tex: {
                 inlineMath: [['\$', '\$'], ['\\\\(', '\\\\)']],
-                displayMath: [['\$\$', '\$\$'], ['\\\\[', '\\\\]']]
+                displayMath: [['\$\$', '\$\$'], ['\\\\[', '\\\\]']],
+                packages: {'[+]': ['noerrors', 'noundefined', 'base', 'ams', 'newcommand', 'autoload']},
+                formatError: function(jax, err) {
+                    var rawText = (jax && (jax.latex || jax.math)) ? (jax.latex || jax.math) : (err && err.message ? err.message : '');
+                    return document.createTextNode(rawText);
+                }
+            },
+            options: {
+                enableMenu: false
             },
             svg: {
                 fontCache: 'global'

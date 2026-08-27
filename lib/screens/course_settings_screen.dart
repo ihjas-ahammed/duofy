@@ -60,6 +60,12 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
   }
 
   void _addFormat() {
+    if (_formats.length >= 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Maximum limit of 10 lesson formats reached.')),
+      );
+      return;
+    }
     final id = _genFormatId();
     final newFormat = LessonFormat(
       id: id,

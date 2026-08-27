@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -21,6 +22,11 @@ class _GlobalErrorCaptureLayerState extends State<GlobalErrorCaptureLayer> {
 
   @override
   Widget build(BuildContext context) {
+    // Never show developer error banners/snackbars in release builds
+    if (kReleaseMode) {
+      return widget.child;
+    }
+
     return ValueListenableBuilder<List<CapturedError>>(
       valueListenable: ErrorCaptureService.instance.errorsNotifier,
       builder: (context, errors, _) {
@@ -60,26 +66,59 @@ class _GlobalErrorCaptureLayerState extends State<GlobalErrorCaptureLayer> {
 
     final categoryColor = isGenerationError ? AppTheme.duoOrange : AppTheme.duoRed;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: context.colors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: categoryColor.withValues(alpha: 0.6), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
+    return Dismissible(
+      key: ValueKey(error.id),
+      direction: DismissDirection.horizontal,
+      onDismissed: (_) {
+        ErrorCaptureService.instance.dismissError(error.id);
+      },
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        alignment: Alignment.centerLeft,
+        decoration: BoxDecoration(
+          color: categoryColor.withValues(alpha: 0.25),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Icon(LucideIcons.trash2, color: categoryColor, size: 22),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      secondaryBackground: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        alignment: Alignment.centerRight,
+        decoration: BoxDecoration(
+          color: categoryColor.withValues(alpha: 0.25),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Icon(LucideIcons.trash2, color: categoryColor, size: 22),
+      ),
+      child: GestureDetector(
+        onVerticalDragEnd: (details) {
+          // Allow swiping up to dismiss
+          if (details.primaryVelocity != null && details.primaryVelocity! < -120) {
+            ErrorCaptureService.instance.dismissError(error.id);
+          }
+        },
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: context.colors.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: categoryColor.withValues(alpha: 0.6), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               color: categoryColor.withValues(alpha: 0.12),
@@ -247,6 +286,8 @@ class _GlobalErrorCaptureLayerState extends State<GlobalErrorCaptureLayer> {
           ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }

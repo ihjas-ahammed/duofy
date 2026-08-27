@@ -99,7 +99,7 @@ void main() {
     final bytes = document.saveSync();
     document.dispose();
 
-    final file = File('/tmp/test_native_notes.pdf');
+    final file = File('${Directory.systemTemp.path}/test_native_notes.pdf');
     file.writeAsBytesSync(bytes);
 
     expect(file.existsSync(), isTrue);

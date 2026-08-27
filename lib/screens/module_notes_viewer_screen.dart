@@ -15,7 +15,9 @@ class ModuleNotesViewerScreen extends StatefulWidget {
   final Module module;
   final int moduleIndex;
   final String? pdfPath;
+  final void Function(String level, String? userRegenReason)? onRegenerateWithSettings;
   final VoidCallback? onRegenerateRequested;
+  final VoidCallback? onNotesDeleted;
 
   const ModuleNotesViewerScreen({
     super.key,
@@ -23,7 +25,9 @@ class ModuleNotesViewerScreen extends StatefulWidget {
     required this.module,
     required this.moduleIndex,
     this.pdfPath,
+    this.onRegenerateWithSettings,
     this.onRegenerateRequested,
+    this.onNotesDeleted,
   });
 
   @override
@@ -90,24 +94,26 @@ class _ModuleNotesViewerScreenState extends State<ModuleNotesViewerScreen> {
         print('[ModuleNotesViewerScreen] url_launcher failed, falling back to OpenFilex: $e');
       }
       OpenFilex.open(htmlPath);
-    } else {
+    } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('HTML notes file not found.')),
       );
     }
   }
 
-  /// Print Web View to A4 PDF (using Chrome on Desktop or Native A4 PDF builder on Android/Mobile) and share via system share sheet.
+  /// Print Web View to A4 PDF and share via system share sheet.
   Future<void> _printAndSharePdf() async {
     if (_isGeneratingPdf) return;
     setState(() => _isGeneratingPdf = true);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Preparing A4 PDF document...'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Preparing A4 PDF document...'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
 
     try {
       final pdfPath = await ModuleNotesService.instance.getNotesPdfPath(widget.book.id, widget.module.id);
@@ -116,7 +122,7 @@ class _ModuleNotesViewerScreenState extends State<ModuleNotesViewerScreen> {
           [XFile(pdfPath)],
           text: '${widget.book.title} - Module ${widget.moduleIndex + 1} Notes',
         );
-      } else {
+      } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Notes PDF not found. Tap Regenerate to build.')),
         );
@@ -131,6 +137,223 @@ class _ModuleNotesViewerScreenState extends State<ModuleNotesViewerScreen> {
     } finally {
       if (mounted) {
         setState(() => _isGeneratingPdf = false);
+      }
+    }
+  }
+
+  /// Shows regeneration dialog to configure note depth (Min to Max) and custom notes focus/changes.
+  void _promptRegenerate() {
+    double depthSliderValue = 3.0; // Defaults to High
+    final reasonCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (dialogCtx, setDialogState) {
+          final int depthIdx = depthSliderValue.round().clamp(0, ModuleNotesService.availableDepths.length - 1);
+          final String selectedDepth = ModuleNotesService.availableDepths[depthIdx];
+
+          return AlertDialog(
+            backgroundColor: context.colors.surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: [
+                const Icon(LucideIcons.refreshCw, color: AppTheme.duoBlue, size: 22),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Regenerate Module Notes',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: context.colors.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'NOTE DEPTH',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                          color: context.colors.textFaint,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppTheme.duoBlue.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppTheme.duoBlue.withValues(alpha: 0.4)),
+                        ),
+                        child: Text(
+                          selectedDepth,
+                          style: const TextStyle(
+                            color: AppTheme.duoBlue,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  SliderTheme(
+                    data: SliderThemeData(
+                      activeTrackColor: AppTheme.duoBlue,
+                      thumbColor: AppTheme.duoBlue,
+                      inactiveTrackColor: context.colors.outline,
+                      overlayColor: AppTheme.duoBlue.withValues(alpha: 0.2),
+                    ),
+                    child: Slider(
+                      value: depthSliderValue,
+                      min: 0,
+                      max: (ModuleNotesService.availableDepths.length - 1).toDouble(),
+                      divisions: ModuleNotesService.availableDepths.length - 1,
+                      onChanged: (val) {
+                        setDialogState(() {
+                          depthSliderValue = val;
+                        });
+                      },
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: ModuleNotesService.depthShortLabels.map((lbl) {
+                        return Text(
+                          lbl,
+                          style: TextStyle(
+                            color: context.colors.textFaint,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    'Custom improvements or focus (optional):',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.colors.textPrimary),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: reasonCtrl,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      hintText: 'e.g. Include full step-by-step proofs, add more visual diagrams, deepen theoretical mechanics...',
+                      hintStyle: TextStyle(fontSize: 12, color: context.colors.textFaint.withValues(alpha: 0.6)),
+                      filled: true,
+                      fillColor: context.colors.background,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: context.colors.outline),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.duoBlue,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: const Icon(LucideIcons.sparkles, size: 16, color: Colors.white),
+                label: const Text('Regenerate Notes', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  final reason = reasonCtrl.text.trim();
+                  if (widget.onRegenerateWithSettings != null) {
+                    widget.onRegenerateWithSettings!(selectedDepth, reason.isNotEmpty ? reason : null);
+                  } else if (widget.onRegenerateRequested != null) {
+                    widget.onRegenerateRequested!();
+                  } else {
+                    ModuleNotesService.instance.startBackgroundNotesGeneration(
+                      book: widget.book,
+                      module: widget.module,
+                      moduleIndex: widget.moduleIndex,
+                      depth: selectedDepth,
+                      userRegenReason: reason.isNotEmpty ? reason : null,
+                    );
+                  }
+                  Navigator.pop(context, true);
+                },
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  /// Shows delete confirmation dialog.
+  Future<void> _confirmDeleteNotes() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.colors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(LucideIcons.trash2, color: Colors.redAccent, size: 22),
+            const SizedBox(width: 8),
+            Text(
+              'Delete Module Notes?',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: context.colors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to delete the study notes for "${widget.module.title}"? You can regenerate them at any time.',
+          style: TextStyle(color: context.colors.textSecondary, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await ModuleNotesService.instance.deleteNotes(widget.book.id, widget.module.id);
+      widget.onNotesDeleted?.call();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Module notes deleted.')),
+        );
+        Navigator.pop(context, true);
       }
     }
   }
@@ -185,12 +408,16 @@ class _ModuleNotesViewerScreenState extends State<ModuleNotesViewerScreen> {
               tooltip: 'Print to A4 PDF & Share',
               onPressed: _printAndSharePdf,
             ),
-          if (widget.onRegenerateRequested != null)
-            IconButton(
-              icon: const Icon(LucideIcons.refreshCw),
-              tooltip: 'Regenerate Notes',
-              onPressed: widget.onRegenerateRequested,
-            ),
+          IconButton(
+            icon: const Icon(LucideIcons.refreshCw),
+            tooltip: 'Regenerate Notes',
+            onPressed: _promptRegenerate,
+          ),
+          IconButton(
+            icon: const Icon(LucideIcons.trash2, color: Colors.redAccent),
+            tooltip: 'Delete Notes',
+            onPressed: _confirmDeleteNotes,
+          ),
           const SizedBox(width: 8),
         ],
       ),
@@ -231,20 +458,19 @@ class _ModuleNotesViewerScreenState extends State<ModuleNotesViewerScreen> {
               style: TextStyle(color: context.colors.textFaint),
             ),
             const SizedBox(height: 20),
-            if (widget.onRegenerateRequested != null)
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.duoBlue,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                icon: const Icon(LucideIcons.sparkles, size: 18, color: Colors.white),
-                label: const Text(
-                  'Quick Generate Notes Now',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-                onPressed: widget.onRegenerateRequested,
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.duoBlue,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
+              icon: const Icon(LucideIcons.sparkles, size: 18, color: Colors.white),
+              label: const Text(
+                'Quick Generate Notes Now',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+              onPressed: _promptRegenerate,
+            ),
           ],
         ),
       ),

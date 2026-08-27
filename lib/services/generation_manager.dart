@@ -1215,7 +1215,7 @@ class GenerationManager extends ChangeNotifier {
       final modules = List<Module>.from(baseBook.modules);
       final sections = List<Section>.from(modules[modIdx].sections);
 
-      final combinedText = '${baseBook.title} ${baseBook.description} ${sections[secIdx].title} ${sections[secIdx].description}';
+      final combinedText = '${baseBook.title} ${baseBook.description} ${sections[secIdx].title} ${sections[secIdx].description} ${baseBook.customInstructions ?? ''} ${sections[secIdx].customInstructions ?? ''} $effectiveInstructions';
       final isProgCourse = Book.isProgrammingCourse(combinedText);
 
       final List<LessonFormat> existingFormats = (sections[secIdx].lessonFormats != null && sections[secIdx].lessonFormats!.isNotEmpty)
