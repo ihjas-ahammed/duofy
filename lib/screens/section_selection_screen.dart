@@ -254,7 +254,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                     controller: reasonCtrl,
                     maxLines: 3,
                     decoration: InputDecoration(
-                      hintText: 'e.g. Detailed step-by-step proofs, visual vector diagrams, deep theoretical analysis...',
+                      hintText: 'e.g. Follow syllabus strictly, emphasize core concepts, add more practical examples/case studies...',
                       hintStyle: TextStyle(fontSize: 12, color: context.colors.textFaint.withValues(alpha: 0.6)),
                       filled: true,
                       fillColor: context.colors.background,

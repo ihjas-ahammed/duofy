@@ -292,19 +292,44 @@ class ModuleNotesService extends ChangeNotifier {
     final timestamp = DateTime.now().toIso8601String();
     print('[ModuleNotesService][$timestamp] Generating section-by-section module notes for Book "${book.title}", Module ${moduleIndex + 1}: "${module.title}" [Depth: $depth]');
 
-    onProgress?.call('Reading reference materials & previous version...', 0.05);
+    onProgress?.call('Reading syllabus & reference materials...', 0.05);
 
-    String refBookText = '';
+    String syllabusText = '';
+    File? sFile;
     if (book.syllabusPath != null && book.syllabusPath!.isNotEmpty) {
-      final sFile = File(book.syllabusPath!);
-      if (sFile.existsSync()) {
-        try {
-          refBookText = await PdfService().extractTextFromPdf(sFile);
-          print('[ModuleNotesService] Extracted ${refBookText.length} characters from syllabus PDF.');
-        } catch (e) {
-          print('[ModuleNotesService] Syllabus text extraction failed: $e');
+      final candidate = File(book.syllabusPath!);
+      if (candidate.existsSync()) {
+        sFile = candidate;
+      }
+    }
+    if (sFile == null) {
+      final dir = await getApplicationDocumentsDirectory();
+      for (final ext in ['pdf', 'txt', 'md']) {
+        final candidate = File('${dir.path}/books/${book.id}/syllabus.$ext');
+        if (candidate.existsSync()) {
+          sFile = candidate;
+          break;
         }
       }
+    }
+
+    if (sFile != null && sFile.existsSync()) {
+      try {
+        final pathLower = sFile.path.toLowerCase();
+        if (pathLower.endsWith('.txt') || pathLower.endsWith('.md')) {
+          syllabusText = await sFile.readAsString();
+        } else {
+          syllabusText = await PdfService().extractTextFromPdf(sFile);
+        }
+        print('[ModuleNotesService] Extracted ${syllabusText.length} characters from syllabus (${sFile.path}).');
+      } catch (e) {
+        print('[ModuleNotesService] Syllabus text extraction failed: $e');
+      }
+    }
+
+    if (syllabusText.isEmpty && book.customIndexText != null && book.customIndexText!.trim().isNotEmpty) {
+      syllabusText = book.customIndexText!.trim();
+      print('[ModuleNotesService] Using customIndexText as syllabus context (${syllabusText.length} chars).');
     }
 
     // Read previous notes version if available to feed into regeneration prompt
@@ -348,15 +373,15 @@ class ModuleNotesService extends ChangeNotifier {
 
     final int totalSecs = sectionsToGenerate.length;
 
-    // Generate detailed notes FOR EVERY SECTION in the module sequentially (2 passes per section)
+    // Generate detailed notes FOR EVERY SECTION in the module sequentially according to syllabus (2 passes per section)
     for (int i = 0; i < totalSecs; i++) {
       final sec = sectionsToGenerate[i];
       final double secBaseProgress = 0.10 + (i / totalSecs) * 0.75;
       final double secHalfProgress = secBaseProgress + (0.75 / totalSecs) * 0.5;
 
-      // Pass 1: Initial lecture note generation with proofs & SVG diagrams
-      onProgress?.call('Section ${i + 1}/$totalSecs: Drafting lecture notes & SVG diagrams ("${sec.title}")...', secBaseProgress);
-      print('[ModuleNotesService] Pass 1: Generating section ${i + 1}/$totalSecs: "${sec.title}"');
+      // Pass 1: Section lecture note generation strictly aligned with syllabus
+      onProgress?.call('Section ${i + 1}/$totalSecs: Drafting notes per syllabus ("${sec.title}")...', secBaseProgress);
+      print('[ModuleNotesService] Pass 1: Generating section ${i + 1}/$totalSecs per syllabus: "${sec.title}"');
 
       Map<String, dynamic> secNote;
       try {
@@ -367,7 +392,7 @@ class ModuleNotesService extends ChangeNotifier {
           sec: sec,
           secIndex: i,
           totalSections: totalSecs,
-          refBookText: refBookText,
+          syllabusText: syllabusText,
           regenDirective: regenDirective,
           previousNotesText: previousNotesText,
           depth: depth,
@@ -377,21 +402,22 @@ class ModuleNotesService extends ChangeNotifier {
         secNote = _buildSmartFallbackSection(secIndex: i, sec: sec);
       }
 
-      // Pass 2: LaTeX Math input error fixer & SVG/content validator pass
-      onProgress?.call('Section ${i + 1}/$totalSecs: Auditing LaTeX & fixing math input errors...', secHalfProgress);
-      print('[ModuleNotesService] Pass 2: Auditing LaTeX math and SVG for section ${i + 1}/$totalSecs: "${sec.title}"');
+      // Pass 2: Syllabus fidelity, content depth, and format audit pass
+      onProgress?.call('Section ${i + 1}/$totalSecs: Verifying syllabus alignment & quality ("${sec.title}")...', secHalfProgress);
+      print('[ModuleNotesService] Pass 2: Auditing syllabus alignment & formatting for section ${i + 1}/$totalSecs: "${sec.title}"');
 
       try {
-        secNote = await _refineAndFixMathErrors(
+        secNote = await _auditAndRefineSectionNotes(
           ai: ai,
           book: book,
           module: module,
           sec: sec,
           rawJson: secNote,
+          syllabusText: syllabusText,
           depth: depth,
         );
       } catch (e) {
-        print('[ModuleNotesService] Math error audit pass fallback: $e');
+        print('[ModuleNotesService] Audit pass fallback for ${sec.title}: $e');
       }
 
       final extractedList = _extractSectionMaps(secNote);
@@ -463,7 +489,7 @@ class ModuleNotesService extends ChangeNotifier {
     return pdfFile;
   }
 
-  /// Pass 1: Prompts AI to generate concise, highly dense academic lecture notes with proofs, SVG diagrams, and no narrative fluff.
+  /// Pass 1: Prompts AI to generate concise, highly dense academic lecture notes following the syllabus without storytelling fluff.
   Future<Map<String, dynamic>> _generateNotesForSection({
     required AiService ai,
     required Book book,
@@ -471,13 +497,18 @@ class ModuleNotesService extends ChangeNotifier {
     required Section sec,
     required int secIndex,
     required int totalSections,
-    required String refBookText,
+    required String syllabusText,
     required String regenDirective,
     String? previousNotesText,
     required String depth,
   }) async {
     final String sectionHeadingStr = 'Section ${secIndex + 1}: ${sec.title}';
     final String unitTitles = sec.units.map((u) => u.title).join(', ');
+
+    // Allow generous syllabus context (up to 40,000 chars) so no syllabus sections are truncated
+    final String trimmedSyllabus = syllabusText.length > 40000
+        ? syllabusText.substring(0, 40000)
+        : syllabusText;
 
     final String prevNotesContext = (previousNotesText != null && previousNotesText.isNotEmpty)
         ? '''
@@ -486,101 +517,108 @@ PREVIOUS VERSION OF NOTES (FIRST VERSION TO IMPROVE/EXPAND):
 $previousNotesText
 """
 CRITICAL REGENERATION DIRECTIVES:
-- The user is REGENERATING these notes to make them significantly more thorough, comprehensive, and clear.
-- CRITICALLY EXPAND and ENRICH all explanations, definitions, derivations, and proofs.
-- DO NOT OMIT ANY THEORY OR THEOREM. PROVIDE FULL, RIGOROUS, STEP-BY-STEP PROOFS FOR EVERY THEOREM/THEORY.
-- Address user feedback: "${regenDirective.isNotEmpty ? regenDirective : 'Expand depth, ensure full rigorous proofs for all theorems, and align with target depth.'}"
+- The user is REGENERATING these notes to make them significantly more thorough, comprehensive, clear, and faithful to the syllabus.
+- CRITICALLY EXPAND and ENRICH all explanations, definitions, key concepts, frameworks, and examples.
+- Address user feedback: "${regenDirective.isNotEmpty ? regenDirective : 'Expand depth, ensure complete syllabus coverage, and align with target depth.'}"
 '''
         : '';
 
     final prompt = '''
-You are an expert academic professor and textbook author creating dense, technical, comprehensive university lecture notes.
+You are an expert university professor and textbook author creating dense, authoritative, comprehensive lecture notes.
 
 COURSE: ${book.title}
 MODULE: ${module.title}
 TARGET SECTION: $sectionHeadingStr
 SECTION DESCRIPTION: ${sec.description.isNotEmpty ? sec.description : sec.title}
-KEY TOPICS / UNITS: ${unitTitles.isNotEmpty ? unitTitles : sec.title}
+KEY TOPICS / UNITS IN THIS SECTION: ${unitTitles.isNotEmpty ? unitTitles : sec.title}
 TARGET NOTE DEPTH: $depth (Min to Max Scale)
-${refBookText.isNotEmpty ? 'REFERENCE TEXT / SYLLABUS SNIPPET:\n${refBookText.length > 1500 ? refBookText.substring(0, 1500) : refBookText}' : ''}
+${trimmedSyllabus.isNotEmpty ? 'COURSE SYLLABUS (MANDATORY TO FOLLOW):\n"""\n$trimmedSyllabus\n"""' : ''}
 $prevNotesContext
 $regenDirective
 
 CRITICAL PEDAGOGICAL INSTRUCTIONS:
-1. PURE ACADEMIC LECTURE NOTE STYLE (NO STORYTELLING / NO META INFO / NO PREREQUISITES):
+1. STRICT SYLLABUS ALIGNMENT:
+   - The notes MUST strictly follow the course syllabus topics, learning objectives, definitions, and scope provided above.
+   - Systematically cover every topic, concept, term, rule, process, and mechanism relevant to this section and module as outlined in the syllabus without omitting anything.
+
+2. ADAPT TO ALL COURSE TYPES (DO NOT FORCE LATEX OR EQUATIONS ON REGULAR COURSES):
+   - We cater to ALL disciplines: Humanities, Social Sciences, History, Literature, Philosophy, Law, Political Science, Business, Management, Economics, Life Sciences, Medicine, Nursing, Psychology, Computer Science, Engineering, Physics, Chemistry, Mathematics, etc.
+   - DO NOT FORCE mathematical equations, formulas, or LaTeX formatting on regular non-mathematical courses (e.g., History, Literature, Management, Biology, Law, Arts). Most regular courses do NOT need LaTeX or equations.
+   - ONLY use LaTeX math formatting (\$...\$ for inline and \$\$...\$\$ for display blocks) IF the course is naturally mathematical, physical, or quantitative. If the subject is non-mathematical, output natural, clean prose and markdown.
+   - DO NOT invent fake mathematical theorems or fake mathematical proofs for non-mathematical topics. For non-mathematical subjects, definitions should be core doctrines, principles, mechanisms, terms, or frameworks, and the accompanying block should be "Significance & Analysis", "Real-World Application & Impact", "Mechanisms & Pathways", or "Key Case Study" (do NOT end with \$\\blacksquare\$ unless it is an actual mathematical proof).
+
+3. PURE ACADEMIC LECTURE NOTE STYLE (NO STORYTELLING / NO META INFO / NO PREREQUISITES):
    - Do NOT write conversational intros, storytelling, or rhetorical fluff (e.g., "Imagine you are...", "Let us embark on...", "Have you ever wondered...").
-   - Do NOT include meta-information sections, prerequisite checklists, syllabus requirements, or background requirements. Jump directly into formal technical definitions, theoretical mechanics, and theorems.
-   - Every paragraph must be dense, technical, precise, and directly explain definitions, theorems, mathematical mechanics, or analytical properties.
-2. DEPTH CALIBRATION ($depth):
-   - Min/Low: Sharp summary bullet points, core formulas, essential theorem statements, and concise proofs.
-   - Medium/High/Max: Comprehensive technical paragraphs, step-by-step rigorous proofs for EVERY theorem ending with \$\\blacksquare\$, detailed worked examples, and SVG diagrams.
-3. DETAILED STEP-BY-STEP PROOFS FOR EVERY THEORY & THEOREM:
-   - For EVERY theorem, lemma, proposition, and theoretical statement, you MUST provide a complete, rigorous, step-by-step mathematical/logical proof with clear explanations for each step.
-   - Conclude every proof with \$\\blacksquare\$ (Q.E.D.).
-   - For definitions/axioms without a proof, provide an in-depth "Significance & Intuition" breakdown in the proof block.
-4. INLINE SVG DIAGRAMS (STRICTLY NO LATEX INSIDE SVG):
-   - Include 1 or 2 standalone, beautiful, clean SVG vector diagrams in the "diagrams" array.
-   - Use valid SVG XML: `<svg viewBox="0 0 450 200" xmlns="http://www.w3.org/2000/svg">...</svg>` with labeled geometric elements, curves, axes, or state graphs.
-   - CRITICAL RULE: NEVER use LaTeX math tags (\$...\$ or \$\$...\$\$) inside SVG or `<text>` elements. MathJax cannot parse LaTeX inside SVGs. Use clean plain text labels or standard Unicode symbols (e.g. θ, π, f(x), x², A ∪ B, →, ≤, ≥, √) directly.
-5. RICH WORKED EXAMPLES:
-   - Include 2 to 4 detailed step-by-step worked examples showing exact problem setups, calculation steps, and final results with LaTeX.
-6. EXAM WARNINGS & PITFALLS:
-   - Detail common student misconceptions, conditions where theorems fail (with counterexamples), and critical exam tips.
-7. LATEX FORMATTING:
-   - Use inline LaTeX math (\$...\$) and display block LaTeX math (\$\$...\$\$) for all equations, symbols, and formulas in text. Ensure all backslashes and quotes are properly escaped in JSON.
+   - Do NOT include meta-information sections, prerequisite checklists, syllabus requirements, or background requirements. Jump directly into formal concepts, definitions, analytical frameworks, and mechanics.
+   - Every paragraph must be dense, technical, precise, and directly explain concepts, mechanisms, analytical properties, or theories.
+
+4. DEPTH CALIBRATION ($depth):
+   - Min/Low: Sharp summary bullet points, core definitions/formulas, essential concept statements, and concise explanations.
+   - Medium/High/Max: Comprehensive academic paragraphs, thorough analytical breakdowns, step-by-step proofs (for math/physics) or in-depth significance/application analyses (for other disciplines), rich examples, and SVG diagrams.
+
+5. INLINE SVG VECTOR DIAGRAMS (STRICTLY NO LATEX INSIDE SVG):
+   - Include 1 or 2 standalone, beautiful, clean SVG vector diagrams in the "diagrams" array (e.g., flowcharts, concept maps, timelines, architecture models, curves, state graphs, anatomical models).
+   - Use valid SVG XML: `<svg viewBox="0 0 450 200" xmlns="http://www.w3.org/2000/svg">...</svg>` with labeled geometric elements.
+   - CRITICAL RULE: NEVER use LaTeX math tags (\$...\$ or \$\$...\$\$) inside SVG or `<text>` elements. MathJax cannot parse LaTeX inside SVGs. Use clean plain text labels or standard Unicode symbols (e.g. θ, π, →, ≤, ≥, √) directly.
+
+6. RICH PRACTICAL EXAMPLES & CASE STUDIES:
+   - Include 2 to 4 detailed step-by-step examples suited to the subject (e.g., worked problem solutions for math/physics, case studies for business/law/history, code examples for computer science, clinical scenarios for biology/medicine).
+
+7. EXAM WARNINGS & COMMON PITFALLS:
+   - Detail common student misconceptions, critical distinctions, conditions where theories/assumptions fail, and high-yield exam tips.
 
 Return valid JSON with this exact schema:
 {
   "sectionHeading": "$sectionHeadingStr",
   "keyConcepts": [
-    "Technical summary point 1 with inline LaTeX \$...\$",
-    "Technical summary point 2 synthesizing core formula \$\$...\$\$"
+    "Technical summary point 1 synthesizing core syllabus concept...",
+    "Technical summary point 2 synthesizing key mechanism or framework..."
   ],
   "contentParagraphs": [
-    "Direct technical lecture explanation 1 defining the analytical framework and core mechanics...",
-    "Direct technical lecture explanation 2 detailing properties, behavior, and relationships..."
+    "Direct academic lecture explanation paragraph 1 defining the analytical framework and core mechanics...",
+    "Direct academic lecture explanation paragraph 2 detailing properties, behavior, and relationships..."
   ],
   "definitions": [
     {
       "number": "${secIndex + 1}.1",
-      "title": "Core Theorem / Theory Title",
-      "tag": "Theorem",
-      "content": "Formal mathematical/theoretical statement with full conditions and notations using LaTeX (\$...\$ and \$\$...\$\$).",
+      "title": "Core Concept / Principle / Framework / Theorem Title",
+      "tag": "Definition / Principle / Framework / Theorem / Doctrine / Law",
+      "content": "Formal statement, definition, or doctrine according to the syllabus.",
       "proof": {
-        "title": "Proof.",
-        "content": "Step 1: ... \\nStep 2: ... \\nStep 3: ... Thus the statement is proven. \$\\blacksquare\$"
+        "title": "Significance & Analysis. (or 'Proof.' for math/logic, or 'Clinical Context.')",
+        "content": "Detailed technical explanation of significance, application, mechanics, or step-by-step proof."
       }
     },
     {
       "number": "${secIndex + 1}.2",
-      "title": "Fundamental Definition Title",
+      "title": "Fundamental Term / Mechanism Title",
       "tag": "Definition",
-      "content": "Precise formal definition with LaTeX math.",
+      "content": "Precise formal definition according to the syllabus.",
       "proof": {
-        "title": "Significance & Intuition.",
-        "content": "Detailed technical explanation of why this definition is structured this way and how it is applied."
+        "title": "Real-World Context & Application.",
+        "content": "Detailed technical explanation of how this is applied in practice."
       }
     }
   ],
   "warningBoxes": [
     {
-      "title": "Common Pitfall / Exam Trap",
-      "content": "Critical condition or misconception where assumptions fail."
+      "title": "Common Pitfall / Critical Nuance / Exam Trap",
+      "content": "Critical condition, misconception, or distinction students often miss."
     }
   ],
   "examples": [
     {
-      "title": "Example ${secIndex + 1}.1: Solved Problem",
-      "statusTag": "Worked Solution",
+      "title": "Example ${secIndex + 1}.1: Solved Case / Problem / Application",
+      "statusTag": "Worked Solution / Case Study / Illustration / Code Walkthrough",
       "statusType": "valid",
-      "content": "Problem Statement: ... \\n\\nSolution:\\nStep 1: ... \\nStep 2: ... \\n\\nFinal Result: \$\$...\$\$"
+      "content": "Problem/scenario statement, step-by-step analysis or derivation, and key takeaway."
     }
   ],
   "diagrams": [
     {
-      "title": "Concept Vector Diagram",
-      "svgContent": "<svg viewBox=\\"0 0 400 160\\" xmlns=\\"http://www.w3.org/2000/svg\\"><rect width=\\"400\\" height=\\"160\\" fill=\\"#f8fafc\\" rx=\\"8\\"/><circle cx=\\"100\\" cy=\\"80\\" r=\\"35\\" stroke=\\"#2563eb\\" stroke-width=\\"2\\" fill=\\"#dbeafe\\"/><circle cx=\\"300\\" cy=\\"80\\" r=\\"35\\" stroke=\\"#059669\\" stroke-width=\\"2\\" fill=\\"#dcfce7\\"/><line x1=\\"140\\" y1=\\"80\\" x2=\\"260\\" y2=\\"80\\" stroke=\\"#334155\\" stroke-width=\\"2\\" stroke-dasharray=\\"4\\"/><text x=\\"100\\" y=\\"85\\" text-anchor=\\"middle\\" font-size=\\"12\\" font-family=\\"sans-serif\\" fill=\\"#1e293b\\">Set A</text><text x=\\"300\\" y=\\"85\\" text-anchor=\\"middle\\" font-size=\\"12\\" font-family=\\"sans-serif\\" fill=\\"#1e293b\\">Set B</text><text x=\\"200\\" y=\\"70\\" text-anchor=\\"middle\\" font-size=\\"12\\" font-family=\\"sans-serif\\" fill=\\"#2563eb\\">f: A &rarr; B</text></svg>",
-      "description": "Visual diagram illustrating the mapping between sets."
+      "title": "Concept Diagram",
+      "svgContent": "<svg viewBox=\\"0 0 400 160\\" xmlns=\\"http://www.w3.org/2000/svg\\"><rect width=\\"400\\" height=\\"160\\" fill=\\"#f8fafc\\" rx=\\"8\\"/><circle cx=\\"100\\" cy=\\"80\\" r=\\"35\\" stroke=\\"#2563eb\\" stroke-width=\\"2\\" fill=\\"#dbeafe\\"/><circle cx=\\"300\\" cy=\\"80\\" r=\\"35\\" stroke=\\"#059669\\" stroke-width=\\"2\\" fill=\\"#dcfce7\\"/><line x1=\\"140\\" y1=\\"80\\" x2=\\"260\\" y2=\\"80\\" stroke=\\"#334155\\" stroke-width=\\"2\\" stroke-dasharray=\\"4\\"/><text x=\\"100\\" y=\\"85\\" text-anchor=\\"middle\\" font-size=\\"12\\" font-family=\\"sans-serif\\" fill=\\"#1e293b\\">Concept A</text><text x=\\"300\\" y=\\"85\\" text-anchor=\\"middle\\" font-size=\\"12\\" font-family=\\"sans-serif\\" fill=\\"#1e293b\\">Concept B</text><text x=\\"200\\" y=\\"70\\" text-anchor=\\"middle\\" font-size=\\"12\\" font-family=\\"sans-serif\\" fill=\\"#2563eb\\">Relationship</text></svg>",
+      "description": "Visual diagram illustrating relationship."
     }
   ]
 }
@@ -610,40 +648,51 @@ Return ONLY valid JSON.
     return _buildSmartFallbackSection(secIndex: secIndex, sec: sec);
   }
 
-  /// Pass 2: Audits the generated section note JSON to fix LaTeX syntax errors (unbalanced braces, broken macros, bad escapes) and validate SVG diagrams.
-  Future<Map<String, dynamic>> _refineAndFixMathErrors({
+  /// Pass 2: Audits syllabus fidelity, academic depth, and domain formatting (LaTeX validation only for math/STEM; plain text clean for regular courses).
+  Future<Map<String, dynamic>> _auditAndRefineSectionNotes({
     required AiService ai,
     required Book book,
     required Module module,
     required Section sec,
     required Map<String, dynamic> rawJson,
+    required String syllabusText,
     required String depth,
   }) async {
     final rawJsonStr = jsonEncode(rawJson);
+    final String trimmedSyllabus = syllabusText.length > 20000
+        ? syllabusText.substring(0, 20000)
+        : syllabusText;
 
     final refinePrompt = '''
-You are a master LaTeX syntax auditor and technical lecture note editor.
+You are a senior academic curriculum auditor and technical lecture note editor.
 Review and audit the following study note JSON for Section "${sec.title}" in Course "${book.title}".
 
+${trimmedSyllabus.isNotEmpty ? 'COURSE SYLLABUS:\n"""\n$trimmedSyllabus\n"""\n' : ''}
 RAW INPUT JSON:
 ```json
 $rawJsonStr
 ```
 
-CRITICAL VALIDATION & CORRECTION INSTRUCTIONS:
-1. FIX ALL LATEX SYNTAX / MATH INPUT ERRORS:
-   - Carefully check every LaTeX math expression in inline math (\$...\$) and display block math (\$\$...\$\$).
-   - Fix unbalanced curly braces ({...}), unmatched brackets ([...]), or missing arguments in commands like \\frac{a}{b}, \\sqrt{x}, \\sum_{i=1}^n, \\int_a^b.
-   - Convert any non-standard or unsupported commands into standard AMS-LaTeX supported by MathJax 3.
-   - Ensure proper escaping in JSON strings (double backslashes for commands like \\\\frac, \\\\alpha, \\\\blacksquare).
-2. REMOVE UNWANTED STORY-LIKE PARAGRAPHS, NARRATIVE FLUFF & META REQUIREMENTS:
-   - Strip out any conversational intros, storytelling, prerequisite requirement checklists, syllabus requirements, or meta-commentary.
+CRITICAL VALIDATION & REFINEMENT INSTRUCTIONS:
+1. STRICT SYLLABUS COVERAGE & ACADEMIC DEPTH ($depth):
+   - Ensure all key concepts and topics for this section as defined in the syllabus are thoroughly covered.
+   - Maintain dense, precise academic lecture prose without superficial shortcuts.
+
+2. REMOVE CONVERSATIONAL FLUFF & STORYTELLING:
+   - Strip out conversational intros, storytelling, prerequisite requirement checklists, syllabus requirement meta-commentary, or rhetorical filler.
    - Retain only dense, rigorous, technical academic lecture explanations, definitions, and mechanics.
-3. VALIDATE SVG DIAGRAMS & STRIP LATEX FROM SVGs:
+
+3. DOMAIN-APPROPRIATE FORMATTING & LATEX VERIFICATION:
+   - If the subject is mathematical/quantitative and contains LaTeX math expressions (\$...\$ or \$\$...\$\$), verify that all syntax is valid AMS-LaTeX (properly closed braces, valid brackets, escaped backslashes in JSON strings).
+   - If the subject is a regular non-mathematical course (History, Management, Literature, Biology, Law, etc.), ensure plain text is clean and natural WITHOUT unnecessary or awkward LaTeX math symbols.
+   - Ensure `\\blacksquare` / Q.E.D. is only present on genuine mathematical proofs, not on general conceptual or descriptive analysis blocks.
+
+4. VALIDATE SVG DIAGRAMS & STRIP LATEX FROM SVGs:
    - Ensure all SVG code in diagrams has valid XML syntax with viewBox, xmlns="http://www.w3.org/2000/svg", and clean vector shapes.
-   - CRITICAL: NEVER leave LaTeX delimiters (\$...\$ or \$\$...\$\$) inside SVG or `<text>` elements. Replace any with plain readable text or Unicode symbols (e.g. replace '\$f(x)\$' with 'f(x)', '\$\\theta\$' with 'θ').
-4. PRESERVE FULL THEOREMS & DETAILED STEP-BY-STEP PROOFS:
-   - Do NOT delete or truncate theorems, definitions, proofs, or worked examples. Every theorem must have a complete step-by-step proof ending with \$Q.E.D.\$ (or \\blacksquare).
+   - CRITICAL: NEVER leave LaTeX delimiters (\$...\$ or \$\$...\$\$) inside SVG or `<text>` elements. Replace any with plain readable text or Unicode symbols.
+
+5. PRESERVE FULL SECTIONS, DEFINITIONS & EXAMPLES:
+   - Do NOT delete or truncate definitions, analytical explanations, or worked examples.
 
 Return ONLY the refined, 100% syntactically valid JSON.
 ''';
@@ -658,7 +707,7 @@ Return ONLY the refined, 100% syntactically valid JSON.
         return parsed;
       }
     } catch (e) {
-      print('[ModuleNotesService] Notice: Math error fixer pass encountered an issue for ${sec.title}: $e. Using pass 1 output.');
+      print('[ModuleNotesService] Notice: Note audit pass encountered an issue for ${sec.title}: $e. Using pass 1 output.');
     }
 
     return rawJson;
@@ -677,24 +726,36 @@ Return ONLY the refined, 100% syntactically valid JSON.
 
     if (sec.units.isNotEmpty) {
       for (final u in sec.units) {
-        concepts.add('${u.title}: ${u.description.isNotEmpty ? u.description : "Core topic covering key definitions, rules, and practical evaluation methods."}');
+        concepts.add('${u.title}: ${u.description.isNotEmpty ? u.description : "Core topic covering key definitions, principles, and practical evaluation methods."}');
       }
     } else {
-      concepts.add('Core Concepts: Detailed study of key principles, algebraic operations, and methods in ${sec.title}.');
-      concepts.add('Formula & Rules: Master standard mathematical operations, order of evaluation, and notation.');
+      concepts.add('Core Concepts: Detailed study of key principles, theoretical foundations, and methods in ${sec.title}.');
+      concepts.add('Analytical Framework: Master foundational concepts, core mechanisms, and practical applications.');
     }
 
     return {
       'sectionHeading': sectionHeadingStr,
       'keyConcepts': concepts,
       'contentParagraphs': [
-        '${sec.title} forms a foundational component of this module. A rigorous understanding requires examining its core definitions, theoretical underpinnings, and analytical methods.',
+        '${sec.title} forms a foundational component of this module. A comprehensive understanding requires examining its core definitions, theoretical underpinnings, and analytical methods.',
         if (sec.description.isNotEmpty) sec.description,
+      ],
+      'definitions': [
+        {
+          'number': '${secIndex + 1}.1',
+          'title': sec.title,
+          'tag': 'Core Principle',
+          'content': sec.description.isNotEmpty ? sec.description : 'Fundamental concept and scope of ${sec.title}.',
+          'proof': {
+            'title': 'Significance & Analysis.',
+            'content': 'Understanding the mechanics and framework of ${sec.title} enables effective analysis of related topics within this domain.'
+          }
+        }
       ],
       'warningBoxes': [
         {
           'title': 'Key Focus Area',
-          'content': 'Ensure proper order of operations and verify variable substitutions carefully during evaluation.'
+          'content': 'Ensure precise understanding of terminology, core assumptions, and domain-specific principles during study.'
         }
       ]
     };
@@ -863,6 +924,14 @@ Return ONLY the refined, 100% syntactically valid JSON.
         .replaceAll(RegExp(r'\\int'), 'integral ')
         .replaceAll(RegExp(r'\\sqrt'), 'sqrt')
         .replaceAll(RegExp(r'\\frac\{([^}]+)\}\{([^}]+)\}'), r'(\1 / \2)')
+        .replaceAll('“', '"')
+        .replaceAll('”', '"')
+        .replaceAll('‘', "'")
+        .replaceAll('’', "'")
+        .replaceAll('—', ' - ')
+        .replaceAll('–', '-')
+        .replaceAll('…', '...')
+        .replaceAll('•', '*')
         .replaceAll(RegExp(r'[\$\\]'), '');
 
     final buffer = StringBuffer();
@@ -1058,17 +1127,20 @@ Return ONLY the refined, 100% syntactically valid JSON.
               );
               y += 8;
 
-              // Proof Block (if present)
+              // Proof / Significance Block (if present)
               if (proof != null) {
-                String proofTitle = 'Proof.';
+                String proofTitle = 'Significance & Analysis:';
                 String proofText = '';
                 if (proof is Map) {
-                  proofTitle = (proof['title'] ?? 'Proof.').toString();
+                  proofTitle = (proof['title'] ?? 'Significance & Analysis:').toString();
                   proofText = (proof['content'] ?? '').toString();
                 } else {
                   proofText = proof.toString();
                 }
                 proofText = _cleanLatexForNativePdf(proofText);
+                final isMathProof = proofTitle.toLowerCase().contains('proof') ||
+                    proofText.contains('[Q.E.D.]') ||
+                    proofText.toLowerCase().contains('q.e.d.');
 
                 if (proofText.trim().isNotEmpty) {
                   if (y > page.getClientSize().height - 60) {
@@ -1083,7 +1155,11 @@ Return ONLY the refined, 100% syntactically valid JSON.
                   )!;
                   y = pTitleRes.bounds.bottom + 2;
 
-                  final pTextRes = sync_pdf.PdfTextElement(text: '$proofText [Q.E.D.]', font: bodyFont).draw(
+                  final textToRender = (isMathProof && !proofText.contains('[Q.E.D.]'))
+                      ? '$proofText [Q.E.D.]'
+                      : proofText;
+
+                  final pTextRes = sync_pdf.PdfTextElement(text: textToRender, font: bodyFont).draw(
                     page: page,
                     bounds: Rect.fromLTWH(18, y, boxWidth - 24, page.getClientSize().height - y),
                   )!;

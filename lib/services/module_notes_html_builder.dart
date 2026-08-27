@@ -27,7 +27,7 @@ class ModuleNotesHtmlBuilder {
         sectionsHtml.writeln('    <ul class="key-concepts-list">');
         for (var kc in keyConcepts) {
           if (kc != null && kc.toString().trim().isNotEmpty) {
-            sectionsHtml.writeln('      <li>${kc.toString()}</li>');
+            sectionsHtml.writeln('      <li>${_formatContent(kc.toString())}</li>');
           }
         }
         sectionsHtml.writeln('    </ul>');
@@ -39,11 +39,11 @@ class ModuleNotesHtmlBuilder {
       if (paragraphs is List) {
         for (var p in paragraphs) {
           if (p != null && p.toString().trim().isNotEmpty) {
-            sectionsHtml.writeln('  <p>${p.toString()}</p>');
+            sectionsHtml.writeln('  <p>${_formatContent(p.toString())}</p>');
           }
         }
       } else if (paragraphs is String && paragraphs.isNotEmpty) {
-        sectionsHtml.writeln('  <p>$paragraphs</p>');
+        sectionsHtml.writeln('  <p>${_formatContent(paragraphs)}</p>');
       }
 
       // Warning Boxes
@@ -60,12 +60,12 @@ class ModuleNotesHtmlBuilder {
               sectionsHtml.writeln('    <ul>');
               for (var item in content) {
                 if (item != null && item.toString().trim().isNotEmpty) {
-                  sectionsHtml.writeln('      <li>${item.toString()}</li>');
+                  sectionsHtml.writeln('      <li>${_formatContent(item.toString())}</li>');
                 }
               }
               sectionsHtml.writeln('    </ul>');
             } else if (content.toString().isNotEmpty) {
-              sectionsHtml.writeln('    <p style="margin:0;">${content.toString()}</p>');
+              sectionsHtml.writeln('    <p style="margin:0;">${_formatContent(content.toString())}</p>');
             }
             sectionsHtml.writeln('  </div>');
           }
@@ -91,19 +91,28 @@ class ModuleNotesHtmlBuilder {
             sectionsHtml.writeln('      <span>${_escapeHtml(displayTitle)}</span>');
             sectionsHtml.writeln('      <span class="env-tag">${_escapeHtml(tag.toString())}</span>');
             sectionsHtml.writeln('    </div>');
-            sectionsHtml.writeln('    <p style="margin:0;">${content.toString()}</p>');
+            sectionsHtml.writeln('    <p style="margin:0;">${_formatContent(content.toString())}</p>');
 
             if (proof != null && proof.toString().isNotEmpty) {
-              String proofTitle = 'Proof.';
+              String proofTitle = 'Significance & Analysis.';
               String proofContent = proof.toString();
               if (proof is Map) {
                 final pMap = Map<String, dynamic>.from(proof);
-                proofTitle = pMap['title'] ?? 'Proof.';
+                proofTitle = pMap['title'] ?? 'Significance & Analysis.';
                 proofContent = pMap['content'] ?? '';
               }
+              final isMathProof = proofTitle.toLowerCase().contains('proof') ||
+                  proofContent.contains(r'\blacksquare') ||
+                  proofContent.toLowerCase().contains('q.e.d.');
+              final showQed = isMathProof && !proofContent.contains(r'\blacksquare');
+
               sectionsHtml.writeln('    <div class="proof-block">');
               sectionsHtml.writeln('      <div class="proof-title">${_escapeHtml(proofTitle)}</div>');
-              sectionsHtml.writeln('      <p>$proofContent <span class="qedsymbol">\$\\blacksquare\$</span></p>');
+              if (showQed) {
+                sectionsHtml.writeln('      <p>${_formatContent(proofContent)} <span class="qedsymbol">\$\\blacksquare\$</span></p>');
+              } else {
+                sectionsHtml.writeln('      <p>${_formatContent(proofContent)}</p>');
+              }
               sectionsHtml.writeln('    </div>');
             }
 
@@ -133,7 +142,7 @@ class ModuleNotesHtmlBuilder {
             if (statusTag != null && statusTag.toString().isNotEmpty) {
               sectionsHtml.writeln('      <span class="status-tag $tagClass">${_escapeHtml(statusTag.toString())}</span>');
             }
-            sectionsHtml.writeln('      <p style="margin-top:0.4rem;">${content.toString()}</p>');
+            sectionsHtml.writeln('      <p style="margin-top:0.4rem;">${_formatContent(content.toString())}</p>');
             sectionsHtml.writeln('    </div>');
           }
         }
@@ -580,6 +589,33 @@ class ModuleNotesHtmlBuilder {
             overflow-y: hidden;
         }
 
+        pre.code-block {
+            background-color: #1e293b;
+            color: #f8fafc;
+            padding: 0.85rem 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 0.88rem;
+            line-height: 1.45;
+            margin: 0.75rem 0;
+        }
+
+        code {
+            font-family: "Courier New", Courier, monospace;
+            font-size: 0.9em;
+            background-color: #f1f5f9;
+            color: #0f172a;
+            padding: 0.1em 0.3em;
+            border-radius: 3px;
+        }
+
+        pre.code-block code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+
         svg, img {
             max-width: 100% !important;
             height: auto !important;
@@ -614,6 +650,42 @@ class ModuleNotesHtmlBuilder {
 </body>
 </html>
 ''';
+  }
+
+  static String _formatContent(String text) {
+    if (text.isEmpty) return '';
+
+    // Handle code blocks ```language ... ```
+    String formatted = text;
+    formatted = formatted.replaceAllMapped(
+      RegExp(r'```(?:[a-zA-Z0-9_-]+)?\n([\s\S]*?)```'),
+      (match) {
+        final code = match.group(1) ?? '';
+        return '<pre class="code-block"><code>${_escapeHtml(code.trim())}</code></pre>';
+      },
+    );
+
+    // Handle inline code `code` (when not inside math formulas)
+    formatted = formatted.replaceAllMapped(
+      RegExp(r'`([^`\n\$]+)`'),
+      (match) {
+        final code = match.group(1) ?? '';
+        return '<code>${_escapeHtml(code)}</code>';
+      },
+    );
+
+    // Handle markdown bold **text**
+    formatted = formatted.replaceAllMapped(
+      RegExp(r'\*\*([^*]+)\*\*'),
+      (match) => '<strong>${match.group(1)}</strong>',
+    );
+
+    // Convert newlines in regular text to <br> if not inside pre tags
+    if (!formatted.contains('<pre')) {
+      formatted = formatted.replaceAll(RegExp(r'\n+'), '<br>');
+    }
+
+    return formatted;
   }
 
   static String _escapeHtml(String text) {

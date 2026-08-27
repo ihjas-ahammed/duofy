@@ -253,7 +253,7 @@ class _ModuleNotesViewerScreenState extends State<ModuleNotesViewerScreen> {
                     controller: reasonCtrl,
                     maxLines: 3,
                     decoration: InputDecoration(
-                      hintText: 'e.g. Include full step-by-step proofs, add more visual diagrams, deepen theoretical mechanics...',
+                      hintText: 'e.g. Follow syllabus strictly, emphasize core concepts, add more practical examples/case studies...',
                       hintStyle: TextStyle(fontSize: 12, color: context.colors.textFaint.withValues(alpha: 0.6)),
                       filled: true,
                       fillColor: context.colors.background,

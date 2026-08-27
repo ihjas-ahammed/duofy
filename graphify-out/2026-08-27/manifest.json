@@ -2285,8 +2285,8 @@
     "semantic_hash": ""
   },
   "lib/services/module_notes_service.dart": {
-    "mtime": 1787819197.8331594,
-    "ast_hash": "a2e159a4c456a96fbb74ab794a16dfd3",
+    "mtime": 1787819849.7159529,
+    "ast_hash": "7ca0027fe3c09050e16423216a0b2fca",
     "semantic_hash": ""
   },
   "lib/services/streak_service.dart": {
@@ -2320,8 +2320,8 @@
     "semantic_hash": ""
   },
   "test/module_notes_test.dart": {
-    "mtime": 1787806188.4599223,
-    "ast_hash": "7b314c00b1a94f1a322652f214f0d635",
+    "mtime": 1787819943.083943,
+    "ast_hash": "e5296f6e65107822c3e8bad3857b22ce",
     "semantic_hash": ""
   },
   "test/syncfusion_math_test.dart": {
@@ -12877,6 +12877,21 @@
   "docs/screenshots/screenshot_restore.png": {
     "mtime": 1785751804.6415775,
     "ast_hash": "2eabb22ec344c8330d0b56df16d9d417",
+    "semantic_hash": ""
+  },
+  "lib/services/latex_json_repairer.dart": {
+    "mtime": 1787819831.8972588,
+    "ast_hash": "495a6e089c84d9865168d35f194165a0",
+    "semantic_hash": ""
+  },
+  "test/latex_json_mapping_test.dart": {
+    "mtime": 1787819902.5714998,
+    "ast_hash": "969143881f739e750846b650fd04a6c2",
+    "semantic_hash": ""
+  },
+  "docs/mathjax_reference.html": {
+    "mtime": 1787819819.0569763,
+    "ast_hash": "98be7599576c6c5bc32e7d94c65e8c88",
     "semantic_hash": ""
   }
 }

@@ -152,10 +152,51 @@ class PdfService {
   }
 
   /// Extracts all text from a PDF file locally.
-  /// Useful for sending dense documents (like syllabuses) to the AI as plain text
-  /// to avoid "unable to process input image" errors with inline PDFs.
+  /// Converts the PDF/syllabus into text using native CLI tools (pdftotext / pdf2text)
+  /// when available (e.g. Linux, macOS, Windows with poppler-utils), and uses Flutter/Dart
+  /// tools (Syncfusion PdfTextExtractor) on mobile (Android, iOS) and other platforms.
   Future<String> extractTextFromPdf(File pdfFile) async {
-    return extractTextFromPdfBytes(await pdfFile.readAsBytes());
+    if (!kIsWeb) {
+      // 1. Try pdftotext CLI (poppler-utils) with -layout preserving spatial structure
+      try {
+        final result = await Process.run('pdftotext', ['-layout', pdfFile.path, '-']);
+        if (result.exitCode == 0 && result.stdout is String) {
+          final text = (result.stdout as String).trim();
+          if (text.isNotEmpty) {
+            print('[PdfService] Successfully extracted ${text.length} chars via pdftotext CLI.');
+            return text;
+          }
+        }
+      } catch (_) {
+        // Not available on this system or process execution not permitted
+      }
+
+      // 2. Try pdf2text CLI alias
+      try {
+        final result = await Process.run('pdf2text', [pdfFile.path, '-']);
+        if (result.exitCode == 0 && result.stdout is String) {
+          final text = (result.stdout as String).trim();
+          if (text.isNotEmpty) {
+            print('[PdfService] Successfully extracted ${text.length} chars via pdf2text CLI.');
+            return text;
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 3. Corresponding Flutter/Dart tool on other platforms (Android, iOS, Windows, macOS, Web)
+    try {
+      final bytes = await pdfFile.readAsBytes();
+      final text = await extractTextFromPdfBytes(bytes);
+      if (text.trim().isNotEmpty) {
+        print('[PdfService] Extracted ${text.length} chars via Syncfusion Flutter PDF.');
+        return text;
+      }
+    } catch (e) {
+      print('[PdfService] Syncfusion extractTextFromPdf failed: $e');
+    }
+
+    return '';
   }
 
   /// Merges multiple PDF/Image files into a single temporary PDF file.
@@ -959,6 +1000,25 @@ class PdfService {
 
   /// Extracts text from a specific 0-based page index of a PDF file.
   Future<String> extractPageText(File pdfFile, int pageIndex) async {
+    if (!kIsWeb && Platform.isLinux) {
+      try {
+        final pageNum = pageIndex + 1;
+        final result = await Process.run('pdftotext', [
+          '-f',
+          '$pageNum',
+          '-l',
+          '$pageNum',
+          '-layout',
+          pdfFile.path,
+          '-',
+        ]);
+        if (result.exitCode == 0 && result.stdout is String) {
+          final text = (result.stdout as String).trim();
+          if (text.isNotEmpty) return text;
+        }
+      } catch (_) {}
+    }
+
     sync_pdf.PdfDocument? doc;
     try {
       doc = sync_pdf.PdfDocument(inputBytes: await pdfFile.readAsBytes());
