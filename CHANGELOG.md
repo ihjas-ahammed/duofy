@@ -7,6 +7,11 @@ All notable changes to DuoFY are documented here. The format follows
 ## [26.8.31] — 2026-08-31
 
 ### Added & Improved
+- **Instant App Update Checking**: Implemented HTTP cache-busting and no-cache headers for update manifests and GitHub release endpoints, completely bypassing CDN stale caching so newly published builds appear immediately upon checking. Added fallback to `latest.txt`.
+- **Interactive Difficult Steps Review & Practice**: Overhauled post-lesson review into an interactive Difficult Step Analysis sheet displaying question breakdowns, solutions, and explanations with full LaTeX, plus a "Practice Missed Questions (N)" launcher.
+- **Universal LaTeX Math Support**: Extended `MathMarkdown` rendering to all interactive slide titles, headers, chips, and formulas.
+- **Mobile-Contained Canvas Art & Interactive Diagrams**: Added strict small mobile viewport containment bounds and touch rules to the AI diagram generator prompt and optimized WebView container styling.
+- **Live Assistant Chat Stability**: Safely managed WebSocket subscriptions and mounted state to prevent null-check errors on disposal.
 - **Complete Learning Interface & Slide Redesign**: Modernized all interactive lesson slide screens based on cognitive load research and design token specifications (`docs/new-theme/slide-p/`).
 - **Floating Glassmorphism Capsule Toolbar (`SlideCapsuleToolbar`)**: Introduced a frosted glass header with a smooth animated liquid gradient progress indicator bar, animated flame streak counter, AI Bot avatar button with celestial orbital ring, and clean quick navigation/secondary menu actions.
 - **Tactile Elevated Action Button (`SlideActionButton`)**: Added animated 3D press interactions, customizable icons, and crisp state transitions across all slide flows.

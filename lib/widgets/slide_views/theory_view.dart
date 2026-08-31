@@ -182,9 +182,9 @@ class TheoryView extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
+                child: MathMarkdown(
+                  data: title,
+                  textStyle: TextStyle(
                     fontSize: 19,
                     fontWeight: FontWeight.w800,
                     color: colors.textMain,

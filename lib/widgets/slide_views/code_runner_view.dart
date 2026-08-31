@@ -178,9 +178,9 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (widget.slide.title.trim().isNotEmpty)
-                      Text(
-                        widget.slide.title,
-                        style: TextStyle(
+                      MathMarkdown(
+                        data: widget.slide.title,
+                        textStyle: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
                           color: colors.textMain,
@@ -735,9 +735,9 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (widget.slide.title.trim().isNotEmpty)
-                      Text(
-                        widget.slide.title,
-                        style: TextStyle(
+                      MathMarkdown(
+                        data: widget.slide.title,
+                        textStyle: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
                           color: colors.textMain,

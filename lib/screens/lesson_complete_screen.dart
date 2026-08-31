@@ -9,6 +9,8 @@ import '../services/metacognition_service.dart';
 import '../services/global_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/combo_badge.dart';
+import '../widgets/math_markdown.dart';
+import 'lesson_screen.dart';
 
 /// Game-over / Lesson Mastered summary screen matching docs/new-theme/slide-p/game-over.html
 class LessonCompleteScreen extends StatefulWidget {
@@ -27,6 +29,8 @@ class LessonCompleteScreen extends StatefulWidget {
   final int? secIdx;
   final int? unitIdx;
   final int? lessonIdx;
+  final Lesson? lesson;
+  final List<Slide>? difficultSlides;
 
   const LessonCompleteScreen({
     super.key,
@@ -41,6 +45,8 @@ class LessonCompleteScreen extends StatefulWidget {
     this.secIdx,
     this.unitIdx,
     this.lessonIdx,
+    this.lesson,
+    this.difficultSlides,
   });
 
   @override
@@ -184,68 +190,411 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen>
   }
 
   void _openReviewModal() {
+    final colors = context.colors;
+    final difficult = widget.difficultSlides ?? [];
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: context.colors.cardBg,
+      isScrollControlled: true,
+      backgroundColor: colors.cardBg,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: context.colors.primaryBlueLight,
-                    shape: BoxShape.circle,
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: difficult.isNotEmpty ? 0.7 : 0.45,
+          minChildSize: 0.35,
+          maxChildSize: 0.92,
+          expand: false,
+          builder: (sheetContext, scrollController) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                12,
+                20,
+                MediaQuery.of(sheetContext).padding.bottom + 16,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Drag Handle
+                  Center(
+                    child: Container(
+                      width: 38,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: colors.textSubtle.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
                   ),
-                  child: Icon(
-                    LucideIcons.listOrdered,
-                    color: context.colors.primaryBlue,
-                    size: 20,
+                  const SizedBox(height: 14),
+
+                  // Header Row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: difficult.isNotEmpty
+                                  ? colors.primaryBlueLight
+                                  : colors.accentGreenLight,
+                            ),
+                            child: Center(
+                              child: Icon(
+                                difficult.isNotEmpty
+                                    ? LucideIcons.listOrdered
+                                    : LucideIcons.checkCircle2,
+                                color: difficult.isNotEmpty
+                                    ? colors.primaryBlue
+                                    : colors.accentGreen,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                difficult.isNotEmpty
+                                    ? 'Difficult Step Analysis'
+                                    : 'Flawless Retrieval!',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w800,
+                                  color: colors.textMain,
+                                ),
+                              ),
+                              Text(
+                                difficult.isNotEmpty
+                                    ? '${difficult.length} question${difficult.length > 1 ? "s" : ""} to reinforce'
+                                    : '100% accuracy on all interactive steps',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: colors.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      GestureDetector(
+                        onTap: () => Navigator.pop(ctx),
+                        child: Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: colors.badgeBg,
+                          ),
+                          child: Icon(
+                            LucideIcons.x,
+                            size: 15,
+                            color: colors.textSubtle,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
+
+                  const SizedBox(height: 16),
+
+                  // Content List
+                  Expanded(
+                    child: difficult.isEmpty
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 60,
+                                    height: 60,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: colors.accentGreenLight,
+                                    ),
+                                    child: Center(
+                                      child: Icon(
+                                        LucideIcons.trophy,
+                                        size: 32,
+                                        color: colors.accentGreen,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 14),
+                                  Text(
+                                    'Zero Mistakes!',
+                                    style: TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w800,
+                                      color: colors.textMain,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'You solved every step in this lesson correctly on your first attempt.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: colors.textMuted,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : ListView.separated(
+                            controller: scrollController,
+                            physics: const BouncingScrollPhysics(),
+                            itemCount: difficult.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 10),
+                            itemBuilder: (context, idx) {
+                              final slide = difficult[idx];
+                              return _buildDifficultSlideCard(
+                                context,
+                                slide,
+                                idx + 1,
+                              );
+                            },
+                          ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Action Button
+                  if (difficult.isNotEmpty)
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _startTargetedPractice(difficult);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colors.primaryBlue,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(LucideIcons.play, size: 16),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Practice Missed Questions (${difficult.length})',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (widget.lesson != null)
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _startTargetedPractice(widget.lesson!.slides);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colors.primaryBlue,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(LucideIcons.rotateCcw, size: 16),
+                          SizedBox(width: 8),
+                          Text(
+                            'Replay Full Lesson',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildDifficultSlideCard(
+    BuildContext context,
+    Slide slide,
+    int number,
+  ) {
+    final colors = context.colors;
+    String? correctAnswerText;
+    String? explanationText;
+
+    if (slide.type == 'quiz' && slide.options != null) {
+      final correctOpt = slide.options!.firstWhere(
+        (o) => o.isCorrect,
+        orElse: () => slide.options!.first,
+      );
+      correctAnswerText = correctOpt.text;
+      explanationText = correctOpt.explanation;
+    } else if (slide.type == 'fill_in_blank' ||
+        slide.type == 'numerical' ||
+        slide.type == 'one_word') {
+      correctAnswerText = slide.blankAnswer;
+    } else if (slide.type == 'matching' && slide.matchPairs != null) {
+      correctAnswerText = slide.matchPairs!
+          .map((p) => '${p.left} ➔ ${p.right}')
+          .join('\n');
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colors.mathBoxBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 3,
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  'Difficult Step Analysis',
+                decoration: BoxDecoration(
+                  color: colors.primaryBlueLight,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'QUESTION $number • ${slide.type.toUpperCase()}',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 9.5,
                     fontWeight: FontWeight.w800,
-                    color: context.colors.textMain,
+                    color: colors.primaryBlue,
+                    letterSpacing: 0.5,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Text(
-              'Reviewing difficult steps activates retrieval dynamics, transforming transient working memory into permanent cortical schemas.',
-              style: TextStyle(
-                fontSize: 13,
-                height: 1.5,
-                color: context.colors.textMuted,
               ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          MathMarkdown(
+            data: slide.content,
+            textStyle: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: colors.textMain,
+              height: 1.4,
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(ctx),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: context.colors.primaryBlue,
-                minimumSize: const Size(double.infinity, 46),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+          ),
+          if (correctAnswerText != null && correctAnswerText.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: colors.accentGreenLight,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: colors.accentGreen.withValues(alpha: 0.3),
                 ),
               ),
-              child: const Text(
-                'Got It',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        LucideIcons.checkCircle2,
+                        size: 13,
+                        color: colors.accentGreen,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Expected Answer:',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          color: colors.accentGreen,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  MathMarkdown(
+                    data: correctAnswerText,
+                    textStyle: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: colors.textMain,
+                    ),
+                  ),
+                  if (explanationText != null &&
+                      explanationText.trim().isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    MathMarkdown(
+                      data: explanationText,
+                      textStyle: TextStyle(
+                        fontSize: 11,
+                        color: colors.textMuted,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  void _startTargetedPractice(List<Slide> slides) {
+    if (slides.isEmpty) return;
+    final practiceLesson = Lesson(
+      id: '${widget.lesson?.id ?? "practice"}_difficult_${DateTime.now().millisecondsSinceEpoch}',
+      title: 'Review: ${widget.lesson?.title ?? "Difficult Questions"}',
+      description: 'Reinforcement practice for difficult steps',
+      icon: widget.lesson?.icon ?? 'brain',
+      slides: slides,
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LessonScreen(
+          lesson: practiceLesson,
+          book: widget.book,
+          modIdx: widget.modIdx,
+          secIdx: widget.secIdx,
+          unitIdx: widget.unitIdx,
+          lessonIdx: widget.lessonIdx,
         ),
       ),
     );
@@ -1319,7 +1668,9 @@ class _LessonCompleteScreenState extends State<LessonCompleteScreen>
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      'Review Difficult Steps',
+                      widget.difficultSlides != null && widget.difficultSlides!.isNotEmpty
+                          ? 'Review Difficult Steps (${widget.difficultSlides!.length})'
+                          : 'Review Difficult Steps',
                       style: TextStyle(
                         color: colors.primaryBlue,
                         fontSize: 13.5,

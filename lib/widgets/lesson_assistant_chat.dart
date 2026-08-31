@@ -56,6 +56,7 @@ class LessonAssistantChat extends StatefulWidget {
 class _LessonAssistantChatState extends State<LessonAssistantChat>
     with SingleTickerProviderStateMixin {
   WebSocket? _webSocket;
+  StreamSubscription? _webSocketSubscription;
   bool _isConnected = false;
   bool _isConnecting = false;
   bool _isLiveMode = true;
@@ -102,8 +103,13 @@ class _LessonAssistantChatState extends State<LessonAssistantChat>
   @override
   void dispose() {
     try {
+      _webSocketSubscription?.cancel();
+      _webSocketSubscription = null;
+    } catch (_) {}
+    try {
       _webSocket?.close();
     } catch (_) {}
+    _webSocket = null;
     try {
       _recorder.dispose();
     } catch (_) {}
@@ -210,7 +216,7 @@ class _LessonAssistantChatState extends State<LessonAssistantChat>
       _webSocket!.add(jsonEncode(setupMsg));
       _addSystemMessage("Connected to Gemini Live!");
 
-      _webSocket!.listen(
+      _webSocketSubscription = _webSocket!.listen(
         (data) {
           _handleWebSocketMessage(data);
         },
@@ -376,11 +382,13 @@ class _LessonAssistantChatState extends State<LessonAssistantChat>
   }
 
   void _handleWebSocketError(dynamic err) {
+    if (!mounted) return;
     _addSystemMessage("Live connection error: $err");
     _disconnectWebSocket();
   }
 
   void _handleWebSocketClosed() {
+    if (!mounted) return;
     final code = _webSocket?.closeCode;
     final reason = _webSocket?.closeReason;
     String details = "";
@@ -392,7 +400,13 @@ class _LessonAssistantChatState extends State<LessonAssistantChat>
   }
 
   void _disconnectWebSocket() {
-    _webSocket?.close();
+    try {
+      _webSocketSubscription?.cancel();
+      _webSocketSubscription = null;
+    } catch (_) {}
+    try {
+      _webSocket?.close();
+    } catch (_) {}
     _webSocket = null;
     if (!mounted) return;
     setState(() {

@@ -86,10 +86,10 @@ class _ConceptPiecesViewState extends State<ConceptPiecesView>
       String formula = '';
       String badgeSymbol = '${i + 1}';
 
-      if (colonIdx > 0 && colonIdx < 40) {
+      if (colonIdx > 0 && colonIdx < 80) {
         title = text.substring(0, colonIdx).replaceAll(RegExp(r'^\d+[\.\)]\s*'), '').trim();
         desc = text.substring(colonIdx + 1).trim();
-      } else if (dashIdx > 0 && dashIdx < 40) {
+      } else if (dashIdx > 0 && dashIdx < 80) {
         title = text.substring(0, dashIdx).replaceAll(RegExp(r'^\d+[\.\)]\s*'), '').trim();
         desc = text.substring(dashIdx + 3).trim();
       } else {
@@ -97,11 +97,11 @@ class _ConceptPiecesViewState extends State<ConceptPiecesView>
         desc = '';
       }
 
-      // Extract symbol like (Q) or (K) if present in title
+      // Extract symbol like (Q) or (K) or ($Q$) if present in title
       final parenMatch = RegExp(r'\((.+?)\)').firstMatch(title);
       if (parenMatch != null) {
-        final inside = parenMatch.group(1)!.trim();
-        if (inside.length <= 3) {
+        final inside = parenMatch.group(1)!.trim().replaceAll(r'$', '').replaceAll(r'\', '');
+        if (inside.length <= 4) {
           badgeSymbol = inside;
         }
       }
@@ -226,9 +226,9 @@ class _ConceptPiecesViewState extends State<ConceptPiecesView>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      displayTitle,
-                      style: TextStyle(
+                    MathMarkdown(
+                      data: displayTitle,
+                      textStyle: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: colors.primaryBlue,
@@ -341,9 +341,9 @@ class _ConceptPiecesViewState extends State<ConceptPiecesView>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  displayTitle,
-                                  style: TextStyle(
+                                MathMarkdown(
+                                  data: displayTitle,
+                                  textStyle: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w800,
                                     color: colors.textMain,
@@ -566,45 +566,30 @@ class _ConceptPiecesViewState extends State<ConceptPiecesView>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    piece.title,
-                                    style: TextStyle(
+                                  MathMarkdown(
+                                    data: piece.title,
+                                    textStyle: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w800,
                                       color: colors.textMain,
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
                                   if (piece.description.isNotEmpty &&
                                       piece.description != piece.title)
                                     Padding(
-                                      padding: const EdgeInsets.only(top: 2.0),
-                                      child: Text(
-                                        piece.description,
-                                        style: TextStyle(
-                                          fontSize: 10.5,
+                                      padding: const EdgeInsets.only(top: 3.0),
+                                      child: MathMarkdown(
+                                        data: piece.description,
+                                        textStyle: TextStyle(
+                                          fontSize: 11,
                                           fontWeight: FontWeight.w500,
                                           color: colors.textMuted,
-                                          height: 1.3,
+                                          height: 1.35,
                                         ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                 ],
                               ),
-                            ),
-
-                            const SizedBox(width: 8),
-
-                            // Trailing chevron
-                            Icon(
-                              LucideIcons.chevronRight,
-                              size: 15,
-                              color: isSelected
-                                  ? colors.textMain
-                                  : colors.textSubtle,
                             ),
                           ],
                         ),

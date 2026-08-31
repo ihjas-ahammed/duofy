@@ -57,6 +57,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
 
   late DateTime _startTime;
   int _mistakesMade = 0;
+  final Map<String, Slide> _difficultSlides = {};
 
   String? _selectedQuizOption;
   String _blankInput = '';
@@ -386,6 +387,8 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
             accuracy: accuracy,
             timeSpentSeconds: timeSpent,
             isPractice: true,
+            book: widget.book,
+            difficultSlides: _difficultSlides.values.toList(),
           ),
         ),
       );
@@ -495,6 +498,10 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
             (val - slide.numericAnswer!).abs() <=
             (slide.numericTolerance ?? 0.01);
       }
+    }
+
+    if (!correct) {
+      _difficultSlides[slide.id] = slide;
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {

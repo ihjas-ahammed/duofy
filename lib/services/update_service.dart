@@ -76,10 +76,18 @@ class UpdateService {
       final currentCode = int.tryParse(pkg.buildNumber) ?? 0;
       final currentVersionStr = pkg.version;
 
-      // 1. Try builds/latest.json manifest first
+      final cacheBuster = DateTime.now().millisecondsSinceEpoch;
+      final noCacheHeaders = {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      };
+
+      // 1. Try builds/latest.json manifest first with cache-busting
       try {
+        final manifestUri = Uri.parse('$_manifestUrl?t=$cacheBuster');
         final res = await http
-            .get(Uri.parse(_manifestUrl))
+            .get(manifestUri, headers: noCacheHeaders)
             .timeout(const Duration(seconds: 8));
         if (res.statusCode == 200) {
           final data = jsonDecode(res.body) as Map<String, dynamic>;
@@ -92,7 +100,9 @@ class UpdateService {
           }
 
           if (remoteCode > currentCode && apks.isNotEmpty) {
-            final abi = isSupported ? await _pickAbi(apks.keys.toList()) : apks.keys.first;
+            final abi = isSupported
+                ? await _pickAbi(apks.keys.toList())
+                : apks.keys.first;
             if (abi != null) {
               final apkRel = apks[abi] as String;
               final changelog = await _fetchChangelog(data, versionName);
@@ -108,19 +118,64 @@ class UpdateService {
         }
       } catch (_) {}
 
-      // 2. Fallback to GitHub Releases API (api.github.com/repos/ihjas-ahammed/duofy/releases/latest)
+      // 2. Try builds/latest.txt or latest.txt if latest.json wasn't found or was stale
+      try {
+        for (final txtPath in ['builds/latest.txt', 'latest.txt']) {
+          final txtUri = Uri.parse('$_rawBase$txtPath?t=$cacheBuster');
+          final txtRes = await http
+              .get(txtUri, headers: noCacheHeaders)
+              .timeout(const Duration(seconds: 5));
+          if (txtRes.statusCode == 200 && txtRes.body.trim().isNotEmpty) {
+            final raw = txtRes.body.trim();
+            final parts = raw.split('+');
+            if (parts.isNotEmpty) {
+              final versionName = parts[0].trim();
+              final remoteCode = parts.length > 1
+                  ? int.tryParse(parts[1].trim()) ?? 0
+                  : 0;
+
+              if (remoteCode > currentCode ||
+                  (remoteCode == 0 && versionName != currentVersionStr)) {
+                final abi = isSupported
+                    ? await _pickAbi(['arm64-v8a', 'armeabi-v7a'])
+                    : 'arm64-v8a';
+                if (abi != null) {
+                  final changelog = await _fetchChangelog(
+                    {'changelogPath': 'builds/whatsnew/$versionName.md'},
+                    versionName,
+                  );
+                  return UpdateInfo(
+                    versionName: versionName,
+                    versionCode: remoteCode > 0 ? remoteCode : currentCode + 1,
+                    changelog: changelog,
+                    apkUrl: '${_rawBase}builds/flow-v$versionName-$abi.apk',
+                    abi: abi,
+                  );
+                }
+              }
+            }
+          }
+        }
+      } catch (_) {}
+
+      // 3. Fallback to GitHub Releases API
       final ghRes = await http
           .get(
-            Uri.parse(_githubReleasesUrl),
-            headers: {'Accept': 'application/vnd.github.v3+json'},
+            Uri.parse('$_githubReleasesUrl?t=$cacheBuster'),
+            headers: {
+              'Accept': 'application/vnd.github.v3+json',
+              ...noCacheHeaders,
+            },
           )
           .timeout(const Duration(seconds: 8));
 
       if (ghRes.statusCode == 200) {
         final ghData = jsonDecode(ghRes.body) as Map<String, dynamic>;
         final tagName = (ghData['tag_name'] as String?) ?? '';
-        final body = (ghData['body'] as String?) ?? 'New update available on GitHub!';
-        final htmlUrl = (ghData['html_url'] as String?) ?? 'https://github.com/ihjas-ahammed/duofy/releases';
+        final body = (ghData['body'] as String?) ??
+            'New update available on GitHub!';
+        final htmlUrl = (ghData['html_url'] as String?) ??
+            'https://github.com/ihjas-ahammed/duofy/releases';
 
         final cleanTag = tagName.replaceAll('v', '').trim();
         if (cleanTag.isNotEmpty && cleanTag != currentVersionStr) {
@@ -153,8 +208,16 @@ class UpdateService {
     final path = data['changelogPath'] as String?;
     if (path != null && path.isNotEmpty) {
       try {
+        final cacheBuster = DateTime.now().millisecondsSinceEpoch;
         final res = await http
-            .get(Uri.parse(_rawBase + path))
+            .get(
+              Uri.parse('$_rawBase$path?t=$cacheBuster'),
+              headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0',
+              },
+            )
             .timeout(const Duration(seconds: 15));
         if (res.statusCode == 200 && res.body.trim().isNotEmpty) {
           return res.body;

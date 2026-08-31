@@ -194,9 +194,10 @@ class _FillInBlankViewState extends State<FillInBlankView> {
                         ]
                       : null,
                 ),
-                child: Text(
-                  option.text,
-                  style: TextStyle(
+                child: MathMarkdown(
+                  data: option.text,
+                  selectable: false,
+                  textStyle: TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
                     color: isSelected

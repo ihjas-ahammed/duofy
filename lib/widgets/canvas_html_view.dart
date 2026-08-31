@@ -126,8 +126,9 @@ String buildCanvasHtml(String userJs) {
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
-  html, body { margin: 0; padding: 0; height: 100%; background: #10172a; overflow: hidden; touch-action: none; }
-  #c, #s { display: block; width: 100vw; height: 100vh; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #10172a; overflow: hidden; touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+  #c, #s { display: block; width: 100%; height: 100%; max-width: 100%; max-height: 100%; }
 </style>
 $threeTag
 </head>
@@ -208,7 +209,8 @@ let __setupRan = false;
 let __lastSetupW = 0, __lastSetupH = 0;
 function _sizeCanvas() {
   const dpr = window.devicePixelRatio || 1;
-  const W = Math.floor(window.innerWidth), H = Math.floor(window.innerHeight);
+  const W = Math.max(1, Math.floor(window.innerWidth || document.documentElement.clientWidth || 300));
+  const H = Math.max(1, Math.floor(window.innerHeight || document.documentElement.clientHeight || 200));
   window.canvas.width = Math.floor(W * dpr);
   window.canvas.height = Math.floor(H * dpr);
   window.canvas.style.width = W + 'px';

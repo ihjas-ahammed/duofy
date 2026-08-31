@@ -169,9 +169,9 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
                     children: [
                       // 1. Header Title Group
                       if (widget.slide.title.trim().isNotEmpty) ...[
-                        Text(
-                          widget.slide.title,
-                          style: TextStyle(
+                        MathMarkdown(
+                          data: widget.slide.title,
+                          textStyle: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w800,
                             color: colors.textMain,

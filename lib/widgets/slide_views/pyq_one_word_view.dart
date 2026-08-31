@@ -68,14 +68,14 @@ class _PyqOneWordViewState extends State<PyqOneWordView> {
           if (widget.slide.title.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 12.0),
-              child: Text(
-                widget.slide.title,
-                style: TextStyle(
+              child: MathMarkdown(
+                data: widget.slide.title,
+                textAlign: TextAlign.center,
+                textStyle: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: context.colors.textPrimary,
                 ),
-                textAlign: TextAlign.center,
               ),
             ),
           if (widget.slide.content.isNotEmpty)

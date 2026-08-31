@@ -153,11 +153,11 @@ class _MatchingViewState extends State<MatchingView> {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      widget.slide.content.isNotEmpty
+                    MathMarkdown(
+                      data: widget.slide.content.isNotEmpty
                           ? widget.slide.content
                           : 'Match each concept on the left with its corresponding partner.',
-                      style: TextStyle(
+                      textStyle: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: colors.textMuted,

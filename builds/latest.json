@@ -1,6 +1,6 @@
 {
   "versionName": "26.8.31",
-  "versionCode": 2127083101,
+  "versionCode": 2127083102,
   "changelogPath": "builds/whatsnew/26.8.31.md",
   "apks": {
     "arm64-v8a": "builds/flow-v26.8.31-arm64-v8a.apk",

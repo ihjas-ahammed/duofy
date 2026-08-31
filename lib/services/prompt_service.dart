@@ -850,15 +850,17 @@ CONCEPT TO ILLUSTRATE:
 LESSON CONTEXT (for tone and reference only — do NOT add unrelated decoration):
 %lesson_context%
 
-RENDERING SURFACE & OPTIMIZATION FOR SMALL VIEWPORTS:
-- The drawing viewport can have a dynamic aspect ratio. By default, it is 3:2. If a different aspect ratio fits your diagram structure better (e.g. 16:9 for wide diagrams, 4:3, or 1:1), declare it at the very top of your JS code with a comment like:
-  `// ASPECT_RATIO: 16:9` (or `// ASPECT_RATIO: 4:3`, etc.). Any ratio between 4:3 and 16:9 is supported.
-- The host already creates the canvas/svg, scales it for devicePixelRatio, and clears to a dark transparent background BEFORE calling your function. Never resize the canvas yourself, never set a fixed size in CSS, never create a second canvas.
-- `W` and `H` are the CSS-pixel width and height of the rendering box. Compute every coordinate relative to `W`/`H` so the drawing dynamically scales and fills the frame.
-- **Design for Small Mobile Preview by Default**: On mobile screens, the preview card size is very small (W is ~300px to ~450px CSS pixels). Design everything to be highly legible and touch-friendly at this small scale:
-  - **Thick Lines**: Do NOT use thin 1px/2px strokes. Use `ctx.lineWidth = 3` to `5` for primary paths, vectors, graphs, and borders.
-  - **Large Text**: Use readable font sizes like `ctx.font = "14px sans-serif"` or `ctx.font = "15px sans-serif"` (or scale font size dynamically with `H * 0.07`). Keep labels short and sparse.
-  - **Touch Hitboxes**: If the canvas is interactive (pointer events), interactive knobs/handles must have a visual radius of at least `12px` to `16px` and a touch hit-detection radius of at least `18px` to `25px` so they are easily draggable with a finger on a mobile screen.
+RENDERING SURFACE & STRICT SMALL MOBILE VIEWPORT CONTAINMENT (CRITICAL):
+- **Small Mobile Viewport by Default**: On mobile screens, the preview card size is very compact (W is ~300px to ~375px CSS pixels, H is ~200px to ~250px).
+- **Safe Margin Bounding Box**: All primary paths, graphs, geometric shapes, nodes, and labels MUST stay strictly within `[pad, W - pad]` horizontally and `[pad, H - pad]` vertically, where `pad = Math.max(16, Math.min(W, H) * 0.08)`. Never place any visual element or text outside `[0, W]` or `[0, H]`.
+- **Top Corners Safe Area**: The top-left corner (0..44px) and top-right corner (W-44px..W) are occupied by UI overlay buttons (maximize & refresh). Do not place important labels, text, or interactive controls in those corner zones.
+- **Dynamic Aspect Ratio**: Default is 3:2. If a different aspect ratio fits your diagram structure better (e.g. 16:9 for wide diagrams, 4:3, or 1:1), declare it at the very top of your JS code with a comment: `// ASPECT_RATIO: 16:9` (or `// ASPECT_RATIO: 4:3`). Any ratio between 4:3 and 16:9 is supported.
+- **Thick Lines & High Contrast**: Do NOT use thin 1px lines. Use `ctx.lineWidth = 3` to `5` for primary paths, vectors, graphs, and borders.
+- **Dynamic & Safe Text Labels**:
+  - Keep labels ultra-short (1-3 words max). Never draw paragraphs or long sentences.
+  - Scale font size dynamically: `ctx.font = Math.max(11, Math.min(15, Math.floor(H * 0.075))) + "px sans-serif"`.
+  - Prevent text clipping at edges: when `x > W * 0.55`, use `ctx.textAlign = "right"`; when `x < W * 0.45`, use `ctx.textAlign = "left"`; otherwise use `ctx.textAlign = "center"`. When `y < H * 0.25`, use `ctx.textBaseline = "top"`; when `y > H * 0.75`, use `ctx.textBaseline = "bottom"`.
+- **Touch Hitboxes for Interactive Canvas**: If the canvas is interactive (pointer events), interactive knobs/handles must have a visible radius of `12px` to `16px` and a touch hit-detection radius of at least `24px` to `30px`. Clamp drag coordinates: `knobX = Math.max(pad + knobR, Math.min(W - pad - knobR, touchX))`.
 
 PICK THE RIGHT ENTRY POINT — define EXACTLY ONE of the following (no others). The host detects which is present.
 
@@ -868,17 +870,17 @@ PICK THE RIGHT ENTRY POINT — define EXACTLY ONE of the following (no others). 
 
   (B) INTERACTIVE / ANIMATED 2D CANVAS — use when the concept benefits from motion or user input (oscillation, particle motion, draggable parameter, click-to-add-point). Output one function:
         function sketch(canvas, W, H) { /* … */ }
-      Inside it: get `canvas.getContext('2d')`, attach `canvas.addEventListener('pointermove' | 'pointerdown' | ...)`, drive animation with `requestAnimationFrame`. You MUST clear the canvas at the top of each frame (`ctx.clearRect(0, 0, W, H)`). Animation should be smooth and bounded — do NOT spawn unbounded objects. Your content MUST fill the canvas: keep every element inside [0,W]×[0,H] but leave no more than ~10% empty margin on any side.
+      Inside it: get `canvas.getContext('2d')`, attach `canvas.addEventListener('pointermove' | 'pointerdown' | ...)`, drive animation with `requestAnimationFrame`. You MUST clear the canvas at the top of each frame (`ctx.clearRect(0, 0, W, H)`). Animation should be smooth and bounded — do NOT spawn unbounded objects. Keep all elements bounded within `[pad, W - pad] × [pad, H - pad]`.
 
   (C) 3D CANVAS (WebGL) — use when the concept is inherently three-dimensional (rotatable solid, molecule, vector field in 3-space, orbiting body). Output one function:
         function sketch(canvas, W, H) { /* … */ }
-      Inside it use the globally-available `THREE` (the host pre-loads three.js r150 on `window.THREE`). Create a `WebGLRenderer({ canvas, alpha: true, antialias: true })`, a `PerspectiveCamera` with `aspect = W/H`, a `Scene`, lights, the geometry, and a render loop with `requestAnimationFrame`. Set `renderer.setSize(W, H, false)` ONCE (the host handles devicePixelRatio). Frame the camera so the subject fills most of the view — no more than ~10% empty margin around it.
+      Inside it use the globally-available `THREE` (the host pre-loads three.js r150 on `window.THREE`). Create a `WebGLRenderer({ canvas, alpha: true, antialias: true })`, a `PerspectiveCamera` with `aspect = W/H`, a `Scene`, lights, the geometry, and a render loop with `requestAnimationFrame`. Set `renderer.setSize(W, H, false)` ONCE (the host handles devicePixelRatio). Frame the camera and size objects (bounding radius ≤ 1.5) so the subject fits entirely inside the view on narrow screens.
 
   (D) STATIC SVG WITH JS MATH — Use when you want to render a still picture, electrical circuit schematic, block diagram, or shape diagram, and construct crisp SVG elements dynamically using JS calculations. Output one function:
         function draw(svg, W, H) { /* … */ }
       `svg` is a DOM `<svg>` element. You can append SVG elements created with `document.createElementNS("http://www.w3.org/2000/svg", ...)` or manipulate `svg.innerHTML` directly using template literals to compute coordinates relative to W and H. Use light-on-dark/harmonious colors: stroke "#E2E8F0" or "#3B82F6", accent "#58CC02", text "#F8FAFC".
 
-  (E) RAW SVG — Use when you want to output a raw, static SVG markup block directly. Output a single, clean raw `<svg>` markup block with an explicit viewBox. Default to viewBox="0 0 300 200" (3:2); you may pick another aspect that suits the diagram as long as it stays between 4:3 and 16:9 (the display card adapts to your viewBox). Use light-on-dark/harmonious colors matching theme: stroke "#E2E8F0" or "#3B82F6", accent "#58CC02", text "#F8FAFC".
+  (E) RAW SVG — Use when you want to output a raw, static SVG markup block directly. Output a single, clean raw `<svg>` markup block with an explicit viewBox. Default to viewBox="0 0 300 200" (3:2) with shapes kept inside [16, 284] × [16, 184].
 
 STYLE RULES (apply to A, B, C, D, E):
 1. Dark, already-cleared background. Light-on-dark colors: primary strokes `#E2E8F0`, accents `#3B82F6` (blue), `#58CC02` (green), `#FBBF24` (amber), `#F472B6` (pink). Label text `#F8FAFC`. Never assume a white page.
@@ -889,7 +891,7 @@ STYLE RULES (apply to A, B, C, D, E):
 
 EXAMPLE A — STATIC 2D (y = x²):
 function draw(ctx, W, H) {
-  const pad = W * 0.08;
+  const pad = Math.max(16, Math.min(W, H) * 0.1);
   ctx.lineWidth = 3;
   ctx.strokeStyle = "#E2E8F0";
   ctx.beginPath();
@@ -905,8 +907,10 @@ function draw(ctx, W, H) {
     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.stroke();
-  ctx.fillStyle = "#F8FAFC"; ctx.font = "14px sans-serif";
-  ctx.fillText("y = x^2", W * 0.58, H * 0.32);
+  ctx.fillStyle = "#F8FAFC";
+  ctx.font = Math.max(12, Math.min(15, Math.floor(H * 0.075))) + "px sans-serif";
+  ctx.textAlign = "right";
+  ctx.fillText("y = x^2", W - pad - 8, pad + 20);
 }
 
 EXAMPLE B — INTERACTIVE 2D (drag the slider to change a sine wave's frequency):
@@ -914,7 +918,8 @@ function sketch(canvas, W, H) {
   const ctx = canvas.getContext('2d');
   let freq = 2;             // cycles across the canvas
   let dragging = false;
-  const sliderY = H * 0.88, knobR = 14, hitR = 25;
+  const pad = Math.max(16, Math.min(W, H) * 0.08);
+  const sliderY = H * 0.86, knobR = 14, hitR = 26;
   let knobX = W * 0.5;
   function onDown(e) {
     const r = canvas.getBoundingClientRect();
@@ -924,8 +929,8 @@ function sketch(canvas, W, H) {
   function onMove(e) {
     if (!dragging) return;
     const r = canvas.getBoundingClientRect();
-    knobX = Math.max(W * 0.1, Math.min(W * 0.9, e.clientX - r.left));
-    freq = 0.5 + 6 * ((knobX - W * 0.1) / (W * 0.8));
+    knobX = Math.max(pad + knobR, Math.min(W - pad - knobR, e.clientX - r.left));
+    freq = 0.5 + 6 * ((knobX - (pad + knobR)) / (W - 2 * (pad + knobR)));
   }
   function onUp() { dragging = false; }
   canvas.addEventListener('pointerdown', onDown);
@@ -937,28 +942,25 @@ function sketch(canvas, W, H) {
     // wave
     ctx.strokeStyle = "#3B82F6"; ctx.lineWidth = 4;
     ctx.beginPath();
-    const midY = H * 0.42, amp = H * 0.22;
+    const midY = H * 0.44, amp = H * 0.22;
     for (let i = 0; i <= 200; i++) {
       const t = i / 200;
-      const x = W * 0.05 + t * W * 0.9;
+      const x = pad + t * (W - 2 * pad);
       const y = midY + amp * Math.sin(2 * Math.PI * freq * t);
       if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
     ctx.stroke();
     // slider track
     ctx.strokeStyle = "#334155"; ctx.lineWidth = 6;
-    ctx.beginPath(); ctx.moveTo(W * 0.1, sliderY); ctx.lineTo(W * 0.9, sliderY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad, sliderY); ctx.lineTo(W - pad, sliderY); ctx.stroke();
     // knob
     ctx.fillStyle = "#FBBF24";
     ctx.beginPath(); ctx.arc(knobX, sliderY, knobR, 0, Math.PI * 2); ctx.fill();
     // label
-    ctx.fillStyle = "#F8FAFC"; ctx.font = "14px sans-serif";
-    ctx.fillText("f = " + freq.toFixed(2), W * 0.05, H * 0.15);
-    // Tap to expand callout for full screen interaction
-    ctx.fillStyle = "#94A3B8"; ctx.font = "12px sans-serif";
-    ctx.textAlign = "right";
-    ctx.fillText("Tap ⛶ for Full Screen", W * 0.95, H * 0.15);
+    ctx.fillStyle = "#F8FAFC";
+    ctx.font = Math.max(12, Math.min(15, Math.floor(H * 0.075))) + "px sans-serif";
     ctx.textAlign = "left";
+    ctx.fillText("f = " + freq.toFixed(2), pad, pad + 16);
     requestAnimationFrame(frame);
   }
   frame();

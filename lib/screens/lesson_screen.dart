@@ -82,6 +82,7 @@ class _LessonScreenState extends State<LessonScreen> {
   /// slide id. Drives the "retry once, then skip" flow and ensures any failure
   /// permanently counts against final accuracy.
   final Map<String, int> _failCounts = {};
+  final Map<String, Slide> _difficultSlides = {};
   List<Slide> _slideQueue = [];
 
   /// High-water mark for the header progress bar. Wrong answers requeue
@@ -632,6 +633,8 @@ class _LessonScreenState extends State<LessonScreen> {
             secIdx: widget.secIdx,
             unitIdx: widget.unitIdx,
             lessonIdx: widget.lessonIdx,
+            lesson: _lesson,
+            difficultSlides: _difficultSlides.values.toList(),
           ),
         ),
       );
@@ -734,6 +737,7 @@ class _LessonScreenState extends State<LessonScreen> {
     });
 
     if (!correct) {
+      _difficultSlides[slide.id] = slide;
       final fails = (_failCounts[slide.id] ?? 0) + 1;
       _failCounts[slide.id] = fails;
       // Every wrong answer adds one to the interactive total, so accuracy is
@@ -1945,6 +1949,7 @@ class _LessonScreenState extends State<LessonScreen> {
               }
             });
             if (!remembered) {
+              _difficultSlides[slide.id] = slide;
               final fails = (_failCounts[slide.id] ?? 0) + 1;
               _failCounts[slide.id] = fails;
               _totalInteractive++;

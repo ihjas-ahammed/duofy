@@ -228,9 +228,9 @@ class _DescriptiveViewState extends State<DescriptiveView> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              displayTitle,
-                              style: TextStyle(
+                            MathMarkdown(
+                              data: displayTitle,
+                              textStyle: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w800,
                                 color: colors.textMain,

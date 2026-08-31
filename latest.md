@@ -1,16 +1,19 @@
-# What's New in v26.8.31 (Build 2127083101)
+# What's New in v26.8.31 (Build 2127083102)
 
-- **Complete Learning Interface & Slide Redesign**: Modernized all interactive lesson slide screens based on cognitive load research and design token specifications (`docs/new-theme/slide-p/`).
-- **Floating Glassmorphism Capsule Toolbar (`SlideCapsuleToolbar`)**: Introduced a frosted glass header with a smooth animated liquid gradient progress indicator bar, animated flame streak counter, AI Bot avatar button with celestial orbital ring, and clean quick navigation/secondary menu actions.
-- **Tactile Elevated Action Button (`SlideActionButton`)**: Added animated 3D press interactions, customizable icons, and crisp state transitions across all slide flows.
-- **Diagnostic Feedback Bottom Sheet (`SlideFeedbackSheet`)**: Built an interactive feedback sheet featuring celebration badges, causal explanations, and an expandable Misconception Analysis card ("Why other options fail").
-- **Overhauled Interactive Slide Screen Types**:
-  - *Theory & Concept Cards*: Structured breakdown with MathJax TeX rendering and key term highlights.
-  - *Quiz / OMR*: Interactive choices with tactile feedback and instantaneous misconception diagnostics.
-  - *Concept Pieces*: Modular atomic component chunking with ordered steps and updated AI prompt directives (3-5 atomic digestible chunks).
-  - *Descriptive / Deep Concept*: Guided multi-step deep learning evaluation.
-  - *Interactive Proof & Math Pairs*: Enhanced deductive logic step validation and tactile matching pairs.
-  - *Code Runner & Program Views*: Seamless sandboxed Python execution with rich terminal output.
-  - *Numerical, Ordering, Error Spotting, Fill in the Blank, and One Word*: Polished UI layouts with clear visual hierarchy and instant error feedback.
-- **Revamped Lesson Mastered Screen**: Redesigned game-over completion view with an animated accuracy gauge, XP celebration animations, streak multiplier badges, and difficulty reflection feedback chips.
-- **Celestial Theme Semantic Tokens**: Extended `AppColors` with unified tokens (`cardBg`, `cardBorder`, `mathBoxBg`, `primaryBlue`, `accentGreen`, `sheetBg`, etc.) ensuring seamless light and dark mode presentation.
+- **Instant App Update Checking**:
+  - Implemented HTTP cache-busting and no-cache headers for GitHub update manifests and release endpoints, completely bypassing CDN stale caching so newly published builds appear immediately upon checking.
+  - Added multi-source fallback to `latest.txt` to guarantee update availability even during CDN propagation.
+- **Interactive Review Difficult Steps Mode**:
+  - Transformed the completion review affordance into a fully functional, interactive **Difficult Steps Analysis & Targeted Practice** sheet.
+  - Users can review missed questions, expected solutions, and explanations with full LaTeX math, then jump directly into a targeted practice session with `"Practice Missed Questions (N)"`.
+  - Added zero-mistake celebration state and lesson replay options.
+- **Universal LaTeX Math Rendering Across All Slides**:
+  - Replaced plain text headers and labels across all slide components (`ConceptPiecesView`, `TheoryView`, `DescriptiveView`, `CodeRunnerView`, `MatchingView`, `FillInBlankView`, `InteractiveProofView`, `PyqOneWordView`) with `MathMarkdown` for consistent KaTeX formula support.
+- **Mobile-Contained Canvas Art & Interactive Diagrams**:
+  - Refined AI diagram generator prompts with strict mobile bounding box containment (`pad = Math.max(16, Math.min(W, H) * 0.08)`), top corner safe areas for floating overlay controls, touch hitboxes ($\ge 24\text{px}$), and anti-clipping edge alignments.
+  - Optimized HTML WebView host container styling with `box-sizing: border-box`, `width: 100%`, `height: 100%`, and resilient viewport fallback calculations.
+- **Live Assistant Chat Stability**:
+  - Fixed a null-check error when closing Gemini Live chat by managing WebSocket stream subscriptions and guarding against post-disposal `setState` invocations.
+- **Complete Slide Architecture Redesign**:
+  - Floating Glassmorphism Capsule Toolbar (`SlideCapsuleToolbar`) with liquid gradient progress and streak multipliers.
+  - Tactile 3D Action Buttons (`SlideActionButton`) and diagnostic misconception feedback sheets (`SlideFeedbackSheet`).
