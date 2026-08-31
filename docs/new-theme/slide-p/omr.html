@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Active Retrieval Quiz - Prototype</title>
+  <!-- Google Fonts: Plus Jakarta Sans & STIX Two Math -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=STIX+Two+Math:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==========================================================================
+       THEME VARIABLES (LIGHT & DARK)
+       ========================================================================== */
+    :root {
+      /* Frosted Light Mode */
+      --page-bg: #e2e8f0;
+      --device-bg: #f8fafc;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-subtle: #94a3b8;
+
+      --card-bg: #ffffff;
+      --card-border: rgba(226, 232, 240, 0.9);
+      --card-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.04);
+
+      /* Light Mode Glass Toolbar */
+      --glass-bar-bg: rgba(255, 255, 255, 0.85);
+      --glass-bar-border: rgba(255, 255, 255, 0.9);
+      --glass-bar-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.8);
+      --glass-btn-bg: #f1f5f9;
+      --glass-btn-border: #e2e8f0;
+      --glass-btn-color: #334155;
+      --glass-track-bg: #e2e8f0;
+      --glass-track-text: #0056fd;
+      --glass-divider: #e2e8f0;
+      --glass-bot-bg: radial-gradient(circle at 30% 30%, #eff6ff, #dbeafe);
+      --glass-bot-border: #93c5fd;
+
+      /* Quiz Options */
+      --opt-bg: #ffffff;
+      --opt-border: rgba(226, 232, 240, 0.9);
+      --opt-text: #0f172a;
+      --opt-circle-bg: #f1f5f9;
+      --opt-circle-text: #475569;
+
+      --opt-selected-border: #0062ff;
+      --opt-selected-bg: #ffffff;
+      --opt-selected-text: #0062ff;
+      --opt-selected-circle-bg: #0062ff;
+      --opt-selected-circle-text: #ffffff;
+      --opt-selected-shadow: 0 0 0 1px #0062ff, 0 8px 20px -4px rgba(0, 98, 255, 0.15);
+
+      /* Calibration Box */
+      --calib-card-bg: #ffffff;
+      --calib-card-border: rgba(226, 232, 240, 0.9);
+      --calib-btn-bg: #ffffff;
+      --calib-btn-border: rgba(226, 232, 240, 0.9);
+      --calib-btn-hover: #f8fafc;
+      --calib-selected-border: #0062ff;
+      --calib-selected-bg: #eff6ff;
+
+      --primary-blue: #0062ff;
+      --primary-blue-hover: #0050d4;
+      --primary-blue-glow: rgba(0, 98, 255, 0.35);
+
+      --sheet-bg: #f7fdfa;
+      --sheet-border: #10b981;
+      --home-bar: #0f172a;
+    }
+
+    [data-theme="dark"] {
+      /* Midnight Obsidian Dark Mode */
+      --page-bg: #030712;
+      --device-bg: #070c18;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-subtle: #64748b;
+
+      --card-bg: #0c1322;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.6);
+
+      /* Dark Mode Glass Toolbar */
+      --glass-bar-bg: rgba(15, 23, 42, 0.75);
+      --glass-bar-border: rgba(255, 255, 255, 0.15);
+      --glass-bar-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+      --glass-btn-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
+      --glass-btn-border: rgba(255, 255, 255, 0.18);
+      --glass-btn-color: #ffffff;
+      --glass-track-bg: rgba(0, 0, 0, 0.45);
+      --glass-track-text: #7dd3fc;
+      --glass-divider: rgba(255, 255, 255, 0.15);
+      --glass-bot-bg: radial-gradient(circle at 30% 30%, #381f75, #110e2e);
+      --glass-bot-border: #a855f7;
+
+      /* Quiz Options */
+      --opt-bg: #0c1322;
+      --opt-border: rgba(255, 255, 255, 0.08);
+      --opt-text: #f8fafc;
+      --opt-circle-bg: rgba(255, 255, 255, 0.06);
+      --opt-circle-text: #94a3b8;
+
+      --opt-selected-border: #3b82f6;
+      --opt-selected-bg: #0f1b33;
+      --opt-selected-text: #60a5fa;
+      --opt-selected-circle-bg: #3b82f6;
+      --opt-selected-circle-text: #ffffff;
+      --opt-selected-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+
+      /* Calibration Box */
+      --calib-card-bg: #0c1322;
+      --calib-card-border: rgba(255, 255, 255, 0.08);
+      --calib-btn-bg: #0c1322;
+      --calib-btn-border: rgba(255, 255, 255, 0.08);
+      --calib-btn-hover: #111b30;
+      --calib-selected-border: #3b82f6;
+      --calib-selected-bg: rgba(59, 130, 246, 0.15);
+
+      --primary-blue: #2563eb;
+      --primary-blue-hover: #1d4ed8;
+      --primary-blue-glow: rgba(37, 99, 235, 0.4);
+
+      --sheet-bg: #091e17;
+      --sheet-border: #059669;
+      --home-bar: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--page-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px 10px;
+      transition: background-color 0.3s ease;
+    }
+
+    .math { font-family: 'STIX Two Math', serif; font-style: italic; }
+
+    /* Prototyping Controls */
+    .prototype-bar {
+      display: flex;
+      gap: 8px;
+      background: var(--card-bg);
+      padding: 6px;
+      border-radius: 9999px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+      border: 1px solid var(--card-border);
+      margin-bottom: 14px;
+      z-index: 100;
+    }
+
+    .proto-btn {
+      padding: 6px 16px;
+      border-radius: 9999px;
+      border: none;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .proto-btn.active {
+      background: var(--primary-blue);
+      color: #ffffff;
+    }
+
+    /* Mobile Shell Frame */
+    .mobile-frame {
+      width: 100%;
+      max-width: 412px;
+      height: 878px;
+      background-color: var(--device-bg);
+      border-radius: 44px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--card-border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: background-color 0.3s ease;
+    }
+
+    /* ==========================================================================
+       TOP STATUS BAR & GLASSMORPHIC TOOLBAR (Light for Light, Dark for Dark)
+       ========================================================================== */
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 26px 4px 26px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      z-index: 15;
+    }
+
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .glass-header-container {
+      padding: 8px 16px 10px 16px;
+      z-index: 15;
+    }
+
+    .glass-pill-bar {
+      background: var(--glass-bar-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-bar-border);
+      border-radius: 9999px;
+      height: 52px;
+      padding: 4px 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: var(--glass-bar-shadow);
+      transition: all 0.3s ease;
+    }
+
+    .glass-close-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--glass-btn-bg);
+      border: 1px solid var(--glass-btn-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--glass-btn-color);
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.15s ease;
+    }
+    .glass-close-btn:active { transform: scale(0.92); }
+
+    .glass-progress-track {
+      flex: 1;
+      height: 32px;
+      background: var(--glass-track-bg);
+      border-radius: 9999px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 2px;
+      overflow: hidden;
+    }
+
+    .glass-progress-fill {
+      width: 30%; /* Question 3 of 10 = 30% */
+      height: 100%;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, #0052d4 0%, #4364f7 50%, #6fb1fc 100%);
+      box-shadow: 0 0 14px rgba(67, 100, 247, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+      position: relative;
+      transition: width 0.3s ease;
+    }
+
+    .glass-progress-fill::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      animation: waveGlow 2.5s infinite linear;
+    }
+
+    @keyframes waveGlow {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .glass-progress-text {
+      position: absolute;
+      right: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--glass-track-text);
+      letter-spacing: 0.2px;
+    }
+
+    .streak-badge {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      padding: 0 4px;
+    }
+
+    .streak-flame {
+      font-size: 16px;
+      filter: drop-shadow(0 0 4px #f97316);
+    }
+
+    .streak-count {
+      font-size: 13px;
+      font-weight: 800;
+      color: #f59e0b;
+    }
+
+    .glass-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--glass-divider);
+    }
+
+    .bot-avatar-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--glass-bot-bg);
+      border: 1.5px solid var(--glass-bot-border);
+      box-shadow: 0 0 12px rgba(147, 197, 253, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      flex-shrink: 0;
+      transition: transform 0.2s ease;
+    }
+    .bot-avatar-btn:hover { transform: scale(1.05); }
+
+    /* AI Hint Floating Callout */
+    .ai-hint-popover {
+      position: absolute;
+      top: 108px;
+      right: 20px;
+      left: 20px;
+      background: var(--card-bg);
+      border: 1.5px solid #3b82f6;
+      box-shadow: var(--card-shadow), 0 0 15px rgba(59,130,246,0.25);
+      border-radius: 18px;
+      padding: 12px 14px;
+      z-index: 50;
+      display: none;
+      animation: popIn 0.2s ease;
+    }
+    .ai-hint-popover.show { display: block; }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ==========================================================================
+       SCROLLABLE QUIZ CONTENT
+       ========================================================================== */
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 2px 16px 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Question Main Card */
+    .quiz-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 18px 16px;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .question-tag-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .q-circle-badge {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(0, 98, 255, 0.1);
+      color: var(--primary-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .q-tag-text {
+      font-size: 10.5px;
+      font-weight: 800;
+      color: var(--text-subtle);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+
+    .question-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1.35;
+      letter-spacing: -0.3px;
+    }
+
+    /* Option Items */
+    .options-list {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .option-item {
+      background: var(--opt-bg);
+      border: 1px solid var(--opt-border);
+      border-radius: 16px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: var(--opt-text);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .option-item:hover {
+      border-color: var(--primary-blue);
+    }
+
+    .option-letter {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--opt-circle-bg);
+      color: var(--opt-circle-text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+
+    .option-item.selected {
+      border-color: var(--opt-selected-border);
+      background: var(--opt-selected-bg);
+      color: var(--opt-selected-text);
+      box-shadow: var(--opt-selected-shadow);
+    }
+
+    .option-item.selected .option-letter {
+      background: var(--opt-selected-circle-bg);
+      color: var(--opt-selected-circle-text);
+    }
+
+    /* ==========================================================================
+       CONFIDENCE CALIBRATION CONTAINER
+       ========================================================================== */
+    .calibration-card {
+      background: var(--calib-card-bg);
+      border: 1px solid var(--calib-card-border);
+      border-radius: 20px;
+      padding: 14px;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .calib-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .calib-icon {
+      color: var(--primary-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .calib-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.2px;
+    }
+
+    .calib-subtitle {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-left: 2px;
+    }
+
+    .calib-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .calib-btn {
+      background: var(--calib-btn-bg);
+      border: 1px solid var(--calib-btn-border);
+      border-radius: 14px;
+      padding: 10px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .calib-btn:hover {
+      background: var(--calib-btn-hover);
+      border-color: var(--primary-blue);
+    }
+
+    .calib-btn.selected {
+      border: 1.5px solid var(--calib-selected-border);
+      background: var(--calib-selected-bg);
+      box-shadow: 0 0 12px rgba(0, 98, 255, 0.15);
+    }
+
+    .calib-stars {
+      display: flex;
+      gap: 2px;
+      color: var(--primary-blue);
+      font-size: 13px;
+    }
+
+    .calib-level {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .calib-label {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* ==========================================================================
+       BOTTOM ACTION BAR
+       ========================================================================== */
+    .bottom-bar {
+      padding: 6px 16px 14px 16px;
+      z-index: 15;
+    }
+
+    .btn-check-main {
+      width: 100%;
+      height: 50px;
+      background: var(--primary-blue);
+      border: none;
+      border-radius: 16px;
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px 0 20px;
+      cursor: pointer;
+      box-shadow: 0 8px 20px -4px var(--primary-blue-glow);
+      transition: all 0.2s ease;
+    }
+
+    .btn-check-main:hover {
+      background: var(--primary-blue-hover);
+      transform: translateY(-1px);
+    }
+    .btn-check-main:active { transform: translateY(0); }
+
+    .home-indicator {
+      width: 130px;
+      height: 4.5px;
+      background: var(--home-bar);
+      border-radius: 9999px;
+      margin: 2px auto 6px auto;
+      opacity: 0.6;
+    }
+
+    /* Slide Complete Alert Bottom Sheet */
+    .sheet-backdrop {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(3px);
+      z-index: 40;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .sheet-backdrop.show { opacity: 1; pointer-events: auto; }
+
+    .bottom-sheet {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      background: var(--sheet-bg);
+      border-top: 2.5px solid var(--sheet-border);
+      border-top-left-radius: 28px;
+      border-top-right-radius: 28px;
+      padding: 12px 18px 24px 18px;
+      box-shadow: 0 -10px 40px rgba(0,0,0,0.35);
+      z-index: 50;
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .bottom-sheet.open { transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Prototype Controls -->
+  <div class="prototype-bar">
+    <button class="proto-btn active" id="themeBtn" onclick="toggleTheme()">
+      <span id="themeIcon">☀️</span> Light Mode
+    </button>
+    <button class="proto-btn" onclick="toggleTutorTip()">
+      <span>🤖</span> AI Tutor Hint
+    </button>
+  </div>
+
+  <!-- Mobile Phone Shell -->
+  <div class="mobile-frame" id="phone">
+
+    <!-- Top Status Bar -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons">
+        <svg width="16" height="12" viewBox="0 0 17 12" fill="currentColor">
+          <rect x="0" y="9" width="3" height="3" rx="0.5"/>
+          <rect x="4.5" y="6" width="3" height="6" rx="0.5"/>
+          <rect x="9" y="3" width="3" height="9" rx="0.5"/>
+          <rect x="13.5" y="0" width="3" height="12" rx="0.5"/>
+        </svg>
+        <svg width="15" height="12" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-4.9-3.2c2.7-2.3 7.1-2.3 9.8 0l1.4-1.4c-3.5-3.1-9.1-3.1-12.6 0l1.4 1.4z"/>
+        </svg>
+        <svg width="22" height="11" viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="1" y="1" width="19" height="10" rx="3"/>
+          <rect x="3" y="3" width="12" height="6" fill="currentColor" rx="1"/>
+          <path d="M21 4.5v3" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 1. GLASSMORPHIC FLOATING TOOLBAR (Light Mode for Light Theme) -->
+    <div class="glass-header-container">
+      <div class="glass-pill-bar">
+        <!-- Close button -->
+        <button class="glass-close-btn" aria-label="Close" onclick="alert('Exit Quiz')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <!-- Glowing Liquid Progress Bar (3 / 10 = 30%) -->
+        <div class="glass-progress-track">
+          <div class="glass-progress-fill"></div>
+          <span class="glass-progress-text">3 / 10</span>
+        </div>
+
+        <!-- Streak Fire Counter -->
+        <div class="streak-badge">
+          <span class="streak-flame">🔥</span>
+          <span class="streak-count">12</span>
+        </div>
+
+        <div class="glass-divider"></div>
+
+        <!-- AI Bot Avatar Pill -->
+        <button class="bot-avatar-btn" aria-label="AI Tutor" onclick="toggleTutorTip()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0056fd" stroke-width="2" stroke-linecap="round">
+            <rect x="4" y="8" width="16" height="12" rx="4"></rect>
+            <circle cx="9" cy="13" r="1.5" fill="#0056fd"></circle>
+            <circle cx="15" cy="13" r="1.5" fill="#0056fd"></circle>
+            <path d="M12 4v4"></path>
+            <path d="M2 13h2"></path>
+            <path d="M20 13h2"></path>
+            <ellipse cx="12" cy="14" rx="10" ry="4" stroke="#3b82f6" stroke-width="1.2" stroke-dasharray="3 2" transform="rotate(-15 12 14)"></ellipse>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- AI Tutor Popover Tip -->
+    <div class="ai-hint-popover" id="aiHint">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span style="font-size: 11px; font-weight: 800; color: var(--primary-blue); text-transform: uppercase;">✦ Socratic Formula Hint</span>
+        <span style="font-size: 12px; cursor: pointer; color: var(--text-muted);" onclick="toggleTutorTip()">✕</span>
+      </div>
+      <p style="font-size: 12px; line-height: 1.45; color: var(--text-main);">
+        Recall the formula for Margin of Error: <br>
+        <span class="math" style="font-size: 14px; font-weight: 600; color: var(--primary-blue);">ME = z* · (σ / √n)</span><br>
+        Notice how sample size <span class="math">n</span> is underneath a square root in the denominator!
+      </p>
+    </div>
+
+    <!-- 2. Scrollable Quiz Content Area -->
+    <div class="content-area">
+
+      <!-- Question Card -->
+      <div class="quiz-card">
+        <div class="question-tag-row">
+          <div class="q-circle-badge">Q</div>
+          <span class="q-tag-text">Question 3</span>
+        </div>
+
+        <h1 class="question-title">
+          What happens to the margin of error in a confidence interval when sample size <span class="math">n</span> is quadrupled?
+        </h1>
+
+        <!-- Options List -->
+        <div class="options-list">
+          
+          <!-- Option A -->
+          <div class="option-item" onclick="selectOption(this, 'A')">
+            <div class="option-letter">A</div>
+            <span>It remains the same</span>
+          </div>
+
+          <!-- Option B (Selected by Default) -->
+          <div class="option-item selected" onclick="selectOption(this, 'B')">
+            <div class="option-letter">B</div>
+            <span>It is halved</span>
+          </div>
+
+          <!-- Option C -->
+          <div class="option-item" onclick="selectOption(this, 'C')">
+            <div class="option-letter">C</div>
+            <span>It is doubled</span>
+          </div>
+
+          <!-- Option D -->
+          <div class="option-item" onclick="selectOption(this, 'D')">
+            <div class="option-letter">D</div>
+            <span>It is reduced by a factor of 4</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Confidence Calibration Card -->
+      <div class="calibration-card">
+        <div class="calib-header">
+          <div class="calib-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+              <circle cx="12" cy="12" r="9"/>
+              <circle cx="12" cy="12" r="5"/>
+              <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+            </svg>
+          </div>
+          <h2 class="calib-title">Confidence Calibration</h2>
+        </div>
+        <p class="calib-subtitle">How confident are you in your answer?</p>
+
+        <!-- 3-Star Rating Grid -->
+        <div class="calib-grid">
+          
+          <!-- 1 Star -->
+          <div class="calib-btn" onclick="selectConfidence(this, 1)">
+            <div class="calib-stars">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <div class="calib-level">1★</div>
+            <div class="calib-label">Guessing</div>
+          </div>
+
+          <!-- 2 Stars -->
+          <div class="calib-btn selected" onclick="selectConfidence(this, 2)">
+            <div class="calib-stars">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <div class="calib-level">2★</div>
+            <div class="calib-label">Fairly Sure</div>
+          </div>
+
+          <!-- 3 Stars -->
+          <div class="calib-btn" onclick="selectConfidence(this, 3)">
+            <div class="calib-stars">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <div class="calib-level">3★</div>
+            <div class="calib-label">Certain</div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 3. Bottom Check Answer Button -->
+    <div class="bottom-bar">
+      <button class="btn-check-main" onclick="openSlideSheet()">
+        <span>Check Answer</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+    </div>
+
+    <!-- iOS Home Bar -->
+    <div class="home-indicator"></div>
+
+    <!-- Slide Complete Alert Bottom Sheet -->
+    <div class="sheet-backdrop" id="sheetBackdrop" onclick="closeSlideSheet()"></div>
+    <div class="bottom-sheet" id="feedbackSheet">
+      <div style="width: 38px; height: 4px; background: #cbd5e1; border-radius: 999px; margin: 0 auto 4px auto;"></div>
+
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: #ecfdf5; color: #10b981; display: flex; align-items: center; justify-content: center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+          <h2 style="font-size: 20px; font-weight: 800; color: #10b981;">Correct Deduction!</h2>
+        </div>
+        <button style="border: none; background: none; font-size: 16px; cursor: pointer; color: var(--text-muted);" onclick="closeSlideSheet()">✕</button>
+      </div>
+
+      <p style="font-size: 12px; line-height: 1.5; color: var(--text-main);">
+        Because the Margin of Error is inversely proportional to <span class="math">√n</span>, quadrupling the sample size <span class="math">n → 4n</span> results in <span class="math">√(4n) = 2√n</span>, which cuts the margin of error exactly in half (<span class="math">1/2</span>).
+      </p>
+
+      <button class="btn-check-main" style="justify-content: center; margin-top: 4px;" onclick="closeSlideSheet()">
+        <span>Continue (Enter ↵)</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Interactive JavaScript -->
+  <script>
+    let isDark = false;
+    let selectedOption = 'B';
+    let selectedConfidence = 2;
+
+    function toggleTheme() {
+      isDark = !isDark;
+      const root = document.documentElement;
+      const themeBtn = document.getElementById('themeBtn');
+
+      if (isDark) {
+        root.setAttribute('data-theme', 'dark');
+        themeBtn.innerHTML = '<span>🌙</span> Dark Mode';
+      } else {
+        root.removeAttribute('data-theme');
+        themeBtn.innerHTML = '<span>☀️</span> Light Mode';
+      }
+    }
+
+    function selectOption(element, letter) {
+      document.querySelectorAll('.option-item').forEach(item => item.classList.remove('selected'));
+      element.classList.add('selected');
+      selectedOption = letter;
+    }
+
+    function selectConfidence(element, stars) {
+      document.querySelectorAll('.calib-btn').forEach(btn => btn.classList.remove('selected'));
+      element.classList.add('selected');
+      selectedConfidence = stars;
+    }
+
+    function toggleTutorTip() {
+      document.getElementById('aiHint').classList.toggle('show');
+    }
+
+    function openSlideSheet() {
+      document.getElementById('feedbackSheet').classList.add('open');
+      document.getElementById('sheetBackdrop').classList.add('show');
+    }
+
+    function closeSlideSheet() {
+      document.getElementById('feedbackSheet').classList.remove('open');
+      document.getElementById('sheetBackdrop').classList.remove('show');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Origins of Quantum Mechanics - Reader Prototype</title>
+  <!-- Google Fonts: EB Garamond, Playfair Display & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==========================================================================
+       THEME VARIABLES (WARM SEPIA EDITORIAL LIGHT / CHARCOAL OBSIDIAN DARK)
+       ========================================================================== */
+    :root {
+      /* Warm Editorial Paper Light Mode (Default as in screenshot) */
+      --page-bg: #e8e3d8;
+      --device-bg: #faf6ee;
+      --text-main: #2b231d;
+      --text-muted: #5e5045;
+      --text-subtle: #8c7a6b;
+      
+      --card-border: rgba(140, 122, 107, 0.25);
+      --card-shadow: 0 15px 35px -5px rgba(67, 50, 36, 0.08);
+
+      --pill-bg: rgba(140, 122, 107, 0.08);
+      --pill-border: rgba(140, 122, 107, 0.2);
+      --pill-text: #6b5a4b;
+
+      --quote-border: #bcaaa4;
+      --quote-corner: #8d6e63;
+      --quote-bg: rgba(255, 255, 255, 0.45);
+      --quote-text: #2b231d;
+
+      --reflect-border: #d7ccc8;
+      --reflect-bg: rgba(245, 239, 228, 0.7);
+      --reflect-icon-bg: #eeddc8;
+      --reflect-icon-color: #8d6e63;
+      --reflect-title: #4e342e;
+
+      --nav-btn-bg: rgba(255, 255, 255, 0.7);
+      --nav-btn-border: rgba(140, 122, 107, 0.25);
+
+      --scrubber-track: #e0d7c7;
+      --scrubber-fill: #6d4c41;
+      --scrubber-thumb: #4e342e;
+      --home-bar: #3e2723;
+    }
+
+    [data-theme="dark"] {
+      /* Deep Obsidian / Warm Charcoal Dark Mode */
+      --page-bg: #0a0908;
+      --device-bg: #141312;
+      --text-main: #f5efe6;
+      --text-muted: #c4b5a5;
+      --text-subtle: #8a7e72;
+
+      --card-border: rgba(255, 255, 255, 0.09);
+      --card-shadow: 0 15px 40px -5px rgba(0, 0, 0, 0.7);
+
+      --pill-bg: rgba(255, 255, 255, 0.05);
+      --pill-border: rgba(255, 255, 255, 0.12);
+      --pill-text: #d7ccc8;
+
+      --quote-border: #5d4037;
+      --quote-corner: #8d6e63;
+      --quote-bg: rgba(25, 24, 22, 0.7);
+      --quote-text: #ede0d4;
+
+      --reflect-border: #4e342e;
+      --reflect-bg: rgba(30, 28, 26, 0.6);
+      --reflect-icon-bg: #3e2723;
+      --reflect-icon-color: #d7ccc8;
+      --reflect-title: #f5efe6;
+
+      --nav-btn-bg: rgba(255, 255, 255, 0.06);
+      --nav-btn-border: rgba(255, 255, 255, 0.1);
+
+      --scrubber-track: #2e2824;
+      --scrubber-fill: #a1887f;
+      --scrubber-thumb: #d7ccc8;
+      --home-bar: #e6dfd5;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: 'EB Garamond', Georgia, serif;
+      background-color: var(--page-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px 10px;
+      transition: background-color 0.3s ease;
+    }
+
+    /* Prototyping Toolbar */
+    .prototype-bar {
+      display: flex;
+      gap: 8px;
+      background: var(--device-bg);
+      padding: 6px;
+      border-radius: 9999px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+      border: 1px solid var(--card-border);
+      margin-bottom: 14px;
+      z-index: 100;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .proto-btn {
+      padding: 6px 14px;
+      border-radius: 9999px;
+      border: none;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .proto-btn.active {
+      background: #8d6e63;
+      color: #ffffff;
+    }
+
+    /* Mobile Frame */
+    .mobile-frame {
+      width: 100%;
+      max-width: 412px;
+      height: 876px;
+      background-color: var(--device-bg);
+      border-radius: 44px;
+      box-shadow: var(--card-shadow), 0 0 0 1px var(--card-border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: background-color 0.3s ease;
+    }
+
+    /* ==========================================================================
+       TOP STATUS BAR & NAVIGATION
+       ========================================================================== */
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 26px 4px 26px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: var(--text-main);
+      z-index: 10;
+    }
+
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 20px 6px 20px;
+      z-index: 10;
+    }
+
+    .nav-icon-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--nav-btn-bg);
+      border: 1px solid var(--nav-btn-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-main);
+      transition: transform 0.15s ease, background 0.2s ease;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    }
+    .nav-icon-btn:active { transform: scale(0.92); }
+
+    .nav-right-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-icon-btn.bookmarked svg path {
+      fill: var(--text-main);
+    }
+
+    /* ==========================================================================
+       SCROLLABLE ARTICLE CONTENT
+       ========================================================================== */
+    .article-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 22px 20px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      scrollbar-width: thin;
+    }
+
+    /* Main Article Title */
+    .article-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 30px;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.18;
+      letter-spacing: -0.3px;
+    }
+
+    /* Metadata Tag Pill */
+    .meta-pill {
+      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--pill-bg);
+      border: 1px solid var(--pill-border);
+      border-radius: 9999px;
+      padding: 4px 12px;
+      font-size: 13.5px;
+      color: var(--pill-text);
+      font-family: 'EB Garamond', Georgia, serif;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    /* Body Paragraphs */
+    .body-p {
+      font-size: 16.5px;
+      line-height: 1.5;
+      color: var(--text-main);
+      text-align: justify;
+      text-justify: inter-word;
+      font-weight: 400;
+    }
+
+    /* Drop Cap */
+    .drop-cap-p::first-letter {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 58px;
+      float: left;
+      line-height: 0.85;
+      padding-top: 4px;
+      padding-right: 10px;
+      padding-bottom: 0px;
+      color: var(--text-main);
+      font-weight: 700;
+    }
+
+    /* ==========================================================================
+       ANTIQUE ORNATE QUOTE CALLOUT
+       ========================================================================== */
+    .ornate-quote-box {
+      position: relative;
+      background: var(--quote-bg);
+      border: 1px solid var(--quote-border);
+      border-radius: 12px;
+      padding: 18px 16px;
+      margin: 6px 0;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* Decorative Corner Filigree SVGs */
+    .corner-decor {
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      color: var(--quote-corner);
+      pointer-events: none;
+    }
+    .corner-tl { top: 3px; left: 3px; }
+    .corner-tr { top: 3px; right: 3px; transform: scaleX(-1); }
+    .corner-bl { bottom: 3px; left: 3px; transform: scaleY(-1); }
+    .corner-br { bottom: 3px; right: 3px; transform: scale(-1); }
+
+    .portrait-wrapper {
+      width: 86px;
+      height: 110px;
+      flex-shrink: 0;
+      border-radius: 6px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.03);
+    }
+
+    .portrait-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: sepia(0.35) contrast(1.08);
+      border-radius: 6px;
+    }
+
+    .quote-content {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .quote-mark {
+      font-family: 'Playfair Display', serif;
+      font-size: 26px;
+      line-height: 1;
+      color: #8d6e63;
+      font-weight: 700;
+    }
+
+    .quote-text {
+      font-size: 15px;
+      font-style: italic;
+      color: var(--quote-text);
+      line-height: 1.35;
+      font-weight: 500;
+    }
+
+    .author-divider {
+      width: 100%;
+      height: 1px;
+      background: radial-gradient(circle, var(--quote-border) 0%, transparent 80%);
+      margin: 4px 0 2px 0;
+    }
+
+    .quote-author {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .quote-sub {
+      font-size: 11px;
+      color: var(--text-subtle);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 500;
+    }
+
+    /* ==========================================================================
+       STOP & REFLECT CARD
+       ========================================================================== */
+    .reflect-card {
+      background: var(--reflect-bg);
+      border: 1.5px dashed var(--reflect-border);
+      border-radius: 16px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-top: 4px;
+    }
+
+    .reflect-card:hover {
+      filter: brightness(0.98);
+      border-color: #8d6e63;
+    }
+
+    .reflect-icon-pill {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--reflect-icon-bg);
+      color: var(--reflect-icon-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 18px;
+    }
+
+    .reflect-text-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .reflect-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--reflect-title);
+    }
+
+    .reflect-question {
+      font-size: 12px;
+      line-height: 1.35;
+      color: var(--text-muted);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 500;
+    }
+
+    .reflect-chevron {
+      color: var(--text-subtle);
+      flex-shrink: 0;
+    }
+
+    /* ==========================================================================
+       BOTTOM READING PROGRESS / CONTROLS
+       ========================================================================== */
+    .bottom-reader-bar {
+      padding: 8px 20px 8px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      z-index: 10;
+    }
+
+    .reader-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+      border-radius: 8px;
+      transition: color 0.2s ease;
+    }
+    .reader-btn:hover { color: var(--text-main); }
+
+    .progress-scrubber {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .progress-label {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-subtle);
+    }
+
+    .scrubber-track {
+      width: 100%;
+      max-width: 160px;
+      height: 3px;
+      background: var(--scrubber-track);
+      border-radius: 9999px;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .scrubber-fill {
+      width: 20%;
+      height: 100%;
+      background: var(--scrubber-fill);
+      border-radius: 9999px;
+      position: relative;
+    }
+
+    .scrubber-thumb {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--scrubber-thumb);
+      position: absolute;
+      right: -5px;
+      top: -3.5px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+
+    .home-indicator {
+      width: 130px;
+      height: 4.5px;
+      background: var(--home-bar);
+      border-radius: 9999px;
+      margin: 2px auto 8px auto;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Prototype Toolbar -->
+  <div class="prototype-bar">
+    <button class="proto-btn active" id="lightThemeBtn" onclick="setTheme('light')">
+      <span>☀️</span> Sepia Light
+    </button>
+    <button class="proto-btn" id="darkThemeBtn" onclick="setTheme('dark')">
+      <span>🌙</span> Night Dark
+    </button>
+  </div>
+
+  <!-- Mobile Frame -->
+  <div class="mobile-frame" id="readerApp">
+
+    <!-- Top Status Bar -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons">
+        <svg width="16" height="12" viewBox="0 0 17 12" fill="currentColor">
+          <rect x="0" y="9" width="3" height="3" rx="0.5"/>
+          <rect x="4.5" y="6" width="3" height="6" rx="0.5"/>
+          <rect x="9" y="3" width="3" height="9" rx="0.5"/>
+          <rect x="13.5" y="0" width="3" height="12" rx="0.5"/>
+        </svg>
+        <svg width="15" height="12" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-4.9-3.2c2.7-2.3 7.1-2.3 9.8 0l1.4-1.4c-3.5-3.1-9.1-3.1-12.6 0l1.4 1.4z"/>
+        </svg>
+        <svg width="22" height="11" viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="1" y="1" width="19" height="10" rx="3"/>
+          <rect x="3" y="3" width="12" height="6" fill="currentColor" rx="1"/>
+          <path d="M21 4.5v3" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Navigation Header -->
+    <div class="nav-bar">
+      <button class="nav-icon-btn" aria-label="Back">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+      </button>
+
+      <div class="nav-right-group">
+        <!-- Bookmark Button -->
+        <button class="nav-icon-btn" id="bookmarkBtn" onclick="toggleBookmark()" aria-label="Bookmark">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+          </svg>
+        </button>
+
+        <!-- More Options Button -->
+        <button class="nav-icon-btn" aria-label="More Options">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="5" cy="12" r="2"/>
+            <circle cx="12" cy="12" r="2"/>
+            <circle cx="19" cy="12" r="2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Article Content -->
+    <div class="article-scroll">
+      
+      <!-- Article Title -->
+      <h1 class="article-title">
+        Origins of Quantum Mechanics:<br>The Ultraviolet Catastrophe
+      </h1>
+
+      <!-- Meta Pill -->
+      <div class="meta-pill">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+        </svg>
+        <span>Deep Synthesis • 4 min read</span>
+      </div>
+
+      <!-- Drop Cap Paragraph -->
+      <p class="body-p drop-cap-p">
+        In the late 19th century, physicists believed they understood radiation. Classical physics, especially the work of Maxwell and Boltzmann, could successfully explain how light behaves at macroscopic scales. But when scientists turned their attention to the interaction between light and matter at the atomic scale, a troubling problem emerged.
+      </p>
+
+      <p class="body-p">
+        According to classical theory, objects emit electromagnetic radiation at all wavelengths. As the wavelength becomes shorter (or the frequency higher), the theory predicted that the intensity of radiation should increase without bound.
+      </p>
+
+      <!-- Antique Ornate Quote Callout -->
+      <div class="ornate-quote-box">
+        <!-- SVG Corner Ornaments -->
+        <svg class="corner-decor corner-tl" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M2,2 L10,2 C10,5 5,10 2,10 L2,2 Z M3,3 L3,8 C5,8 8,5 8,3 L3,3 Z"/>
+          <circle cx="14" cy="3" r="1.2"/>
+          <circle cx="3" cy="14" r="1.2"/>
+        </svg>
+        <svg class="corner-decor corner-tr" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M2,2 L10,2 C10,5 5,10 2,10 L2,2 Z M3,3 L3,8 C5,8 8,5 8,3 L3,3 Z"/>
+          <circle cx="14" cy="3" r="1.2"/>
+          <circle cx="3" cy="14" r="1.2"/>
+        </svg>
+        <svg class="corner-decor corner-bl" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M2,2 L10,2 C10,5 5,10 2,10 L2,2 Z M3,3 L3,8 C5,8 8,5 8,3 L3,3 Z"/>
+          <circle cx="14" cy="3" r="1.2"/>
+          <circle cx="3" cy="14" r="1.2"/>
+        </svg>
+        <svg class="corner-decor corner-br" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M2,2 L10,2 C10,5 5,10 2,10 L2,2 Z M3,3 L3,8 C5,8 8,5 8,3 L3,3 Z"/>
+          <circle cx="14" cy="3" r="1.2"/>
+          <circle cx="3" cy="14" r="1.2"/>
+        </svg>
+
+        <!-- Max Planck Portrait -->
+        <div class="portrait-wrapper">
+          <img class="portrait-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Max_Planck_1933.jpg/320px-Max_Planck_1933.jpg" alt="Max Planck" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'86\' height=\'110\' fill=\'%238d6e63\'><rect width=\'86\' height=\'110\' fill=\'%23e0d7c7\'/><text x=\'43\' y=\'60\' text-anchor=\'middle\' font-size=\'12\'>Max Planck</text></svg>'">
+        </div>
+
+        <!-- Quote Copy -->
+        <div class="quote-content">
+          <div class="quote-mark">“</div>
+          <p class="quote-text">
+            The more we study nature, the more we stand amazed at the simplicity of her secrets.
+          </p>
+          <div class="author-divider"></div>
+          <div class="quote-author">– Max Planck</div>
+          <div class="quote-sub">Nobel Laureate in Physics, 1918</div>
+        </div>
+      </div>
+
+      <!-- Continuation Paragraphs -->
+      <p class="body-p">
+        This led to an absurd conclusion: a black body—a perfect emitter and absorber of radiation—should radiate infinite energy in the ultraviolet region. This contradiction between theory and experiment became known as the ultraviolet catastrophe.
+      </p>
+
+      <p class="body-p">
+        The failure of classical physics at short wavelengths signaled the breakdown of an entire worldview and set the stage for a revolutionary idea: energy is quantized.
+      </p>
+
+      <!-- Stop & Reflect Interactive Card -->
+      <div class="reflect-card" onclick="alert('Reflect prompt clicked!')">
+        <div class="reflect-icon-pill">
+          🧠
+        </div>
+        <div class="reflect-text-group">
+          <div class="reflect-title">Stop & Reflect</div>
+          <div class="reflect-question">
+            Why do you think classical physics failed at high frequencies? What does this tell us about the limits of established theories?
+          </div>
+        </div>
+        <svg class="reflect-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </div>
+
+    </div>
+
+    <!-- Bottom Navigation & Progress Scrubber -->
+    <div class="bottom-reader-bar">
+      <!-- Table of Contents / Outline Button -->
+      <button class="reader-btn" aria-label="Table of Contents">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="8" y1="6" x2="21" y2="6"></line>
+          <line x1="8" y1="12" x2="21" y2="12"></line>
+          <line x1="8" y1="18" x2="21" y2="18"></line>
+          <line x1="3" y1="6" x2="3.01" y2="6"></line>
+          <line x1="3" y1="12" x2="3.01" y2="12"></line>
+          <line x1="3" y1="18" x2="3.01" y2="18"></line>
+        </svg>
+      </button>
+
+      <!-- Reading Position Scrubber -->
+      <div class="progress-scrubber" onclick="advanceProgress()">
+        <span class="progress-label" id="progressText">2 of 10 • 20%</span>
+        <div class="scrubber-track">
+          <div class="scrubber-fill" id="scrubberFill">
+            <div class="scrubber-thumb"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Night / Dark Mode Moon Toggle Button -->
+      <button class="reader-btn" aria-label="Toggle Theme" onclick="toggleTheme()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- iOS Home Indicator -->
+    <div class="home-indicator"></div>
+
+  </div>
+
+  <!-- Interactive JavaScript -->
+  <script>
+    let isDark = false;
+    let isBookmarked = false;
+    let progressVal = 20;
+
+    function setTheme(theme) {
+      const root = document.documentElement;
+      const lightBtn = document.getElementById('lightThemeBtn');
+      const darkBtn = document.getElementById('darkThemeBtn');
+
+      if (theme === 'dark') {
+        root.setAttribute('data-theme', 'dark');
+        darkBtn.classList.add('active');
+        lightBtn.classList.remove('active');
+        isDark = true;
+      } else {
+        root.removeAttribute('data-theme');
+        lightBtn.classList.add('active');
+        darkBtn.classList.remove('active');
+        isDark = false;
+      }
+    }
+
+    function toggleTheme() {
+      setTheme(isDark ? 'light' : 'dark');
+    }
+
+    function toggleBookmark() {
+      isBookmarked = !isBookmarked;
+      const btn = document.getElementById('bookmarkBtn');
+      if (isBookmarked) {
+        btn.classList.add('bookmarked');
+      } else {
+        btn.classList.remove('bookmarked');
+      }
+    }
+
+    function advanceProgress() {
+      progressVal = progressVal >= 100 ? 10 : progressVal + 10;
+      const page = Math.round((progressVal / 100) * 10);
+      document.getElementById('progressText').innerText = `${page} of 10 • ${progressVal}%`;
+      document.getElementById('scrubberFill').style.width = `${progressVal}%`;
+    }
+  </script>
+</body>
+</html>

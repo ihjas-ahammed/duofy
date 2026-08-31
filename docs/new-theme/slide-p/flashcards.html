@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spaced Repetition Flashcard - Neuropharmacology</title>
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==========================================================================
+       DESIGN SYSTEM TOKENS (LIGHT & DARK)
+       ========================================================================== */
+    :root {
+      /* Frosted Light Mode */
+      --page-bg: #e2e8f0;
+      --device-bg: #f8fafc;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-subtle: #94a3b8;
+
+      --card-bg: #ffffff;
+      --card-border: rgba(226, 232, 240, 0.9);
+      --card-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.04);
+
+      /* Glass Toolbar Tokens */
+      --glass-bar-bg: rgba(255, 255, 255, 0.85);
+      --glass-bar-border: rgba(255, 255, 255, 0.9);
+      --glass-bar-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.8);
+      --glass-btn-bg: #f1f5f9;
+      --glass-btn-border: #e2e8f0;
+      --glass-btn-color: #334155;
+      --glass-track-bg: #e2e8f0;
+      --glass-track-text: #0056fd;
+      --glass-divider: #e2e8f0;
+      --glass-bot-bg: radial-gradient(circle at 30% 30%, #eff6ff, #dbeafe);
+      --glass-bot-border: #93c5fd;
+
+      /* 3D Glass Flashcard Tokens */
+      --flashcard-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(241, 245, 249, 0.75));
+      --flashcard-border: rgba(255, 255, 255, 0.9);
+      --flashcard-shadow: 0 20px 40px -10px rgba(0, 86, 253, 0.15), 0 0 0 1.5px rgba(0, 86, 253, 0.3);
+      --flashcard-glow: radial-gradient(circle at 50% 100%, rgba(139, 92, 246, 0.15), transparent 70%);
+      --flashcard-sub-text: #6366f1;
+
+      /* Metrics Box */
+      --metrics-bg: #ffffff;
+      --metrics-border: rgba(226, 232, 240, 0.9);
+
+      /* Grade Buttons (Light) */
+      --btn-again-bg: #fef2f2;
+      --btn-again-border: #fecaca;
+      --btn-again-color: #ef4444;
+
+      --btn-hard-bg: #fffbeb;
+      --btn-hard-border: #fde68a;
+      --btn-hard-color: #d97706;
+
+      --btn-good-bg: #eff6ff;
+      --btn-good-border: #bfdbfe;
+      --btn-good-color: #2563eb;
+
+      --btn-easy-bg: #f0fdf4;
+      --btn-easy-border: #bbf7d0;
+      --btn-easy-color: #16a34a;
+
+      --primary-blue: #0062ff;
+      --primary-blue-hover: #0050d4;
+      --primary-blue-glow: rgba(0, 98, 255, 0.35);
+
+      --sheet-bg: #f7fdfa;
+      --sheet-border: #10b981;
+      --home-bar: #0f172a;
+    }
+
+    [data-theme="dark"] {
+      /* Midnight Obsidian Dark Mode (Default) */
+      --page-bg: #030712;
+      --device-bg: #070c18;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-subtle: #64748b;
+
+      --card-bg: #0c1322;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.6);
+
+      /* Dark Glass Toolbar Tokens */
+      --glass-bar-bg: rgba(15, 23, 42, 0.75);
+      --glass-bar-border: rgba(255, 255, 255, 0.15);
+      --glass-bar-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+      --glass-btn-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
+      --glass-btn-border: rgba(255, 255, 255, 0.18);
+      --glass-btn-color: #ffffff;
+      --glass-track-bg: rgba(0, 0, 0, 0.45);
+      --glass-track-text: #7dd3fc;
+      --glass-divider: rgba(255, 255, 255, 0.15);
+      --glass-bot-bg: radial-gradient(circle at 30% 30%, #381f75, #110e2e);
+      --glass-bot-border: #a855f7;
+
+      /* 3D Glass Flashcard Tokens (Dark) */
+      --flashcard-bg: linear-gradient(145deg, rgba(17, 24, 39, 0.85), rgba(11, 18, 32, 0.95));
+      --flashcard-border: rgba(56, 189, 248, 0.25);
+      --flashcard-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 30px rgba(56, 189, 248, 0.25), 0 0 45px rgba(168, 85, 247, 0.2);
+      --flashcard-glow: radial-gradient(circle at 50% 100%, rgba(168, 85, 247, 0.25), transparent 70%);
+      --flashcard-sub-text: #a5b4fc;
+
+      /* Metrics Box */
+      --metrics-bg: #0c1322;
+      --metrics-border: rgba(255, 255, 255, 0.08);
+
+      /* Grade Buttons (Dark Neon) */
+      --btn-again-bg: rgba(239, 68, 68, 0.08);
+      --btn-again-border: rgba(239, 68, 68, 0.4);
+      --btn-again-color: #f87171;
+
+      --btn-hard-bg: rgba(245, 158, 11, 0.08);
+      --btn-hard-border: rgba(245, 158, 11, 0.4);
+      --btn-hard-color: #fbbf24;
+
+      --btn-good-bg: rgba(59, 130, 246, 0.08);
+      --btn-good-border: rgba(59, 130, 246, 0.4);
+      --btn-good-color: #60a5fa;
+
+      --btn-easy-bg: rgba(16, 185, 129, 0.08);
+      --btn-easy-border: rgba(16, 185, 129, 0.4);
+      --btn-easy-color: #34d399;
+
+      --primary-blue: #2563eb;
+      --primary-blue-hover: #1d4ed8;
+      --primary-blue-glow: rgba(37, 99, 235, 0.4);
+
+      --sheet-bg: #091e17;
+      --sheet-border: #059669;
+      --home-bar: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--page-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px 10px;
+      transition: background-color 0.3s ease;
+    }
+
+    /* Prototyping Controls */
+    .prototype-bar {
+      display: flex;
+      gap: 8px;
+      background: var(--card-bg);
+      padding: 6px;
+      border-radius: 9999px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+      border: 1px solid var(--card-border);
+      margin-bottom: 14px;
+      z-index: 100;
+    }
+
+    .proto-btn {
+      padding: 6px 16px;
+      border-radius: 9999px;
+      border: none;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .proto-btn.active {
+      background: var(--primary-blue);
+      color: #ffffff;
+    }
+
+    /* Mobile Shell Frame */
+    .mobile-frame {
+      width: 100%;
+      max-width: 412px;
+      height: 884px;
+      background-color: var(--device-bg);
+      border-radius: 44px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--card-border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: background-color 0.3s ease;
+    }
+
+    /* ==========================================================================
+       TOP STATUS BAR & SIGNATURE GLASS TOOLBAR
+       ========================================================================== */
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 26px 4px 26px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      z-index: 15;
+    }
+
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .glass-header-container {
+      padding: 8px 16px 8px 16px;
+      z-index: 15;
+    }
+
+    .glass-pill-bar {
+      background: var(--glass-bar-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-bar-border);
+      border-radius: 9999px;
+      height: 52px;
+      padding: 4px 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: var(--glass-bar-shadow);
+      transition: all 0.3s ease;
+    }
+
+    .glass-close-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--glass-btn-bg);
+      border: 1px solid var(--glass-btn-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--glass-btn-color);
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.15s ease;
+    }
+    .glass-close-btn:active { transform: scale(0.92); }
+
+    .glass-progress-track {
+      flex: 1;
+      height: 32px;
+      background: var(--glass-track-bg);
+      border-radius: 9999px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 2px;
+      overflow: hidden;
+    }
+
+    .glass-progress-fill {
+      width: 56%; /* 14 / 25 = 56% */
+      height: 100%;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, #0052d4 0%, #4364f7 50%, #6fb1fc 100%);
+      box-shadow: 0 0 14px rgba(67, 100, 247, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+      position: relative;
+    }
+
+    .glass-progress-fill::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      animation: waveGlow 2.5s infinite linear;
+    }
+
+    @keyframes waveGlow {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .glass-progress-text {
+      position: absolute;
+      right: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--glass-track-text);
+      letter-spacing: 0.2px;
+    }
+
+    .streak-badge {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      padding: 0 4px;
+    }
+
+    .streak-flame {
+      font-size: 16px;
+      filter: drop-shadow(0 0 4px #f97316);
+    }
+
+    .streak-count {
+      font-size: 13px;
+      font-weight: 800;
+      color: #f59e0b;
+    }
+
+    .glass-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--glass-divider);
+    }
+
+    .bot-avatar-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--glass-bot-bg);
+      border: 1.5px solid var(--glass-bot-border);
+      box-shadow: 0 0 12px rgba(147, 197, 253, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      flex-shrink: 0;
+      transition: transform 0.2s ease;
+    }
+    .bot-avatar-btn:hover { transform: scale(1.05); }
+
+    /* AI Hint Floating Popover */
+    .ai-hint-popover {
+      position: absolute;
+      top: 108px;
+      right: 20px;
+      left: 20px;
+      background: var(--card-bg);
+      border: 1.5px solid var(--primary-blue);
+      box-shadow: var(--card-shadow), 0 0 16px rgba(0, 98, 255, 0.25);
+      border-radius: 18px;
+      padding: 12px 14px;
+      z-index: 50;
+      display: none;
+      animation: popIn 0.2s ease;
+    }
+    .ai-hint-popover.show { display: block; }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ==========================================================================
+       TOP METRICS: MEMORY STABILITY & DUE TODAY
+       ========================================================================== */
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 2px 16px 8px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Sub-header Title */
+    .category-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      margin-top: 2px;
+    }
+
+    .card-counter {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .topic-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #818cf8;
+    }
+
+    .topic-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #818cf8;
+    }
+
+    /* Dual Metrics Box */
+    .metrics-card {
+      background: var(--metrics-bg);
+      border: 1px solid var(--metrics-border);
+      border-radius: 20px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--card-shadow);
+    }
+
+    .stability-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brain-glow-icon {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #38bdf8;
+      filter: drop-shadow(0 0 6px #818cf8);
+    }
+
+    .stability-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .stability-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-subtle);
+    }
+
+    .stability-val {
+      font-size: 14px;
+      font-weight: 800;
+      color: #10b981;
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .stability-val span {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .stability-progress-bar {
+      width: 110px;
+      height: 3px;
+      background: var(--card-border);
+      border-radius: 9999px;
+      margin-top: 3px;
+      overflow: hidden;
+    }
+
+    .stability-progress-fill {
+      width: 88%;
+      height: 100%;
+      background: #10b981;
+      box-shadow: 0 0 6px #10b981;
+      border-radius: 9999px;
+    }
+
+    /* Due Today Ring Gauge */
+    .due-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .ring-gauge-wrapper {
+      position: relative;
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ring-svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .ring-bg {
+      fill: none;
+      stroke: var(--card-border);
+      stroke-width: 3.5;
+    }
+
+    .ring-progress {
+      fill: none;
+      stroke: #818cf8;
+      stroke-width: 3.5;
+      stroke-linecap: round;
+      stroke-dasharray: 100;
+      stroke-dashoffset: 35;
+      filter: drop-shadow(0 0 4px #818cf8);
+    }
+
+    .ring-count {
+      position: absolute;
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .due-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .due-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-subtle);
+    }
+
+    .due-count-text {
+      font-size: 12px;
+      font-weight: 700;
+      color: #818cf8;
+    }
+
+    /* ==========================================================================
+       3D HOLOGRAPHIC FLASHCARD WITH FLIP EFFECT
+       ========================================================================== */
+    .flashcard-3d-scene {
+      width: 100%;
+      height: 340px;
+      perspective: 1200px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .flashcard-inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .flashcard-3d-scene.flipped .flashcard-inner {
+      transform: rotateY(180deg);
+    }
+
+    .card-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: 28px;
+      background: var(--flashcard-bg);
+      border: 1.5px solid var(--flashcard-border);
+      box-shadow: var(--flashcard-shadow);
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+
+    .card-face-back {
+      transform: rotateY(180deg);
+    }
+
+    /* Neon rim-lighting glow under the card */
+    .card-face::before {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0; height: 100%;
+      background: var(--flashcard-glow);
+      pointer-events: none;
+    }
+
+    .card-face-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 2;
+    }
+
+    .face-badge {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      padding: 4px 10px;
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      color: #93c5fd;
+    }
+
+    .flip-helper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      color: var(--text-subtle);
+    }
+
+    .flip-btn-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-main);
+    }
+
+    .flip-helper-label {
+      font-size: 9.5px;
+      font-weight: 600;
+      color: var(--text-subtle);
+    }
+
+    .card-face-body {
+      text-align: center;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 0 10px;
+    }
+
+    .card-main-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1.3;
+      letter-spacing: -0.4px;
+    }
+
+    .card-sub-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--flashcard-sub-text);
+      letter-spacing: -0.2px;
+    }
+
+    /* Holographic Synapse Vector Drawing */
+    .synapse-vector-wrapper {
+      width: 100%;
+      height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+      opacity: 0.85;
+    }
+
+    /* Back Face Info List */
+    .back-content-list {
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--text-main);
+      z-index: 2;
+      padding: 4px 6px;
+    }
+
+    .back-content-item strong {
+      color: #38bdf8;
+    }
+
+    /* ==========================================================================
+       SPACED REPETITION 4-BUTTON GRADING BAR
+       ========================================================================== */
+    .grading-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      z-index: 10;
+      margin-top: 2px;
+    }
+
+    .grade-btn {
+      height: 84px;
+      border-radius: 18px;
+      border: 1.5px solid transparent;
+      padding: 8px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .grade-btn:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.1);
+    }
+    .grade-btn:active {
+      transform: translateY(0);
+    }
+
+    .grade-again {
+      background: var(--btn-again-bg);
+      border-color: var(--btn-again-border);
+      color: var(--btn-again-color);
+    }
+
+    .grade-hard {
+      background: var(--btn-hard-bg);
+      border-color: var(--btn-hard-border);
+      color: var(--btn-hard-color);
+    }
+
+    .grade-good {
+      background: var(--btn-good-bg);
+      border-color: var(--btn-good-border);
+      color: var(--btn-good-color);
+    }
+
+    .grade-easy {
+      background: var(--btn-easy-bg);
+      border-color: var(--btn-easy-border);
+      color: var(--btn-easy-color);
+    }
+
+    .grade-icon {
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .grade-name {
+      font-size: 12.5px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .grade-interval {
+      font-size: 10.5px;
+      font-weight: 600;
+      opacity: 0.85;
+    }
+
+    /* Footer Tag */
+    .footer-review-tag {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-subtle);
+      margin-top: auto;
+    }
+
+    .home-indicator {
+      width: 130px;
+      height: 4.5px;
+      background: var(--home-bar);
+      border-radius: 9999px;
+      margin: 2px auto 6px auto;
+      opacity: 0.6;
+      z-index: 15;
+    }
+
+    /* Slide Complete Alert Bottom Sheet */
+    .sheet-backdrop {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 40;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .sheet-backdrop.show { opacity: 1; pointer-events: auto; }
+
+    .bottom-sheet {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      background: var(--sheet-bg);
+      border-top: 2.5px solid var(--sheet-border);
+      border-top-left-radius: 28px;
+      border-top-right-radius: 28px;
+      padding: 14px 18px 24px 18px;
+      box-shadow: 0 -10px 40px rgba(0,0,0,0.4);
+      z-index: 50;
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .bottom-sheet.open { transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Prototype Controls -->
+  <div class="prototype-bar">
+    <button class="proto-btn active" id="themeBtn" onclick="toggleTheme()">
+      <span id="themeIcon">🌙</span> Dark Mode
+    </button>
+    <button class="proto-btn" onclick="flipCard()">
+      <span>🔄</span> Flip Card
+    </button>
+    <button class="proto-btn" onclick="toggleTutorTip()">
+      <span>🤖</span> AI Tutor Hint
+    </button>
+  </div>
+
+  <!-- Mobile Frame Shell -->
+  <div class="mobile-frame" id="phone">
+
+    <!-- Top Status Bar -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons">
+        <svg width="16" height="12" viewBox="0 0 17 12" fill="currentColor">
+          <rect x="0" y="9" width="3" height="3" rx="0.5"/>
+          <rect x="4.5" y="6" width="3" height="6" rx="0.5"/>
+          <rect x="9" y="3" width="3" height="9" rx="0.5"/>
+          <rect x="13.5" y="0" width="3" height="12" rx="0.5"/>
+        </svg>
+        <svg width="15" height="12" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-4.9-3.2c2.7-2.3 7.1-2.3 9.8 0l1.4-1.4c-3.5-3.1-9.1-3.1-12.6 0l1.4 1.4z"/>
+        </svg>
+        <svg width="22" height="11" viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="1" y="1" width="19" height="10" rx="3"/>
+          <rect x="3" y="3" width="12" height="6" fill="currentColor" rx="1"/>
+          <path d="M21 4.5v3" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 1. SIGNATURE GLASSMORPHIC FLOATING TOOLBAR -->
+    <div class="glass-header-container">
+      <div class="glass-pill-bar">
+        <!-- Close button -->
+        <button class="glass-close-btn" aria-label="Close" onclick="alert('Exit Flashcards')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <!-- Glowing Progress Track (14 / 25 = 56%) -->
+        <div class="glass-progress-track">
+          <div class="glass-progress-fill"></div>
+          <span class="glass-progress-text">14 / 25</span>
+        </div>
+
+        <!-- Streak Fire Counter -->
+        <div class="streak-badge">
+          <span class="streak-flame">🔥</span>
+          <span class="streak-count">12</span>
+        </div>
+
+        <div class="glass-divider"></div>
+
+        <!-- AI Bot Avatar Pill -->
+        <button class="bot-avatar-btn" aria-label="AI Tutor" onclick="toggleTutorTip()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0056fd" stroke-width="2" stroke-linecap="round">
+            <rect x="4" y="8" width="16" height="12" rx="4"></rect>
+            <circle cx="9" cy="13" r="1.5" fill="#0056fd"></circle>
+            <circle cx="15" cy="13" r="1.5" fill="#0056fd"></circle>
+            <path d="M12 4v4"></path>
+            <path d="M2 13h2"></path>
+            <path d="M20 13h2"></path>
+            <ellipse cx="12" cy="14" rx="10" ry="4" stroke="#3b82f6" stroke-width="1.2" stroke-dasharray="3 2" transform="rotate(-15 12 14)"></ellipse>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- AI Tutor Popover Tip -->
+    <div class="ai-hint-popover" id="aiHint">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span style="font-size: 11px; font-weight: 800; color: var(--primary-blue); text-transform: uppercase;">✦ Pharmacology High-Yield Tip</span>
+        <span style="font-size: 12px; cursor: pointer; color: var(--text-muted);" onclick="toggleTutorTip()">✕</span>
+      </div>
+      <p style="font-size: 12px; line-height: 1.45; color: var(--text-main);">
+        <strong>Non-ergot D2 Agonists</strong> (Pramipexole, Ropinirole) are preferred first-line in Parkinson's to delay levodopa-induced dyskinesias. Watch for impulse control side effects!
+      </p>
+    </div>
+
+    <!-- 2. Scrollable Content Area -->
+    <div class="content-area">
+
+      <!-- Category Sub-Header -->
+      <div class="category-header">
+        <span class="card-counter">Card 14 / 25</span>
+        <div class="topic-pill">
+          <div class="topic-dot"></div>
+          <span>Neuropharmacology</span>
+        </div>
+      </div>
+
+      <!-- Top Dual Metrics Card -->
+      <div class="metrics-card">
+        <!-- Memory Stability -->
+        <div class="stability-group">
+          <div class="brain-glow-icon">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.04z"></path>
+              <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.04z"></path>
+            </svg>
+          </div>
+          <div class="stability-info">
+            <span class="stability-label">Memory Stability</span>
+            <div class="stability-val">
+              <strong id="stabilityVal">88%</strong>
+              <span>Retained</span>
+            </div>
+            <div class="stability-progress-bar">
+              <div class="stability-progress-fill" id="stabilityFill"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Due Today Gauge -->
+        <div class="due-group">
+          <div class="ring-gauge-wrapper">
+            <svg class="ring-svg" viewBox="0 0 36 36">
+              <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+              <path class="ring-progress" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+            </svg>
+            <span class="ring-count" id="dueCount">7</span>
+          </div>
+          <div class="due-info">
+            <span class="due-label">Due Today</span>
+            <span class="due-count-text" id="dueLabel">7 cards</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3D Holographic Flashcard Container -->
+      <div class="flashcard-3d-scene" id="flashcardScene" onclick="flipCard()">
+        <div class="flashcard-inner">
+          
+          <!-- FRONT FACE -->
+          <div class="card-face card-face-front">
+            <div class="card-face-header">
+              <span class="face-badge">FRONT</span>
+              <div class="flip-helper">
+                <div class="flip-btn-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                  </svg>
+                </div>
+                <span class="flip-helper-label">Tap to flip</span>
+              </div>
+            </div>
+
+            <div class="card-face-body">
+              <h2 class="card-main-title">
+                Dopamine D2<br>Receptor Agonists -
+              </h2>
+              <div class="card-sub-title">
+                Clinical Mechanism &amp;<br>Side Effects
+              </div>
+            </div>
+
+            <!-- Synapse & Vesicles Line Art SVG -->
+            <div class="synapse-vector-wrapper">
+              <svg viewBox="0 0 140 80" width="100%" height="100%">
+                <!-- Presynaptic bulb -->
+                <path d="M50,0 C50,25 40,35 40,45 C40,55 55,60 70,60 C85,60 100,55 100,45 C100,35 90,25 90,0" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/>
+                
+                <!-- Neurotransmitter vesicles -->
+                <circle cx="60" cy="35" r="2.5" fill="#a855f7"/>
+                <circle cx="75" cy="28" r="2.5" fill="#a855f7"/>
+                <circle cx="80" cy="40" r="2.5" fill="#a855f7"/>
+
+                <!-- Released dopamine molecules in synaptic cleft -->
+                <circle cx="58" cy="67" r="2" fill="#38bdf8" filter="drop-shadow(0 0 3px #38bdf8)"/>
+                <circle cx="70" cy="65" r="2" fill="#38bdf8" filter="drop-shadow(0 0 3px #38bdf8)"/>
+                <circle cx="82" cy="68" r="2" fill="#38bdf8" filter="drop-shadow(0 0 3px #38bdf8)"/>
+
+                <!-- Postsynaptic membrane with D2 receptors -->
+                <path d="M35,76 Q70,72 105,76" fill="none" stroke="#818cf8" stroke-width="2" stroke-linecap="round"/>
+                <rect x="54" y="73" width="8" height="5" rx="1.5" fill="#a855f7"/>
+                <rect x="66" y="72" width="8" height="5" rx="1.5" fill="#a855f7"/>
+                <rect x="78" y="73" width="8" height="5" rx="1.5" fill="#a855f7"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- BACK FACE (Answers / Details) -->
+          <div class="card-face card-face-back">
+            <div class="card-face-header">
+              <span class="face-badge" style="color: #34d399; border-color: rgba(16, 185, 129, 0.3);">BACK</span>
+              <div class="flip-helper">
+                <div class="flip-btn-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                  </svg>
+                </div>
+                <span class="flip-helper-label">Tap to flip</span>
+              </div>
+            </div>
+
+            <div class="back-content-list">
+              <div class="back-content-item">
+                <strong>Primary Agents:</strong> Pramipexole (D3>D2), Ropinirole (non-ergot), Bromocriptine (ergot).
+              </div>
+              <div class="back-content-item">
+                <strong>Clinical Indications:</strong> First-line monotherapy in early Parkinson's Disease &amp; Restless Legs Syndrome (RLS).
+              </div>
+              <div class="back-content-item">
+                <strong>Notable Adverse Effects:</strong> Impulse control disorders (pathological gambling, binge eating), sudden sleep attacks, orthostatic hypotension.
+              </div>
+            </div>
+
+            <div style="font-size: 11px; font-weight: 700; color: #818cf8; text-align: center;">
+              ✦ Direct post-synaptic D2 receptor stimulation bypasses dopamine synthesis
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 4-Button Spaced Repetition Grading Bar -->
+      <div class="grading-grid">
+        <!-- 1. Again (< 10m) -->
+        <button class="grade-btn grade-again" onclick="gradeCard('again')">
+          <div class="grade-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="1 4 1 10 7 10"></polyline>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
+          </div>
+          <span class="grade-name">Again</span>
+          <span class="grade-interval">&lt; 10m</span>
+        </button>
+
+        <!-- 2. Hard (1 day) -->
+        <button class="grade-btn grade-hard" onclick="gradeCard('hard')">
+          <div class="grade-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+              <circle cx="12" cy="12" r="9"/>
+              <line x1="9" y1="15" x2="15" y2="15" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="9" cy="9" r="1" fill="currentColor"/>
+              <circle cx="15" cy="9" r="1" fill="currentColor"/>
+            </svg>
+          </div>
+          <span class="grade-name">Hard</span>
+          <span class="grade-interval">1 day</span>
+        </button>
+
+        <!-- 3. Good (4 days) -->
+        <button class="grade-btn grade-good" onclick="gradeCard('good')">
+          <div class="grade-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M8 14s1.5 2 4 2 4-2 4-2" stroke-linecap="round"/>
+              <circle cx="9" cy="9" r="1" fill="currentColor"/>
+              <circle cx="15" cy="9" r="1" fill="currentColor"/>
+            </svg>
+          </div>
+          <span class="grade-name">Good</span>
+          <span class="grade-interval">4 days</span>
+        </button>
+
+        <!-- 4. Easy (10 days) -->
+        <button class="grade-btn grade-easy" onclick="gradeCard('easy')">
+          <div class="grade-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+          </div>
+          <span class="grade-name">Easy</span>
+          <span class="grade-interval">10 days</span>
+        </button>
+      </div>
+
+      <!-- Footer Motto -->
+      <div class="footer-review-tag">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+        <span>Review regularly. Retain effortlessly.</span>
+      </div>
+
+    </div>
+
+    <!-- iOS Home Indicator -->
+    <div class="home-indicator"></div>
+
+    <!-- Slide Complete Alert Bottom Sheet -->
+    <div class="sheet-backdrop" id="sheetBackdrop" onclick="closeSheet()"></div>
+    <div class="bottom-sheet" id="feedbackSheet">
+      <div style="width: 38px; height: 4px; background: #cbd5e1; border-radius: 999px; margin: 0 auto 4px auto;"></div>
+
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: #ecfdf5; color: #10b981; display: flex; align-items: center; justify-content: center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+          <h2 style="font-size: 20px; font-weight: 800; color: #10b981;" id="sheetTitle">Memory Strengthened!</h2>
+        </div>
+        <button style="border: none; background: none; font-size: 16px; cursor: pointer; color: var(--text-muted);" onclick="closeSheet()">✕</button>
+      </div>
+
+      <p style="font-size: 12px; line-height: 1.5; color: var(--text-main);" id="sheetBody">
+        Graded: <strong>Good (4 days)</strong>. The optimal spaced repetition interval has been scheduled. Your retention probability is calculated at <strong>92%</strong>.
+      </p>
+
+      <button style="width: 100%; height: 48px; background: var(--primary-blue); color: #fff; border: none; border-radius: 14px; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 4px;" onclick="closeSheet()">
+        <span>Next Card (Enter ↵)</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Interactive JavaScript Engine -->
+  <script>
+    let isDark = true;
+    let dueCount = 7;
+    let stability = 88;
+
+    function toggleTheme() {
+      isDark = !isDark;
+      const root = document.documentElement;
+      const themeBtn = document.getElementById('themeBtn');
+
+      if (isDark) {
+        root.setAttribute('data-theme', 'dark');
+        themeBtn.innerHTML = '<span>🌙</span> Dark Mode';
+      } else {
+        root.setAttribute('data-theme', 'light');
+        themeBtn.innerHTML = '<span>☀️</span> Light Mode';
+      }
+    }
+
+    function flipCard() {
+      document.getElementById('flashcardScene').classList.toggle('flipped');
+    }
+
+    function toggleTutorTip() {
+      document.getElementById('aiHint').classList.toggle('show');
+    }
+
+    function gradeCard(grade) {
+      if (grade === 'easy') {
+        stability = Math.min(100, stability + 4);
+        dueCount = Math.max(0, dueCount - 1);
+        document.getElementById('sheetTitle').innerText = 'Superb Retention!';
+        document.getElementById('sheetBody').innerHTML = 'Graded: <strong>Easy (10 days)</strong>. Card interval increased significantly to reduce review fatigue.';
+      } else if (grade === 'good') {
+        stability = Math.min(100, stability + 2);
+        dueCount = Math.max(0, dueCount - 1);
+        document.getElementById('sheetTitle').innerText = 'Memory Strengthened!';
+        document.getElementById('sheetBody').innerHTML = 'Graded: <strong>Good (4 days)</strong>. Standard spaced repetition multiplier applied successfully.';
+      } else if (grade === 'hard') {
+        stability = Math.max(50, stability - 2);
+        document.getElementById('sheetTitle').innerText = 'Hard Review Recorded';
+        document.getElementById('sheetBody').innerHTML = 'Graded: <strong>Hard (1 day)</strong>. Card will be reviewed tomorrow to prevent forgetting.';
+      } else {
+        stability = Math.max(40, stability - 8);
+        document.getElementById('sheetTitle').innerText = 'Lapse Logged';
+        document.getElementById('sheetBody').innerHTML = 'Graded: <strong>Again (< 10m)</strong>. Card re-queued in current session for immediate reinforcement.';
+      }
+
+      document.getElementById('stabilityVal').innerText = stability + '%';
+      document.getElementById('stabilityFill').style.width = stability + '%';
+      document.getElementById('dueCount').innerText = dueCount;
+      document.getElementById('dueLabel').innerText = dueCount + ' cards';
+
+      document.getElementById('feedbackSheet').classList.add('open');
+      document.getElementById('sheetBackdrop').classList.add('show');
+    }
+
+    function closeSheet() {
+      document.getElementById('feedbackSheet').classList.remove('open');
+      document.getElementById('sheetBackdrop').classList.remove('show');
+    }
+  </script>
+</body>
+</html>

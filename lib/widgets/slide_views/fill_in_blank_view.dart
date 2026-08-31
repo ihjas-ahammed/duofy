@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+
 import '../../models/app_models.dart';
 import '../../theme/app_theme.dart';
 import '../math_markdown.dart';
-// BlankSyntax and BlankBuilder are now internal to MathMarkdown.
 
+class _BlankOption {
+  final String id;
+  final String text;
+
+  const _BlankOption({required this.id, required this.text});
+}
+
+/// Fill in the Blank & Synthesis View matching docs/new-theme/slide-p/fill-program.html
 class FillInBlankView extends StatefulWidget {
   final Slide slide;
   final String value;
@@ -12,7 +21,6 @@ class FillInBlankView extends StatefulWidget {
   final bool isCorrect;
   final Function(String) onChanged;
   final VoidCallback? onSubmit;
-
   final Widget? bottomBar;
 
   const FillInBlankView({
@@ -28,13 +36,6 @@ class FillInBlankView extends StatefulWidget {
 
   @override
   State<FillInBlankView> createState() => _FillInBlankViewState();
-}
-
-class _BlankOption {
-  final String id;
-  final String text;
-
-  const _BlankOption({required this.id, required this.text});
 }
 
 class _FillInBlankViewState extends State<FillInBlankView> {
@@ -68,7 +69,9 @@ class _FillInBlankViewState extends State<FillInBlankView> {
       for (final dist in widget.slide.blankDistractors!) {
         final cleanDist = dist.trim();
         if (cleanDist.isNotEmpty) {
-          _suggestions.add(_BlankOption(id: 'dist_${idx++}_$cleanDist', text: cleanDist));
+          _suggestions.add(
+            _BlankOption(id: 'dist_${idx++}_$cleanDist', text: cleanDist),
+          );
         }
       }
     }
@@ -131,91 +134,113 @@ class _FillInBlankViewState extends State<FillInBlankView> {
   }
 
   Widget _buildSuggestionsBank([int numBlanks = 1, List<String>? userAnswers]) {
+    final colors = context.colors;
     if (_suggestions.isEmpty || widget.isAnswered) {
       return const SizedBox.shrink();
     }
     final effectiveUserAnswers = userAnswers ?? [widget.value];
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 24.0),
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        spacing: 12,
-        runSpacing: 12,
-        children: _suggestions.map((option) {
-          final isSelected = _assignedChipIds.containsValue(option.id) ||
-              (numBlanks <= 1
-                  ? widget.value == option.text
-                  : effectiveUserAnswers.contains(option.text));
-          return GestureDetector(
-            onTap: () =>
-                _onSuggestionTapped(option, numBlanks, effectiveUserAnswers),
-            child: Container(
-              constraints: BoxConstraints(minHeight: 48),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? AppTheme.duoBlue.withValues(alpha: 0.2)
-                    : context.colors.surfaceAlt,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isSelected
-                      ? AppTheme.duoBlue
-                      : context.colors.textFaint,
-                  width: 2,
-                ),
-              ),
-              child: Text(
-                option.text,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: isSelected
-                      ? AppTheme.duoBlue
-                      : context.colors.textPrimary,
-                ),
-              ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 2.0, bottom: 8.0),
+          child: Text(
+            'SELECT A TOKEN / EXPRESSION:',
+            style: TextStyle(
+              fontSize: 9.5,
+              fontWeight: FontWeight.w800,
+              color: colors.textSubtle,
+              letterSpacing: 0.8,
             ),
-          );
-        }).toList(),
-      ),
+          ),
+        ),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _suggestions.map((option) {
+            final isSelected = _assignedChipIds.containsValue(option.id) ||
+                (numBlanks <= 1
+                    ? widget.value == option.text
+                    : effectiveUserAnswers.contains(option.text));
+            return GestureDetector(
+              onTap: () =>
+                  _onSuggestionTapped(option, numBlanks, effectiveUserAnswers),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                constraints: const BoxConstraints(minHeight: 44),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? colors.primaryBlueLight
+                      : colors.cardBg,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isSelected
+                        ? colors.primaryBlue
+                        : colors.cardBorder,
+                    width: isSelected ? 1.8 : 1.0,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: colors.primaryBlue.withValues(alpha: 0.2),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Text(
+                  option.text,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: isSelected
+                        ? colors.primaryBlue
+                        : colors.textMain,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 
-  // Fallback for when the AI returned no blankAnswer/blankDistractors to
-  // build a suggestion bank from — without this, CHECK stays permanently
-  // disabled with no way to answer the inline blank(s).
   Widget _buildInlineFallbackField(int numBlanks, List<String> userAnswers) {
+    final colors = context.colors;
     if (widget.isAnswered) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(top: 24.0),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: colors.cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colors.cardBorder),
+      ),
       child: TextFormField(
         key: ValueKey('blank_fallback_$_activeBlankIndex'),
         initialValue: userAnswers[_activeBlankIndex],
-        textAlign: TextAlign.center,
+        textAlign: TextAlign.left,
         textInputAction: TextInputAction.done,
         onFieldSubmitted: (_) => widget.onSubmit?.call(),
         style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w900,
-          color: Colors.amber,
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: colors.textMain,
         ),
         decoration: InputDecoration(
           hintText: numBlanks > 1
-              ? 'Type answer for blank ${_activeBlankIndex + 1}'
-              : 'Type your answer',
-          hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 14),
-          filled: true,
-          fillColor: context.colors.surfaceAlt,
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 12,
-            horizontal: 16,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
+              ? 'Type answer for blank ${_activeBlankIndex + 1}...'
+              : 'Type missing token here...',
+          hintStyle: TextStyle(color: colors.textSubtle, fontSize: 13),
+          border: InputBorder.none,
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(vertical: 8),
         ),
         onChanged: (text) {
           userAnswers[_activeBlankIndex] = text;
@@ -227,13 +252,13 @@ class _FillInBlankViewState extends State<FillInBlankView> {
 
   @override
   Widget build(BuildContext context) {
-    bool hasInlineBlank = widget.slide.content.contains('___');
+    final colors = context.colors;
+    final bool hasInlineBlank = widget.slide.content.contains('___');
 
     if (hasInlineBlank) {
       final matches = RegExp(r'___+').allMatches(widget.slide.content);
       final numBlanks = matches.length;
 
-      // Parse userAnswers from widget.value
       final List<String> userAnswers = List.generate(numBlanks, (index) => '');
       if (widget.value.isNotEmpty) {
         final splitValues = widget.value.split(',');
@@ -242,9 +267,8 @@ class _FillInBlankViewState extends State<FillInBlankView> {
         }
       }
 
-      // Rebuild updatedContent replacing each ___ sequentially with the user answer
       int blankCounter = 0;
-      String updatedContent = widget.slide.content.replaceAllMapped(
+      final String updatedContent = widget.slide.content.replaceAllMapped(
         RegExp(r'___+'),
         (match) {
           final i = blankCounter++;
@@ -256,107 +280,120 @@ class _FillInBlankViewState extends State<FillInBlankView> {
       );
 
       return Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(horizontal: 4.0),
         child: CustomScrollView(
-          physics: BouncingScrollPhysics(),
+          physics: const BouncingScrollPhysics(),
           slivers: [
             SliverToBoxAdapter(
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // 1. Instruction Header
                   Container(
                     decoration: BoxDecoration(
-                      color: context.colors.isDark
-                          ? context.colors.surface
-                          : Colors.white,
+                      color: colors.cardBg,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: AppTheme.duoBlue.withValues(alpha: 0.3),
-                        width: 1.5,
-                      ),
+                      border: Border.all(color: colors.cardBorder),
                       boxShadow: [
                         BoxShadow(
-                          color: AppTheme.duoBlue.withValues(alpha: 0.08),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
+                          color: Colors.black.withValues(
+                            alpha: colors.isDark ? 0.35 : 0.04,
+                          ),
+                          blurRadius: 18,
+                          offset: const Offset(0, 5),
                         ),
                       ],
                     ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                    padding: const EdgeInsets.all(14),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          height: 4,
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [AppTheme.duoBlue, AppTheme.duoViolet, AppTheme.duoGreen],
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: colors.primaryBlueLight,
+                          ),
+                          child: Center(
+                            child: Icon(
+                              LucideIcons.edit3,
+                              size: 16,
+                              color: colors.primaryBlue,
                             ),
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: MathMarkdown(data: updatedContent),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'SYNTHESIZE THE MISSING CONCEPT',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: colors.primaryBlue,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              MathMarkdown(
+                                data: updatedContent,
+                                textStyle: TextStyle(
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: colors.textMain,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
+
+                  const SizedBox(height: 12),
+
                   if (numBlanks > 1 && !widget.isAnswered) ...[
-                    const SizedBox(height: 20),
-                    Text(
-                      'SELECT BLANK TO FILL',
-                      style: TextStyle(
-                        color: context.colors.textFaint,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 10,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       physics: const BouncingScrollPhysics(),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
                         children: List.generate(numBlanks, (i) {
                           final isActive = i == _activeBlankIndex;
                           final val = userAnswers[i];
                           return Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6.0,
-                            ),
+                            padding: const EdgeInsets.only(right: 6.0),
                             child: GestureDetector(
                               onTap: () =>
                                   setState(() => _activeBlankIndex = i),
-                              child: AnimatedContainer(
-                                duration: Duration(milliseconds: 200),
-                                constraints: const BoxConstraints(
-                                  minHeight: 48,
-                                ),
+                              child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 10,
+                                  horizontal: 12,
+                                  vertical: 6,
                                 ),
-                                alignment: Alignment.center,
                                 decoration: BoxDecoration(
                                   color: isActive
-                                      ? AppTheme.duoBlue.withValues(alpha: 0.15)
-                                      : context.colors.surfaceAlt,
-                                  borderRadius: BorderRadius.circular(12),
+                                      ? colors.primaryBlueLight
+                                      : colors.cardBg,
+                                  borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
                                     color: isActive
-                                        ? AppTheme.duoBlue
-                                        : context.colors.textFaint,
-                                    width: 2,
+                                        ? colors.primaryBlue
+                                        : colors.cardBorder,
+                                    width: isActive ? 1.5 : 1.0,
                                   ),
                                 ),
                                 child: Text(
-                                  'Blank ${i + 1}: ${val.isEmpty ? '___' : val}',
+                                  'Blank ${i + 1}: ${val.isEmpty ? "___" : val}',
                                   style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
                                     color: isActive
-                                        ? AppTheme.duoBlue
-                                        : context.colors.textSecondary,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
+                                        ? colors.primaryBlue
+                                        : colors.textMuted,
                                   ),
                                 ),
                               ),
@@ -365,10 +402,15 @@ class _FillInBlankViewState extends State<FillInBlankView> {
                         }),
                       ),
                     ),
+                    const SizedBox(height: 12),
                   ],
+
+                  // 2. Suggestions or Manual Input
                   _suggestions.isEmpty
                       ? _buildInlineFallbackField(numBlanks, userAnswers)
                       : _buildSuggestionsBank(numBlanks, userAnswers),
+
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
@@ -377,7 +419,10 @@ class _FillInBlankViewState extends State<FillInBlankView> {
                 hasScrollBody: false,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
-                  children: [const SizedBox(height: 24), widget.bottomBar!],
+                  children: [
+                    const SizedBox(height: 16),
+                    widget.bottomBar!,
+                  ],
                 ),
               ),
           ],
@@ -385,97 +430,136 @@ class _FillInBlankViewState extends State<FillInBlankView> {
       );
     }
 
+    // Default Fill-In Blank View
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
       child: CustomScrollView(
-        physics: BouncingScrollPhysics(),
+        physics: const BouncingScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: AppTheme.glassOf(context),
-                  child: MathMarkdown(
-                    data: widget.slide.content,
-                    textStyle: TextStyle(
-                      fontSize: 18,
-                      color: context.colors.textPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 32),
-                Container(
-                  padding: EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: context.colors.surfaceAlt,
+                    color: colors.cardBg,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: widget.isAnswered
-                          ? (widget.isCorrect
-                                ? AppTheme.duoGreen
-                                : AppTheme.duoRed)
-                          : context.colors.outline,
-                      width: 2,
-                    ),
+                    border: Border.all(color: colors.cardBorder),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(
+                          alpha: colors.isDark ? 0.35 : 0.04,
+                        ),
+                        blurRadius: 18,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
                   ),
-                  child: Column(
+                  padding: const EdgeInsets.all(14),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'YOUR ANSWER',
-                        style: TextStyle(
-                          color: context.colors.textFaint,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 10,
-                          letterSpacing: 1.5,
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          color: colors.primaryBlueLight,
+                        ),
+                        child: Center(
+                          child: Icon(
+                            LucideIcons.helpCircle,
+                            size: 16,
+                            color: colors.primaryBlue,
+                          ),
                         ),
                       ),
-                      SizedBox(height: 12),
-                      TextField(
-                        controller: _controller,
-                        enabled: !widget.isAnswered,
-                        onChanged: widget.onChanged,
-                        textAlign: TextAlign.center,
-                        textInputAction: TextInputAction.done,
-                        onSubmitted: widget.isAnswered
-                            ? null
-                            : (_) => widget.onSubmit?.call(),
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          color: widget.isAnswered
-                              ? (widget.isCorrect
-                                    ? AppTheme.duoGreen
-                                    : AppTheme.duoRed)
-                              : Colors.amber,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: '___',
-                          hintStyle: TextStyle(color: context.colors.textFaint),
-                          filled: true,
-                          fillColor: context.colors.surfaceAlt,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 12,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: Colors.amber,
-                              width: 2,
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'FILL IN THE BLANK',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: colors.primaryBlue,
+                                letterSpacing: 0.8,
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 6),
+                            MathMarkdown(
+                              data: widget.slide.content,
+                              textStyle: TextStyle(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w700,
+                                color: colors.textMain,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
+
+                const SizedBox(height: 14),
+
+                // Answer Field
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.cardBg,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: widget.isAnswered
+                          ? (widget.isCorrect
+                              ? colors.accentGreen
+                              : AppTheme.duoRed)
+                          : colors.cardBorder,
+                      width: widget.isAnswered ? 1.8 : 1.0,
+                    ),
+                  ),
+                  child: TextField(
+                    controller: _controller,
+                    enabled: !widget.isAnswered,
+                    onChanged: widget.onChanged,
+                    textAlign: TextAlign.left,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: widget.isAnswered
+                        ? null
+                        : (_) => widget.onSubmit?.call(),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: widget.isAnswered
+                          ? (widget.isCorrect
+                              ? colors.accentGreen
+                              : AppTheme.duoRed)
+                          : colors.textMain,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Type your answer here...',
+                      hintStyle: TextStyle(
+                        color: colors.textSubtle,
+                        fontSize: 14,
+                      ),
+                      border: InputBorder.none,
+                      isDense: true,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
                 _buildSuggestionsBank(),
+
+                const SizedBox(height: 16),
               ],
             ),
           ),
@@ -484,7 +568,10 @@ class _FillInBlankViewState extends State<FillInBlankView> {
               hasScrollBody: false,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
-                children: [const SizedBox(height: 24), widget.bottomBar!],
+                children: [
+                  const SizedBox(height: 16),
+                  widget.bottomBar!,
+                ],
               ),
             ),
         ],

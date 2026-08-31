@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Lesson & Feedback Prototype</title>
+  <!-- Google Fonts: Plus Jakarta Sans & STIX Two Math for equations -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=STIX+Two+Math&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==========================================================================
+       THEME VARIABLES (LIGHT & DARK)
+       ========================================================================== */
+    :root {
+      --page-bg: #e2e8f0;
+      --device-bg: #f8fafc;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-subtle: #94a3b8;
+      
+      --card-bg: #ffffff;
+      --card-border: rgba(226, 232, 240, 0.9);
+      --card-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05);
+
+      --math-box-bg: #f1f5f9;
+      --math-box-border: #e2e8f0;
+      
+      --primary-blue: #005cf6;
+      --primary-blue-hover: #0046c7;
+      --primary-blue-light: #eff6ff;
+
+      --accent-green: #059669;
+      --accent-green-light: #ecfdf5;
+      --accent-green-border: #a7f3d0;
+      --sheet-bg: #f7fdfa;
+      --sheet-border: #10b981;
+      
+      --home-bar: #0f172a;
+    }
+
+    [data-theme="dark"] {
+      --page-bg: #030712;
+      --device-bg: #0b0f19;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-subtle: #64748b;
+      
+      --card-bg: #131b2e;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+
+      --math-box-bg: #0f172a;
+      --math-box-border: #1e293b;
+      
+      --primary-blue: #2563eb;
+      --primary-blue-hover: #1d4ed8;
+      --primary-blue-light: rgba(37, 99, 235, 0.15);
+
+      --accent-green: #10b981;
+      --accent-green-light: rgba(16, 185, 129, 0.12);
+      --accent-green-border: rgba(16, 185, 129, 0.3);
+      --sheet-bg: #091e17;
+      --sheet-border: #059669;
+      
+      --home-bar: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--page-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px 10px;
+      transition: background-color 0.3s ease;
+    }
+
+    /* Math typography */
+    .math {
+      font-family: 'STIX Two Math', 'Times New Roman', serif;
+      font-style: italic;
+    }
+
+    /* Prototyping Controls */
+    .prototype-bar {
+      display: flex;
+      gap: 8px;
+      background: var(--card-bg);
+      padding: 6px;
+      border-radius: 9999px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+      border: 1px solid var(--card-border);
+      margin-bottom: 16px;
+      z-index: 100;
+    }
+
+    .proto-btn {
+      padding: 6px 14px;
+      border-radius: 9999px;
+      border: none;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .proto-btn.active {
+      background: var(--primary-blue);
+      color: #ffffff;
+    }
+
+    /* Phone Shell */
+    .mobile-frame {
+      width: 100%;
+      max-width: 412px;
+      height: 870px;
+      background-color: var(--device-bg);
+      border-radius: 44px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.25), 0 0 0 1px var(--card-border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: background-color 0.3s ease;
+    }
+
+    /* ==========================================================================
+       HEADER & STATUS BAR
+       ========================================================================== */
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 26px 4px 26px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      z-index: 10;
+    }
+
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Glassmorphism Capsule Header Bar (From Image 1) */
+    .glass-header-container {
+      padding: 8px 16px 12px 16px;
+      z-index: 10;
+    }
+
+    .glass-pill-bar {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 9999px;
+      height: 52px;
+      padding: 4px 6px 4px 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    }
+
+    .glass-close-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .glass-progress-track {
+      flex: 1;
+      height: 32px;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 9999px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 2px;
+      overflow: hidden;
+    }
+
+    .glass-progress-fill {
+      width: 65%;
+      height: 100%;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, #0052d4 0%, #4364f7 50%, #6fb1fc 100%);
+      box-shadow: 0 0 14px rgba(67, 100, 247, 0.8), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Liquid wave inside progress bar */
+    .glass-progress-fill::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+      animation: waveGlow 2.5s infinite linear;
+    }
+
+    @keyframes waveGlow {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .glass-progress-text {
+      position: absolute;
+      right: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #7dd3fc;
+      letter-spacing: 0.2px;
+    }
+
+    .streak-badge {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      padding: 0 4px;
+    }
+
+    .streak-flame {
+      font-size: 16px;
+      filter: drop-shadow(0 0 4px #f97316);
+    }
+
+    .streak-count {
+      font-size: 13px;
+      font-weight: 800;
+      color: #fbbf24;
+    }
+
+    .glass-divider {
+      width: 1px;
+      height: 24px;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .bot-avatar-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #381f75, #110e2e);
+      border: 1.5px solid #a855f7;
+      box-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    /* ==========================================================================
+       MAIN LESSON CONTENT (From Image 3)
+       ========================================================================== */
+    .content-scrollable {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 18px 18px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .category-tag {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: var(--text-subtle);
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+
+    .lesson-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 18px 16px;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .lesson-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .pi-badge {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--primary-blue-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--primary-blue);
+      flex-shrink: 0;
+    }
+
+    .lesson-title {
+      font-size: 19px;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1.25;
+      letter-spacing: -0.3px;
+    }
+
+    /* Diagram SVG Styles */
+    .diagram-container {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 2px 0;
+    }
+
+    .diagram-svg {
+      width: 100%;
+      max-width: 290px;
+      height: auto;
+    }
+
+    /* Math Formula Callout Box */
+    .math-formula-box {
+      background: var(--math-box-bg);
+      border: 1px solid var(--math-box-border);
+      border-radius: 14px;
+      padding: 12px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .primary-equation {
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .eq-blue { color: #0284c7; }
+    .eq-green { color: #16a34a; }
+    
+    .formula-divider {
+      width: 60%;
+      height: 1px;
+      background: var(--card-border);
+    }
+
+    .formula-subtext {
+      font-size: 12px;
+      color: var(--text-main);
+    }
+
+    /* Theory Explainer Box with Sparkle Border */
+    .theory-explainer {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 14px 14px 14px 18px;
+      box-shadow: var(--card-shadow);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .theory-left-bar {
+      position: absolute;
+      left: 10px;
+      top: 14px;
+      bottom: 14px;
+      width: 2px;
+      background: var(--primary-blue);
+      border-radius: 2px;
+    }
+
+    .theory-sparkle {
+      position: absolute;
+      top: 8px;
+      left: 6px;
+      color: var(--primary-blue);
+      background: var(--card-bg);
+      padding: 2px 0;
+    }
+
+    .theory-p {
+      font-size: 11.5px;
+      line-height: 1.5;
+      color: var(--text-muted);
+      padding-left: 8px;
+    }
+
+    /* Bottom Action Button */
+    .bottom-bar {
+      padding: 10px 18px 22px 18px;
+      z-index: 10;
+    }
+
+    .btn-action {
+      width: 100%;
+      height: 50px;
+      background: var(--primary-blue);
+      border: none;
+      border-radius: 16px;
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px 0 10px;
+      cursor: pointer;
+      box-shadow: 0 8px 20px -4px rgba(0, 92, 246, 0.4);
+      transition: background 0.2s ease;
+    }
+
+    .btn-action:hover {
+      background: var(--primary-blue-hover);
+    }
+
+    .btn-leading-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ==========================================================================
+       SLIDE COMPLETE ALERT / BOTTOM SHEET (From Image 2)
+       ========================================================================== */
+    .sheet-backdrop {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(3px);
+      z-index: 40;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .sheet-backdrop.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .bottom-sheet {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--sheet-bg);
+      border-top: 2.5px solid var(--sheet-border);
+      border-top-left-radius: 28px;
+      border-top-right-radius: 28px;
+      padding: 10px 18px 24px 18px;
+      box-shadow: 0 -10px 35px rgba(0,0,0,0.25);
+      z-index: 50;
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .bottom-sheet.open {
+      transform: translateY(0);
+    }
+
+    .drag-handle {
+      width: 38px;
+      height: 4px;
+      background: #cbd5e1;
+      border-radius: 999px;
+      margin: 0 auto 4px auto;
+    }
+
+    .sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sheet-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .trophy-badge {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--accent-green-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-green);
+      flex-shrink: 0;
+    }
+
+    .sheet-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--accent-green);
+      letter-spacing: -0.3px;
+    }
+
+    .sheet-close-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent-green-light);
+      border: none;
+      color: var(--accent-green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .sheet-body-text {
+      font-size: 11.5px;
+      line-height: 1.5;
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .misconception-pill {
+      background: var(--card-bg);
+      border: 1px solid var(--accent-green-border);
+      border-radius: 14px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+
+    .misconception-content {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-green);
+    }
+
+    .home-indicator {
+      width: 130px;
+      height: 4.5px;
+      background: var(--home-bar);
+      border-radius: 9999px;
+      margin: 6px auto 0 auto;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PROTOTYPE CONTROLS -->
+  <div class="prototype-bar">
+    <button class="proto-btn active" id="themeBtn" onclick="toggleTheme()">
+      <span id="themeIcon">☀️</span> Light Mode
+    </button>
+    <button class="proto-btn active" id="modalToggleBtn" onclick="toggleBottomSheet()">
+      <span>🔔</span> Toggle Slide Complete Alert
+    </button>
+  </div>
+
+  <!-- PHONE SHELL -->
+  <div class="mobile-frame" id="phoneApp">
+
+    <!-- 1. Top Status Bar -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons">
+        <svg width="16" height="12" viewBox="0 0 17 12" fill="currentColor">
+          <rect x="0" y="9" width="3" height="3" rx="0.5"/>
+          <rect x="4.5" y="6" width="3" height="6" rx="0.5"/>
+          <rect x="9" y="3" width="3" height="9" rx="0.5"/>
+          <rect x="13.5" y="0" width="3" height="12" rx="0.5"/>
+        </svg>
+        <svg width="15" height="12" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-4.9-3.2c2.7-2.3 7.1-2.3 9.8 0l1.4-1.4c-3.5-3.1-9.1-3.1-12.6 0l1.4 1.4z"/>
+        </svg>
+        <svg width="22" height="11" viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="1" y="1" width="19" height="10" rx="3"/>
+          <rect x="3" y="3" width="12" height="6" fill="currentColor" rx="1"/>
+          <path d="M21 4.5v3" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 2. Glassmorphism Glowing Capsule Header Bar (From Image 1) -->
+    <div class="glass-header-container">
+      <div class="glass-pill-bar">
+        <!-- Close button -->
+        <button class="glass-close-btn" aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <!-- Glowing Progress Track -->
+        <div class="glass-progress-track">
+          <div class="glass-progress-fill"></div>
+          <span class="glass-progress-text">65%</span>
+        </div>
+
+        <!-- Streak Fire Counter -->
+        <div class="streak-badge">
+          <span class="streak-flame">🔥</span>
+          <span class="streak-count">x5</span>
+        </div>
+
+        <div class="glass-divider"></div>
+
+        <!-- AI Bot Avatar Pill -->
+        <button class="bot-avatar-btn" aria-label="AI Tutor">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e0e7ff" stroke-width="2" stroke-linecap="round">
+            <rect x="4" y="8" width="16" height="12" rx="4"></rect>
+            <circle cx="9" cy="13" r="1.5" fill="#e0e7ff"></circle>
+            <circle cx="15" cy="13" r="1.5" fill="#e0e7ff"></circle>
+            <path d="M12 4v4"></path>
+            <path d="M2 13h2"></path>
+            <path d="M20 13h2"></path>
+            <!-- Orbit ring -->
+            <ellipse cx="12" cy="14" rx="10" ry="4" stroke="#c084fc" stroke-width="1.2" stroke-dasharray="3 2" transform="rotate(-15 12 14)"></ellipse>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 3. Scrollable Lesson Content (From Image 3) -->
+    <div class="content-scrollable">
+      <div class="category-tag">Theory & Concept Introduction</div>
+
+      <!-- Main Lesson Card -->
+      <div class="lesson-card">
+        <div class="lesson-header">
+          <div class="pi-badge">
+            <span class="math">π</span>
+          </div>
+          <h1 class="lesson-title">Euler's Identity & Rotational Phasors</h1>
+        </div>
+
+        <!-- Unit Circle Complex Plane Diagram (SVG) -->
+        <div class="diagram-container">
+          <svg class="diagram-svg" viewBox="0 0 320 240">
+            <!-- Sparkle top indicator -->
+            <path d="M160,8 L162,14 L168,16 L162,18 L160,24 L158,18 L152,16 L158,14 Z" fill="#cbd5e1"/>
+
+            <!-- Axes -->
+            <!-- Real Axis (horizontal) -->
+            <line x1="20" y1="120" x2="280" y2="120" stroke="#94a3b8" stroke-width="1.5" />
+            <polygon points="285,120 277,116 277,124" fill="#64748b"/>
+            <text x="290" y="123" fill="currentColor" font-size="12" font-family="'Plus Jakarta Sans', sans-serif" font-weight="600">Re</text>
+
+            <!-- Imaginary Axis (vertical) -->
+            <line x1="140" y1="210" x2="140" y2="30" stroke="#94a3b8" stroke-width="1.5" />
+            <polygon points="140,25 136,33 144,33" fill="#64748b"/>
+            <text x="140" y="18" text-anchor="middle" fill="currentColor" font-size="12" font-family="'Plus Jakarta Sans', sans-serif" font-weight="600">Im</text>
+
+            <!-- Unit Circle with gradient -->
+            <defs>
+              <linearGradient id="circleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#0284c7"/>
+                <stop offset="100%" stop-color="#10b981"/>
+              </linearGradient>
+            </defs>
+            <circle cx="140" cy="120" r="75" fill="none" stroke="url(#circleGrad)" stroke-width="2"/>
+
+            <!-- Angle theta sector shaded -->
+            <path d="M140,120 L168,120 A28,28 0 0,0 162,98 Z" fill="#93c5fd" fill-opacity="0.45"/>
+            <text x="170" y="112" fill="#0284c7" font-size="12" font-family="'STIX Two Math', serif" font-style="italic">θ</text>
+
+            <!-- Dashed projection lines -->
+            <line x1="193" y1="67" x2="193" y2="120" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="3 3"/>
+            <line x1="193" y1="67" x2="140" y2="67" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="3 3"/>
+
+            <!-- Phasor Vector Arrow (e^jθ) -->
+            <line x1="140" y1="120" x2="190" y2="70" stroke="#005cf6" stroke-width="2.8"/>
+            <circle cx="193" cy="67" r="4.5" fill="#005cf6"/>
+
+            <!-- Axis Labels & Tick Marks -->
+            <text x="132" y="134" font-size="11" fill="currentColor">0</text>
+            <text x="219" y="132" font-size="11" fill="currentColor">1</text>
+            <text x="56" y="132" font-size="11" fill="currentColor">-1</text>
+            <text x="132" y="52" font-size="12" class="math" fill="currentColor">i</text>
+            <text x="127" y="196" font-size="12" class="math" fill="currentColor">-i</text>
+
+            <!-- Vector Formula Annotation -->
+            <text x="195" y="52" font-size="12" font-weight="600">
+              <tspan class="math" fill="#0284c7">e</tspan><tspan class="math" dy="-4" font-size="9" fill="#0284c7">jθ</tspan><tspan dy="4" font-size="11" fill="currentColor"> = </tspan><tspan class="math" fill="currentColor">cos θ</tspan><tspan fill="#16a34a" class="math"> + j sin θ</tspan>
+            </text>
+            <text x="208" y="70" font-size="11" class="math" fill="#16a34a">(cos θ, sin θ)</text>
+          </svg>
+        </div>
+
+        <!-- Formula Highlight Container -->
+        <div class="math-formula-box">
+          <div class="primary-equation math">
+            <span class="eq-blue">e<sup style="font-size: 13px;">jθ</sup></span> = cos θ <span class="eq-green">+ j sin θ</span>
+          </div>
+          <div class="formula-divider"></div>
+          <div class="formula-subtext">
+            where <span class="math eq-blue">j = √-1</span>, &nbsp;<span class="math eq-green">θ ∈ ℝ</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Theory Explainer / Definition Box -->
+      <div class="theory-explainer">
+        <div class="theory-left-bar"></div>
+        <div class="theory-sparkle">✦</div>
+        <p class="theory-p">
+          Euler's Identity links complex exponentials to trigonometric functions, forming the foundation of phasor analysis.
+        </p>
+        <p class="theory-p">
+          On the complex plane, <span class="math eq-blue">e<sup>jθ</sup></span> represents a unit phasor rotated by an angle <span class="math eq-green">θ</span> from the positive real axis.
+        </p>
+      </div>
+    </div>
+
+    <!-- Bottom Continue Button -->
+    <div class="bottom-bar">
+      <button class="btn-action" onclick="toggleBottomSheet()">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="btn-leading-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+              <polyline points="17 6 23 6 23 12"></polyline>
+            </svg>
+          </div>
+          <span>Continue to Active Practice</span>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+    </div>
+
+    <!-- 4. Slide Complete Alert Bottom Sheet (From Image 2) -->
+    <div class="sheet-backdrop" id="backdrop" onclick="toggleBottomSheet()"></div>
+    
+    <div class="bottom-sheet" id="bottomSheet">
+      <div class="drag-handle"></div>
+
+      <!-- Sheet Header -->
+      <div class="sheet-header">
+        <div class="sheet-title-group">
+          <div class="trophy-badge">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
+              <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+              <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+              <path d="M4 22h16"/>
+              <path d="M10 14.66V17c0 .55-.45 1-1 1H8v4h8v-4h-1c-.55 0-1-.45-1-1v-2.34"/>
+              <path d="M18 4H6v7a6 6 0 0 0 12 0V4z"/>
+              <!-- star -->
+              <polygon points="12 7 13 9 15 9.3 13.5 10.7 14 13 12 11.8 10 13 10.5 10.7 9 9.3 11 9" fill="currentColor"/>
+            </svg>
+          </div>
+          <h2 class="sheet-title">Excellent Deduction!</h2>
+        </div>
+
+        <button class="sheet-close-btn" onclick="toggleBottomSheet()" aria-label="Dismiss">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Sheet Explanation Text -->
+      <div class="sheet-body-text">
+        <p>
+          L'Hopital's Rule requires both the numerator and denominator to be differentiable at the point and the limit to be in an indeterminate form (0/0 or ∞/∞).
+        </p>
+        <p>
+          Here, <span class="math">sin x</span> and <span class="math">x</span> are differentiable at <span class="math">x = 0</span>, but the rule was applied incorrectly.
+        </p>
+      </div>
+
+      <!-- Collapsible Misconception Accordion Pill -->
+      <div class="misconception-pill">
+        <div class="misconception-content">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+            <circle cx="12" cy="12" r="1" fill="currentColor"></circle>
+          </svg>
+          Why other options fail (Misconception Analysis)
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </div>
+
+      <!-- Sheet Primary Action Button -->
+      <button class="btn-action" style="justify-content: center; gap: 8px;" onclick="toggleBottomSheet()">
+        <span>Continue (Enter ↵)</span>
+      </button>
+
+      <!-- iOS Home Bar -->
+      <div class="home-indicator"></div>
+    </div>
+
+  </div>
+
+  <!-- Interactive JavaScript for Prototyping -->
+  <script>
+    let isDark = false;
+    let isSheetOpen = true; // Open by default to showcase the complete design
+
+    // Set initial sheet state
+    document.getElementById('bottomSheet').classList.add('open');
+    document.getElementById('backdrop').classList.add('show');
+
+    function toggleTheme() {
+      isDark = !isDark;
+      const root = document.documentElement;
+      const themeBtn = document.getElementById('themeBtn');
+      const themeIcon = document.getElementById('themeIcon');
+
+      if (isDark) {
+        root.setAttribute('data-theme', 'dark');
+        themeBtn.innerHTML = '<span>🌙</span> Dark Mode';
+      } else {
+        root.removeAttribute('data-theme');
+        themeBtn.innerHTML = '<span>☀️</span> Light Mode';
+      }
+    }
+
+    function toggleBottomSheet() {
+      const sheet = document.getElementById('bottomSheet');
+      const backdrop = document.getElementById('backdrop');
+      const modalBtn = document.getElementById('modalToggleBtn');
+
+      isSheetOpen = !isSheetOpen;
+      if (isSheetOpen) {
+        sheet.classList.add('open');
+        backdrop.classList.add('show');
+        modalBtn.classList.add('active');
+      } else {
+        sheet.classList.remove('open');
+        backdrop.classList.remove('show');
+        modalBtn.classList.remove('active');
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Physics Calculator - Escape Velocity</title>
+  <!-- Google Fonts: Plus Jakarta Sans & STIX Two Math -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=STIX+Two+Math:ital,wght@0,400;0,600;1,400;1,600&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==========================================================================
+       THEME TOKENS (LIGHT & DARK)
+       ========================================================================== */
+    :root {
+      /* Frosted Light Mode */
+      --page-bg: #e2e8f0;
+      --device-bg: #f8fafc;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-subtle: #94a3b8;
+
+      --card-bg: #ffffff;
+      --card-border: rgba(226, 232, 240, 0.9);
+      --card-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.04);
+
+      /* Glass Toolbar Tokens */
+      --glass-bar-bg: rgba(255, 255, 255, 0.85);
+      --glass-bar-border: rgba(255, 255, 255, 0.9);
+      --glass-bar-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.8);
+      --glass-btn-bg: #f1f5f9;
+      --glass-btn-border: #e2e8f0;
+      --glass-btn-color: #334155;
+      --glass-track-bg: #e2e8f0;
+      --glass-track-text: #0056fd;
+      --glass-divider: #e2e8f0;
+      --glass-bot-bg: radial-gradient(circle at 30% 30%, #eff6ff, #dbeafe);
+      --glass-bot-border: #93c5fd;
+
+      /* Input Display Box */
+      --input-bg: #ffffff;
+      --input-border: #0062ff;
+      --input-shadow: 0 0 0 1px #0062ff, 0 8px 25px -4px rgba(0, 98, 255, 0.15);
+      --input-label: #0062ff;
+      --cursor-color: #0062ff;
+
+      /* Keypad Tokens */
+      --keypad-bg: #ffffff;
+      --key-btn-bg: #ffffff;
+      --key-btn-border: #e2e8f0;
+      --key-btn-text: #0f172a;
+      --key-btn-hover: #f1f5f9;
+      --key-btn-shadow: 0 2px 4px rgba(0,0,0,0.03);
+
+      --key-op-bg: #f8fafc;
+      --key-op-text: #0f172a;
+
+      --primary-blue: #0062ff;
+      --primary-blue-hover: #0050d4;
+      --primary-blue-glow: rgba(0, 98, 255, 0.35);
+
+      --sheet-bg: #f7fdfa;
+      --sheet-border: #10b981;
+      --home-bar: #0f172a;
+    }
+
+    [data-theme="dark"] {
+      /* Midnight Obsidian Dark Mode */
+      --page-bg: #030712;
+      --device-bg: #070c18;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-subtle: #64748b;
+
+      --card-bg: #0c1322;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.6);
+
+      --glass-bar-bg: rgba(15, 23, 42, 0.75);
+      --glass-bar-border: rgba(255, 255, 255, 0.15);
+      --glass-bar-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+      --glass-btn-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
+      --glass-btn-border: rgba(255, 255, 255, 0.18);
+      --glass-btn-color: #ffffff;
+      --glass-track-bg: rgba(0, 0, 0, 0.45);
+      --glass-track-text: #7dd3fc;
+      --glass-divider: rgba(255, 255, 255, 0.15);
+      --glass-bot-bg: radial-gradient(circle at 30% 30%, #381f75, #110e2e);
+      --glass-bot-border: #a855f7;
+
+      --input-bg: #0c1322;
+      --input-border: #3b82f6;
+      --input-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+      --input-label: #60a5fa;
+      --cursor-color: #38bdf8;
+
+      --keypad-bg: #0c1322;
+      --key-btn-bg: #111b30;
+      --key-btn-border: rgba(255, 255, 255, 0.08);
+      --key-btn-text: #f8fafc;
+      --key-btn-hover: #172440;
+      --key-btn-shadow: 0 4px 10px rgba(0,0,0,0.3);
+
+      --key-op-bg: #0e172a;
+      --key-op-text: #38bdf8;
+
+      --primary-blue: #2563eb;
+      --primary-blue-hover: #1d4ed8;
+      --primary-blue-glow: rgba(37, 99, 235, 0.4);
+
+      --sheet-bg: #091e17;
+      --sheet-border: #059669;
+      --home-bar: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--page-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px 10px;
+      transition: background-color 0.3s ease;
+    }
+
+    .math { font-family: 'STIX Two Math', 'Times New Roman', serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Floating Toolbar for Testing */
+    .prototype-bar {
+      display: flex;
+      gap: 8px;
+      background: var(--card-bg);
+      padding: 6px;
+      border-radius: 9999px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+      border: 1px solid var(--card-border);
+      margin-bottom: 14px;
+      z-index: 100;
+    }
+
+    .proto-btn {
+      padding: 6px 16px;
+      border-radius: 9999px;
+      border: none;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .proto-btn.active {
+      background: var(--primary-blue);
+      color: #ffffff;
+    }
+
+    /* Mobile Frame */
+    .mobile-frame {
+      width: 100%;
+      max-width: 412px;
+      height: 884px;
+      background-color: var(--device-bg);
+      border-radius: 44px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--card-border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: background-color 0.3s ease;
+    }
+
+    /* ==========================================================================
+       STATUS BAR & SIGNATURE GLASS TOOLBAR
+       ========================================================================== */
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 26px 4px 26px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      z-index: 15;
+    }
+
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .glass-header-container {
+      padding: 8px 16px 8px 16px;
+      z-index: 15;
+    }
+
+    .glass-pill-bar {
+      background: var(--glass-bar-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-bar-border);
+      border-radius: 9999px;
+      height: 52px;
+      padding: 4px 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: var(--glass-bar-shadow);
+      transition: all 0.3s ease;
+    }
+
+    .glass-close-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--glass-btn-bg);
+      border: 1px solid var(--glass-btn-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--glass-btn-color);
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.15s ease;
+    }
+    .glass-close-btn:active { transform: scale(0.92); }
+
+    .glass-progress-track {
+      flex: 1;
+      height: 32px;
+      background: var(--glass-track-bg);
+      border-radius: 9999px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 2px;
+      overflow: hidden;
+    }
+
+    .glass-progress-fill {
+      width: 50%; /* 5 / 10 = 50% */
+      height: 100%;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, #0052d4 0%, #4364f7 50%, #6fb1fc 100%);
+      box-shadow: 0 0 14px rgba(67, 100, 247, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+      position: relative;
+    }
+
+    .glass-progress-fill::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      animation: waveGlow 2.5s infinite linear;
+    }
+
+    @keyframes waveGlow {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .glass-progress-text {
+      position: absolute;
+      right: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--glass-track-text);
+      letter-spacing: 0.2px;
+    }
+
+    .streak-badge {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      padding: 0 4px;
+    }
+
+    .streak-flame {
+      font-size: 16px;
+      filter: drop-shadow(0 0 4px #f97316);
+    }
+
+    .streak-count {
+      font-size: 13px;
+      font-weight: 800;
+      color: #f59e0b;
+    }
+
+    .glass-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--glass-divider);
+    }
+
+    .bot-avatar-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--glass-bot-bg);
+      border: 1.5px solid var(--glass-bot-border);
+      box-shadow: 0 0 12px rgba(147, 197, 253, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      flex-shrink: 0;
+      transition: transform 0.2s ease;
+    }
+    .bot-avatar-btn:hover { transform: scale(1.05); }
+
+    /* AI Hint Floating Popover */
+    .ai-hint-popover {
+      position: absolute;
+      top: 108px;
+      right: 20px;
+      left: 20px;
+      background: var(--card-bg);
+      border: 1.5px solid #3b82f6;
+      box-shadow: var(--card-shadow), 0 0 16px rgba(59, 130, 246, 0.3);
+      border-radius: 18px;
+      padding: 12px 14px;
+      z-index: 50;
+      display: none;
+      animation: popIn 0.2s ease;
+    }
+    .ai-hint-popover.show { display: block; }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ==========================================================================
+       SCROLLABLE PROBLEM CARD
+       ========================================================================== */
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 2px 16px 8px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Scratchpad Top Bar */
+    .scratchpad-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .scratchpad-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-main);
+      cursor: pointer;
+      box-shadow: var(--card-shadow);
+      transition: all 0.2s ease;
+    }
+    .scratchpad-btn:hover { border-color: var(--primary-blue); }
+
+    /* Problem Description Card */
+    .problem-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 16px 14px 14px 14px;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .topic-tag-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .atom-badge {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(0, 98, 255, 0.1);
+      color: var(--primary-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .topic-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topic-category {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--primary-blue);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .topic-sub {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-subtle);
+    }
+
+    .question-statement {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1.35;
+      letter-spacing: -0.2px;
+    }
+
+    .divider-line {
+      width: 100%;
+      height: 1px;
+      background: var(--card-border);
+      margin: 2px 0;
+    }
+
+    /* Formula Derivation Callout */
+    .formula-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .formula-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .formula-expression {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-main);
+      padding-left: 2px;
+    }
+
+    .where-clause {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      line-height: 1.4;
+      margin-top: 4px;
+    }
+
+    /* ==========================================================================
+       ANSWER INPUT BOX
+       ========================================================================== */
+    .answer-container {
+      background: var(--input-bg);
+      border: 1.5px solid var(--input-border);
+      border-radius: 18px;
+      padding: 10px 14px;
+      box-shadow: var(--input-shadow);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .answer-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .answer-label {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--input-label);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .answer-value-row {
+      display: flex;
+      align-items: center;
+    }
+
+    .answer-display {
+      font-size: 38px;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1;
+      letter-spacing: -0.5px;
+      min-width: 20px;
+    }
+
+    .blinking-cursor {
+      width: 2.5px;
+      height: 34px;
+      background: var(--cursor-color);
+      margin-left: 4px;
+      border-radius: 2px;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+
+    .unit-pill {
+      background: var(--device-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .unit-pill:hover { border-color: var(--primary-blue); }
+
+    /* ==========================================================================
+       SCIENTIFIC ON-SCREEN KEYPAD
+       ========================================================================== */
+    .keypad-grid {
+      padding: 0 16px 8px 16px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      z-index: 10;
+    }
+
+    .key-btn {
+      height: 52px;
+      background: var(--key-btn-bg);
+      border: 1px solid var(--key-btn-border);
+      border-radius: 14px;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--key-btn-text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: var(--key-btn-shadow);
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .key-btn:hover {
+      background: var(--key-btn-hover);
+      transform: translateY(-1px);
+    }
+    .key-btn:active {
+      transform: translateY(1px);
+      box-shadow: none;
+    }
+
+    .key-op {
+      background: var(--key-op-bg);
+      color: var(--key-op-text);
+    }
+
+    .key-enter {
+      background: var(--primary-blue);
+      border-color: var(--primary-blue);
+      color: #ffffff;
+      box-shadow: 0 6px 16px -3px var(--primary-blue-glow);
+    }
+    .key-enter:hover {
+      background: var(--primary-blue-hover);
+    }
+
+    .home-indicator {
+      width: 130px;
+      height: 4.5px;
+      background: var(--home-bar);
+      border-radius: 9999px;
+      margin: 2px auto 6px auto;
+      opacity: 0.6;
+    }
+
+    /* Scratchpad Canvas Modal */
+    .scratchpad-modal {
+      position: absolute;
+      top: 60px; left: 16px; right: 16px; bottom: 80px;
+      background: var(--card-bg);
+      border: 1.5px solid var(--primary-blue);
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      z-index: 60;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .scratchpad-modal.show { display: flex; }
+
+    .scratchpad-header {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    #drawCanvas {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+      background: transparent;
+    }
+
+    /* Slide Complete Alert Sheet */
+    .sheet-backdrop {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(3px);
+      z-index: 40;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .sheet-backdrop.show { opacity: 1; pointer-events: auto; }
+
+    .bottom-sheet {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      background: var(--sheet-bg);
+      border-top: 2.5px solid var(--sheet-border);
+      border-top-left-radius: 28px;
+      border-top-right-radius: 28px;
+      padding: 14px 18px 24px 18px;
+      box-shadow: 0 -10px 40px rgba(0,0,0,0.35);
+      z-index: 50;
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .bottom-sheet.open { transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Prototype Controls -->
+  <div class="prototype-bar">
+    <button class="proto-btn active" id="themeBtn" onclick="toggleTheme()">
+      <span id="themeIcon">☀️</span> Light Mode
+    </button>
+    <button class="proto-btn" onclick="toggleScratchpad()">
+      <span>✏️</span> Scratchpad
+    </button>
+  </div>
+
+  <!-- Mobile Frame Shell -->
+  <div class="mobile-frame" id="phone">
+
+    <!-- Top Status Bar -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons">
+        <svg width="16" height="12" viewBox="0 0 17 12" fill="currentColor">
+          <rect x="0" y="9" width="3" height="3" rx="0.5"/>
+          <rect x="4.5" y="6" width="3" height="6" rx="0.5"/>
+          <rect x="9" y="3" width="3" height="9" rx="0.5"/>
+          <rect x="13.5" y="0" width="3" height="12" rx="0.5"/>
+        </svg>
+        <svg width="15" height="12" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-4.9-3.2c2.7-2.3 7.1-2.3 9.8 0l1.4-1.4c-3.5-3.1-9.1-3.1-12.6 0l1.4 1.4z"/>
+        </svg>
+        <svg width="22" height="11" viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="1" y="1" width="19" height="10" rx="3"/>
+          <rect x="3" y="3" width="12" height="6" fill="currentColor" rx="1"/>
+          <path d="M21 4.5v3" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 1. SIGNATURE GLASSMORPHIC FLOATING TOOLBAR -->
+    <div class="glass-header-container">
+      <div class="glass-pill-bar">
+        <!-- Close button -->
+        <button class="glass-close-btn" aria-label="Close" onclick="alert('Exit Problem')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <!-- Glowing Liquid Progress Bar (5 / 10 = 50%) -->
+        <div class="glass-progress-track">
+          <div class="glass-progress-fill"></div>
+          <span class="glass-progress-text">5 / 10</span>
+        </div>
+
+        <!-- Streak Fire Counter -->
+        <div class="streak-badge">
+          <span class="streak-flame">🔥</span>
+          <span class="streak-count">12</span>
+        </div>
+
+        <div class="glass-divider"></div>
+
+        <!-- AI Bot Avatar Pill -->
+        <button class="bot-avatar-btn" aria-label="AI Tutor" onclick="toggleTutorTip()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0056fd" stroke-width="2" stroke-linecap="round">
+            <rect x="4" y="8" width="16" height="12" rx="4"></rect>
+            <circle cx="9" cy="13" r="1.5" fill="#0056fd"></circle>
+            <circle cx="15" cy="13" r="1.5" fill="#0056fd"></circle>
+            <path d="M12 4v4"></path>
+            <path d="M2 13h2"></path>
+            <path d="M20 13h2"></path>
+            <ellipse cx="12" cy="14" rx="10" ry="4" stroke="#3b82f6" stroke-width="1.2" stroke-dasharray="3 2" transform="rotate(-15 12 14)"></ellipse>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- AI Tutor Popover Tip -->
+    <div class="ai-hint-popover" id="aiHint">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span style="font-size: 11px; font-weight: 800; color: var(--primary-blue); text-transform: uppercase;">✦ Step-by-Step Calculation</span>
+        <span style="font-size: 12px; cursor: pointer; color: var(--text-muted);" onclick="toggleTutorTip()">✕</span>
+      </div>
+      <p style="font-size: 12px; line-height: 1.45; color: var(--text-main);">
+        1. Substitute: <span class="math">2 · (6.6743×10⁻¹¹) · (6.42×10²³) / (3.389×10⁶)</span><br>
+        2. Calculate inside root: <span class="math">≈ 2.530×10⁷ m²/s²</span><br>
+        3. Square root: <span class="math">≈ 5030 m/s = 5.03 km/s</span>.
+      </p>
+    </div>
+
+    <!-- 2. Scrollable Problem Card -->
+    <div class="content-area">
+
+      <!-- Scratchpad Button Row -->
+      <div class="scratchpad-bar">
+        <button class="scratchpad-btn" onclick="toggleScratchpad()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+          </svg>
+          <span>Scratchpad</span>
+        </button>
+      </div>
+
+      <!-- Problem Card Container -->
+      <div class="problem-card">
+        <div class="topic-tag-row">
+          <div class="atom-badge">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+              <ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(30 12 12)"/>
+              <ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(-30 12 12)"/>
+            </svg>
+          </div>
+          <div class="topic-text">
+            <span class="topic-category">Physics</span>
+            <span class="topic-sub">Gravitation</span>
+          </div>
+        </div>
+
+        <h1 class="question-statement">
+          Calculate the escape velocity from Mars <br>
+          <span class="math">(M = 6.42 \times 10^{23}\text{ kg}, R = 3389\text{ km})</span> <br>
+          in km/s.
+        </h1>
+
+        <div class="divider-line"></div>
+
+        <!-- Formula Section -->
+        <div class="formula-section">
+          <div class="formula-label">Formula</div>
+          <div class="formula-expression math">
+            v<sub>esc</sub> = <span style="font-size: 22px;">√</span><span style="border-top: 1.5px solid currentColor; padding-top: 1px;">( 2GM / R )</span>
+          </div>
+
+          <div class="where-clause math">
+            <div>Where:</div>
+            <div>G = 6.67430 × 10<sup>-11</sup> m<sup>3</sup> kg<sup>-1</sup> s<sup>-2</sup></div>
+            <div>M = 6.42 × 10<sup>23</sup> kg</div>
+            <div>R = 3389 km = 3.389 × 10<sup>6</sup> m</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Answer Input Box -->
+      <div class="answer-container">
+        <div class="answer-left">
+          <span class="answer-label">Answer</span>
+          <div class="answer-value-row">
+            <span class="answer-display" id="ansDisplay">5.03</span>
+            <div class="blinking-cursor"></div>
+          </div>
+        </div>
+
+        <div class="unit-pill" onclick="cycleUnits()">
+          <span id="unitDisplay">km/s</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 3. Scientific Interactive On-Screen Keypad -->
+    <div class="keypad-grid">
+      <!-- Row 1 -->
+      <button class="key-btn" onclick="pressKey('7')">7</button>
+      <button class="key-btn" onclick="pressKey('8')">8</button>
+      <button class="key-btn" onclick="pressKey('9')">9</button>
+      <button class="key-btn key-op" onclick="pressBackspace()" aria-label="Backspace">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
+          <line x1="18" y1="9" x2="12" y2="15"></line>
+          <line x1="12" y1="9" x2="18" y2="15"></line>
+        </svg>
+      </button>
+
+      <!-- Row 2 -->
+      <button class="key-btn" onclick="pressKey('4')">4</button>
+      <button class="key-btn" onclick="pressKey('5')">5</button>
+      <button class="key-btn" onclick="pressKey('6')">6</button>
+      <button class="key-btn key-op math" onclick="pressSqrt()">√</button>
+
+      <!-- Row 3 -->
+      <button class="key-btn" onclick="pressKey('1')">1</button>
+      <button class="key-btn" onclick="pressKey('2')">2</button>
+      <button class="key-btn" onclick="pressKey('3')">3</button>
+      <button class="key-btn key-op" onclick="pressKey('-')">−</button>
+
+      <!-- Row 4 -->
+      <button class="key-btn" onclick="pressKey('0')">0</button>
+      <button class="key-btn" onclick="pressKey('.')">.</button>
+      <button class="key-btn key-op" onclick="toggleSign()">±</button>
+      <button class="key-btn key-enter" onclick="submitAnswer()" aria-label="Submit">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 10 4 15 9 20"></polyline>
+          <path d="M20 4v7a4 4 0 0 1-4 4H4"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- iOS Home Bar -->
+    <div class="home-indicator"></div>
+
+    <!-- Scratchpad Canvas Drawer -->
+    <div class="scratchpad-modal" id="scratchpadModal">
+      <div class="scratchpad-header">
+        <span style="font-size: 13px; font-weight: 800; color: var(--text-main);">Scratchpad (Drawing / Notes)</span>
+        <div style="display: flex; gap: 8px;">
+          <button style="border:none; background:none; color: var(--primary-blue); font-weight:700; cursor:pointer;" onclick="clearCanvas()">Clear</button>
+          <button style="border:none; background:none; color: var(--text-muted); font-weight:700; cursor:pointer;" onclick="toggleScratchpad()">Done</button>
+        </div>
+      </div>
+      <canvas id="drawCanvas"></canvas>
+    </div>
+
+    <!-- Slide Complete Alert Bottom Sheet -->
+    <div class="sheet-backdrop" id="sheetBackdrop" onclick="closeSheet()"></div>
+    <div class="bottom-sheet" id="feedbackSheet">
+      <div style="width: 38px; height: 4px; background: #cbd5e1; border-radius: 999px; margin: 0 auto 4px auto;"></div>
+
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: #ecfdf5; color: #10b981; display: flex; align-items: center; justify-content: center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+          <h2 style="font-size: 20px; font-weight: 800; color: #10b981;">Correct Calculation!</h2>
+        </div>
+        <button style="border: none; background: none; font-size: 16px; cursor: pointer; color: var(--text-muted);" onclick="closeSheet()">✕</button>
+      </div>
+
+      <p style="font-size: 12px; line-height: 1.5; color: var(--text-main);">
+        <span class="math">v<sub>esc</sub> = √(2 · 6.6743×10⁻¹¹ · 6.42×10²³ / 3.389×10⁶) = 5,030 m/s = <strong>5.03 km/s</strong></span>. Excellent precision!
+      </p>
+
+      <button style="width: 100%; height: 48px; background: var(--primary-blue); color: #fff; border: none; border-radius: 14px; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 4px;" onclick="closeSheet()">
+        <span>Continue to Next Problem (Enter ↵)</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Interactive Logic -->
+  <script>
+    let isDark = false;
+    let currentInput = "5.03";
+    const units = ["km/s", "m/s", "mi/s"];
+    let unitIdx = 0;
+
+    function toggleTheme() {
+      isDark = !isDark;
+      const root = document.documentElement;
+      const themeBtn = document.getElementById('themeBtn');
+
+      if (isDark) {
+        root.setAttribute('data-theme', 'dark');
+        themeBtn.innerHTML = '<span>🌙</span> Dark Mode';
+      } else {
+        root.removeAttribute('data-theme');
+        themeBtn.innerHTML = '<span>☀️</span> Light Mode';
+      }
+    }
+
+    function pressKey(char) {
+      if (currentInput === "0" && char !== ".") {
+        currentInput = char;
+      } else {
+        currentInput += char;
+      }
+      updateDisplay();
+    }
+
+    function pressBackspace() {
+      currentInput = currentInput.slice(0, -1);
+      if (currentInput === "") currentInput = "0";
+      updateDisplay();
+    }
+
+    function pressSqrt() {
+      const val = parseFloat(currentInput);
+      if (!isNaN(val) && val >= 0) {
+        currentInput = Math.sqrt(val).toFixed(2).toString();
+        updateDisplay();
+      }
+    }
+
+    function toggleSign() {
+      if (currentInput.startsWith("-")) {
+        currentInput = currentInput.substring(1);
+      } else if (currentInput !== "0") {
+        currentInput = "-" + currentInput;
+      }
+      updateDisplay();
+    }
+
+    function updateDisplay() {
+      document.getElementById('ansDisplay').innerText = currentInput;
+    }
+
+    function cycleUnits() {
+      unitIdx = (unitIdx + 1) % units.length;
+      document.getElementById('unitDisplay').innerText = units[unitIdx];
+    }
+
+    function toggleTutorTip() {
+      document.getElementById('aiHint').classList.toggle('show');
+    }
+
+    function submitAnswer() {
+      if (currentInput === "5.03" || currentInput === "5.030" || currentInput === "5") {
+        document.getElementById('feedbackSheet').classList.add('open');
+        document.getElementById('sheetBackdrop').classList.add('show');
+      } else {
+        alert('Value entered: ' + currentInput + ' ' + units[unitIdx] + '\nTip: Re-evaluate √(2GM/R) = 5.03 km/s.');
+      }
+    }
+
+    function closeSheet() {
+      document.getElementById('feedbackSheet').classList.remove('open');
+      document.getElementById('sheetBackdrop').classList.remove('show');
+    }
+
+    // Scratchpad canvas logic
+    let isDrawing = false;
+    const canvas = document.getElementById('drawCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function toggleScratchpad() {
+      const modal = document.getElementById('scratchpadModal');
+      modal.classList.toggle('show');
+      if (modal.classList.contains('show')) {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight - 40;
+        ctx.strokeStyle = isDark ? '#38bdf8' : '#0062ff';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+      }
+    }
+
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    canvas.addEventListener('mousedown', (e) => { isDrawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); });
+    canvas.addEventListener('mousemove', (e) => { if (isDrawing) { ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); } });
+    canvas.addEventListener('mouseup', () => { isDrawing = false; });
+  </script>
+</body>
+</html>

@@ -2,18 +2,13 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../models/app_models.dart';
 import '../../theme/app_theme.dart';
 import '../math_markdown.dart';
 
-/// `matching` slide: pair every left item with its right partner. Tap a left
-/// chip, then a right chip, to bind them; tapping a right chip while a left is
-/// selected reassigns it, tapping a bound right chip with nothing selected
-/// unbinds it. State is keyed by pair INDEX (not display text) so pairs with
-/// identical strings stay distinct. The host receives the current
-/// leftIndex→rightIndex assignment map via [onChanged]; an assignment is
-/// correct when key == value (the right item's original pair index matches).
+/// Conceptual Matching Pairs View matching docs/new-theme/slide-p/math-pairs.html
 class MatchingView extends StatefulWidget {
   final Slide slide;
   final bool isAnswered;
@@ -45,8 +40,8 @@ class _MatchingViewState extends State<MatchingView> {
     AppTheme.duoViolet,
     AppTheme.duoOrange,
     AppTheme.duoGreen,
-    Color(0xFFf472b6),
-    Color(0xFF22d3ee),
+    Color(0xFFF472B6),
+    Color(0xFF22D3EE),
   ];
 
   @override
@@ -93,8 +88,6 @@ class _MatchingViewState extends State<MatchingView> {
     if (widget.isAnswered) return;
     HapticFeedback.selectionClick();
     setState(() {
-      // Selecting never unbinds — a bound left can be selected and re-pointed
-      // at a different right; tapping the selected left deselects it.
       _selectedLeft = _selectedLeft == leftIndex ? null : leftIndex;
     });
     widget.onChanged(Map.of(_assigned));
@@ -121,99 +114,24 @@ class _MatchingViewState extends State<MatchingView> {
     widget.onChanged(Map.of(_assigned));
   }
 
-  Widget _chip({
-    required Widget child,
-    required bool bound,
-    required Color color,
-    required bool highlighted,
-    Color? resultColor,
-    required VoidCallback onTap,
-  }) {
-    final border =
-        resultColor ??
-        (bound ? color : (highlighted ? Colors.amber : context.colors.outline));
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
-          child: AnimatedContainer(
-            duration: Duration(milliseconds: 150),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            constraints: const BoxConstraints(minHeight: 48),
-            alignment: Alignment.centerLeft,
-            decoration: BoxDecoration(
-              color: bound
-                  ? color.withValues(alpha: 0.16)
-                  : (context.colors.isDark
-                      ? color.withValues(alpha: 0.06)
-                      : Colors.white),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: border == context.colors.outline
-                    ? color.withValues(alpha: 0.3)
-                    : border,
-                width: highlighted || bound ? 2.5 : 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: (bound ? color : border).withValues(alpha: 0.06),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: child,
-          ),
-        ),
-      ),
-    );
+  void _resetMatches() {
+    if (widget.isAnswered) return;
+    HapticFeedback.selectionClick();
+    setState(() {
+      _assigned.clear();
+      _selectedLeft = null;
+    });
+    widget.onChanged({});
   }
 
   @override
   Widget build(BuildContext context) {
-    final titleWidget = MathMarkdown(
-      key: ValueKey('title_${widget.slide.id}'),
-      data: widget.slide.content.isNotEmpty
-          ? widget.slide.content
-          : 'Match each item with its pair.',
-      textStyle: TextStyle(
-        fontSize: 17,
-        color: context.colors.textPrimary,
-        fontWeight: FontWeight.bold,
-      ),
-    );
-
-    final leftChips = [
-      for (var i = 0; i < _pairs.length; i++)
-        MathMarkdown(
-          key: ValueKey('left_${widget.slide.id}_$i'),
-          data: _pairs[i].left,
-          textStyle: TextStyle(
-            fontSize: 14,
-            color: context.colors.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-    ];
-
-    final rightChips = [
-      for (var i = 0; i < _pairs.length; i++)
-        MathMarkdown(
-          key: ValueKey('right_${widget.slide.id}_$i'),
-          data: _pairs[i].right,
-          textStyle: TextStyle(
-            fontSize: 14,
-            color: context.colors.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-    ];
+    final colors = context.colors;
+    final totalPairs = _pairs.length;
+    final matchedCount = _assigned.length;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
       child: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
@@ -221,98 +139,400 @@ class _MatchingViewState extends State<MatchingView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: context.colors.isDark
-                        ? context.colors.surface
-                        : Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: AppTheme.duoViolet.withValues(alpha: 0.3),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.duoViolet.withValues(alpha: 0.08),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Container(
-                        height: 4,
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [AppTheme.duoViolet, Color(0xFF0284C7), AppTheme.duoGreen],
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: titleWidget,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
+                // 1. Header Title & Objective Banner
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          for (var i = 0; i < _pairs.length; i++)
-                            _chip(
-                              child: leftChips[i],
-                              bound: _assigned.containsKey(i),
-                              color: _pairColor(i),
-                              highlighted: _selectedLeft == i,
-                              resultColor: widget.isAnswered
-                                  ? (_isPairCorrect(i)
-                                        ? AppTheme.duoGreen
-                                        : AppTheme.duoRed)
-                                  : null,
-                              onTap: () => _tapLeft(i),
-                            ),
-                        ],
+                    Text(
+                      'Matching Pairs',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: colors.textMain,
+                        letterSpacing: -0.3,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          for (final rightIndex in _rightOrder)
-                            Builder(
-                              builder: (context) {
-                                final boundLeft = _boundLeftFor(rightIndex);
-                                return _chip(
-                                  child: rightChips[rightIndex],
-                                  bound: boundLeft != null,
-                                  color: boundLeft != null
-                                      ? _pairColor(boundLeft)
-                                      : context.colors.outline,
-                                  highlighted: false,
-                                  resultColor:
-                                      widget.isAnswered && boundLeft != null
-                                      ? (_isPairCorrect(boundLeft)
-                                            ? AppTheme.duoGreen
-                                            : AppTheme.duoRed)
-                                      : null,
-                                  onTap: () => _tapRight(rightIndex),
-                                );
-                              },
-                            ),
-                        ],
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.slide.content.isNotEmpty
+                          ? widget.slide.content
+                          : 'Match each concept on the left with its corresponding partner.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: colors.textMuted,
                       ),
                     ),
                   ],
                 ),
+
+                const SizedBox(height: 12),
+
+                // 2. Column Headers
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Icon(
+                              LucideIcons.boxes,
+                              size: 13,
+                              color: colors.primaryBlue,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              'CONCEPT / TERM',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: colors.primaryBlue,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Row(
+                          children: [
+                            const Icon(
+                              LucideIcons.link2,
+                              size: 13,
+                              color: Color(0xFF8B5CF6),
+                            ),
+                            const SizedBox(width: 5),
+                            const Text(
+                              'DEFINITION / MATCH',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF8B5CF6),
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // 3. Matching Pairs Grid (2 Columns)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Left Column
+                    Expanded(
+                      child: Column(
+                        children: List.generate(_pairs.length, (leftIdx) {
+                          final isSelected = _selectedLeft == leftIdx;
+                          final isBound = _assigned.containsKey(leftIdx);
+                          final boundColor = _pairColor(leftIdx);
+
+                          Color cardBg = colors.cardBg;
+                          Color cardBorder = colors.cardBorder;
+                          Color textColor = colors.textMain;
+
+                          if (widget.isAnswered && isBound) {
+                            final correct = _isPairCorrect(leftIdx);
+                            cardBorder = correct
+                                ? colors.accentGreen
+                                : AppTheme.duoRed;
+                            cardBg = correct
+                                ? colors.accentGreenLight
+                                : AppTheme.duoRed.withValues(alpha: 0.12);
+                            textColor = correct
+                                ? colors.accentGreen
+                                : AppTheme.duoRed;
+                          } else if (isSelected) {
+                            cardBorder = colors.primaryBlue;
+                            cardBg = colors.primaryBlueLight;
+                            textColor = colors.primaryBlue;
+                          } else if (isBound) {
+                            cardBorder = boundColor;
+                            cardBg = boundColor.withValues(alpha: 0.12);
+                          }
+
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: GestureDetector(
+                              onTap: () => _tapLeft(leftIdx),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 10,
+                                ),
+                                constraints: const BoxConstraints(
+                                  minHeight: 64,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: cardBg,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: cardBorder,
+                                    width: isSelected || isBound ? 1.8 : 1.0,
+                                  ),
+                                  boxShadow: isSelected
+                                      ? [
+                                          BoxShadow(
+                                            color: colors.primaryBlue
+                                                .withValues(alpha: 0.18),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 3),
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 18,
+                                      height: 18,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: isBound
+                                              ? boundColor
+                                              : (isSelected
+                                                  ? colors.primaryBlue
+                                                  : colors.cardBorder),
+                                          width: 1.5,
+                                        ),
+                                        color: isBound
+                                            ? boundColor
+                                            : (isSelected
+                                                ? colors.primaryBlue
+                                                : Colors.transparent),
+                                      ),
+                                      child: isBound
+                                          ? const Icon(
+                                              LucideIcons.check,
+                                              size: 11,
+                                              color: Colors.white,
+                                            )
+                                          : (isSelected
+                                              ? const Center(
+                                                  child: Icon(
+                                                    LucideIcons.dot,
+                                                    size: 14,
+                                                    color: Colors.white,
+                                                  ),
+                                                )
+                                              : null),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: MathMarkdown(
+                                        data: _pairs[leftIdx].left,
+                                        selectable: false,
+                                        textStyle: TextStyle(
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: textColor,
+                                          height: 1.35,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    // Right Column
+                    Expanded(
+                      child: Column(
+                        children: _rightOrder.map((rightIdx) {
+                          final boundLeft = _boundLeftFor(rightIdx);
+                          final isBound = boundLeft != null;
+                          final boundColor = isBound
+                              ? _pairColor(boundLeft)
+                              : colors.cardBorder;
+
+                          Color cardBg = colors.cardBg;
+                          Color cardBorder = colors.cardBorder;
+                          Color textColor = colors.textMain;
+
+                          if (widget.isAnswered && isBound) {
+                            final correct = _isPairCorrect(boundLeft);
+                            cardBorder = correct
+                                ? colors.accentGreen
+                                : AppTheme.duoRed;
+                            cardBg = correct
+                                ? colors.accentGreenLight
+                                : AppTheme.duoRed.withValues(alpha: 0.12);
+                            textColor = correct
+                                ? colors.accentGreen
+                                : AppTheme.duoRed;
+                          } else if (isBound) {
+                            cardBorder = boundColor;
+                            cardBg = boundColor.withValues(alpha: 0.12);
+                          }
+
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: GestureDetector(
+                              onTap: () => _tapRight(rightIdx),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 10,
+                                ),
+                                constraints: const BoxConstraints(
+                                  minHeight: 64,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: cardBg,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: cardBorder,
+                                    width: isBound ? 1.8 : 1.0,
+                                  ),
+                                  boxShadow: isBound
+                                      ? [
+                                          BoxShadow(
+                                            color: boundColor.withValues(
+                                              alpha: 0.14,
+                                            ),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 3),
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 18,
+                                      height: 18,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: isBound
+                                              ? boundColor
+                                              : colors.cardBorder,
+                                          width: 1.5,
+                                        ),
+                                        color: isBound
+                                            ? boundColor
+                                            : Colors.transparent,
+                                      ),
+                                      child: isBound
+                                          ? const Icon(
+                                              LucideIcons.check,
+                                              size: 11,
+                                              color: Colors.white,
+                                            )
+                                          : null,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: MathMarkdown(
+                                        data: _pairs[rightIdx].right,
+                                        selectable: false,
+                                        textStyle: TextStyle(
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: textColor,
+                                          height: 1.35,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 10),
+
+                // 4. Bottom Utility Bar (Instruction & Reset Action)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.cardBg,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: colors.cardBorder),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            LucideIcons.helpCircle,
+                            size: 14,
+                            color: colors.primaryBlue,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Matched: $matchedCount of $totalPairs pairs',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              color: colors.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (!widget.isAnswered && matchedCount > 0)
+                        GestureDetector(
+                          onTap: _resetMatches,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.badgeBg,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: colors.cardBorder),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  LucideIcons.rotateCcw,
+                                  size: 11,
+                                  color: colors.textMuted,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Reset',
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: colors.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
               ],
             ),
           ),
@@ -321,7 +541,10 @@ class _MatchingViewState extends State<MatchingView> {
               hasScrollBody: false,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
-                children: [const SizedBox(height: 24), widget.bottomBar!],
+                children: [
+                  const SizedBox(height: 16),
+                  widget.bottomBar!,
+                ],
               ),
             ),
         ],

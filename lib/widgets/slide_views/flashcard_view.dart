@@ -1,17 +1,14 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../models/app_models.dart';
 import '../../theme/app_theme.dart';
-import '../duo_button.dart';
 import '../math_markdown.dart';
 
-/// `flashcard` slide: active recall with self-grading. Front = the prompt
-/// ([Slide.content]), back = the answer ([Slide.blankAnswer]). The learner
-/// recalls, flips, then honestly grades themselves — "Again" feeds the
-/// spaced-review queue via the host's [onSelfGrade].
+/// Spaced Repetition 3D Flip Flashcard View matching docs/new-theme/slide-p/flashcards.html
 class FlashcardView extends StatefulWidget {
   final Slide slide;
   final void Function(bool remembered) onSelfGrade;
@@ -39,156 +36,392 @@ class _FlashcardViewState extends State<FlashcardView> {
     }
   }
 
+  void _toggleFlip() {
+    HapticFeedback.selectionClick();
+    setState(() => _flipped = !_flipped);
+  }
+
+  void _handleGrade(bool remembered) {
+    if (_graded) return;
+    if (remembered) {
+      HapticFeedback.mediumImpact();
+    } else {
+      HapticFeedback.lightImpact();
+    }
+    setState(() => _graded = true);
+    widget.onSelfGrade(remembered);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+
     return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Expanded(
-            child: Center(
-              child: GestureDetector(
-                onTap: () => setState(() => _flipped = !_flipped),
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0, end: _flipped ? 1 : 0),
-                  duration: const Duration(milliseconds: 350),
-                  curve: Curves.easeInOut,
-                  builder: (context, t, _) {
-                    final showBack = t > 0.5;
-                    final angle = t * math.pi;
-                    return Transform(
-                      alignment: Alignment.center,
-                      transform: Matrix4.identity()
-                        ..setEntry(3, 2, 0.0012)
-                        ..rotateY(angle),
-                      child: Transform(
-                        alignment: Alignment.center,
-                        // Un-mirror the back face.
-                        transform: Matrix4.identity()
-                          ..rotateY(showBack ? math.pi : 0),
-                        child: Container(
-                          width: double.infinity,
-                          constraints: const BoxConstraints(minHeight: 260),
-                          decoration: BoxDecoration(
-                            color: showBack
-                                ? AppTheme.duoGreen.withValues(alpha: 0.12)
-                                : (context.colors.isDark
-                                    ? AppTheme.duoBlue.withValues(alpha: 0.1)
-                                    : Colors.white),
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: showBack
-                                  ? AppTheme.duoGreen
-                                  : AppTheme.duoBlue.withValues(alpha: 0.5),
-                              width: 2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: (showBack ? AppTheme.duoGreen : AppTheme.duoBlue).withValues(alpha: 0.1),
-                                blurRadius: 16,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+      child: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 1. Spaced Repetition Stability Gauge Card
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.cardBg,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: colors.cardBorder),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(
+                          alpha: colors.isDark ? 0.25 : 0.03,
+                        ),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            LucideIcons.brain,
+                            size: 18,
+                            color: colors.primaryBlue,
                           ),
-                          clipBehavior: Clip.antiAlias,
-                          child: Column(
+                          const SizedBox(width: 8),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                height: 4,
-                                color: showBack ? AppTheme.duoGreen : AppTheme.duoBlue,
+                              Text(
+                                'ACTIVE RETRIEVAL',
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: colors.textSubtle,
+                                  letterSpacing: 0.8,
+                                ),
                               ),
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(24),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        showBack
-                                            ? 'ANSWER'
-                                            : 'RECALL, THEN TAP TO FLIP',
-                                        style: TextStyle(
-                                          color: showBack
-                                              ? AppTheme.duoGreen
-                                              : context.colors.textFaint,
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 10,
-                                          letterSpacing: 1.5,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      MathMarkdown(
-                                        data: showBack
-                                            ? (widget.slide.blankAnswer ?? '')
-                                            : widget.slide.content,
-                                        textStyle: TextStyle(
-                                          fontSize: 19,
-                                          color: context.colors.textPrimary,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      if (!showBack) ...[
-                                        const SizedBox(height: 20),
-                                        Icon(
-                                          LucideIcons.refreshCw,
-                                          color: context.colors.textFaint,
-                                          size: 18,
-                                        ),
-                                      ],
-                                    ],
-                                  ),
+                              Text(
+                                'Spaced Repetition Flashcard',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: colors.textMain,
                                 ),
                               ),
                             ],
                           ),
-                        ),
+                        ],
                       ),
-                    );
-                  },
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: _flipped && !_graded
-                ? Row(
-                    key: const ValueKey('grade_buttons'),
-                    children: [
-                      Expanded(
-                        child: DuoButton(
-                          text: 'Again',
-                          color: AppTheme.duoRed,
-                          shadowColor: AppTheme.duoRedDark,
-                          isOutline: true,
-                          onPressed: () {
-                            setState(() => _graded = true);
-                            widget.onSelfGrade(false);
-                          },
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: DuoButton(
-                          text: 'Got it',
-                          color: AppTheme.duoGreen,
-                          shadowColor: AppTheme.duoGreenDark,
-                          onPressed: () {
-                            setState(() => _graded = true);
-                            widget.onSelfGrade(true);
-                          },
+                        decoration: BoxDecoration(
+                          color: colors.accentGreenLight,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              LucideIcons.sparkles,
+                              size: 11,
+                              color: colors.accentGreen,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Review Deck',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                color: colors.accentGreen,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
-                  )
-                : const SizedBox(
-                    height: 56,
-                    key: ValueKey('grade_placeholder'),
                   ),
+                ),
+
+                const SizedBox(height: 14),
+
+                // 2. 3D Flip Card Container
+                GestureDetector(
+                  onTap: _toggleFlip,
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: _flipped ? 1 : 0),
+                    duration: const Duration(milliseconds: 400),
+                    curve: Curves.easeInOutBack,
+                    builder: (context, t, _) {
+                      final showBack = t > 0.5;
+                      final angle = t * math.pi;
+
+                      return Transform(
+                        alignment: Alignment.center,
+                        transform: Matrix4.identity()
+                          ..setEntry(3, 2, 0.0012)
+                          ..rotateY(angle),
+                        child: Transform(
+                          alignment: Alignment.center,
+                          transform: Matrix4.identity()
+                            ..rotateY(showBack ? math.pi : 0),
+                          child: Container(
+                            constraints: const BoxConstraints(minHeight: 280),
+                            decoration: BoxDecoration(
+                              color: colors.cardBg,
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: showBack
+                                    ? colors.accentGreen
+                                    : colors.primaryBlue,
+                                width: 1.8,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: (showBack
+                                          ? colors.accentGreen
+                                          : colors.primaryBlue)
+                                      .withValues(alpha: 0.18),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                // Card Top Bar
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: showBack
+                                            ? colors.accentGreenLight
+                                            : colors.primaryBlueLight,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        showBack
+                                            ? 'ANSWER / KEY CONCEPT'
+                                            : 'PROMPT / QUESTION',
+                                        style: TextStyle(
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.w800,
+                                          color: showBack
+                                              ? colors.accentGreen
+                                              : colors.primaryBlue,
+                                          letterSpacing: 0.6,
+                                        ),
+                                      ),
+                                    ),
+                                    Icon(
+                                      LucideIcons.rotateCcw,
+                                      size: 14,
+                                      color: colors.textSubtle,
+                                    ),
+                                  ],
+                                ),
+
+                                const SizedBox(height: 16),
+
+                                // Card Body Content
+                                MathMarkdown(
+                                  data: showBack
+                                      ? (widget.slide.blankAnswer?.isNotEmpty ==
+                                                true
+                                            ? widget.slide.blankAnswer!
+                                            : widget.slide.content)
+                                      : widget.slide.content,
+                                  textStyle: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                    color: colors.textMain,
+                                    height: 1.4,
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
+
+                                const SizedBox(height: 16),
+
+                                // Flip instruction footer
+                                Text(
+                                  showBack
+                                      ? 'Tap to see prompt'
+                                      : 'Tap card to flip and verify answer',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: colors.textSubtle,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // 3. 4-Tier Spaced Repetition Grading Bar
+                if (!_graded) ...[
+                  Text(
+                    'RATE YOUR RECALL FIDELITY:',
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                      color: colors.textSubtle,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  Row(
+                    children: [
+                      // Again (<10m)
+                      Expanded(
+                        child: _buildGradeButton(
+                          title: 'Again',
+                          interval: '<10m',
+                          color: AppTheme.duoRed,
+                          bgColor: AppTheme.duoRed.withValues(alpha: 0.12),
+                          onTap: () => _handleGrade(false),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+
+                      // Hard (1d)
+                      Expanded(
+                        child: _buildGradeButton(
+                          title: 'Hard',
+                          interval: '1d',
+                          color: AppTheme.duoOrange,
+                          bgColor: AppTheme.duoOrange.withValues(alpha: 0.12),
+                          onTap: () => _handleGrade(false),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+
+                      // Good (3d)
+                      Expanded(
+                        child: _buildGradeButton(
+                          title: 'Good',
+                          interval: '3d',
+                          color: colors.primaryBlue,
+                          bgColor: colors.primaryBlueLight,
+                          onTap: () => _handleGrade(true),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+
+                      // Easy (7d)
+                      Expanded(
+                        child: _buildGradeButton(
+                          title: 'Easy',
+                          interval: '7d',
+                          color: colors.accentGreen,
+                          bgColor: colors.accentGreenLight,
+                          onTap: () => _handleGrade(true),
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: colors.accentGreenLight,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: colors.accentGreen.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          LucideIcons.checkCircle2,
+                          size: 16,
+                          color: colors.accentGreen,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Graded & Added to Spaced Queue',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w800,
+                            color: colors.accentGreen,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
         ],
+      ),
+    );
+  }
+
+  Widget _buildGradeButton({
+    required String title,
+    required String interval,
+    required Color color,
+    required Color bgColor,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 64,
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withValues(alpha: 0.35), width: 1.2),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              interval,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: color.withValues(alpha: 0.8),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

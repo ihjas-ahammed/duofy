@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Synthesize the Missing Code - Prototype</title>
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==========================================================================
+       THEME VARIABLES (DARK BY DEFAULT & LIGHT COMPATIBLE)
+       ========================================================================== */
+    :root {
+      /* Dark Theme (Default as screenshot) */
+      --page-bg: #030712;
+      --device-bg: #070c18;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-subtle: #64748b;
+
+      /* Glass Toolbar Tokens */
+      --glass-bar-bg: rgba(15, 23, 42, 0.75);
+      --glass-bar-border: rgba(255, 255, 255, 0.15);
+      --glass-bar-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+      --glass-btn-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
+      --glass-btn-border: rgba(255, 255, 255, 0.18);
+      --glass-btn-color: #ffffff;
+      --glass-track-bg: rgba(0, 0, 0, 0.45);
+      --glass-track-text: #7dd3fc;
+      --glass-divider: rgba(255, 255, 255, 0.15);
+      --glass-bot-bg: radial-gradient(circle at 30% 30%, #381f75, #110e2e);
+      --glass-bot-border: #a855f7;
+
+      /* Editor Card Tokens */
+      --editor-bg: #0b1220;
+      --editor-border: rgba(255, 255, 255, 0.08);
+      --editor-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.6);
+      --editor-header-bg: #0e172a;
+      --editor-line-num: #475569;
+      --editor-active-line-num: #38bdf8;
+      --editor-active-line-bg: rgba(56, 189, 248, 0.06);
+
+      /* Code Syntax Colors */
+      --syn-keyword: #c084fc;   /* def, while, if, elif, else, return */
+      --syn-func: #60a5fa;      /* binary_search, len */
+      --syn-var: #f8fafc;       /* arr, target, left, right, mid */
+      --syn-num: #fbbf24;       /* 0, 1 */
+      --syn-op: #94a3b8;        /* =, ==, <, -, + */
+
+      /* Code Slot & Chips */
+      --slot-border: #00e5ff;
+      --slot-glow: rgba(0, 229, 255, 0.4);
+      --slot-bg: rgba(0, 229, 255, 0.08);
+
+      --chip-bg: #0c1527;
+      --chip-border: rgba(255, 255, 255, 0.08);
+      --chip-text: #f8fafc;
+      --chip-selected-border: #00d2ff;
+      --chip-selected-glow: 0 0 16px rgba(0, 210, 255, 0.4), inset 0 0 8px rgba(0, 210, 255, 0.15);
+
+      /* Bottom Bar */
+      --util-bar-bg: #0c1322;
+      --util-bar-border: rgba(255, 255, 255, 0.08);
+      --util-btn-bg: rgba(255, 255, 255, 0.05);
+      --util-btn-border: rgba(255, 255, 255, 0.1);
+
+      --primary-blue: #0062ff;
+      --primary-blue-hover: #0050d4;
+      --home-bar: #ffffff;
+    }
+
+    [data-theme="light"] {
+      /* Frosted Light Theme */
+      --page-bg: #e2e8f0;
+      --device-bg: #f8fafc;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-subtle: #94a3b8;
+
+      --glass-bar-bg: rgba(255, 255, 255, 0.85);
+      --glass-bar-border: rgba(255, 255, 255, 0.9);
+      --glass-bar-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.8);
+      --glass-btn-bg: #f1f5f9;
+      --glass-btn-border: #e2e8f0;
+      --glass-btn-color: #334155;
+      --glass-track-bg: #e2e8f0;
+      --glass-track-text: #0056fd;
+      --glass-divider: #e2e8f0;
+      --glass-bot-bg: radial-gradient(circle at 30% 30%, #eff6ff, #dbeafe);
+      --glass-bot-border: #93c5fd;
+
+      --editor-bg: #ffffff;
+      --editor-border: rgba(226, 232, 240, 0.9);
+      --editor-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05);
+      --editor-header-bg: #f8fafc;
+      --editor-line-num: #94a3b8;
+      --editor-active-line-num: #0284c7;
+      --editor-active-line-bg: #f0f9ff;
+
+      --syn-keyword: #7e22ce;
+      --syn-func: #0284c7;
+      --syn-var: #0f172a;
+      --syn-num: #d97706;
+      --syn-op: #64748b;
+
+      --slot-border: #0284c7;
+      --slot-glow: rgba(2, 132, 199, 0.25);
+      --slot-bg: #f0f9ff;
+
+      --chip-bg: #ffffff;
+      --chip-border: rgba(226, 232, 240, 0.9);
+      --chip-text: #0f172a;
+      --chip-selected-border: #0284c7;
+      --chip-selected-glow: 0 0 12px rgba(2, 132, 199, 0.25);
+
+      --util-bar-bg: #ffffff;
+      --util-bar-border: rgba(226, 232, 240, 0.9);
+      --util-btn-bg: #f8fafc;
+      --util-btn-border: #e2e8f0;
+
+      --primary-blue: #0062ff;
+      --primary-blue-hover: #0050d4;
+      --home-bar: #0f172a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--page-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px 10px;
+      transition: background-color 0.3s ease;
+    }
+
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Prototyping Controls */
+    .prototype-bar {
+      display: flex;
+      gap: 8px;
+      background: var(--editor-bg);
+      padding: 6px;
+      border-radius: 9999px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+      border: 1px solid var(--editor-border);
+      margin-bottom: 14px;
+      z-index: 100;
+    }
+
+    .proto-btn {
+      padding: 6px 16px;
+      border-radius: 9999px;
+      border: none;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .proto-btn.active {
+      background: var(--primary-blue);
+      color: #ffffff;
+    }
+
+    /* Mobile Frame Shell */
+    .mobile-frame {
+      width: 100%;
+      max-width: 412px;
+      height: 878px;
+      background-color: var(--device-bg);
+      border-radius: 44px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--editor-border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: background-color 0.3s ease;
+    }
+
+    /* ==========================================================================
+       STATUS BAR & SIGNATURE GLASS TOOLBAR
+       ========================================================================== */
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 26px 4px 26px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      z-index: 15;
+    }
+
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .glass-header-container {
+      padding: 8px 16px 10px 16px;
+      z-index: 15;
+    }
+
+    .glass-pill-bar {
+      background: var(--glass-bar-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-bar-border);
+      border-radius: 9999px;
+      height: 52px;
+      padding: 4px 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: var(--glass-bar-shadow);
+      transition: all 0.3s ease;
+    }
+
+    .glass-close-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--glass-btn-bg);
+      border: 1px solid var(--glass-btn-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--glass-btn-color);
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.15s ease;
+    }
+    .glass-close-btn:active { transform: scale(0.92); }
+
+    .glass-progress-track {
+      flex: 1;
+      height: 32px;
+      background: var(--glass-track-bg);
+      border-radius: 9999px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 2px;
+      overflow: hidden;
+    }
+
+    .glass-progress-fill {
+      width: 40%; /* 4 / 10 = 40% */
+      height: 100%;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, #0052d4 0%, #4364f7 50%, #6fb1fc 100%);
+      box-shadow: 0 0 14px rgba(67, 100, 247, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+      position: relative;
+    }
+
+    .glass-progress-fill::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      animation: waveGlow 2.5s infinite linear;
+    }
+
+    @keyframes waveGlow {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .glass-progress-text {
+      position: absolute;
+      right: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--glass-track-text);
+      letter-spacing: 0.2px;
+    }
+
+    .streak-badge {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      padding: 0 4px;
+    }
+
+    .streak-flame {
+      font-size: 16px;
+      filter: drop-shadow(0 0 4px #f97316);
+    }
+
+    .streak-count {
+      font-size: 13px;
+      font-weight: 800;
+      color: #f59e0b;
+    }
+
+    .glass-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--glass-divider);
+    }
+
+    .bot-avatar-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--glass-bot-bg);
+      border: 1.5px solid var(--glass-bot-border);
+      box-shadow: 0 0 12px rgba(168, 85, 247, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      flex-shrink: 0;
+      transition: transform 0.2s ease;
+    }
+    .bot-avatar-btn:hover { transform: scale(1.05); }
+
+    /* AI Hint Floating Popover */
+    .ai-hint-popover {
+      position: absolute;
+      top: 108px;
+      right: 20px;
+      left: 20px;
+      background: var(--editor-bg);
+      border: 1.5px solid #3b82f6;
+      box-shadow: var(--editor-shadow), 0 0 16px rgba(59, 130, 246, 0.3);
+      border-radius: 18px;
+      padding: 12px 14px;
+      z-index: 50;
+      display: none;
+      animation: popIn 0.2s ease;
+    }
+    .ai-hint-popover.show { display: block; }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ==========================================================================
+       SCROLLABLE MAIN CONTENT
+       ========================================================================== */
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 2px 16px 10px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Instruction Header */
+    .instruction-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 2px;
+      margin-bottom: 2px;
+    }
+
+    .code-tag-badge {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      background: rgba(0, 98, 255, 0.12);
+      border: 1px solid rgba(0, 98, 255, 0.25);
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .instruction-text h2 {
+      font-size: 15.5px;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.2px;
+    }
+
+    .instruction-text p {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-top: 2px;
+    }
+
+    /* ==========================================================================
+       CODE EDITOR CARD
+       ========================================================================== */
+    .editor-card {
+      background: var(--editor-bg);
+      border: 1px solid var(--editor-border);
+      border-radius: 20px;
+      box-shadow: var(--editor-shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .editor-header {
+      background: var(--editor-header-bg);
+      border-bottom: 1px solid var(--editor-border);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .editor-lang {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .copy-btn {
+      color: var(--text-subtle);
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Code Body */
+    .editor-body {
+      padding: 12px 10px 14px 6px;
+      font-size: 11.8px;
+      line-height: 1.6;
+    }
+
+    .code-line {
+      display: flex;
+      align-items: center;
+      padding: 1px 8px;
+      border-radius: 6px;
+    }
+
+    .code-line.active-line {
+      background: var(--editor-active-line-bg);
+    }
+
+    .line-number {
+      width: 28px;
+      font-size: 11px;
+      color: var(--editor-line-num);
+      text-align: right;
+      margin-right: 14px;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .code-line.active-line .line-number {
+      color: var(--editor-active-line-num);
+      font-weight: 700;
+    }
+
+    .line-content {
+      color: var(--syn-var);
+      white-space: pre;
+    }
+
+    /* Syntax Tokens */
+    .kw { color: var(--syn-keyword); font-weight: 600; }
+    .fn { color: var(--syn-func); }
+    .nm { color: var(--syn-num); }
+    .op { color: var(--syn-op); }
+
+    /* Interactive Fill-in Slot */
+    .code-slot {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 105px;
+      height: 24px;
+      background: var(--slot-bg);
+      border: 1.5px dashed var(--slot-border);
+      box-shadow: 0 0 10px var(--slot-glow);
+      border-radius: 6px;
+      padding: 0 6px;
+      margin: 0 2px;
+      color: var(--slot-border);
+      font-weight: 700;
+      vertical-align: middle;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .code-slot.filled {
+      border-style: solid;
+      color: var(--text-main);
+      background: rgba(0, 229, 255, 0.15);
+    }
+
+    /* ==========================================================================
+       DRAGGABLE / SELECTABLE EXPRESSION TILES
+       ========================================================================== */
+    .tiles-helper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin: 4px 4px 2px 4px;
+    }
+
+    .tiles-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .expr-chip {
+      background: var(--chip-bg);
+      border: 1.5px solid var(--chip-border);
+      border-radius: 12px;
+      padding: 11px 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--chip-text);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+      user-select: none;
+    }
+
+    .expr-chip:hover {
+      border-color: var(--primary-blue);
+      transform: translateY(-1px);
+    }
+
+    .expr-chip.active {
+      border-color: var(--chip-selected-border);
+      box-shadow: var(--chip-selected-glow);
+    }
+
+    /* ==========================================================================
+       BOTTOM UTILITY DOCK
+       ========================================================================== */
+    .bottom-utility-dock {
+      background: var(--util-bar-bg);
+      border: 1px solid var(--util-bar-border);
+      border-radius: 18px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 0 16px 12px 16px;
+    }
+
+    .util-btn {
+      background: var(--util-btn-bg);
+      border: 1px solid var(--util-btn-border);
+      border-radius: 12px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .util-btn:hover {
+      border-color: var(--primary-blue);
+    }
+
+    .util-center-text {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .util-center-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .util-center-sub {
+      font-size: 9px;
+      color: var(--text-subtle);
+      font-weight: 500;
+    }
+
+    .home-indicator {
+      width: 130px;
+      height: 4.5px;
+      background: var(--home-bar);
+      border-radius: 9999px;
+      margin: 0 auto 6px auto;
+      opacity: 0.6;
+    }
+
+    /* Success Bottom Sheet */
+    .sheet-backdrop {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(3px);
+      z-index: 40;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .sheet-backdrop.show { opacity: 1; pointer-events: auto; }
+
+    .bottom-sheet {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      background: var(--editor-bg);
+      border-top: 2.5px solid #10b981;
+      border-top-left-radius: 28px;
+      border-top-right-radius: 28px;
+      padding: 14px 18px 24px 18px;
+      box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+      z-index: 50;
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .bottom-sheet.open { transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Prototyping Controls -->
+  <div class="prototype-bar">
+    <button class="proto-btn active" id="themeBtn" onclick="toggleTheme()">
+      <span id="themeIcon">🌙</span> Dark Mode
+    </button>
+    <button class="proto-btn" onclick="testSubmit()">
+      <span>🚀</span> Check Solution
+    </button>
+  </div>
+
+  <!-- Mobile Frame Shell -->
+  <div class="mobile-frame" id="phone">
+
+    <!-- Top Status Bar -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons">
+        <svg width="16" height="12" viewBox="0 0 17 12" fill="currentColor">
+          <rect x="0" y="9" width="3" height="3" rx="0.5"/>
+          <rect x="4.5" y="6" width="3" height="6" rx="0.5"/>
+          <rect x="9" y="3" width="3" height="9" rx="0.5"/>
+          <rect x="13.5" y="0" width="3" height="12" rx="0.5"/>
+        </svg>
+        <svg width="15" height="12" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-4.9-3.2c2.7-2.3 7.1-2.3 9.8 0l1.4-1.4c-3.5-3.1-9.1-3.1-12.6 0l1.4 1.4z"/>
+        </svg>
+        <svg width="22" height="11" viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="1" y="1" width="19" height="10" rx="3"/>
+          <rect x="3" y="3" width="12" height="6" fill="currentColor" rx="1"/>
+          <path d="M21 4.5v3" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 1. SIGNATURE GLASSMORPHIC TOOLBAR -->
+    <div class="glass-header-container">
+      <div class="glass-pill-bar">
+        <!-- Close button -->
+        <button class="glass-close-btn" aria-label="Close" onclick="alert('Exit Module')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <!-- Glowing Liquid Progress Bar (4 / 10 = 40%) -->
+        <div class="glass-progress-track">
+          <div class="glass-progress-fill"></div>
+          <span class="glass-progress-text">4 / 10</span>
+        </div>
+
+        <!-- Streak Fire Counter -->
+        <div class="streak-badge">
+          <span class="streak-flame">🔥</span>
+          <span class="streak-count">12</span>
+        </div>
+
+        <div class="glass-divider"></div>
+
+        <!-- AI Bot Avatar Pill -->
+        <button class="bot-avatar-btn" aria-label="AI Tutor" onclick="toggleTutorTip()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round">
+            <rect x="4" y="8" width="16" height="12" rx="4"></rect>
+            <circle cx="9" cy="13" r="1.5" fill="#38bdf8"></circle>
+            <circle cx="15" cy="13" r="1.5" fill="#38bdf8"></circle>
+            <path d="M12 4v4"></path>
+            <path d="M2 13h2"></path>
+            <path d="M20 13h2"></path>
+            <ellipse cx="12" cy="14" rx="10" ry="4" stroke="#818cf8" stroke-width="1.2" stroke-dasharray="3 2" transform="rotate(-15 12 14)"></ellipse>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- AI Tutor Popover Tip -->
+    <div class="ai-hint-popover" id="aiHint">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span style="font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase;">✦ Socratic Coding Hint</span>
+        <span style="font-size: 12px; cursor: pointer; color: var(--text-muted);" onclick="toggleTutorTip()">✕</span>
+      </div>
+      <p style="font-size: 12px; line-height: 1.45; color: var(--text-main);">
+        To avoid 32-bit integer overflow when calculating midpoint in arrays, use <br>
+        <code class="mono" style="color: #00e5ff;">left + (right - left) // 2</code> instead of <code class="mono">(left + right) // 2</code>.
+      </p>
+    </div>
+
+    <!-- 2. Main Scrollable Content Area -->
+    <div class="content-area">
+
+      <!-- Instruction Header -->
+      <div class="instruction-group">
+        <div class="code-tag-badge">&lt;/&gt;</div>
+        <div class="instruction-text">
+          <h2>Synthesize the missing code</h2>
+          <p>Drag the correct expression to fill in the blank.</p>
+        </div>
+      </div>
+
+      <!-- IDE Code Editor Card -->
+      <div class="editor-card">
+        <div class="editor-header">
+          <div class="editor-lang">
+            <!-- Python Logo SVG -->
+            <svg width="18" height="18" viewBox="0 0 24 24">
+              <path d="M11.9 2c-5.2 0-4.8 2.2-4.8 2.2l.02 2.3h4.9v.7H5.2S2 6.8 2 12c0 5.3 2.8 5.1 2.8 5.1h1.7v-2.4s-.1-2.8 2.8-2.8h4.8s2.7.05 2.7-2.6V4.6S17.2 2 11.9 2zm-2.7 1.5c.5 0 .9.4.9.9s-.4.9-.9.9-.9-.4-.9-.9.4-.9.9-.9z" fill="#387eb8"/>
+              <path d="M12.1 22c5.2 0 4.8-2.2 4.8-2.2l-.02-2.3H12v-.7h6.8s3.2.4 3.2-4.8c0-5.3-2.8-5.1-2.8-5.1h-1.7v2.4s.1 2.8-2.8 2.8h-4.8s-2.7-.05-2.7 2.6v4.7s-.4 2.6 4.9 2.6zm2.7-1.5c-.5 0-.9-.4-.9-.9s.4-.9.9-.9.9.4.9.9-.4.9-.9.9z" fill="#ffe052"/>
+            </svg>
+            <span>Python</span>
+          </div>
+          <button class="copy-btn" aria-label="Copy Code" onclick="alert('Code copied!')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="editor-body mono">
+          <div class="code-line"><span class="line-number">1</span><span class="line-content"><span class="kw">def</span> <span class="fn">binary_search</span>(arr, target):</span></div>
+          <div class="code-line"><span class="line-number">2</span><span class="line-content">    left <span class="op">=</span> <span class="nm">0</span></span></div>
+          <div class="code-line"><span class="line-number">3</span><span class="line-content">    right <span class="op">=</span> <span class="fn">len</span>(arr) <span class="op">-</span> <span class="nm">1</span></span></div>
+          
+          <!-- Line 4 (Interactive Fill-in Slot) -->
+          <div class="code-line active-line">
+            <span class="line-number">4</span>
+            <span class="line-content">    mid <span class="op">=</span> left <span class="op">+</span> <span class="code-slot filled" id="targetSlot" onclick="clearSlot()">(right - left) // 2</span></span>
+          </div>
+
+          <div class="code-line"><span class="line-number">5</span><span class="line-content">    <span class="kw">while</span> left <span class="op">&lt;=</span> right:</span></div>
+          <div class="code-line"><span class="line-number">6</span><span class="line-content">        <span class="kw">if</span> arr[mid] <span class="op">==</span> target:</span></div>
+          <div class="code-line"><span class="line-number">7</span><span class="line-content">            <span class="kw">return</span> mid</span></div>
+          <div class="code-line"><span class="line-number">8</span><span class="line-content">        <span class="kw">elif</span> arr[mid] <span class="op">&lt;</span> target:</span></div>
+          <div class="code-line"><span class="line-number">9</span><span class="line-content">            left <span class="op">=</span> mid <span class="op">+</span> <span class="nm">1</span></span></div>
+          <div class="code-line"><span class="line-number">10</span><span class="line-content">        <span class="kw">else</span>:</span></div>
+          <div class="code-line"><span class="line-number">11</span><span class="line-content">            right <span class="op">=</span> mid <span class="op">-</span> <span class="nm">1</span></span></div>
+          <div class="code-line"><span class="line-number">12</span><span class="line-content">    <span class="kw">return</span> <span class="op">-</span><span class="nm">1</span></span></div>
+          <div class="code-line"><span class="line-number">13</span><span class="line-content"></span></div>
+        </div>
+      </div>
+
+      <!-- Draggable Options Title -->
+      <div class="tiles-helper">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="5" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="5" r="2"/>
+          <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+          <circle cx="5" cy="19" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="19" cy="19" r="2"/>
+        </svg>
+        <span>Drag an expression to fill in the blank</span>
+      </div>
+
+      <!-- 4 Selectable Code Expression Tiles -->
+      <div class="tiles-grid mono">
+        <!-- Tile 1 (Active) -->
+        <div class="expr-chip active" id="chip-1" onclick="applyExpression(this, '(right - left) // 2')">
+          (right - left) // 2
+        </div>
+
+        <!-- Tile 2 -->
+        <div class="expr-chip" id="chip-2" onclick="applyExpression(this, '(right + left) / 2')">
+          (right + left) / 2
+        </div>
+
+        <!-- Tile 3 -->
+        <div class="expr-chip" id="chip-3" onclick="applyExpression(this, 'right * 2')">
+          right * 2
+        </div>
+
+        <!-- Tile 4 -->
+        <div class="expr-chip" id="chip-4" onclick="applyExpression(this, 'left // 2')">
+          left // 2
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 3. Bottom Utility Bar -->
+    <div class="bottom-utility-dock">
+      <button class="util-btn" onclick="toggleTutorTip()">
+        <span>💡</span>
+        <span>Hint</span>
+      </button>
+
+      <div class="util-center-text">
+        <span class="util-center-title">Use integer arithmetic</span>
+        <span class="util-center-sub">Think about overflow-safe midpoint</span>
+      </div>
+
+      <button class="util-btn" onclick="resetSlot()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+        <span>Reset</span>
+      </button>
+    </div>
+
+    <!-- iOS Home Bar -->
+    <div class="home-indicator"></div>
+
+    <!-- Slide Complete Alert Sheet -->
+    <div class="sheet-backdrop" id="sheetBackdrop" onclick="closeSheet()"></div>
+    <div class="bottom-sheet" id="successSheet">
+      <div style="width: 38px; height: 4px; background: #475569; border-radius: 999px; margin: 0 auto 4px auto;"></div>
+
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(16, 185, 129, 0.15); color: #10b981; display: flex; align-items: center; justify-content: center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+          <h2 style="font-size: 20px; font-weight: 800; color: #10b981;">Correct Synthesis!</h2>
+        </div>
+        <button style="border: none; background: none; font-size: 16px; cursor: pointer; color: var(--text-muted);" onclick="closeSheet()">✕</button>
+      </div>
+
+      <p style="font-size: 12px; line-height: 1.5; color: var(--text-main);">
+        <code class="mono" style="color: #00e5ff;">mid = left + (right - left) // 2</code> correctly calculates the midpoint while ensuring the sum does not overflow maximum integer limits.
+      </p>
+
+      <button style="width: 100%; height: 48px; background: var(--primary-blue); color: #fff; border: none; border-radius: 14px; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 4px;" onclick="closeSheet()">
+        Continue to Next Step (Enter ↵)
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Interactive Logic -->
+  <script>
+    let isDark = true;
+    let selectedExpr = '(right - left) // 2';
+
+    function toggleTheme() {
+      isDark = !isDark;
+      const root = document.documentElement;
+      const themeBtn = document.getElementById('themeBtn');
+
+      if (isDark) {
+        root.removeAttribute('data-theme');
+        themeBtn.innerHTML = '<span>🌙</span> Dark Mode';
+      } else {
+        root.setAttribute('data-theme', 'light');
+        themeBtn.innerHTML = '<span>☀️</span> Light Mode';
+      }
+    }
+
+    function applyExpression(chip, expr) {
+      document.querySelectorAll('.expr-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      selectedExpr = expr;
+
+      const slot = document.getElementById('targetSlot');
+      slot.innerText = expr;
+      slot.classList.add('filled');
+    }
+
+    function resetSlot() {
+      document.querySelectorAll('.expr-chip').forEach(c => c.classList.remove('active'));
+      const slot = document.getElementById('targetSlot');
+      slot.innerText = '[           ]';
+      slot.classList.remove('filled');
+      selectedExpr = '';
+    }
+
+    function clearSlot() {
+      resetSlot();
+    }
+
+    function toggleTutorTip() {
+      document.getElementById('aiHint').classList.toggle('show');
+    }
+
+    function testSubmit() {
+      if (selectedExpr === '(right - left) // 2') {
+        document.getElementById('successSheet').classList.add('open');
+        document.getElementById('sheetBackdrop').classList.add('show');
+      } else {
+        alert('❌ Try again: Ensure your formula avoids overflow and uses integer floor division.');
+      }
+    }
+
+    function closeSheet() {
+      document.getElementById('successSheet').classList.remove('open');
+      document.getElementById('sheetBackdrop').classList.remove('show');
+    }
+  </script>
+</body>
+</html>

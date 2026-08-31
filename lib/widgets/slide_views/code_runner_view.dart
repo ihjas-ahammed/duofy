@@ -2,19 +2,17 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../models/app_models.dart';
 import '../../services/python_runner_service.dart';
 import '../../theme/app_theme.dart';
 import '../code_highlighter.dart';
-import '../duo_button.dart';
 import '../math_markdown.dart';
 import '../platform_webview.dart';
 
-/// A `try_yourself` slide: an in-app code playground. Native Python execution
-/// via [PythonRunnerService] (or Pyodide fallback on Web) with real-time input()
-/// support and Matplotlib inline graphics rendering. Learning-by-doing!
+/// Python Code Sandbox & Interactive Runner View matching docs/new-theme/slide-p/python-run.html
 class CodeRunnerView extends StatefulWidget {
   final Slide slide;
   final VoidCallback onComplete;
@@ -47,6 +45,17 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
           ? widget.slide.code!
           : widget.slide.content;
 
+  static const List<String> _accessoryKeys = [
+    'Tab',
+    ':',
+    '()',
+    '[]',
+    '""',
+    '=',
+    '@',
+    'def',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -63,6 +72,27 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
     super.dispose();
   }
 
+  void _insertKey(String key) {
+    HapticFeedback.selectionClick();
+    final text = _controller.text;
+    final selection = _controller.selection;
+
+    String insertion = key;
+    if (key == 'Tab') insertion = '    ';
+
+    if (selection.isValid && selection.start >= 0) {
+      final newText = text.replaceRange(selection.start, selection.end, insertion);
+      _controller.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(
+          offset: selection.start + insertion.length,
+        ),
+      );
+    } else {
+      _controller.text += insertion;
+    }
+  }
+
   void _submitRealtimeInput() {
     final val = _realtimeInputController.text;
     _activeInputCompleter?.complete(val);
@@ -75,6 +105,7 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
 
   Future<void> _runCode() async {
     if (_isRunning) return;
+    HapticFeedback.mediumImpact();
 
     setState(() {
       _isRunning = true;
@@ -114,6 +145,8 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+
     if (_language != 'python') {
       final html = CodeRunnerHtml.build(
         language: _language,
@@ -123,288 +156,496 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
       return _buildWebViewLayout(context, html);
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (widget.slide.title.trim().isNotEmpty ||
-            widget.slide.content.trim().isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (widget.slide.title.trim().isNotEmpty)
-                  Text(
-                    widget.slide.title,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      color: context.colors.textPrimary,
-                    ),
-                  ),
-                if (widget.slide.content.trim().isNotEmpty &&
-                    widget.slide.content != _initialCode)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: MathMarkdown(data: widget.slide.content),
-                  ),
-              ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 1. Header Information (if title or content is non-code)
+          if (widget.slide.title.trim().isNotEmpty ||
+              (widget.slide.content.trim().isNotEmpty &&
+                  widget.slide.content != _initialCode))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0, left: 2, right: 2),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: colors.cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: colors.cardBorder),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (widget.slide.title.trim().isNotEmpty)
+                      Text(
+                        widget.slide.title,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: colors.textMain,
+                        ),
+                      ),
+                    if (widget.slide.content.trim().isNotEmpty &&
+                        widget.slide.content != _initialCode)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2.0),
+                        child: MathMarkdown(
+                          data: widget.slide.content,
+                          textStyle: TextStyle(
+                            fontSize: 12,
+                            color: colors.textMuted,
+                            height: 1.3,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+
+          // 2. Editor & Terminal Workspace
+          Expanded(
             child: CustomScrollView(
-              physics: BouncingScrollPhysics(),
+              physics: const BouncingScrollPhysics(),
               slivers: [
                 SliverToBoxAdapter(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: context.colors.surface,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: _isRunning
-                            ? AppTheme.duoGreen
-                            : context.colors.outline,
-                        width: _isRunning ? 2 : 1,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Playground Header Bar
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: context.colors.surfaceAlt,
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(13)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Code Editor Card
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0A1120),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: _isRunning
+                                ? colors.accentGreen
+                                : colors.cardBorder,
+                            width: _isRunning ? 1.8 : 1.0,
                           ),
-                          child: Row(
-                            children: [
-                              const Icon(LucideIcons.code, color: AppTheme.duoGreen, size: 18),
-                              const SizedBox(width: 8),
-                              Text(
-                                '${_language.toUpperCase()} PLAYGROUND',
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.35),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Tab Header
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF0E172A),
+                                border: Border(
+                                  bottom: BorderSide(color: Color(0xFF1E293B)),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 7,
+                                    height: 7,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: colors.accentGreen,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: colors.accentGreen
+                                              .withValues(alpha: 0.8),
+                                          blurRadius: 6,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'main.py',
+                                    style: TextStyle(
+                                      color: Color(0xFFF8FAFC),
+                                      fontFamily: 'monospace',
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _showInputsField = !_showInputsField;
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: _showInputsField
+                                            ? colors.primaryBlueLight
+                                            : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            LucideIcons.terminal,
+                                            size: 13,
+                                            color: _showInputsField
+                                                ? colors.primaryBlue
+                                                : const Color(0xFF94A3B8),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'STDIN',
+                                            style: TextStyle(
+                                              fontSize: 9.5,
+                                              fontWeight: FontWeight.w800,
+                                              color: _showInputsField
+                                                  ? colors.primaryBlue
+                                                  : const Color(0xFF94A3B8),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Multi-line code editor TextField
+                            Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: TextField(
+                                controller: _controller,
+                                maxLines: null,
+                                keyboardType: TextInputType.multiline,
+                                autocorrect: false,
+                                enableSuggestions: false,
                                 style: const TextStyle(
                                   fontFamily: 'monospace',
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.duoGreen,
+                                  fontSize: 13,
+                                  height: 1.5,
+                                  color: Color(0xFFF8FAFC),
+                                ),
+                                decoration: const InputDecoration(
+                                  filled: false,
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.zero,
+                                  border: InputBorder.none,
                                 ),
                               ),
-                              const Spacer(),
-                              IconButton(
-                                iconSize: 18,
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                icon: Icon(
-                                  LucideIcons.terminal,
-                                  color: _showInputsField ? AppTheme.duoBlue : context.colors.textSecondary,
+                            ),
+
+                            // Optional Standard Input Field
+                            if (_showInputsField)
+                              Container(
+                                margin: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF060B16),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: const Color(0xFF1E293B),
+                                  ),
                                 ),
-                                tooltip: 'Configure Inputs (for input() calls)',
-                                onPressed: () {
-                                  setState(() {
-                                    _showInputsField = !_showInputsField;
-                                  });
-                                },
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'INPUT STREAM (one line per input())',
+                                      style: TextStyle(
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w800,
+                                        color: Color(0xFF38BDF8),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    TextField(
+                                      controller: _inputsController,
+                                      maxLines: 2,
+                                      minLines: 1,
+                                      style: const TextStyle(
+                                        fontFamily: 'monospace',
+                                        fontSize: 12,
+                                        color: Color(0xFF38BDF8),
+                                      ),
+                                      decoration: const InputDecoration(
+                                        isDense: true,
+                                        hintText: 'Feed inputs here...',
+                                        hintStyle: TextStyle(
+                                          color: Color(0xFF475569),
+                                          fontSize: 11,
+                                        ),
+                                        border: InputBorder.none,
+                                        contentPadding: EdgeInsets.zero,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              IconButton(
-                                iconSize: 20,
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                                icon: _isRunning
-                                    ? const SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.duoGreen),
-                                      )
-                                    : const Icon(LucideIcons.play, color: AppTheme.duoGreen),
-                                tooltip: 'Run Code',
-                                onPressed: _isRunning ? null : _runCode,
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      // 3. Accessory Keys Quick Row
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          children: _accessoryKeys.map((k) {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 6.0),
+                              child: GestureDetector(
+                                onTap: () => _insertKey(k),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 11,
+                                    vertical: 7,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.cardBg,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: colors.cardBorder,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    k,
+                                    style: TextStyle(
+                                      fontFamily: 'monospace',
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: colors.textMain,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      // 4. Real-time Interactive Input Prompt
+                      if (_awaitingRealtimeInput) ...[
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: colors.cardBg,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: colors.accentGreen,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  SizedBox(
+                                    width: 12,
+                                    height: 12,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: colors.accentGreen,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    _currentInputPrompt.isNotEmpty
+                                        ? _currentInputPrompt
+                                        : 'Input required:',
+                                    style: TextStyle(
+                                      fontFamily: 'monospace',
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: colors.accentGreen,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _realtimeInputController,
+                                      autofocus: true,
+                                      style: TextStyle(
+                                        fontFamily: 'monospace',
+                                        fontSize: 12.5,
+                                        color: colors.textMain,
+                                      ),
+                                      decoration: InputDecoration(
+                                        isDense: true,
+                                        hintText: 'Type input and press Enter...',
+                                        hintStyle: TextStyle(
+                                          color: colors.textSubtle,
+                                          fontSize: 11.5,
+                                        ),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 6,
+                                        ),
+                                        border: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          borderSide: BorderSide(
+                                            color: colors.cardBorder,
+                                          ),
+                                        ),
+                                      ),
+                                      onSubmitted: (_) =>
+                                          _submitRealtimeInput(),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  IconButton(
+                                    icon: Icon(
+                                      LucideIcons.send,
+                                      color: colors.accentGreen,
+                                      size: 18,
+                                    ),
+                                    tooltip: 'Submit',
+                                    onPressed: _submitRealtimeInput,
+                                  ),
+                                ],
                               ),
                             ],
                           ),
                         ),
-                        // Code Field
-                        Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: TextField(
-                            controller: _controller,
-                            maxLines: null,
-                            keyboardType: TextInputType.multiline,
-                            autocorrect: false,
-                            enableSuggestions: false,
-                            style: TextStyle(
-                              fontFamily: 'monospace',
-                              fontSize: 13.5,
-                              height: 1.5,
-                              color: context.colors.textPrimary,
-                            ),
-                            decoration: InputDecoration(
-                              filled: true,
-                              fillColor: context.colors.surfaceAlt,
-                              contentPadding: const EdgeInsets.all(12),
-                              border: const OutlineInputBorder(
-                                borderRadius: BorderRadius.all(Radius.circular(10)),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                          ),
-                        ),
-                        // Optional Input Field
-                        if (_showInputsField)
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                            child: Container(
-                              padding: EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: context.colors.surfaceAlt,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: AppTheme.duoBlue.withValues(alpha: 0.4)),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(LucideIcons.terminal, color: AppTheme.duoBlue, size: 14),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        'STANDARD INPUT (one line per input() call)',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                          color: context.colors.textSecondary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 6),
-                                  TextField(
-                                    controller: _inputsController,
-                                    maxLines: 3,
-                                    minLines: 1,
-                                    style: const TextStyle(
-                                      fontFamily: 'monospace',
-                                      fontSize: 12.5,
-                                      color: Color(0xFF38BDF8),
-                                    ),
-                                    decoration: InputDecoration(
-                                      isDense: true,
-                                      hintText: 'Type input lines here...',
-                                      hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 12),
-                                      border: InputBorder.none,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        // Real-time Interactive Input Prompt
-                        if (_awaitingRealtimeInput)
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: context.colors.surfaceAlt,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: AppTheme.duoGreen, width: 2),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      const SizedBox(
-                                        width: 12,
-                                        height: 12,
-                                        child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.duoGreen),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        _currentInputPrompt.isNotEmpty
-                                            ? _currentInputPrompt
-                                            : 'Input required:',
-                                        style: const TextStyle(
-                                          fontFamily: 'monospace',
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppTheme.duoGreen,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: TextField(
-                                          controller: _realtimeInputController,
-                                          autofocus: true,
-                                          style: TextStyle(
-                                            fontFamily: 'monospace',
-                                            fontSize: 13,
-                                            color: context.colors.textPrimary,
-                                          ),
-                                          decoration: InputDecoration(
-                                            isDense: true,
-                                            hintText: 'Type input and press Enter...',
-                                            hintStyle: TextStyle(color: context.colors.textFaint, fontSize: 12),
-                                            filled: true,
-                                            fillColor: context.colors.surfaceAlt,
-                                            border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(8),
-                                              borderSide: BorderSide.none,
-                                            ),
-                                          ),
-                                          onSubmitted: (_) => _submitRealtimeInput(),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      IconButton(
-                                        icon: const Icon(LucideIcons.send, color: AppTheme.duoGreen),
-                                        tooltip: 'Submit Input',
-                                        onPressed: _submitRealtimeInput,
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        // Output Display Pane
-                        if (_result != null) _buildResultPane(context, _result!),
+                        const SizedBox(height: 8),
                       ],
+
+                      // 5. Output Console Pane
+                      if (_result != null) _buildResultPane(context, _result!),
+
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // 6. Bottom Run CTA Button
+          Padding(
+            padding: const EdgeInsets.only(top: 4.0, bottom: 6.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: _isRunning ? null : _runCode,
+                    child: Container(
+                      height: 48,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            colors.accentGreen,
+                            const Color(0xFF059669),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colors.accentGreen.withValues(alpha: 0.35),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (_isRunning)
+                            const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          else
+                            const Icon(
+                              LucideIcons.play,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _isRunning ? 'EXECUTING...' : 'RUN PYTHON SCRIPT',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: widget.onComplete,
+                  child: Container(
+                    height: 48,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    decoration: BoxDecoration(
+                      color: colors.cardBg,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: colors.cardBorder),
+                    ),
+                    child: Center(
+                      child: Text(
+                        'CONTINUE',
+                        style: TextStyle(
+                          color: colors.textMain,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-          child: DuoButton(
-            text: 'CONTINUE',
-            color: AppTheme.duoGreen,
-            shadowColor: AppTheme.duoGreenDark,
-            onPressed: widget.onComplete,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildResultPane(BuildContext context, PythonExecutionResult res) {
+    final colors = context.colors;
     final hasStdout = res.stdout.trim().isNotEmpty;
     final hasStderr = res.stderr.trim().isNotEmpty;
     final hasGraphics = res.graphicsBase64.isNotEmpty;
 
     return Container(
       decoration: BoxDecoration(
-        color: context.colors.surfaceAlt,
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(13)),
+        color: const Color(0xFF0A1120),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: res.exitCode == 0 ? colors.accentGreen : AppTheme.duoRed,
+          width: 1.2,
+        ),
       ),
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -413,17 +654,20 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
           Row(
             children: [
               Icon(
-                res.exitCode == 0 ? LucideIcons.checkCircle : LucideIcons.alertTriangle,
+                res.exitCode == 0
+                    ? LucideIcons.checkCircle
+                    : LucideIcons.alertTriangle,
                 size: 14,
-                color: res.exitCode == 0 ? AppTheme.duoGreen : AppTheme.duoRed,
+                color: res.exitCode == 0 ? colors.accentGreen : AppTheme.duoRed,
               ),
               const SizedBox(width: 6),
               Text(
                 'Output (${res.duration.inMilliseconds}ms)',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 11.5,
                   fontWeight: FontWeight.bold,
-                  color: res.exitCode == 0 ? AppTheme.duoGreen : AppTheme.duoRed,
+                  color:
+                      res.exitCode == 0 ? colors.accentGreen : AppTheme.duoRed,
                 ),
               ),
             ],
@@ -432,10 +676,10 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
             const SizedBox(height: 6),
             SelectableText(
               res.stdout,
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: 'monospace',
                 fontSize: 12,
-                color: context.colors.textPrimary,
+                color: Color(0xFFF8FAFC),
               ),
             ),
           ],
@@ -443,10 +687,10 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
             const SizedBox(height: 6),
             SelectableText(
               res.stderr,
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: 'monospace',
                 fontSize: 12,
-                color: context.colors.danger,
+                color: Color(0xFFF87171),
               ),
             ),
           ],
@@ -454,7 +698,7 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
             const SizedBox(height: 8),
             for (final base64Img in res.graphicsBase64)
               Padding(
-                padding: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.only(top: 6),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.memory(
@@ -470,58 +714,81 @@ class _CodeRunnerViewState extends State<CodeRunnerView> {
   }
 
   Widget _buildWebViewLayout(BuildContext context, String html) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (widget.slide.title.trim().isNotEmpty ||
-            widget.slide.content.trim().isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (widget.slide.title.trim().isNotEmpty)
-                  Text(
-                    widget.slide.title,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      color: context.colors.textPrimary,
-                    ),
-                  ),
-                if (widget.slide.content.trim().isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: MathMarkdown(data: widget.slide.content),
-                  ),
-              ],
+    final colors = context.colors;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (widget.slide.title.trim().isNotEmpty ||
+              widget.slide.content.trim().isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: colors.cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: colors.cardBorder),
+                ),
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (widget.slide.title.trim().isNotEmpty)
+                      Text(
+                        widget.slide.title,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: colors.textMain,
+                        ),
+                      ),
+                    if (widget.slide.content.trim().isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2.0),
+                        child: MathMarkdown(data: widget.slide.content),
+                      ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          Expanded(
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(16),
               child: PlatformWebView(html: html),
             ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-          child: DuoButton(
-            text: 'CONTINUE',
-            color: AppTheme.duoGreen,
-            shadowColor: AppTheme.duoGreenDark,
-            onPressed: widget.onComplete,
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: GestureDetector(
+              onTap: widget.onComplete,
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  color: colors.accentGreen,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Center(
+                  child: Text(
+                    'CONTINUE',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
 /// Builds the self-contained HTML playground for a [CodeRunnerView], picking a
-/// runtime by language. Kept separate so it's unit-testable without a WebView.
+/// runtime by language.
 class CodeRunnerHtml {
   static const String pyodideVersion = 'v0.26.2';
 
@@ -545,7 +812,6 @@ class CodeRunnerHtml {
     }
   }
 
-  /// Shared dark editor chrome + a JSON-injected starter program.
   static String _shell(String bodyHtml, String scriptJs, String code) {
     final codeJson = jsonEncode(code);
     return '''
@@ -606,16 +872,15 @@ $bodyHtml
 ''';
     final script = '''
 <script>
-// Global error diagnostics for WebView environment
 window.onerror = function(message, source, lineno, colno, error) {
   var errLog = 'Script error: ' + message;
   if (source) errLog += ' at ' + source.split('/').last();
   if (lineno) errLog += ':' + lineno;
-  if (error && error.stack) errLog += '\nStack: ' + error.stack;
+  if (error && error.stack) errLog += '\\nStack: ' + error.stack;
   console.error(errLog);
   var outEl = document.getElementById('out');
   if (outEl) {
-    outEl.innerText = (outEl.innerText || '') + '\n' + errLog;
+    outEl.innerText = (outEl.innerText || '') + '\\n' + errLog;
   }
 };
 
@@ -649,7 +914,6 @@ window.__initRunner = async function(){
     };
     let loader = getLoadPyodide();
     if (!loader) { await loadScript(PYODIDE_URL); }
-    // Defensive check: poll until loadPyodide is bound and executable
     let retries = 0;
     loader = getLoadPyodide();
     while (!loader && retries < 100) {
@@ -709,9 +973,7 @@ async function runCode(){
     return _shell(body, script, code);
   }
 
-  /// HTML/CSS/JS: render the snippet live in a sandboxed iframe.
   static String _web(String language, String code) {
-    // Wrap CSS/JS-only snippets so they still produce a visible page.
     final body = '''
 <div class="bar">
   <span class="lang">${language.toUpperCase()}</span>
@@ -748,7 +1010,6 @@ function render(){
     return _shell(body, script, code);
   }
 
-  /// LaTeX: typeset with KaTeX & Math preprocessor.
   static String _latex(String code) {
     final body = '''
 <div class="bar"><span class="lang">LATEX</span>
@@ -785,7 +1046,6 @@ function render(){
     return _shell(body, script, code);
   }
 
-  /// Languages we can't run on-device yet: show the code read-only with a note.
   static String _unsupported(String language, String code) {
     final body = '''
 <div class="bar"><span class="lang">${language.toUpperCase()}</span>

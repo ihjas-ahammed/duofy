@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Matching Pairs - Greek Archetypes Prototype</title>
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==========================================================================
+       DESIGN SYSTEM & THEME TOKENS
+       ========================================================================== */
+    :root {
+      /* Frosted Light Mode */
+      --page-bg: #e2e8f0;
+      --device-bg: #f8fafc;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-subtle: #94a3b8;
+
+      --card-bg: #ffffff;
+      --card-border: rgba(226, 232, 240, 0.9);
+      --card-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.04);
+
+      /* Glass Toolbar Tokens */
+      --glass-bar-bg: rgba(255, 255, 255, 0.85);
+      --glass-bar-border: rgba(255, 255, 255, 0.9);
+      --glass-bar-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.8);
+      --glass-btn-bg: #f1f5f9;
+      --glass-btn-border: #e2e8f0;
+      --glass-btn-color: #334155;
+      --glass-track-bg: #e2e8f0;
+      --glass-track-text: #0056fd;
+      --glass-divider: #e2e8f0;
+      --glass-bot-bg: radial-gradient(circle at 30% 30%, #eff6ff, #dbeafe);
+      --glass-bot-border: #93c5fd;
+
+      /* Match Cards */
+      --item-bg: #ffffff;
+      --item-border: rgba(226, 232, 240, 0.9);
+      --item-hover: #f1f5f9;
+
+      --item-selected-border: #0062ff;
+      --item-selected-glow: 0 0 0 1px #0062ff, 0 8px 20px -4px rgba(0, 98, 255, 0.2);
+      --item-selected-bg: #eff6ff;
+
+      --item-matched-border: #10b981;
+      --item-matched-glow: 0 0 0 1px #10b981, 0 8px 20px -4px rgba(16, 185, 129, 0.2);
+      --item-matched-bg: #f0fdf4;
+
+      --radio-border: #cbd5e1;
+      --dot-line: #cbd5e1;
+
+      --primary-blue: #0062ff;
+      --primary-blue-hover: #0050d4;
+      --primary-blue-glow: rgba(0, 98, 255, 0.35);
+
+      --col-archetype: #0284c7;
+      --col-theme: #7c3aed;
+
+      --sheet-bg: #f7fdfa;
+      --sheet-border: #10b981;
+      --home-bar: #0f172a;
+    }
+
+    [data-theme="dark"] {
+      /* Midnight Obsidian Dark Mode */
+      --page-bg: #030712;
+      --device-bg: #070c18;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-subtle: #64748b;
+
+      --card-bg: #0c1322;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.6);
+
+      /* Dark Glass Toolbar Tokens */
+      --glass-bar-bg: rgba(15, 23, 42, 0.75);
+      --glass-bar-border: rgba(255, 255, 255, 0.15);
+      --glass-bar-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+      --glass-btn-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
+      --glass-btn-border: rgba(255, 255, 255, 0.18);
+      --glass-btn-color: #ffffff;
+      --glass-track-bg: rgba(0, 0, 0, 0.45);
+      --glass-track-text: #7dd3fc;
+      --glass-divider: rgba(255, 255, 255, 0.15);
+      --glass-bot-bg: radial-gradient(circle at 30% 30%, #381f75, #110e2e);
+      --glass-bot-border: #a855f7;
+
+      /* Match Cards */
+      --item-bg: #0c1322;
+      --item-border: rgba(255, 255, 255, 0.08);
+      --item-hover: #121c32;
+
+      --item-selected-border: #3b82f6;
+      --item-selected-glow: 0 0 20px rgba(59, 130, 246, 0.35);
+      --item-selected-bg: #0f1c38;
+
+      --item-matched-border: #10b981;
+      --item-matched-glow: 0 0 20px rgba(16, 185, 129, 0.35);
+      --item-matched-bg: #082117;
+
+      --radio-border: #334155;
+      --dot-line: #334155;
+
+      --primary-blue: #2563eb;
+      --primary-blue-hover: #1d4ed8;
+      --primary-blue-glow: rgba(37, 99, 235, 0.4);
+
+      --col-archetype: #38bdf8;
+      --col-theme: #c084fc;
+
+      --sheet-bg: #091e17;
+      --sheet-border: #059669;
+      --home-bar: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--page-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px 10px;
+      transition: background-color 0.3s ease;
+    }
+
+    /* Prototyping Controls */
+    .prototype-bar {
+      display: flex;
+      gap: 8px;
+      background: var(--card-bg);
+      padding: 6px;
+      border-radius: 9999px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+      border: 1px solid var(--card-border);
+      margin-bottom: 14px;
+      z-index: 100;
+    }
+
+    .proto-btn {
+      padding: 6px 16px;
+      border-radius: 9999px;
+      border: none;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .proto-btn.active {
+      background: var(--primary-blue);
+      color: #ffffff;
+    }
+
+    /* Mobile Shell Frame */
+    .mobile-frame {
+      width: 100%;
+      max-width: 412px;
+      height: 884px;
+      background-color: var(--device-bg);
+      border-radius: 44px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--card-border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: background-color 0.3s ease;
+    }
+
+    /* ==========================================================================
+       TOP STATUS BAR & SIGNATURE GLASS TOOLBAR
+       ========================================================================== */
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 26px 4px 26px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      z-index: 15;
+    }
+
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .glass-header-container {
+      padding: 8px 16px 8px 16px;
+      z-index: 15;
+    }
+
+    .glass-pill-bar {
+      background: var(--glass-bar-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-bar-border);
+      border-radius: 9999px;
+      height: 52px;
+      padding: 4px 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: var(--glass-bar-shadow);
+      transition: all 0.3s ease;
+    }
+
+    .glass-close-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--glass-btn-bg);
+      border: 1px solid var(--glass-btn-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--glass-btn-color);
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.15s ease;
+    }
+    .glass-close-btn:active { transform: scale(0.92); }
+
+    .glass-progress-track {
+      flex: 1;
+      height: 32px;
+      background: var(--glass-track-bg);
+      border-radius: 9999px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 2px;
+      overflow: hidden;
+    }
+
+    .glass-progress-fill {
+      width: 50%; /* 2 of 4 = 50% */
+      height: 100%;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, #0052d4 0%, #4364f7 50%, #6fb1fc 100%);
+      box-shadow: 0 0 14px rgba(67, 100, 247, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+      position: relative;
+      transition: width 0.3s ease;
+    }
+
+    .glass-progress-fill::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      animation: waveGlow 2.5s infinite linear;
+    }
+
+    @keyframes waveGlow {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .glass-progress-text {
+      position: absolute;
+      right: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--glass-track-text);
+      letter-spacing: 0.2px;
+    }
+
+    .streak-badge {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      padding: 0 4px;
+    }
+
+    .streak-flame {
+      font-size: 16px;
+      filter: drop-shadow(0 0 4px #f97316);
+    }
+
+    .streak-count {
+      font-size: 13px;
+      font-weight: 800;
+      color: #f59e0b;
+    }
+
+    .glass-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--glass-divider);
+    }
+
+    .bot-avatar-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--glass-bot-bg);
+      border: 1.5px solid var(--glass-bot-border);
+      box-shadow: 0 0 12px rgba(147, 197, 253, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      flex-shrink: 0;
+      transition: transform 0.2s ease;
+    }
+    .bot-avatar-btn:hover { transform: scale(1.05); }
+
+    /* AI Hint Floating Popover */
+    .ai-hint-popover {
+      position: absolute;
+      top: 108px;
+      right: 20px;
+      left: 20px;
+      background: var(--card-bg);
+      border: 1.5px solid var(--primary-blue);
+      box-shadow: var(--card-shadow), 0 0 16px rgba(0, 98, 255, 0.25);
+      border-radius: 18px;
+      padding: 12px 14px;
+      z-index: 50;
+      display: none;
+      animation: popIn 0.2s ease;
+    }
+    .ai-hint-popover.show { display: block; }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ==========================================================================
+       SCROLLABLE MATCHING CONTENT AREA
+       ========================================================================== */
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 2px 14px 8px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Screen Title Header */
+    .title-group {
+      text-align: center;
+      margin-bottom: 2px;
+    }
+
+    .screen-title {
+      font-size: 19px;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.3px;
+    }
+
+    .screen-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+      font-weight: 500;
+    }
+
+    /* Column Headers */
+    .columns-header-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      padding: 4px 6px 0 6px;
+    }
+
+    .col-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+
+    .col-header.archetype { color: var(--col-archetype); }
+    .col-header.theme { color: var(--col-theme); }
+
+    /* ==========================================================================
+       MATCHING PAIRS GRID & CONNECTORS
+       ========================================================================== */
+    .matching-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+    }
+
+    .match-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      position: relative;
+      align-items: center;
+    }
+
+    /* Connector line layer */
+    .row-connector-line {
+      position: absolute;
+      left: calc(50% - 15px);
+      width: 30px;
+      height: 2px;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .connector-dots {
+      width: 100%;
+      height: 2px;
+      background-image: linear-gradient(to right, var(--dot-line) 40%, rgba(255,255,255,0) 0%);
+      background-position: bottom;
+      background-size: 6px 2px;
+      background-repeat: repeat-x;
+    }
+
+    .connector-solid-green {
+      width: 100%;
+      height: 2.5px;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+      position: relative;
+    }
+
+    .connector-solid-green::before,
+    .connector-solid-green::after {
+      content: '';
+      position: absolute;
+      top: -2.5px;
+      width: 7.5px;
+      height: 7.5px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 6px #10b981;
+    }
+    .connector-solid-green::before { left: -3px; }
+    .connector-solid-green::after { right: -3px; }
+
+    /* Match Item Card */
+    .match-card {
+      background: var(--item-bg);
+      border: 1.5px solid var(--item-border);
+      border-radius: 18px;
+      padding: 12px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      z-index: 2;
+      min-height: 106px;
+    }
+
+    .match-card:hover {
+      background: var(--item-hover);
+    }
+
+    .match-card.selected {
+      border-color: var(--item-selected-border);
+      background: var(--item-selected-bg);
+      box-shadow: var(--item-selected-glow);
+    }
+
+    .match-card.matched {
+      border-color: var(--item-matched-border);
+      background: var(--item-matched-bg);
+      box-shadow: var(--item-matched-glow);
+    }
+
+    .card-top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .item-icon-circle {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-main);
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .match-card.matched .item-icon-circle {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: #10b981;
+    }
+
+    .match-card.selected .item-icon-circle {
+      background: rgba(59, 130, 246, 0.15);
+      border-color: rgba(59, 130, 246, 0.3);
+      color: #3b82f6;
+    }
+
+    /* Radio / Checkmark status circle */
+    .status-indicator {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 1.5px solid var(--radio-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .match-card.selected .status-indicator {
+      border-color: #3b82f6;
+      background: #3b82f6;
+      box-shadow: 0 0 6px #3b82f6;
+    }
+    .match-card.selected .status-indicator::after {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #ffffff;
+    }
+
+    .match-card.matched .status-indicator {
+      border-color: #10b981;
+      background: #10b981;
+      color: #ffffff;
+    }
+
+    .item-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1.25;
+      letter-spacing: -0.2px;
+    }
+
+    .item-tags {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-subtle);
+      margin-top: auto;
+    }
+
+    .match-card.matched .item-tags {
+      color: #10b981;
+    }
+
+    /* ==========================================================================
+       BOTTOM UTILITY DOCK
+       ========================================================================== */
+    .bottom-utility-dock {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 4px 2px 8px 2px;
+      box-shadow: var(--card-shadow);
+      z-index: 15;
+    }
+
+    .util-info-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-icon-pill {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: rgba(0, 98, 255, 0.1);
+      color: var(--primary-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .util-instruction {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .util-instruction-main {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .util-instruction-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .reset-btn {
+      background: var(--device-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+    .reset-btn:hover { border-color: var(--primary-blue); }
+
+    .home-indicator {
+      width: 130px;
+      height: 4.5px;
+      background: var(--home-bar);
+      border-radius: 9999px;
+      margin: 0 auto 6px auto;
+      opacity: 0.6;
+      z-index: 15;
+    }
+
+    /* Slide-Up Feedback Bottom Sheet */
+    .sheet-backdrop {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 40;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .sheet-backdrop.show { opacity: 1; pointer-events: auto; }
+
+    .bottom-sheet {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      background: var(--sheet-bg);
+      border-top: 2.5px solid var(--sheet-border);
+      border-top-left-radius: 28px;
+      border-top-right-radius: 28px;
+      padding: 14px 18px 24px 18px;
+      box-shadow: 0 -10px 40px rgba(0,0,0,0.4);
+      z-index: 50;
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .bottom-sheet.open { transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Prototype Controls -->
+  <div class="prototype-bar">
+    <button class="proto-btn active" id="themeBtn" onclick="toggleTheme()">
+      <span id="themeIcon">🌙</span> Dark Mode
+    </button>
+    <button class="proto-btn" onclick="toggleTutorTip()">
+      <span>🤖</span> AI Tutor Hint
+    </button>
+    <button class="proto-btn" onclick="autoCompleteMatches()">
+      <span>✓</span> Complete All
+    </button>
+  </div>
+
+  <!-- Mobile Frame Shell -->
+  <div class="mobile-frame" id="phone">
+
+    <!-- Top Status Bar -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons">
+        <svg width="16" height="12" viewBox="0 0 17 12" fill="currentColor">
+          <rect x="0" y="9" width="3" height="3" rx="0.5"/>
+          <rect x="4.5" y="6" width="3" height="6" rx="0.5"/>
+          <rect x="9" y="3" width="3" height="9" rx="0.5"/>
+          <rect x="13.5" y="0" width="3" height="12" rx="0.5"/>
+        </svg>
+        <svg width="15" height="12" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-4.9-3.2c2.7-2.3 7.1-2.3 9.8 0l1.4-1.4c-3.5-3.1-9.1-3.1-12.6 0l1.4 1.4z"/>
+        </svg>
+        <svg width="22" height="11" viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="1" y="1" width="19" height="10" rx="3"/>
+          <rect x="3" y="3" width="12" height="6" fill="currentColor" rx="1"/>
+          <path d="M21 4.5v3" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 1. SIGNATURE GLASSMORPHIC FLOATING TOOLBAR -->
+    <div class="glass-header-container">
+      <div class="glass-pill-bar">
+        <!-- Close button -->
+        <button class="glass-close-btn" aria-label="Close" onclick="alert('Exit Matching Session')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <!-- Glowing Progress Bar (2 of 4 = 50%) -->
+        <div class="glass-progress-track">
+          <div class="glass-progress-fill" id="progressFill"></div>
+          <span class="glass-progress-text" id="progressText">2 / 4</span>
+        </div>
+
+        <!-- Streak Fire Counter -->
+        <div class="streak-badge">
+          <span class="streak-flame">🔥</span>
+          <span class="streak-count">12</span>
+        </div>
+
+        <div class="glass-divider"></div>
+
+        <!-- AI Bot Avatar Pill -->
+        <button class="bot-avatar-btn" aria-label="AI Tutor" onclick="toggleTutorTip()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0056fd" stroke-width="2" stroke-linecap="round">
+            <rect x="4" y="8" width="16" height="12" rx="4"></rect>
+            <circle cx="9" cy="13" r="1.5" fill="#0056fd"></circle>
+            <circle cx="15" cy="13" r="1.5" fill="#0056fd"></circle>
+            <path d="M12 4v4"></path>
+            <path d="M2 13h2"></path>
+            <path d="M20 13h2"></path>
+            <ellipse cx="12" cy="14" rx="10" ry="4" stroke="#3b82f6" stroke-width="1.2" stroke-dasharray="3 2" transform="rotate(-15 12 14)"></ellipse>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- AI Tutor Popover Tip -->
+    <div class="ai-hint-popover" id="aiHint">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span style="font-size: 11px; font-weight: 800; color: var(--primary-blue); text-transform: uppercase;">✦ Mythology Archetype Hint</span>
+        <span style="font-size: 12px; cursor: pointer; color: var(--text-muted);" onclick="toggleTutorTip()">✕</span>
+      </div>
+      <p style="font-size: 12px; line-height: 1.45; color: var(--text-main);">
+        <strong>Icarus:</strong> Flew too close to the sun with wax wings despite warnings, symbolizing <em>hubris and fatal overreaching</em>.
+      </p>
+    </div>
+
+    <!-- 2. Scrollable Matching Pairs Content Area -->
+    <div class="content-area">
+
+      <!-- Header Title -->
+      <div class="title-group">
+        <h1 class="screen-title">Matching Pairs</h1>
+        <p class="screen-sub">Match each Greek archetype to its core theme.</p>
+      </div>
+
+      <!-- Column Headers -->
+      <div class="columns-header-row">
+        <div class="col-header archetype">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <line x1="4" y1="20" x2="20" y2="20"></line>
+            <line x1="4" y1="4" x2="20" y2="4"></line>
+            <line x1="6" y1="4" x2="6" y2="20"></line>
+            <line x1="12" y1="4" x2="12" y2="20"></line>
+            <line x1="18" y1="4" x2="18" y2="20"></line>
+          </svg>
+          <span>Archetype</span>
+        </div>
+
+        <div class="col-header theme">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+          </svg>
+          <span>Core Theme</span>
+        </div>
+      </div>
+
+      <!-- Matching Pairs Grid -->
+      <div class="matching-grid">
+
+        <!-- Row 1: Prometheus <-> Forethought & Fire (Matched State) -->
+        <div class="match-row" id="row-1">
+          <div class="row-connector-line">
+            <div class="connector-solid-green" id="conn-1"></div>
+          </div>
+
+          <!-- Prometheus (L1) -->
+          <div class="match-card matched" id="card-l-1" onclick="handleCardClick('L', 1)">
+            <div class="card-top-bar">
+              <div class="item-icon-circle">
+                <!-- Torch / Fire Icon -->
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                  <path d="M12 2c0 4-4 6-4 10a4 4 0 0 0 8 0c0-4-4-6-4-10z"></path>
+                  <path d="M9 18l3 4 3-4"></path>
+                </svg>
+              </div>
+              <div class="status-indicator">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+            </div>
+            <div class="item-title">Prometheus</div>
+            <div class="item-tags">#giver-of-fire</div>
+          </div>
+
+          <!-- Forethought & Fire (R1) -->
+          <div class="match-card matched" id="card-r-1" onclick="handleCardClick('R', 1)">
+            <div class="card-top-bar">
+              <div class="item-icon-circle">
+                <!-- Flame Icon -->
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                  <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path>
+                </svg>
+              </div>
+              <div class="status-indicator">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+            </div>
+            <div class="item-title">Forethought & Fire</div>
+            <div class="item-tags">#foresight #sacrifice</div>
+          </div>
+        </div>
+
+        <!-- Row 2: Sisyphus <-> Endless Repetitive Struggle -->
+        <div class="match-row" id="row-2">
+          <div class="row-connector-line">
+            <div class="connector-dots" id="conn-2"></div>
+          </div>
+
+          <!-- Sisyphus (L2) -->
+          <div class="match-card" id="card-l-2" onclick="handleCardClick('L', 2)">
+            <div class="card-top-bar">
+              <div class="item-icon-circle">
+                <!-- Boulder Rolling Uphill Icon -->
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <circle cx="15" cy="8" r="5"></circle>
+                  <path d="M3 21l18-10"></path>
+                </svg>
+              </div>
+              <div class="status-indicator"></div>
+            </div>
+            <div class="item-title">Sisyphus</div>
+            <div class="item-tags">#endless-task</div>
+          </div>
+
+          <!-- Endless Repetitive Struggle (R2) -->
+          <div class="match-card" id="card-r-2" onclick="handleCardClick('R', 2)">
+            <div class="card-top-bar">
+              <div class="item-icon-circle">
+                <!-- Infinity Icon -->
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.26-8-12.355-8-5.096 0-5.096 8 0 8 5.095 0 7.26-8 12.355-8z"></path>
+                </svg>
+              </div>
+              <div class="status-indicator"></div>
+            </div>
+            <div class="item-title">Endless Repetitive Struggle</div>
+            <div class="item-tags">#futility #perseverance</div>
+          </div>
+        </div>
+
+        <!-- Row 3: Icarus <-> Hubris & Overreaching (Active Selected State) -->
+        <div class="match-row" id="row-3">
+          <div class="row-connector-line">
+            <div class="connector-dots" id="conn-3"></div>
+          </div>
+
+          <!-- Icarus (L3 - Selected by Default) -->
+          <div class="match-card selected" id="card-l-3" onclick="handleCardClick('L', 3)">
+            <div class="card-top-bar">
+              <div class="item-icon-circle">
+                <!-- Wing Icon -->
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                  <path d="M22 6c0 6-6 12-14 12-3 0-5-2-5-5 0-6 7-10 19-7z"></path>
+                  <path d="M8 12c4 0 7-2 9-5"></path>
+                </svg>
+              </div>
+              <div class="status-indicator"></div>
+            </div>
+            <div class="item-title">Icarus</div>
+            <div class="item-tags">#fly-too-high</div>
+          </div>
+
+          <!-- Hubris & Overreaching (R3) -->
+          <div class="match-card" id="card-r-3" onclick="handleCardClick('R', 3)">
+            <div class="card-top-bar">
+              <div class="item-icon-circle">
+                <!-- Falling Silhouette Icon -->
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <circle cx="12" cy="5" r="2"></circle>
+                  <path d="M10 9l4 4-2 7"></path>
+                  <path d="M14 9l-4 3-4-2"></path>
+                </svg>
+              </div>
+              <div class="status-indicator"></div>
+            </div>
+            <div class="item-title">Hubris & Overreaching</div>
+            <div class="item-tags">#pride #consequence</div>
+          </div>
+        </div>
+
+        <!-- Row 4: Daedalus <-> Mastery of Craft -->
+        <div class="match-row" id="row-4">
+          <div class="row-connector-line">
+            <div class="connector-dots" id="conn-4"></div>
+          </div>
+
+          <!-- Daedalus (L4) -->
+          <div class="match-card" id="card-l-4" onclick="handleCardClick('L', 4)">
+            <div class="card-top-bar">
+              <div class="item-icon-circle">
+                <!-- Labyrinth Maze Icon -->
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="9"></circle>
+                  <circle cx="12" cy="12" r="6"></circle>
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M12 3v3M12 9v6"></path>
+                </svg>
+              </div>
+              <div class="status-indicator"></div>
+            </div>
+            <div class="item-title">Daedalus</div>
+            <div class="item-tags">#craftsman</div>
+          </div>
+
+          <!-- Mastery of Craft (R4) -->
+          <div class="match-card" id="card-r-4" onclick="handleCardClick('R', 4)">
+            <div class="card-top-bar">
+              <div class="item-icon-circle">
+                <!-- Crossed Tools Icon -->
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                  <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                </svg>
+              </div>
+              <div class="status-indicator"></div>
+            </div>
+            <div class="item-title">Mastery of Craft</div>
+            <div class="item-tags">#skill #ingenuity</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 3. Bottom Utility Instruction & Reset Bar -->
+      <div class="bottom-utility-dock">
+        <div class="util-info-group">
+          <div class="info-icon-pill">i</div>
+          <div class="util-instruction">
+            <span class="util-instruction-main">Drag from left to right</span>
+            <span class="util-instruction-sub">Make all 4 matches to continue.</span>
+          </div>
+        </div>
+
+        <button class="reset-btn" onclick="resetMatches()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+          <span>Reset</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- iOS Home Indicator -->
+    <div class="home-indicator"></div>
+
+    <!-- Slide Complete Alert Bottom Sheet -->
+    <div class="sheet-backdrop" id="sheetBackdrop" onclick="closeSheet()"></div>
+    <div class="bottom-sheet" id="feedbackSheet">
+      <div style="width: 38px; height: 4px; background: #cbd5e1; border-radius: 999px; margin: 0 auto 4px auto;"></div>
+
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: #ecfdf5; color: #10b981; display: flex; align-items: center; justify-content: center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+          <h2 style="font-size: 20px; font-weight: 800; color: #10b981;">All Archetypes Matched!</h2>
+        </div>
+        <button style="border: none; background: none; font-size: 16px; cursor: pointer; color: var(--text-muted);" onclick="closeSheet()">✕</button>
+      </div>
+
+      <p style="font-size: 12px; line-height: 1.5; color: var(--text-main);">
+        Outstanding deduction! You've correctly linked Prometheus (Foresight/Fire), Sisyphus (Endless Task), Icarus (Hubris), and Daedalus (Craftsmanship).
+      </p>
+
+      <button style="width: 100%; height: 48px; background: var(--primary-blue); color: #fff; border: none; border-radius: 14px; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 4px;" onclick="closeSheet()">
+        <span>Continue to Summary (Enter ↵)</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Interactive JavaScript Engine -->
+  <script>
+    let isDark = true;
+    let selectedLeft = 3; // Icarus active by default
+    let matches = [1]; // Prometheus already matched by default
+
+    function toggleTheme() {
+      isDark = !isDark;
+      const root = document.documentElement;
+      const themeBtn = document.getElementById('themeBtn');
+
+      if (isDark) {
+        root.setAttribute('data-theme', 'dark');
+        themeBtn.innerHTML = '<span>🌙</span> Dark Mode';
+      } else {
+        root.setAttribute('data-theme', 'light');
+        themeBtn.innerHTML = '<span>☀️</span> Light Mode';
+      }
+    }
+
+    function handleCardClick(side, rowId) {
+      if (matches.includes(rowId)) return; // already matched
+
+      if (side === 'L') {
+        // Select Left item
+        selectedLeft = rowId;
+        for (let i = 1; i <= 4; i++) {
+          if (!matches.includes(i)) {
+            document.getElementById('card-l-' + i).classList.remove('selected');
+          }
+        }
+        document.getElementById('card-l-' + rowId).classList.add('selected');
+      } else if (side === 'R') {
+        // Attempt match
+        if (selectedLeft === rowId) {
+          // Successful match
+          matches.push(rowId);
+          completeMatchRow(rowId);
+          selectedLeft = null;
+          updateProgress();
+
+          if (matches.length === 4) {
+            setTimeout(() => {
+              document.getElementById('feedbackSheet').classList.add('open');
+              document.getElementById('sheetBackdrop').classList.add('show');
+            }, 300);
+          }
+        } else {
+          alert('❌ Mismatch: Review the mythological core theme and try again.');
+        }
+      }
+    }
+
+    function completeMatchRow(id) {
+      const cardL = document.getElementById('card-l-' + id);
+      const cardR = document.getElementById('card-r-' + id);
+      const conn = document.getElementById('conn-' + id);
+
+      cardL.classList.remove('selected');
+      cardL.classList.add('matched');
+      cardR.classList.add('matched');
+
+      // Set checkmarks
+      cardL.querySelector('.status-indicator').innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+      cardR.querySelector('.status-indicator').innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+
+      conn.className = 'connector-solid-green';
+    }
+
+    function updateProgress() {
+      const count = matches.length;
+      document.getElementById('progressText').innerText = `${count} / 4`;
+      document.getElementById('progressFill').style.width = `${(count / 4) * 100}%`;
+    }
+
+    function resetMatches() {
+      matches = [];
+      selectedLeft = null;
+      for (let i = 1; i <= 4; i++) {
+        const cardL = document.getElementById('card-l-' + i);
+        const cardR = document.getElementById('card-r-' + i);
+        const conn = document.getElementById('conn-' + i);
+
+        cardL.classList.remove('selected', 'matched');
+        cardR.classList.remove('selected', 'matched');
+        cardL.querySelector('.status-indicator').innerHTML = '';
+        cardR.querySelector('.status-indicator').innerHTML = '';
+        conn.className = 'connector-dots';
+      }
+      updateProgress();
+    }
+
+    function autoCompleteMatches() {
+      for (let i = 1; i <= 4; i++) {
+        if (!matches.includes(i)) {
+          matches.push(i);
+          completeMatchRow(i);
+        }
+      }
+      updateProgress();
+      document.getElementById('feedbackSheet').classList.add('open');
+      document.getElementById('sheetBackdrop').classList.add('show');
+    }
+
+    function toggleTutorTip() {
+      document.getElementById('aiHint').classList.toggle('show');
+    }
+
+    function closeSheet() {
+      document.getElementById('feedbackSheet').classList.remove('open');
+      document.getElementById('sheetBackdrop').classList.remove('show');
+    }
+  </script>
+</body>
+</html>

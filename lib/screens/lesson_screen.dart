@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -33,6 +32,8 @@ import '../widgets/slide_views/ordering_view.dart';
 
 import '../widgets/slide_views/flashcard_view.dart';
 import '../widgets/lesson_assistant_chat.dart';
+import '../widgets/slide_views/slide_capsule_toolbar.dart';
+import '../widgets/slide_views/slide_action_button.dart';
 import '../widgets/combo_badge.dart';
 import 'lesson_complete_screen.dart';
 
@@ -1455,35 +1456,48 @@ class _LessonScreenState extends State<LessonScreen> {
         child: GestureDetector(
           onTap: () => setState(() => _confidence = selected ? null : value),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
+            duration: const Duration(milliseconds: 140),
             margin: const EdgeInsets.symmetric(horizontal: 4),
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: 9),
             decoration: BoxDecoration(
               color: selected
-                  ? AppTheme.duoBlue.withValues(alpha: 0.18)
-                  : context.colors.surfaceAlt,
-              borderRadius: BorderRadius.circular(12),
+                  ? context.colors.primaryBlueLight
+                  : context.colors.cardBg,
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: selected ? AppTheme.duoBlue : context.colors.outline,
-                width: selected ? 1.5 : 1.0,
+                color: selected
+                    ? context.colors.primaryBlue
+                    : context.colors.cardBorder,
+                width: selected ? 1.8 : 1.0,
               ),
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                        color: context.colors.primaryBlue.withValues(alpha: 0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : [],
             ),
             child: Column(
               children: [
                 Icon(
                   icon,
                   size: 16,
-                  color: selected ? AppTheme.duoBlue : context.colors.textFaint,
+                  color: selected
+                      ? context.colors.primaryBlue
+                      : context.colors.textFaint,
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 3),
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 9,
+                    fontSize: 9.5,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0.6,
                     color: selected
-                        ? AppTheme.duoBlue
+                        ? context.colors.primaryBlue
                         : context.colors.textFaint,
                   ),
                 ),
@@ -1509,7 +1523,7 @@ class _LessonScreenState extends State<LessonScreen> {
                 fontSize: 10,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0.8,
-                color: context.colors.textFaint,
+                color: context.colors.textSubtle,
               ),
               textAlign: TextAlign.center,
             ),
@@ -1584,7 +1598,7 @@ class _LessonScreenState extends State<LessonScreen> {
           width: 1,
         ),
       ),
-      padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 24),
+      padding: const EdgeInsets.only(top: 8, left: 16, right: 16, bottom: 20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1690,18 +1704,20 @@ class _LessonScreenState extends State<LessonScreen> {
                     },
                   )
                 : isTheory
-                    ? DuoButton(
+                    ? SlideActionButton(
                         key: const ValueKey('theory_continue_button'),
-                        text: 'CONTINUE',
+                        text: 'Continue to Active Practice',
+                        leadingIcon: const Icon(
+                          LucideIcons.trendingUp,
+                          color: Colors.white,
+                          size: 16,
+                        ),
                         color: canContinueTheory
-                            ? AppTheme.duoGreen
-                            : context.colors.outline,
-                        shadowColor: canContinueTheory
-                            ? AppTheme.duoGreenDark
-                            : context.colors.surfaceAlt,
-                        onPressed: () {
-                          if (canContinueTheory) _onTheoryContinue(slide);
-                        },
+                            ? context.colors.primaryBlue
+                            : null,
+                        onPressed: canContinueTheory
+                            ? () => _onTheoryContinue(slide)
+                            : null,
                       )
                     : DuoButton(
                         key: const ValueKey('continue_button'),
@@ -2016,7 +2032,6 @@ class _LessonScreenState extends State<LessonScreen> {
     } else {
       progress = _maxProgress;
     }
-    final remaining = _slideQueue.length - _currentIndex;
     final hasCustomBar = _isCustomBottomBar(slide);
     final bottomBar = (!hasCustomBar && !_isEditingMode)
         ? _buildActionBottomBar(slide)
@@ -2030,169 +2045,35 @@ class _LessonScreenState extends State<LessonScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // Header Bar exactly as LessonView.tsx
-              ClipRRect(
-                // To clip the BackdropFilter
-                borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(24),
-                ),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    height: 56,
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      color: context.colors.surfaceAlt,
-                      borderRadius: const BorderRadius.vertical(
-                        bottom: Radius.circular(24),
-                      ),
-                      border: Border(
-                        bottom: BorderSide(color: context.colors.outline),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        GestureDetector(
-                          onTap: _confirmExit,
-                          child: SizedBox(
-                            width: 36,
-                            height: 36,
-                            child: Icon(
-                              LucideIcons.x,
-                              color: context.colors.textFaint,
-                              size: 24,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        ValueListenableBuilder<int>(
-                          valueListenable: GlobalState.comboNotifier,
-                          builder: (context, combo, _) {
-                            if (combo < 2) return const SizedBox.shrink();
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 6.0),
-                              child: ComboBadge(combo: combo, isCompact: true),
-                            );
-                          },
-                        ),
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: TweenAnimationBuilder<double>(
-                              tween: Tween(end: progress),
-                              duration: const Duration(milliseconds: 350),
-                              curve: Curves.easeOut,
-                              builder: (context, value, _) =>
-                                  LinearProgressIndicator(
-                                    value: value,
-                                    backgroundColor: context.colors.outline,
-                                    valueColor:
-                                        const AlwaysStoppedAnimation<Color>(
-                                          AppTheme.duoGreen,
-                                        ),
-                                    minHeight: 14,
-                                  ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '$remaining left',
-                          style: TextStyle(
-                            color: context.colors.textFaint,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        GestureDetector(
-                          onTap: () => _openAssistant(),
-                          child: SizedBox(
-                            width: 34,
-                            height: 36,
-                            child: Icon(
-                              LucideIcons.messageCircle,
-                              color: AppTheme.duoBlue,
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                        if (_canBookmark) ...[
-                          const SizedBox(width: 4),
-                          GestureDetector(
-                            onTap: _toggleBookmark,
-                            child: SizedBox(
-                              width: 34,
-                              height: 36,
-                              child: Icon(
-                                _isBookmarked
-                                    ? LucideIcons.bookmark
-                                    : LucideIcons.bookmarkPlus,
-                                color: _isBookmarked
-                                    ? AppTheme.duoOrange
-                                    : context.colors.textFaint,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                        ],
-                        if (_canRegenerateCanvas) ...[
-                          const SizedBox(width: 4),
-                          AnimatedBuilder(
-                            animation: GenerationManager.instance,
-                            builder: (context, _) {
-                              final busy = GenerationManager
-                                  .instance
-                                  .activeSlideRegens
-                                  .contains(slide.id);
-                              return GestureDetector(
-                                onTap: busy
-                                    ? null
-                                    : () => _promptRegenerateSlide(slide),
-                                child: SizedBox(
-                                  width: 32,
-                                  height: 36,
-                                  child: Center(
-                                    child: busy
-                                        ? SizedBox(
-                                            width: 18,
-                                            height: 18,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2.5,
-                                              valueColor:
-                                                  AlwaysStoppedAnimation<Color>(
-                                                    AppTheme.duoBlue,
-                                                  ),
-                                            ),
-                                          )
-                                        : Icon(
-                                            LucideIcons.refreshCcw,
-                                            color: context.colors.textFaint,
-                                            size: 20,
-                                          ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(width: 4),
-                          GestureDetector(
-                            onTap: () => _promptDeleteSlide(slide),
-                            child: SizedBox(
-                              width: 32,
-                              height: 36,
-                              child: Icon(
-                                LucideIcons.trash2,
-                                color: AppTheme.duoRed,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
+              // Glassmorphic Capsule Header Bar based on docs/new-theme/slide-p/theory.html
+              ValueListenableBuilder<int>(
+                valueListenable: GlobalState.comboNotifier,
+                builder: (context, combo, _) {
+                  return AnimatedBuilder(
+                    animation: GenerationManager.instance,
+                    builder: (context, _) {
+                      final isRegenerating = GenerationManager.instance.activeSlideRegens.contains(slide.id);
+                      final streak = combo > 1 ? combo : 1;
+
+                      return SlideCapsuleToolbar(
+                        progress: progress,
+                        streakCount: streak,
+                        onClose: _confirmExit,
+                        onAssistantTap: _openAssistant,
+                        onBookmarkTap: _canBookmark ? _toggleBookmark : null,
+                        isBookmarked: _isBookmarked,
+                        onRegenerateTap: _canRegenerateCanvas
+                            ? (isRegenerating ? null : () => _promptRegenerateSlide(slide))
+                            : null,
+                        isRegenerating: isRegenerating,
+                        onDeleteTap: _canRegenerateCanvas
+                            ? () => _promptDeleteSlide(slide)
+                            : null,
+                        isDeveloperMode: GlobalState.developerModeNotifier.value,
+                      );
+                    },
+                  );
+                },
               ),
 
               // Slide Main Content

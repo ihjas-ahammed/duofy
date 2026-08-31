@@ -1,31 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../models/app_models.dart';
 import '../../theme/app_theme.dart';
 import '../canvas_art_view.dart';
 import '../math_markdown.dart';
-import '../duo_button.dart';
 
+/// Interactive Proof & Step-by-Step Derivation View matching docs/new-theme/slide-p/proof.html
 class InteractiveProofView extends StatefulWidget {
   final Slide slide;
   final VoidCallback onComplete;
-
-  /// Triggered when the user taps the regenerate button on the slide\'s
-  /// canvas. Null disables the regenerate affordance — used when the
-  /// caller doesn\'t know the slide\'s position in the book.
   final void Function(String? errorContext)? onRegenerateCanvas;
-
-  /// Set true while a regenerate call for this slide is in flight so the
-  /// canvas swaps to its spinner state.
   final bool canvasIsLoading;
-
-  /// Optional lesson-level canvas widget to stack above the content.
   final Widget? lessonCanvas;
-
-  /// Fires when the user double-taps a step or option to edit its text.
-  /// The view passes back the new [Slide] (with the relevant interactive
-  /// step or option text replaced) and the lesson screen handles state +
-  /// persistence. Null disables the affordance.
   final void Function(Slide updated)? onUpdateSlide;
 
   const InteractiveProofView({
@@ -74,18 +61,17 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
   }
 
   void _handleNextStatic() {
+    if (_currentStepIndex >= _steps.length) return;
     final currentStep = _steps[_currentStepIndex];
-    if (currentStep.stepText != null && currentStep.stepText!.isNotEmpty) {
-      setState(() {
-        _revealedSteps.add(currentStep.stepText!);
-        _currentStepIndex++;
-      });
-    } else {
-      // Failsafe if stepText is empty
-      setState(() {
-        _currentStepIndex++;
-      });
-    }
+    final text = currentStep.stepText?.trim().isNotEmpty == true
+        ? currentStep.stepText!
+        : (currentStep.prompt ?? '');
+
+    setState(() {
+      if (text.isNotEmpty) _revealedSteps.add(text);
+      _currentStepIndex++;
+    });
+    HapticFeedback.lightImpact();
   }
 
   void _checkAnswer() {
@@ -102,24 +88,29 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
       _isSubmitted = true;
       _isCorrect = correct;
     });
+
+    if (correct) {
+      HapticFeedback.heavyImpact();
+    } else {
+      HapticFeedback.mediumImpact();
+    }
   }
 
   void _handleNextInteractive() {
+    if (_currentStepIndex >= _steps.length) return;
     final currentStep = _steps[_currentStepIndex];
     final correctOpt = currentStep.options?.cast<QuizOption?>().firstWhere(
       (o) => o!.isCorrect,
       orElse: () => null,
     );
 
-    // Sometimes the AI puts the question in stepText. If it did, don't reveal the question as the "learned fact".
-    // Rely on the correct option text instead.
     String textToReveal = '';
     if (currentStep.stepText != null &&
         currentStep.stepText!.isNotEmpty &&
         currentStep.prompt != null) {
       textToReveal = currentStep.stepText!;
     } else {
-      textToReveal = correctOpt?.text ?? '';
+      textToReveal = correctOpt?.text ?? currentStep.prompt ?? '';
     }
 
     setState(() {
@@ -129,6 +120,7 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
       _isCorrect = false;
       _selectedOptionId = null;
     });
+    HapticFeedback.lightImpact();
   }
 
   void _resetInteraction() {
@@ -139,531 +131,799 @@ class _InteractiveProofViewState extends State<InteractiveProofView> {
     });
   }
 
-  Future<void> _editText({
-    required String label,
-    required String initial,
-    required void Function(String) onSave,
-  }) async {
-    if (widget.onUpdateSlide == null) return;
-    final ctrl = TextEditingController(text: initial);
-    final newText = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: context.colors.surface,
-        title: Text(
-          label,
-          style: TextStyle(
-            color: context.colors.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: TextField(
-          controller: ctrl,
-          maxLines: null,
-          autofocus: true,
-          style: TextStyle(color: context.colors.textPrimary),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: context.colors.surfaceAlt,
-            hintText: 'Markdown / LaTeX supported',
-            hintStyle: TextStyle(color: context.colors.textFaint),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: context.colors.textFaint),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-            child: const Text(
-              'Save',
-              style: TextStyle(
-                color: AppTheme.duoBlue,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-    ctrl.dispose();
-    if (newText == null || newText.isEmpty || newText == initial) return;
-    onSave(newText);
-  }
-
-  void _saveStepText(int stepIdx, String newText) {
-    final steps = List<InteractiveStep>.from(_steps);
-    steps[stepIdx] = steps[stepIdx].copyWith(stepText: newText);
-    setState(() => _steps = steps);
-    widget.onUpdateSlide?.call(widget.slide.copyWith(interactiveSteps: steps));
-  }
-
-  void _saveStepPrompt(int stepIdx, String newText) {
-    final steps = List<InteractiveStep>.from(_steps);
-    steps[stepIdx] = steps[stepIdx].copyWith(prompt: newText);
-    setState(() => _steps = steps);
-    widget.onUpdateSlide?.call(widget.slide.copyWith(interactiveSteps: steps));
-  }
-
-  void _saveStepOption(int stepIdx, QuizOption opt, String newText) {
-    final steps = List<InteractiveStep>.from(_steps);
-    final newOpts = steps[stepIdx].options!
-        .map((o) => o.id == opt.id ? o.copyWith(text: newText) : o)
-        .toList();
-    steps[stepIdx] = steps[stepIdx].copyWith(options: newOpts);
-    setState(() => _steps = steps);
-    widget.onUpdateSlide?.call(widget.slide.copyWith(interactiveSteps: steps));
-  }
-
-  void _saveRevealedStep(int revealedIdx, String newText) {
-    final revised = List<String>.from(_revealedSteps);
-    revised[revealedIdx] = newText;
-    setState(() {
-      _revealedSteps
-        ..clear()
-        ..addAll(revised);
-    });
-    // Best-effort persistence: rewrite the matching interactive step. The
-    // revealed list mirrors stepText for static steps and the correct option
-    // text for interactive ones, so finding the source is straightforward.
-    final steps = List<InteractiveStep>.from(_steps);
-    int seen = 0;
-    for (int i = 0; i < steps.length; i++) {
-      final s = steps[i];
-      final hasReveal =
-          (s.stepText != null && s.stepText!.isNotEmpty) ||
-          (s.options?.any((o) => o.isCorrect) ?? false);
-      if (!hasReveal) continue;
-      if (seen == revealedIdx) {
-        if (s.stepText != null && s.stepText!.isNotEmpty && s.prompt == null) {
-          steps[i] = s.copyWith(stepText: newText);
-        } else if (s.options != null) {
-          final newOpts = s.options!.map((o) {
-            return o.isCorrect ? o.copyWith(text: newText) : o;
-          }).toList();
-          steps[i] = s.copyWith(options: newOpts);
+  void _handlePreviousStep() {
+    if (_currentStepIndex > 0) {
+      setState(() {
+        _currentStepIndex--;
+        if (_revealedSteps.isNotEmpty) {
+          _revealedSteps.removeLast();
         }
-        widget.onUpdateSlide?.call(
-          widget.slide.copyWith(interactiveSteps: steps),
-        );
-        return;
-      }
-      seen++;
+        _isSubmitted = false;
+        _isCorrect = false;
+        _selectedOptionId = null;
+      });
+      HapticFeedback.selectionClick();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    bool isFinished = _currentStepIndex >= _steps.length;
-    InteractiveStep? currentStep = isFinished
-        ? null
-        : _steps[_currentStepIndex];
-    bool hasOptions =
+    final colors = context.colors;
+    final isFinished = _currentStepIndex >= _steps.length;
+    final currentStep = isFinished ? null : _steps[_currentStepIndex];
+    final hasOptions =
         currentStep?.options != null && currentStep!.options!.isNotEmpty;
+    final totalSteps = _steps.isNotEmpty ? _steps.length : 1;
 
     return Column(
       children: [
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Lesson-level canvas stacked above proof content
-                if (widget.lessonCanvas != null) widget.lessonCanvas!,
-
-                if (widget.slide.title.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16.0),
-                    child: Text(
-                      widget.slide.title,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        color: context.colors.textPrimary,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-
-                // Per-proof canvas art — scrolls with the rest of the content.
-                CanvasArtView(
-                  svg: widget.slide.canvasSvg,
-                  hasPrompt:
-                      (widget.slide.canvasPrompt?.trim().isNotEmpty ?? false),
-                  prompt: widget.slide.canvasPrompt,
-                  isLoading: widget.canvasIsLoading,
-                  onRegenerate: widget.onRegenerateCanvas,
-                  targetId: widget.slide.id,
-                ),
-
-                if (widget.slide.content.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    margin: const EdgeInsets.only(bottom: 24),
-                    decoration: AppTheme.glassOf(context),
-                    child: MathMarkdown(
-                      data: widget.slide.content,
-                      textStyle: TextStyle(
-                        fontSize: 16,
-                        color: context.colors.textPrimary,
-                      ),
-                    ),
-                  ),
-
-                ..._revealedSteps.asMap().entries.map((entry) {
-                  final revealedIdx = entry.key;
-                  final stepText = entry.value;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: GestureDetector(
-                      onDoubleTap: widget.onUpdateSlide == null
-                          ? null
-                          : () => _editText(
-                              label: 'Edit step',
-                              initial: stepText,
-                              onSave: (v) => _saveRevealedStep(revealedIdx, v),
-                            ),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppTheme.duoGreen.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: AppTheme.duoGreen.withValues(alpha: 0.3),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            child: CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // 1. Header Title Group
+                      if (widget.slide.title.trim().isNotEmpty) ...[
+                        Text(
+                          widget.slide.title,
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: colors.textMain,
+                            letterSpacing: -0.3,
                           ),
                         ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: EdgeInsets.only(top: 2, right: 12),
-                              child: Icon(
-                                LucideIcons.checkCircle2,
-                                color: AppTheme.duoGreen,
-                                size: 20,
-                              ),
-                            ),
-                            Expanded(
-                              child: MathMarkdown(
-                                data: stepText,
-                                textStyle: TextStyle(
-                                  fontSize: 16,
-                                  color: context.colors.textPrimary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
+                        const SizedBox(height: 2),
+                        Text(
+                          'Step-by-Step Derivation & Proof',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: colors.textMuted,
+                          ),
                         ),
-                      ),
-                    ),
-                  );
-                }),
+                        const SizedBox(height: 10),
+                      ],
 
-                if (!isFinished && currentStep != null)
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: AppTheme.duoBlue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: AppTheme.duoBlue.withValues(alpha: 0.3),
-                        width: 2,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              LucideIcons.brainCircuit,
-                              color: AppTheme.duoBlue,
-                              size: 24,
+                      // 2. Objective Banner (if content is present)
+                      if (widget.slide.content.trim().isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.primaryBlueLight,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: colors.primaryBlue.withValues(alpha: 0.25),
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'NEXT STEP',
-                              style: TextStyle(
-                                color: AppTheme.duoBlue.withValues(alpha: 0.8),
-                                fontWeight: FontWeight.w900,
-                                fontSize: 12,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Robust step rendering to handle AI placement mistakes
-                        if (currentStep.prompt != null &&
-                            currentStep.prompt!.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 16.0),
-                            child: GestureDetector(
-                              onDoubleTap: widget.onUpdateSlide == null
-                                  ? null
-                                  : () => _editText(
-                                      label: 'Edit prompt',
-                                      initial: currentStep.prompt!,
-                                      onSave: (v) =>
-                                          _saveStepPrompt(_currentStepIndex, v),
-                                    ),
-                              child: MathMarkdown(
-                                data: currentStep.prompt!,
-                                textStyle: TextStyle(
-                                  fontSize: 18,
-                                  color: context.colors.textPrimary,
-                                  fontWeight: FontWeight.bold,
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 18,
+                                height: 18,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: colors.primaryBlue,
                                 ),
-                              ),
-                            ),
-                          )
-                        else if (hasOptions &&
-                            currentStep.stepText != null &&
-                            currentStep.stepText!.isNotEmpty)
-                          // Fallback: AI mistakenly put the question inside `stepText` instead of `prompt`
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 16.0),
-                            child: GestureDetector(
-                              onDoubleTap: widget.onUpdateSlide == null
-                                  ? null
-                                  : () => _editText(
-                                      label: 'Edit step text',
-                                      initial: currentStep.stepText!,
-                                      onSave: (v) =>
-                                          _saveStepText(_currentStepIndex, v),
+                                child: const Center(
+                                  child: Text(
+                                    'i',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
                                     ),
-                              child: MathMarkdown(
-                                data: currentStep.stepText!,
-                                textStyle: TextStyle(
-                                  fontSize: 18,
-                                  color: context.colors.textPrimary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          )
-                        else if (!hasOptions &&
-                            currentStep.stepText != null &&
-                            currentStep.stepText!.isNotEmpty)
-                          GestureDetector(
-                            onDoubleTap: widget.onUpdateSlide == null
-                                ? null
-                                : () => _editText(
-                                    label: 'Edit step text',
-                                    initial: currentStep.stepText!,
-                                    onSave: (v) =>
-                                        _saveStepText(_currentStepIndex, v),
                                   ),
-                            child: MathMarkdown(
-                              data: currentStep.stepText!,
-                              textStyle: TextStyle(
-                                fontSize: 18,
-                                color: context.colors.textPrimary,
-                                fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: MathMarkdown(
+                                  data: widget.slide.content,
+                                  textStyle: TextStyle(
+                                    fontSize: 12,
+                                    color: colors.primaryBlue,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
+                        ),
 
-                        if (hasOptions)
-                          ...currentStep.options!.map((opt) {
-                            final isSelected = _selectedOptionId == opt.id;
-                            Color borderColor = context.colors.outline;
-                            Color bgColor = context.colors.surfaceAlt;
+                      const SizedBox(height: 12),
 
-                            if (_isSubmitted) {
-                              if (opt.isCorrect) {
-                                borderColor = AppTheme.duoGreen;
-                                bgColor = AppTheme.duoGreen.withValues(alpha: 0.2);
-                              } else if (isSelected && !opt.isCorrect) {
-                                borderColor = AppTheme.duoRed;
-                                bgColor = AppTheme.duoRed.withValues(alpha: 0.2);
-                              } else {
-                                bgColor = Colors.transparent;
-                              }
-                            } else if (isSelected) {
-                              borderColor = AppTheme.duoBlue;
-                              bgColor = AppTheme.duoBlue.withValues(alpha: 0.2);
-                            }
+                      // Optional Lesson / SVG Canvas
+                      if (widget.lessonCanvas != null) ...[
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: widget.lessonCanvas!,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
 
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: InkWell(
-                                onTap: _isSubmitted
-                                    ? null
-                                    : () => setState(
-                                        () => _selectedOptionId = opt.id,
-                                      ),
-                                onDoubleTap: widget.onUpdateSlide == null
-                                    ? null
-                                    : () => _editText(
-                                        label: 'Edit option',
-                                        initial: opt.text,
-                                        onSave: (v) => _saveStepOption(
-                                          _currentStepIndex,
-                                          opt,
-                                          v,
+                      CanvasArtView(
+                        svg: widget.slide.canvasSvg,
+                        hasPrompt:
+                            (widget.slide.canvasPrompt?.trim().isNotEmpty ??
+                                false),
+                        prompt: widget.slide.canvasPrompt,
+                        isLoading: widget.canvasIsLoading,
+                        onRegenerate: widget.onRegenerateCanvas,
+                        targetId: widget.slide.id,
+                      ),
+
+                      // 3. Step Progression Cards
+                      ...List.generate(_steps.length, (idx) {
+                        final step = _steps[idx];
+                        final isCompleted = idx < _currentStepIndex;
+                        final isActive = idx == _currentStepIndex;
+
+                        if (isCompleted) {
+                          final displayText = idx < _revealedSteps.length
+                              ? _revealedSteps[idx]
+                              : (step.stepText ?? step.prompt ?? '');
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            decoration: BoxDecoration(
+                              color: colors.cardBg,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: colors.cardBorder),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(
+                                    alpha: colors.isDark ? 0.25 : 0.03,
+                                  ),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  border: Border(
+                                    left: BorderSide(
+                                      color: colors.accentGreen,
+                                      width: 4,
+                                    ),
+                                  ),
+                                ),
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Container(
+                                              width: 22,
+                                              height: 22,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: colors.accentGreen,
+                                              ),
+                                              child: Center(
+                                                child: Text(
+                                                  '${idx + 1}',
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w800,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              'Step ${idx + 1}',
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w800,
+                                                color: colors.textMain,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Container(
+                                          width: 22,
+                                          height: 22,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: colors.accentGreenLight,
+                                          ),
+                                          child: Icon(
+                                            LucideIcons.check,
+                                            size: 13,
+                                            color: colors.accentGreen,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 30),
+                                      child: MathMarkdown(
+                                        data: displayText,
+                                        textStyle: TextStyle(
+                                          fontSize: 13,
+                                          height: 1.45,
+                                          color: colors.textMain,
                                         ),
                                       ),
-                                borderRadius: BorderRadius.circular(16),
-                                child: Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: bgColor,
-                                    border: Border.all(
-                                      color: borderColor,
-                                      width: 2,
                                     ),
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: MathMarkdown(
-                                    data: opt.text,
-                                    selectable: false,
-                                    textStyle: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: context.colors.textPrimary,
-                                    ),
-                                  ),
+                                  ],
                                 ),
                               ),
-                            );
-                          }),
-                      ],
-                    ),
+                            ),
+                          );
+                        }
+
+                        if (isActive) {
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            decoration: BoxDecoration(
+                              color: colors.cardBg,
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                color: colors.primaryBlue,
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colors.primaryBlue.withValues(
+                                    alpha: 0.16,
+                                  ),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            padding: const EdgeInsets.all(14),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 22,
+                                      height: 22,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: colors.primaryBlue,
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          '${idx + 1}',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Active Derivation Step',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w800,
+                                        color: colors.textMain,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                if (step.prompt?.trim().isNotEmpty == true)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 10.0),
+                                    child: MathMarkdown(
+                                      data: step.prompt!,
+                                      textStyle: TextStyle(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: colors.textMain,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  )
+                                else if (step.stepText?.trim().isNotEmpty == true)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 10.0),
+                                    child: MathMarkdown(
+                                      data: step.stepText!,
+                                      textStyle: TextStyle(
+                                        fontSize: 13.5,
+                                        color: colors.textMain,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ),
+
+                                // If options are present
+                                if (hasOptions) ...[
+                                  Text(
+                                    'SELECT THE JUSTIFYING STATEMENT:',
+                                    style: TextStyle(
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: colors.textSubtle,
+                                      letterSpacing: 1.0,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  ...step.options!.map((opt) {
+                                    final isSelected =
+                                        _selectedOptionId == opt.id;
+                                    Color optBg = colors.cardBg;
+                                    Color optBorder = colors.cardBorder;
+                                    Color optText = colors.textMain;
+
+                                    if (_isSubmitted) {
+                                      if (opt.isCorrect) {
+                                        optBg = colors.accentGreenLight;
+                                        optBorder = colors.accentGreen;
+                                        optText = colors.accentGreen;
+                                      } else if (isSelected && !opt.isCorrect) {
+                                        optBg = AppTheme.duoRed.withValues(
+                                          alpha: 0.12,
+                                        );
+                                        optBorder = AppTheme.duoRed;
+                                        optText = AppTheme.duoRed;
+                                      }
+                                    } else if (isSelected) {
+                                      optBg = colors.primaryBlueLight;
+                                      optBorder = colors.primaryBlue;
+                                      optText = colors.primaryBlue;
+                                    }
+
+                                    return GestureDetector(
+                                      onTap: _isSubmitted
+                                          ? null
+                                          : () {
+                                              setState(
+                                                () => _selectedOptionId =
+                                                    opt.id,
+                                              );
+                                              HapticFeedback.selectionClick();
+                                            },
+                                      child: Container(
+                                        margin: const EdgeInsets.only(
+                                          bottom: 8.0,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 10,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: optBg,
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          border: Border.all(
+                                            color: optBorder,
+                                            width: isSelected ? 1.5 : 1.0,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              width: 18,
+                                              height: 18,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: isSelected
+                                                      ? colors.primaryBlue
+                                                      : colors.cardBorder,
+                                                  width: 1.5,
+                                                ),
+                                                color: isSelected
+                                                    ? colors.primaryBlue
+                                                    : Colors.transparent,
+                                              ),
+                                              child: isSelected
+                                                  ? const Center(
+                                                      child: Icon(
+                                                        LucideIcons.check,
+                                                        size: 11,
+                                                        color: Colors.white,
+                                                      ),
+                                                    )
+                                                  : null,
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: MathMarkdown(
+                                                data: opt.text,
+                                                textStyle: TextStyle(
+                                                  fontSize: 12.5,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: optText,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                ],
+                              ],
+                            ),
+                          );
+                        }
+
+                        // Locked State
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            color: colors.badgeBg,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: colors.cardBorder.withValues(alpha: 0.5),
+                            ),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 20,
+                                    height: 20,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: colors.textSubtle.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        '${idx + 1}',
+                                        style: TextStyle(
+                                          color: colors.textSubtle,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Step ${idx + 1}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: colors.textSubtle,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Icon(
+                                LucideIcons.lock,
+                                size: 14,
+                                color: colors.textSubtle,
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+
+                      const SizedBox(height: 14),
+                    ],
                   ),
+                ),
               ],
             ),
           ),
         ),
 
-        // Bottom Action Bar
-        AnimatedContainer(
-          duration: Duration(milliseconds: 300),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-          decoration: BoxDecoration(
-            color: _isSubmitted
-                ? (_isCorrect
-                      ? AppTheme.duoGreen.withValues(alpha: 0.15)
-                      : AppTheme.duoRed.withValues(alpha: 0.15))
-                : Colors.transparent,
-            border: Border(
-              top: BorderSide(
-                color: _isSubmitted
-                    ? (_isCorrect ? AppTheme.duoGreen : AppTheme.duoRed)
-                    : context.colors.outline,
-                width: 2,
+        // 4. Bottom Stepper & Action Controls
+        _buildBottomBar(colors, isFinished, hasOptions, totalSteps),
+      ],
+    );
+  }
+
+  Widget _buildBottomBar(
+    AppColors colors,
+    bool isFinished,
+    bool hasOptions,
+    int totalSteps,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: colors.cardBg,
+        border: Border(top: BorderSide(color: colors.cardBorder)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Previous Step Button
+          GestureDetector(
+            onTap: _currentStepIndex > 0 ? _handlePreviousStep : null,
+            child: Container(
+              height: 42,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: colors.badgeBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: colors.cardBorder),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    LucideIcons.chevronLeft,
+                    size: 14,
+                    color: _currentStepIndex > 0
+                        ? colors.textMain
+                        : colors.textSubtle,
+                  ),
+                  const SizedBox(width: 2),
+                  Text(
+                    'Prev',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: _currentStepIndex > 0
+                          ? colors.textMain
+                          : colors.textSubtle,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (_isSubmitted)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: _isCorrect
-                              ? AppTheme.duoGreen
-                              : AppTheme.duoRed,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          _isCorrect ? LucideIcons.check : LucideIcons.x,
-                          color: context.colors.textPrimary,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Text(
-                          _isCorrect ? 'Excellent!' : 'Incorrect.',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w900,
-                            color: _isCorrect
-                                ? AppTheme.duoGreen
-                                : AppTheme.duoRed,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
 
-              if (isFinished)
-                DuoButton(
-                  text: 'Complete Sequence',
-                  color: AppTheme.duoGreen,
-                  shadowColor: AppTheme.duoGreenDark,
-                  onPressed: widget.onComplete,
-                )
-              else if (hasOptions)
-                !_isSubmitted
-                    ? (_selectedOptionId != null
-                        ? DuoButton(
-                            text: 'Check Step',
-                            color: AppTheme.duoBlue,
-                            shadowColor: AppTheme.duoBlueDark,
-                            onPressed: _checkAnswer,
-                          )
-                        : DuoButton(
-                            text: 'Skip Step',
-                            color: AppTheme.duoOrange,
-                            shadowColor: AppTheme.duoOrangeDark,
-                            onPressed: _handleNextInteractive,
-                          ))
-                    : (_isCorrect
-                        ? DuoButton(
-                            text: 'Continue',
-                            color: AppTheme.duoGreen,
-                            shadowColor: AppTheme.duoGreenDark,
-                            onPressed: _handleNextInteractive,
-                          )
-                        : Row(
-                            children: [
-                              Expanded(
-                                child: DuoButton(
-                                  text: 'Try Again',
-                                  color: context.colors.surfaceAlt,
-                                  shadowColor: context.colors.outline,
-                                  onPressed: _resetInteraction,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: DuoButton(
-                                  text: 'Continue',
-                                  color: AppTheme.duoRed,
-                                  shadowColor: AppTheme.duoRedDark,
-                                  onPressed: _handleNextInteractive,
-                                ),
-                              ),
-                            ],
-                          ))
-              else
-                DuoButton(
-                  text: 'Next Step',
-                  color: AppTheme.duoBlue,
-                  shadowColor: AppTheme.duoBlueDark,
-                  onPressed: _handleNextStatic,
+          // Stepper Dashes Center
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Step ${(_currentStepIndex + 1).clamp(1, totalSteps)} of $totalSteps',
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  color: colors.textMuted,
                 ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(totalSteps, (i) {
+                  final isDoneOrCurrent = i <= _currentStepIndex;
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    width: 12,
+                    height: 3.5,
+                    decoration: BoxDecoration(
+                      color: isDoneOrCurrent
+                          ? colors.primaryBlue
+                          : colors.cardBorder,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  );
+                }),
+              ),
             ],
           ),
-        ),
-      ],
+
+          // Next / Check Action Button
+          if (isFinished)
+            GestureDetector(
+              onTap: widget.onComplete,
+              child: Container(
+                height: 42,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                decoration: BoxDecoration(
+                  color: colors.accentGreen,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.accentGreen.withValues(alpha: 0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  children: [
+                    Text(
+                      'Complete',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(width: 4),
+                    Icon(
+                      LucideIcons.checkCheck,
+                      size: 14,
+                      color: Colors.white,
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else if (hasOptions)
+            !_isSubmitted
+                ? GestureDetector(
+                    onTap: _selectedOptionId != null ? _checkAnswer : null,
+                    child: Container(
+                      height: 42,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      decoration: BoxDecoration(
+                        color: _selectedOptionId != null
+                            ? colors.primaryBlue
+                            : colors.cardBorder,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            'Check',
+                            style: TextStyle(
+                              color: _selectedOptionId != null
+                                  ? Colors.white
+                                  : colors.textSubtle,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            LucideIcons.arrowRight,
+                            size: 14,
+                            color: _selectedOptionId != null
+                                ? Colors.white
+                                : colors.textSubtle,
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : (_isCorrect
+                    ? GestureDetector(
+                        onTap: _handleNextInteractive,
+                        child: Container(
+                          height: 42,
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          decoration: BoxDecoration(
+                            color: colors.accentGreen,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Row(
+                            children: [
+                              Text(
+                                'Next Step',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              SizedBox(width: 4),
+                              Icon(
+                                LucideIcons.chevronRight,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : Row(
+                        children: [
+                          GestureDetector(
+                            onTap: _resetInteraction,
+                            child: Container(
+                              height: 42,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.cardBg,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: colors.primaryBlue),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Retry',
+                                  style: TextStyle(
+                                    color: colors.primaryBlue,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          GestureDetector(
+                            onTap: _handleNextInteractive,
+                            child: Container(
+                              height: 42,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppTheme.duoOrange,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  'Skip',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ))
+          else
+            GestureDetector(
+              onTap: _handleNextStatic,
+              child: Container(
+                height: 42,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                decoration: BoxDecoration(
+                  color: colors.primaryBlue,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.primaryBlue.withValues(alpha: 0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  children: [
+                    Text(
+                      'Next Step',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(width: 4),
+                    Icon(
+                      LucideIcons.chevronRight,
+                      size: 14,
+                      color: Colors.white,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

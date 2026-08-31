@@ -1,15 +1,14 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../models/app_models.dart';
 import '../../theme/app_theme.dart';
 import '../math_markdown.dart';
 
-/// `ordering` slide: drag the shuffled items into their correct sequence.
-/// The host receives the current order via [onChanged] and validates it
-/// against [Slide.orderItems].
+/// Chronological & Logic Ordering View matching docs/new-theme/slide-p/reorder.html
 class OrderingView extends StatefulWidget {
   final Slide slide;
   final bool isAnswered;
@@ -38,8 +37,6 @@ class _OrderingViewState extends State<OrderingView> {
     super.initState();
     final correct = widget.slide.orderItems ?? [];
     _current = List.of(correct);
-    // Deterministic shuffle (stable across rebuilds); reshuffle once if the
-    // shuffle landed on the already-correct order.
     final rng = math.Random(widget.slide.id.hashCode);
     _current.shuffle(rng);
     if (_current.length > 1 && _listEquals(_current, correct)) {
@@ -61,66 +58,80 @@ class _OrderingViewState extends State<OrderingView> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final correct = widget.slide.orderItems ?? [];
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // 1. Header Prompt Card
           Container(
             decoration: BoxDecoration(
-              color: context.colors.isDark
-                  ? context.colors.surface
-                  : Colors.white,
+              color: colors.cardBg,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: AppTheme.duoViolet.withValues(alpha: 0.3),
-                width: 1.5,
-              ),
+              border: Border.all(color: colors.cardBorder),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.duoViolet.withValues(alpha: 0.08),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
+                  color: Colors.black.withValues(
+                    alpha: colors.isDark ? 0.35 : 0.04,
+                  ),
+                  blurRadius: 18,
+                  offset: const Offset(0, 5),
                 ),
               ],
             ),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  height: 4,
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [AppTheme.duoViolet, AppTheme.duoBlue, AppTheme.duoGreen],
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: colors.primaryBlueLight,
+                  ),
+                  child: Center(
+                    child: Icon(
+                      LucideIcons.listOrdered,
+                      size: 16,
+                      color: colors.primaryBlue,
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(20),
+                const SizedBox(width: 10),
+                Expanded(
                   child: MathMarkdown(
                     data: widget.slide.content.isNotEmpty
                         ? widget.slide.content
-                        : 'Drag the steps into the correct order.',
+                        : 'Order the steps from first to last in proper sequence.',
                     textStyle: TextStyle(
-                      fontSize: 17,
-                      color: context.colors.textPrimary,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: colors.textMain,
+                      height: 1.35,
+                      letterSpacing: -0.2,
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+
+          const SizedBox(height: 12),
+
+          // 2. Reorderable Sequence List
           Expanded(
             child: ReorderableListView.builder(
               buildDefaultDragHandles: !widget.isAnswered,
               physics: const BouncingScrollPhysics(),
               itemCount: _current.length,
+              // ignore: deprecated_member_use
               onReorder: (oldIndex, newIndex) {
                 if (widget.isAnswered) return;
+                HapticFeedback.selectionClick();
                 setState(() {
                   if (newIndex > oldIndex) newIndex -= 1;
                   final item = _current.removeAt(oldIndex);
@@ -130,94 +141,111 @@ class _OrderingViewState extends State<OrderingView> {
               },
               itemBuilder: (context, i) {
                 final item = _current[i];
-                final stepColors = [
-                  AppTheme.duoBlue,
-                  AppTheme.duoViolet,
-                  AppTheme.duoOrange,
-                  context.colors.secondary,
-                  AppTheme.duoGreen,
-                ];
-                final stepAccent = stepColors[i % stepColors.length];
+                final isLast = i == _current.length - 1;
 
-                final resultColor = widget.isAnswered
-                    ? (i < correct.length && correct[i] == item
-                          ? AppTheme.duoGreen
-                          : AppTheme.duoRed)
-                    : null;
+                Color cardBg = colors.cardBg;
+                Color cardBorder = colors.cardBorder;
+                Color badgeBg = colors.primaryBlueLight;
+                Color badgeTextColor = colors.primaryBlue;
 
-                return Container(
-                  key: ValueKey('order-$item'),
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: resultColor != null
-                        ? resultColor.withValues(alpha: 0.12)
-                        : (context.colors.isDark
-                            ? stepAccent.withValues(alpha: 0.08)
-                            : Colors.white),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: resultColor ?? stepAccent.withValues(alpha: 0.4),
-                      width: 1.5,
+                if (widget.isAnswered) {
+                  final isItemCorrect =
+                      i < correct.length && correct[i] == item;
+                  if (isItemCorrect) {
+                    cardBorder = colors.accentGreen;
+                    cardBg = colors.accentGreenLight;
+                    badgeBg = colors.accentGreen;
+                    badgeTextColor = Colors.white;
+                  } else {
+                    cardBorder = AppTheme.duoRed;
+                    cardBg = AppTheme.duoRed.withValues(alpha: 0.12);
+                    badgeBg = AppTheme.duoRed;
+                    badgeTextColor = Colors.white;
+                  }
+                }
+
+                return Column(
+                  key: ValueKey('order-$item-$i'),
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cardBg,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: cardBorder, width: 1.2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(
+                              alpha: colors.isDark ? 0.2 : 0.03,
+                            ),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          if (!widget.isAnswered)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: Icon(
+                                LucideIcons.gripVertical,
+                                size: 16,
+                                color: colors.textSubtle,
+                              ),
+                            ),
+                          // Stage Number Badge
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: badgeBg,
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${i + 1}',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  color: badgeTextColor,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: MathMarkdown(
+                              data: item,
+                              textStyle: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                                color: colors.textMain,
+                                height: 1.35,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (resultColor ?? stepAccent).withValues(alpha: 0.06),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 28,
-                        height: 28,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: (resultColor ?? stepAccent).withValues(
-                            alpha: 0.18,
-                          ),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: (resultColor ?? stepAccent).withValues(alpha: 0.4),
-                          ),
-                        ),
-                        child: Text(
-                          '${i + 1}',
-                          style: TextStyle(
-                            color: resultColor ?? stepAccent,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 13,
-                          ),
+                    if (!isLast)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 3.0),
+                        child: Icon(
+                          LucideIcons.arrowDown,
+                          size: 13,
+                          color: colors.textSubtle.withValues(alpha: 0.6),
                         ),
                       ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: MathMarkdown(
-                          data: item,
-                          textStyle: TextStyle(
-                            fontSize: 14,
-                            color: context.colors.textPrimary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      if (!widget.isAnswered)
-                        Icon(
-                          LucideIcons.gripVertical,
-                          color: context.colors.textFaint,
-                          size: 18,
-                        ),
-                    ],
-                  ),
+                  ],
                 );
               },
             ),
           ),
+
           if (widget.bottomBar != null) widget.bottomBar!,
         ],
       ),

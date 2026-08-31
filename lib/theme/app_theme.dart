@@ -64,6 +64,24 @@ class AppColors {
   });
 
   bool get isDark => brightness == Brightness.dark;
+
+  // New slide theme tokens
+  Color get cardBg => isDark ? const Color(0xFF131B2E) : const Color(0xFFFFFFFF);
+  Color get cardBorder => isDark ? const Color(0x14FFFFFF) : const Color(0xE6E2E8F0);
+  Color get mathBoxBg => isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
+  Color get mathBoxBorder => isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+  Color get primaryBlue => isDark ? const Color(0xFF2563EB) : const Color(0xFF005CF6);
+  Color get primaryBlueHover => isDark ? const Color(0xFF1D4ED8) : const Color(0xFF0046C7);
+  Color get primaryBlueLight => isDark ? const Color(0x262563EB) : const Color(0xFFEFF6FF);
+  Color get accentGreen => isDark ? const Color(0xFF10B981) : const Color(0xFF059669);
+  Color get accentGreenLight => isDark ? const Color(0x1F10B981) : const Color(0xFFECFDF5);
+  Color get accentGreenBorder => isDark ? const Color(0x4D10B981) : const Color(0xFFA7F3D0);
+  Color get sheetBg => isDark ? const Color(0xFF091E17) : const Color(0xFFF7FDFA);
+  Color get sheetBorder => isDark ? const Color(0xFF059669) : const Color(0xFF10B981);
+  Color get textMain => isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
+  Color get textMuted => isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569);
+  Color get textSubtle => isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8);
+  Color get badgeBg => isDark ? const Color(0x0DFFFFFF) : const Color(0x0A000000);
 }
 
 /// Preferred access point for theme tokens: `context.colors.surface`.

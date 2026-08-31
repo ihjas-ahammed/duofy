@@ -4,6 +4,26 @@ All notable changes to DuoFY are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com); versions follow the app's
 `major.minor.patch` scheme from `pubspec.yaml`.
 
+## [26.8.31] — 2026-08-31
+
+### Added & Improved
+- **Complete Learning Interface & Slide Redesign**: Modernized all interactive lesson slide screens based on cognitive load research and design token specifications (`docs/new-theme/slide-p/`).
+- **Floating Glassmorphism Capsule Toolbar (`SlideCapsuleToolbar`)**: Introduced a frosted glass header with a smooth animated liquid gradient progress indicator bar, animated flame streak counter, AI Bot avatar button with celestial orbital ring, and clean quick navigation/secondary menu actions.
+- **Tactile Elevated Action Button (`SlideActionButton`)**: Added animated 3D press interactions, customizable icons, and crisp state transitions across all slide flows.
+- **Diagnostic Feedback Bottom Sheet (`SlideFeedbackSheet`)**: Built an interactive feedback sheet featuring celebration badges, causal explanations, and an expandable Misconception Analysis card ("Why other options fail").
+- **Overhauled Interactive Slide Screen Types**: Modernized Theory, Quiz / OMR, Concept Pieces, Descriptive / Deep Concept, Interactive Proof, Math Pairs, Code Runner, Program, Numerical, Ordering, Error Spotting, Fill in the Blank, and One Word slide views.
+- **Revamped Lesson Mastered Screen**: Redesigned completion view with an animated accuracy gauge, XP celebration animations, streak multiplier badges, and difficulty reflection feedback chips.
+- **Celestial Theme Semantic Tokens**: Extended `AppColors` with unified tokens (`cardBg`, `cardBorder`, `mathBoxBg`, `primaryBlue`, `accentGreen`, `sheetBg`, etc.) ensuring seamless light and dark mode presentation.
+
+## [26.8.27] — 2026-08-27
+
+### Added & Improved
+- **Online LaTeX Compiler via HTTP POST**: Replaced URL-length-restricted GET requests with JSON POST payloads to `https://latex.ytotech.com/builds/sync`, enabling compilation of arbitrarily large, multi-page LaTeX documents.
+- **Explain Error with AI (LaTeX IDE)**: Integrated automated AI diagnosis and 1-tap correction directly in the LaTeX Studio error dialog.
+- **Fixed LaTeX Syntax Highlighting**: Disabled quote-based string parsing for LaTeX/TeX files in `CodeHighlighter`.
+- **Lesson Formats Optimization & 10-Cap**: Streamlined default and generated lesson formats to the top 10 pedagogical formats with non-programming subject filtering.
+- **Interactive Programming Course Selector**: Added toggle card and programming language selector in Course Generator window.
+
 ## [26.8.12] — 2026-08-12
 
 ### Added & Improved

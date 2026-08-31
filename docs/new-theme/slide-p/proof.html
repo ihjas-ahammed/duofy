@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Proof - Pythagorean Theorem</title>
+  <!-- Google Fonts: Plus Jakarta Sans & STIX Two Math -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=STIX+Two+Math:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==========================================================================
+       THEME VARIABLES (LIGHT & DARK)
+       ========================================================================== */
+    :root {
+      /* Light Mode */
+      --page-bg: #e2e8f0;
+      --device-bg: #f8fafc;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-subtle: #94a3b8;
+
+      --card-bg: #ffffff;
+      --card-border: rgba(226, 232, 240, 0.9);
+      --card-shadow: 0 6px 20px -4px rgba(15, 23, 42, 0.04);
+
+      --banner-bg: #eff6ff;
+      --banner-border: #dbeafe;
+      --banner-text: #1d4ed8;
+
+      --step-completed-border: #10b981;
+      --step-completed-bg: #ecfdf5;
+      --step-completed-text: #059669;
+
+      --step-active-border: #0062ff;
+      --step-active-shadow: 0 0 0 1px #0062ff, 0 8px 24px -4px rgba(0, 98, 255, 0.15);
+
+      --step-locked-bg: rgba(241, 245, 249, 0.6);
+      --step-locked-border: #e2e8f0;
+      --step-locked-text: #94a3b8;
+
+      --opt-bg: #ffffff;
+      --opt-border: #e2e8f0;
+      --opt-text: #334155;
+      --opt-selected-bg: #eff6ff;
+      --opt-selected-border: #0062ff;
+      --opt-selected-text: #0062ff;
+
+      --primary-blue: #0062ff;
+      --primary-blue-hover: #0050d4;
+      --primary-blue-glow: rgba(0, 98, 255, 0.35);
+
+      --home-bar: #0f172a;
+    }
+
+    [data-theme="dark"] {
+      /* Dark Mode */
+      --page-bg: #030712;
+      --device-bg: #070c18;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-subtle: #64748b;
+
+      --card-bg: #0c1322;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.6);
+
+      --banner-bg: rgba(30, 58, 138, 0.2);
+      --banner-border: rgba(59, 130, 246, 0.3);
+      --banner-text: #60a5fa;
+
+      --step-completed-border: #059669;
+      --step-completed-bg: rgba(16, 185, 129, 0.12);
+      --step-completed-text: #34d399;
+
+      --step-active-border: #3b82f6;
+      --step-active-shadow: 0 0 0 1px #3b82f6, 0 0 20px rgba(59, 130, 246, 0.3);
+
+      --step-locked-bg: rgba(15, 23, 42, 0.4);
+      --step-locked-border: rgba(255, 255, 255, 0.05);
+      --step-locked-text: #475569;
+
+      --opt-bg: #0c1322;
+      --opt-border: rgba(255, 255, 255, 0.1);
+      --opt-text: #94a3b8;
+      --opt-selected-bg: rgba(37, 99, 235, 0.18);
+      --opt-selected-border: #3b82f6;
+      --opt-selected-text: #60a5fa;
+
+      --primary-blue: #2563eb;
+      --primary-blue-hover: #1d4ed8;
+      --primary-blue-glow: rgba(37, 99, 235, 0.4);
+
+      --home-bar: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--page-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px 10px;
+      transition: background-color 0.3s ease;
+    }
+
+    .math { font-family: 'STIX Two Math', 'Times New Roman', serif; }
+
+    /* Prototyping Toolbar */
+    .prototype-bar {
+      display: flex;
+      gap: 8px;
+      background: var(--card-bg);
+      padding: 6px;
+      border-radius: 9999px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+      border: 1px solid var(--card-border);
+      margin-bottom: 14px;
+      z-index: 100;
+    }
+
+    .proto-btn {
+      padding: 6px 14px;
+      border-radius: 9999px;
+      border: none;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .proto-btn.active {
+      background: var(--primary-blue);
+      color: #ffffff;
+    }
+
+    /* Mobile Frame */
+    .mobile-frame {
+      width: 100%;
+      max-width: 412px;
+      height: 884px;
+      background-color: var(--device-bg);
+      border-radius: 44px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--card-border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: background-color 0.3s ease;
+    }
+
+    /* ==========================================================================
+       TOP STATUS BAR & GLASSMORPHIC TOOLBAR (Consistent with previous screens)
+       ========================================================================== */
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 26px 4px 26px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      z-index: 15;
+    }
+
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .glass-header-container {
+      padding: 8px 16px 8px 16px;
+      z-index: 15;
+    }
+
+    .glass-pill-bar {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 9999px;
+      height: 52px;
+      padding: 4px 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    }
+
+    .glass-close-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .glass-progress-track {
+      flex: 1;
+      height: 32px;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 9999px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 2px;
+      overflow: hidden;
+    }
+
+    .glass-progress-fill {
+      width: 75%;
+      height: 100%;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, #0052d4 0%, #4364f7 50%, #6fb1fc 100%);
+      box-shadow: 0 0 14px rgba(67, 100, 247, 0.8), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+      position: relative;
+    }
+
+    .glass-progress-fill::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      animation: waveGlow 2.5s infinite linear;
+    }
+
+    @keyframes waveGlow {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .glass-progress-text {
+      position: absolute;
+      right: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #7dd3fc;
+      letter-spacing: 0.2px;
+    }
+
+    .streak-badge {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      padding: 0 4px;
+    }
+
+    .streak-flame {
+      font-size: 16px;
+      filter: drop-shadow(0 0 4px #f97316);
+    }
+
+    .streak-count {
+      font-size: 13px;
+      font-weight: 800;
+      color: #fbbf24;
+    }
+
+    .glass-divider {
+      width: 1px;
+      height: 24px;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .bot-avatar-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #381f75, #110e2e);
+      border: 1.5px solid #a855f7;
+      box-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.2s ease;
+    }
+    .bot-avatar-btn:hover { transform: scale(1.05); }
+
+    /* ==========================================================================
+       SCROLLABLE PROOF CONTENT
+       ========================================================================== */
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 16px 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Screen Title & Subtitle */
+    .title-group {
+      margin-top: 2px;
+      margin-bottom: 2px;
+    }
+
+    .proof-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.4px;
+      line-height: 1.2;
+    }
+
+    .proof-subtitle {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Objective Banner */
+    .objective-banner {
+      background: var(--banner-bg);
+      border: 1px solid var(--banner-border);
+      border-radius: 12px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--banner-text);
+      font-weight: 500;
+    }
+
+    .info-circle {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--primary-blue);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    /* Proof Steps Cards */
+    .step-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 12px 14px;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .step-card.completed {
+      border-left: 4px solid var(--step-completed-border);
+    }
+
+    .step-card.active {
+      border: 1.5px solid var(--step-active-border);
+      box-shadow: var(--step-active-shadow);
+    }
+
+    .step-card.locked {
+      background: var(--step-locked-bg);
+      border-color: var(--step-locked-border);
+      opacity: 0.75;
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .step-title-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .step-number-badge {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .badge-completed { background: var(--step-completed-border); color: #fff; }
+    .badge-active { background: var(--primary-blue); color: #fff; }
+    .badge-locked { background: var(--text-subtle); color: #fff; }
+
+    .step-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .step-status-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon-completed {
+      background: var(--step-completed-bg);
+      color: var(--step-completed-text);
+    }
+
+    .icon-locked {
+      color: var(--step-locked-text);
+    }
+
+    .step-body {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      padding-left: 30px;
+    }
+
+    .math-highlight {
+      color: var(--text-main);
+    }
+
+    /* Fill-in Question Area in Step 3 */
+    .question-prompt {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-top: 4px;
+      margin-bottom: 2px;
+    }
+
+    .slot-box {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border: 1.5px dashed var(--primary-blue);
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--primary-blue);
+      margin: 0 4px;
+      vertical-align: middle;
+      background: var(--opt-selected-bg);
+    }
+
+    .options-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .option-pill {
+      background: var(--opt-bg);
+      border: 1px solid var(--opt-border);
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--opt-text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .option-pill:hover {
+      border-color: var(--primary-blue);
+    }
+
+    .option-pill.selected {
+      background: var(--opt-selected-bg);
+      border-color: var(--opt-selected-border);
+      color: var(--opt-selected-text);
+      box-shadow: 0 0 10px rgba(0, 98, 255, 0.15);
+    }
+
+    /* ==========================================================================
+       RIGHT TRIANGLE VECTOR DIAGRAM CARD
+       ========================================================================== */
+    .diagram-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 12px;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .triangle-svg-wrapper {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
+    .triangle-svg {
+      width: 100%;
+      max-width: 320px;
+      height: auto;
+    }
+
+    /* Legend Pills Row */
+    .legend-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .legend-box {
+      background: var(--device-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 6px 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-symbol {
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .legend-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .legend-title {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--text-subtle);
+    }
+
+    .legend-formula {
+      font-size: 9.5px;
+      font-weight: 700;
+      color: var(--text-main);
+      white-space: nowrap;
+    }
+
+    /* ==========================================================================
+       BOTTOM PROGRESS BAR & NAVIGATION
+       ========================================================================== */
+    .bottom-bar {
+      padding: 8px 16px 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      z-index: 15;
+    }
+
+    .btn-prev {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 0 12px;
+      height: 42px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .step-stepper-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .step-stepper-text {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .stepper-bars {
+      display: flex;
+      gap: 3px;
+    }
+
+    .step-dash {
+      width: 14px;
+      height: 3.5px;
+      border-radius: 9999px;
+      background: var(--card-border);
+    }
+
+    .step-dash.filled {
+      background: var(--primary-blue);
+    }
+
+    .btn-check {
+      background: var(--primary-blue);
+      border: none;
+      border-radius: 14px;
+      height: 42px;
+      padding: 0 16px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 6px 16px -3px var(--primary-blue-glow);
+      transition: background 0.2s ease;
+    }
+
+    .btn-check:hover {
+      background: var(--primary-blue-hover);
+    }
+
+    .home-indicator {
+      width: 130px;
+      height: 4.5px;
+      background: var(--home-bar);
+      border-radius: 9999px;
+      margin: 2px auto 6px auto;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Prototype Controls -->
+  <div class="prototype-bar">
+    <button class="proto-btn active" id="themeBtn" onclick="toggleTheme()">
+      <span id="themeIcon">☀️</span> Light Mode
+    </button>
+    <button class="proto-btn" onclick="alert('AI Proof Hint: Recall that the dot product distributes over addition/subtraction just like standard multiplication: u · (v - w) = u·v - u·w')">
+      <span>💡</span> Proof Hint
+    </button>
+  </div>
+
+  <!-- Mobile Phone Shell Frame -->
+  <div class="mobile-frame" id="phone">
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons">
+        <svg width="16" height="12" viewBox="0 0 17 12" fill="currentColor">
+          <rect x="0" y="9" width="3" height="3" rx="0.5"/>
+          <rect x="4.5" y="6" width="3" height="6" rx="0.5"/>
+          <rect x="9" y="3" width="3" height="9" rx="0.5"/>
+          <rect x="13.5" y="0" width="3" height="12" rx="0.5"/>
+        </svg>
+        <svg width="15" height="12" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-4.9-3.2c2.7-2.3 7.1-2.3 9.8 0l1.4-1.4c-3.5-3.1-9.1-3.1-12.6 0l1.4 1.4z"/>
+        </svg>
+        <svg width="22" height="11" viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="1" y="1" width="19" height="10" rx="3"/>
+          <rect x="3" y="3" width="12" height="6" fill="currentColor" rx="1"/>
+          <path d="M21 4.5v3" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 1. GLASSMORPHIC TITLE BAR (Requested Header) -->
+    <div class="glass-header-container">
+      <div class="glass-pill-bar">
+        <!-- Close button -->
+        <button class="glass-close-btn" aria-label="Close" onclick="alert('Exit Proof Session')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <!-- Glowing Progress Track -->
+        <div class="glass-progress-track">
+          <div class="glass-progress-fill" id="glassFill"></div>
+          <span class="glass-progress-text" id="glassText">75%</span>
+        </div>
+
+        <!-- Streak Fire Counter -->
+        <div class="streak-badge">
+          <span class="streak-flame">🔥</span>
+          <span class="streak-count">12</span>
+        </div>
+
+        <div class="glass-divider"></div>
+
+        <!-- AI Bot Avatar Pill -->
+        <button class="bot-avatar-btn" aria-label="AI Tutor" onclick="alert('AI Proof Assistant: Step 3 tests your understanding of vector dot product algebraic expansion.')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e0e7ff" stroke-width="2" stroke-linecap="round">
+            <rect x="4" y="8" width="16" height="12" rx="4"></rect>
+            <circle cx="9" cy="13" r="1.5" fill="#e0e7ff"></circle>
+            <circle cx="15" cy="13" r="1.5" fill="#e0e7ff"></circle>
+            <path d="M12 4v4"></path>
+            <path d="M2 13h2"></path>
+            <path d="M20 13h2"></path>
+            <ellipse cx="12" cy="14" rx="10" ry="4" stroke="#c084fc" stroke-width="1.2" stroke-dasharray="3 2" transform="rotate(-15 12 14)"></ellipse>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. Scrollable Proof Content -->
+    <div class="content-area">
+
+      <!-- Header Title -->
+      <div class="title-group">
+        <h1 class="proof-title">Pythagorean Theorem</h1>
+        <div class="proof-subtitle">via Vector Dot Products</div>
+      </div>
+
+      <!-- Objective Banner -->
+      <div class="objective-banner">
+        <div class="info-circle">i</div>
+        <span>Prove that in a right triangle, <span class="math">a² + b² = c²</span>.</span>
+      </div>
+
+      <!-- Step 1: Completed -->
+      <div class="step-card completed">
+        <div class="step-header">
+          <div class="step-title-group">
+            <div class="step-number-badge badge-completed">1</div>
+            <span class="step-title">Define Vectors</span>
+          </div>
+          <div class="step-status-icon icon-completed">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+        </div>
+        <div class="step-body">
+          Let <span class="math math-highlight">u⃗ = ⟨a, 0⟩</span> and <span class="math math-highlight">v⃗ = ⟨x, b⟩</span>.<br>
+          Then <span class="math math-highlight">u⃗ · u⃗ = a²</span> and <span class="math math-highlight">v⃗ · v⃗ = x² + b²</span>.
+        </div>
+      </div>
+
+      <!-- Step 2: Completed -->
+      <div class="step-card completed">
+        <div class="step-header">
+          <div class="step-title-group">
+            <div class="step-number-badge badge-completed">2</div>
+            <span class="step-title">Use Orthogonality</span>
+          </div>
+          <div class="step-status-icon icon-completed">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+        </div>
+        <div class="step-body">
+          Since the triangle is right-angled, the vectors are orthogonal: <span class="math math-highlight">u⃗ ⊥ (v⃗ - u⃗)</span>.<br>
+          Thus, <span class="math math-highlight">u⃗ · (v⃗ - u⃗) = 0</span>.
+        </div>
+      </div>
+
+      <!-- Step 3: Active Interactive Question -->
+      <div class="step-card active">
+        <div class="step-header">
+          <div class="step-title-group">
+            <div class="step-number-badge badge-active">3</div>
+            <span class="step-title">Expand the Dot Product</span>
+          </div>
+        </div>
+        <div class="step-body">
+          <div style="font-size: 13.5px; margin-bottom: 4px;">
+            <span class="math math-highlight">u⃗ · (v⃗ - u⃗) = u⃗ · </span>
+            <span class="slot-box" id="slotDisplay">?</span>
+            <span class="math math-highlight"> u⃗ · v⃗ - u⃗ · u⃗ = 0</span>
+          </div>
+          
+          <div class="question-prompt">Which property justifies this step?</div>
+
+          <div class="options-row">
+            <!-- Option 1: Selected -->
+            <div class="option-pill selected" onclick="selectOption(this, '+')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="16"></line>
+                <line x1="8" y1="12" x2="16" y2="12"></line>
+              </svg>
+              <span>Distributive Property</span>
+            </div>
+
+            <!-- Option 2 -->
+            <div class="option-pill" onclick="selectOption(this, '⊥')">
+              <span style="font-size: 13px; line-height: 1;">⊥</span>
+              <span>Orthogonality Axiom</span>
+            </div>
+
+            <!-- Option 3 -->
+            <div class="option-pill" onclick="selectOption(this, '||')">
+              <span style="font-weight: 800; font-size: 11px;">||</span>
+              <span>Cauchy-Schwarz Inequality</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Locked -->
+      <div class="step-card locked">
+        <div class="step-header">
+          <div class="step-title-group">
+            <div class="step-number-badge badge-locked">4</div>
+            <span class="step-title" style="color: var(--text-muted);">Simplify and Conclude</span>
+          </div>
+          <div class="step-status-icon icon-locked">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </div>
+        </div>
+        <div class="step-body" style="filter: blur(0.3px);">
+          From the expansion, we get <span class="math">ax - a² = 0 ⟹ x = a</span>.<br>
+          Then <span class="math">c² = x² + b² = a² + b²</span>.
+        </div>
+      </div>
+
+      <!-- Right Triangle Vector Diagram Card -->
+      <div class="diagram-card">
+        <!-- SVG Vector Drawing -->
+        <div class="triangle-svg-wrapper">
+          <svg class="triangle-svg" viewBox="0 0 320 150">
+            <!-- Vector legend text at top-left -->
+            <g font-size="9.5" font-family="'STIX Two Math', serif">
+              <line x1="8" y1="12" x2="22" y2="12" stroke="#0062ff" stroke-width="2.2"/>
+              <text x="28" y="15" fill="currentColor">u⃗ = ⟨a, 0⟩</text>
+
+              <line x1="8" y1="28" x2="22" y2="28" stroke="#10b981" stroke-width="2.2"/>
+              <text x="28" y="31" fill="currentColor">v⃗ = ⟨x, b⟩</text>
+
+              <line x1="8" y1="44" x2="22" y2="44" stroke="#8b5cf6" stroke-width="2.2"/>
+              <text x="28" y="47" fill="currentColor">v⃗ - u⃗ = ⟨x - a, b⟩</text>
+            </g>
+
+            <!-- Angle Arc at A -->
+            <path d="M120,120 A22,22 0 0,0 138,107" fill="none" stroke="#8b5cf6" stroke-width="1.2"/>
+
+            <!-- Dashed projection curve -->
+            <path d="M120,120 Q215,70 240,20" fill="none" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="3 3"/>
+
+            <!-- Triangle Path Lines -->
+            <!-- Base Vector u (A to C) -->
+            <line x1="120" y1="120" x2="240" y2="120" stroke="#0062ff" stroke-width="2.5"/>
+            <!-- Height Vector (C to B) -->
+            <line x1="240" y1="120" x2="240" y2="20" stroke="#10b981" stroke-width="2.5"/>
+            <!-- Hypotenuse Vector (A to B) -->
+            <line x1="120" y1="120" x2="240" y2="20" stroke="#8b5cf6" stroke-width="2.5"/>
+
+            <!-- Right Angle Square at C -->
+            <polyline points="230,120 230,110 240,110" fill="none" stroke="currentColor" stroke-width="1.2"/>
+
+            <!-- Points & Labels -->
+            <!-- Point A -->
+            <circle cx="120" cy="120" r="3.5" fill="currentColor"/>
+            <text x="88" y="124" font-size="11" font-weight="700" fill="currentColor">A <tspan font-size="9.5" font-weight="400">(0, 0)</tspan></text>
+
+            <!-- Point C -->
+            <circle cx="240" cy="120" r="3.5" fill="currentColor"/>
+            <text x="248" y="124" font-size="11" font-weight="700" fill="currentColor">C <tspan font-size="9.5" font-weight="400">(a, 0)</tspan></text>
+
+            <!-- Point B -->
+            <circle cx="240" cy="20" r="3.5" fill="currentColor"/>
+            <text x="248" y="22" font-size="11" font-weight="700" fill="currentColor">B <tspan font-size="9.5" font-weight="400">(a, b)</tspan></text>
+
+            <!-- Dimension labels -->
+            <text x="175" y="134" font-size="11" class="math" fill="#0062ff" font-style="italic">a</text>
+            <text x="248" y="74" font-size="11" class="math" fill="#10b981" font-style="italic">b</text>
+            <text x="170" y="62" font-size="11" class="math" fill="#8b5cf6" font-style="italic">c</text>
+          </svg>
+        </div>
+
+        <!-- Legend Stats Row -->
+        <div class="legend-grid">
+          <div class="legend-box">
+            <span class="legend-symbol math" style="color: #0062ff;">c²</span>
+            <div class="legend-text">
+              <span class="legend-title">Hypotenuse</span>
+              <span class="legend-formula math">c² = x² + b²</span>
+            </div>
+          </div>
+
+          <div class="legend-box">
+            <span class="legend-symbol" style="color: #10b981; font-size: 11px;">90°</span>
+            <div class="legend-text">
+              <span class="legend-title">Right Angle</span>
+              <span class="legend-formula">∠C = 90°</span>
+            </div>
+          </div>
+
+          <div class="legend-box">
+            <span class="legend-symbol" style="color: #8b5cf6; font-size: 10px;">🟣</span>
+            <div class="legend-text">
+              <span class="legend-title">Dot Product</span>
+              <span class="legend-formula math">u⃗ · (v⃗ - u⃗) = 0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 3. Bottom Progress Bar & Actions -->
+    <div class="bottom-bar">
+      <button class="btn-prev" onclick="alert('Previous Step')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        <span>Previous Step</span>
+      </button>
+
+      <div class="step-stepper-center">
+        <span class="step-stepper-text">Step 3 of 4</span>
+        <div class="stepper-bars">
+          <div class="step-dash filled"></div>
+          <div class="step-dash filled"></div>
+          <div class="step-dash filled"></div>
+          <div class="step-dash"></div>
+        </div>
+      </div>
+
+      <button class="btn-check" onclick="checkAnswer()">
+        <span>Check Answer</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+    </div>
+
+    <!-- iOS Home Indicator -->
+    <div class="home-indicator"></div>
+
+  </div>
+
+  <!-- Interactive Logic -->
+  <script>
+    let isDark = false;
+
+    function toggleTheme() {
+      isDark = !isDark;
+      const root = document.documentElement;
+      const themeBtn = document.getElementById('themeBtn');
+      const themeIcon = document.getElementById('themeIcon');
+
+      if (isDark) {
+        root.setAttribute('data-theme', 'dark');
+        themeBtn.innerHTML = '<span>🌙</span> Dark Mode';
+      } else {
+        root.removeAttribute('data-theme');
+        themeBtn.innerHTML = '<span>☀️</span> Light Mode';
+      }
+    }
+
+    function selectOption(element, symbol) {
+      document.querySelectorAll('.option-pill').forEach(pill => {
+        pill.classList.remove('selected');
+      });
+      element.classList.add('selected');
+      document.getElementById('slotDisplay').innerText = symbol;
+    }
+
+    function checkAnswer() {
+      alert('🎉 Correct! By the distributive property of dot products: u⃗ · (v⃗ - u⃗) = u⃗·v⃗ - u⃗·u⃗.');
+    }
+  </script>
+</body>
+</html>

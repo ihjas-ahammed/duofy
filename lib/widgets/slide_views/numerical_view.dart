@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../models/app_models.dart';
 import '../../theme/app_theme.dart';
 import '../../services/math_evaluator_service.dart';
 import '../math_markdown.dart';
 
+/// Numerical Calculation & Precision Keypad View matching docs/new-theme/slide-p/numerical.html
 class NumericalView extends StatefulWidget {
   final Slide slide;
   final String value;
   final bool isAnswered;
   final bool isCorrect;
   final Function(String) onChanged;
-
   final Widget? bottomBar;
 
   const NumericalView({
@@ -31,7 +32,7 @@ class NumericalView extends StatefulWidget {
 class _NumericalViewState extends State<NumericalView> {
   late TextEditingController _controller;
   late FocusNode _focusNode;
-  bool _useMathKeypad = false;
+  bool _useMathKeypad = true;
 
   @override
   void initState() {
@@ -60,6 +61,7 @@ class _NumericalViewState extends State<NumericalView> {
 
   void _insertText(String insertText) {
     if (widget.isAnswered) return;
+    HapticFeedback.selectionClick();
     final text = _controller.text;
     final selection = _controller.selection;
 
@@ -81,6 +83,7 @@ class _NumericalViewState extends State<NumericalView> {
 
   void _backspace() {
     if (widget.isAnswered) return;
+    HapticFeedback.selectionClick();
     final text = _controller.text;
     final selection = _controller.selection;
 
@@ -112,162 +115,138 @@ class _NumericalViewState extends State<NumericalView> {
 
   void _clear() {
     if (widget.isAnswered) return;
+    HapticFeedback.selectionClick();
     _controller.clear();
     widget.onChanged('');
   }
 
+  void _toggleSign() {
+    if (widget.isAnswered) return;
+    HapticFeedback.selectionClick();
+    final text = _controller.text.trim();
+    if (text.startsWith('-')) {
+      _controller.text = text.substring(1);
+    } else if (text.isNotEmpty && text != '0') {
+      _controller.text = '-$text';
+    }
+    widget.onChanged(_controller.text);
+  }
+
   @override
   Widget build(BuildContext context) {
-    String placeholder = '0.0 or =formula';
-    if (widget.slide.numericAnswer != null) {
-      final str = widget.slide.numericAnswer!.toString();
-      final parts = str.split('.');
-      if (parts.length < 2) {
-        placeholder = '0';
-      } else {
-        final fraction = parts[1];
-        if (fraction == '0') {
-          placeholder = '0';
-        } else {
-          placeholder = '0.${'0' * fraction.length}';
-        }
-      }
-    }
+    final colors = context.colors;
+    final displayValue = _controller.text.isNotEmpty ? _controller.text : '0';
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
       child: CustomScrollView(
-        physics: BouncingScrollPhysics(),
+        physics: const BouncingScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // 1. Problem Card
                 Container(
                   decoration: BoxDecoration(
-                    color: context.colors.isDark
-                        ? context.colors.surface
-                        : Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: AppTheme.duoBlue.withValues(alpha: 0.3),
-                      width: 1.5,
-                    ),
+                    color: colors.cardBg,
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: colors.cardBorder),
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.duoBlue.withValues(alpha: 0.08),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
+                        color: Colors.black.withValues(
+                          alpha: colors.isDark ? 0.35 : 0.04,
+                        ),
+                        blurRadius: 20,
+                        offset: const Offset(0, 6),
                       ),
                     ],
                   ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Container(
-                        height: 4,
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [AppTheme.duoBlue, AppTheme.duoViolet, AppTheme.duoGreen],
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: MathMarkdown(
-                          data: widget.slide.content,
-                          textStyle: TextStyle(
-                            fontSize: 18,
-                            color: context.colors.textPrimary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: context.colors.isDark
-                        ? context.colors.surfaceAlt
-                        : AppTheme.duoBlue.withValues(alpha: 0.04),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: widget.isAnswered
-                          ? (widget.isCorrect ? AppTheme.duoGreen : AppTheme.duoRed)
-                          : AppTheme.duoBlue.withValues(alpha: 0.4),
-                      width: 2,
-                    ),
-                  ),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Header Row: Topic Badge & Mode Toggle
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'ANSWER',
-                            style: TextStyle(
-                              color: context.colors.textFaint,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 10,
-                              letterSpacing: 1.5,
-                            ),
-                          ),
-                          InkWell(
-                            onTap: widget.isAnswered
-                                ? null
-                                : () {
-                                    setState(() {
-                                      _useMathKeypad = !_useMathKeypad;
-                                      if (_useMathKeypad) {
-                                        FocusScope.of(context).unfocus();
-                                      } else {
-                                        _focusNode.requestFocus();
-                                      }
-                                    });
-                                  },
-                            borderRadius: BorderRadius.circular(8),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _useMathKeypad
-                                    ? AppTheme.duoBlue.withValues(alpha: 0.2)
-                                    : context.colors.surface,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: _useMathKeypad
-                                      ? AppTheme.duoBlue
-                                      : context.colors.outline,
+                          Row(
+                            children: [
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: colors.primaryBlueLight,
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    LucideIcons.binary,
+                                    color: colors.primaryBlue,
+                                    size: 16,
+                                  ),
                                 ),
                               ),
+                              const SizedBox(width: 8),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'NUMERICAL CALCULATION',
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: colors.primaryBlue,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Precision Problem Solving',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: colors.textSubtle,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() => _useMathKeypad = !_useMathKeypad);
+                              if (_useMathKeypad) {
+                                FocusScope.of(context).unfocus();
+                              } else {
+                                _focusNode.requestFocus();
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.badgeBg,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: colors.cardBorder),
+                              ),
                               child: Row(
-                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
                                     _useMathKeypad
                                         ? LucideIcons.calculator
                                         : LucideIcons.keyboard,
-                                    size: 14,
-                                    color: _useMathKeypad
-                                        ? AppTheme.duoBlue
-                                        : context.colors.textSecondary,
+                                    size: 12,
+                                    color: colors.textMuted,
                                   ),
-                                  SizedBox(width: 6),
+                                  const SizedBox(width: 4),
                                   Text(
                                     _useMathKeypad ? 'KEYPAD' : 'KEYBOARD',
                                     style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: 0.5,
-                                      color: _useMathKeypad
-                                          ? AppTheme.duoBlue
-                                          : context.colors.textSecondary,
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: colors.textMuted,
                                     ),
                                   ),
                                 ],
@@ -276,56 +255,125 @@ class _NumericalViewState extends State<NumericalView> {
                           ),
                         ],
                       ),
-                      SizedBox(height: 12),
-                      TextField(
-                        controller: _controller,
-                        focusNode: _focusNode,
-                        enabled: !widget.isAnswered,
-                        readOnly: _useMathKeypad,
-                        onChanged: widget.onChanged,
-                        keyboardType: TextInputType.text,
-                        autocorrect: false,
-                        enableSuggestions: false,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          color: widget.isAnswered
-                              ? (widget.isCorrect
-                                  ? AppTheme.duoGreen
-                                  : AppTheme.duoRed)
-                              : Colors.amber,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: placeholder,
-                          hintStyle: TextStyle(color: context.colors.textFaint),
-                          filled: true,
-                          fillColor: context.colors.surface,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 12,
-                            horizontal: 12,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: Colors.amber,
-                              width: 2,
-                            ),
-                          ),
+
+                      const SizedBox(height: 12),
+
+                      // Problem Statement
+                      MathMarkdown(
+                        data: widget.slide.content,
+                        textStyle: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: colors.textMain,
+                          height: 1.4,
+                          letterSpacing: -0.2,
                         ),
                       ),
-                      _buildCalculationPreview(context),
                     ],
                   ),
                 ),
-                if (_useMathKeypad && !widget.isAnswered) ...[
-                  const SizedBox(height: 16),
-                  _buildMathKeypad(context),
-                ],
+
+                const SizedBox(height: 12),
+
+                // 2. Active Answer Input Box
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.cardBg,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: widget.isAnswered
+                          ? (widget.isCorrect
+                              ? colors.accentGreen
+                              : AppTheme.duoRed)
+                          : colors.primaryBlue,
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (widget.isAnswered
+                                ? (widget.isCorrect
+                                    ? colors.accentGreen
+                                    : AppTheme.duoRed)
+                                : colors.primaryBlue)
+                            .withValues(alpha: 0.16),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'CALCULATED VALUE',
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w800,
+                                color: colors.primaryBlue,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              displayValue,
+                              style: TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w800,
+                                color: widget.isAnswered
+                                    ? (widget.isCorrect
+                                        ? colors.accentGreen
+                                        : AppTheme.duoRed)
+                                    : colors.textMain,
+                                height: 1.1,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (widget.slide.numericTolerance != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.badgeBg,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: colors.cardBorder),
+                          ),
+                          child: Text(
+                            '±${widget.slide.numericTolerance}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: colors.textMuted,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+
+                // Real-time evaluation preview
+                _buildCalculationPreview(colors),
+
+                const SizedBox(height: 12),
+
+                // 3. Interactive Scientific Keypad (when enabled)
+                if (_useMathKeypad && !widget.isAnswered)
+                  _buildScientificKeypad(colors),
+
+                const SizedBox(height: 16),
               ],
             ),
           ),
@@ -334,7 +382,10 @@ class _NumericalViewState extends State<NumericalView> {
               hasScrollBody: false,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
-                children: [const SizedBox(height: 24), widget.bottomBar!],
+                children: [
+                  const SizedBox(height: 16),
+                  widget.bottomBar!,
+                ],
               ),
             ),
         ],
@@ -342,7 +393,7 @@ class _NumericalViewState extends State<NumericalView> {
     );
   }
 
-  Widget _buildCalculationPreview(BuildContext context) {
+  Widget _buildCalculationPreview(AppColors colors) {
     final rawText = _controller.text.trim();
     if (rawText.isEmpty) return const SizedBox.shrink();
 
@@ -363,17 +414,17 @@ class _NumericalViewState extends State<NumericalView> {
     }
 
     return Container(
-      margin: const EdgeInsets.only(top: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: formatted != null
-            ? AppTheme.duoBlue.withValues(alpha: 0.12)
-            : Colors.amber.withValues(alpha: 0.12),
+            ? colors.primaryBlueLight
+            : AppTheme.duoOrange.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: formatted != null
-              ? AppTheme.duoBlue.withValues(alpha: 0.4)
-              : Colors.amber.withValues(alpha: 0.4),
+              ? colors.primaryBlue.withValues(alpha: 0.3)
+              : AppTheme.duoOrange.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -381,16 +432,17 @@ class _NumericalViewState extends State<NumericalView> {
         children: [
           Icon(
             formatted != null ? LucideIcons.calculator : LucideIcons.helpCircle,
-            size: 16,
-            color: formatted != null ? AppTheme.duoBlue : Colors.amber,
+            size: 14,
+            color: formatted != null ? colors.primaryBlue : AppTheme.duoOrange,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           Text(
-            formatted != null ? '= $formatted' : '= Incomplete formula',
+            formatted != null ? '= $formatted' : '= Incomplete expression',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 12,
               fontWeight: FontWeight.w800,
-              color: formatted != null ? AppTheme.duoBlue : Colors.amber,
+              color:
+                  formatted != null ? colors.primaryBlue : AppTheme.duoOrange,
             ),
           ),
         ],
@@ -398,11 +450,8 @@ class _NumericalViewState extends State<NumericalView> {
     );
   }
 
-  Widget _buildMathKeypad(BuildContext context) {
-    final formulaChips = [
-      'P(',
-      'C(',
-      'fact(',
+  Widget _buildScientificKeypad(AppColors colors) {
+    final functionChips = [
       'sqrt(',
       'sin(',
       'cos(',
@@ -411,58 +460,57 @@ class _NumericalViewState extends State<NumericalView> {
       'ln(',
       'pi',
       'e',
-      '=',
+      '^',
+      'fact(',
     ];
 
-    final gridButtons = [
-      ['C', '(', ')', '⌫'],
-      ['7', '8', '9', '/'],
-      ['4', '5', '6', '*'],
-      ['1', '2', '3', '-'],
-      ['0', '.', '^', '+'],
+    final keys = [
+      ['7', '8', '9', '⌫'],
+      ['4', '5', '6', '÷'],
+      ['1', '2', '3', '×'],
+      ['0', '.', '±', '−'],
+      ['C', '(', ')', '+'],
     ];
 
     return Container(
-      padding: EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: context.colors.surfaceAlt,
+        color: colors.cardBg,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.colors.outline),
+        border: Border.all(color: colors.cardBorder),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Function chips bar
+          // Function chips row
           SizedBox(
-            height: 36,
+            height: 32,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: formulaChips.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 6),
-              itemBuilder: (context, index) {
-                final label = formulaChips[index];
-                return InkWell(
+              itemCount: functionChips.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 6),
+              itemBuilder: (context, idx) {
+                final label = functionChips[idx];
+                return GestureDetector(
                   onTap: () => _insertText(label),
-                  borderRadius: BorderRadius.circular(10),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
+                      horizontal: 10,
+                      vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppTheme.duoBlue.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
+                      color: colors.primaryBlueLight,
+                      borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: AppTheme.duoBlue.withValues(alpha: 0.4),
+                        color: colors.primaryBlue.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Center(
                       child: Text(
                         label,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
-                          color: AppTheme.duoBlue,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w800,
+                          color: colors.primaryBlue,
                         ),
                       ),
                     ),
@@ -471,81 +519,85 @@ class _NumericalViewState extends State<NumericalView> {
               },
             ),
           ),
-          const SizedBox(height: 12),
-          // Calculator Grid
-          Column(
-            children: gridButtons.map((row) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  children: row.map((btn) {
-                    return Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: _buildKeypadButton(context, btn),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              );
-            }).toList(),
-          ),
+
+          const SizedBox(height: 8),
+
+          // Keypad Grid
+          ...keys.map((row) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                children: row.map((btn) {
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                      child: _buildKeyBtn(colors, btn),
+                    ),
+                  );
+                }).toList(),
+              ),
+            );
+          }),
         ],
       ),
     );
   }
 
-  Widget _buildKeypadButton(BuildContext context, String btn) {
-    Color bg = context.colors.surface;
-    Color fg = context.colors.textPrimary;
-    Color border = context.colors.outline;
+  Widget _buildKeyBtn(AppColors colors, String btn) {
+    Color bg = colors.mathBoxBg;
+    Color fg = colors.textMain;
+    Color border = colors.cardBorder;
 
     if (btn == 'C') {
-      bg = AppTheme.duoRed.withValues(alpha: 0.15);
+      bg = AppTheme.duoRed.withValues(alpha: 0.12);
       fg = AppTheme.duoRed;
-      border = AppTheme.duoRed.withValues(alpha: 0.4);
+      border = AppTheme.duoRed.withValues(alpha: 0.3);
     } else if (btn == '⌫') {
-      bg = Colors.amber.withValues(alpha: 0.15);
-      fg = Colors.amber;
-      border = Colors.amber.withValues(alpha: 0.4);
-    } else if (['+', '-', '*', '/', '^', '(', ')'].contains(btn)) {
-      bg = AppTheme.duoBlue.withValues(alpha: 0.12);
-      fg = AppTheme.duoBlue;
-      border = AppTheme.duoBlue.withValues(alpha: 0.3);
+      bg = AppTheme.duoOrange.withValues(alpha: 0.12);
+      fg = AppTheme.duoOrange;
+      border = AppTheme.duoOrange.withValues(alpha: 0.3);
+    } else if (['+', '−', '×', '÷', '^', '(', ')', '±'].contains(btn)) {
+      bg = colors.primaryBlueLight;
+      fg = colors.primaryBlue;
+      border = colors.primaryBlue.withValues(alpha: 0.25);
     }
 
-    String displayLabel = btn;
-    if (btn == '*') displayLabel = '×';
-    if (btn == '/') displayLabel = '÷';
-    if (btn == '-') displayLabel = '−';
-
-    return InkWell(
+    return GestureDetector(
       onTap: () {
         if (btn == 'C') {
           _clear();
         } else if (btn == '⌫') {
           _backspace();
+        } else if (btn == '±') {
+          _toggleSign();
+        } else if (btn == '×') {
+          _insertText('*');
+        } else if (btn == '÷') {
+          _insertText('/');
+        } else if (btn == '−') {
+          _insertText('-');
         } else {
           _insertText(btn);
         }
       },
-      borderRadius: BorderRadius.circular(12),
       child: Container(
-        height: 48,
+        height: 42,
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: border),
         ),
         child: Center(
-          child: Text(
-            displayLabel,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              color: fg,
-            ),
-          ),
+          child: btn == '⌫'
+              ? Icon(LucideIcons.delete, size: 16, color: fg)
+              : Text(
+                  btn,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: fg,
+                  ),
+                ),
         ),
       ),
     );

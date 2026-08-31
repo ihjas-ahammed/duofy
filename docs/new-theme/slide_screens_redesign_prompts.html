@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duofy Slide Screens Redesign & AI Image Prompts Catalog</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=JetBrains+Mono:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #F8FAFC;
+            --bg-surface: #FFFFFF;
+            --bg-surface-subtle: #F1F5F9;
+            --bg-card: #FFFFFF;
+            --text-primary: #0F172A;
+            --text-secondary: #334155;
+            --text-muted: #64748B;
+            --text-faint: #94A3B8;
+            
+            --accent-primary: #2563EB;
+            --accent-primary-light: #DBEAFE;
+            --accent-primary-hover: #1D4ED8;
+            --accent-success: #16A34A;
+            --accent-success-light: #DCFCE7;
+            --accent-warning: #D97706;
+            --accent-warning-light: #FEF3C7;
+            --accent-danger: #DC2626;
+            --accent-danger-light: #FEE2E2;
+            --accent-meta: #7C3AED;
+            --accent-meta-light: #EDE9FE;
+            
+            --border-subtle: #E2E8F0;
+            --border-medium: #CBD5E1;
+            --border-focus: #3B82F6;
+            
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --radius-xl: 28px;
+            --radius-full: 9999px;
+            
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 12px -2px rgba(0,0,0,0.08), 0 2px 6px -2px rgba(0,0,0,0.04);
+            --shadow-lg: 0 12px 24px -4px rgba(0,0,0,0.08), 0 4px 12px -4px rgba(0,0,0,0.04);
+            
+            --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            --font-serif: 'Newsreader', Georgia, serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-display: 'Space Grotesk', var(--font-sans);
+            
+            --transition-smooth: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #090D16;
+            --bg-surface: #0F172A;
+            --bg-surface-subtle: #1E293B;
+            --bg-card: #131D31;
+            --text-primary: #F8FAFC;
+            --text-secondary: #CBD5E1;
+            --text-muted: #94A3B8;
+            --text-faint: #64748B;
+            
+            --accent-primary: #60A5FA;
+            --accent-primary-light: rgba(96, 165, 250, 0.15);
+            --accent-primary-hover: #93C5FD;
+            --accent-success: #22C55E;
+            --accent-success-light: rgba(34, 197, 94, 0.15);
+            --accent-warning: #FBBF24;
+            --accent-warning-light: rgba(251, 191, 36, 0.15);
+            --accent-danger: #F87171;
+            --accent-danger-light: rgba(248, 113, 113, 0.15);
+            --accent-meta: #A78BFA;
+            --accent-meta-light: rgba(167, 139, 250, 0.15);
+            
+            --border-subtle: #1E293B;
+            --border-medium: #334155;
+            --border-focus: #60A5FA;
+            
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+            --shadow-md: 0 4px 14px rgba(0,0,0,0.5);
+            --shadow-lg: 0 12px 30px rgba(0,0,0,0.7);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            line-height: 1.65;
+            transition: var(--transition-smooth);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Top Header */
+        header.top-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(var(--bg-primary), 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 12px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand-pill {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-primary);
+            font-weight: 800;
+            font-size: 18px;
+            font-family: var(--font-display);
+        }
+
+        .brand-badge {
+            background: var(--accent-primary-light);
+            color: var(--accent-primary);
+            padding: 4px 10px;
+            border-radius: var(--radius-full);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .theme-switcher-group {
+            display: flex;
+            background: var(--bg-surface-subtle);
+            padding: 4px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border-subtle);
+            gap: 4px;
+        }
+
+        .theme-btn {
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            padding: 6px 14px;
+            border-radius: var(--radius-full);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .theme-btn.active {
+            background: var(--bg-surface);
+            color: var(--accent-primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Hero */
+        .hero-banner {
+            max-width: 1200px;
+            margin: 36px auto 20px;
+            padding: 0 32px;
+            text-align: center;
+        }
+
+        .hero-tag {
+            display: inline-block;
+            background: var(--accent-meta-light);
+            color: var(--accent-meta);
+            padding: 6px 16px;
+            border-radius: var(--radius-full);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+
+        h1.hero-title {
+            font-size: 38px;
+            font-weight: 900;
+            font-family: var(--font-display);
+            letter-spacing: -1px;
+            margin-bottom: 12px;
+        }
+
+        h1.hero-title span {
+            color: var(--accent-primary);
+        }
+
+        p.hero-desc {
+            max-width: 800px;
+            margin: 0 auto 30px;
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+
+        /* Container */
+        .main-layout {
+            max-width: 1200px;
+            margin: 0 auto 80px;
+            padding: 0 32px;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 36px;
+        }
+
+        /* Sidebar Index */
+        aside.sidebar-index {
+            position: sticky;
+            top: 90px;
+            height: fit-content;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+
+        .index-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .index-title {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .index-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .index-item a {
+            display: block;
+            padding: 6px 10px;
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            transition: var(--transition-smooth);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .index-item a:hover {
+            background: var(--accent-primary-light);
+            color: var(--accent-primary);
+        }
+
+        /* Slide Screen Cards */
+        .slide-stream {
+            display: flex;
+            flex-direction: column;
+            gap: 36px;
+        }
+
+        .slide-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition-smooth);
+        }
+
+        .slide-card:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .slide-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-subtle);
+            padding-bottom: 14px;
+        }
+
+        .slide-num-pill {
+            background: var(--accent-primary-light);
+            color: var(--accent-primary);
+            padding: 4px 12px;
+            border-radius: var(--radius-full);
+            font-size: 12px;
+            font-weight: 800;
+            font-family: var(--font-mono);
+        }
+
+        h2.slide-name {
+            font-size: 22px;
+            font-weight: 800;
+            font-family: var(--font-display);
+            color: var(--text-primary);
+        }
+
+        .slide-type-tag {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-muted);
+            background: var(--bg-surface-subtle);
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+
+        .section-block {
+            margin-bottom: 18px;
+        }
+
+        .section-label {
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--accent-primary);
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        p.text-body {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        ul.change-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        ul.change-list li {
+            position: relative;
+            padding-left: 18px;
+            font-size: 13.5px;
+            color: var(--text-secondary);
+        }
+
+        ul.change-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--accent-success);
+            font-weight: bold;
+        }
+
+        /* Prompt Box */
+        .prompt-container {
+            background: var(--bg-surface-subtle);
+            border: 1px solid var(--border-medium);
+            border-radius: var(--radius-md);
+            padding: 18px;
+            margin-top: 18px;
+            position: relative;
+        }
+
+        .prompt-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .prompt-title {
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--accent-meta);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .copy-btn {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-medium);
+            color: var(--text-secondary);
+            padding: 4px 10px;
+            border-radius: var(--radius-sm);
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .copy-btn:hover {
+            background: var(--accent-primary);
+            color: #ffffff;
+            border-color: var(--accent-primary);
+        }
+
+        pre.prompt-text {
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-family: var(--font-mono);
+            font-size: 12.5px;
+            color: var(--text-primary);
+            line-height: 1.5;
+            background: var(--bg-card);
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-subtle);
+        }
+
+        /* Footer */
+        footer.doc-footer {
+            border-top: 1px solid var(--border-subtle);
+            padding: 36px 32px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+            background: var(--bg-surface);
+        }
+
+        @media (max-width: 900px) {
+            .main-layout { grid-template-columns: 1fr; }
+            aside.sidebar-index { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="top-header">
+        <a href="#" class="brand-pill">
+            <span>DUOFY REDESIGN</span>
+            <span class="brand-badge">AI Image Prompts Catalog</span>
+        </a>
+        <div class="theme-switcher-group">
+            <button class="theme-btn active" onclick="setTheme('light')">☀️ Light</button>
+            <button class="theme-btn" onclick="setTheme('dark')">🌙 Dark</button>
+        </div>
+    </header>
+
+    <div class="hero-banner">
+        <div class="hero-tag">ALL 18 SLIDE SCREENS &amp; COMPONENTS</div>
+        <h1 class="hero-title">Screen-by-Screen Redesign &amp; <span>AI Generation Prompts</span></h1>
+        <p class="hero-desc">
+            Complete architectural redesign guidelines and ready-to-copy image generation prompts for Midjourney v6, Flux Pro, Imagen 3, and DALL-E 3 based on cognitive science and flow state principles.
+        </p>
+    </div>
+
+    <div class="main-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar-index">
+            <div class="index-card">
+                <div class="index-title">All 18 Slide Screens</div>
+                <ul class="index-list">
+                    <li class="index-item"><a href="#screen-1">01. Theory Introduction</a></li>
+                    <li class="index-item"><a href="#screen-2">02. Modular Concept Pieces</a></li>
+                    <li class="index-item"><a href="#screen-3">03. Descriptive Synthesis</a></li>
+                    <li class="index-item"><a href="#screen-4">04. Interactive Proof</a></li>
+                    <li class="index-item"><a href="#screen-5">05. Active Retrieval Quiz</a></li>
+                    <li class="index-item"><a href="#screen-6">06. Fill in Blank</a></li>
+                    <li class="index-item"><a href="#screen-7">07. Numerical Calculation</a></li>
+                    <li class="index-item"><a href="#screen-8">08. One-Word Recall</a></li>
+                    <li class="index-item"><a href="#screen-9">09. Matching Pairs</a></li>
+                    <li class="index-item"><a href="#screen-10">10. Logic Ordering</a></li>
+                    <li class="index-item"><a href="#screen-11">11. Spaced Flashcard</a></li>
+                    <li class="index-item"><a href="#screen-12">12. Program Logic Builder</a></li>
+                    <li class="index-item"><a href="#screen-13">13. Live Python Runner</a></li>
+                    <li class="index-item"><a href="#screen-14">14. HTML5 Simulator</a></li>
+                    <li class="index-item"><a href="#screen-15">15. Error Bug Hunt</a></li>
+                    <li class="index-item"><a href="#screen-16">16. Header Flow Chrome</a></li>
+                    <li class="index-item"><a href="#screen-17">17. Bottom Autopsy Tray</a></li>
+                    <li class="index-item"><a href="#screen-18">18. Mastery Summary</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Slide Content Stream -->
+        <div class="slide-stream">
+            
+    <section id="screen-1" class="slide-card">
+        <div class="slide-header">
+            <div>
+                <span class="slide-num-pill">SCREEN 01</span>
+                <h2 class="slide-name" style="margin-top: 6px;">Theory & Concept Introduction View</h2>
+            </div>
+            <span class="slide-type-tag">** theory / theory_group</span>
+        </div>
+
+        <div class="section-block">
+            <span class="section-label">Required Cognitive &amp; UI Redesign Changes</span>
+            <ul class="change-list">
+                <li>**Modular Chunking:** Break text into visual concept cards with clear typographic hierarchy (`Space Grotesk` headings + `Plus Jakarta Sans` subheadings + `Newsreader` narrative).</li><li>**Spatial Contiguity Integration:** Embed interactive canvas or SVG diagrams directly inline adjacent to formulas.</li><li>**Pre-Activation Prompt:** Add an initial 1-sentence thought-experiment question at the top before the full theory unfolds.</li><li>**Signaling Highlights:** Subtle amber/cobalt signposting on invariant terms in formulas (e.g., highlighting \(e\) and \(\pi\) in Euler's formula).</li>
+            </ul>
+        </div>
+
+        <div class="prompt-container">
+            <div class="prompt-header">
+                <span class="prompt-title">🎨 AI Image Generation Prompt (Midjourney / Flux / Imagen)</span>
+                <button class="copy-btn" onclick="copyPrompt(this)">Copy Prompt</button>
+            </div>
+            <pre class="prompt-text">UI Design of a modern educational mobile app screen, "Theory & Concept Introduction" slide. Clean "Cognitive Sanctuary" light theme with soft off-white background #F8FAFC, elevated crisp white cards with rounded corners (16px radius) and subtle drop shadows. At top, a thin sleek progress bar (35% filled in vibrant royal blue #2563EB) and a minimalist flame combo badge. Main card features a bold lesson title "Euler's Identity & Rotational Phasors" in Space Grotesk font, followed by an inline interactive SVG complex plane unit circle diagram with glowing vector arrows. Below the diagram, an elegant LaTeX formula box with syntax-highlighted terms in cobalt blue and emerald green. Underneath, a concise 2-sentence concept chunk in Newsreader serif typography with high legibility. At the bottom, a full-width pill button "Continue to Active Practice" in solid royal blue with subtle hover glow. Minimalist, distraction-free, Apple Design Award quality, Figma UI mockup, 8k resolution, crisp vector graphics --ar 9:16</pre>
+        </div>
+    </section>
+    
+    <section id="screen-2" class="slide-card">
+        <div class="slide-header">
+            <div>
+                <span class="slide-num-pill">SCREEN 02</span>
+                <h2 class="slide-name" style="margin-top: 6px;">Modular Concept Pieces View</h2>
+            </div>
+            <span class="slide-type-tag">** concept_pieces</span>
+        </div>
+
+        <div class="section-block">
+            <span class="section-label">Required Cognitive &amp; UI Redesign Changes</span>
+            <ul class="change-list">
+                <li>**Progressive Unfolding:** Cards start in a collapsed "piece tray" at the bottom; tapping a piece dynamically illuminates its matching node on the central visual schematic.</li><li>**Micro-Self-Testing:** Each piece reveals a 1-sentence functional explanation only when dragged or tapped.</li><li>**Color-Coded Semantic Anchors:** Each piece receives a dedicated pastel chromatic token (Mint, Cobalt, Amber, Violet).</li>
+            </ul>
+        </div>
+
+        <div class="prompt-container">
+            <div class="prompt-header">
+                <span class="prompt-title">🎨 AI Image Generation Prompt (Midjourney / Flux / Imagen)</span>
+                <button class="copy-btn" onclick="copyPrompt(this)">Copy Prompt</button>
+            </div>
+            <pre class="prompt-text">Mobile app UI design for "Modular Concept Pieces" learning screen in modern "Midnight Flow" dark mode theme. Deep nocturnal navy background #090D16 with dark glassmorphic cards #131D31. In the upper half, an interactive architectural diagram of a "Transformer Attention Mechanism" with glowing connected nodes and subtle dotted line paths. In the lower half, four modular horizontal pill cards labeled "Queries (Q)", "Keys (K)", "Values (V)", and "Softmax Scaling", each styled with glowing left border accents in emerald, sky blue, amber, and lavender. The "Queries" card is actively selected, casting a gentle neon blue aura. Sleek minimalist typography in Plus Jakarta Sans and JetBrains Mono. Bottom bar has a clean button "Assemble Schema". High-tech, futuristic yet clean pedagogical interface, Dribbble trending, 8k, UI/UX showcase --ar 9:16</pre>
+        </div>
+    </section>
+    
+    <section id="screen-3" class="slide-card">
+        <div class="slide-header">
+            <div>
+                <span class="slide-num-pill">SCREEN 03</span>
+                <h2 class="slide-name" style="margin-top: 6px;">Descriptive Reading & Deep Synthesis View</h2>
+            </div>
+            <span class="slide-type-tag">** descriptive</span>
+        </div>
+
+        <div class="section-block">
+            <span class="section-label">Required Cognitive &amp; UI Redesign Changes</span>
+            <ul class="change-list">
+                <li>**60-Character Optimal Reading Column:** Narrow text measure styled in `Newsreader` serif with 1.75 line-height and generous margins.</li><li>**Warm Codex (Sepia) Mode Palette:** Ivory background `#FFFDF9`, rich walnut text `#2C2416`, and warm amber highlights.</li><li>**Active Margin Annotations:** Inset margin notes and key vocabulary definitions that expand without shifting layout.</li><li>**Mid-Text Retrieval Stop:** A collapsible "Stop & Predict" card halfway through the reading.</li>
+            </ul>
+        </div>
+
+        <div class="prompt-container">
+            <div class="prompt-header">
+                <span class="prompt-title">🎨 AI Image Generation Prompt (Midjourney / Flux / Imagen)</span>
+                <button class="copy-btn" onclick="copyPrompt(this)">Copy Prompt</button>
+            </div>
+            <pre class="prompt-text">Clean mobile UI design for "Descriptive Conceptual Reading" screen in "Warm Codex" sepia theme. Ivory parchment paper background #FFFDF9 with deep walnut text #2C2416. Elegant editorial typography using Newsreader serif font with 1.75 line height and perfect 65-character line length. The top header shows "Origins of Quantum Mechanics: The Ultraviolet Catastrophe" with a small sepia badge "Deep Synthesis • 4 min read". In the middle of the article, an inline pull-quote card with an antique iron-gall ink border and a small portrait illustration of Max Planck. At bottom of text, an interactive "Stop & Reflect" reflection callout box with a dashed golden ochre outline #D97706. Minimalist footer with reading progress tracker. Editorial magazine aesthetic, elegant, distraction-free, 8k --ar 9:16</pre>
+        </div>
+    </section>
+    
+    <section id="screen-4" class="slide-card">
+        <div class="slide-header">
+            <div>
+                <span class="slide-num-pill">SCREEN 04</span>
+                <h2 class="slide-name" style="margin-top: 6px;">Interactive Proof & Step-by-Step Derivation View</h2>
+            </div>
+            <span class="slide-type-tag">** interactive_proof / step_by_step / proof</span>
+        </div>
+
+        <div class="section-block">
+            <span class="section-label">Required Cognitive &amp; UI Redesign Changes</span>
+            <ul class="change-list">
+                <li>**Accordion Step-by-Step Unrolling:** Only the current derivation step is active; subsequent steps are blurred/locked until the justification is verified.</li><li>**Deductive Justification Dropdowns:** The user must select the mathematical theorem or algebraic axiom that justifies the transition from Step \(n\) to Step \(n+1\).</li><li>**Interactive Visual Canvas Sync:** As each algebraic step is completed, the adjacent geometric canvas updates in real time (Dual Coding Principle).</li>
+            </ul>
+        </div>
+
+        <div class="prompt-container">
+            <div class="prompt-header">
+                <span class="prompt-title">🎨 AI Image Generation Prompt (Midjourney / Flux / Imagen)</span>
+                <button class="copy-btn" onclick="copyPrompt(this)">Copy Prompt</button>
+            </div>
+            <pre class="prompt-text">Mobile app UI design for "Interactive Mathematical Proof" screen. Modern light theme #F8FAFC with sleek card containers. Main view showcases a step-by-step derivation for "Pythagorean Theorem via Vector Dot Products". Step 1 and Step 2 are completed, displayed in clean white cards with green checkmarks and crisp LaTeX equations. Step 3 is currently active, outlined with a bright royal blue border #2563EB: it shows an equation with a missing algebraic operator and an interactive pill selector for "Distributive Property", "Orthogonality Axiom", "Cauchy-Schwarz Inequality". Below the proof steps, an interactive SVG right-angle triangle diagram with live updating angle projections. Clean typography with JetBrains Mono for equations and Plus Jakarta Sans for UI. Premium STEM educational app, Figma UI, ultra-clean, 8k --ar 9:16</pre>
+        </div>
+    </section>
+    
+    <section id="screen-5" class="slide-card">
+        <div class="slide-header">
+            <div>
+                <span class="slide-num-pill">SCREEN 05</span>
+                <h2 class="slide-name" style="margin-top: 6px;">Active Retrieval Quiz View</h2>
+            </div>
+            <span class="slide-type-tag">** quiz</span>
+        </div>
+
+        <div class="section-block">
+            <span class="section-label">Required Cognitive &amp; UI Redesign Changes</span>
+            <ul class="change-list">
+                <li>**"Active-First" Generation Scratchpad:** An optional scratchpad or mental prediction prompt appears *before* option selection is unlocked.</li><li>**Pre-Answer Metacognitive Calibration:** 3-tier confidence indicator (1★ Guessing, 2★ Plausible, 3★ Absolute Certainty) required before checking.</li><li>**Diagnostic Error Autopsy Tray:** Explains why the selected distractor is wrong, not just highlighting the correct choice in green.</li>
+            </ul>
+        </div>
+
+        <div class="prompt-container">
+            <div class="prompt-header">
+                <span class="prompt-title">🎨 AI Image Generation Prompt (Midjourney / Flux / Imagen)</span>
+                <button class="copy-btn" onclick="copyPrompt(this)">Copy Prompt</button>
+            </div>
+            <pre class="prompt-text">Mobile app UI interface for "Active Retrieval Quiz" screen in "Cognitive Sanctuary" light theme. Clean off-white background #F8FAFC with high-contrast slate text #0F172A. Question card at top: "What happens to the margin of error in a confidence interval when sample size n is quadrupled?" Four elegant option cards with subtle borders: Option A, B, C, D. Option B ("It is halved") is actively selected with a crisp cobalt blue outline #2563EB and a soft light blue background tint. Above the submit button, a horizontal "Confidence Calibration" bar with 3 selectable star chips: "1★ Guessing", "2★ Fairly Sure", "3★ Certain". Bottom has a solid blue "Check Answer" pill button. Clean, modern typography in Plus Jakarta Sans, zero clutter, Duolingo meets Apple design, 8k --ar 9:16</pre>
+        </div>
+    </section>
+    
+    <section id="screen-6" class="slide-card">
+        <div class="slide-header">
+            <div>
+                <span class="slide-num-pill">SCREEN 06</span>
+                <h2 class="slide-name" style="margin-top: 6px;">Fill in the Blank & Code Synthesis View</h2>
+            </div>
+            <span class="slide-type-tag">** fill_in_blank</span>
+        </div>
+
+        <div class="section-block">
+            <span class="section-label">Required Cognitive &amp; UI Redesign Changes</span>
+            <ul class="change-list">
+                <li>**Integrated In-Line Drop Slots:** Slots are shaped exactly like the missing syntax or equation token with clean dotted borders.</li><li>**Dual Input Modes:** Toggle between draggable word bank chips and direct keyboard text entry for advanced learners.</li><li>**Contextual Syntax Highlighting:** If in code mode, the surrounding code block maintains full dark/light IDE styling (`JetBrains Mono`).</li>
+            </ul>
+        </div>
+
+        <div class="prompt-container">
+            <div class="prompt-header">
+                <span class="prompt-title">🎨 AI Image Generation Prompt (Midjourney / Flux / Imagen)</span>
+                <button class="copy-btn" onclick="copyPrompt(this)">Copy Prompt</button>
+            </div>
+            <pre class="prompt-text">Mobile app UI design for "Fill in the Blank" code synthesis slide. Dark mode "Midnight Flow" theme with deep navy canvas #090D16. The center of the screen features a rounded code editor card #131D31 with syntax-highlighted Python code defining a binary search function. Inside the code, line 4 has a glowing empty slot with a cyan dashed outline for the midpoint calculation: `mid = left + [ _____ ]`. Below the code card, a horizontal bank of 4 draggable rounded chips: `(right - left) // 2`, `(right + left) / 2`, `right * 2`, `left // 2`. The first chip has a subtle glow effect. Sleek font pairing with JetBrains Mono and Plus Jakarta Sans. Smooth modern glassmorphic aesthetics, 8k resolution, UI design portfolio piece --ar 9:16</pre>
+        </div>
+    </section>
+    
+    <section id="screen-7" class="slide-card">
+        <div class="slide-header">
+            <div>
+                <span class="slide-num-pill">SCREEN 07</span>
+                <h2 class="slide-name" style="margin-top: 6px;">Numerical Calculation & Precision Keypad View</h2>
+            </div>
+            <span class="slide-type-tag">** numerical</span>
+        </div>
+
+        <div class="section-block">
+            <span class="section-label">Required Cognitive &amp; UI Redesign Changes</span>
+            <ul class="change-list">
+                <li>**Custom Built-in Scientific Math Keypad:** Integrated numbers `0-9`, decimal point, negative sign, fraction toggle `a/b`, and \(\pi\) / \(\sqrt{x}\) buttons that never cover the problem card.</li><li>**Dynamic Tolerance Indicator:** Subtitle showing acceptable margin of error (e.g., "\(\pm 0.05\) tolerance").</li><li>**Step-by-Step Scratchpad Drawer:** Swipe-up canvas for finger scratch calculations.</li>
+            </ul>
+        </div>
+
+        <div class="prompt-container">
+            <div class="prompt-header">
+                <span class="prompt-title">🎨 AI Image Generation Prompt (Midjourney / Flux / Imagen)</span>
+                <button class="copy-btn" onclick="copyPrompt(this)">Copy Prompt</button>
+            </div>
+            <pre class="prompt-text">Mobile learning app UI design for "Numerical Calculation & Scientific Input" slide. Clean light mode with pure white cards and soft gray canvas #F8FAFC. Top card presents a physics problem: "Calculate the escape velocity from Mars (M = 6.42 x 10^23 kg, R = 3389 km) in km/s." Below the question, a large numerical input display showing `5.03` with a blinking royal blue cursor and unit tag `km/s`. Lower half of the screen features a dedicated custom scientific numerical keypad with large rounded soft-gray buttons: numbers 0-9, decimal point, negative sign, backspace, and square root symbol. Top-right of the screen has a small "Scratchpad" pen icon. Ultra-clean typography, Apple Calculator meets Brilliant.org aesthetic, 8k --ar 9:16</pre>
+        </div>
+    </section>
+    
+    <section id="screen-8" class="slide-card">
+        <div class="slide-header">
+            <div>
+                <span class="slide-num-pill">SCREEN 08</span>
+                <h2 class="slide-name" style="margin-top: 6px;">One-Word Direct Recall View</h2>
+            </div>
+            <span class="slide-type-tag">** one_word / pyq_one_word</span>
+        </div>
+
+        <div class="section-block">
+            <span class="section-label">Required Cognitive &amp; UI Redesign Changes</span>
+            <ul class="change-list">
+                <li>**Fuzzy Match & Phonetic Tolerance Engine:** Recognizes valid spelling variants while politely noting correct orthography.</li><li>**Progressive Letter Reveal (Desirable Difficulty Ladder):** Users can tap "Reveal First Letter" for a minor score deduction rather than giving up.</li><li>**Pronunciation & Etymology Card:** Post-answer drawer displays phonetic pronunciation and root word origin.</li>
+            </ul>
+        </div>
+
+        <div class="prompt-container">
+            <div class="prompt-header">
+                <span class="prompt-title">🎨 AI Image Generation Prompt (Midjourney / Flux / Imagen)</span>
+                <button class="copy-btn" onclick="copyPrompt(this)">Copy Prompt</button>
+            </div>
+            <pre class="prompt-text">Mobile app UI design for "One-Word Exact Recall" screen in "Forest Zen" theme. Deep forest green nocturnal background #0A1918 with elevated moss-slate cards #122624. Question card displays: "Name the biological process where cells engulf large particles or whole microorganisms." In the center, an elegant single-line text input field with a mint-green glowing underline #10B981 showing the typed answer "Phagocytosis". Beneath the input, a small subtle button "💡 Reveal First Letter (P...)". Top right displays a green streak counter with a leaf icon. Bottom has a mint-colored "Submit Word" button. Calming, focused, non-anxiety-inducing educational UI, 8k --ar 9:16</pre>
+        </div>
+    </section>
+    
+    <section id="screen-9" class="slide-card">
+        <div class="slide-header">
+            <div>
+                <span class="slide-num-pill">SCREEN 09</span>
+                <h2 class="slide-name" style="margin-top: 6px;">Conceptual Matching Pairs View</h2>
+            </div>
+            <span class="slide-type-tag">** matching</span>
+        </div>
+
+        <div class="section-block">
+            <span class="section-label">Required Cognitive &amp; UI Redesign Changes</span>
+            <ul class="change-list">
+                <li>**Tonal Color-Lock Pairing:** Tapping a left card and right card locks them in a matching soft pastel color pairing (no messy crisscross lines).</li><li>**Max 4-Item Chunks:** Enforce a strict 4-pair maximum per slide to honor Cowan's working memory model.</li><li>**Instant Micro-Haptic Confirmation:** Subtle haptic pulse upon correct pairing.</li>
+            </ul>
+        </div>
+
+        <div class="prompt-container">
+            <div class="prompt-header">
+                <span class="prompt-title">🎨 AI Image Generation Prompt (Midjourney / Flux / Imagen)</span>
+                <button class="copy-btn" onclick="copyPrompt(this)">Copy Prompt</button>
+            </div>
+            <pre class="prompt-text">Mobile app UI design for "Matching Pairs" interactive learning slide in "Midnight Flow" dark theme #090D16. Two parallel columns of 4 rounded cards each. Left column displays Greek mythological archetypes: "Prometheus", "Sisyphus", "Icarus", "Daedalus". Right column displays core themes: "Endless Repetitive Struggle", "Hubris & Overreaching", "Forethought & Fire", "Mastery of Craft". "Prometheus" and "Forethought & Fire" are successfully matched, both highlighted with a shared glowing emerald green border #22C55E. "Icarus" is currently selected with a glowing sky blue border #60A5FA awaiting its pair. Minimalist, modern card UI, JetBrains Mono tags, Figma design showcase, 8k --ar 9:16</pre>
+        </div>
+    </section>
+    
+    <section id="screen-10" class="slide-card">
+        <div class="slide-header">
+            <div>
+                <span class="slide-num-pill">SCREEN 10</span>
+                <h2 class="slide-name" style="margin-top: 6px;">Chronological & Logic Ordering View</h2>
+            </div>
+            <span class="slide-type-tag">** ordering</span>
+        </div>
+
+        <div class="section-block">
+            <span class="section-label">Required Cognitive &amp; UI Redesign Changes</span>
+            <ul class="change-list">
+                <li>**Large Drag-and-Snap Cards:** Full-card touch targets with smooth vertical spring physics and haptic snapping.</li><li>**Transition Arrow Indicators:** Dynamic vertical numbered connector lines `(1) -> (2) -> (3) -> (4)` between cards that highlight logical dependencies.</li><li>**Partial Order Diagnostics:** Visual indicator showing which sub-sequences are correctly ordered even if the total array is not.</li>
+            </ul>
+        </div>
+
+        <div class="prompt-container">
+            <div class="prompt-header">
+                <span class="prompt-title">🎨 AI Image Generation Prompt (Midjourney / Flux / Imagen)</span>
+                <button class="copy-btn" onclick="copyPrompt(this)">Copy Prompt</button>
+            </div>
+            <pre class="prompt-text">Mobile learning app UI design for "Sequence & Logic Ordering" slide. Clean "Cognitive Sanctuary" light theme with slate background #F8FAFC. Screen prompt: "Order the stages of the Mitosis cell cycle from start to finish." Four large draggable cards with vertical numbered badges on their left edges: (1) Prophase, (2) Metaphase, (3) Anaphase, (4) Telophase. Card (2) "Metaphase" is currently being dragged, slightly tilted with an elevated drop shadow and glowing blue border #2563EB. Vertical connecting line with soft downward arrows linking the cards together. Bottom pill button "Verify Sequence". High fidelity, crisp UI components, Apple iOS 18 design guidelines, 8k --ar 9:16</pre>
+        </div>
+    </section>
+    
+    <section id="screen-11" class="slide-card">
+        <div class="slide-header">
+            <div>
+                <span class="slide-num-pill">SCREEN 11</span>
+                <h2 class="slide-name" style="margin-top: 6px;">Spaced Repetition Flashcard View</h2>
+            </div>
+            <span class="slide-type-tag">** flashcard</span>
+        </div>
+
+        <div class="section-block">
+            <span class="section-label">Required Cognitive &amp; UI Redesign Changes</span>
+            <ul class="change-list">
+                <li>**Effort Timer & Delayed Flip:** Flip button encourages a 5-second mental generation pause before revealing the back.</li><li>**4-Tier Metacognitive Grading:** Replacing binary Pass/Fail with: `Again (<10m)`, `Hard (1d)`, `Good (3d)`, `Easy (7d)`.</li><li>**Memory Stability Indicator:** Small visual bar showing current memory retention half-life in days.</li>
+            </ul>
+        </div>
+
+        <div class="prompt-container">
+            <div class="prompt-header">
+                <span class="prompt-title">🎨 AI Image Generation Prompt (Midjourney / Flux / Imagen)</span>
+                <button class="copy-btn" onclick="copyPrompt(this)">Copy Prompt</button>
+            </div>
+            <pre class="prompt-text">Mobile app UI interface for "Spaced Repetition 3D Flip Flashcard" slide. Modern dark theme #090D16 with soft gradient glow. Center card is an elevated 3D glassmorphic card #131D31 with a subtle perspective tilt: Front face shows "Dopamine D2 Receptor Agonists - Clinical Mechanism & Side Effects". A small flip icon in the top right. Bottom area displays 4 self-grading rating buttons in distinct colors: Red "Again (<10m)", Amber "Hard (1d)", Blue "Good (4d)", Emerald "Easy (10d)". Top header shows a spaced repetition queue counter "Card 14 / 25" and memory stability gauge (88% Retained). Clean typography, Plus Jakarta Sans, slick modern 3D UI card rendering, 8k --ar 9:16</pre>
+        </div>
+    </section>
+    
+    <section id="screen-12" class="slide-card">
+        <div class="slide-header">
+            <div>
+                <span class="slide-num-pill">SCREEN 12</span>
+                <h2 class="slide-name" style="margin-top: 6px;">Program Construction & Logic Builder View</h2>
+            </div>
+            <span class="slide-type-tag">** program</span>
+        </div>
+
+        <div class="section-block">
+            <span class="section-label">Required Cognitive &amp; UI Redesign Changes</span>
+            <ul class="change-list">
+                <li>**Block-to-Text Hybrid Architecture:** Combines clean Python syntax highlighting with drag-and-drop code logic slots.</li><li>**Real-Time AST Validation:** Instant feedback on indentation and variable binding without crashing the runtime.</li><li>**Step-by-Step Execution Variable Inspector:** Small expandable tray showing variable values (`x=5`, `total=15`) updating per loop iteration.</li>
+            </ul>
+        </div>
+
+        <div class="prompt-container">
+            <div class="prompt-header">
+                <span class="prompt-title">🎨 AI Image Generation Prompt (Midjourney / Flux / Imagen)</span>
+                <button class="copy-btn" onclick="copyPrompt(this)">Copy Prompt</button>
+            </div>
+            <pre class="prompt-text">Mobile UI design for "Program Construction & Coding Logic" slide in dark theme #090D16. Main view displays a sleek code editor window with macOS style top-left red/yellow/green window dots. Code contains an algorithm for "Calculate Fibonacci Sequence" with syntax highlighted keywords in violet #A78BFA, functions in blue #60A5FA, and strings in green #34D399. A missing loop condition line has a designated drop target. Below the editor, a code block tray with 3 formatted draggable code blocks: `for i in range(2, n):`, `while i <= n:`, `for i in list:`. On the bottom right, a small mini variable tracker box showing `prev=1, curr=1, next=2`. Modern developer education UI, JetBrains IDE aesthetic, 8k --ar 9:16</pre>
+        </div>
+    </section>
+    
+    <section id="screen-13" class="slide-card">
+        <div class="slide-header">
+            <div>
+                <span class="slide-num-pill">SCREEN 13</span>
+                <h2 class="slide-name" style="margin-top: 6px;">Live SeriousPython Code Runner & Sandbox View</h2>
+            </div>
+            <span class="slide-type-tag">** try_yourself / code_runner</span>
+        </div>
+
+        <div class="section-block">
+            <span class="section-label">Required Cognitive &amp; UI Redesign Changes</span>
+            <ul class="change-list">
+                <li>**Quick-Access Python Accessory Toolbar:** Floating keyboard toolbar with `( )`, `[ ]`, `:`, `=`, `->`, `def`, `return`, `print`, and 4-space tab indent key.</li><li>**Split-Pane Live Terminal & Matplotlib Canvas:** Code on top (55%), live terminal output and auto-rendering Matplotlib charts on bottom (45%).</li><li>**Interactive Reset & Solution Diff:** One-tap button to reset to starter code or view a side-by-side diff against the master solution.</li>
+            </ul>
+        </div>
+
+        <div class="prompt-container">
+            <div class="prompt-header">
+                <span class="prompt-title">🎨 AI Image Generation Prompt (Midjourney / Flux / Imagen)</span>
+                <button class="copy-btn" onclick="copyPrompt(this)">Copy Prompt</button>
+            </div>
+            <pre class="prompt-text">Mobile app UI design for "Live Python Code Runner & Data Science Sandbox" screen in dark mode #090D16. Split view layout: Upper 55% contains an interactive code editor with JetBrains Mono font showing a NumPy matrix multiplication script with a runnable `import numpy as np` snippet. Directly above the phone keyboard, a sleek horizontal developer accessory bar with one-tap buttons: `( )`, `[ ]`, `:`, `tab`, `def`, `run`. Lower 45% shows a live terminal console output card #0F172A displaying the calculated output matrix and a crisp embedded Matplotlib scatter plot with red decision boundaries. A prominent circular green "Run Code ▶" floating action button. High-tech, developer-friendly educational app, 8k --ar 9:16</pre>
+        </div>
+    </section>
+    
+    <section id="screen-14" class="slide-card">
+        <div class="slide-header">
+            <div>
+                <span class="slide-num-pill">SCREEN 14</span>
+                <h2 class="slide-name" style="margin-top: 6px;">Interactive HTML5 Canvas & Simulator View</h2>
+            </div>
+            <span class="slide-type-tag">** custom_html / interactive_webview</span>
+        </div>
+
+        <div class="section-block">
+            <span class="section-label">Required Cognitive &amp; UI Redesign Changes</span>
+            <ul class="change-list">
+                <li>**Goal-Directed Parameter Challenges:** Overlay a specific target objective banner (e.g., *"Adjust launch angle \(	heta\) to hit the target at 120m with air resistance"*).</li><li>**Synchronized Parameter Readouts:** Real-time HUD displaying velocity, energy conservation curves, and trajectory equations updating at 60fps.</li><li>**DuoMessageChannel Two-Way Sync:** Seamless progress tracking communicating simulator state directly to the native Flutter lesson engine.</li>
+            </ul>
+        </div>
+
+        <div class="prompt-container">
+            <div class="prompt-header">
+                <span class="prompt-title">🎨 AI Image Generation Prompt (Midjourney / Flux / Imagen)</span>
+                <button class="copy-btn" onclick="copyPrompt(this)">Copy Prompt</button>
+            </div>
+            <pre class="prompt-text">Mobile app UI design for "Interactive Physics Simulator & Canvas" slide. Modern dark theme #090D16. The screen showcases an interactive "Gravitational Orbital Mechanics Simulator" with a large glowing golden Sun at the center and an interactive elliptical orbit path of Earth. Interactive HUD overlays: Top banner with objective "Achieve a stable circular orbit at radius R = 1.5 AU". Lower section contains 2 sleek slider controls: "Initial Velocity (v)" and "Launch Angle (	heta)", with glowing emerald green slider thumbs. Real-time metric card on the side showing `Period: 365.2 days | Eccentricity: 0.016`. Futuristic, beautiful, highly engaging STEM interactive visualization, PhET meets Apple UI, 8k --ar 9:16</pre>
+        </div>
+    </section>
+    
+    <section id="screen-15" class="slide-card">
+        <div class="slide-header">
+            <div>
+                <span class="slide-num-pill">SCREEN 15</span>
+                <h2 class="slide-name" style="margin-top: 6px;">Error Spotting & Bug Hunting Diagnostic View</h2>
+            </div>
+            <span class="slide-type-tag">** error_spotting</span>
+        </div>
+
+        <div class="section-block">
+            <span class="section-label">Required Cognitive &amp; UI Redesign Changes</span>
+            <ul class="change-list">
+                <li>**Line-by-Line Target Inspection:** Tapping a line highlights it with an amber diagnostic scope.</li><li>**Two-Stage Bug Resolution:** Stage 1: Identify flawed line -> Stage 2: Select the correct logical replacement from a multi-choice prompt.</li><li>**Misconception Deep Dive:** Post-solve drawer explains the historical or conceptual misconception associated with this specific error.</li>
+            </ul>
+        </div>
+
+        <div class="prompt-container">
+            <div class="prompt-header">
+                <span class="prompt-title">🎨 AI Image Generation Prompt (Midjourney / Flux / Imagen)</span>
+                <button class="copy-btn" onclick="copyPrompt(this)">Copy Prompt</button>
+            </div>
+            <pre class="prompt-text">Mobile app UI design for "Error Spotting & Logic Bug Hunt" slide in "Cognitive Sanctuary" light theme #F8FAFC. The main card presents a 6-line mathematical proof solving for a limit: `lim x->0 (sin x / x)`. Line 3 contains an erroneous application of L'Hopital's Rule: it is actively selected with a prominent amber alert border #D97706 and a small magnifying glass bug icon. Below the proof card, a prompt card asks: "Why is Line 3 invalid?" with 3 selectable options. Bottom button "Confirm Flaw Analysis" in solid cobalt blue #2563EB. Clean mathematical typography with JetBrains Mono and Space Grotesk. Diagnostic, intellectually engaging UI design, 8k --ar 9:16</pre>
+        </div>
+    </section>
+    
+    <section id="screen-16" class="slide-card">
+        <div class="slide-header">
+            <div>
+                <span class="slide-num-pill">SCREEN 16</span>
+                <h2 class="slide-name" style="margin-top: 6px;">Lesson Header & Ambient Flow Chrome</h2>
+            </div>
+            <span class="slide-type-tag">** Header Navigation, Progress, Streak & Zen Mode</span>
+        </div>
+
+        <div class="section-block">
+            <span class="section-label">Required Cognitive &amp; UI Redesign Changes</span>
+            <ul class="change-list">
+                <li>**Ambient Zen Mode (Auto-Dimming Chrome):** When problem solving begins, the top bar smoothly fades to 20% opacity, returning to full visibility upon user touch or step completion.</li><li>**Fluid Flow Momentum Meter:** Replaces brittle streaks with a rolling 14-day cognitive volume momentum indicator with graceful rest day protection.</li><li>**Integrated AI Socratic Tutor Pill:** Minimalist glowing pill button to invoke contextual hints without obscuring the question.</li>
+            </ul>
+        </div>
+
+        <div class="prompt-container">
+            <div class="prompt-header">
+                <span class="prompt-title">🎨 AI Image Generation Prompt (Midjourney / Flux / Imagen)</span>
+                <button class="copy-btn" onclick="copyPrompt(this)">Copy Prompt</button>
+            </div>
+            <pre class="prompt-text">Mobile app UI design for "Ambient Flow Header & Lesson Chrome Bar" (component showcase at top of mobile screen). Sleek minimalist glassmorphic header on dark background #090D16: Left side has a subtle 'X' close button; center has a smooth pill-shaped fluid progress bar (65% filled with glowing gradient from Royal Blue #2563EB to Sky Blue #60A5FA); right side features a subtle flame icon with combo multiplier "x5" in warm amber #FBBF24 and an intelligent AI tutor orb icon with a soft violet pulse #A78BFA. Ultra-clean, modern, unobtrusive, designed for deep flow state, 8k resolution, vector UI asset --ar 16:9</pre>
+        </div>
+    </section>
+    
+    <section id="screen-17" class="slide-card">
+        <div class="slide-header">
+            <div>
+                <span class="slide-num-pill">SCREEN 17</span>
+                <h2 class="slide-name" style="margin-top: 6px;">Bottom Action, Confidence Meter & Diagnostic Autopsy Tray</h2>
+            </div>
+            <span class="slide-type-tag">** Bottom Action Bar, Metacognitive Sliders & Feedback Drawer</span>
+        </div>
+
+        <div class="section-block">
+            <span class="section-label">Required Cognitive &amp; UI Redesign Changes</span>
+            <ul class="change-list">
+                <li>**3-Tier Metacognitive Confidence Bar:** Clean selector allowing the student to specify confidence (*Guessing*, *Plausible*, *Certain*) before checking.</li><li>**Gated 3-Tier Progressive Hint Ladder:** Clean collapsible drawer offering Socratic Clues, Schema Outlines, and Worked Steps.</li><li>**Causal Diagnostic Autopsy Tray:** Slides up post-check, explaining *why* the concept works and analyzing common cognitive traps.</li>
+            </ul>
+        </div>
+
+        <div class="prompt-container">
+            <div class="prompt-header">
+                <span class="prompt-title">🎨 AI Image Generation Prompt (Midjourney / Flux / Imagen)</span>
+                <button class="copy-btn" onclick="copyPrompt(this)">Copy Prompt</button>
+            </div>
+            <pre class="prompt-text">Mobile app UI design for "Bottom Action Bar & Diagnostic Feedback Drawer" (component mockup on mobile screen). Clean light theme #F8FAFC. The bottom drawer has slid up with a soft emerald green background tint #DCFCE7 and a crisp green top border #16A34A. Inside the drawer: A bold green header "✨ Excellent Deduction!" followed by a 2-line causal explanation of the underlying theorem. Below the explanation, a collapsible tab "Why other options fail (Misconception Analysis)". At the very bottom, a wide solid royal blue pill button "Continue (Enter ↵)" with high clickability. Elegant Plus Jakarta Sans typography, friendly yet rigorous educational aesthetic, 8k --ar 16:9</pre>
+        </div>
+    </section>
+    
+    <section id="screen-18" class="slide-card">
+        <div class="slide-header">
+            <div>
+                <span class="slide-num-pill">SCREEN 18</span>
+                <h2 class="slide-name" style="margin-top: 6px;">Lesson Complete & Metacognitive Mastery Summary Screen</h2>
+            </div>
+            <span class="slide-type-tag">** lesson_complete_screen</span>
+        </div>
+
+        <div class="section-block">
+            <span class="section-label">Required Cognitive &amp; UI Redesign Changes</span>
+            <ul class="change-list">
+                <li>**Cognitive Mastery Radar & Schema Growth:** Displays exact sub-skills mastered (e.g., *Eigenvalues: 94%*, *Matrix Trace: 88%*).</li><li>**Memory Stability Forecast:** Visual calendar card showing the next spaced repetition interval (*"Optimal review in 3 days"*).</li><li>**Flow State Velocity Score:** Reflects focused deliberate practice time, error recovery rate, and total cognitive volume.</li>
+            </ul>
+        </div>
+
+        <div class="prompt-container">
+            <div class="prompt-header">
+                <span class="prompt-title">🎨 AI Image Generation Prompt (Midjourney / Flux / Imagen)</span>
+                <button class="copy-btn" onclick="copyPrompt(this)">Copy Prompt</button>
+            </div>
+            <pre class="prompt-text">Mobile app UI design for "Lesson Complete & Metacognitive Mastery Summary" screen in "Cognitive Sanctuary" light theme #F8FAFC. Top hero section features an elegant glowing circular progress ring (92% Mastery) in emerald green #16A34A and royal blue #2563EB with text "Lesson Mastered • Linear Transformations". Below the hero, three sleek metrics cards: "Focus Velocity (12m in Flow)", "First-Try Accuracy (88%)", and "Cognitive Momentum (+45 pts)". In the middle, a Spaced Repetition calendar forecast card with a badge: "📅 Next Review Scheduled: Wednesday (3 Days)". At bottom, two pill buttons: Primary "Continue Learning Journey" in solid blue, Secondary "Review Difficult Steps". Celebration without distraction, high-end pedagogical UX, 8k resolution --ar 9:16</pre>
+        </div>
+    </section>
+    
+        </div>
+    </div>
+
+    <footer class="doc-footer">
+        <p>DUOFY COGNITIVE INTERFACE REDESIGN &amp; AI IMAGE GENERATION SPECIFICATION</p>
+        <p style="margin-top: 4px; font-size: 11px;">Engineered with Deliberate Practice (PEAK), Retrieval Dynamics (Make It Stick), and Flow Psychology.</p>
+    </footer>
+
+    <script>
+        function setTheme(t) {
+            document.documentElement.setAttribute('data-theme', t);
+            document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function copyPrompt(btn) {
+            const pre = btn.closest('.prompt-container').querySelector('pre.prompt-text');
+            navigator.clipboard.writeText(pre.innerText).then(() => {
+                const orig = btn.innerText;
+                btn.innerText = 'Copied! ✓';
+                btn.style.background = '#16a34a';
+                btn.style.color = '#fff';
+                setTimeout(() => {
+                    btn.innerText = orig;
+                    btn.style.background = '';
+                    btn.style.color = '';
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>

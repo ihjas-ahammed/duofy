@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Error Spotting & Logic Bug Hunt</title>
+  <!-- Google Fonts: Plus Jakarta Sans & STIX Two Math -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=STIX+Two+Math:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==========================================================================
+       DESIGN SYSTEM TOKENS (LIGHT & DARK)
+       ========================================================================== */
+    :root {
+      /* Frosted Light Mode */
+      --page-bg: #e2e8f0;
+      --device-bg: #f8fafc;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-subtle: #94a3b8;
+
+      --card-bg: #ffffff;
+      --card-border: rgba(226, 232, 240, 0.9);
+      --card-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.04);
+
+      /* Glass Toolbar Tokens */
+      --glass-bar-bg: rgba(255, 255, 255, 0.85);
+      --glass-bar-border: rgba(255, 255, 255, 0.9);
+      --glass-bar-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.8);
+      --glass-btn-bg: #f1f5f9;
+      --glass-btn-border: #e2e8f0;
+      --glass-btn-color: #334155;
+      --glass-track-bg: #e2e8f0;
+      --glass-track-text: #0056fd;
+      --glass-divider: #e2e8f0;
+      --glass-bot-bg: radial-gradient(circle at 30% 30%, #eff6ff, #dbeafe);
+      --glass-bot-border: #93c5fd;
+
+      /* Proof Steps (Light) */
+      --step-row-hover: #f8fafc;
+      --step-row-active-bg: #fffbf0;
+      --step-row-active-border: #f97316;
+      --step-num-bg: #eff6ff;
+      --step-num-text: #0056fd;
+      --step-num-active-bg: #f97316;
+
+      /* Flaw Question Card */
+      --flaw-opt-bg: #ffffff;
+      --flaw-opt-border: rgba(226, 232, 240, 0.9);
+      --flaw-opt-hover: #f8fafc;
+      --flaw-opt-selected-border: #0062ff;
+      --flaw-opt-selected-bg: #eff6ff;
+
+      --primary-blue: #0062ff;
+      --primary-blue-hover: #0050d4;
+      --primary-blue-glow: rgba(0, 98, 255, 0.35);
+
+      --sheet-bg: #f7fdfa;
+      --sheet-border: #10b981;
+      --home-bar: #0f172a;
+    }
+
+    [data-theme="dark"] {
+      /* Midnight Obsidian Dark Mode */
+      --page-bg: #030712;
+      --device-bg: #070c18;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-subtle: #64748b;
+
+      --card-bg: #0c1322;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.6);
+
+      /* Dark Glass Toolbar Tokens */
+      --glass-bar-bg: rgba(15, 23, 42, 0.75);
+      --glass-bar-border: rgba(255, 255, 255, 0.15);
+      --glass-bar-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+      --glass-btn-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
+      --glass-btn-border: rgba(255, 255, 255, 0.18);
+      --glass-btn-color: #ffffff;
+      --glass-track-bg: rgba(0, 0, 0, 0.45);
+      --glass-track-text: #7dd3fc;
+      --glass-divider: rgba(255, 255, 255, 0.15);
+      --glass-bot-bg: radial-gradient(circle at 30% 30%, #381f75, #110e2e);
+      --glass-bot-border: #a855f7;
+
+      /* Proof Steps (Dark) */
+      --step-row-hover: #111a2e;
+      --step-row-active-bg: rgba(249, 115, 22, 0.1);
+      --step-row-active-border: #f97316;
+      --step-num-bg: rgba(59, 130, 246, 0.15);
+      --step-num-text: #60a5fa;
+      --step-num-active-bg: #f97316;
+
+      /* Flaw Question Card */
+      --flaw-opt-bg: #0c1322;
+      --flaw-opt-border: rgba(255, 255, 255, 0.08);
+      --flaw-opt-hover: #111a2e;
+      --flaw-opt-selected-border: #3b82f6;
+      --flaw-opt-selected-bg: rgba(59, 130, 246, 0.15);
+
+      --primary-blue: #2563eb;
+      --primary-blue-hover: #1d4ed8;
+      --primary-blue-glow: rgba(37, 99, 235, 0.4);
+
+      --sheet-bg: #091e17;
+      --sheet-border: #059669;
+      --home-bar: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--page-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px 10px;
+      transition: background-color 0.3s ease;
+    }
+
+    .math { font-family: 'STIX Two Math', serif; }
+
+    /* Prototyping Controls */
+    .prototype-bar {
+      display: flex;
+      gap: 8px;
+      background: var(--card-bg);
+      padding: 6px;
+      border-radius: 9999px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+      border: 1px solid var(--card-border);
+      margin-bottom: 14px;
+      z-index: 100;
+    }
+
+    .proto-btn {
+      padding: 6px 16px;
+      border-radius: 9999px;
+      border: none;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .proto-btn.active {
+      background: var(--primary-blue);
+      color: #ffffff;
+    }
+
+    /* Mobile Shell Frame */
+    .mobile-frame {
+      width: 100%;
+      max-width: 412px;
+      height: 884px;
+      background-color: var(--device-bg);
+      border-radius: 44px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--card-border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: background-color 0.3s ease;
+    }
+
+    /* ==========================================================================
+       TOP STATUS BAR & SIGNATURE GLASS TOOLBAR
+       ========================================================================== */
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 26px 4px 26px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      z-index: 15;
+    }
+
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .glass-header-container {
+      padding: 8px 16px 8px 16px;
+      z-index: 15;
+    }
+
+    .glass-pill-bar {
+      background: var(--glass-bar-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-bar-border);
+      border-radius: 9999px;
+      height: 52px;
+      padding: 4px 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: var(--glass-bar-shadow);
+      transition: all 0.3s ease;
+    }
+
+    .glass-close-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--glass-btn-bg);
+      border: 1px solid var(--glass-btn-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--glass-btn-color);
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.15s ease;
+    }
+    .glass-close-btn:active { transform: scale(0.92); }
+
+    .glass-progress-track {
+      flex: 1;
+      height: 32px;
+      background: var(--glass-track-bg);
+      border-radius: 9999px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 2px;
+      overflow: hidden;
+    }
+
+    .glass-progress-fill {
+      width: 30%; /* 3 / 10 = 30% */
+      height: 100%;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, #0052d4 0%, #4364f7 50%, #6fb1fc 100%);
+      box-shadow: 0 0 14px rgba(67, 100, 247, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+      position: relative;
+    }
+
+    .glass-progress-fill::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      animation: waveGlow 2.5s infinite linear;
+    }
+
+    @keyframes waveGlow {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .glass-progress-text {
+      position: absolute;
+      right: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--glass-track-text);
+      letter-spacing: 0.2px;
+    }
+
+    .streak-badge {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      padding: 0 4px;
+    }
+
+    .streak-flame {
+      font-size: 16px;
+      filter: drop-shadow(0 0 4px #f97316);
+    }
+
+    .streak-count {
+      font-size: 13px;
+      font-weight: 800;
+      color: #f59e0b;
+    }
+
+    .glass-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--glass-divider);
+    }
+
+    .bot-avatar-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--glass-bot-bg);
+      border: 1.5px solid var(--glass-bot-border);
+      box-shadow: 0 0 12px rgba(147, 197, 253, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      flex-shrink: 0;
+      transition: transform 0.2s ease;
+    }
+    .bot-avatar-btn:hover { transform: scale(1.05); }
+
+    /* AI Hint Floating Popover */
+    .ai-hint-popover {
+      position: absolute;
+      top: 108px;
+      right: 20px;
+      left: 20px;
+      background: var(--card-bg);
+      border: 1.5px solid #0062ff;
+      box-shadow: var(--card-shadow), 0 0 16px rgba(0, 98, 255, 0.25);
+      border-radius: 18px;
+      padding: 12px 14px;
+      z-index: 50;
+      display: none;
+      animation: popIn 0.2s ease;
+    }
+    .ai-hint-popover.show { display: block; }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ==========================================================================
+       SCROLLABLE CONTENT AREA
+       ========================================================================== */
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 2px 14px 8px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Sub-header Breadcrumb */
+    .screen-header-title {
+      text-align: center;
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.2px;
+      margin-top: 1px;
+    }
+
+    /* 1. Main Proof Inspection Card */
+    .proof-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 22px;
+      padding: 14px 14px 10px 14px;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .proof-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .proof-title-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pi-badge-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: rgba(0, 98, 255, 0.1);
+      color: var(--primary-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .proof-instruction {
+      font-size: 12.5px;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.2px;
+    }
+
+    .proof-pill-tag {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--primary-blue);
+      background: rgba(0, 98, 255, 0.08);
+      border: 1px solid rgba(0, 98, 255, 0.2);
+      border-radius: 9999px;
+      padding: 3px 8px;
+    }
+
+    .prove-statement {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text-main);
+      padding: 2px 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Proof Steps Rows */
+    .steps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .step-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 8px;
+      border-radius: 12px;
+      border: 1.5px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .step-row:hover {
+      background: var(--step-row-hover);
+    }
+
+    .step-row.active-bug {
+      background: var(--step-row-active-bg);
+      border-color: var(--step-row-active-border);
+      box-shadow: 0 0 16px rgba(249, 115, 22, 0.25);
+    }
+
+    .step-left-content {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .step-no-badge {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--step-num-bg);
+      color: var(--step-num-text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .step-row.active-bug .step-no-badge {
+      background: var(--step-num-active-bg);
+      color: #ffffff;
+    }
+
+    .step-math-expr {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .step-right-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .step-justification {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .step-row.active-bug .step-justification {
+      color: #ea580c;
+    }
+
+    .bug-spotter-lens {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #f97316;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 10px rgba(249, 115, 22, 0.4);
+      flex-shrink: 0;
+    }
+
+    /* 2. Flaw Analysis Section Card */
+    .flaw-analysis-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 12px 14px;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .flaw-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .flaw-title-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .question-mark-badge {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      background: #fff7ed;
+      color: #ea580c;
+      border: 1px solid #fed7aa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .flaw-title-text {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .select-one-pill {
+      font-size: 9.5px;
+      font-weight: 700;
+      color: var(--primary-blue);
+      background: rgba(0, 98, 255, 0.08);
+      border-radius: 9999px;
+      padding: 3px 8px;
+    }
+
+    .flaw-options-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .flaw-opt-item {
+      background: var(--flaw-opt-bg);
+      border: 1px solid var(--flaw-opt-border);
+      border-radius: 14px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .flaw-opt-item:hover {
+      background: var(--flaw-opt-hover);
+      border-color: var(--primary-blue);
+    }
+
+    .flaw-opt-item.selected {
+      border-color: var(--flaw-opt-selected-border);
+      background: var(--flaw-opt-selected-bg);
+    }
+
+    .radio-circle {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 1.5px solid var(--text-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .flaw-opt-item.selected .radio-circle {
+      border-color: var(--primary-blue);
+      background: var(--primary-blue);
+    }
+    .flaw-opt-item.selected .radio-circle::after {
+      content: '';
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #ffffff;
+    }
+
+    .opt-symbol-badge {
+      width: 30px;
+      height: 30px;
+      border-radius: 10px;
+      background: rgba(0, 98, 255, 0.08);
+      color: var(--primary-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .flaw-opt-text {
+      font-size: 11.5px;
+      line-height: 1.35;
+      color: var(--text-main);
+    }
+
+    /* ==========================================================================
+       BOTTOM CONFIRM ACTION & FOOTER
+       ========================================================================== */
+    .bottom-bar {
+      padding: 4px 16px 8px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      z-index: 15;
+    }
+
+    .btn-confirm-flaw {
+      width: 100%;
+      height: 52px;
+      background: var(--primary-blue);
+      border: none;
+      border-radius: 16px;
+      color: #ffffff;
+      font-size: 14.5px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 8px 20px -4px var(--primary-blue-glow);
+      transition: all 0.2s ease;
+    }
+
+    .btn-confirm-flaw:hover {
+      background: var(--primary-blue-hover);
+      transform: translateY(-1px);
+    }
+    .btn-confirm-flaw:active { transform: translateY(0); }
+
+    .brain-glow-btn-icon {
+      font-size: 17px;
+    }
+
+    .bottom-tip-footer {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10.5px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .home-indicator {
+      width: 130px;
+      height: 4.5px;
+      background: var(--home-bar);
+      border-radius: 9999px;
+      margin: 2px auto 6px auto;
+      opacity: 0.6;
+      z-index: 15;
+    }
+
+    /* Slide Complete Alert Bottom Sheet */
+    .sheet-backdrop {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 40;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .sheet-backdrop.show { opacity: 1; pointer-events: auto; }
+
+    .bottom-sheet {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      background: var(--sheet-bg);
+      border-top: 2.5px solid var(--sheet-border);
+      border-top-left-radius: 28px;
+      border-top-right-radius: 28px;
+      padding: 14px 18px 24px 18px;
+      box-shadow: 0 -10px 40px rgba(0,0,0,0.4);
+      z-index: 50;
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .bottom-sheet.open { transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Prototype Controls -->
+  <div class="prototype-bar">
+    <button class="proto-btn active" id="themeBtn" onclick="toggleTheme()">
+      <span id="themeIcon">☀️</span> Light Mode
+    </button>
+    <button class="proto-btn" onclick="toggleTutorTip()">
+      <span>🤖</span> AI Calculus Hint
+    </button>
+    <button class="proto-btn" onclick="confirmFlaw()">
+      <span>🔍</span> Validate Bug
+    </button>
+  </div>
+
+  <!-- Mobile Phone Shell -->
+  <div class="mobile-frame" id="phone">
+
+    <!-- Top Status Bar -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons">
+        <svg width="16" height="12" viewBox="0 0 17 12" fill="currentColor">
+          <rect x="0" y="9" width="3" height="3" rx="0.5"/>
+          <rect x="4.5" y="6" width="3" height="6" rx="0.5"/>
+          <rect x="9" y="3" width="3" height="9" rx="0.5"/>
+          <rect x="13.5" y="0" width="3" height="12" rx="0.5"/>
+        </svg>
+        <svg width="15" height="12" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-4.9-3.2c2.7-2.3 7.1-2.3 9.8 0l1.4-1.4c-3.5-3.1-9.1-3.1-12.6 0l1.4 1.4z"/>
+        </svg>
+        <svg width="22" height="11" viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="1" y="1" width="19" height="10" rx="3"/>
+          <rect x="3" y="3" width="12" height="6" fill="currentColor" rx="1"/>
+          <path d="M21 4.5v3" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 1. SIGNATURE GLASSMORPHIC FLOATING TOOLBAR -->
+    <div class="glass-header-container">
+      <div class="glass-pill-bar">
+        <!-- Close button -->
+        <button class="glass-close-btn" aria-label="Close" onclick="alert('Exit Bug Hunt')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <!-- Glowing Progress Track (3 / 10 = 30%) -->
+        <div class="glass-progress-track">
+          <div class="glass-progress-fill"></div>
+          <span class="glass-progress-text">3 / 10</span>
+        </div>
+
+        <!-- Streak Fire Counter -->
+        <div class="streak-badge">
+          <span class="streak-flame">🔥</span>
+          <span class="streak-count">12</span>
+        </div>
+
+        <div class="glass-divider"></div>
+
+        <!-- AI Bot Avatar Pill -->
+        <button class="bot-avatar-btn" aria-label="AI Tutor" onclick="toggleTutorTip()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0056fd" stroke-width="2" stroke-linecap="round">
+            <rect x="4" y="8" width="16" height="12" rx="4"></rect>
+            <circle cx="9" cy="13" r="1.5" fill="#0056fd"></circle>
+            <circle cx="15" cy="13" r="1.5" fill="#0056fd"></circle>
+            <path d="M12 4v4"></path>
+            <path d="M2 13h2"></path>
+            <path d="M20 13h2"></path>
+            <ellipse cx="12" cy="14" rx="10" ry="4" stroke="#3b82f6" stroke-width="1.2" stroke-dasharray="3 2" transform="rotate(-15 12 14)"></ellipse>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- AI Tutor Popover Tip -->
+    <div class="ai-hint-popover" id="aiHint">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span style="font-size: 11px; font-weight: 800; color: var(--primary-blue); text-transform: uppercase;">✦ Socratic Bug Hunt Hint</span>
+        <span style="font-size: 12px; cursor: pointer; color: var(--text-muted);" onclick="toggleTutorTip()">✕</span>
+      </div>
+      <p style="font-size: 12px; line-height: 1.45; color: var(--text-main);">
+        Ask yourself: How do we prove that $\frac{d}{dx}[\sin x] = \cos x$? The proof of the derivative itself relies on the geometric limit $\lim_{x\to 0} \frac{\sin x}{x} = 1$! Using L'Hôpital's Rule here creates a <strong>circular reasoning fallacy</strong>.
+      </p>
+    </div>
+
+    <!-- 2. Main Scrollable Content Area -->
+    <div class="content-area">
+
+      <h1 class="screen-header-title">Error Spotting &amp; Logic Bug Hunt</h1>
+
+      <!-- Proof Container Card -->
+      <div class="proof-card">
+        <div class="proof-header-row">
+          <div class="proof-title-left">
+            <div class="pi-badge-icon">
+              <span class="math">π</span>
+            </div>
+            <span class="proof-instruction">Analyze the proof and identify the flawed step.</span>
+          </div>
+          <span class="proof-pill-tag">Proof #23</span>
+        </div>
+
+        <div class="prove-statement">
+          <strong>Prove:</strong> &nbsp;<span class="math" style="font-size: 15px;">lim<sub>x→0</sub> (sin x / x) = 1</span>
+        </div>
+
+        <!-- 6 Proof Steps List -->
+        <div class="steps-list">
+          
+          <!-- Line 1 -->
+          <div class="step-row" onclick="selectStep(1)">
+            <div class="step-left-content">
+              <div class="step-no-badge">1</div>
+              <span class="step-math-expr math">lim<sub>x→0</sub> (sin x / x)</span>
+            </div>
+            <span class="step-justification">Original limit</span>
+          </div>
+
+          <!-- Line 2 -->
+          <div class="step-row" onclick="selectStep(2)">
+            <div class="step-left-content">
+              <div class="step-no-badge">2</div>
+              <span class="step-math-expr math">This is an indeterminate form ( 0 / 0 ).</span>
+            </div>
+            <span class="step-justification">Indeterminate form</span>
+          </div>
+
+          <!-- Line 3 (Bug Line Active by Default) -->
+          <div class="step-row active-bug" id="step-3" onclick="selectStep(3)">
+            <div class="step-left-content">
+              <div class="step-no-badge">3</div>
+              <span class="step-math-expr math">lim<sub>x→0</sub> (sin x / x) = lim<sub>x→0</sub> (cos x / 1)</span>
+            </div>
+            <div class="step-right-group">
+              <span class="step-justification">L'Hopital's Rule</span>
+              <div class="bug-spotter-lens">
+                <!-- Magnifier Bug Icon -->
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <circle cx="11" cy="11" r="7"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Line 4 -->
+          <div class="step-row" onclick="selectStep(4)">
+            <div class="step-left-content">
+              <div class="step-no-badge">4</div>
+              <span class="step-math-expr math">= lim<sub>x→0</sub> cos x</span>
+            </div>
+            <span class="step-justification">Simplify</span>
+          </div>
+
+          <!-- Line 5 -->
+          <div class="step-row" onclick="selectStep(5)">
+            <div class="step-left-content">
+              <div class="step-no-badge">5</div>
+              <span class="step-math-expr math">= cos 0</span>
+            </div>
+            <span class="step-justification">Direct substitution</span>
+          </div>
+
+          <!-- Line 6 -->
+          <div class="step-row" onclick="selectStep(6)">
+            <div class="step-left-content">
+              <div class="step-no-badge">6</div>
+              <span class="step-math-expr math">= 1</span>
+            </div>
+            <span class="step-justification">Final result</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Flaw Justification Card -->
+      <div class="flaw-analysis-card">
+        <div class="flaw-header">
+          <div class="flaw-title-group">
+            <div class="question-mark-badge">?</div>
+            <h2 class="flaw-title-text">Why is Line 3 invalid?</h2>
+          </div>
+          <span class="select-one-pill">Select one answer</span>
+        </div>
+
+        <div class="flaw-options-list">
+          
+          <!-- Option 1 (Selected) -->
+          <div class="flaw-opt-item selected" onclick="selectOption(this)">
+            <div class="radio-circle"></div>
+            <div class="opt-symbol-badge math">f'(x)</div>
+            <span class="flaw-opt-text">
+              L'Hopital's Rule cannot be applied because the functions are not differentiable at <span class="math">x = 0</span>.
+            </span>
+          </div>
+
+          <!-- Option 2 -->
+          <div class="flaw-opt-item" onclick="selectOption(this)">
+            <div class="radio-circle"></div>
+            <div class="opt-symbol-badge">⊘</div>
+            <span class="flaw-opt-text">
+              L'Hopital's Rule was applied incorrectly; the derivative of <span class="math">sin x</span> is not <span class="math">cos x</span>.
+            </span>
+          </div>
+
+          <!-- Option 3 -->
+          <div class="flaw-opt-item" onclick="selectOption(this)">
+            <div class="radio-circle"></div>
+            <div class="opt-symbol-badge">∞</div >
+            <span class="flaw-opt-text">
+              The limit is not in an indeterminate form <span class="math">( 0 / 0 )</span>, so L'Hopital's Rule cannot be used.
+            </span>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 3. Bottom Confirm Button & Tip -->
+    <div class="bottom-bar">
+      <button class="btn-confirm-flaw" onclick="confirmFlaw()">
+        <span class="brain-glow-btn-icon">🧠</span>
+        <span>Confirm Flaw Analysis</span>
+      </button>
+
+      <div class="bottom-tip-footer">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <span>Review the rules for L'Hopital's Rule before confirming.</span>
+      </div>
+    </div>
+
+    <!-- iOS Home Indicator -->
+    <div class="home-indicator"></div>
+
+    <!-- Slide Complete Alert Bottom Sheet -->
+    <div class="sheet-backdrop" id="sheetBackdrop" onclick="closeSheet()"></div>
+    <div class="bottom-sheet" id="feedbackSheet">
+      <div style="width: 38px; height: 4px; background: #cbd5e1; border-radius: 999px; margin: 0 auto 4px auto;"></div>
+
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: #ecfdf5; color: #10b981; display: flex; align-items: center; justify-content: center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+          <h2 style="font-size: 20px; font-weight: 800; color: #10b981;">Excellent Deduction!</h2>
+        </div>
+        <button style="border: none; background: none; font-size: 16px; cursor: pointer; color: var(--text-muted);" onclick="closeSheet()">✕</button>
+      </div>
+
+      <p style="font-size: 12px; line-height: 1.5; color: var(--text-main);">
+        L'Hopital's Rule requires both the numerator and denominator to be differentiable independently without circular reasoning. Proving <span class="math">(sin x)' = cos x</span> fundamentally relies on knowing <span class="math">lim<sub>x→0</sub> (sin x / x) = 1</span> first!
+      </p>
+
+      <button class="btn-confirm-flaw" style="margin-top: 4px;" onclick="closeSheet()">
+        <span>Continue to Summary (Enter ↵)</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Interactive JavaScript Engine -->
+  <script>
+    let isDark = false;
+    let selectedStepNumber = 3;
+
+    function toggleTheme() {
+      isDark = !isDark;
+      const root = document.documentElement;
+      const themeBtn = document.getElementById('themeBtn');
+
+      if (isDark) {
+        root.setAttribute('data-theme', 'dark');
+        themeBtn.innerHTML = '<span>🌙</span> Dark Mode';
+      } else {
+        root.removeAttribute('data-theme');
+        themeBtn.innerHTML = '<span>☀️</span> Light Mode';
+      }
+    }
+
+    function selectStep(stepNum) {
+      document.querySelectorAll('.step-row').forEach(row => {
+        row.classList.remove('active-bug');
+        const lens = row.querySelector('.bug-spotter-lens');
+        if (lens) lens.remove();
+      });
+
+      const clickedRow = event.currentTarget;
+      clickedRow.classList.add('active-bug');
+      selectedStepNumber = stepNum;
+
+      // Add magnifier icon
+      const rightGroup = clickedRow.querySelector('.step-right-group') || clickedRow;
+      if (!clickedRow.querySelector('.bug-spotter-lens')) {
+        const lens = document.createElement('div');
+        lens.className = 'bug-spotter-lens';
+        lens.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>';
+        rightGroup.appendChild(lens);
+      }
+    }
+
+    function selectOption(el) {
+      document.querySelectorAll('.flaw-opt-item').forEach(item => item.classList.remove('selected'));
+      el.classList.add('selected');
+    }
+
+    function toggleTutorTip() {
+      document.getElementById('aiHint').classList.toggle('show');
+    }
+
+    function confirmFlaw() {
+      if (selectedStepNumber === 3) {
+        document.getElementById('feedbackSheet').classList.add('open');
+        document.getElementById('sheetBackdrop').classList.add('show');
+      } else {
+        alert(`Line ${selectedStepNumber} is algebraically sound. Look closer at Line 3 (L'Hôpital application).`);
+      }
+    }
+
+    function closeSheet() {
+      document.getElementById('feedbackSheet').classList.remove('open');
+      document.getElementById('sheetBackdrop').classList.remove('show');
+    }
+  </script>
+</body>
+</html>
