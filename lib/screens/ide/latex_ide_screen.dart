@@ -32,6 +32,13 @@ class _LatexIdeScreenState extends State<LatexIdeScreen> {
   late String _projectId;
   late TextEditingController _titleController;
   late CodeEditingController _texController;
+
+  // Multi-file state
+  Map<String, String> _files = {};
+  List<String> _openTabs = [];
+  String _activeFileName = 'main.tex';
+  String _mainFileName = 'main.tex';
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   bool _isSaving = false;
 
   static String get _authorName {
@@ -42,73 +49,24 @@ class _LatexIdeScreenState extends State<LatexIdeScreen> {
     return 'Flow Learner';
   }
 
-  Map<String, String> get _templates => {
-    'Hello World': r'''\documentclass{article}
-\begin{document}
-
-\title{Hello World}
-\author{''' + _authorName + r'''}
-\maketitle
-
-\section{Introduction}
-Hello World! Welcome to LaTeX typesetting \cite{lamport1994}.
-
-\section{Mathematics}
-Here is a simple equation:
-\[ E = mc^2 \]
-
-\begin{thebibliography}{99}
-\bibitem{lamport1994}
-Lamport, L. (1994). \textit{\LaTeX: A Document Preparation System}. Addison-Wesley.
-\end{thebibliography}
-
-\end{document}''',
-
-    'Indexed Book (makeidx)': r'''\documentclass{article}
-\usepackage{makeidx}
-\makeindex
-
-\begin{document}
-
-\title{Computer Science \& AI Index Guide}
-\author{''' + _authorName + r'''}
-\date{\today}
-\maketitle
-
-\section{Algorithms \& Complexity}
-An \index{Algorithm} algorithm is a step-by-step method for solving computation problems \cite{knuth1997}.
-We evaluate performance using \index{Time Complexity} time complexity and \index{Space Complexity} space complexity bounds.
-
-\section{Artificial Intelligence}
-Modern \index{Neural Network} neural networks enable automated pattern recognition in \index{Artificial Intelligence} artificial intelligence systems \cite{goodfellow2016}.
-Optimization uses \index{Gradient Descent} gradient descent algorithms with \index{Backpropagation} backpropagation.
-
-\printindex
-
-\begin{thebibliography}{99}
-\bibitem{knuth1997}
-Knuth, D. E. (1997). \textit{The Art of Computer Programming}. Addison-Wesley.
-\bibitem{goodfellow2016}
-Goodfellow, I., Bengio, Y., \& Courville, A. (2016). \textit{Deep Learning}. MIT Press.
-\end{thebibliography}
-
-\end{document}''',
-
-    'Academic Paper': r'''\documentclass[11pt,a4paper]{article}
+  Map<String, Map<String, String>> get _multiFileTemplates => {
+    'Academic Paper (BibTeX)': {
+      'main.tex': r'''\documentclass[11pt,a4paper]{article}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{graphicx}
 \usepackage{hyperref}
+\usepackage{cite}
 
-\begin{document}
-
-\title{\textbf{Advanced Deep Learning \& Neural Architectures}}
+\title{\textbf{Deep Neural Representations \& Autonomous Reasoning}}
 \author{\textbf{''' + _authorName + r'''} \\ Department of Computer Science}
 \date{\today}
+
+\begin{document}
 \maketitle
 
 \begin{abstract}
-This paper presents a formal analysis of neural network optimization and mathematical foundations of deep representation learning. We explore convergence bounds and empirical performance.
+This paper presents a formal analysis of neural network optimization and mathematical foundations of deep representation learning. Bibliographical sources are organized in the companion \texttt{references.bib} file.
 \end{abstract}
 
 \section{Introduction}
@@ -117,34 +75,137 @@ Modern machine learning models rely heavily on loss minimization \cite{goodfello
 \mathcal{L}(\theta) = \frac{1}{N} \sum_{i=1}^N \ell(f(x_i; \theta), y_i) + \lambda \|\theta\|^2_2
 \end{equation}
 
-\section{Mathematical Foundations}
-The gradient update rule for stochastic gradient descent with momentum is defined as:
-\begin{align}
-v_{t+1} &= \beta v_t + (1 - \beta) \nabla_\theta \mathcal{L}(\theta_t) \\
-\theta_{t+1} &= \theta_t - \alpha v_{t+1}
-\end{align}
+\section{Transformer Architectures}
+Attention mechanisms allow sequence-to-sequence mapping with quadratic scaling \cite{vaswani2017}:
+\begin{equation}
+\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right) V
+\end{equation}
 
-\section{Matrix Operations}
-Consider the transformation matrix $A \in \mathbb{R}^{3 \times 3}$:
-\[
-A = \begin{bmatrix}
-\cos\theta & -\sin\theta & 0 \\
-\sin\theta & \cos\theta & 0 \\
-0 & 0 & 1
-\end{bmatrix}
-\]
+\section{Algorithmic Complexity}
+Foundational algorithms in computational complexity follow established asymptotic principles \cite{knuth1997, lamport1994}.
 
-\begin{thebibliography}{99}
-\bibitem{goodfellow2016}
-Goodfellow, I., Bengio, Y., \& Courville, A. (2016). \textit{Deep Learning}. MIT Press.
-\bibitem{vaswani2017}
-Vaswani, A., et al. (2017). \textit{Attention Is All You Need}. Advances in Neural Information Processing Systems.
-\end{thebibliography}
+\bibliographystyle{plain}
+\bibliography{references}
 
 \end{document}''',
+      'references.bib': r'''@article{vaswani2017,
+  author    = {Vaswani, Ashish and Shazeer, Noam and Parmar, Niki and Uszkoreit, Jakob and Jones, Llion and Gomez, Aidan N. and Kaiser, Lukasz and Polosukhin, Illia},
+  title     = {Attention Is All You Need},
+  journal   = {Advances in Neural Information Processing Systems},
+  volume    = {30},
+  year      = {2017}
+}
 
-    'Math & Physics': r'''\documentclass[12pt]{article}
+@book{goodfellow2016,
+  author    = {Goodfellow, Ian and Bengio, Yoshua and Courville, Aaron},
+  title     = {Deep Learning},
+  publisher = {MIT Press},
+  year      = {2016}
+}
+
+@book{knuth1997,
+  author    = {Knuth, Donald E.},
+  title     = {The Art of Computer Programming, Vol 1},
+  publisher = {Addison-Wesley},
+  year      = {1997}
+}
+
+@book{lamport1994,
+  author    = {Lamport, Leslie},
+  title     = {\LaTeX: A Document Preparation System},
+  publisher = {Addison-Wesley},
+  year      = {1994}
+}''',
+    },
+
+    'Multi-Chapter Report': {
+      'main.tex': r'''\documentclass[11pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{cite}
+
+\title{\textbf{Principles of Computation \& Modern AI}}
+\author{''' + _authorName + r'''}
+\date{\today}
+
+\begin{document}
+\maketitle
+\tableofcontents
+
+\include{chapter1}
+\include{chapter2}
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}''',
+      'chapter1.tex': r'''\chapter{Foundations of Computation}
+\section{Automata \& Formal Grammars}
+A Turing machine is defined as a 7-tuple $M = \langle Q, \Sigma, \Gamma, \delta, q_0, q_{accept}, q_{reject} \rangle$.
+Complexity classes evaluate algorithmic efficiency \cite{knuth1997}:
+\begin{equation}
+T(n) = \mathcal{O}(n \log n)
+\end{equation}''',
+      'chapter2.tex': r'''\chapter{Deep Learning Architectures}
+\section{Transformers \& Self-Attention}
+Self-attention transforms inputs into key, query, and value subspaces \cite{vaswani2017, goodfellow2016}.
+\begin{equation}
+\mathbf{h}_i = \sum_{j=1}^N \alpha_{ij} \mathbf{v}_j
+\end{equation}''',
+      'references.bib': r'''@article{vaswani2017,
+  author  = {Vaswani, Ashish and others},
+  title   = {Attention Is All You Need},
+  journal = {NeurIPS},
+  year    = {2017}
+}
+
+@book{goodfellow2016,
+  author    = {Goodfellow, Ian and others},
+  title     = {Deep Learning},
+  publisher = {MIT Press},
+  year      = {2016}
+}
+
+@book{knuth1997,
+  author    = {Knuth, Donald E.},
+  title     = {The Art of Computer Programming},
+  publisher = {Addison-Wesley},
+  year      = {1997}
+}''',
+    },
+
+    'Hello World': {
+      'main.tex': r'''\documentclass{article}
+\usepackage{cite}
+\begin{document}
+
+\title{Hello World with BibTeX}
+\author{''' + _authorName + r'''}
+\maketitle
+
+\section{Introduction}
+Hello World! Welcome to multi-file LaTeX typesetting \cite{lamport1994}.
+
+\section{Mathematics}
+Here is a simple equation:
+\[ E = mc^2 \]
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}''',
+      'references.bib': r'''@book{lamport1994,
+  author    = {Lamport, Leslie},
+  title     = {\LaTeX: A Document Preparation System},
+  publisher = {Addison-Wesley},
+  year      = {1994}
+}''',
+    },
+
+    'Math & Physics': {
+      'main.tex': r'''\documentclass[12pt]{article}
 \usepackage{amsmath,amssymb,amsthm}
+\usepackage{cite}
 
 \newtheorem{theorem}{Theorem}
 
@@ -174,16 +235,26 @@ In electrodynamics, Maxwell's equations in differential form are \cite{maxwell18
 The Gaussian integral evaluation:
 \[ \int_{-\infty}^{\infty} e^{-x^2} \, dx = \sqrt{\pi} \]
 
-\begin{thebibliography}{99}
-\bibitem{euler1748}
-Euler, L. (1748). \textit{Introductio in analysin infinitorum}.
-\bibitem{maxwell1865}
-Maxwell, J. C. (1865). A dynamical theory of the electromagnetic field. \textit{Philosophical Transactions}.
-\end{thebibliography}
+\bibliographystyle{plain}
+\bibliography{references}
 
 \end{document}''',
+      'references.bib': r'''@book{euler1748,
+  author    = {Euler, Leonhard},
+  title     = {Introductio in analysin infinitorum},
+  year      = {1748}
+}
 
-    'Beamer Slides': r'''\documentclass{beamer}
+@article{maxwell1865,
+  author    = {Maxwell, James Clerk},
+  title     = {A Dynamical Theory of the Electromagnetic Field},
+  journal   = {Philosophical Transactions of the Royal Society of London},
+  year      = {1865}
+}''',
+    },
+
+    'Beamer Slides': {
+      'main.tex': r'''\documentclass{beamer}
 \usetheme{Madrid}
 \usecolortheme{beaver}
 
@@ -210,14 +281,22 @@ where $|\alpha|^2 + |\beta|^2 = 1$.
 \end{itemize}
 \end{frame}
 
-\begin{thebibliography}{99}
-\bibitem{nielsen2010}
-Nielsen, M. A., \& Chuang, I. L. (2010). \textit{Quantum Computation and Quantum Information}. Cambridge University Press.
-\end{thebibliography}
+\begin{frame}[allowframebreaks]{References}
+\bibliographystyle{plain}
+\bibliography{references}
+\end{frame}
 
 \end{document}''',
+      'references.bib': r'''@book{nielsen2010,
+  author    = {Nielsen, Michael A. and Chuang, Isaac L.},
+  title     = {Quantum Computation and Quantum Information},
+  publisher = {Cambridge University Press},
+  year      = {2010}
+}''',
+    },
 
-    'Resume / CV': r'''\documentclass[11pt,a4paper]{article}
+    'Resume / CV': {
+      'main.tex': r'''\documentclass[11pt,a4paper]{article}
 \usepackage{hyperref}
 
 \begin{document}
@@ -238,12 +317,17 @@ Flow University \hfill GPA: 3.92/4.0
   \item High-throughput TeX Parsing and WebAssembly Render Optimization \cite{flow2026}.
 \end{itemize}
 
-\begin{thebibliography}{99}
-\bibitem{flow2026}
-Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{Duofy Systems}.
-\end{thebibliography}
+\bibliographystyle{plain}
+\bibliography{references}
 
 \end{document}''',
+      'references.bib': r'''@article{flow2026,
+  author  = {Flow Research},
+  title   = {Client-side WebAssembly TeX compilation engine},
+  journal = {Duofy Systems},
+  year    = {2026}
+}''',
+    },
   };
 
   Timer? _autosaveTimer;
@@ -257,14 +341,69 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
       text: widget.existingProject?.title ?? 'LaTeX Studio',
     );
 
-    final existingCode = widget.existingProject?.codeContent ?? '';
+    // Initialize files from project or default template
+    if (widget.existingProject?.files.isNotEmpty == true) {
+      _files = Map<String, String>.from(widget.existingProject!.files);
+      _activeFileName = widget.existingProject!.activeFile ?? _files.keys.first;
+      _mainFileName = _files.containsKey('main.tex')
+          ? 'main.tex'
+          : _files.keys.firstWhere((k) => k.endsWith('.tex'), orElse: () => _files.keys.first);
+    } else {
+      final existingCode = widget.existingProject?.codeContent ?? '';
+      if (existingCode.isNotEmpty) {
+        _files = {'main.tex': existingCode, 'references.bib': _defaultBibContent};
+        _activeFileName = 'main.tex';
+        _mainFileName = 'main.tex';
+      } else {
+        final defaultTemplate = _multiFileTemplates['Academic Paper (BibTeX)']!;
+        _files = Map<String, String>.from(defaultTemplate);
+        _activeFileName = 'main.tex';
+        _mainFileName = 'main.tex';
+      }
+    }
+
+    _openTabs = _files.keys.toList();
+    if (!_openTabs.contains(_activeFileName)) {
+      _openTabs.insert(0, _activeFileName);
+    }
+
+    final initialCode = _files[_activeFileName] ?? '';
     _texController = CodeEditingController(
-      text: existingCode.isNotEmpty ? existingCode : _templates['Hello World']!,
-      language: 'latex',
+      text: initialCode,
+      language: _getLanguageForFile(_activeFileName),
     );
 
     _texController.addListener(_onTextChanged);
     _titleController.addListener(_onTextChanged);
+  }
+
+  static String get _defaultBibContent => r'''@article{example2026,
+  author  = {Author, Sample},
+  title   = {Sample Reference Title},
+  journal = {Journal of Modern LaTeX},
+  year    = {2026}
+}''';
+
+  String _getLanguageForFile(String filename) {
+    if (filename.endsWith('.bib')) return 'bibtex';
+    if (filename.endsWith('.tex') || filename.endsWith('.sty') || filename.endsWith('.cls')) {
+      return 'latex';
+    }
+    return 'latex';
+  }
+
+  IconData _getIconForFile(String filename) {
+    if (filename.endsWith('.bib')) return LucideIcons.bookMarked;
+    if (filename.endsWith('.sty') || filename.endsWith('.cls')) return LucideIcons.palette;
+    if (filename.endsWith('.tex')) return LucideIcons.fileText;
+    return LucideIcons.file;
+  }
+
+  Color _getColorForFile(String filename) {
+    if (filename.endsWith('.bib')) return AppTheme.duoViolet;
+    if (filename.endsWith('.sty') || filename.endsWith('.cls')) return AppTheme.duoOrange;
+    if (filename.endsWith('.tex')) return AppTheme.duoBlue;
+    return Colors.grey;
   }
 
   @override
@@ -278,6 +417,7 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
   }
 
   void _onTextChanged() {
+    _files[_activeFileName] = _texController.text;
     _autosaveTimer?.cancel();
     _autosaveTimer = Timer(const Duration(milliseconds: 1500), () {
       if (mounted) {
@@ -286,11 +426,319 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
     });
   }
 
+  void _switchToFile(String fileName) {
+    if (_activeFileName == fileName) return;
+
+    // Save current active text
+    _files[_activeFileName] = _texController.text;
+
+    if (!_openTabs.contains(fileName)) {
+      _openTabs.add(fileName);
+    }
+
+    setState(() {
+      _activeFileName = fileName;
+      _texController.text = _files[fileName] ?? '';
+      _texController.language = _getLanguageForFile(fileName);
+    });
+  }
+
+  void _closeTab(String fileName) {
+    if (_openTabs.length <= 1) return;
+
+    final index = _openTabs.indexOf(fileName);
+    setState(() {
+      _openTabs.remove(fileName);
+      if (_activeFileName == fileName) {
+        final newIndex = index.clamp(0, _openTabs.length - 1);
+        _activeFileName = _openTabs[newIndex];
+        _texController.text = _files[_activeFileName] ?? '';
+        _texController.language = _getLanguageForFile(_activeFileName);
+      }
+    });
+  }
+
+  void _promptCreateNewFile() {
+    final nameCtrl = TextEditingController(text: 'references.bib');
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (dialogCtx, setDialogState) {
+          return AlertDialog(
+            backgroundColor: context.colors.surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                const Icon(LucideIcons.filePlus, color: AppTheme.duoGreen, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'New File',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: context.colors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Enter filename with extension (.tex, .bib, .sty):',
+                  style: TextStyle(fontSize: 13, color: context.colors.textSecondary),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: nameCtrl,
+                  autofocus: true,
+                  style: TextStyle(color: context.colors.textPrimary, fontFamily: 'monospace'),
+                  decoration: InputDecoration(
+                    hintText: 'e.g. references.bib, chapter1.tex',
+                    filled: true,
+                    fillColor: context.colors.background,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 6,
+                  children: [
+                    ActionChip(
+                      label: const Text('references.bib', style: TextStyle(fontSize: 11)),
+                      onPressed: () => setDialogState(() => nameCtrl.text = 'references.bib'),
+                    ),
+                    ActionChip(
+                      label: const Text('chapter1.tex', style: TextStyle(fontSize: 11)),
+                      onPressed: () => setDialogState(() => nameCtrl.text = 'chapter1.tex'),
+                    ),
+                    ActionChip(
+                      label: const Text('macros.sty', style: TextStyle(fontSize: 11)),
+                      onPressed: () => setDialogState(() => nameCtrl.text = 'macros.sty'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.duoGreen,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () {
+                  final name = nameCtrl.text.trim();
+                  if (name.isEmpty) return;
+                  if (_files.containsKey(name)) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('File "$name" already exists.')),
+                    );
+                    return;
+                  }
+
+                  Navigator.pop(ctx);
+
+                  String defaultContent = '';
+                  if (name.endsWith('.bib')) {
+                    defaultContent = _defaultBibContent;
+                  } else if (name.endsWith('.tex')) {
+                    defaultContent = '% $name\n\\section{${name.replaceAll('.tex', '')}}\n\n';
+                  }
+
+                  setState(() {
+                    _files[name] = defaultContent;
+                    if (!_openTabs.contains(name)) _openTabs.add(name);
+                    _activeFileName = name;
+                    _texController.text = defaultContent;
+                    _texController.language = _getLanguageForFile(name);
+                  });
+                  _saveProject(silent: true);
+                },
+                child: const Text('Create File'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _promptRenameFile(String oldName) {
+    final nameCtrl = TextEditingController(text: oldName);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.colors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Rename File',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: context.colors.textPrimary,
+          ),
+        ),
+        content: TextField(
+          controller: nameCtrl,
+          autofocus: true,
+          style: TextStyle(color: context.colors.textPrimary, fontFamily: 'monospace'),
+          decoration: InputDecoration(
+            hintText: 'New file name',
+            filled: true,
+            fillColor: context.colors.background,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.duoBlue,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () {
+              final newName = nameCtrl.text.trim();
+              if (newName.isEmpty || newName == oldName) {
+                Navigator.pop(ctx);
+                return;
+              }
+              if (_files.containsKey(newName)) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('File "$newName" already exists.')),
+                );
+                return;
+              }
+
+              Navigator.pop(ctx);
+              final content = _files.remove(oldName) ?? '';
+              _files[newName] = content;
+
+              final tabIdx = _openTabs.indexOf(oldName);
+              if (tabIdx != -1) {
+                _openTabs[tabIdx] = newName;
+              }
+
+              if (_activeFileName == oldName) {
+                _activeFileName = newName;
+              }
+              if (_mainFileName == oldName) {
+                _mainFileName = newName;
+              }
+
+              setState(() {});
+              _saveProject(silent: true);
+            },
+            child: const Text('Rename'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _promptDeleteFile(String fileName) {
+    if (_files.length <= 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cannot delete the only file in the project.')),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.colors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Delete "$fileName"?',
+          style: TextStyle(fontWeight: FontWeight.bold, color: context.colors.textPrimary),
+        ),
+        content: Text(
+          'Are you sure you want to permanently delete this file from your LaTeX project?',
+          style: TextStyle(color: context.colors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel', style: TextStyle(color: context.colors.textFaint)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              setState(() {
+                _files.remove(fileName);
+                _openTabs.remove(fileName);
+
+                if (_mainFileName == fileName) {
+                  _mainFileName = _files.keys.firstWhere(
+                    (k) => k.endsWith('.tex'),
+                    orElse: () => _files.keys.first,
+                  );
+                }
+
+                if (_activeFileName == fileName) {
+                  _activeFileName = _openTabs.isNotEmpty ? _openTabs.first : _files.keys.first;
+                  _texController.text = _files[_activeFileName] ?? '';
+                  _texController.language = _getLanguageForFile(_activeFileName);
+                }
+              });
+              _saveProject(silent: true);
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _setAsMainFile(String fileName) {
+    setState(() {
+      _mainFileName = fileName;
+    });
+    _saveProject(silent: true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Root compilation file set to "$fileName"'),
+        backgroundColor: AppTheme.duoGreen,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   void _loadTemplate(String name) {
-    if (_templates.containsKey(name)) {
+    if (_multiFileTemplates.containsKey(name)) {
+      final template = _multiFileTemplates[name]!;
       setState(() {
-        _texController.text = _templates[name]!;
+        _files = Map<String, String>.from(template);
+        _openTabs = _files.keys.toList();
+        _mainFileName = _files.containsKey('main.tex')
+            ? 'main.tex'
+            : _files.keys.firstWhere((k) => k.endsWith('.tex'), orElse: () => _files.keys.first);
+        _activeFileName = _mainFileName;
+        _texController.text = _files[_activeFileName] ?? '';
+        _texController.language = _getLanguageForFile(_activeFileName);
       });
+      _saveProject(silent: true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Loaded "$name" multi-file template'),
+          backgroundColor: AppTheme.duoGreen,
+          duration: const Duration(seconds: 2),
+        ),
+      );
     }
   }
 
@@ -298,7 +746,9 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
     final title = _titleController.text.trim().isEmpty
         ? 'LaTeX Studio'
         : _titleController.text.trim();
-    final texCode = _texController.text;
+
+    // Sync active editor buffer to files
+    _files[_activeFileName] = _texController.text;
 
     FocusScope.of(context).unfocus();
     _saveProject(silent: true);
@@ -320,7 +770,7 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Compiling LaTeX PDF...',
+                      'Compiling Multi-file LaTeX...',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: context.colors.textPrimary,
@@ -328,7 +778,7 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Connecting to online TeX Live API...',
+                      'Resolving BibTeX & TeX Live dependencies...',
                       style: TextStyle(
                         fontSize: 12,
                         color: context.colors.textFaint,
@@ -348,18 +798,25 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
     String? onlineErrorMessage;
 
     try {
-      // 1. Primary: POST request with JSON payload to https://latex.ytotech.com/builds/sync
-      // This completely overcomes HTTP GET / URL length limits (compiles documents of any size).
+      // Build resources array with ALL project files
+      final resources = _files.entries.map((entry) {
+        final isMain = (entry.key == _mainFileName);
+        final content = (entry.key == _activeFileName) ? _texController.text : entry.value;
+        return {
+          'main': isMain,
+          'path': entry.key,
+          'content': content,
+        };
+      }).toList();
+
       final response = await http.post(
         Uri.parse('https://latex.ytotech.com/builds/sync'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'compiler': 'pdflatex',
-          'resources': [
-            {'main': true, 'content': texCode}
-          ]
+          'resources': resources,
         }),
-      ).timeout(const Duration(seconds: 35));
+      ).timeout(const Duration(seconds: 40));
 
       if ((response.statusCode == 200 || response.statusCode == 201) &&
           response.bodyBytes.length > 100 &&
@@ -377,7 +834,7 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
 
         if (mounted) Navigator.of(context).pop(); // Dismiss loading dialog
 
-        await _openPdfInViewer(file.path, title, 'Compiled TeX Live Output PDF');
+        await _openPdfInViewer(file.path, title, 'Compiled Multi-file TeX Live Output PDF');
       } else {
         final rawBody = utf8.decode(response.bodyBytes, allowMalformed: true).trim();
         String extractedLog = rawBody;
@@ -391,35 +848,12 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
               extractedLog = decoded['logs'].toString();
             } else if (decoded['error'] != null) {
               extractedLog = decoded['error'].toString();
+              if (decoded['shape_errors'] != null) {
+                extractedLog += '\n${decoded['shape_errors']}';
+              }
             }
           }
         } catch (_) {}
-
-        // If primary returned a 5xx server failure and texCode is small, try fallback
-        if (response.statusCode >= 500 && texCode.length < 2500) {
-          try {
-            final encodedTex = Uri.encodeComponent(texCode);
-            final fallbackUri = Uri.parse('https://latexonline.cc/compile?text=$encodedTex');
-            final fallbackResp = await http.get(fallbackUri).timeout(const Duration(seconds: 20));
-            if (fallbackResp.statusCode == 200 &&
-                fallbackResp.bodyBytes.length > 100 &&
-                fallbackResp.bodyBytes[0] == 37 &&
-                fallbackResp.bodyBytes[1] == 80) {
-              isOnlineSuccess = true;
-              final tempDir = await getTemporaryDirectory();
-              final sanitizedTitle = title
-                  .replaceAll(RegExp(r'[^\w\s-]'), '_')
-                  .replaceAll(' ', '_');
-              final filePath = '${tempDir.path}/${sanitizedTitle}_compiled.pdf';
-              final file = File(filePath);
-              await file.writeAsBytes(fallbackResp.bodyBytes);
-
-              if (mounted) Navigator.of(context).pop();
-              await _openPdfInViewer(file.path, title, 'Compiled TeX Live Output PDF');
-              return;
-            }
-          } catch (_) {}
-        }
 
         onlineErrorMessage = extractedLog.isNotEmpty
             ? extractedLog
@@ -460,8 +894,8 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
         }
 
         try {
-          final offlineFile = await _generateOfflinePdf(title, texCode);
-          await _openPdfInViewer(offlineFile.path, '$title (Offline)', 'Offline Generated LaTeX PDF');
+          final offlineFile = await _generateOfflinePdf(title);
+          await _openPdfInViewer(offlineFile.path, '$title (Offline)', 'Offline Generated Multi-file LaTeX PDF');
         } catch (offlineErr) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -473,7 +907,8 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
           }
         }
       } else if (onlineErrorMessage != null && mounted) {
-        _showCompilationErrorDialog(onlineErrorMessage, texCode);
+        final mainContent = _files[_mainFileName] ?? _texController.text;
+        _showCompilationErrorDialog(onlineErrorMessage, mainContent);
       }
     }
   }
@@ -485,6 +920,9 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
       });
     }
 
+    // Sync active editor buffer
+    _files[_activeFileName] = _texController.text;
+
     final project = IdeProject(
       id: _projectId,
       title: _titleController.text.trim().isEmpty
@@ -492,7 +930,9 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
           : _titleController.text.trim(),
       type: 'latex_ide',
       language: 'latex',
-      codeContent: _texController.text,
+      codeContent: _files[_mainFileName] ?? _texController.text,
+      files: Map<String, String>.from(_files),
+      activeFile: _activeFileName,
       updatedAt: DateTime.now().millisecondsSinceEpoch,
     );
 
@@ -505,12 +945,26 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
       if (!silent) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('LaTeX Project saved!'),
+            content: Text('LaTeX Multi-file Project saved!'),
             backgroundColor: AppTheme.duoGreen,
             duration: Duration(seconds: 2),
           ),
         );
       }
+    }
+  }
+
+  @override
+  void reassemble() {
+    super.reassemble();
+    if (_files.isEmpty) {
+      _files = {'main.tex': _texController.text};
+    }
+    if (!_files.containsKey(_activeFileName)) {
+      _activeFileName = _files.keys.first;
+    }
+    if (!_openTabs.contains(_activeFileName)) {
+      _openTabs.add(_activeFileName);
     }
   }
 
@@ -523,15 +977,33 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
         final appIsDark = context.colors.isDark;
         final isDark = settings.forceDarkMode ?? appIsDark;
 
-        _texController.theme = isDark ? CodeTheme.dark : CodeTheme.light;
-
         return CallbackShortcuts(
           bindings: {
             const SingleActivator(LogicalKeyboardKey.enter, control: true): _openPdfPreview,
             const SingleActivator(LogicalKeyboardKey.enter, meta: true): _openPdfPreview,
+            const SingleActivator(LogicalKeyboardKey.keyB, control: true): () {
+              if (_scaffoldKey.currentState?.isDrawerOpen == true) {
+                Navigator.of(context).pop();
+              } else {
+                _scaffoldKey.currentState?.openDrawer();
+              }
+            },
+            const SingleActivator(LogicalKeyboardKey.keyB, meta: true): () {
+              if (_scaffoldKey.currentState?.isDrawerOpen == true) {
+                Navigator.of(context).pop();
+              } else {
+                _scaffoldKey.currentState?.openDrawer();
+              }
+            },
           },
           child: Scaffold(
+            key: _scaffoldKey,
+            drawer: _buildFileDrawer(isDark),
             appBar: AppBar(
+              leading: IconButton(
+                icon: const Icon(LucideIcons.arrowLeft),
+                onPressed: () => Navigator.pop(context),
+              ),
               title: TextField(
                 controller: _titleController,
                 style: TextStyle(
@@ -541,24 +1013,36 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
                 ),
                 decoration: const InputDecoration(
                   border: InputBorder.none,
-                  hintText: 'LaTeX Title...',
+                  hintText: 'LaTeX Project Title...',
                   isDense: true,
                 ),
               ),
               actions: [
-                // Play Icon Button Only (Normal Icon Button)
+                // Open File Explorer Drawer
+                IconButton(
+                  icon: const Icon(
+                    LucideIcons.folderGit2,
+                    size: 20,
+                    color: AppTheme.duoBlue,
+                  ),
+                  tooltip: 'Project Files',
+                  onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                ),
+                // Play Icon Button
                 IconButton(
                   icon: const Icon(LucideIcons.play, color: AppTheme.duoGreen, size: 20),
-                  tooltip: 'Run / Preview PDF',
+                  tooltip: 'Run / Compile PDF',
                   onPressed: _openPdfPreview,
                 ),
-                // Single Menu Button for ALL options to save space
+                // Menu Button for options & templates
                 PopupMenuButton<String>(
                   icon: const Icon(LucideIcons.moreVertical, size: 20),
                   tooltip: 'More Options',
                   onSelected: (val) {
                     if (val.startsWith('template:')) {
                       _loadTemplate(val.replaceFirst('template:', ''));
+                    } else if (val == 'new_file') {
+                      _promptCreateNewFile();
                     } else if (val == 'settings') {
                       IdeConfigDialog.show(context);
                     } else if (val == 'save') {
@@ -572,16 +1056,46 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
                         children: [
                           Icon(_isSaving ? LucideIcons.loader : LucideIcons.save, size: 16, color: AppTheme.duoGreen),
                           const SizedBox(width: 10),
-                          const Text('Save Document'),
+                          const Text('Save Project'),
                           const Spacer(),
                           const Text('Autosave On', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'new_file',
+                      child: Row(
+                        children: [
+                          Icon(LucideIcons.filePlus, size: 16, color: AppTheme.duoBlue),
+                          SizedBox(width: 10),
+                          Text('New Project File'),
                         ],
                       ),
                     ),
                     const PopupMenuDivider(),
                     const PopupMenuItem(
                       enabled: false,
-                      child: Text('LOAD TEMPLATE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
+                      child: Text('MULTI-FILE TEMPLATES', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
+                    ),
+                    const PopupMenuItem(
+                      value: 'template:Academic Paper (BibTeX)',
+                      child: Row(
+                        children: [
+                          Icon(LucideIcons.bookOpen, size: 16, color: AppTheme.duoBlue),
+                          SizedBox(width: 8),
+                          Text('Academic Paper (with BibTeX)'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'template:Multi-Chapter Report',
+                      child: Row(
+                        children: [
+                          Icon(LucideIcons.layers, size: 16, color: AppTheme.duoGreen),
+                          SizedBox(width: 8),
+                          Text('Multi-Chapter Report (Includes)'),
+                        ],
+                      ),
                     ),
                     const PopupMenuItem(
                       value: 'template:Hello World',
@@ -590,26 +1104,6 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
                           Icon(LucideIcons.fileText, size: 16, color: AppTheme.duoGreen),
                           SizedBox(width: 8),
                           Text('Hello World (Minimal)'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'template:Indexed Book (makeidx)',
-                      child: Row(
-                        children: [
-                          Icon(LucideIcons.bookmark, size: 16, color: AppTheme.duoViolet),
-                          SizedBox(width: 8),
-                          Text('Indexed Book (makeidx Package)'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'template:Academic Paper',
-                      child: Row(
-                        children: [
-                          Icon(LucideIcons.bookOpen, size: 16, color: AppTheme.duoBlue),
-                          SizedBox(width: 8),
-                          Text('Academic Paper'),
                         ],
                       ),
                     ),
@@ -659,11 +1153,423 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
               ],
             ),
             body: SafeArea(
-              child: _buildCodeInput(isDark, settings),
+              child: Column(
+                children: [
+                  _buildTopTabBar(isDark),
+                  Expanded(
+                    child: _buildCodeInput(isDark, settings),
+                  ),
+                ],
+              ),
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildFileDrawer(bool isDark) {
+    final drawerBg = isDark ? const Color(0xFF161B22) : const Color(0xFFF8FAFC);
+    final surfaceBg = isDark ? const Color(0xFF0D1117) : Colors.white;
+    final borderColor = context.colors.outline.withValues(alpha: 0.2);
+
+    return Drawer(
+      backgroundColor: drawerBg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.horizontal(right: Radius.circular(20)),
+      ),
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drawer Header
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: surfaceBg,
+                border: Border(bottom: BorderSide(color: borderColor)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.duoBlue.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(LucideIcons.folderGit2, color: AppTheme.duoBlue, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Project Files',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: context.colors.textPrimary,
+                              ),
+                            ),
+                            Text(
+                              '${_files.length} file${_files.length == 1 ? '' : 's'} in project',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: context.colors.textFaint,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(LucideIcons.x, size: 18),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.duoGreen,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          icon: const Icon(LucideIcons.plus, size: 15),
+                          label: const Text('New File', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _promptCreateNewFile();
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: AppTheme.duoViolet.withValues(alpha: 0.5)),
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          icon: const Icon(LucideIcons.bookMarked, size: 15, color: AppTheme.duoViolet),
+                          label: const Text('Add BibTeX', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.duoViolet)),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            if (_files.containsKey('references.bib')) {
+                              _switchToFile('references.bib');
+                            } else {
+                              setState(() {
+                                _files['references.bib'] = _defaultBibContent;
+                                if (!_openTabs.contains('references.bib')) _openTabs.add('references.bib');
+                                _activeFileName = 'references.bib';
+                                _texController.text = _defaultBibContent;
+                                _texController.language = 'bibtex';
+                              });
+                              _saveProject(silent: true);
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // File list header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Text(
+                'WORKSPACE EXPLORER',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.1,
+                  color: context.colors.textFaint,
+                ),
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                children: _files.keys.map((fileName) {
+                  final isActive = (fileName == _activeFileName);
+                  final isMain = (fileName == _mainFileName);
+                  final icon = _getIconForFile(fileName);
+                  final iconColor = _getColorForFile(fileName);
+
+                  return Container(
+                    margin: const EdgeInsets.symmetric(vertical: 3),
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? (isDark ? const Color(0xFF21262D) : const Color(0xFFE2E8F0))
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(10),
+                      border: isActive
+                          ? Border.all(color: AppTheme.duoBlue.withValues(alpha: 0.5), width: 1.2)
+                          : null,
+                    ),
+                    child: ListTile(
+                      dense: true,
+                      contentPadding: const EdgeInsets.only(left: 12, right: 6),
+                      leading: Icon(icon, size: 18, color: iconColor),
+                      title: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              fileName,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: isActive ? FontWeight.w900 : FontWeight.w600,
+                                color: isActive ? context.colors.textPrimary : context.colors.textSecondary,
+                                fontFamily: 'monospace',
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (isMain)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppTheme.duoGreen.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                'MAIN',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.duoGreen,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      trailing: PopupMenuButton<String>(
+                        icon: Icon(LucideIcons.moreVertical, size: 16, color: context.colors.textFaint),
+                        padding: EdgeInsets.zero,
+                        onSelected: (val) {
+                          if (val == 'set_main') {
+                            _setAsMainFile(fileName);
+                          } else if (val == 'rename') {
+                            _promptRenameFile(fileName);
+                          } else if (val == 'delete') {
+                            _promptDeleteFile(fileName);
+                          }
+                        },
+                        itemBuilder: (ctx) => [
+                          if (fileName.endsWith('.tex') && !isMain)
+                            const PopupMenuItem(
+                              value: 'set_main',
+                              child: Row(
+                                children: [
+                                  Icon(LucideIcons.checkCheck, size: 15, color: AppTheme.duoGreen),
+                                  SizedBox(width: 8),
+                                  Text('Set as Main TeX Root', style: TextStyle(fontSize: 12)),
+                                ],
+                              ),
+                            ),
+                          const PopupMenuItem(
+                            value: 'rename',
+                            child: Row(
+                              children: [
+                                Icon(LucideIcons.edit2, size: 15),
+                                SizedBox(width: 8),
+                                Text('Rename', style: TextStyle(fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          if (_files.length > 1)
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(LucideIcons.trash2, size: 15, color: Colors.redAccent),
+                                  SizedBox(width: 8),
+                                  Text('Delete', style: TextStyle(fontSize: 12, color: Colors.redAccent)),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                      onTap: () {
+                        _switchToFile(fileName);
+                        Navigator.pop(context);
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+
+            // Bottom Bar
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: surfaceBg,
+                border: Border(top: BorderSide(color: borderColor)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(LucideIcons.sparkles, size: 15, color: AppTheme.duoGreen),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Multi-file LaTeX Engine',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: context.colors.textFaint,
+                      ),
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () {
+                      Navigator.pop(context);
+                      IdeConfigDialog.show(context);
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: Icon(LucideIcons.slidersHorizontal, size: 16, color: context.colors.textSecondary),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopTabBar(bool isDark) {
+    final tabBg = isDark ? const Color(0xFF161B22) : const Color(0xFFE2E8F0);
+    final borderColor = context.colors.outline.withValues(alpha: 0.25);
+
+    return Container(
+      height: 40,
+      decoration: BoxDecoration(
+        color: tabBg,
+        border: Border(bottom: BorderSide(color: borderColor)),
+      ),
+      child: Row(
+        children: [
+          // Drawer trigger button
+          InkWell(
+            onTap: () => _scaffoldKey.currentState?.openDrawer(),
+            child: Container(
+              height: 40,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                border: Border(right: BorderSide(color: borderColor)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(LucideIcons.folderGit2, size: 15, color: AppTheme.duoBlue),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Files',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: context.colors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _openTabs.map((fileName) {
+                  final isActive = (fileName == _activeFileName);
+                  final isMain = (fileName == _mainFileName);
+                  final icon = _getIconForFile(fileName);
+                  final iconColor = _getColorForFile(fileName);
+
+                  final activeBg = isDark ? const Color(0xFF0D1117) : const Color(0xFFF8FAFC);
+                  final inactiveBg = Colors.transparent;
+
+                  return InkWell(
+                    onTap: () => _switchToFile(fileName),
+                    child: Container(
+                      height: 40,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: isActive ? activeBg : inactiveBg,
+                        border: Border(
+                          right: BorderSide(color: borderColor),
+                          top: isActive
+                              ? BorderSide(color: iconColor, width: 2)
+                              : BorderSide.none,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(icon, size: 14, color: iconColor),
+                          const SizedBox(width: 6),
+                          Text(
+                            fileName,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                              color: isActive ? context.colors.textPrimary : context.colors.textSecondary,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                          if (isMain) ...[
+                            const SizedBox(width: 4),
+                            Text(
+                              '(main)',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.duoGreen.withValues(alpha: 0.8),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(width: 8),
+                          if (_openTabs.length > 1)
+                            InkWell(
+                              borderRadius: BorderRadius.circular(10),
+                              onTap: () => _closeTab(fileName),
+                              child: Padding(
+                                padding: const EdgeInsets.all(2),
+                                child: Icon(
+                                  LucideIcons.x,
+                                  size: 13,
+                                  color: context.colors.textFaint,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          // New file icon button in tab bar
+          IconButton(
+            icon: const Icon(LucideIcons.plus, size: 16),
+            tooltip: 'New File',
+            onPressed: _promptCreateNewFile,
+          ),
+        ],
+      ),
     );
   }
 
@@ -699,7 +1605,9 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
                 isDense: true,
-                hintText: r'Write LaTeX code...',
+                hintText: _activeFileName.endsWith('.bib')
+                    ? r'Write BibTeX entries (e.g. @article{...}, @book{...})...'
+                    : r'Write LaTeX code...',
                 hintStyle: TextStyle(
                   color: isDark ? const Color(0xFF6E7781) : const Color(0xFF8C959F),
                   fontSize: 12,
@@ -707,7 +1615,7 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
               ),
             ),
           ),
-          // Bottom status bar (Line & Column tracking)
+          // Bottom status bar (Line, Column & Active File tracking)
           ListenableBuilder(
             listenable: _texController,
             builder: (context, _) {
@@ -732,6 +1640,18 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
                 ),
                 child: Row(
                   children: [
+                    Icon(_getIconForFile(_activeFileName), size: 12, color: _getColorForFile(_activeFileName)),
+                    const SizedBox(width: 6),
+                    Text(
+                      _activeFileName,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: context.colors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                    const SizedBox(width: 12),
                     Text(
                       'Line $currentLine of $totalLines',
                       style: TextStyle(
@@ -869,6 +1789,7 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
         onApplyFix: (newCode) {
           setState(() {
             _texController.text = newCode;
+            _files[_activeFileName] = newCode;
           });
           _saveProject(silent: true);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -883,30 +1804,42 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
     );
   }
 
-  Future<File> _generateOfflinePdf(String title, String texCode) async {
+  Future<File> _generateOfflinePdf(String title) async {
     final pdf = pw.Document();
+
+    // Start with the main TeX file
+    var mainTex = _files[_mainFileName] ?? _texController.text;
+
+    // Inline \include{...} and \input{...}
+    final includeRegex = RegExp(r'\\(?:include|input)\{([^}]+)\}');
+    mainTex = mainTex.replaceAllMapped(includeRegex, (match) {
+      var incName = match.group(1)?.trim() ?? '';
+      if (!incName.endsWith('.tex')) incName = '$incName.tex';
+      return _files[incName] ?? '';
+    });
 
     String docTitle = title;
     String docAuthor = '';
     String docDate = '';
 
-    final tMatch = RegExp(r'\\title\{([\s\S]*?)\}').firstMatch(texCode);
+    final tMatch = RegExp(r'\\title\{([\s\S]*?)\}').firstMatch(mainTex);
     if (tMatch != null && tMatch.group(1)!.trim().isNotEmpty) {
       docTitle = tMatch.group(1)!.replaceAll(RegExp(r'\\[a-zA-Z]+'), '').trim();
     }
-    final aMatch = RegExp(r'\\author\{([\s\S]*?)\}').firstMatch(texCode);
+    final aMatch = RegExp(r'\\author\{([\s\S]*?)\}').firstMatch(mainTex);
     if (aMatch != null) {
       docAuthor = aMatch.group(1)!.replaceAll(RegExp(r'\\[a-zA-Z]+'), '').trim();
     }
-    final dMatch = RegExp(r'\\date\{([\s\S]*?)\}').firstMatch(texCode);
+    final dMatch = RegExp(r'\\date\{([\s\S]*?)\}').firstMatch(mainTex);
     if (dMatch != null) {
       final nowStr = DateTime.now().toString().split(' ')[0];
       docDate = dMatch.group(1)!.replaceAll(r'\today', nowStr).replaceAll(RegExp(r'\\[a-zA-Z]+'), '').trim();
     }
 
+    // Parse custom macros
     final customMacros = <String, String>{};
     final macroRegex = RegExp(r'\\(?:newcommand|def)\{?\\([a-zA-Z]+)\}?\{([\s\S]*?)\}');
-    for (final match in macroRegex.allMatches(texCode)) {
+    for (final match in macroRegex.allMatches(mainTex)) {
       final name = match.group(1);
       final body = match.group(2);
       if (name != null && body != null) {
@@ -914,29 +1847,53 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
       }
     }
 
-    var processedTex = texCode;
+    var processedTex = mainTex;
     customMacros.forEach((name, replacement) {
       processedTex = processedTex.replaceAll('\\$name', replacement);
     });
 
-    final lines = processedTex.split('\n');
-    final contentWidgets = <pw.Widget>[];
+    // Parse BibTeX bibliography files
+    final bibEntries = <String, String>{};
+    final bibKeyToNumber = <String, int>{};
+    int bibCounter = 1;
 
-    final bibItems = <String, String>{};
-    final indexTerms = <String>{};
-    int citationCounter = 1;
+    for (final entry in _files.entries) {
+      if (entry.key.endsWith('.bib')) {
+        final bibContent = entry.value;
+        final entryRegex = RegExp(r'@([a-zA-Z]+)\s*\{\s*([^,]+),([\s\S]*?)(?=\n@|\Z)');
+        for (final m in entryRegex.allMatches(bibContent)) {
+          final key = m.group(2)?.trim() ?? '';
+          final body = m.group(3) ?? '';
 
-    for (final rawLine in lines) {
-      final line = rawLine.trim();
-      final bMatch = RegExp(r'\\bibitem\{([^}]+)\}').firstMatch(line);
-      if (bMatch != null) {
-        bibItems[bMatch.group(1)!] = '[${citationCounter++}]';
-      }
-      final idxMatch = RegExp(r'\\index\{([^}]+)\}').firstMatch(line);
-      if (idxMatch != null) {
-        indexTerms.add(idxMatch.group(1)!);
+          String parseField(String field) {
+            final fMatch = RegExp('$field\\s*=\\s*[\\{"]([\\s\\S]*?)[\\}"]', caseSensitive: false).firstMatch(body);
+            return fMatch?.group(1)?.trim().replaceAll(RegExp(r'[\r\n\t]+'), ' ') ?? '';
+          }
+
+          final author = parseField('author');
+          final entryTitle = parseField('title');
+          final journal = parseField('journal');
+          final publisher = parseField('publisher');
+          final year = parseField('year');
+
+          var formatted = '';
+          if (author.isNotEmpty) formatted += '$author. ';
+          if (entryTitle.isNotEmpty) formatted += '"$entryTitle". ';
+          if (journal.isNotEmpty) formatted += '$journal, ';
+          if (publisher.isNotEmpty) formatted += '$publisher, ';
+          if (year.isNotEmpty) formatted += '($year).';
+
+          if (key.isNotEmpty) {
+            bibKeyToNumber[key] = bibCounter;
+            bibEntries[key] = formatted.isNotEmpty ? formatted : key;
+            bibCounter++;
+          }
+        }
       }
     }
+
+    final lines = processedTex.split('\n');
+    final contentWidgets = <pw.Widget>[];
 
     bool inCodeBlock = false;
     final codeBuffer = StringBuffer();
@@ -952,7 +1909,8 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
           line.startsWith(r'\title') ||
           line.startsWith(r'\author') ||
           line.startsWith(r'\date') ||
-          line.startsWith(r'\makeindex')) {
+          line.startsWith(r'\makeindex') ||
+          line.startsWith(r'\bibliographystyle')) {
         continue;
       }
 
@@ -1046,52 +2004,45 @@ Flow Research. (2026). Client-side WebAssembly TeX compilation engine. \textit{D
         continue;
       }
 
-      if (line.startsWith(r'\begin{thebibliography}')) {
+      if (line.startsWith(r'\bibliography{') || line.startsWith(r'\begin{thebibliography}')) {
         contentWidgets.add(pw.SizedBox(height: 14));
         contentWidgets.add(pw.Text('References', style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)));
         contentWidgets.add(pw.Divider(thickness: 0.5, color: PdfColors.blue900));
         contentWidgets.add(pw.SizedBox(height: 4));
-        continue;
-      }
-      if (line.startsWith(r'\bibitem')) {
-        final keyMatch = RegExp(r'\\bibitem\{([^}]+)\}').firstMatch(line);
-        final key = keyMatch?.group(1) ?? '';
-        final tag = bibItems[key] ?? '[1]';
-        final textAfter = line.replaceAll(RegExp(r'\\bibitem\{[^}]+\}'), '').trim();
-        contentWidgets.add(
-          pw.Padding(
-            padding: const pw.EdgeInsets.only(top: 4, bottom: 2),
-            child: pw.Row(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.SizedBox(width: 28, child: pw.Text(tag, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900))),
-                pw.Expanded(child: pw.Text(textAfter, style: const pw.TextStyle(fontSize: 10, lineSpacing: 2))),
-              ],
-            ),
-          ),
-        );
-        continue;
-      }
 
-      if (line.startsWith(r'\printindex')) {
-        if (indexTerms.isNotEmpty) {
-          contentWidgets.add(pw.SizedBox(height: 14));
-          contentWidgets.add(pw.Text('Index', style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)));
-          contentWidgets.add(pw.Divider(thickness: 0.5, color: PdfColors.blue900));
-          contentWidgets.add(pw.SizedBox(height: 4));
-          for (final term in indexTerms) {
-            contentWidgets.add(pw.Text(term, style: const pw.TextStyle(fontSize: 10)));
-          }
+        if (bibEntries.isNotEmpty) {
+          bibEntries.forEach((key, val) {
+            final numTag = bibKeyToNumber[key] ?? 1;
+            contentWidgets.add(
+              pw.Padding(
+                padding: const pw.EdgeInsets.only(top: 4, bottom: 2),
+                child: pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.SizedBox(width: 28, child: pw.Text('[$numTag]', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900))),
+                    pw.Expanded(child: pw.Text(val, style: const pw.TextStyle(fontSize: 10, lineSpacing: 2))),
+                  ],
+                ),
+              ),
+            );
+          });
         }
         continue;
       }
 
-      var cleanLine = line
-          .replaceAll(RegExp(r'\\cite\{([^}]+)\}'), r'[1]')
+      // Replace \cite{key} with [num]
+      var cleanLine = line.replaceAllMapped(RegExp(r'\\cite\{([^}]+)\}'), (match) {
+        final key = match.group(1)?.trim() ?? '';
+        final numTag = bibKeyToNumber[key];
+        return numTag != null ? '[$numTag]' : '[1]';
+      });
+
+      cleanLine = cleanLine
           .replaceAll(RegExp(r'\\index\{([^}]+)\}'), r'$1')
           .replaceAll(RegExp(r'\\textbf\{([^}]+)\}'), r'$1')
           .replaceAll(RegExp(r'\\textit\{([^}]+)\}'), r'$1')
           .replaceAll(RegExp(r'\\underline\{([^}]+)\}'), r'$1')
+          .replaceAll(RegExp(r'\\texttt\{([^}]+)\}'), r'$1')
           .replaceAll(RegExp(r'\\[a-zA-Z]+'), '');
 
       if (cleanLine.isNotEmpty) {
@@ -1250,7 +2201,7 @@ class _LatexErrorAiExplainerSheetState
                           'Automated TeX debugging & correction',
                           style: TextStyle(
                             fontSize: 12,
-                            color: textSecondary,
+                            color: textFaint,
                           ),
                         ),
                       ],
@@ -1264,9 +2215,71 @@ class _LatexErrorAiExplainerSheetState
               ),
             ),
             const Divider(height: 1),
+
             // Content
             Expanded(
-              child: _buildBody(isDark, textPrimary, textSecondary, textFaint),
+              child: _isLoading
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const CircularProgressIndicator(color: AppTheme.duoGreen),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Analyzing TeX compilation log with AI...',
+                            style: TextStyle(
+                              color: textSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : _errorMessage != null
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24.0),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  LucideIcons.alertCircle,
+                                  color: Colors.redAccent,
+                                  size: 36,
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Analysis Failed',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  _errorMessage!,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: textFaint,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.duoGreen,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  icon: const Icon(LucideIcons.rotateCw, size: 16),
+                                  label: const Text('Retry'),
+                                  onPressed: _fetchExplanation,
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : _buildResultView(isDark, textPrimary, textSecondary, textFaint),
             ),
           ],
         ),
@@ -1274,176 +2287,42 @@ class _LatexErrorAiExplainerSheetState
     );
   }
 
-  Widget _buildBody(
+  Widget _buildResultView(
     bool isDark,
     Color textPrimary,
     Color textSecondary,
     Color textFaint,
   ) {
-    if (_isLoading) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(
-                width: 44,
-                height: 44,
-                child: CircularProgressIndicator(
-                  color: AppTheme.duoGreen,
-                  strokeWidth: 3,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Analyzing LaTeX code & error log...',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                  color: textPrimary,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Detecting syntax typos, missing packages, and generating a validated fix.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (_errorMessage != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(LucideIcons.alertCircle,
-                  color: Colors.redAccent, size: 40),
-              const SizedBox(height: 12),
-              Text(
-                'Failed to generate AI diagnosis',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                  color: textPrimary,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                _errorMessage!,
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: textSecondary),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.duoGreen,
-                  foregroundColor: Colors.white,
-                ),
-                icon: const Icon(LucideIcons.refreshCw, size: 16),
-                label: const Text('Try Again'),
-                onPressed: _fetchExplanation,
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    final summary =
-        _explanationResult?['summary']?.toString() ?? 'Error diagnosis';
-    final lineHint = _explanationResult?['lineHint']?.toString();
-    final explanation = _explanationResult?['explanation']?.toString() ?? '';
-    final fixedCode = _explanationResult?['fixedCode']?.toString();
+    final explanation = _explanationResult?['explanation'] as String? ?? 'No explanation provided.';
+    final fixedCode = _explanationResult?['fixedCode'] as String?;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Summary Banner
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.redAccent.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
-              border:
-                  Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(LucideIcons.alertTriangle,
-                        color: Colors.redAccent, size: 18),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        summary,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                          color: textPrimary,
-                        ),
-                      ),
-                    ),
-                  ],
+          // Explanation Box
+          Row(
+            children: [
+              const Icon(LucideIcons.info, size: 16, color: AppTheme.duoBlue),
+              const SizedBox(width: 6),
+              Text(
+                'WHY THIS ERROR OCCURRED',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.8,
+                  color: textFaint,
                 ),
-                if (lineHint != null && lineHint.trim().isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      lineHint,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.redAccent,
-                        fontFamily: 'monospace',
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Detailed Markdown Explanation
-          Text(
-            'DIAGNOSIS & SOLUTION',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.8,
-              color: textFaint,
-            ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color:
-                  isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+              color: isDark ? const Color(0xFF161B22) : const Color(0xFFF1F5F9),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: context.colors.outline.withValues(alpha: 0.3),
@@ -1452,26 +2331,18 @@ class _LatexErrorAiExplainerSheetState
             child: MarkdownBody(
               data: explanation,
               selectable: true,
-              styleSheet:
-                  MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+              styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
                 p: TextStyle(fontSize: 13, height: 1.4, color: textPrimary),
                 code: TextStyle(
-                  backgroundColor: isDark
-                      ? const Color(0xFF1E293B)
-                      : const Color(0xFFE2E8F0),
+                  backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
                   fontFamily: 'monospace',
                   fontSize: 12,
-                  color: isDark
-                      ? const Color(0xFF93C5FD)
-                      : const Color(0xFF1D4ED8),
+                  color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8),
                 ),
                 codeblockDecoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF0D1117)
-                      : const Color(0xFFF8FAFC),
+                  color: isDark ? const Color(0xFF0D1117) : const Color(0xFFF8FAFC),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                      color: context.colors.outline.withValues(alpha: 0.2)),
+                  border: Border.all(color: context.colors.outline.withValues(alpha: 0.2)),
                 ),
               ),
             ),
@@ -1495,8 +2366,7 @@ class _LatexErrorAiExplainerSheetState
                 TextButton.icon(
                   style: TextButton.styleFrom(
                     visualDensity: VisualDensity.compact,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   ),
                   icon: Icon(
                     _isCopied ? LucideIcons.check : LucideIcons.copy,
@@ -1528,8 +2398,7 @@ class _LatexErrorAiExplainerSheetState
               decoration: BoxDecoration(
                 color: const Color(0xFF0D1117),
                 borderRadius: BorderRadius.circular(10),
-                border:
-                    Border.all(color: AppTheme.duoGreen.withValues(alpha: 0.4)),
+                border: Border.all(color: AppTheme.duoGreen.withValues(alpha: 0.4)),
               ),
               child: SingleChildScrollView(
                 child: SelectableText(

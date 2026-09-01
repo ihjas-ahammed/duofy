@@ -37,6 +37,20 @@ class CodeHighlighter {
       'package', 'try', 'catch', 'finally', 'throw', 'throws', 'true', 'false',
       'null', 'System',
     },
+    'bibtex': {
+      'article', 'book', 'inproceedings', 'proceedings', 'techreport', 'manual',
+      'mastersthesis', 'phdthesis', 'misc', 'unpublished', 'author', 'title',
+      'journal', 'year', 'volume', 'number', 'pages', 'month', 'note',
+      'publisher', 'editor', 'institution', 'school', 'address', 'doi', 'url',
+      'eprint', 'howpublished', 'abstract', 'keywords',
+    },
+    'bib': {
+      'article', 'book', 'inproceedings', 'proceedings', 'techreport', 'manual',
+      'mastersthesis', 'phdthesis', 'misc', 'unpublished', 'author', 'title',
+      'journal', 'year', 'volume', 'number', 'pages', 'month', 'note',
+      'publisher', 'editor', 'institution', 'school', 'address', 'doi', 'url',
+      'eprint', 'howpublished', 'abstract', 'keywords',
+    },
   };
 
   static const Set<String> _generic = {
@@ -59,6 +73,8 @@ class CodeHighlighter {
         return '--';
       case 'latex':
       case 'tex':
+      case 'bib':
+      case 'bibtex':
         return '%';
       default:
         return '//';

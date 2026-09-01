@@ -46,6 +46,8 @@ class IdeProject {
   String language; // 'python', 'javascript', 'html', 'latex', 'cpp', 'java', etc.
   String codeContent;
   List<NotebookCell> notebookCells;
+  Map<String, String> files;
+  String? activeFile;
   int updatedAt;
 
   IdeProject({
@@ -55,6 +57,8 @@ class IdeProject {
     required this.language,
     required this.codeContent,
     this.notebookCells = const [],
+    this.files = const {},
+    this.activeFile,
     required this.updatedAt,
   });
 
@@ -65,10 +69,21 @@ class IdeProject {
         'language': language,
         'codeContent': codeContent,
         'notebookCells': notebookCells.map((c) => c.toJson()).toList(),
+        'files': files,
+        'activeFile': activeFile,
         'updatedAt': updatedAt,
       };
 
   factory IdeProject.fromJson(Map<String, dynamic> json) {
+    Map<String, String> parsedFiles = {};
+    if (json['files'] is Map) {
+      (json['files'] as Map).forEach((k, v) {
+        if (k != null && v != null) {
+          parsedFiles[k.toString()] = v.toString();
+        }
+      });
+    }
+
     return IdeProject(
       id: json['id']?.toString() ?? 'proj-${DateTime.now().millisecondsSinceEpoch}',
       title: json['title']?.toString() ?? 'Untitled Project',
@@ -79,6 +94,8 @@ class IdeProject {
               ?.map((c) => NotebookCell.fromJson(Map<String, dynamic>.from(c is Map ? c : {})))
               .toList() ??
           [],
+      files: parsedFiles,
+      activeFile: json['activeFile']?.toString(),
       updatedAt: json['updatedAt'] is num
           ? (json['updatedAt'] as num).toInt()
           : DateTime.now().millisecondsSinceEpoch,

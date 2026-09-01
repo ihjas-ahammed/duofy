@@ -4,6 +4,15 @@ All notable changes to DuoFY are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com); versions follow the app's
 `major.minor.patch` scheme from `pubspec.yaml`.
 
+## [26.9.1] — 2026-09-01
+
+### Added & Improved
+- **Multi-File LaTeX Studio & Workspace File Manager**: Added full multi-file project support (`main.tex`, `references.bib`, `.tex` inclusions, `.sty` macros), mobile-first Navigation Drawer workspace explorer, and VS Code-style top file tabs bar with close buttons.
+- **Online & Offline Multi-File TeX Live Compilation**: Enabled online compilation of multi-file projects and BibTeX bibliographies via validated payload schemas to `latex.ytotech.com`, with comprehensive offline fallback citation and include inlining.
+- **LaTeX Presets & Highlighting**: Added pre-configured templates for Academic Papers (BibTeX), Multi-Chapter Reports, and presentations, along with BibTeX syntax highlighting in `CodeHighlighter`.
+- **Hot Reload Resiliency**: Added state reassembly hooks and eliminated build-phase controller mutations in LaTeX IDE.
+- **Reel-like View & Navigation Improvements**: Added dedicated Reel-like View screen button and simplified "Module Notes" action labels.
+
 ## [26.8.31] — 2026-08-31
 
 ### Added & Improved

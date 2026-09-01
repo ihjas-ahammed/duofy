@@ -16,6 +16,7 @@ import '../services/database_service.dart';
 import '../services/module_notes_service.dart';
 import 'lesson_screen.dart';
 import 'module_notes_viewer_screen.dart';
+import 'reel_view_screen.dart';
 
 class SectionSelectionScreen extends StatefulWidget {
   final Book book;
@@ -141,6 +142,19 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
         ),
       ).then((_) => _checkNotesStatus());
     }
+  }
+
+  void _openReelView() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ReelViewScreen(
+          book: _currentBook,
+          module: _currentModule,
+          moduleIndex: widget.moduleIdx,
+        ),
+      ),
+    );
   }
 
   void _promptGenerateOrRegenerateNotes({bool isRegen = true}) {
@@ -635,7 +649,7 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                                         ),
                                         icon: const Icon(LucideIcons.bookOpenCheck, size: 16, color: Colors.white),
                                         label: const Text(
-                                          'Open Module Notes (PDF)',
+                                          'Module Notes',
                                           style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w900,
@@ -656,6 +670,16 @@ class _SectionSelectionScreenState extends State<SectionSelectionScreen> {
                                       onPressed: () => _promptGenerateOrRegenerateNotes(isRegen: true),
                                     ),
                                   ],
+                                  const SizedBox(width: 8),
+                                  IconButton(
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: context.colors.outline.withValues(alpha: 0.3),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                    icon: const Icon(LucideIcons.film, size: 16),
+                                    tooltip: 'Reel-like View',
+                                    onPressed: _openReelView,
+                                  ),
                                 ],
                               );
                             },
